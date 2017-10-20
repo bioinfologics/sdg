@@ -144,13 +144,13 @@ void SequenceGraph::load_from_gfa(std::string filename) {
             }
             else {
                 if (sourcedir=="-") sourcedir="+";
-                if (sourcedir=="+") sourcedir="-";
+                else sourcedir="-";
             }
 
             if (dest_id<0) {
                 dest_id=-dest_id;
                 if (destdir=="-") destdir="+";
-                if (destdir=="+") destdir="-";
+                else destdir="-";
             }
 
             if (sourcedir=="-") l.source=-src_id;
@@ -160,7 +160,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
             l.dist=0;
             if (cigar.size()>1 and cigar[cigar.size()-1]=='M') {
                 //TODO: better checks for M
-                l.dist=atoi(cigar.c_str());
+                l.dist=-atoi(cigar.c_str());
                 //std::cout<<l.dist<<std::endl;
             }
             links[src_id].emplace_back(l);
@@ -186,14 +186,32 @@ void SequenceGraph::write_to_gfa(std::string filename){
     }
     else throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '"+filename.substr(filename.size()-4,4)+"'");
 
+    std::ofstream gfaf(filename);
+    if (!gfaf) throw std::invalid_argument("Can't write to gfa file");
+    gfaf<<"H\tVN:Z:1.0"<<std::endl;
 
-
-    //load all sequences from fasta file if they're not canonical, flip and remember they're flipped
-    std::cout<<"Loading sequences from "<<fasta_filename<<std::endl;
     std::ofstream fastaf(fasta_filename);
     if (!fastaf) throw std::invalid_argument("Can't write to fasta file");
 
+
+    //load all sequences from fasta file if they're not canonical, flip and remember they're flipped
+    std::cout<<"Writing sequences to "<<fasta_filename<<std::endl;
+
     for (sgNodeID_t i=1;i<nodes.size();++i){
-        fastaf<<">"<<i<<std::endl<<nodes[i].sequence<<std::endl;
+        fastaf<<">seq"<<i<<std::endl<<nodes[i].sequence<<std::endl;
+        gfaf<<"S\tseq"<<i<<"\t*\tLN:i:"<<nodes[i].sequence.size()<<"\tUR:Z:"<<fasta_filename<<std::endl;
     }
+
+    for (auto &ls:links){
+        for (auto &l:ls)
+            if (l.source<=l.dest) {
+                gfaf<<"L\t";
+                if (l.source>0) gfaf<<"seq"<<l.source<<"\t-\t";
+                else gfaf<<"seq"<<-l.source<<"\t+\t";
+                if (l.dest>0) gfaf<<"seq"<<l.dest<<"\t+\t";
+                else gfaf<<"seq"<<-l.dest<<"\t-\t";
+                gfaf<<(l.dist<0 ? -l.dist : 0)<<"M"<<std::endl;
+            }
+    }
+
 }
