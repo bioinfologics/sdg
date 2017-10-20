@@ -5,7 +5,7 @@
 
 
 int main(int argc, char * argv[]) {
-    std::string gfa_filename,output_prefix;
+    std::string gfa_filename,ref_filename,output_prefix;
     bool stats_only=0;
 
     try
@@ -15,7 +15,7 @@ int main(int argc, char * argv[]) {
         options.add_options()
                 ("help", "Print help")
                 ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename))
-                ("R,reference", "reference file (FASTA)", cxxopts::value<std::string>(gfa_filename))
+                ("R,reference", "reference file (FASTA)", cxxopts::value<std::string>(ref_filename))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
                 ("s,stats_only", "do not dump detailed information (default=0)", cxxopts::value<bool>(stats_only));
 
@@ -45,6 +45,9 @@ int main(int argc, char * argv[]) {
 
     std::cout<< "Welcome to gfaqc"<<std::endl<<std::endl;
 
+    SequenceGraph sg;
+    sg.load_from_gfa(gfa_filename);
+    sg.write_to_gfa(output_prefix+".gfa");
     return 0;
 }
 

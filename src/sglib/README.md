@@ -24,3 +24,19 @@ node is specified the
 * replace_path: can be used to expand haplotypes, checks in-out
 * solve_region: receives a list of paths through a region, replaces
 the region.
+
+
+## SequenceNode
+
+`SequenceNode n` variables:
+
+* `n.seq`: the sequence, as a string, canonical.
+* `n.status`: as of now, always 1, meaning it is active.
+
+##
+
+##
+
+## Using the graph
+
+### walking the graph
