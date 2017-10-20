@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include "SequenceGraph.hpp"
 
 bool Node::is_canonical() {
@@ -57,24 +58,32 @@ void Node::make_rc() {
 };
 
 void SequenceGraph::load_from_gfa(std::string filename) {
-    std::string fasta_filename;
+    std::string fasta_filename,line;
     //check the filename ends in .gfa
     if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
         fasta_filename=filename.substr(0,filename.size()-4)+".fasta";
     }
     else throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '"+filename.substr(filename.size()-4,4)+"'");
 
+    std::ifstream gfaf(filename);
+    if (!gfaf) throw std::invalid_argument("Can't read gfa file");
+    std::getline(gfaf, line);
+    if (line!="H\tVN:Z:1.0") std::cout<<"WARNING, first line of gfa doesn't correspond to GFA1"<<std::endl;
+
+    std::ifstream fastaf(fasta_filename);
+    if (!fastaf) throw std::invalid_argument("Can't read fasta file");
+
 
 
     //load all sequences from fasta file if they're not canonical, flip and remember they're flipped
     std::cout<<"Loading sequences from "<<fasta_filename<<std::endl;
-    std::ifstream fastaf(fasta_filename);
-    if (!fastaf) throw std::invalid_argument("Can't read fasta file");
-    std::string name,seq="",line;
+
+    std::string name,seq="";
     seq.reserve(10000000); //stupid hack but probably useful to reserve
     std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids;
     nodes.clear();
-    nodes.emplace_back(Node("")); //an empty node on 0, just to skip the space
+    links.clear();
+    add_node(Node("")); //an empty node on 0, just to skip the space
     sgNodeID_t nextid=1;
     uint64_t rcnodes=0;
     while(!fastaf.eof()){
@@ -82,10 +91,9 @@ void SequenceGraph::load_from_gfa(std::string filename) {
         if (fastaf.eof() or line[0]=='>'){
             if (!name.empty()) {
                 //rough ansi C and C++ mix but it works
-                nodes.emplace_back(Node(seq)); //an empty node on 0, just to skip the space
                 if (oldnames_to_ids.find(name) != oldnames_to_ids.end())
                     throw std::logic_error("sequence " + name + " is already defined");
-                oldnames_to_ids[name] = nextid++;
+                oldnames_to_ids[name] = add_node(Node(seq));
                 //reverse seq if not canonical
                 if (!nodes.back().is_canonical()) {
                     nodes.back().make_rc();
@@ -102,9 +110,72 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     }
     std::cout<<nodes.size()-1<<" nodes loaded! "<<rcnodes<<" canonised"<<std::endl;
 
-
-
     //load store all conections.
+
+    std::string rtype,source,sourcedir,dest,destdir,cigar;
+    sgNodeID_t src_id,dest_id;
+    uint64_t lcount=0;
+    Link l(0,0,0);
+    while(std::getline(gfaf, line) and !gfaf.eof()) {
+        //std::cout<<line<<std::endl;
+        std::istringstream iss(line);
+        iss >> rtype;
+        if (rtype == "L"){
+            iss >> source;
+            iss >> sourcedir;
+            iss >> dest;
+            iss >> destdir;
+            iss >> cigar;
+            //std::cout<<"'"<<source<<"' '"<<sourcedir<<"' '"<<dest<<"' '"<<destdir<<"'"<<std::endl;
+            if (oldnames_to_ids.find(source)==oldnames_to_ids.end()){
+                oldnames_to_ids[source] = add_node(Node(""));
+                //std::cout<<"added source!" <<source<<std::endl;
+            }
+            if (oldnames_to_ids.find(dest)==oldnames_to_ids.end()){
+                oldnames_to_ids[dest] = add_node(Node(""));
+                //std::cout<<"added dest! "<<dest<<std::endl;
+            }
+            src_id=oldnames_to_ids[source];
+            dest_id=oldnames_to_ids[dest];
+
+            //Go from GFA's "Links as paths" to a normal "nodes have sinks (-/start/left) and sources (+/end/right)
+            if (src_id<0) {
+                src_id = -src_id;
+            }
+            else {
+                if (sourcedir=="-") sourcedir="+";
+                if (sourcedir=="+") sourcedir="-";
+            }
+
+            if (dest_id<0) {
+                dest_id=-dest_id;
+                if (destdir=="-") destdir="+";
+                if (destdir=="+") destdir="-";
+            }
+
+            if (sourcedir=="-") l.source=-src_id;
+            else l.source=src_id;
+            if (destdir=="-") l.dest=-dest_id;
+            else l.dest=dest_id;
+            l.dist=0;
+            if (cigar.size()>1 and cigar[cigar.size()-1]=='M') {
+                //TODO: better checks for M
+                l.dist=atoi(cigar.c_str());
+                //std::cout<<l.dist<<std::endl;
+            }
+            links[src_id].emplace_back(l);
+            std::swap(l.source,l.dest);
+            links[dest_id].emplace_back(l);
+            ++lcount;
+        }
+    }
+    std::cout<<nodes.size()-1<<" nodes after connecting with "<<lcount<<" links"<<std::endl;
+}
+
+sgNodeID_t SequenceGraph::add_node(Node n) {
+    nodes.emplace_back(n);
+    links.emplace_back();
+    return (sgNodeID_t) nodes.size()-1;
 }
 
 void SequenceGraph::write_to_gfa(std::string filename){

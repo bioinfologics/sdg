@@ -23,7 +23,9 @@ public:
 };
 
 class Link{
-    sgNodeID_t soure,dest;
+public:
+    Link( sgNodeID_t _src, sgNodeID_t _dst, int32_t _dist) : source(_src), dest(_dst), dist(_dist) {};
+    sgNodeID_t source,dest;
     int32_t dist;
 };
 
@@ -32,10 +34,11 @@ public:
     SequenceGraph(){};
     void load_from_gfa(std::string filename);
     void write_to_gfa(std::string filename);
+    sgNodeID_t add_node(Node n);
 
 private:
     std::vector<Node> nodes;
-    std::unordered_map<sgNodeID_t,std::vector<Link>> links;
+    std::vector<std::vector<Link>> links;
 
 };
 
