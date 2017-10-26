@@ -36,7 +36,6 @@ public:
     void write_to_gfa(std::string filename);
     sgNodeID_t add_node(Node n);
     std::vector<sgNodeID_t> oldnames_to_nodes(std::string _oldnames);
-private:
     std::vector<Node> nodes;
     std::vector<std::vector<Link>> links;
     std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids;
@@ -48,6 +47,8 @@ class SequenceGraphPath {
 public:
     std::vector<sgNodeID_t> nodes;
     explicit SequenceGraphPath(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
+    std::string get_fasta_header();
+    std::string get_sequence();
 
 private:
     SequenceGraph& sg;

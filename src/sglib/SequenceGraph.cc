@@ -238,3 +238,53 @@ std::vector<sgNodeID_t> SequenceGraph::oldnames_to_nodes(std::string _oldnames) 
     }
     return nv;
 }
+
+std::string SequenceGraphPath::get_fasta_header() {
+    std::string h=">sgPath_";
+    for (auto &n:nodes) {
+        h += std::to_string(n)+",";
+    }
+    h.resize(h.size()-1);
+    return h;
+}
+
+std::string SequenceGraphPath::get_sequence() {
+    std::string s="";
+    sgNodeID_t pnode=0;
+    for (auto &n:nodes) {
+        std::string nseq;
+        if (n>0){
+            nseq=sg.nodes[n].sequence;
+        } else {
+            auto rcn=sg.nodes[-n];
+            rcn.make_rc();
+            nseq=rcn.sequence;
+        }
+        if (pnode !=0){
+            //find link between pnode' output (+pnode) and n's sink (-n)
+            auto l=sg.links[(pnode>0 ? pnode:-pnode)].begin();
+            for (;l!=sg.links[(pnode>0 ? pnode:-pnode)].end();++l)
+                if (l->source==pnode and l->dest==n) break;
+            if (l==sg.links[(pnode>0 ? pnode:-pnode)].end()) {
+                std::cout<<"can't find a link between "<<pnode<<" and "<<-n<<std::endl;
+                throw std::runtime_error("path has no link");
+            } else {
+                std::cout<<"validating distance between "<<pnode<<" and "<<n<<" of "<<l->dist<<std::endl;
+                if (l->dist>0){
+                    for (auto c=l->dist;c>0;--c) s+="N";
+                }
+                else {
+                    auto ovl=-l->dist;
+                    for (auto s1=s.c_str()+s.size()-ovl,s2=nseq.c_str();*s1!=NULL;++s1,++s2)
+                        if (*s1!=*s2)
+                            throw std::runtime_error("path overlap is invalid!");
+                    std::cout<<"Overlap validated!"<<std::endl;
+                    nseq.erase(0,ovl);
+                }
+            }
+        }
+        s+=nseq;
+        pnode=-n;
+    }
+    return s;
+}

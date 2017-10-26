@@ -55,6 +55,8 @@ int main(int argc, char * argv[]) {
             std::cout<<"Path in current Ids: ";
             for (auto n:path.nodes) {std::cout<<" "<<n;}
             std::cout<<std::endl;
+            ofasta<<path.get_fasta_header()<<std::endl;
+            ofasta<<path.get_sequence()<<std::endl;
 
         } catch (const std::exception& e) {
             std::cout << "Can't dump path "<<p<<", check path is valid and files are accessible"<<std::endl;
