@@ -55,9 +55,13 @@ include_directories("src/")
 ## Set sources variables
 
 ## add executables and respective sources
-add_executable(gfaqc
-        src/gfaqc.cc
-        src/sglib/SequenceNode.cc src/sglib/SequenceNode.hpp
+add_executable(gfa-qc
+        src/gfa-qc.cc
+        src/sglib/SequenceGraph.cc src/sglib/SequenceGraph.hpp)
+
+## add executables and respective sources
+add_executable(gfa-dumppath
+        src/gfa-dumppath.cc
         src/sglib/SequenceGraph.cc src/sglib/SequenceGraph.hpp)
 
 

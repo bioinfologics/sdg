@@ -11,7 +11,8 @@
 
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
 
-class SequenceGraph;
+
+
 class Node{
 public:
     Node(std::string _seq) : sequence(_seq){};
@@ -19,7 +20,6 @@ public:
     uint8_t status;
     bool is_canonical();
     void make_rc();
-    //std::shared_ptr<SequenceGraph> sub_sg; <--- someday
 };
 
 class Link{
@@ -35,20 +35,24 @@ public:
     void load_from_gfa(std::string filename);
     void write_to_gfa(std::string filename);
     sgNodeID_t add_node(Node n);
-
+    std::vector<sgNodeID_t> oldnames_to_nodes(std::string _oldnames);
 private:
     std::vector<Node> nodes;
     std::vector<std::vector<Link>> links;
+    std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids;
 
 };
+
 
 class SequenceGraphPath {
 public:
     std::vector<sgNodeID_t> nodes;
-    explicit SequenceGraphPath(std::shared_ptr<SequenceGraph> _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
+    explicit SequenceGraphPath(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
+
 private:
-    std::shared_ptr<SequenceGraph> sg;
+    SequenceGraph& sg;
 };
+
 
 
 

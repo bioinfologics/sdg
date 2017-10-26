@@ -80,7 +80,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
 
     std::string name,seq="";
     seq.reserve(10000000); //stupid hack but probably useful to reserve
-    std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids;
+    oldnames_to_ids.clear();
     nodes.clear();
     links.clear();
     add_node(Node("")); //an empty node on 0, just to skip the space
@@ -214,4 +214,27 @@ void SequenceGraph::write_to_gfa(std::string filename){
             }
     }
 
+}
+
+std::vector<sgNodeID_t> SequenceGraph::oldnames_to_nodes(std::string _oldnames) {
+    std::vector<sgNodeID_t> nv;
+    const char * s = _oldnames.c_str();
+    const char * sign;
+    std::string oldname;
+    sgNodeID_t node;
+    while (*s!= NULL){
+        for (sign=s;*sign!=NULL and *sign !='+' and *sign!='-';++sign);
+        if (sign ==s or *sign==NULL ) throw std::invalid_argument("invalid path specification");
+        oldname=s;
+        oldname.resize(sign-s);
+        node=oldnames_to_ids[oldname];
+        if (0==node) throw std::invalid_argument("node "+oldname+" doesn't exist in graph");
+        if (*sign=='-') node=-node;
+        nv.push_back(node);
+        s=sign+1;
+        if (*s==',') ++s;
+        else if (*s!=NULL) throw std::invalid_argument("invalid path specification");
+
+    }
+    return nv;
 }
