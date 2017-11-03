@@ -32,9 +32,34 @@ public:
 class SequenceGraph {
 public:
     SequenceGraph(){};
+    //=== I/O functions ===
     void load_from_gfa(std::string filename);
     void write_to_gfa(std::string filename);
+
+    //=== graph operations ===
     sgNodeID_t add_node(Node n);
+    void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
+    //TODO
+    //get_fw_links
+    //get_bw_links
+    //void find_connected_components (); --> enable extra breaks in repeats
+
+    // remove_node
+    // remove_link
+    // expand_path --> creates an edge with the consensus of a path, eliminates old nodes if only in path and unused edges
+    // simplify --> executes expand_path on every multi-sequence unitig
+    // tip_clip -> eliminates tips.
+
+
+    //void explode_node( sgNodeID_t node, uint16_t k);
+    //void explode_all_nodes ();
+    //void collapse_identical_nodes ();
+
+    //later
+    //project spectra and use for flow
+
+
+    //=== internal variables ===
     std::vector<sgNodeID_t> oldnames_to_nodes(std::string _oldnames);
     std::vector<Node> nodes;
     std::vector<std::vector<Link>> links;

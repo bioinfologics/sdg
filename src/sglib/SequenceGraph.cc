@@ -57,6 +57,19 @@ void Node::make_rc() {
     std::swap(sequence,rseq);
 };
 
+sgNodeID_t SequenceGraph::add_node(Node n) {
+    nodes.emplace_back(n);
+    links.emplace_back();
+    return (sgNodeID_t) nodes.size()-1;
+}
+
+void SequenceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d) {
+    Link l(source,dest,d);
+    links[(source > 0 ? source : -source)].emplace_back(l);
+    std::swap(l.source,l.dest);
+    links[(dest > 0 ? dest : -dest)].emplace_back(l);
+}
+
 void SequenceGraph::load_from_gfa(std::string filename) {
     std::string fasta_filename,line;
     //check the filename ends in .gfa
@@ -112,70 +125,46 @@ void SequenceGraph::load_from_gfa(std::string filename) {
 
     //load store all conections.
 
-    std::string rtype,source,sourcedir,dest,destdir,cigar;
+    std::string gfa_rtype,gfa_source,gfa_sourcedir,gfa_dest,gfa_destdir,gfa_cigar;
     sgNodeID_t src_id,dest_id;
+    int32_t dist;
     uint64_t lcount=0;
     Link l(0,0,0);
     while(std::getline(gfaf, line) and !gfaf.eof()) {
-        //std::cout<<line<<std::endl;
         std::istringstream iss(line);
-        iss >> rtype;
-        if (rtype == "L"){
-            iss >> source;
-            iss >> sourcedir;
-            iss >> dest;
-            iss >> destdir;
-            iss >> cigar;
-            //std::cout<<"'"<<source<<"' '"<<sourcedir<<"' '"<<dest<<"' '"<<destdir<<"'"<<std::endl;
-            if (oldnames_to_ids.find(source)==oldnames_to_ids.end()){
-                oldnames_to_ids[source] = add_node(Node(""));
+        iss >> gfa_rtype;
+        if (gfa_rtype == "L"){
+            iss >> gfa_source;
+            iss >> gfa_sourcedir;
+            iss >> gfa_dest;
+            iss >> gfa_destdir;
+            iss >> gfa_cigar;
+            //std::cout<<"'"<<source<<"' '"<<gfa_sourcedir<<"' '"<<dest<<"' '"<<destdir<<"'"<<std::endl;
+            if (oldnames_to_ids.find(gfa_source)==oldnames_to_ids.end()){
+                oldnames_to_ids[gfa_source] = add_node(Node(""));
                 //std::cout<<"added source!" <<source<<std::endl;
             }
-            if (oldnames_to_ids.find(dest)==oldnames_to_ids.end()){
-                oldnames_to_ids[dest] = add_node(Node(""));
+            if (oldnames_to_ids.find(gfa_dest)==oldnames_to_ids.end()){
+                oldnames_to_ids[gfa_dest] = add_node(Node(""));
                 //std::cout<<"added dest! "<<dest<<std::endl;
             }
-            src_id=oldnames_to_ids[source];
-            dest_id=oldnames_to_ids[dest];
+            src_id=oldnames_to_ids[gfa_source];
+            dest_id=oldnames_to_ids[gfa_dest];
 
             //Go from GFA's "Links as paths" to a normal "nodes have sinks (-/start/left) and sources (+/end/right)
-            if (src_id<0) {
-                src_id = -src_id;
-            }
-            else {
-                if (sourcedir=="-") sourcedir="+";
-                else sourcedir="-";
-            }
-
-            if (dest_id<0) {
-                dest_id=-dest_id;
-                if (destdir=="-") destdir="+";
-                else destdir="-";
-            }
-
-            if (sourcedir=="-") l.source=-src_id;
-            else l.source=src_id;
-            if (destdir=="-") l.dest=-dest_id;
-            else l.dest=dest_id;
-            l.dist=0;
-            if (cigar.size()>1 and cigar[cigar.size()-1]=='M') {
+            if (gfa_sourcedir=="+") src_id=-src_id;
+            if (gfa_destdir=="-") dest_id=-dest_id;
+            dist=0;
+            if (gfa_cigar.size()>1 and gfa_cigar[gfa_cigar.size()-1]=='M') {
                 //TODO: better checks for M
-                l.dist=-atoi(cigar.c_str());
+                dist=-atoi(gfa_cigar.c_str());
                 //std::cout<<l.dist<<std::endl;
             }
-            links[src_id].emplace_back(l);
-            std::swap(l.source,l.dest);
-            links[dest_id].emplace_back(l);
+            add_link(src_id,dest_id,dist);
             ++lcount;
         }
     }
     std::cout<<nodes.size()-1<<" nodes after connecting with "<<lcount<<" links"<<std::endl;
-}
-
-sgNodeID_t SequenceGraph::add_node(Node n) {
-    nodes.emplace_back(n);
-    links.emplace_back();
-    return (sgNodeID_t) nodes.size()-1;
 }
 
 void SequenceGraph::write_to_gfa(std::string filename){
