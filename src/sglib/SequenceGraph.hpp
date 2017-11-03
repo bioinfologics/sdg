@@ -39,15 +39,23 @@ public:
     //=== graph operations ===
     sgNodeID_t add_node(Node n);
     void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
-    //TODO
+
+    std::vector<Link> get_fw_links( sgNodeID_t n);
+    inline std::vector<Link> get_bw_links( sgNodeID_t n){ return get_fw_links (-n); };
     //get_fw_links
     //get_bw_links
     //void find_connected_components (); --> enable extra breaks in repeats
 
     // remove_node
     // remove_link
+
+    //These two need to mark expanded edges, and transfer read maps and unique kmers for non-expanded, but just read map for expanded.
     // expand_path --> creates an edge with the consensus of a path, eliminates old nodes if only in path and unused edges
     // simplify --> executes expand_path on every multi-sequence unitig
+
+    //find balanced repeat subgraphs
+
+
     // tip_clip -> eliminates tips.
 
 

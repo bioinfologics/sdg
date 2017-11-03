@@ -70,6 +70,12 @@ void SequenceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d) {
     links[(dest > 0 ? dest : -dest)].emplace_back(l);
 }
 
+std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n){
+    std::vector<Link> r;
+    for (auto &l:links[(n>0 ? n : -n)]) if (l.source==-n) r.emplace_back(l);
+    return r;
+}
+
 void SequenceGraph::load_from_gfa(std::string filename) {
     std::string fasta_filename,line;
     //check the filename ends in .gfa
