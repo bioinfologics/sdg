@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <set>
 #include "SequenceGraph.hpp"
 
 bool Node::is_canonical() {
@@ -74,6 +75,42 @@ std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n){
     std::vector<Link> r;
     for (auto &l:links[(n>0 ? n : -n)]) if (l.source==-n) r.emplace_back(l);
     return r;
+}
+
+std::vector<std::vector<sgNodeID_t>> SequenceGraph::connected_components(int max_nr_totalinks, int max_nr_dirlinks,
+                                                                         int min_rsize) {
+    std::vector<bool> used(nodes.size());
+    std::vector<std::vector<sgNodeID_t>> components;
+    //TODO: first find all repeats, add them as independent components and mark them as used.
+
+    for (sgNodeID_t start_node=1;start_node<nodes.size();++start_node){
+        if (false==used[start_node]){
+            used[start_node]=true;
+            //if start node is repeat, just add a single-node component
+            std::set<sgNodeID_t> in_component;
+            in_component.insert(start_node);
+            std::set<sgNodeID_t> to_explore;
+            to_explore.insert(start_node);
+            while(to_explore.size()){
+                auto n=*to_explore.begin();
+                to_explore.erase(n);
+                //find all connections that are not already used, include both in component and in to_explore
+                for (auto l:links[n]) {
+                    sgNodeID_t next=(l.dest>0 ? l.dest : -l.dest);
+                    if (in_component.count(next)==0) {
+                        in_component.insert(next);
+                        to_explore.insert(next);
+                    }
+                }
+            }
+            components.emplace_back();
+            for (sgNodeID_t n:in_component){
+                components.back().push_back(n);
+                used[n]=true;
+            }
+        }
+    }
+    return components;
 }
 
 void SequenceGraph::load_from_gfa(std::string filename) {

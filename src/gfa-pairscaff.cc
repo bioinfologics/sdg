@@ -52,9 +52,15 @@ int main(int argc, char * argv[]) {
 
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
-
+    uint16_t i=1;
     //First, report on connected components.
-
+    std::map<sgNodeID_t , std::string> nodes_to_oldnames;
+    for (auto &nm:sg.oldnames_to_ids) nodes_to_oldnames[(nm.second>0 ? nm.second : -nm.second)]=nm.first;
+    for (auto &c:sg.connected_components()){
+        std::cout<<"Component #"<<i++<<":";
+        for (auto &n:c) std::cout<<" "<<nodes_to_oldnames[n];
+        std::cout<<std::endl;
+    }
 
 
     sg.write_to_gfa(output_prefix+"_scaffolded.gfa");

@@ -42,9 +42,11 @@ public:
 
     std::vector<Link> get_fw_links( sgNodeID_t n);
     inline std::vector<Link> get_bw_links( sgNodeID_t n){ return get_fw_links (-n); };
-    //get_fw_links
-    //get_bw_links
-    //void find_connected_components (); --> enable extra breaks in repeats
+
+    /*
+     * Connected components, optionally breaking up in repeats, nodes that class as repeats will be returned on their own
+     */
+    std::vector<std::vector<sgNodeID_t>> connected_components (int max_nr_totalinks=0, int max_nr_dirlinks=0, int min_rsize=0); //--> enable extra breaks in repeats
 
     // remove_node
     // remove_link
