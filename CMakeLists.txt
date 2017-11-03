@@ -64,5 +64,10 @@ add_executable(gfa-dumppath
         src/gfa-dumppath.cc
         src/sglib/SequenceGraph.cc src/sglib/SequenceGraph.hpp)
 
+## add executables and respective sources
+add_executable(gfa-pairscaff
+        src/gfa-pairscaff.cc
+        src/sglib/SequenceGraph.cc src/sglib/SequenceGraph.hpp)
+
 
 #target_link_libraries (sgaqc ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
