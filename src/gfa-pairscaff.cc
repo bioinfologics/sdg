@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sglib/PairedReadMapper.hpp>
 #include "deps/cxxopts.hpp"
 #include "sglib/SequenceGraph.hpp"
 
@@ -52,15 +53,27 @@ int main(int argc, char * argv[]) {
 
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
-    uint16_t i=1;
+
     //First, report on connected components.
-    std::map<sgNodeID_t , std::string> nodes_to_oldnames;
-    for (auto &nm:sg.oldnames_to_ids) nodes_to_oldnames[(nm.second>0 ? nm.second : -nm.second)]=nm.first;
-    for (auto &c:sg.connected_components()){
-        std::cout<<"Component #"<<i++<<":";
-        for (auto &n:c) std::cout<<" "<<nodes_to_oldnames[n];
-        std::cout<<std::endl;
+    {
+        std::ofstream ccf(output_prefix + "_initial_components.txt");
+        uint16_t i = 1;
+        std::map<sgNodeID_t, std::string> nodes_to_oldnames;
+        for (auto &nm:sg.oldnames_to_ids) nodes_to_oldnames[(nm.second > 0 ? nm.second : -nm.second)] = nm.first;
+        for (auto &c:sg.connected_components()) {
+            ccf << "Component #" << i++ << ":";
+            for (auto &n:c) ccf << " " << nodes_to_oldnames[n];
+            ccf << std::endl;
+        }
     }
+
+
+    //Now try read mapping (as of now, just the first library)
+
+    PairedReadMapper mapper(sg);
+    mapper.map_reads(reads1[0],reads2[0],prmPE);
+
+
 
 
     sg.write_to_gfa(output_prefix+"_scaffolded.gfa");
