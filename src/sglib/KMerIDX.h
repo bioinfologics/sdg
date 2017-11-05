@@ -72,7 +72,7 @@ public:
     ~kmerIDXFactory() {
 #pragma omp critical (KMerFactoryDestructor)
         {
-            std::cout << "Bases processed " << bases << "\n";
+            //std::cout << "Bases processed " << bases << "\n";
         }
     }
     void setFileRecord(FileRecord &rec) {
