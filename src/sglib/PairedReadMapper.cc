@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <atomic>
 #include "PairedReadMapper.hpp"
 
 
@@ -56,7 +57,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
      * Read mapping in parallel,
      */
     FastqReader<FastqRecord> fastqReader({0},filename);
-    std::atomic_uint64_t mapped_count(0),total_count(0);
+    std::atomic<uint64_t> mapped_count(0),total_count(0);
 #pragma omp parallel shared(fastqReader,reads_in_node)
     {
         FastqRecord read;
