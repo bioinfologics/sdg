@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sglib/PairedReadMapper.hpp>
-#include "deps/cxxopts.hpp"
+#include "cxxopts.hpp"
 #include "sglib/SequenceGraph.hpp"
 
 

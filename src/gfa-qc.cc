@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include "deps/cxxopts.hpp"
+#include "cxxopts.hpp"
 #include "sglib/SequenceGraph.hpp"
 
 

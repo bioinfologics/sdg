@@ -7,7 +7,7 @@
 
 #include <fstream>
 #include <fcntl.h>
-#include "../deps/kseqcpp/kseq.hpp"
+#include "kseq.hpp"
 
 struct FastxReaderParams {
     uint32_t min_length;
