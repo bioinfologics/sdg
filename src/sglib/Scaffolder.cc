@@ -68,7 +68,7 @@ uint64_t Scaffolder::count_reads_linking(sgNodeID_t source, sgNodeID_t dest) {
     for (auto &m:rmappers) {
         for (auto &rm:m.reads_in_node[(source > 0 ? source : -source)]) {
             auto prm=(rm.read_id%2 ? rm.read_id+1:rm.read_id-1);
-            if (m.read_to_node[prm]==dest || m.read_to_node[prm]==-dest) ++c;//TODO:consider correct orientation and distance
+            if (m.read_to_node[prm]==dest || m.read_to_node[prm]==-dest) ++c;// \todo consider correct orientation and distance
             //std::cout<<rm.read_id<<"("<<rm.node<<")"<<" -> "<<prm<<"("<<m.read_to_node[prm]<<")"<<std::endl;
         }
     }
