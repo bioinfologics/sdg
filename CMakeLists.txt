@@ -75,7 +75,7 @@ add_executable(gfa-pairscaff
         src/sglib/SequenceGraph.cc
         src/sglib/PairedReadMapper.hpp
         src/sglib/PairedReadMapper.cc
-        )
+        src/sglib/Scaffolder.cc src/sglib/Scaffolder.hpp)
 
 
 target_link_libraries (gfa-pairscaff ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})

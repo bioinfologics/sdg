@@ -53,7 +53,11 @@ public:
                                                                         totalRecordsGenerated(0), tmp(Otmp),
                                                                         outdir(outdir), minCount(min), maxCount(max),
                                                                         mergeCount(4), maxThreads((unsigned int) 1) {
+
         numElementsPerBatch = (maxMem / sizeof(RecordType) / maxThreads);
+        std::cout<<"SMR created with elements of size "<<sizeof(RecordType)<<" using "<<maxThreads<<" threads and "
+                 <<maxMem<<" Bytes of memory -> batches of "<<numElementsPerBatch<<" elements"<<std::endl;
+
     }
 
     /**
