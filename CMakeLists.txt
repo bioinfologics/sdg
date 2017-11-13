@@ -77,5 +77,17 @@ add_executable(gfa-pairscaff
         src/sglib/PairedReadMapper.cc
         src/sglib/Scaffolder.cc src/sglib/Scaffolder.hpp)
 
+add_executable(phaser
+        src/phaser.cpp
+        src/sglib/FileReader.h
+        src/sglib/KMerFactory.h
+        src/sglib/KMerIDX.h
+        src/sglib/SMR.h
+        src/sglib/SequenceGraph.hpp
+        src/sglib/SequenceGraph.cc
+        src/sglib/PairedReadMapper.hpp
+        src/sglib/PairedReadMapper.cc)
+
 
 target_link_libraries (gfa-pairscaff ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+target_link_libraries (phaser ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
