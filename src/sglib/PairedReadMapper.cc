@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <cassert>
 #include <atomic>
 #include "PairedReadMapper.hpp"
 
@@ -154,7 +155,7 @@ void PairedReadMapper::map_reads(std::string filename1, std::string filename2, p
         auto r1c=process_reads_from_file(k,min_matches,unique_kmers,filename1,1);
         auto r2c=process_reads_from_file(k,min_matches,unique_kmers,filename2,2);
         //now populate the read_to_node array
-        __glibcxx_assert(r1c==r2c);
+        assert(r1c==r2c);
         read_to_node.resize(r1c*2+1,0);
         for (auto &rin:reads_in_node)
             for (auto &mr:rin)

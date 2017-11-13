@@ -15,6 +15,11 @@ IF (MY_COMPILER_OPTION STREQUAL "Intel")
     ENDIF()
 ENDIF ()
 
+if (APPLE)
+       set(CMAKE_MACOSX_RPATH ON)
+endif (APPLE)
+
+
 project (sg)
 
 ## Compiler flags
@@ -56,28 +61,27 @@ include_directories("deps/kseqcpp/")
 
 ## Set sources variables
 
+## Libraries
+add_library(sequence_graph SHARED src/sglib/SequenceGraph.cc)
+
 ## add executables and respective sources
 add_executable(gfa-qc
-        src/gfa-qc.cc
-        src/sglib/SequenceGraph.cc src/sglib/SequenceGraph.hpp)
+        src/gfa-qc.cc)
 
 ## add executables and respective sources
 add_executable(gfa-dumppath
-        src/gfa-dumppath.cc
-        src/sglib/SequenceGraph.cc src/sglib/SequenceGraph.hpp)
+        src/gfa-dumppath.cc)
 
 ## add executables and respective sources
 add_executable(gfa-pairscaff
         src/gfa-pairscaff.cc
-        src/sglib/FileReader.h
-        src/sglib/KMerFactory.h
-        src/sglib/KMerIDX.h
-        src/sglib/SMR.h
-        src/sglib/SequenceGraph.hpp
-        src/sglib/SequenceGraph.cc
-        src/sglib/PairedReadMapper.hpp
-        src/sglib/PairedReadMapper.cc
-        )
+        src/sglib/PairedReadMapper.cc)
 
+add_executable(gfa-align
+               src/gfa-align.cc)
 
+target_link_libraries(gfa-dumppath sequence_graph)
+target_link_libraries(gfa-qc sequence_graph)
+target_link_libraries(gfa-pairscaff sequence_graph)
+target_link_libraries(gfa-align sequence_graph)
 target_link_libraries (gfa-pairscaff ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
