@@ -82,6 +82,5 @@ add_executable(gfa-align
 
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
-target_link_libraries(gfa-pairscaff sequence_graph)
-target_link_libraries(gfa-align sequence_graph)
-target_link_libraries (gfa-pairscaff ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
