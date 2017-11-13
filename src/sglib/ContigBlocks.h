@@ -18,10 +18,10 @@
 
 struct FilterSetParams {
     FilterSetParams(std::string output_prefix, uint8_t k, std::vector<KmerIDX> &uniq_kmers,
-                    std::unordered_map<int32_t, std::pair<uint64_t, uint32_t>> &sequences, uint32_t min_kmers_to_call_match = 1,
+                    uint32_t min_kmers_to_call_match = 1,
                     uint32_t min_seen_contig_to_write_output = 0) : k(k), uniq_kmers(uniq_kmers),
                                                                     min_kmers_to_call_match(min_kmers_to_call_match),
-                                                                    unitigs(sequences), output_prefix(output_prefix),
+                                                                    output_prefix(output_prefix),
                                                                     min_seen_contig_to_write_output(
                                                                             min_seen_contig_to_write_output) {}
 
@@ -146,8 +146,6 @@ public:
     };
 
     const bool isValid(const Block &b) const {
-        const auto seq_contig = unitigs.find(std::abs(b.contigID));
-        if (seq_contig == unitigs.end()) return false;
 
         //  Minimo numero de kmers en el bloque
         if (b.count < min_kmers_to_call_match) {
@@ -160,7 +158,6 @@ public:
             KMerFactory(params.k),
             bases(0),
             kmers(params.uniq_kmers.cbegin(), params.uniq_kmers.cend()),
-            unitigs(params.unitigs),
             min_kmers_to_call_match(params.min_kmers_to_call_match),
             min_seen_contig_to_write_output(params.min_seen_contig_to_write_output), offset_limit(1000),
             ctg_read(params.output_prefix+"ctg_read.txt"),
@@ -284,7 +281,6 @@ private:
 
 
     const std::unordered_set<KmerIDX> kmers;
-    const std::unordered_map<int32_t, std::pair<uint64_t, uint32_t>> unitigs;
 
     char b2f[255];
     char b2r[255];

@@ -68,7 +68,7 @@ int main(int argc, char * argv[]) {
     SMR<KmerIDX,
     kmerIDXFactory<FastaRecord>,
     GraphNodeReader<FastaRecord>,
-    FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> ref_kmerIDX_SMR({1,&reference_sg}, {k}, 4*GB, 0, max_coverage,
+    FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> ref_kmerIDX_SMR({1,reference_sg}, {k}, 4*GB, 0, max_coverage,
                                                                           smr_output_prefix+"_ref");
 
     std::vector<KmerIDX> reference_unique_kmers;
@@ -76,60 +76,9 @@ int main(int argc, char * argv[]) {
     // Get the unique_kmers from the file
     reference_unique_kmers = ref_kmerIDX_SMR.read_from_file(output_prefix);
 
-    SMR<KmerIDX,
-            kmerIDXFactory<FastaRecord>,
-            GraphNodeReader<FastaRecord>,
-            FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> asm_kmerIDX_SMR({1,&reference_sg}, {k}, 4*GB, 0, max_coverage,
-                                                                                  smr_output_prefix+"_asm");
-
-    std::vector<KmerIDX> asm_unique_kmers;
-
-    // Get the unique_kmers from the file
-    asm_unique_kmers = asm_kmerIDX_SMR.read_from_file(output_prefix);
-
-    std::vector<KmerIDX> total_uniq_set;
-    std::set_intersection(reference_unique_kmers.cbegin(),reference_unique_kmers.cend(), asm_unique_kmers.cbegin(), asm_unique_kmers.cend(), std::back_inserter(total_uniq_set));
-
-    std::cout << reference_unique_kmers.size() << " " << asm_unique_kmers.size() << " " << total_uniq_set.size() << std::endl;
-
-    /*
- * Store the lengths of the sequences longer than min_contig_length
- * and keep a set of the shorter ones to filter the unique_kmers map with
- */
-    FastaReader<FastaRecord> reader({0}, gfa_filename+".fasta");
-    std::unordered_map<int32_t, std::pair<uint64_t, uint32_t>> sequences_fasta;
-    std::unordered_set<int> invalid_sequences;
-    FastaRecord rec;
-    while (reader.next_record(rec)) {
-        if (rec.seq.size() > min_contig_length) {
-            sequences_fasta[rec.id] = std::make_pair(rec.seq.size(),0);
-        } else {
-            invalid_sequences.insert(rec.id);
-        }
-    }
-
-    /*
-     * Delete all the kmers in the map that come from "invalid" unitigs
-     */
-    std::remove_if(total_uniq_set.begin(), total_uniq_set.end(),
-                   [&invalid_sequences] (const KmerIDX &kidx)
-                   {
-                       // Remove if I found the contigID on the invalid_sequences
-                       return (invalid_sequences.find(kidx.contigID) != invalid_sequences.cend());
-                   }
-    );
-    std::cout << "Number of " << int(k) << "-mers in contigs larger than " << min_contig_length << " " << total_uniq_set.size() << std::endl;
-    // Cleanup invalid_sequences
-    invalid_sequences = std::unordered_set<int>();
-
-    for (const auto &kdx: total_uniq_set) {
-        sequences_fasta[std::abs(kdx.contigID)].second++;
-    }
-
-
-    FastaReader<FastaRecord> fastaReader({min_contig_length}, gfa_filename+".fasta");
+    GraphNodeReader<FastaRecord> graphReader({1,other_sg}, gfa_filename+".fasta");
     std::atomic<uint64_t> mapped_count(0),total_count(0);
-    ContigBlockFactory<FastaRecord> blockFactory({output_prefix, k, total_uniq_set, sequences_fasta});
+    ContigBlockFactory<FastaRecord> blockFactory({output_prefix, k, reference_unique_kmers});
     std::vector<std::vector<Block>> total_validBlocks;
 #pragma omp parallel shared(fastaReader,blockFactory)
     {
@@ -139,20 +88,16 @@ int main(int argc, char * argv[]) {
         bool c;
         FastaRecord read;
 #pragma omp critical(read_record)
-        c = fastaReader.next_record(read);
+        c = graphReader.next_record(read);
         while (c) {
             blockFactory.setFileRecord(read);
             blockFactory.next_element(validBlocks);
 #pragma omp critical(add_blocks)
             total_validBlocks.push_back(validBlocks);
-            auto tc=++total_count;
+            auto tc = ++total_count;
             if (tc % 100000 == 0) std::cout << mapped_count << " / " << tc << std::endl;
 #pragma omp critical(read_record)
-            c = fastaReader.next_record(read);
+            c = graphReader.next_record(read);
         }
     }
-
-
-
-    return 0;
 }

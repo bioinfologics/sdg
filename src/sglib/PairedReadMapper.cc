@@ -99,7 +99,7 @@ void PairedReadMapper::map_reads(std::string filename1, std::string filename2, p
         SMR<KmerIDX,
         kmerIDXFactory<FastaRecord>,
         GraphNodeReader<FastaRecord>,
-        FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1,&sg}, {k}, maxmem, 0, max_coverage,
+        FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1,sg}, {k}, maxmem, 0, max_coverage,
                                                                           output_prefix);
 
         std::vector<KmerIDX> unique_kmers;
