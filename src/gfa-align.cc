@@ -54,8 +54,8 @@ int main(int argc, char * argv[]) {
      * Load the GFAs
      */
     SequenceGraph reference_sg, other_sg;
-    reference_sg.load_from_gfa(ref_gfa_filename+".gfa");
-    other_sg.load_from_gfa(gfa_filename+".gfa");
+    reference_sg.load_from_gfa(ref_gfa_filename);
+    other_sg.load_from_gfa(gfa_filename);
 
 
     /*
@@ -76,7 +76,7 @@ int main(int argc, char * argv[]) {
     // Get the unique_kmers from the file
     reference_unique_kmers = ref_kmerIDX_SMR.read_from_file(output_prefix);
 
-    GraphNodeReader<FastaRecord> graphReader({1,other_sg}, gfa_filename+".fasta");
+    GraphNodeReader<FastaRecord> graphReader({1,other_sg}, other_sg.fasta_filename);
     std::atomic<uint64_t> mapped_count(0),total_count(0);
     ContigBlockFactory<FastaRecord> blockFactory({output_prefix, k, reference_unique_kmers});
     std::vector<std::vector<Block>> total_validBlocks;

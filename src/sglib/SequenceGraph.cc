@@ -114,10 +114,11 @@ std::vector<std::vector<sgNodeID_t>> SequenceGraph::connected_components(int max
 }
 
 void SequenceGraph::load_from_gfa(std::string filename) {
-    std::string fasta_filename,line;
+    std::string line;
+    this->filename=filename;
     //check the filename ends in .gfa
     if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
-        fasta_filename=filename.substr(0,filename.size()-4)+".fasta";
+        this->fasta_filename=filename.substr(0,filename.size()-4)+".fasta";
     }
     else throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '"+filename.substr(filename.size()-4,4)+"'");
 

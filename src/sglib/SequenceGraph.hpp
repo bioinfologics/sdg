@@ -76,7 +76,7 @@ public:
     std::vector<Node> nodes;
     std::vector<std::vector<Link>> links;
     std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids;
-
+    std::string filename,fasta_filename;
 };
 
 
