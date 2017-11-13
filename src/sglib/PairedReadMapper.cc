@@ -13,45 +13,6 @@
 #define GB 1024*1024*1024
 
 
-/*
- * Pseudo-reader that gets its sequences from the nodes of the graph.
- */
-
-struct GraphNodeReaderParams {
-    uint32_t min_length;
-    SequenceGraph * sgp;
-};
-
-template<typename FileRecord>
-class GraphNodeReader {
-public:
-    explicit GraphNodeReader(GraphNodeReaderParams params, const std::string &filepath) : params(params), numRecords(1) {
-        sg=params.sgp;
-        min_length=params.min_length;//TODO: use this
-    }
-
-    bool next_record(FileRecord& rec) {
-        if (numRecords<sg->nodes.size()) {
-            rec.id = numRecords;
-            rec.seq = sg->nodes[numRecords].sequence;
-            rec.name = std::to_string(numRecords);
-            ++numRecords;
-            stats.totalLength += rec.seq.size();
-            return true;
-        } else return false;
-    }
-    ReaderStats getSummaryStatistics() {
-        stats.totalRecords = numRecords-1;
-        return stats;
-    }
-private:
-    SequenceGraph * sg;
-    GraphNodeReaderParams params;
-    uint32_t numRecords;
-    ReaderStats stats;
-    uint32_t min_length;
-};
-
 uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::vector<KmerIDX> &unique_kmers, std::string filename, uint64_t offset ) {
     std::cout<<"mapping reads!!!"<<std::endl;
     /*

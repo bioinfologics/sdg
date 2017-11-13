@@ -22,6 +22,8 @@
 #include <unordered_set>
 #include <cmath>
 
+static const std::uint64_t GB(1024*1024*1024);
+
 /**
  * @brief
  * SMR is an external memory map reduce engine with configurable memory bounds

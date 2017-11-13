@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include "FileReader.h"
 
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
 
@@ -91,6 +92,44 @@ private:
 };
 
 
+/*
+ * Pseudo-reader that gets its sequences from the nodes of the graph.
+ */
+
+struct GraphNodeReaderParams {
+    uint32_t min_length;
+    SequenceGraph * sgp;
+};
+
+template<typename FileRecord>
+class GraphNodeReader {
+public:
+    explicit GraphNodeReader(GraphNodeReaderParams params, const std::string &filepath) : params(params), numRecords(1) {
+        sg=params.sgp;
+        min_length=params.min_length;//TODO: use this
+    }
+
+    bool next_record(FileRecord& rec) {
+        if (numRecords<sg->nodes.size()) {
+            rec.id = numRecords;
+            rec.seq = sg->nodes[numRecords].sequence;
+            rec.name = std::to_string(numRecords);
+            ++numRecords;
+            stats.totalLength += rec.seq.size();
+            return true;
+        } else return false;
+    }
+    ReaderStats getSummaryStatistics() {
+        stats.totalRecords = numRecords-1;
+        return stats;
+    }
+private:
+    SequenceGraph * sg;
+    GraphNodeReaderParams params;
+    uint32_t numRecords;
+    ReaderStats stats;
+    uint32_t min_length;
+};
 
 
 #endif //SG_SEQUENCEGRAPH_HPP
