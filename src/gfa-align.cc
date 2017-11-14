@@ -5,12 +5,40 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+
+#include <sys/stat.h>
+
 #include <sglib/KMerIDX.h>
 #include <sglib/FileReader.h>
 #include <sglib/SMR.h>
 #include "cxxopts.hpp"
 #include "sglib/ContigBlocks.h"
 #include "sglib/SequenceGraph.hpp"
+
+bool check_or_create_directory(std::string &output_prefix) {
+    if (output_prefix.back() != '/') {
+        output_prefix.push_back('/');
+    }
+    struct stat sb{};
+    bool validate_dir(false);
+    if (stat(output_prefix.c_str(), &sb) != 0) {
+        if (errno == ENOENT) {
+            mode_t mask = umask(0);
+            umask(mask);
+            mkdir(output_prefix.c_str(), mode_t(0777 - mask));
+            validate_dir = true;
+        }
+        if (stat(output_prefix.c_str(), &sb) != 0) {
+            perror(output_prefix.c_str());
+            validate_dir = false;
+        }
+    } else if (!S_ISDIR(sb.st_mode)) {
+        std::cout << output_prefix << " is not a directory " << std::endl;
+    } else {
+        validate_dir = true;
+    }
+    return validate_dir;
+}
 
 int main(int argc, char * argv[]) {
     std::string gfa_filename,ref_gfa_filename,output_prefix;
@@ -28,7 +56,7 @@ int main(int argc, char * argv[]) {
                 ("r,reference", "reference GFA", cxxopts::value<std::string>(ref_gfa_filename), "filepath")
                 ("l,min_contig_length", "Minimum contig length", cxxopts::value<uint32_t>(min_contig_length)->default_value("1000"),"uint")
                 ("m,min_matches", "Minimum kmers to match before calling a block", cxxopts::value<unsigned int>(min_matches)->default_value("1000"),"uint")
-                ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix), "string")
+                ("o,output", "output directory prefix", cxxopts::value<std::string>(output_prefix), "string")
                 ("s,stats_only", "do not dump detailed information", cxxopts::value<bool>(stats_only)->default_value("0"), "uint");
 
         options.add_options("Performance")
@@ -49,6 +77,10 @@ int main(int argc, char * argv[]) {
     {
         std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
                   <<"Use option --help to check command line arguments." << std::endl;
+        exit(1);
+    }
+
+    if (!check_or_create_directory(output_prefix)) {
         exit(1);
     }
 
@@ -73,20 +105,20 @@ int main(int argc, char * argv[]) {
     kmerIDXFactory<FastaRecord>,
     GraphNodeReader<FastaRecord>,
     FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> ref_kmerIDX_SMR({1,reference_sg}, {k}, mem_limit*GB, 0, max_coverage,
-                                                                          smr_output_prefix+"_ref");
+                                                                          output_prefix+smr_output_prefix+"_ref");
 
-    std::vector<KmerIDX> reference_unique_kmers;
+    std::vector<KmerIDX> vector_unique_kmers(ref_kmerIDX_SMR.read_from_file(output_prefix));
+    std::unordered_set<KmerIDX> reference_unique_kmers(std::make_move_iterator(vector_unique_kmers.begin()),
+                                                       std::make_move_iterator(vector_unique_kmers.end()));
 
-    // Get the unique_kmers from the file
-    reference_unique_kmers = ref_kmerIDX_SMR.read_from_file(output_prefix);
-
+    std::cout << "Database generated" << std::endl;
     GraphNodeReader<FastaRecord> graphReader({1,other_sg}, other_sg.fasta_filename);
     std::atomic<uint64_t> mapped_count(0),total_count(0);
-    ContigBlockFactory<FastaRecord> blockFactory({output_prefix, k, reference_unique_kmers, min_matches});
-    std::vector<std::vector<Block>> ctg_ctgMatches;
-#pragma omp parallel shared(graphReader,blockFactory)
+    std::cout << "Mapping " << other_sg.filename << " to " << reference_sg.filename << std::endl;
+    std::ofstream ref_to_other_blocks(output_prefix+"ref_to_other.txt");
+#pragma omp parallel shared(graphReader)
     {
-        std::vector<KmerIDX> readkmers;
+        ContigBlockFactory<FastaRecord> blockFactory({output_prefix, k, reference_unique_kmers, min_matches});
         kmerIDXFactory<FastaRecord> kf({k});
         std::vector<Block> BlockByPos;
         bool c;
@@ -97,23 +129,21 @@ int main(int argc, char * argv[]) {
             blockFactory.setFileRecord(read);
             blockFactory.next_element(BlockByPos);
             if (!BlockByPos.empty()) {
-                std::cout << read.name << "\t";
+                // Sort blocks by number of matches
                 std::sort(BlockByPos.begin(), BlockByPos.end(), Block::byCount());
-                std::copy_n(BlockByPos.cbegin(), std::min(5ul,BlockByPos.size()), std::ostream_iterator<Block>(std::cout, ", "));
-                std::cout << std::endl;
+                // Report top 5 blocks by number of matches
+#pragma omp critical(report)
+                {
+                    ref_to_other_blocks << read.name << "\t";
+                    std::copy_n(BlockByPos.crbegin(), std::min(5ul, BlockByPos.size()),
+                                std::ostream_iterator<Block>(ref_to_other_blocks, ", "));
+                    ref_to_other_blocks << std::endl;
+                }
             }
-#pragma omp critical(add_blocks)
-            ctg_ctgMatches.push_back(BlockByPos);
             auto tc = ++total_count;
             if (tc % 100000 == 0) std::cout << mapped_count << " / " << tc << std::endl;
 #pragma omp critical(read_record)
             c = graphReader.next_record(read);
         }
     }
-
-//    for (auto it = ctg_ctgMatches.cbegin(); it != ctg_ctgMatches.cend(); ++it){
-//        if (it->empty()) continue;
-//        std::cout << std::distance(ctg_ctgMatches.cbegin(), it) << "\t";
-//        std::cout << std::endl;
-//    }
 }

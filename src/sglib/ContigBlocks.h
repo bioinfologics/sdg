@@ -17,7 +17,7 @@
 #include "KMerIDX.h"
 
 struct FilterSetParams {
-    FilterSetParams(std::string output_prefix, uint8_t k, std::vector<KmerIDX> &uniq_kmers,
+    FilterSetParams(std::string output_prefix, uint8_t k, const std::unordered_set<KmerIDX> &uniq_kmers,
                     uint32_t min_kmers_to_call_match = 1,
                     uint32_t min_seen_contig_to_write_output = 0) : k(k), uniq_kmers(uniq_kmers),
                                                                     min_kmers_to_call_match(min_kmers_to_call_match),
@@ -26,7 +26,7 @@ struct FilterSetParams {
                                                                             min_seen_contig_to_write_output) {}
 
     uint8_t k;
-    const std::vector<KmerIDX> uniq_kmers;
+    const std::unordered_set<KmerIDX> &uniq_kmers;
     const uint32_t min_kmers_to_call_match;
     const uint32_t min_seen_contig_to_write_output;
     const std::string output_prefix;
@@ -162,7 +162,7 @@ public:
     explicit ContigBlockFactory(FilterSetParams params) :
             KMerFactory(params.k),
             bases(0),
-            kmers(params.uniq_kmers.cbegin(), params.uniq_kmers.cend()),
+            kmers(params.uniq_kmers),
             min_kmers_to_call_match(params.min_kmers_to_call_match),
             min_seen_contig_to_write_output(params.min_seen_contig_to_write_output), offset_limit(1000),
             ctg_read(params.output_prefix+"ctg_read.txt"),
@@ -285,7 +285,7 @@ private:
     const uint32_t offset_limit;
 
 
-    const std::unordered_set<KmerIDX> kmers;
+    const std::unordered_set<KmerIDX>& kmers;
 
     char b2f[255];
     char b2r[255];
