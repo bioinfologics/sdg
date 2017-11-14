@@ -80,6 +80,9 @@ add_executable(gfa-pairscaff
 add_executable(gfa-align
                src/gfa-align.cc)
 
+add_executable(kc_comp
+               src/comp_kc.cc)
+
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})

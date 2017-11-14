@@ -40,7 +40,7 @@ struct KmerIDX {
     }
 
     friend std::ostream& operator<<(std::ostream& os, const KmerIDX& kmer) {
-        os << kmer.contigID << "-" << kmer.kmer << ":" << (int) kmer.count;
+        os << kmer.contigID << "\t" << kmer.pos;
         return os;
     }
 
@@ -48,6 +48,13 @@ struct KmerIDX {
         is.read((char*)&kmer, sizeof(kmer));
         return is;
     }
+
+    friend class byCtgPos;
+    struct byCtgPos {
+        bool operator()(const KmerIDX &a, const KmerIDX &b) {
+            return std::tie(a.contigID, a.pos) < std::tie(b.contigID,b.pos);
+        }
+    };
 
     uint64_t kmer;
     int32_t contigID;

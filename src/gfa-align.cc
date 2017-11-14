@@ -4,7 +4,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <algorithm>
 
 #include <sys/stat.h>
 
@@ -106,6 +105,10 @@ int main(int argc, char * argv[]) {
     GraphNodeReader<FastaRecord>,
     FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> ref_kmerIDX_SMR({1,reference_sg}, {k}, mem_limit*GB, 0, max_coverage,
                                                                           output_prefix+smr_output_prefix+"_ref");
+
+    FastaReader<FastaRecord> referenceReader({1}, ref_gfa_filename.substr(0, ref_gfa_filename.length()-4)+".fasta");
+
+
 
     std::vector<KmerIDX> vector_unique_kmers(ref_kmerIDX_SMR.read_from_file(output_prefix));
     std::unordered_set<KmerIDX> reference_unique_kmers(std::make_move_iterator(vector_unique_kmers.begin()),

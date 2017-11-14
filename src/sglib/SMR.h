@@ -67,23 +67,31 @@ public:
      * Filtered vector of RecordType elements
      */
     std::vector<RecordType> read_from_file(const std::string &read_file) {
-        uint64_t numFileRecords(0);
+        std::ifstream final_file(outdir+"final.kc");
+        if (final_file.is_open()){
+            std::cout << "Using precomputed sum file at " << outdir << "final.kc" << std::endl;
+            return readFinalkc(outdir+"final.kc");
+        } else {
+            uint64_t numFileRecords(0);
 
-        std::chrono::time_point<std::chrono::system_clock> start, end;
-        start = std::chrono::system_clock::now();
+            std::chrono::time_point<std::chrono::system_clock> start, end;
+            start = std::chrono::system_clock::now();
 
 
-        FileReader myFileReader(reader_parameters, read_file);
-        std::cout << "Begin reduction using " << numElementsPerBatch << " elements per batch (" << ceil(uint64_t((numElementsPerBatch*sizeof(RecordType)*maxThreads)) / (1.0f*1024*1024*1024)) << "GB)" << std::endl;
-        mapElementsToBatches(myFileReader, numFileRecords);
+            FileReader myFileReader(reader_parameters, read_file);
+            std::cout << "Begin reduction using " << numElementsPerBatch << " elements per batch ("
+                      << ceil(uint64_t((numElementsPerBatch * sizeof(RecordType) * maxThreads)) /
+                              (1.0f * 1024 * 1024 * 1024)) << "GB)" << std::endl;
+            mapElementsToBatches(myFileReader, numFileRecords);
 
-        readerStatistics = myFileReader.getSummaryStatistics();
+            readerStatistics = myFileReader.getSummaryStatistics();
 
-        end = std::chrono::system_clock::now();
-        std::chrono::duration<double> elapsed_seconds = end - start;
-        std::cout << "Done reduction in " << elapsed_seconds.count() << "s" << std::endl;
+            end = std::chrono::system_clock::now();
+            std::chrono::duration<double> elapsed_seconds = end - start;
+            std::cout << "Done reduction in " << elapsed_seconds.count() << "s" << std::endl;
 
-        return getRecords();
+            return getRecords();
+        }
     };
 
     /**
@@ -446,6 +454,26 @@ private:
         _elements.resize(std::distance(_elements.begin(), writePtr));
     }
 
+
+    std::vector<RecordType> readFinalkc(std::string finalFile) {
+        std::ifstream outf(finalFile, std::ios_base::binary);
+
+        outf.unsetf(std::ios::skipws);
+
+        std::streampos fileSize;
+        outf.seekg(0, std::ios::end);
+        fileSize = outf.tellg();
+        outf.seekg(sizeof(uint64_t), std::ios::beg);
+        // reserve capacity
+        std::vector<RecordType> vec;
+        vec.reserve(fileSize);
+
+        // read the data:
+        vec.insert(vec.begin(), std::istream_iterator<RecordType>(outf), std::istream_iterator<RecordType>());
+
+        return vec;
+
+    }
     /**
      * @brief
      * Does a final merge of all thread's data and returns a collapsed vector along with writing the results to disk.
@@ -464,24 +492,7 @@ private:
 
         totalFilteredRecords = merge(outdir + "final.kc", threadFiles);
 
-
-        std::ifstream outf(outdir + "final.kc", std::ios_base::binary);
-
-        outf.unsetf(std::ios::skipws);
-
-
-        std::streampos fileSize;
-        outf.seekg(0, std::ios::end);
-        fileSize = outf.tellg();
-        outf.seekg(sizeof(uint64_t), std::ios::beg);
-        // reserve capacity
-        std::vector<RecordType> vec;
-        vec.reserve(fileSize);
-
-        // read the data:
-        vec.insert(vec.begin(), std::istream_iterator<RecordType>(outf), std::istream_iterator<RecordType>());
-
-        return vec;
+        return readFinalkc(outdir+"final.kc");
     }
 
     unsigned int minCount;                          /// Minimum times a record has to be seen to be accepted
