@@ -80,7 +80,7 @@ int main(int argc, char * argv[]) {
     std::atomic<uint64_t> mapped_count(0),total_count(0);
     ContigBlockFactory<FastaRecord> blockFactory({output_prefix, k, reference_unique_kmers});
     std::vector<std::vector<Block>> total_validBlocks;
-#pragma omp parallel shared(fastaReader,blockFactory)
+#pragma omp parallel shared(graphReader,blockFactory)
     {
         std::vector<KmerIDX> readkmers;
         kmerIDXFactory<FastaRecord> kf({k});
