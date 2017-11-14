@@ -70,7 +70,8 @@ int main(int argc, char * argv[]) {
     // instead of loading gfa and contig list separately, start by using gfa of subcomponent as input
     // be given names of bubble contigs to avoid having to code bubble finding now
     HaplotypeScorer hs(sg, "blah.txt");
-    hs.find_possible_haplotypes(3, bubble_contigs_filename);
+    // for now supply next file with list of possible phasings
+    std::vector<std::vector<std::string> > haplotypes = hs.load_haplotypes(bubble_contigs_filename, 2);
     sg.write_to_gfa(output_prefix+".gfa");
     return 0;
 }
