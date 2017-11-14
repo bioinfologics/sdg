@@ -66,10 +66,42 @@ struct Block {
     }
 
     friend class byReadPos;
-
+    friend class byCount;
+    struct byCount {
+        bool operator()(const Block &a, const Block &b) {
+            return a.count < b.count;
+        }
+    };
     struct byReadPos {
         bool operator()(const Block &a, const Block &o) {
             return std::tie(a.start, a.contigID) < std::tie(o.start, o.contigID);
+        }
+    };
+};
+
+struct Match {
+public:
+    Match() : dirContig(0), offset(0), readPos(0) {};
+
+    Match(int32_t contig, int64_t offset, uint32_t readPos) : dirContig(contig), offset(offset), readPos(readPos) {}
+
+    int32_t dirContig;  // Sign indicates direction
+    int64_t offset;     // Pos_contig - Pos_read
+    uint32_t readPos;
+
+    friend std::ostream &operator<<(std::ostream &os, const Match &match) {
+        os << "(" << match.dirContig << "," << match.offset
+           //               << ","
+           //               << match.readPos
+           << ")";
+        return os;
+    }
+
+    friend class byCtgOffset;
+
+    struct byCtgOffset {
+        bool operator()(const Match &a, const Match &b) {
+            return std::tie(a.dirContig, a.offset) < std::tie(b.dirContig, b.offset);
         }
     };
 };
@@ -118,33 +150,6 @@ class ContigBlockFactory : protected KMerFactory {
     };
 
 public:
-    struct Match {
-    public:
-        Match() : dirContig(0), offset(0), readPos(0) {};
-
-        Match(int32_t contig, int64_t offset, uint32_t readPos) : dirContig(contig), offset(offset), readPos(readPos) {}
-
-        int32_t dirContig;  // Sign indicates direction
-        int64_t offset;     // Pos_contig - Pos_read
-        uint32_t readPos;
-
-        friend std::ostream &operator<<(std::ostream &os, const Match &match) {
-            os << "(" << match.dirContig << "," << match.offset
-               //               << ","
-               //               << match.readPos
-               << ")";
-            return os;
-        }
-
-        friend class byCtgOffset;
-
-        struct byCtgOffset {
-            bool operator()(const Match &a, const Match &b) {
-                return std::tie(a.dirContig, a.offset) < std::tie(b.dirContig, b.offset);
-            }
-        };
-    };
-
     const bool isValid(const Block &b) const {
 
         //  Minimo numero de kmers en el bloque
@@ -206,11 +211,11 @@ public:
             blocks.push_back(blk);
         }
         std::sort(blocks.begin(), blocks.end(), typename Block::byReadPos());
-        read_block_stats << blkDif << "," << offDif; // First 2 values, missing validBlocks
+//        read_block_stats << blkDif << "," << offDif; // First 2 values, missing validBlocks
         return blocks;
     }
 
-    std::vector<Match> getMatches() {
+    std::vector<Match>  getMatches() {
         std::vector<Match> matches;
         int64_t offset(0);
         uint64_t p(0);
@@ -240,11 +245,11 @@ public:
         return matches;
     }
 
-    const bool next_element(std::vector<Block> &validBlocks) {
-        validBlocks.clear();
-        std::cout << currentFileRecord.name << "\t" << currentFileRecord.seq.size() << " ";
+    const bool next_element(std::vector<Block> &blocks) {
+        blocks.clear();
+//        std::cout << currentFileRecord.name << "\t" << currentFileRecord.seq.size() << " ";
         bases+=currentFileRecord.seq.size();
-        read_length << currentFileRecord.name << "," << currentFileRecord.seq.size() << std::endl;
+//        read_length << currentFileRecord.name << "," << currentFileRecord.seq.size() << std::endl;
 //        ctg_read << ">" << currentFileRecord.name << "(" << currentFileRecord.seq.size() << ")\n";
 //        ctg_read << std::endl;
 
@@ -252,17 +257,17 @@ public:
 //        std::copy(matches.begin(),matches.end(),std::ostream_iterator<Match>(std::cout, ";"));std::cout << std::endl;
 
         // Generate blocks which share the same ctgOffset
-        std::vector<Block> blocks = getBlocks(matches);
+        blocks = getBlocks(matches);
 
         // Sort blocks by ReadPos and keep only the valid ones
-        std::copy_if(blocks.begin(), blocks.end(), std::back_inserter(validBlocks),
-                     [&](const Block &b) { return isValid(b); });
-        std::copy(validBlocks.cbegin(), validBlocks.cend(), std::ostream_iterator<Block>(std::cout, ";"));
+//        std::copy_if(blocks.begin(), blocks.end(), std::back_inserter(sortedMatchbyCtgOffset),
+//                     [&](const Match &b) { return isValid(b); });
+//        std::copy(validBlocks.cbegin(), validBlocks.cend(), std::ostream_iterator<Block>(std::cout, ";"));
 
         // print the rest of the parameters for the blocks on this read
-        read_block_stats << "," << validBlocks.size() << "," << blocks.size() << std::endl;
-        std::cout << std::endl;
-        read_link_stats << blocks.size() << std::endl;
+//        read_block_stats << "," << validBlocks.size() << "," << blocks.size() << std::endl;
+//        std::cout << std::endl;
+//        read_link_stats << blocks.size() << std::endl;
         return false;
     }
 
