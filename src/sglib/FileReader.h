@@ -5,6 +5,7 @@
 #ifndef SEQSORTER_FILEREADER_H
 #define SEQSORTER_FILEREADER_H
 
+#include <cstring>
 #include <fstream>
 #include <fcntl.h>
 #include "kseq.hpp"
