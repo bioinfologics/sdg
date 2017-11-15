@@ -10,11 +10,8 @@
 #include <fstream>
 #include <vector>
 #include <limits>
+#include <iterator>
 #include "sglib/KMerIDX.h"
-
-struct KmerIDXMatch{
-    KmerIDX a,b;
-};
 
 std::vector<KmerIDX> readKC(std::string filename) {
     std::ifstream ref_kc(filename, std::ios_base::binary);
