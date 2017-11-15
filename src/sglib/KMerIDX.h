@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <limits>
+#include <tuple>
 #include "KMerFactory.h"
 struct KMerIDXFactoryParams {
     uint8_t k;
