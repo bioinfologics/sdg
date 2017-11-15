@@ -11,19 +11,28 @@
 #include <vector>
 #include <limits>
 #include <iterator>
+#include <sys/stat.h>
 #include "sglib/KMerIDX.h"
+
+
+off_t getFilesize(const std::string& filename) {
+    struct stat st;
+    if(stat(filename.c_str(), &st) != 0) {
+        return 0;
+    }
+    return st.st_size;
+}
 
 std::vector<KmerIDX> readKC(std::string filename) {
     std::ifstream ref_kc(filename, std::ios_base::binary);
     ref_kc.unsetf(std::ios_base::skipws);
 
-    std::streampos fileSize;
     ref_kc.seekg(0, std::ios_base::end);
-    fileSize = ref_kc.tellg();
+    auto fileSize = getFilesize(filename);
     ref_kc.seekg(sizeof(uint64_t), std::ios_base::beg);
     // reserve capacity
     std::vector<KmerIDX> vec;
-    vec.reserve(fileSize);
+    vec.reserve(fileSize/sizeof(KmerIDX));
 
     // read the data:
     vec.insert(vec.begin(), std::istream_iterator<KmerIDX>(ref_kc), std::istream_iterator<KmerIDX>());
