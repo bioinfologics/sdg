@@ -62,6 +62,8 @@ int main(int argc, char * argv[]) {
 
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
+    std::cout << sg.oldnames_to_ids.size() << std::endl;
+    std::cout << "Edge 0: " << sg.oldnames_to_ids["edge0"] << " " << sg.oldnames_to_ids["edge0+"] << std::endl;
     // take list of contigs to phase from input
     // generate possible haplotypes
     // load mappings from input or disk
@@ -71,7 +73,7 @@ int main(int argc, char * argv[]) {
     // be given names of bubble contigs to avoid having to code bubble finding now
     HaplotypeScorer hs(sg, "blah.txt");
     // for now supply next file with list of possible phasings
-    std::vector<std::vector<std::string> > haplotypes = hs.load_haplotypes(bubble_contigs_filename, 2);
+    hs.load_haplotypes(bubble_contigs_filename, 2);
     sg.write_to_gfa(output_prefix+".gfa");
     return 0;
 }

@@ -19,9 +19,9 @@ public:
      HaplotypeScorer(SequenceGraph, std::string);
     // functions we will need:
     void find_possible_haplotypes(int, std::string);
-    std::vector<std::vector<std::string> >  load_haplotypes(std::string, int);
+    void load_haplotypes(std::string, int);
 
-    void count_barcode_votes();
+    void count_barcode_votes(std::string, std::string);
     void score_haplotypes();
 
 private:
@@ -30,7 +30,7 @@ private:
     PairedReadMapper mapper;
 
     std::vector<std::vector<std::string> > load_bubble_file(std::string , int );
-    // actually, for time being just lad haplotype:
+    std::vector<std::vector<sgNodeID_t> > haplotype_ids;
 
 };
 #endif //SG_HAPLOTYPE_SCORER_H

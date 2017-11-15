@@ -146,6 +146,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
         std::getline(fastaf,line);
         if (fastaf.eof() or line[0]=='>'){
             if (!name.empty()) {
+                std::cout << "name: " << name << std::endl;
                 //rough ansi C and C++ mix but it works
                 if (oldnames_to_ids.find(name) != oldnames_to_ids.end())
                     throw std::logic_error("sequence " + name + " is already defined");
@@ -283,6 +284,7 @@ std::string SequenceGraphPath::get_fasta_header() {
 std::string SequenceGraphPath::get_sequence() {
     std::string s="";
     sgNodeID_t pnode=0;
+    // just iterate over every node in path - contig names are converted to ids at construction
     for (auto &n:nodes) {
         std::string nseq;
         if (n>0){

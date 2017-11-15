@@ -45,7 +45,7 @@ void HaplotypeScorer::find_possible_haplotypes(int max_degree, std::string bubbl
     auto bubbles = load_bubble_file(bubble_contig_filename, max_degree);
 };
 
-std::vector<std::vector<std::string> >  HaplotypeScorer::load_haplotypes(std::string haplotype_filename, int degree = 2){
+void  HaplotypeScorer::load_haplotypes(std::string haplotype_filename, int degree = 2){
     std::ifstream infile(haplotype_filename);
     std::string line;
     std::string fields[degree];
@@ -53,13 +53,13 @@ std::vector<std::vector<std::string> >  HaplotypeScorer::load_haplotypes(std::st
     int counter = 0;
     std::string res;
     // no obvious way to access graph nodes directly, so store  names;
-    std::vector<std::vector<std::string> > haplotypes;
+    std::vector<std::vector<sgNodeID_t> > haplotypes;
     while (std::getline(infile, line)) {
         std::istringstream(line) >> res;
         if (res == "next" or counter == degree){
-            std::vector<std::string> next_haplotype;
+            std::vector<sgNodeID_t> next_haplotype;
             for (int j=0; j < counter; j++){
-                next_haplotype.push_back(fields[j]);
+                next_haplotype.push_back(sg.oldnames_to_ids[fields[j]]);
             }
 
             counter = 0;
@@ -71,11 +71,22 @@ std::vector<std::vector<std::string> >  HaplotypeScorer::load_haplotypes(std::st
             counter += 1;
 
         }
+        //TODO: sanity check, no ids should be 0, all haps should be same length
+
 
     }
+    haplotype_ids =  haplotypes;
+    for (auto h: haplotypes){
+        for (auto c: h) {
+            std::cout << c << " ";
+
+        }
+        std::cout << std::endl << "next:";
+    }
     std::cout << "Loaded " << haplotypes.size() << "haplotypes \n";
-    return haplotypes;
 }
 
-void HaplotypeScorer::count_barcode_votes(){};
+void HaplotypeScorer::count_barcode_votes(std::string r1_filename, std::string r2_filename){
+    mapper.map_reads(r1_filename, r2_filename);
+};
 void HaplotypeScorer::score_haplotypes(){};

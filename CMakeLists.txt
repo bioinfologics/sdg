@@ -86,7 +86,7 @@ add_executable(phaser
         src/sglib/SequenceGraph.hpp
         src/sglib/SequenceGraph.cc
         src/sglib/PairedReadMapper.hpp
-        src/sglib/PairedReadMapper.cc src/haplotype_scorer.h src/haplotype_scorer.cpp)
+        src/sglib/PairedReadMapper.cc src/haplotype_scorer.h src/haplotype_scorer.cpp src/sglib/ReadMapper10X.cpp src/sglib/ReadMapper10X.h)
 
 
 target_link_libraries (gfa-pairscaff ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
