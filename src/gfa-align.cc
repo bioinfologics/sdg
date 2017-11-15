@@ -51,8 +51,7 @@ int main(int argc, char * argv[]) {
 
         options.add_options()
                 ("help", "Print help")
-                ("g,gfa", "input GFA", cxxopts::value<std::string>(gfa_filename), "filepath")
-                ("r,reference", "reference GFA", cxxopts::value<std::string>(ref_gfa_filename), "filepath")
+                ("r,reference", "reference FASTA", cxxopts::value<std::string>(ref_gfa_filename), "filepath")
                 ("l,min_contig_length", "Minimum contig length", cxxopts::value<uint32_t>(min_contig_length)->default_value("1000"),"uint")
                 ("m,min_matches", "Minimum kmers to match before calling a block", cxxopts::value<unsigned int>(min_matches)->default_value("1000"),"uint")
                 ("o,output", "output directory prefix", cxxopts::value<std::string>(output_prefix), "string")
@@ -68,7 +67,7 @@ int main(int argc, char * argv[]) {
             exit(0);
         }
 
-        if (options.count("g")!=1 or options.count("r")!=1 or options.count("o")!=1) {
+        if (options.count("r")!=1 or options.count("o")!=1) {
             throw cxxopts::OptionException(" please specify input files and output prefix");
         }
 
@@ -89,8 +88,8 @@ int main(int argc, char * argv[]) {
     /*
      * Load the GFAs
      */
-    SequenceGraph reference_sg, other_sg;
-    reference_sg.load_from_gfa(ref_gfa_filename);
+//    SequenceGraph reference_sg, other_sg;
+//    reference_sg.load_from_gfa(ref_gfa_filename);
 //    other_sg.load_from_gfa(gfa_filename);
 
 
@@ -99,18 +98,19 @@ int main(int argc, char * argv[]) {
      */
     const int k =31;
     const int max_coverage=1;
-    const std::string smr_output_prefix("smr_files");
+    std::string smr_output_prefix(output_prefix+"smr_files/");
+    check_or_create_directory(smr_output_prefix);
     SMR<KmerIDX,
     kmerIDXFactory<FastaRecord>,
-    GraphNodeReader<FastaRecord>,
-    FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> ref_kmerIDX_SMR({1,reference_sg}, {k}, mem_limit*GB, 0, max_coverage,
-                                                                          output_prefix+smr_output_prefix+"_ref");
+    FastaReader<FastaRecord>,
+    FastaRecord, FastxReaderParams, KMerIDXFactoryParams> ref_kmerIDX_SMR({1}, {k}, mem_limit*GB, 0, max_coverage,
+                                                                          smr_output_prefix+ref_gfa_filename.substr(0,ref_gfa_filename.find_last_of(".")));
+    std::vector<KmerIDX> vector_unique_kmers(ref_kmerIDX_SMR.read_from_file(ref_gfa_filename));
 
 //    FastaReader<FastaRecord> referenceReader({1}, ref_gfa_filename.substr(0, ref_gfa_filename.length()-4)+".fasta");
 //
 //
 //
-//    std::vector<KmerIDX> vector_unique_kmers(ref_kmerIDX_SMR.read_from_file(output_prefix));
 //    std::unordered_set<KmerIDX> reference_unique_kmers(std::make_move_iterator(vector_unique_kmers.begin()),
 //                                                       std::make_move_iterator(vector_unique_kmers.end()));
 //
