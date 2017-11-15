@@ -57,7 +57,7 @@ private:
     uint32_t min_length;
 };
 
-uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::vector<KmerIDX> &unique_kmers, std::string filename, uint64_t offset ) {
+uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::vector<KmerIDX> &unique_kmers, std::string filename, uint64_t offset , bool is_tagged=false) {
     std::cout<<"mapping reads!!!"<<std::endl;
     /*
      * Read mapping in parallel,
@@ -110,6 +110,10 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
                 mapping.read_id=(read.id)*2+offset;
 #pragma omp critical(add_mapped)
                 reads_in_node[mapping.node].emplace_back(mapping);
+                if (is_tagged){
+                    std::string barcode = read.name.substr(read.name.size() - 16);
+                    read_ids_to_tags[mapping.read_id] = barcode;
+                }
                 ++mapped_count;
             }
             auto tc=++total_count;
@@ -173,10 +177,12 @@ void PairedReadMapper::map_reads(std::string filename1, std::string filename2, p
             for (auto &mr:rin)
                 read_to_node[mr.read_id] = mr.node;
 
-    } else if (read_type==prm10x){
+    } else if (read_type==prm10x){ // can no longer access read name here, but dont' know how big to make it otherwise
         for (auto &rin:reads_in_node)
-            for (auto &mr:rin)
+            for (auto &mr:rin) {
                 read_to_node[mr.read_id] = mr.node;
+                read_to_tag[mr.read_id] = read_ids_to_tags[mr.read_id];
+            }
 
         }
 }

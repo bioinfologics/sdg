@@ -10,8 +10,8 @@
 
 
 int main(int argc, char * argv[]) {
-    std::string gfa_filename,bubble_contigs_filename,output_prefix;
-    std::vector<std::string> reads1,reads2, dump_mapped, load_mapped;
+    std::string gfa_filename,bubble_contigs_filename,output_prefix, reads1,reads2;
+    std::vector<std::string>  dump_mapped, load_mapped;
 
     bool stats_only=0;
 
@@ -25,8 +25,8 @@ int main(int argc, char * argv[]) {
                 ("c,contigs", "Bubble contigs to phase", cxxopts::value<std::string>(bubble_contigs_filename))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
         options.add_options("Paired reads options")
-                ("1,read1", "input reads, left", cxxopts::value<std::vector<std::string>>(reads1))
-                ("2,read2", "input reads, right", cxxopts::value<std::vector<std::string>>(reads2))
+                ("1,read1", "input reads, left", cxxopts::value<std::string>(reads1))
+                ("2,read2", "input reads, right", cxxopts::value<std::string>(reads2))
                 ("d,dump_to", "dump mapped reads to file", cxxopts::value<std::vector<std::string>>(dump_mapped))
                 ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped));
 
@@ -74,6 +74,8 @@ int main(int argc, char * argv[]) {
     HaplotypeScorer hs(sg, "blah.txt");
     // for now supply next file with list of possible phasings
     hs.load_haplotypes(bubble_contigs_filename, 2);
+    PairedReadMapper mapper(sg);
+    mapper.map_reads(reads1, reads2, prm10x);
     sg.write_to_gfa(output_prefix+".gfa");
     return 0;
 }
