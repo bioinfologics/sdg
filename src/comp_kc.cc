@@ -28,6 +28,11 @@ int main(int argc, char **argv){
         perror(std::string(std::string("Failed opening ") + std::string(argv[2])).c_str());
         exit(1);
     }
+
+    uint64_t size;
+    ::read(ref_fds, &size, sizeof(size));
+    ::read(asm_fds, &size, sizeof(size));
+
     auto bufferSize(10000000u);
     auto count_element_from_ref(0u);
     auto next_element_from_ref ( (KmerIDX*) malloc(bufferSize* sizeof(KmerIDX)));
