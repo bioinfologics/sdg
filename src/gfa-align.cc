@@ -99,7 +99,7 @@ int main(int argc, char * argv[]) {
     const int k =31;
     const int max_coverage=1;
     std::string smr_output_prefix(output_prefix+"smr_files/");
-    std::string tmp_dir("tmp_"+ref_gfa_filename.substr(0,ref_gfa_filename.find_last_of(".")));
+    std::string tmp_dir("tmp_"+ref_gfa_filename.substr(0,ref_gfa_filename.find_last_of(".")).substr(ref_gfa_filename.find_last_of("/")+1));
     check_or_create_directory(smr_output_prefix);
     check_or_create_directory(tmp_dir);
     SMR<KmerIDX,
@@ -107,7 +107,7 @@ int main(int argc, char * argv[]) {
     FastaReader<FastaRecord>,
     FastaRecord, FastxReaderParams, KMerIDXFactoryParams> ref_kmerIDX_SMR({1}, {k}, mem_limit*GB, 0,
                                                                           max_coverage,
-                                                                          smr_output_prefix+ref_gfa_filename.substr(0,ref_gfa_filename.find_last_of(".")),
+                                                                          smr_output_prefix+ref_gfa_filename.substr(0,ref_gfa_filename.find_last_of(".")).substr(ref_gfa_filename.find_last_of("/")+1),
                                                                           tmp_dir);
     std::vector<KmerIDX> vector_unique_kmers(ref_kmerIDX_SMR.read_from_file(ref_gfa_filename));
 
