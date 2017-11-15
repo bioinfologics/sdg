@@ -8,6 +8,7 @@
 
 #include <map>
 #include<atomic>
+#include "PairedReadMapper.hpp"
 #include "SequenceGraph.hpp"
 #include "KMerIDX.h"
 #include "FileReader.h"
@@ -34,14 +35,20 @@ public:
 class Barcode {
 public:
     std::string barcode;
-    std::vector<ReadMapping10X> mappings;
+    std::vector<ReadMapping> mappings;
 };
 
 
 class ReadMapper10X {
 public:
     std::vector<Barcode> barcodes;
-    uint64_t process_reads_from_file(uint8_t, uint16_t , std::vector<KmerIDX> &, std::string , uint64_t  );
+    uint64_t process_reads_from_file(uint8_t, uint16_t , std::vector<KmerIDX> &, std::string , uint64_t );
+
+    //sg, reads in node etc need to be same as for read mapper - not really sure how best to combine this with paired read mapper
+    // easiest way is to just pass those in as arguments- but reads in node is vector of read mappings, not 10x read mappings
+    // but makes no sense to keep sg on paired read mapper and have reads in node here
+    // if mappings aren't on paired read mapper, they can't be used for scaffolding
+    // so use that mapping and use this to hold index
 
 private:
     std::map<std::string, int> barcode_index_map;

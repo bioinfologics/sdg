@@ -130,7 +130,6 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
  */
 void PairedReadMapper::map_reads(std::string filename1, std::string filename2, prmReadType read_type) {
     std::cout<<"Mapping "<<prmReadTypeDesc[read_type]<<" reads from "<<filename1<<" and "<<filename2<<std::endl;
-    if (read_type==prmPE) {
 
         uint64_t maxmem = 4;
         maxmem *= 1024 * 1024 * 1024;
@@ -169,11 +168,17 @@ void PairedReadMapper::map_reads(std::string filename1, std::string filename2, p
         //now populate the read_to_node array
         __glibcxx_assert(r1c == r2c);
         read_to_node.resize(r1c * 2 + 1, 0);
+    if (read_type==prmPE) {
         for (auto &rin:reads_in_node)
             for (auto &mr:rin)
                 read_to_node[mr.read_id] = mr.node;
 
-    }
+    } else if (read_type==prm10x){
+        for (auto &rin:reads_in_node)
+            for (auto &mr:rin)
+                read_to_node[mr.read_id] = mr.node;
+
+        }
 }
 
 void PairedReadMapper::print_stats() {
