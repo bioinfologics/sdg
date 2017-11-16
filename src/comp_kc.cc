@@ -45,7 +45,7 @@ int main(int argc, char **argv){
             ::read(asm_fds, next_element_from_asm, bufferSize* sizeof(KmerIDX)) / sizeof(KmerIDX);
 
     size_t idxRef(0), idxAsm(0);
-    while (count_element_from_ref<size_element_from_ref and count_element_from_asm < size_element_from_asm) {
+    while (count_element_from_ref <= size_element_from_ref and count_element_from_asm <= size_element_from_asm) {
         if (next_element_from_asm[count_element_from_asm].kmer == next_element_from_ref[count_element_from_ref].kmer) {
             std::cout << next_element_from_ref[count_element_from_ref] << "\t" << next_element_from_asm[count_element_from_asm] << std::endl;
             count_element_from_asm++; count_element_from_ref++;
@@ -58,7 +58,7 @@ int main(int argc, char **argv){
 
             if (count_element_from_asm==size_element_from_asm){
                 size_element_from_asm=
-                        ::read(ref_fds, next_element_from_asm, bufferSize* sizeof(KmerIDX)) / sizeof(KmerIDX);
+                        ::read(asm_fds, next_element_from_asm, bufferSize* sizeof(KmerIDX)) / sizeof(KmerIDX);
                 count_element_from_asm=0;
             }
 
@@ -74,7 +74,7 @@ int main(int argc, char **argv){
             count_element_from_asm++;
             if (count_element_from_asm==size_element_from_asm){
                 size_element_from_asm=
-                        ::read(ref_fds, next_element_from_asm, bufferSize* sizeof(KmerIDX)) / sizeof(KmerIDX);
+                        ::read(asm_fds, next_element_from_asm, bufferSize* sizeof(KmerIDX)) / sizeof(KmerIDX);
                 count_element_from_asm=0;
             }
         }
