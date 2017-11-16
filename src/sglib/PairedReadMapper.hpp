@@ -51,7 +51,6 @@ public:
     std::vector<sgNodeID_t> read_to_node;
     std::vector<std::string> read_to_tag;
 
-private:
     // hack.... if we use this, not sure if the vector above is needed
     std::map<sgNodeID_t , std::string> read_ids_to_tags;
 };

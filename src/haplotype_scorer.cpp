@@ -59,7 +59,9 @@ void  HaplotypeScorer::load_haplotypes(std::string haplotype_filename, int degre
         if (res == "next" or counter == degree){
             std::vector<sgNodeID_t> next_haplotype;
             for (int j=0; j < counter; j++){
-                next_haplotype.push_back(sg.oldnames_to_ids[fields[j]]);
+                sgNodeID_t node = sg.oldnames_to_ids[fields[j]];
+                next_haplotype.push_back(node);
+                haplotype_nodes.insert(node);
             }
 
             counter = 0;
@@ -86,7 +88,31 @@ void  HaplotypeScorer::load_haplotypes(std::string haplotype_filename, int degre
     std::cout << "Loaded " << haplotypes.size() << "haplotypes \n";
 }
 
+
+
 void HaplotypeScorer::count_barcode_votes(std::string r1_filename, std::string r2_filename){
-    mapper.map_reads(r1_filename, r2_filename);
+    mapper.map_reads(r1_filename, r2_filename, prm10x);
+    // loop over all mappings to get reads mapped to haplotype nodes - can only get kmers from read in node,
+    /*std::vector<int> reads_mapped_to_het_nodes;
+    for (int read_index= 0; read_index < mapper.read_to_node.size(); read_index++) {
+        std::string barcode = mapper.read_to_tag[read_index];
+        sgNodeID_t node = mapper.read_to_node[read_index];
+        // if read mapped succesfully
+         if (node > 0){
+        //    barcode_node_mappings[barcode][node]  += mapper.
+             if (std::find(haplotype_nodes.begin(), haplotype_nodes.end(), node) != haplotype_nodes.end()){
+                 reads_mapped_to_het_nodes.push_back(read_index);
+
+             }
+        }
+
+    }*/
+    for (auto node:haplotype_nodes){
+        for (auto mapping:mapper.reads_in_node[node]){
+            std::string barcode = mapper.read_ids_to_tags[mapping.read_id];
+            barcode_node_mappings[barcode][node] += mapping.unique_matches;
+        }
+    }
 };
+
 void HaplotypeScorer::score_haplotypes(){};

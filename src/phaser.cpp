@@ -71,11 +71,10 @@ int main(int argc, char * argv[]) {
     // -----------------------------
     // instead of loading gfa and contig list separately, start by using gfa of subcomponent as input
     // be given names of bubble contigs to avoid having to code bubble finding now
-    HaplotypeScorer hs(sg, "blah.txt");
     // for now supply next file with list of possible phasings
+    HaplotypeScorer hs(sg, "blah.txt");
     hs.load_haplotypes(bubble_contigs_filename, 2);
-    PairedReadMapper mapper(sg);
-    mapper.map_reads(reads1, reads2, prm10x);
+    // now have mappings and
     sg.write_to_gfa(output_prefix+".gfa");
     return 0;
 }
