@@ -136,7 +136,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
 void PairedReadMapper::map_reads(std::string filename1, std::string filename2, prmReadType read_type) {
     std::cout<<"Mapping "<<prmReadTypeDesc[read_type]<<" reads from "<<filename1<<" and "<<filename2<<std::endl;
 
-        uint64_t maxmem = 0.5;
+        uint64_t maxmem = 2;
         maxmem *= 1024 * 1024 * 1024;
         std::cout << "maxmem=" << maxmem << std::endl;
         /*

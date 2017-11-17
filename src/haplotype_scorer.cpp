@@ -105,30 +105,28 @@ void HaplotypeScorer::find_possible_haplotypes(int max_degree, std::string bubbl
 void  HaplotypeScorer::load_haplotypes(std::string haplotype_filename, int degree = 2){
     std::ifstream infile(haplotype_filename);
     std::string line;
-    std::string fields[degree];
+    std::vector<std::string> fields;
     std::cout << "Loading haplotypes " << haplotype_filename << std::endl;
-    int counter = 0;
     std::string res;
     // no obvious way to access graph nodes directly, so store  names;
     std::vector<std::vector<sgNodeID_t> > haplotypes;
     while (std::getline(infile, line)) {
         std::istringstream(line) >> res;
-        if (res == "next" or counter == degree){
+        if (res == "next" ){
             std::vector<sgNodeID_t> next_haplotype;
-            for (int j=0; j < counter; j++){
-                sgNodeID_t node = sg.oldnames_to_ids[fields[j]];
+            for (auto n:fields){
+                sgNodeID_t node = sg.oldnames_to_ids[n];
                 next_haplotype.push_back(node);
                 haplotype_nodes.insert(node);
                 node_id_haplotype_index_map[node].push_back(haplotypes.size());
+                fields.clear();
             }
 
-            counter = 0;
             haplotypes.push_back(next_haplotype);
 
             continue;
         } else {
-            fields[counter] = res;
-            counter += 1;
+            fields.push_back(res);
 
         }
         //TODO: sanity check, no ids should be 0, all haps should be same length
@@ -181,11 +179,12 @@ void HaplotypeScorer::count_barcode_votes(std::string r1_filename, std::string r
 };
 
 int HaplotypeScorer::score_haplotypes() {
-    std::cout << haplotype_ids.size() << std::endl;
+    auto number_haplotypes = haplotype_ids.size();
+    std::cout << "Finding most supported of " << number_haplotypes<< " possible haplotypes"<<std::endl;
     //initialize score arrays- index is haplotype index
-    int haplotype_support[haplotype_ids.size()] = {0};
-    int haplotype_not_support[haplotype_ids.size()] = {0};
-    int haplotype_overall_support[haplotype_ids.size()] = {0};
+    int haplotype_support[number_haplotypes] = {0};
+    int haplotype_not_support[number_haplotypes] = {0};
+    int haplotype_overall_support[number_haplotypes] = {0};
     std::map<std::pair<int, int>, int> hap_pair_not_support;
     std::map<std::pair<int, int>, int> hap_pair_support;
     std::map<std::pair<int, int>, int> hap_pair_support_total_score;
@@ -200,9 +199,9 @@ int HaplotypeScorer::score_haplotypes() {
             haplotype_barcode_agree[winner][barcode] += bm.second[winner];
             haplotype_barcode_disagree[winner][barcode] += bm.second[pair];
         }
-        for (int hap = 0; hap < haplotype_ids.size() / 2; hap++) {
+        for (int hap = 0; hap < number_haplotypes/ 2; hap++) {
             // pair = len(self.list_of_possible_haplotypes) -1 -haplotype
-            int pair = haplotype_ids.size() - 1 - hap;
+            auto pair = number_haplotypes - 1 - hap;
             if (bm.second.find(hap) != bm.second.end()) {
                 haplotype_overall_support[hap] += bm.second[hap];
                 hap_pair_support_total_score[std::make_pair(hap, pair)] += bm.second[hap];
@@ -224,7 +223,12 @@ int HaplotypeScorer::score_haplotypes() {
             }
         }
     }
-
+    int winner = *std::max_element(haplotype_support, haplotype_support+number_haplotypes);
+    std::cout << "Winner: " << winner << std::endl;
+    for (auto h: haplotype_ids[winner]){
+        std::cout << h << " ";
+    }
+    std::cout << std::endl;
     return 0;
 }
 
