@@ -74,7 +74,7 @@ public:
         std::chrono::time_point<std::chrono::system_clock> start, end;
         start = std::chrono::system_clock::now();
 
-
+        std::cout << "Reading file: " << read_file << std::endl;
         FileReader myFileReader(reader_parameters, read_file);
         std::cout << "Begin reduction using " << numElementsPerBatch << " elements per batch (" << ceil(uint64_t((numElementsPerBatch*sizeof(RecordType)*maxThreads)) / (1.0f*1024*1024*1024)) << "GB)" << std::endl;
         mapElementsToBatches(myFileReader, numFileRecords);
@@ -349,7 +349,6 @@ private:
         _elements.reserve(numElementsPerBatch);
         RecordFactory myRecordFactory(factory_parameters);
         FileRecord frecord;
-
         while (myFileReader.next_record(frecord)) {
             numReadsReduction++;
             std::vector<RecordType> record;

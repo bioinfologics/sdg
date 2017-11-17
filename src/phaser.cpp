@@ -62,8 +62,14 @@ int main(int argc, char * argv[]) {
 
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
-    std::cout << sg.oldnames_to_ids.size() << std::endl;
+    std::cout << sg.oldnames_to_ids.size() << " sg oodes size: " << sg.nodes.size() << std::endl;
     std::cout << "Edge 0: " << sg.oldnames_to_ids["edge0"] << " " << sg.oldnames_to_ids["edge0+"] << std::endl;
+
+
+
+    /*(for (auto node: sg.nodes){
+        std::cout << node.sequence << " " << std::endl;
+    }*/
     // take list of contigs to phase from input
     // generate possible haplotypes
     // load mappings from input or disk
@@ -74,7 +80,12 @@ int main(int argc, char * argv[]) {
     // for now supply next file with list of possible phasings
     HaplotypeScorer hs(sg, "blah.txt");
     hs.load_haplotypes(bubble_contigs_filename, 2);
-    // now have mappings and
+    hs.count_barcode_votes(reads1, reads2);
+    hs.decide_barcode_haplotype_support();
+    // now have mappings and barcode support
+    if (hs.barcode_haplotype_mappings.size() > 0){
+        hs.score_haplotypes();
+    }
     sg.write_to_gfa(output_prefix+".gfa");
     return 0;
 }

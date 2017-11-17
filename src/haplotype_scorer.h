@@ -16,17 +16,19 @@
 class HaplotypeScorer{
 
 public:
-     HaplotypeScorer(SequenceGraph, std::string);
+     HaplotypeScorer(SequenceGraph &, std::string);
     // functions we will need:
     void find_possible_haplotypes(int, std::string);
     void load_haplotypes(std::string, int);
 
     void count_barcode_votes(std::string, std::string);
-    void score_haplotypes();
+    int score_haplotypes();
     std::map<std::string, std::map<sgNodeID_t , int> > barcode_node_mappings;
+    void decide_barcode_haplotype_support();
+    std::map<std::string, std::map< int, int > > barcode_haplotype_mappings;
 
 private:
-    SequenceGraph sg;
+    SequenceGraph & sg;
     std::string fasta_filename;
     PairedReadMapper mapper;
     // each het node
@@ -34,6 +36,13 @@ private:
     std::vector<std::vector<std::string> > load_bubble_file(std::string , int );
     // each possible hsplotype
     std::vector<std::vector<sgNodeID_t> > haplotype_ids;
+    std::vector <std::string> unused_barcodes;
+    std::map<sgNodeID_t , std::vector<int> > node_id_haplotype_index_map;
+
+    std::vector<int>  winner_for_barcode(std::string barcode);
+
+    std::map<int, std::map<std::string, int > > haplotype_barcode_agree;
+    std::map<int, std::map<std::string, int > > haplotype_barcode_disagree;
 
 };
 #endif //SG_HAPLOTYPE_SCORER_H

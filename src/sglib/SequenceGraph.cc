@@ -127,6 +127,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     if (line!="H\tVN:Z:1.0") std::cout<<"WARNING, first line of gfa doesn't correspond to GFA1"<<std::endl;
 
     std::ifstream fastaf(fasta_filename);
+    std::cout << "fasta filesname: " << fasta_filename << std::endl;
     if (!fastaf) throw std::invalid_argument("Can't read fasta file");
 
 
@@ -146,7 +147,6 @@ void SequenceGraph::load_from_gfa(std::string filename) {
         std::getline(fastaf,line);
         if (fastaf.eof() or line[0]=='>'){
             if (!name.empty()) {
-                std::cout << "name: " << name << std::endl;
                 //rough ansi C and C++ mix but it works
                 if (oldnames_to_ids.find(name) != oldnames_to_ids.end())
                     throw std::logic_error("sequence " + name + " is already defined");

@@ -7,7 +7,7 @@
 #include "PairedReadMapper.hpp"
 
 
-#define mem_limit 4
+#define mem_limit 0.2
 #define GB 1024*1024*1024
 
 
@@ -37,8 +37,7 @@ public:
             ++numRecords;
         }
         if (n!=0){
-            rec.id = n;
-            rec.seq = sg->nodes[n].sequence;
+            rec.id = n;rec.seq = sg->nodes[n].sequence;
             rec.name = std::to_string(n);
 
             stats.totalLength += rec.seq.size();
@@ -111,7 +110,9 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
 #pragma omp critical(add_mapped)
                 reads_in_node[mapping.node].emplace_back(mapping);
                 if (is_tagged){
+                    //std::cout << "Read name: " << read.name << std::endl;
                     std::string barcode = read.name.substr(read.name.size() - 16);
+                    #pragma omp critical(add_mapped_tagged)
                     read_ids_to_tags[mapping.read_id] = barcode;
                 }
                 ++mapped_count;
@@ -135,7 +136,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
 void PairedReadMapper::map_reads(std::string filename1, std::string filename2, prmReadType read_type) {
     std::cout<<"Mapping "<<prmReadTypeDesc[read_type]<<" reads from "<<filename1<<" and "<<filename2<<std::endl;
 
-        uint64_t maxmem = 4;
+        uint64_t maxmem = 0.5;
         maxmem *= 1024 * 1024 * 1024;
         std::cout << "maxmem=" << maxmem << std::endl;
         /*
@@ -166,18 +167,24 @@ void PairedReadMapper::map_reads(std::string filename1, std::string filename2, p
         //std::cout << "Number of " << int(k) << "-kmers that appear more than 0 < kmer_coverage <= " << max_coverage
         //          << " in assembly " << uniqKmer_statistics[1] << std::endl;
         std::cout << "Number of contigs from the assembly " << uniqKmer_statistics[2] << std::endl;
-
+    if (read_type==prmPE) {
         auto r1c = process_reads_from_file(k, min_matches, unique_kmers, filename1, 1);
         auto r2c = process_reads_from_file(k, min_matches, unique_kmers, filename2, 2);
         //now populate the read_to_node array
         __glibcxx_assert(r1c == r2c);
         read_to_node.resize(r1c * 2 + 1, 0);
-    if (read_type==prmPE) {
+
         for (auto &rin:reads_in_node)
             for (auto &mr:rin)
                 read_to_node[mr.read_id] = mr.node;
 
     } else if (read_type==prm10x){ // can no longer access read name here, but dont' know how big to make it otherwise
+        auto r1c = process_reads_from_file(k, min_matches, unique_kmers, filename1, 1, true);
+        auto r2c = process_reads_from_file(k, min_matches, unique_kmers, filename2, 2, true);
+        //now populate the read_to_node array
+        __glibcxx_assert(r1c == r2c);
+        read_to_node.resize(r1c * 2 + 1, 0);
+        read_to_tag.resize(r1c * 2 + 1, "");
         for (auto &rin:reads_in_node)
             for (auto &mr:rin) {
                 read_to_node[mr.read_id] = mr.node;

@@ -4,7 +4,64 @@
 
 #include "haplotype_scorer.h"
 
-HaplotypeScorer::HaplotypeScorer(SequenceGraph sg, std::string fasta_filename): sg(sg), mapper(sg){
+HaplotypeScorer::HaplotypeScorer(SequenceGraph & sg, std::string fasta_filename): sg(sg), mapper(PairedReadMapper(sg)){
+
+}
+
+void HaplotypeScorer::decide_barcode_haplotype_support(){
+
+    int support;
+    int haplotypes_supported = 0;
+    std::cout << "Calculating barcode haplotype support for" <<std::endl;
+    for (auto &mapping:barcode_node_mappings){
+        if (mapping.second.size() > 1){
+            std::vector<sgNodeID_t > nodes;
+            std::vector<int> scores;
+            for (auto n: mapping.second){
+                nodes.push_back(n.first);
+                scores.push_back(n.second);
+            }
+            if (*std::max_element(scores.begin(), scores.end())> 1) {
+                //  for i, haplotype in enumerate(self.list_of_possible_haplotypes)
+                for (int i = 0; i < haplotype_ids.size(); i++) {
+                    std::vector<sgNodeID_t > nodes_in_haplotype;
+                    std::vector<sgNodeID_t > h;
+                    h = haplotype_ids[i];
+                    // find all nods in each haplotype that this barcode maps to
+                    for (auto n1: nodes) {
+                        //edges_in_haplotype = [e for e in haplotype if e in edges]
+                        if (std::find(h.begin(), h.end(), n1) != h.end()) {
+                            nodes_in_haplotype.push_back(n1);
+                        }
+                    }
+                    // somewhat arbitrary rule to decide if the barcode supports a haplotype enough
+                    // if len(edges_in_haplotype)>= len(edges)/2 and len(edges_in_haplotype) > 1:
+                    if (nodes_in_haplotype.size() >= (nodes.size() / 2) && nodes_in_haplotype.size() > 1) {
+                        support = 0;
+                        for (auto a: nodes_in_haplotype) {
+                            support += mapping.second[a];
+                        }
+                        barcode_haplotype_mappings[mapping.first][i] = support;
+                        support = 0;
+                        haplotypes_supported += 1;
+                    } else {
+                        unused_barcodes.push_back(mapping.first);
+                    }
+                }
+            }
+
+        } else {
+            unused_barcodes.push_back(mapping.first);
+        }
+        //std::cout << "barcode " << mapping.first << " supports " << haplotypes_supported << std::endl;
+
+        haplotypes_supported = 0;
+        // try alternative way just looping over each edge mapped to and each hap in that edge
+        /*for (auto n:mapping.second){
+
+        }*/
+    }
+    std::cout << "Calculated haplotype support for each barcode, " << barcode_haplotype_mappings.size() <<  std::endl;
 
 }
 
@@ -62,6 +119,7 @@ void  HaplotypeScorer::load_haplotypes(std::string haplotype_filename, int degre
                 sgNodeID_t node = sg.oldnames_to_ids[fields[j]];
                 next_haplotype.push_back(node);
                 haplotype_nodes.insert(node);
+                node_id_haplotype_index_map[node].push_back(haplotypes.size());
             }
 
             counter = 0;
@@ -107,12 +165,83 @@ void HaplotypeScorer::count_barcode_votes(std::string r1_filename, std::string r
         }
 
     }*/
-    for (auto node:haplotype_nodes){
-        for (auto mapping:mapper.reads_in_node[node]){
+    std::cout << "Mapped " << mapper.read_to_node.size() << " reads to " <<  mapper.reads_in_node.size() << "nodes" << std::endl;
+    std::cout << "NOw counting barcode votes... " << std::endl;
+    int counter = 0;
+    for (auto &node:haplotype_nodes){
+        std::cout << "Node: " <<node <<std::endl;
+        for (auto &mapping:mapper.reads_in_node[node>0?node:-node]){
             std::string barcode = mapper.read_ids_to_tags[mapping.read_id];
-            barcode_node_mappings[barcode][node] += mapping.unique_matches;
+            std::cout << "Barcode: " << barcode << std::endl;
+             barcode_node_mappings[barcode][node] += mapping.unique_matches;
+            counter += 1;
         }
     }
+    std::cout << "counted " << counter << " votes for " << barcode_node_mappings.size() << "barcodes";
 };
 
-void HaplotypeScorer::score_haplotypes(){};
+int HaplotypeScorer::score_haplotypes() {
+    std::cout << haplotype_ids.size() << std::endl;
+    //initialize score arrays- index is haplotype index
+    int haplotype_support[haplotype_ids.size()] = {0};
+    int haplotype_not_support[haplotype_ids.size()] = {0};
+    int haplotype_overall_support[haplotype_ids.size()] = {0};
+    std::map<std::pair<int, int>, int> hap_pair_not_support;
+    std::map<std::pair<int, int>, int> hap_pair_support;
+    std::map<std::pair<int, int>, int> hap_pair_support_total_score;
+    std::string barcode;
+    for (auto &bm: barcode_haplotype_mappings) {
+        barcode = bm.first;
+        std::vector<int> winners = winner_for_barcode(barcode); // ideally should be length 1
+        for (auto winner:winners){
+            int pair = haplotype_ids.size() - 1 - winner;
+            haplotype_support[winner] += 1;
+            hap_pair_support[std::make_pair(winner, pair)] += 1;
+            haplotype_barcode_agree[winner][barcode] += bm.second[winner];
+            haplotype_barcode_disagree[winner][barcode] += bm.second[pair];
+        }
+        for (int hap = 0; hap < haplotype_ids.size() / 2; hap++) {
+            // pair = len(self.list_of_possible_haplotypes) -1 -haplotype
+            int pair = haplotype_ids.size() - 1 - hap;
+            if (bm.second.find(hap) != bm.second.end()) {
+                haplotype_overall_support[hap] += bm.second[hap];
+                hap_pair_support_total_score[std::make_pair(hap, pair)] += bm.second[hap];
+            }
+
+            if (bm.second.find(pair) != bm.second.end()) {
+                haplotype_overall_support[pair] += bm.second[pair];
+                hap_pair_support_total_score[std::make_pair(hap, pair)] += bm.second[pair];
+            }
+            if (bm.second.find(hap) == bm.second.end()) {
+                haplotype_not_support[hap] += 1;
+            }
+            if (bm.second.find(pair) == bm.second.end()) {
+                haplotype_not_support[pair] += 1;
+            }
+            if (bm.second.find(hap) == bm.second.end() and bm.second.find(pair) == bm.second.end()) {
+                hap_pair_not_support[std::make_pair(hap, pair)] += 1;
+
+            }
+        }
+    }
+
+    return 0;
+}
+
+
+std::vector<int>  HaplotypeScorer::winner_for_barcode(std::string barcode){
+    int max=0;
+    std::vector<int> winners;
+    for (auto h:barcode_haplotype_mappings[barcode]){
+        if (h.second > max){
+            max = h.second;
+        }
+    }
+    //TODO: DECIDE CRITERIA FOR MINIMUM SUPPORT
+    for (auto h:barcode_haplotype_mappings[barcode]){
+        if (h.second == max){
+            winners.push_back(h.first);
+        }
+    }
+    return winners;
+}
