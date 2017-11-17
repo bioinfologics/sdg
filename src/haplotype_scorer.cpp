@@ -12,20 +12,21 @@ void HaplotypeScorer::decide_barcode_haplotype_support(){
 
     int support;
     int haplotypes_supported = 0;
+
     std::cout << "Calculating barcode haplotype support for" <<std::endl;
-    for (auto &mapping:barcode_node_mappings){
-        if (mapping.second.size() > 1){
-            std::vector<sgNodeID_t > nodes;
+    for (auto &mapping:barcode_node_mappings) {
+        if (mapping.second.size() > 1) {
+            std::vector<sgNodeID_t> nodes;
             std::vector<int> scores;
-            for (auto n: mapping.second){
+            for (auto n: mapping.second) {
                 nodes.push_back(n.first);
                 scores.push_back(n.second);
             }
-            if (*std::max_element(scores.begin(), scores.end())> 1) {
+            if (*std::max_element(scores.begin(), scores.end()) > 1) {
                 //  for i, haplotype in enumerate(self.list_of_possible_haplotypes)
                 for (int i = 0; i < haplotype_ids.size(); i++) {
-                    std::vector<sgNodeID_t > nodes_in_haplotype;
-                    std::vector<sgNodeID_t > h;
+                    std::vector<sgNodeID_t> nodes_in_haplotype;
+                    std::vector<sgNodeID_t> h;
                     h = haplotype_ids[i];
                     // find all nods in each haplotype that this barcode maps to
                     for (auto n1: nodes) {
@@ -54,12 +55,32 @@ void HaplotypeScorer::decide_barcode_haplotype_support(){
             unused_barcodes.push_back(mapping.first);
         }
         //std::cout << "barcode " << mapping.first << " supports " << haplotypes_supported << std::endl;
-
         haplotypes_supported = 0;
-        // try alternative way just looping over each edge mapped to and each hap in that edge
-        /*for (auto n:mapping.second){
+        // try alternative way just looping over each node mapped to and each hap for that node
+        if (mapping.second.size() > 1) {
+            for (auto n:mapping.second) {
+                // won't be idemtical to before because allows scores to all be 1
+                // see if this agrees well with other
+                for (auto h: node_id_haplotype_index_map[n.first]) {
+                    barcode_haplotype_mappings2[mapping.first][h] += n.second;
 
-        }*/
+                }
+            }
+        }
+
+    }
+    bool no_matched = true;
+    for (auto m:barcode_haplotype_mappings){
+
+        for (auto n:m.second){
+            if (barcode_haplotype_mappings2[m.first][n.second] != barcode_haplotype_mappings[m.first][n.second]){
+                no_matched = false;
+                break;
+            }
+        }
+    }
+    if (!no_matched){
+        std::cout << "twu methods differ " << std::endl;
     }
     std::cout << "Calculated haplotype support for each barcode, " << barcode_haplotype_mappings.size() <<  std::endl;
 
@@ -148,21 +169,6 @@ void  HaplotypeScorer::load_haplotypes(std::string haplotype_filename, int degre
 
 void HaplotypeScorer::count_barcode_votes(std::string r1_filename, std::string r2_filename){
     mapper.map_reads(r1_filename, r2_filename, prm10x);
-    // loop over all mappings to get reads mapped to haplotype nodes - can only get kmers from read in node,
-    /*std::vector<int> reads_mapped_to_het_nodes;
-    for (int read_index= 0; read_index < mapper.read_to_node.size(); read_index++) {
-        std::string barcode = mapper.read_to_tag[read_index];
-        sgNodeID_t node = mapper.read_to_node[read_index];
-        // if read mapped succesfully
-         if (node > 0){
-        //    barcode_node_mappings[barcode][node]  += mapper.
-             if (std::find(haplotype_nodes.begin(), haplotype_nodes.end(), node) != haplotype_nodes.end()){
-                 reads_mapped_to_het_nodes.push_back(read_index);
-
-             }
-        }
-
-    }*/
     std::cout << "Mapped " << mapper.read_to_node.size() << " reads to " <<  mapper.reads_in_node.size() << "nodes" << std::endl;
     std::cout << "NOw counting barcode votes... " << std::endl;
     int counter = 0;

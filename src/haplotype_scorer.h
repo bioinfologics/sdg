@@ -25,7 +25,10 @@ public:
     int score_haplotypes();
     std::map<std::string, std::map<sgNodeID_t , int> > barcode_node_mappings;
     void decide_barcode_haplotype_support();
+    void decide_barcode_haplotype_support2();
+
     std::map<std::string, std::map< int, int > > barcode_haplotype_mappings;
+    std::map<std::string, std::map< int, int > > barcode_haplotype_mappings2;
 
 private:
     SequenceGraph & sg;
