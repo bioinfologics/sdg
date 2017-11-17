@@ -140,6 +140,7 @@ void  HaplotypeScorer::load_haplotypes(std::string haplotype_filename, int degre
                 next_haplotype.push_back(node);
                 haplotype_nodes.insert(node);
                 node_id_haplotype_index_map[node].push_back(haplotypes.size());
+                id_to_contig_name[node] = n;
                 fields.clear();
             }
 
@@ -232,7 +233,65 @@ int HaplotypeScorer::score_haplotypes() {
     int winner = *std::max_element(haplotype_support, haplotype_support+number_haplotypes);
     std::cout << "Winner: " << winner << std::endl;
     for (auto h: haplotype_ids[winner]){
-        std::cout << h << " ";
+        std::cout << id_to_contig_name[h] << " ";
+    }
+    std::cout << std::endl;
+    return 0;
+}
+
+
+int HaplotypeScorer::score_haplotypes2() {
+    auto number_haplotypes = haplotype_ids.size();
+    std::cout << "Finding most supported of " << number_haplotypes<< " possible haplotypes"<<std::endl;
+    //initialize score arrays- index is haplotype index
+    int haplotype_support[number_haplotypes] = {0};
+    int haplotype_not_support[number_haplotypes] = {0};
+    int haplotype_overall_support[number_haplotypes] = {0};
+    std::map<std::pair<int, int>, int> hap_pair_not_support;
+    std::map<std::pair<int, int>, int> hap_pair_support;
+    std::map<std::pair<int, int>, int> hap_pair_support_total_score;
+
+    std::map<int, std::map<std::string, int > > haplotype_barcode_agree2;
+    std::map<int, std::map<std::string, int > > haplotype_barcode_disagree2;
+    std::string barcode;
+    for (auto &bm: barcode_haplotype_mappings2) {
+        barcode = bm.first;
+        std::vector<int> winners = winner_for_barcode(barcode); // ideally should be length 1
+        for (auto winner:winners){
+            int pair = haplotype_ids.size() - 1 - winner;
+            haplotype_support[winner] += 1;
+            hap_pair_support[std::make_pair(winner, pair)] += 1;
+            haplotype_barcode_agree2[winner][barcode] += bm.second[winner];
+            haplotype_barcode_disagree2[winner][barcode] += bm.second[pair];
+        }
+        for (int hap = 0; hap < number_haplotypes/ 2; hap++) {
+            // pair = len(self.list_of_possible_haplotypes) -1 -haplotype
+            auto pair = number_haplotypes - 1 - hap;
+            if (bm.second.find(hap) != bm.second.end()) {
+                haplotype_overall_support[hap] += bm.second[hap];
+                hap_pair_support_total_score[std::make_pair(hap, pair)] += bm.second[hap];
+            }
+
+            if (bm.second.find(pair) != bm.second.end()) {
+                haplotype_overall_support[pair] += bm.second[pair];
+                hap_pair_support_total_score[std::make_pair(hap, pair)] += bm.second[pair];
+            }
+            if (bm.second.find(hap) == bm.second.end()) {
+                haplotype_not_support[hap] += 1;
+            }
+            if (bm.second.find(pair) == bm.second.end()) {
+                haplotype_not_support[pair] += 1;
+            }
+            if (bm.second.find(hap) == bm.second.end() and bm.second.find(pair) == bm.second.end()) {
+                hap_pair_not_support[std::make_pair(hap, pair)] += 1;
+
+            }
+        }
+    }
+    int winner = *std::max_element(haplotype_support, haplotype_support+number_haplotypes);
+    std::cout << "Winner method 2: " << winner << std::endl;
+    for (auto h: haplotype_ids[winner]){
+        std::cout << id_to_contig_name[h] << " ";
     }
     std::cout << std::endl;
     return 0;

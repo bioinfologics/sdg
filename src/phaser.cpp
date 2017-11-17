@@ -85,6 +85,7 @@ int main(int argc, char * argv[]) {
     // now have mappings and barcode support
     if (hs.barcode_haplotype_mappings.size() > 0){
         hs.score_haplotypes();
+        hs.score_haplotypes2();
     }
     sg.write_to_gfa(output_prefix+".gfa");
     return 0;
