@@ -177,7 +177,6 @@ void HaplotypeScorer::count_barcode_votes(std::string r1_filename, std::string r
         std::cout << "Node: " <<node <<std::endl;
         for (auto &mapping:mapper.reads_in_node[node>0?node:-node]){
             std::string barcode = mapper.read_ids_to_tags[mapping.read_id];
-            std::cout << "Barcode: " << barcode << std::endl;
              barcode_node_mappings[barcode][node] += mapping.unique_matches;
             counter += 1;
         }
