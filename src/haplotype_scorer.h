@@ -10,6 +10,8 @@
 #include <sstream>
 #include <istream>
 #include <string>
+#include <numeric>
+
 #include "sglib/SequenceGraph.hpp"
 #include <sglib/PairedReadMapper.hpp>
 
@@ -27,7 +29,6 @@ public:
 
     std::map<std::string, std::map<sgNodeID_t , int> > barcode_node_mappings;
     void decide_barcode_haplotype_support();
-
     std::map<std::string, std::map< int, int > > barcode_haplotype_mappings;
     std::map<std::string, std::map< int, int > > barcode_haplotype_mappings2;
 

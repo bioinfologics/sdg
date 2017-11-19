@@ -79,6 +79,11 @@ int main(int argc, char * argv[]) {
     // be given names of bubble contigs to avoid having to code bubble finding now
     // for now supply next file with list of possible phasings
     HaplotypeScorer hs(sg, "blah.txt");
+    //find and phase each component of gfa
+   // auto components = sg.connected_components();
+    //for (auto component:components){
+        // should
+    //}
     hs.load_haplotypes(bubble_contigs_filename, 2);
     hs.count_barcode_votes(reads1, reads2);
     hs.decide_barcode_haplotype_support();
