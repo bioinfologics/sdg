@@ -18,7 +18,7 @@
 class HaplotypeScorer{
 
 public:
-     HaplotypeScorer(SequenceGraph &, std::string);
+     HaplotypeScorer(SequenceGraph &);
     // functions we will need:
     void find_possible_haplotypes(int, std::string);
     void load_haplotypes(std::string, int);
@@ -34,11 +34,9 @@ public:
 
 private:
     SequenceGraph & sg;
-    std::string fasta_filename;
     PairedReadMapper mapper;
     // each het node
     std::set<sgNodeID_t > haplotype_nodes;
-    std::vector<std::vector<std::string> > load_bubble_file(std::string , int );
     // each possible hsplotype
     std::vector<std::vector<sgNodeID_t> > haplotype_ids;
 

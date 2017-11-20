@@ -78,7 +78,7 @@ int main(int argc, char * argv[]) {
     // instead of loading gfa and contig list separately, start by using gfa of subcomponent as input
     // be given names of bubble contigs to avoid having to code bubble finding now
     // for now supply next file with list of possible phasings
-    HaplotypeScorer hs(sg, "blah.txt");
+    HaplotypeScorer hs(sg);
     //find and phase each component of gfa
    // auto components = sg.connected_components();
     //for (auto component:components){
@@ -90,7 +90,6 @@ int main(int argc, char * argv[]) {
     // now have mappings and barcode support
     if (hs.barcode_haplotype_mappings.size() > 0){
         hs.score_haplotypes();
-        hs.score_haplotypes2();
     }
     sg.write_to_gfa(output_prefix+".gfa");
     return 0;
