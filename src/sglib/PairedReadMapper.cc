@@ -191,13 +191,13 @@ void PairedReadMapper::map_reads(std::string filename1, std::string filename2, p
             for (auto &mr:rin) {
                 // this is fine,
                 read_to_node[mr.read_id] = mr.node;
-                std::cout << "Node: " << mr.node <<std::endl;
-                std::cout << "read id: " << mr.read_id << std::endl;
-                std::cout << "Tag: " << read_ids_to_tags[mr.read_id]<< std::endl;
+                //std::cout << "Node: " << mr.node <<std::endl;
+                //std::cout << "read id: " << mr.read_id << std::endl;
+                //std::cout << "Tag: " << read_ids_to_tags[mr.read_id]<< std::endl;
                 //std::cout << "gfdgfd" << read_to_tag[mr.read_id]; // malloc error too
-                std::cout << "read_to_tag size: " << read_to_tag.size() << "read_to_node size: " << read_to_node.size() << std::endl;
-                read_to_tag[mr.read_id] = read_ids_to_tags[mr.read_id];
-                std::cout << "read to tag " << read_to_tag[mr.read_id];
+                //std::cout << "read_to_tag size: " << read_to_tag.size() << "read_to_node size: " << read_to_node.size() << std::endl;
+                //read_to_tag[mr.read_id] = read_ids_to_tags[mr.read_id];
+                //std::cout << "read to tag " << read_to_tag[mr.read_id];
 
             }
 

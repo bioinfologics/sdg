@@ -185,11 +185,16 @@ void HaplotypeScorer::count_barcode_votes(std::string r1_filename, std::string r
 
 int HaplotypeScorer::score_haplotypes() {
     auto number_haplotypes = haplotype_ids.size();
+    int haplotype_support2[number_haplotypes] = {0};
+
     std::cout << "Finding most supported of " << number_haplotypes<< " possible haplotypes"<<std::endl;
     //initialize score arrays- index is haplotype index
-    int haplotype_support[number_haplotypes] = {0};
-    int haplotype_not_support[number_haplotypes] = {0};
-    int haplotype_overall_support[number_haplotypes] = {0};
+    std::vector<int > haplotype_support;
+    std::vector<int > haplotype_not_support;
+    std::vector<int> haplotype_overall_support;
+    haplotype_support.resize(number_haplotypes);
+    haplotype_not_support.resize(number_haplotypes);
+    haplotype_overall_support.resize(number_haplotypes);
     std::map<std::pair<int, int>, int> hap_pair_not_support;
     std::map<std::pair<int, int>, int> hap_pair_support;
     std::map<std::pair<int, int>, int> hap_pair_support_total_score;
@@ -200,6 +205,8 @@ int HaplotypeScorer::score_haplotypes() {
         for (auto winner:winners){
             int pair = haplotype_ids.size() - 1 - winner;
             haplotype_support[winner] += 1;
+            haplotype_support2[winner] += 1;
+
             hap_pair_support[std::make_pair(winner, pair)] += 1;
             haplotype_barcode_agree[winner][barcode] += bm.second[winner];
             haplotype_barcode_disagree[winner][barcode] += bm.second[pair];
@@ -228,29 +235,27 @@ int HaplotypeScorer::score_haplotypes() {
             }
         }
     }
-    std::vector<int> haplotype_support_vals;
-    std::vector<int> haplotype_not_support_vals;
-    std::vector<int> haplotype_overall_support_vals;
-    for (int i = 0; i < haplotype_ids.size(); i++) {
-        haplotype_support_vals.push_back(haplotype_support[i]);
-        haplotype_not_support_vals.push_back(haplotype_not_support[i]);
-        haplotype_overall_support_vals.push_back(haplotype_overall_support[i]);
+    // this gives value of max support, not index, must be better way
+
+    auto winner_index = std::max_element(haplotype_support.begin(), haplotype_support.end());
+    std::cout << "hap " << *winner_index << " winning contigs: " << std::endl;
+
+    std::vector<int> support_winner;
+
+    for (int h = 0; h < haplotype_ids.size(); h++) {
+        if (haplotype_support[h] == *winner_index) {
+            std::cout << "Winner: " << h << std::endl;
+            support_winner.push_back(h);
+        }
+    }
+   for (auto w: support_winner){
+       for (auto h:haplotype_ids[w]){
+           std::cout << id_to_contig_name[h] << " ";
+
+       }
+       std::cout << std::endl;
 
     }
-    std::vector<std::pair<int, int> > supports;
-    std::vector<std::pair<int, int> > overall_supports;
-    std::vector<std::pair<std::pair<int, int>, int > > pair_supports;
-    std::vector<std::pair<std::pair<int, int>, int > > pair_overall_supports;
-    for (int i=0; i< haplotype_ids.size(); i++){
-        supports.push_back(std::make_pair(i, haplotype_support[i]));
-        overall_supports.push_back(std::make_pair(i, haplotype_support[i]));
-    }
-    std::sort(supports.begin(), supports.end(), [](auto &left, auto &right) {
-        return left.second < right.second;
-    });
-    std::sort(overall_supports.begin(), overall_supports.end(), [](auto &left, auto &right) {
-        return left.second < right.second;
-    });
 
     return 0;
 }
@@ -305,6 +310,29 @@ int HaplotypeScorer::score_haplotypes2() {
         }
     }
 
+    std::vector<int> haplotype_support_vals;
+    for (int i = 0; i < haplotype_ids.size(); i++) {
+        haplotype_support_vals.push_back(haplotype_support[i]);
+
+    }
+    auto support_max = std::max_element(haplotype_support_vals.begin(), haplotype_support_vals.end());
+
+    std::vector<int> support_winner;
+
+    for (int h = 0; h < haplotype_ids.size(); h++) {
+        if (haplotype_support[h] == *support_max) {
+            std::cout << "Winner: " << h << std::endl;
+            support_winner.push_back(h);
+        }
+    }
+    for (auto w: support_winner){
+        for (auto h:haplotype_ids[w]){
+            std::cout << id_to_contig_name[h] << " ";
+
+        }
+        std::cout << std::endl;
+
+    }
     return 0;
 }
 
