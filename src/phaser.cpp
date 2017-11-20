@@ -70,20 +70,32 @@ int main(int argc, char * argv[]) {
     /*(for (auto node: sg.nodes){
         std::cout << node.sequence << " " << std::endl;
     }*/
-    // take list of contigs to phase from input
-    // generate possible haplotypes
-    // load mappings from input or disk
-    // score haplotypes
-    // -----------------------------
-    // instead of loading gfa and contig list separately, start by using gfa of subcomponent as input
-    // be given names of bubble contigs to avoid having to code bubble finding now
-    // for now supply next file with list of possible phasings
+    // currently takes gfa, file of possible phasings, and reads
+    // loads graph, loads phasings, maps reads and computes support:
+    /**
+     * \todo Load entire GFA rather than subcomponent
+     * \todo map reads to entire GFA
+     * \todo find connected components
+     * \todo find bubble contigs, allowing bubbles of varying degrees
+    * \todo phase components with > 1 bubbles in turn
+
+     * \todo from bubble contigs, compute possible haplotypes - if too many, split so exponential growth doesn't kill us
+     * \todo decide heurisitcs for picking barcode winner, overall winner, when to
+     * with all phased, intersect barocdes supporting phasings on different contigs to build up phase blocks
+
+ */
+
     HaplotypeScorer hs(sg);
     //find and phase each component of gfa
-   // auto components = sg.connected_components();
-    //for (auto component:components){
+    auto components = sg.connected_components();
+    /*for (auto component:components){
         // should
-    //}
+        auto n = component.find_bubbles();
+        if (n > 1){
+            component.find_possible_haplotypes();
+            // then as below for each
+        }
+    }*/
     hs.load_haplotypes(bubble_contigs_filename, 2);
     hs.count_barcode_votes(reads1, reads2);
     hs.decide_barcode_haplotype_support();

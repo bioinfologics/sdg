@@ -112,13 +112,7 @@ void  HaplotypeScorer::load_haplotypes(std::string haplotype_filename, int degre
 
     }
     haplotype_ids =  haplotypes;
-    for (auto h: haplotypes){
-        for (auto c: h) {
-            std::cout << c << " ";
 
-        }
-        std::cout << std::endl << "next:";
-    }
     std::cout << "Loaded " << haplotypes.size() << "haplotypes \n";
 }
 
@@ -149,9 +143,19 @@ void HaplotypeScorer::count_barcode_votes(std::string r1_filename, std::string r
     std::cout << "counted " << counter << " votes for " << barcode_node_mappings.size() << "barcodes";
 };
 
+/**
+ *
+ *
+ * @brief
+ * Decide winning phasing
+ * @return
+ * Calculate, for each haplotype, a number of metrics that represent how well the 10x reads support that phasing
+ * loop over each barcode in turn, then each phasing pair
+ * \todo decide criteria for winning haploype
+ *
+ */
 int HaplotypeScorer::score_haplotypes() {
     auto number_haplotypes = haplotype_ids.size();
-    int haplotype_support2[number_haplotypes] = {0};
 
     std::cout << "Finding most supported of " << number_haplotypes<< " possible haplotypes"<<std::endl;
     //initialize score arrays- index is haplotype index
@@ -171,7 +175,6 @@ int HaplotypeScorer::score_haplotypes() {
         for (auto winner:winners){
             int pair = haplotype_ids.size() - 1 - winner;
             haplotype_support[winner] += 1;
-            haplotype_support2[winner] += 1;
 
             hap_pair_support[std::make_pair(winner, pair)] += 1;
             haplotype_barcode_agree[winner][barcode] += bm.second[winner];
@@ -226,7 +229,16 @@ int HaplotypeScorer::score_haplotypes() {
     return 0;
 }
 
-
+/**
+ *
+ *
+ * @brief
+ * Find haplotype that a barcode votes for
+ * * @return
+ * loop over barcode aplotype mappings to find maximum support
+ * if more than2 have same support both are returned
+ * \todo decide heuristics to vote for winner
+ */
 std::vector<int>  HaplotypeScorer::winner_for_barcode(std::string barcode){
     int max=0;
     std::vector<int> winners;
