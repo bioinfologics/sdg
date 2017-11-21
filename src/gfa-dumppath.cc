@@ -11,7 +11,7 @@ int main(int argc, char * argv[]) {
 
     try
     {
-        cxxopts::Options options("gfaqc", "GFA dump path tool");
+        cxxopts::Options options("gfa-dumppath", "GFA dump path tool");
 
         options.add_options()
                 ("help", "Print help", cxxopts::value<std::string>(help), "")
