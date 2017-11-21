@@ -1,5 +1,4 @@
-# sg
-
+# bsg
 A basic sequence graph, with some associated tools.
 
 Information on the tools on this file, information on sglib can be found
