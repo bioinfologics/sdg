@@ -96,9 +96,9 @@ int main(int argc, char **argv) {
         options.add_options("Performance")
         ("mem_limit", "Memory limit in GB",cxxopts::value<unsigned int>(mem_limit)->default_value("10"));
 //@formatter:on
-        options.parse(argc, argv);
+        auto result (options.parse(argc, argv));
 
-        if (0 != options.count("help")) {
+        if (0 != result.count("help")) {
             std::cout << options.help({"", "Performance"}) << std::endl;
             exit(0);
         }

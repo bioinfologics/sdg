@@ -91,7 +91,7 @@ add_library(sequence_graph SHARED
             src/sglib/SequenceGraph.cc
             src/sglib/PairedReadMapper.cc
             src/sglib/Scaffolder.cc)
-
+target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 ## add executables and respective sources
 add_executable(gfa-qc
         src/gfa-qc.cc)
@@ -106,9 +106,9 @@ add_executable(gfa-pairscaff
 
 add_executable(phaser
                src/phaser.cpp
-               src/sglib/FileReader.h
-               src/sglib/KMerFactory.h
-               src/sglib/KMerIDX.h
+               src/sglib/readers/FileReader.h
+               src/sglib/factories/KMerFactory.h
+               src/sglib/factories/KMerIDXFactory.h
                src/sglib/SMR.h
                src/sglib/SequenceGraph.hpp
                src/sglib/SequenceGraph.cc
@@ -126,7 +126,7 @@ add_executable(seq-sorter
 
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
-target_link_libraries(seq-sorter sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 target_link_libraries (phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})

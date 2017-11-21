@@ -59,15 +59,16 @@ int main(int argc, char * argv[]) {
 
         options.add_options("Performance")
                 ("mem_limit", "Memory limit in GB",cxxopts::value<unsigned int>(mem_limit)->default_value("10"), "uint");
-        options.parse(argc, argv);
 
-        if (options.count("help"))
+        auto result(options.parse(argc, argv));
+
+        if (result.count("help"))
         {
             std::cout << options.help({""}) << std::endl;
             exit(0);
         }
 
-        if (options.count("r")!=1 or options.count("o")!=1) {
+        if (result.count("r")!=1 or result.count("o")!=1) {
             throw cxxopts::OptionException(" please specify input files and output prefix");
         }
 

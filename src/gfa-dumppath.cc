@@ -5,7 +5,7 @@
 
 
 int main(int argc, char * argv[]) {
-    std::string gfa_filename,output_prefix;
+    std::string gfa_filename,output_prefix,help;
     std::vector<std::string> paths;
     bool stats_only=0;
 
@@ -14,22 +14,22 @@ int main(int argc, char * argv[]) {
         cxxopts::Options options("gfaqc", "GFA dump path tool");
 
         options.add_options()
-                ("help", "Print help")
-                ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename))
-                ("p,path", "coma separated lists of nodes (ex: 123-,34+,16+ )", cxxopts::value<std::vector<std::string>>(paths))
-                ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
+                ("help", "Print help", cxxopts::value<std::string>(help), "")
+                ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename), "GFA")
+                ("p,path", "coma separated lists of nodes", cxxopts::value<std::vector<std::string>>(paths), "ex: 123-,34+,16+")
+                ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix), "path");
 
 
 
-        options.parse(argc, argv);
+        auto result = options.parse(argc, argv);
 
-        if (options.count("help"))
+        if (result.count("help"))
         {
             std::cout << options.help({""}) << std::endl;
             exit(0);
         }
 
-        if (options.count("g")!=1 or options.count("p")<1 or options.count("o")!=1) {
+        if (result.count("g")!=1 or result.count("p")<1 or result.count("o")!=1) {
             throw cxxopts::OptionException(" please specify input files and output prefix");
         }
 

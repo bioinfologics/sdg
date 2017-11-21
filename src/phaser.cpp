@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include <fstream>
-#include "deps/cxxopts.hpp"
+#include "cxxopts.hpp"
 #include "sglib/SequenceGraph.hpp"
 #include "sglib/HaplotypeScorer.hpp"
 
@@ -31,18 +31,18 @@ int main(int argc, char * argv[]) {
                 ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped));
 
 
-        options.parse(argc, argv);
+        auto result = options.parse(argc, argv);
 
-        if (options.count("help"))
+        if (result.count("help"))
         {
             std::cout << options.help({""}) << std::endl;
             exit(0);
         }
 
-        if (options.count("g")!=1 or options.count("o")!=1 or options.count("c") != 1) {
+        if (result.count("g")!=1 or result.count("o")!=1 or result.count("c") != 1) {
             throw cxxopts::OptionException(" please specify input files and output prefix");
         }
-        if (options.count("1")!=1 or options.count("2")!=1) {
+        if (result.count("1")!=1 or result.count("2")!=1) {
             throw cxxopts::OptionException(" please specify  R1 and R2 of 10x readfiles ");
 
         }
