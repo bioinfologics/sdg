@@ -6,7 +6,7 @@
 #include <fstream>
 #include "deps/cxxopts.hpp"
 #include "sglib/SequenceGraph.hpp"
-#include "haplotype_scorer.h"
+#include "sglib/HaplotypeScorer.hpp"
 
 
 int main(int argc, char * argv[]) {

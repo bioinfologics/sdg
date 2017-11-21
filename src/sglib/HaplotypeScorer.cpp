@@ -2,7 +2,7 @@
 // Created by Katie Barr (EI) on 14/11/2017.
 //
 
-#include "haplotype_scorer.h"
+#include "HaplotypeScorer.hpp"
 
 HaplotypeScorer::HaplotypeScorer(SequenceGraph & sg): sg(sg), mapper(PairedReadMapper(sg)){
 

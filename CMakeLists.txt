@@ -105,15 +105,15 @@ add_executable(gfa-pairscaff
         src/gfa-pairscaff.cc)
 
 add_executable(phaser
-        src/phaser.cpp
-        src/sglib/FileReader.h
-        src/sglib/KMerFactory.h
-        src/sglib/KMerIDX.h
-        src/sglib/SMR.h
-        src/sglib/SequenceGraph.hpp
-        src/sglib/SequenceGraph.cc
-        src/sglib/PairedReadMapper.hpp
-        src/sglib/PairedReadMapper.cc src/haplotype_scorer.h src/haplotype_scorer.cpp)
+               src/phaser.cpp
+               src/sglib/FileReader.h
+               src/sglib/KMerFactory.h
+               src/sglib/KMerIDX.h
+               src/sglib/SMR.h
+               src/sglib/SequenceGraph.hpp
+               src/sglib/SequenceGraph.cc
+               src/sglib/PairedReadMapper.hpp
+               src/sglib/PairedReadMapper.cc src/sglib/HaplotypeScorer.hpp src/sglib/HaplotypeScorer.cpp)
 
 add_executable(gfa-align
                src/gfa-align.cc)
