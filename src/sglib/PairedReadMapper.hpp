@@ -7,8 +7,9 @@
 
 
 #include "SequenceGraph.hpp"
-#include "KMerIDX.h"
-#include "FileReader.h"
+#include "sglib/factories/KMerIDXFactory.h"
+#include "sglib/readers/FileReader.h"
+#include "sglib/readers/SequenceGraphReader.h"
 #include "SMR.h"
 
 enum prmReadType {prmPE, prmLMP, prm10x};

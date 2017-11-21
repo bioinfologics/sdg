@@ -4,6 +4,20 @@ sudo: false
 
 matrix:
   include:
+  - os: linux
+    addons:
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        packages:
+        - g++-6
+        - doxygen
+        - doxygen-doc
+        - doxygen-latex
+        - doxygen-gui
+        - graphviz
+      env:
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
     - os: osx
       osx_image: xcode8
       env:
@@ -11,14 +25,6 @@ matrix:
     - os: osx
       osx_image: xcode8
     - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-6
-      env:
-        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
 before_install:
     - eval "${MATRIX_EVAL}"
 
@@ -26,3 +32,10 @@ script:
     mkdir build && cd build && cmake .. ${CMAKE_OPTIONS} && make
 
 install: true
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
+  local_dir: $TRAVIS_BUILD_DIR/build/docs/html
+  on:
+    branch: master

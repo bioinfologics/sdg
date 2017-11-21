@@ -14,7 +14,7 @@
 #include <cmath>
 #include <numeric>
 #include <unordered_map>
-#include "KMerIDX.h"
+#include "KMerIDXFactory.h"
 
 struct FilterSetParams {
     FilterSetParams(std::string output_prefix, uint8_t k, const std::unordered_set<KmerIDX> &uniq_kmers,

@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "sglib/KMerIDX.h"
+#include "sglib/factories/KMerIDXFactory.h"
 
 int main(int argc, char **argv){
 

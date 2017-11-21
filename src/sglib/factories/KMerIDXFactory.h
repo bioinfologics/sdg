@@ -8,7 +8,7 @@
 #include <vector>
 #include <limits>
 #include <tuple>
-#include "KMerFactory.h"
+#include "sglib/factories/KMerFactory.h"
 struct KMerIDXFactoryParams {
     uint8_t k;
 };

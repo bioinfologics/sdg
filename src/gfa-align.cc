@@ -7,11 +7,11 @@
 
 #include <sys/stat.h>
 
-#include <sglib/KMerIDX.h>
-#include <sglib/FileReader.h>
+#include <sglib/factories/KMerIDXFactory.h>
+#include <sglib/readers/FileReader.h>
 #include <sglib/SMR.h>
 #include "cxxopts.hpp"
-#include "sglib/ContigBlocks.h"
+#include "sglib/factories/ContigBlockFactory.h"
 #include "sglib/SequenceGraph.hpp"
 
 bool check_or_create_directory(std::string &output_prefix) {

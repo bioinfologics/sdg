@@ -8,6 +8,7 @@
 #include <cstring>
 #include <fstream>
 #include <fcntl.h>
+#include "Common.h"
 #include "kseq.hpp"
 
 struct FastxReaderParams {
@@ -17,13 +18,6 @@ struct FastxReaderParams {
 struct FastaRecord{
     int32_t id;
     std::string name,seq;
-};
-
-struct ReaderStats {
-    uint64_t totalRecords = 0;
-    uint64_t filteredRecords = 0;
-    uint64_t totalLength = 0;
-    uint64_t filteredLength = 0;
 };
 
 template<typename FileRecord>
