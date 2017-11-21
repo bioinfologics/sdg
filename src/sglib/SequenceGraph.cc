@@ -128,6 +128,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     if (line!="H\tVN:Z:1.0") std::cout<<"WARNING, first line of gfa doesn't correspond to GFA1"<<std::endl;
 
     std::ifstream fastaf(fasta_filename);
+    std::cout << "fasta filesname: " << fasta_filename << std::endl;
     if (!fastaf) throw std::invalid_argument("Can't read fasta file");
 
 
@@ -284,6 +285,7 @@ std::string SequenceGraphPath::get_fasta_header() {
 std::string SequenceGraphPath::get_sequence() {
     std::string s="";
     sgNodeID_t pnode=0;
+    // just iterate over every node in path - contig names are converted to ids at construction
     for (auto &n:nodes) {
         std::string nseq;
         if (n>0){

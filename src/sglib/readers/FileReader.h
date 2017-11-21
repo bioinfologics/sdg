@@ -133,6 +133,7 @@ public:
 
     ReaderStats getSummaryStatistics() {
         stats.totalRecords=numRecords;
+        std::cout << "Num records" << numRecords << "Total length" << stats.totalLength << " filtered records: " << stats.filteredRecords << "filtered length" << stats.filteredLength << std::endl;
         return stats;
     }
 

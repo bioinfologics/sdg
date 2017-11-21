@@ -1,13 +1,14 @@
 #include <iostream>
 #include <fstream>
 #include <sglib/PairedReadMapper.hpp>
-#include "cxxopts.hpp"
+#include <sglib/Scaffolder.hpp>
 #include "sglib/SequenceGraph.hpp"
+#include "cxxopts.hpp"
 
 
 int main(int argc, char * argv[]) {
     std::string gfa_filename,output_prefix;
-    std::vector<std::string> reads1,reads2;
+    std::vector<std::string> reads1,reads2, dump_mapped, load_mapped;
     bool stats_only=0;
 
     try
@@ -17,26 +18,32 @@ int main(int argc, char * argv[]) {
         options.add_options()
                 ("help", "Print help")
                 ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename))
+                ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
+        options.add_options("Paired reads options")
                 ("1,read1", "input reads, left", cxxopts::value<std::vector<std::string>>(reads1))
                 ("2,read2", "input reads, right", cxxopts::value<std::vector<std::string>>(reads2))
-                ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
-
+                ("d,dump_to", "dump mapped reads to file", cxxopts::value<std::vector<std::string>>(dump_mapped))
+                ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped));
 
 
         options.parse(argc, argv);
 
         if (options.count("help"))
         {
-            std::cout << options.help({""}) << std::endl;
+            std::cout << options.help({"","Paired reads options"}) << std::endl;
             exit(0);
         }
 
-        if (options.count("g")!=1 or options.count("1")<1 or options.count("o")!=1) {
+        if (options.count("g")!=1 or (options.count("1")<1 and options.count("l")<1) or options.count("o")!=1) {
             throw cxxopts::OptionException(" please specify input files and output prefix");
         }
 
         if ( options.count("1")!=options.count("2")){
             throw cxxopts::OptionException(" please specify read1 and read2 files in pairs");
+        }
+
+        if ( options.count("d")>0 and options.count("d")!=options.count("2")){
+            throw cxxopts::OptionException(" please specify dump files for all libs, or for none");
         }
 
 
@@ -70,8 +77,27 @@ int main(int argc, char * argv[]) {
 
     //Now try read mapping (as of now, just the first library)
 
-    PairedReadMapper mapper(sg);
-    mapper.map_reads(reads1[0],reads2[0],prmPE);
+    std::vector<PairedReadMapper> mappers;
+    for(auto loadfile:load_mapped){
+        mappers.emplace_back(sg);
+        mappers.back().load_from_disk(loadfile);
+        mappers.back().print_stats();
+    }
+    for(int lib=0;lib<reads1.size();lib++) {
+        mappers.emplace_back(sg);
+        mappers.back().map_reads(reads1[lib], reads2[lib], prmPE);
+        mappers.back().print_stats();
+        if (dump_mapped.size() > 0) {
+            std::cout<<"dumping map to "<<dump_mapped[lib]<<std::endl;
+            mappers.back().save_to_disk(dump_mapped[lib]);
+        }
+    }
+    //simple scaffolder:
+
+    Scaffolder scaff(sg,mappers);
+    scaff.find_canonical_repeats();
+
+
 
 
 
