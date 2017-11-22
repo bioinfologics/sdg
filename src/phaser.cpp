@@ -92,20 +92,20 @@ int main(int argc, char * argv[]) {
     std::cout << "Found " << components.size() <<" connected components " << std::endl;
     for (auto component:components){
         for (auto n:component){
-            std::cout << sg.oldnames[n] << " ";
+            std::cout << sg.oldnames[n] << std::endl; //" ";
         }
         std::cout << std::endl;
         // should
         auto bubbles = sg.find_bubbles(component);
 
     }
-    hs.load_haplotypes(bubble_contigs_filename, 2);
+    /*hs.load_haplotypes(bubble_contigs_filename, 2);
     hs.count_barcode_votes(reads1, reads2);
     hs.decide_barcode_haplotype_support();
     // now have mappings and barcode support
     if (hs.barcode_haplotype_mappings.size() > 0){
         hs.score_haplotypes();
     }
-    sg.write_to_gfa(output_prefix+".gfa");
+    sg.write_to_gfa(output_prefix+".gfa");*/
     return 0;
 }

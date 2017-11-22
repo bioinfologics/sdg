@@ -82,45 +82,108 @@ std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sg
     std::vector<sgNodeID_t > checked;
     // loop over all links in component, if 2 (or x) nodes have same source and dest, they are bubbles
     for (auto n: component){
+        std::cout << "Checking " << oldnames[n] << std::endl;
+        std::vector<sgNodeID_t > bubble;
         // if we haven't checked this node
         if (std::find(checked.begin(), checked.end(), n) == checked.end()){
             auto links_n = links[n];
+            std::cout << oldnames[n] << " has " << links_n.size() << " links" << std::endl;
             // if l has exactly 2 links, one source and one dest, it may be a bubble
             if (links_n.size() == 2) {
-                sgNodeID_t source_n = 0;
-                sgNodeID_t dest_n = 0;
+                std::vector<sgNodeID_t> linked_to;
+                std::vector<sgNodeID_t> linked_2nd_degree;
                 for (auto l:links_n){
-                    if (l.dest == n){
-                        source_n = l.source;
-                        checked.push_back(source_n);
-                    } else if (l.source == n) {
-                        dest_n = l.dest;
-                        checked.push_back(dest_n);
+                    std::cout << "Link source: " << l.source << " dest " << l.dest <<std::endl;
+                    if (l.dest == n or l.dest == -n){
+                        auto s = l.source > 0 ? l.source:-l.source;
+                        linked_to.push_back(s);
+                        checked.push_back(s);
+                        for (auto l_2:links[s]){
+                            auto s = l_2.source > 0 ? l_2.source:-l_2.source;
+                            linked_2nd_degree.push_back(s);
+                            auto d = l_2.dest > 0 ? l_2.dest:-l_2.dest;
+                            linked_2nd_degree.push_back(d);
+                        }
+                    } else if (l.source == n or l.source == -n) {
+                        auto s = l.dest > 0 ? l.dest:-l.dest;
+                        linked_to.push_back(s);
+                        checked.push_back(s);
+                        for (auto l_2:links[s]){
+                            auto s = l_2.source > 0 ? l_2.source:-l_2.source;
+                            linked_2nd_degree.push_back(s);
+                            auto d = l_2.dest > 0 ? l_2.dest:-l_2.dest;
+                            linked_2nd_degree.push_back(d);
+                        }
                     }
 
                 }
-                if (source_n != 0 && dest_n != 0) {
-                    std::vector<sgNodeID_t > dests;
-                    std::vector<sgNodeID_t > sources;
-                    // if n is a bubble, other bubble contigs will share source and dest
-                    auto links_source = links[source_n];
-                    auto links_dest = links[dest_n];
-                    for (auto s:links_source){
-                        dests.push_back(s.dest);
-                        checked.push_back(s.dest);
-                    }
-                    for (auto d:links_dest){
-                        sources.push_back(d.source);
-                        checked.push_back(d.source);
-                    }
-                    // if dests and sources are the same, they are list of bubble contigs
-                    if (dests == sources){
-                        std::cout << "found bubble" << std::endl;
-                        bubbles.push_back(sources);
-                    }
+                std::cout << "linked to:";
+                for (auto j: linked_to){
+                    std::cout << j << " ";
                 }
+                std::cout << "linked 2nd:";
+                for (auto j: linked_2nd_degree){
+                    std::cout << j << " ";
+                }
+                std::cout << std::endl;
+                    std::map<sgNodeID_t, int > joined_2nd_degree;
+                    // if n is a bubble, other bubble contigs will share source and dest
+                    // nope... but each bubble contig should occur twice...
+                auto links_all = links[linked_to[0]];
+                     links_all.insert(links[linked_to[0]].begin(), links[linked_to[1]].begin(), links[linked_to[1]].end());
+                    for (auto s:links_all){
+                        for (auto s2: links[s.source]) {
+                            auto joined = s2.source == n ? s2.dest : s2.source;
+                            auto j = joined > 0 ? joined : -joined;
+                            joined_2nd_degree[j] += 1;
+                            checked.push_back(j);
+                        }
+                        for (auto s2: links[s.dest]) {
+                            auto joined = s2.source == n ? s2.dest : s2.source;
+                            auto j = joined > 0 ? joined : -joined;
+                            joined_2nd_degree[j] += 1;
+                            checked.push_back(j);
+                        }
+                    }
+
+                std::cout << "founr " << joined_2nd_degree.size() << " 2nd degree links " << std::endl;
+                    // if an element is 2nd degree joined to n twice, and linked to the same nodes as n, its in a bubble
+                    for (auto j:joined_2nd_degree){
+                        std::cout << "node joined to: " << j.first << " number of joins " << j.second << std::endl;
+                        if (j.second == 2){
+
+                            auto links_j = links[j.first];
+                            std::vector<sgNodeID_t > joined_j;
+                            for (auto l_j:links_j){
+                                std::cout << "j" << j.first << " joined to "<< l_j.source << " and " << l_j.dest << std::endl;
+                                if (l_j.source == j.first or l_j.source == -j.first){
+                                    auto l_j_abs = l_j.dest > 0? l_j.dest: -l_j.dest;
+                                    joined_j.push_back(l_j_abs);
+                                } else if (l_j.dest == j.first or l_j.dest == -j.first){
+                                    auto l_j_abs = l_j.source > 0? l_j.source: -l_j.source;
+
+                                    joined_j.push_back(l_j_abs);
+
+                                }
+                            }
+                            for (auto i:joined_j){
+                                std::cout << i <<" ";
+                            }
+                            std::cout << std::endl;
+
+                            if (joined_j.size() > 0 && std::is_permutation(linked_to.begin(), linked_to.end(), joined_j.begin()) ){
+                                bubble.push_back(j.first);
+                            }
+                        }
+
+                    }
+
+
             }
 
+        }
+        if (bubble.size() != 0){
+            bubbles.push_back(bubble);
         }
     }
     for (auto bubble:bubbles){

@@ -8,6 +8,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <map>
 #include <unordered_map>
 #include "sglib/readers/FileReader.h"
 
