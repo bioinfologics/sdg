@@ -15,6 +15,11 @@ IF (MY_COMPILER_OPTION STREQUAL "Intel")
     ENDIF()
 ENDIF ()
 
+if (APPLE)
+       set(CMAKE_MACOSX_RPATH ON)
+endif (APPLE)
+
+
 project (sg)
 
 ## Compiler flags
@@ -49,33 +54,79 @@ if (BZIP2_FOUND)
     include_directories(${BZIP2_INCLUDE_DIRS})
 endif()
 
+# first we can indicate the documentation build as an option and set it to ON by default
+option(BUILD_DOC "Build documentation" ON)
+
+# check if Doxygen is installed
+find_package(Doxygen)
+if (DOXYGEN_FOUND)
+    # set input and output files
+    set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
+    set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+
+    # request to configure the file
+    configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+    message("Doxygen build started")
+
+    # note the option ALL which allows to build the docs together with the application
+    add_custom_target(doc_doxygen ALL
+                      COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                      COMMENT "Generating API documentation with Doxygen"
+                      VERBATIM)
+else (DOXYGEN_FOUND)
+    message("Doxygen need to be installed to generate the doxygen documentation")
+endif (DOXYGEN_FOUND)
+
+
 ## Include directories
 include_directories("src/")
+include_directories("deps/cxxopts/include")
+include_directories("deps/kseqcpp/")
 
 ## Set sources variables
 
+## Libraries
+add_library(sequence_graph SHARED
+            src/sglib/SequenceGraph.cc
+            src/sglib/PairedReadMapper.cc
+            src/sglib/Scaffolder.cc)
+target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 ## add executables and respective sources
 add_executable(gfa-qc
-        src/gfa-qc.cc
-        src/sglib/SequenceGraph.cc src/sglib/SequenceGraph.hpp)
+        src/gfa-qc.cc)
 
 ## add executables and respective sources
 add_executable(gfa-dumppath
-        src/gfa-dumppath.cc
-        src/sglib/SequenceGraph.cc src/sglib/SequenceGraph.hpp)
+        src/gfa-dumppath.cc)
 
 ## add executables and respective sources
 add_executable(gfa-pairscaff
-        src/gfa-pairscaff.cc
-        src/sglib/FileReader.h
-        src/sglib/KMerFactory.h
-        src/sglib/KMerIDX.h
-        src/sglib/SMR.h
-        src/sglib/SequenceGraph.hpp
-        src/sglib/SequenceGraph.cc
-        src/sglib/PairedReadMapper.hpp
-        src/sglib/PairedReadMapper.cc
-        src/sglib/Scaffolder.cc src/sglib/Scaffolder.hpp)
+        src/gfa-pairscaff.cc)
 
+add_executable(phaser
+               src/phaser.cpp
+               src/sglib/readers/FileReader.h
+               src/sglib/factories/KMerFactory.h
+               src/sglib/factories/KMerIDXFactory.h
+               src/sglib/SMR.h
+               src/sglib/SequenceGraph.hpp
+               src/sglib/SequenceGraph.cc
+               src/sglib/PairedReadMapper.hpp
+               src/sglib/PairedReadMapper.cc src/sglib/HaplotypeScorer.hpp src/sglib/HaplotypeScorer.cpp)
 
-target_link_libraries (gfa-pairscaff ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+add_executable(gfa-align
+               src/gfa-align.cc)
+
+add_executable(kc_comp
+               src/comp_kc.cc)
+
+add_executable(seq-sorter
+               src/seq-sorter.cpp)
+
+target_link_libraries(gfa-dumppath sequence_graph)
+target_link_libraries(gfa-qc sequence_graph)
+target_link_libraries(seq-sorter sequence_graph)
+target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+target_link_libraries (phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
