@@ -77,6 +77,64 @@ std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n){
     return r;
 }
 
+std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sgNodeID_t> component){
+    std::vector<std::vector<sgNodeID_t >> bubbles;
+    std::vector<sgNodeID_t > checked;
+    // loop over all links in component, if 2 (or x) nodes have same source and dest, they are bubbles
+    for (auto n: component){
+        // if we haven't checked this node
+        if (std::find(checked.begin(), checked.end(), n) == checked.end()){
+            auto links_n = links[n];
+            // if l has exactly 2 links, one source and one dest, it may be a bubble
+            if (links_n.size() == 2) {
+                sgNodeID_t source_n = 0;
+                sgNodeID_t dest_n = 0;
+                for (auto l:links_n){
+                    if (l.dest == n){
+                        source_n = l.source;
+                        checked.push_back(source_n);
+                    } else if (l.source == n) {
+                        dest_n = l.dest;
+                        checked.push_back(dest_n);
+                    }
+
+                }
+                if (source_n != 0 && dest_n != 0) {
+                    std::vector<sgNodeID_t > dests;
+                    std::vector<sgNodeID_t > sources;
+                    // if n is a bubble, other bubble contigs will share source and dest
+                    auto links_source = links[source_n];
+                    auto links_dest = links[dest_n];
+                    for (auto s:links_source){
+                        dests.push_back(s.dest);
+                        checked.push_back(s.dest);
+                    }
+                    for (auto d:links_dest){
+                        sources.push_back(d.source);
+                        checked.push_back(d.source);
+                    }
+                    // if dests and sources are the same, they are list of bubble contigs
+                    if (dests == sources){
+                        std::cout << "found bubble" << std::endl;
+                        bubbles.push_back(sources);
+                    }
+                }
+            }
+
+        }
+    }
+    for (auto bubble:bubbles){
+        for (auto n: bubble){
+            // id is index i other lists
+            std::cout << oldnames[n] << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "Found " << bubbles.size() << " bubbles in component of " << component.size() << " nodes " <<std::endl;
+    return bubbles;
+}
+
+
 std::vector<std::vector<sgNodeID_t>> SequenceGraph::connected_components(int max_nr_totalinks, int max_nr_dirlinks,
                                                                          int min_rsize) {
     std::vector<bool> used(nodes.size());

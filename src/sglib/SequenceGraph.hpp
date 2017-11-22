@@ -6,6 +6,7 @@
 #define SG_SEQUENCEGRAPH_HPP
 
 #include <vector>
+#include <algorithm>
 #include <string>
 #include <unordered_map>
 #include "sglib/readers/FileReader.h"
@@ -49,6 +50,8 @@ public:
      */
     std::vector<std::vector<sgNodeID_t>> connected_components (int max_nr_totalinks=0, int max_nr_dirlinks=0, int min_rsize=0); //TODO: --> enable extra breaks in repeats
 
+    // find bubbles in component of graph
+    std::vector<std::vector<sgNodeID_t >> find_bubbles(std::vector<sgNodeID_t>);
 
     // remove_node
     // remove_link
