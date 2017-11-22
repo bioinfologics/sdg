@@ -114,10 +114,11 @@ std::vector<std::vector<sgNodeID_t>> SequenceGraph::connected_components(int max
 }
 
 void SequenceGraph::load_from_gfa(std::string filename) {
-    std::string fasta_filename,line;
+    std::string line;
+    this->filename=filename;
     //check the filename ends in .gfa
     if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
-        fasta_filename=filename.substr(0,filename.size()-4)+".fasta";
+        this->fasta_filename=filename.substr(0,filename.size()-4)+".fasta";
     }
     else throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '"+filename.substr(filename.size()-4,4)+"'");
 
@@ -127,6 +128,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     if (line!="H\tVN:Z:1.0") std::cout<<"WARNING, first line of gfa doesn't correspond to GFA1"<<std::endl;
 
     std::ifstream fastaf(fasta_filename);
+    std::cout << "fasta filesname: " << fasta_filename << std::endl;
     if (!fastaf) throw std::invalid_argument("Can't read fasta file");
 
 
@@ -172,6 +174,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     sgNodeID_t src_id,dest_id;
     int32_t dist;
     uint64_t lcount=0;
+    uint64_t dist_gt0(0);
     Link l(0,0,0);
     while(std::getline(gfaf, line) and !gfaf.eof()) {
         std::istringstream iss(line);
@@ -201,10 +204,16 @@ void SequenceGraph::load_from_gfa(std::string filename) {
             if (gfa_cigar.size()>1 and gfa_cigar[gfa_cigar.size()-1]=='M') {
                 //TODO: better checks for M
                 dist=-atoi(gfa_cigar.c_str());
+                if (dist!=0) {
+                    dist_gt0++;
+                }
                 //std::cout<<l.dist<<std::endl;
             }
             add_link(src_id,dest_id,dist);
             ++lcount;
+        }
+        if (dist_gt0 > lcount*0.5f) {
+            std::cout << "Warning: The loaded graph contains " << dist_gt0 << " non-overlapping links out of " << lcount << std::endl;
         }
     }
     std::cout<<nodes.size()-1<<" nodes after connecting with "<<lcount<<" links"<<std::endl;
@@ -283,6 +292,7 @@ std::string SequenceGraphPath::get_fasta_header() {
 std::string SequenceGraphPath::get_sequence() {
     std::string s="";
     sgNodeID_t pnode=0;
+    // just iterate over every node in path - contig names are converted to ids at construction
     for (auto &n:nodes) {
         std::string nseq;
         if (n>0){

@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include "sglib/readers/FileReader.h"
 
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
 
@@ -75,7 +76,7 @@ public:
     std::vector<Node> nodes;
     std::vector<std::vector<Link>> links;
     std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids;
-
+    std::string filename,fasta_filename;
 };
 
 
@@ -89,8 +90,5 @@ public:
 private:
     SequenceGraph& sg;
 };
-
-
-
 
 #endif //SG_SEQUENCEGRAPH_HPP

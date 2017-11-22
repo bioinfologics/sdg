@@ -5,10 +5,12 @@
 #ifndef SG_PAIREDREADMAPPER_HPP
 #define SG_PAIREDREADMAPPER_HPP
 
+#include <map>
 
 #include "SequenceGraph.hpp"
-#include "KMerIDX.h"
-#include "FileReader.h"
+#include "sglib/factories/KMerIDXFactory.h"
+#include "sglib/readers/FileReader.h"
+#include "sglib/readers/SequenceGraphReader.h"
 #include "SMR.h"
 
 enum prmReadType {prmPE, prmLMP, prm10x};
@@ -40,7 +42,7 @@ public:
         reads_in_node.resize(sg.nodes.size());
     };
     void map_reads(std::string filename1, std::string filename2, prmReadType read_type=prmPE);
-    uint64_t process_reads_from_file(uint8_t k, uint16_t min_matches, std::vector<KmerIDX> &unique_kmers, std::string filename, uint64_t offset);
+    uint64_t process_reads_from_file(uint8_t, uint16_t, std::vector<KmerIDX> &, std::string , uint64_t, bool );
     void save_to_disk(std::string filename);
     void load_from_disk(std::string filename);
     void print_stats();
@@ -48,6 +50,10 @@ public:
     SequenceGraph & sg;
     std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;
+    std::vector<std::string> read_to_tag;
+
+    // hack.... if we use this, not sure if the vector above is needed
+    std::map<sgNodeID_t , std::string> read_ids_to_tags;
 };
 
 

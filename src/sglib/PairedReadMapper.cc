@@ -4,6 +4,8 @@
 
 #include <iostream>
 #include <iomanip>
+#include <cassert>
+#include <atomic>
 #include "PairedReadMapper.hpp"
 
 
@@ -11,59 +13,13 @@
 #define GB 1024*1024*1024
 
 
-/*
- * Pseudo-reader that gets its sequences from the nodes of the graph.
- */
-
-struct GraphNodeReaderParams {
-    uint32_t min_length;
-    SequenceGraph * sgp;
-};
-
-template<typename FileRecord>
-class GraphNodeReader {
-public:
-    explicit GraphNodeReader(GraphNodeReaderParams params, const std::string &filepath) : params(params), numRecords(1) {
-        sg=params.sgp;
-        numRecords=1;
-        min_length=params.min_length;//TODO: use this
-    }
-
-    bool next_record(FileRecord& rec) {
-        uint64_t n=0;
-#pragma omp critical(next_node)
-        if (numRecords<sg->nodes.size()) {
-            n=numRecords;
-            ++numRecords;
-        }
-        if (n!=0){
-            rec.id = n;
-            rec.seq = sg->nodes[n].sequence;
-            rec.name = std::to_string(n);
-
-            stats.totalLength += rec.seq.size();
-            return true;
-        } else return false;
-    }
-    ReaderStats getSummaryStatistics() {
-        stats.totalRecords = numRecords-1;
-        return stats;
-    }
-private:
-    SequenceGraph * sg;
-    GraphNodeReaderParams params;
-    uint32_t numRecords;
-    ReaderStats stats;
-    uint32_t min_length;
-};
-
-uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::vector<KmerIDX> &unique_kmers, std::string filename, uint64_t offset ) {
+uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::vector<KmerIDX> &unique_kmers, std::string filename, uint64_t offset , bool is_tagged=false) {
     std::cout<<"mapping reads!!!"<<std::endl;
     /*
      * Read mapping in parallel,
      */
     FastqReader<FastqRecord> fastqReader({0},filename);
-    std::atomic_uint64_t mapped_count(0),total_count(0);
+    std::atomic<uint64_t> mapped_count(0),total_count(0);
 #pragma omp parallel shared(fastqReader,reads_in_node)
     {
         FastqRecord read;
@@ -110,6 +66,12 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
                 mapping.read_id=(read.id)*2+offset;
 #pragma omp critical(add_mapped)
                 reads_in_node[mapping.node].emplace_back(mapping);
+                if (is_tagged){
+                    //std::cout << "Read name: " << read.name << std::endl;
+                    std::string barcode = read.name.substr(read.name.size() - 16);
+                    #pragma omp critical(add_mapped_tagged)
+                    read_ids_to_tags[mapping.read_id] = barcode;
+                }
                 ++mapped_count;
             }
             auto tc=++total_count;
@@ -119,7 +81,9 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
         }
 
     }
+    // somehow for my test data with 700 reads, totak count is 834 for r2...
     std::cout<<"Reads mapped: "<<mapped_count<<" / "<<total_count<<std::endl;
+    fastqReader.getSummaryStatistics();
     return total_count;
 }
 
@@ -130,10 +94,8 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
  */
 void PairedReadMapper::map_reads(std::string filename1, std::string filename2, prmReadType read_type) {
     std::cout<<"Mapping "<<prmReadTypeDesc[read_type]<<" reads from "<<filename1<<" and "<<filename2<<std::endl;
-    if (read_type==prmPE) {
 
-        uint64_t maxmem = 4;
-        maxmem *= 1024 * 1024 * 1024;
+        uint64_t maxmem(mem_limit * GB);
         std::cout << "maxmem=" << maxmem << std::endl;
         /*
          * Reads a fasta file and generates the set of kmers and which entry number on the fasta they belong to
@@ -146,11 +108,10 @@ void PairedReadMapper::map_reads(std::string filename1, std::string filename2, p
         const int min_matches = 1;
         const std::string output_prefix("smr_files");
         SMR<KmerIDX,
-                kmerIDXFactory<FastaRecord>,
-                GraphNodeReader<FastaRecord>,
-                FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1, &sg}, {k}, maxmem, 0,
-                                                                                      max_coverage,
-                                                                                      output_prefix);
+            kmerIDXFactory<FastaRecord>,
+            GraphNodeReader<FastaRecord>,
+            FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1,sg}, {k}, maxmem, 0, max_coverage,
+                                                                          output_prefix);
 
         std::vector<KmerIDX> unique_kmers;
 
@@ -163,17 +124,38 @@ void PairedReadMapper::map_reads(std::string filename1, std::string filename2, p
         //std::cout << "Number of " << int(k) << "-kmers that appear more than 0 < kmer_coverage <= " << max_coverage
         //          << " in assembly " << uniqKmer_statistics[1] << std::endl;
         std::cout << "Number of contigs from the assembly " << uniqKmer_statistics[2] << std::endl;
-
+    if (read_type==prmPE) {
         auto r1c = process_reads_from_file(k, min_matches, unique_kmers, filename1, 1);
         auto r2c = process_reads_from_file(k, min_matches, unique_kmers, filename2, 2);
         //now populate the read_to_node array
-        __glibcxx_assert(r1c == r2c);
+        assert(r1c == r2c);
         read_to_node.resize(r1c * 2 + 1, 0);
         for (auto &rin:reads_in_node)
             for (auto &mr:rin)
                 read_to_node[mr.read_id] = mr.node;
 
-    }
+    } else if (read_type==prm10x){ // can no longer access read name here, but dont' know how big to make it otherwise
+        auto r1c = process_reads_from_file(k, min_matches, unique_kmers, filename1, 1, true);
+        auto r2c = process_reads_from_file(k, min_matches, unique_kmers, filename2, 2, true);
+        //now populate the read_to_node array
+        assert(r1c == r2c);
+        read_to_node.resize(r1c * 2 + 1, 0);
+        read_to_tag.resize(r1c * 2 + 1);
+        for (auto &rin:reads_in_node)
+            for (auto &mr:rin) {
+                // this is fine,
+                read_to_node[mr.read_id] = mr.node;
+                //std::cout << "Node: " << mr.node <<std::endl;
+                //std::cout << "read id: " << mr.read_id << std::endl;
+                //std::cout << "Tag: " << read_ids_to_tags[mr.read_id]<< std::endl;
+                //std::cout << "gfdgfd" << read_to_tag[mr.read_id]; // malloc error too
+                //std::cout << "read_to_tag size: " << read_to_tag.size() << "read_to_node size: " << read_to_node.size() << std::endl;
+                //read_to_tag[mr.read_id] = read_ids_to_tags[mr.read_id];
+                //std::cout << "read to tag " << read_to_tag[mr.read_id];
+
+            }
+
+        }
 }
 
 void PairedReadMapper::print_stats() {

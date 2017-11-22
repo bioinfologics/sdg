@@ -5,9 +5,12 @@
 #ifndef SEQSORTER_FILEREADER_H
 #define SEQSORTER_FILEREADER_H
 
+#include <cstring>
 #include <fstream>
+#include <iostream>
 #include <fcntl.h>
-#include "../deps/kseqcpp/kseq.hpp"
+#include "Common.h"
+#include "kseq.hpp"
 
 struct FastxReaderParams {
     uint32_t min_length;
@@ -16,13 +19,6 @@ struct FastxReaderParams {
 struct FastaRecord{
     int32_t id;
     std::string name,seq;
-};
-
-struct ReaderStats {
-    uint64_t totalRecords = 0;
-    uint64_t filteredRecords = 0;
-    uint64_t totalLength = 0;
-    uint64_t filteredLength = 0;
 };
 
 template<typename FileRecord>
@@ -39,6 +35,10 @@ public:
     explicit FastaReader(FastxReaderParams params, const std::string &filepath) : params(params), numRecords(0) {
         std::cout << "Opening: " << filepath << "\n";
         gz_file = gzopen(filepath.c_str(), "r");
+        if (gz_file == Z_NULL) {
+            std::cout << "Error opening FASTA " << filepath << ": " << std::strerror(errno) << std::endl;
+            exit(1);
+        }
         ks = new kstream<gzFile, FunctorZlib>(gz_file, gzr);
     }
 
@@ -134,6 +134,7 @@ public:
 
     ReaderStats getSummaryStatistics() {
         stats.totalRecords=numRecords;
+        std::cout << "Num records" << numRecords << "Total length" << stats.totalLength << " filtered records: " << stats.filteredRecords << "filtered length" << stats.filteredLength << std::endl;
         return stats;
     }
 

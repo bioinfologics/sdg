@@ -2,8 +2,8 @@
 #include <fstream>
 #include <sglib/PairedReadMapper.hpp>
 #include <sglib/Scaffolder.hpp>
-#include "deps/cxxopts.hpp"
 #include "sglib/SequenceGraph.hpp"
+#include "cxxopts.hpp"
 
 
 int main(int argc, char * argv[]) {
@@ -26,23 +26,23 @@ int main(int argc, char * argv[]) {
                 ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped));
 
 
-        options.parse(argc, argv);
+        auto result(options.parse(argc, argv));
 
-        if (options.count("help"))
+        if (result.count("help"))
         {
             std::cout << options.help({"","Paired reads options"}) << std::endl;
             exit(0);
         }
 
-        if (options.count("g")!=1 or (options.count("1")<1 and options.count("l")<1) or options.count("o")!=1) {
+        if (result.count("g")!=1 or (result.count("1")<1 and result.count("l")<1) or result.count("o")!=1) {
             throw cxxopts::OptionException(" please specify input files and output prefix");
         }
 
-        if ( options.count("1")!=options.count("2")){
+        if ( result.count("1")!=result.count("2")){
             throw cxxopts::OptionException(" please specify read1 and read2 files in pairs");
         }
 
-        if ( options.count("d")>0 and options.count("d")!=options.count("2")){
+        if ( result.count("d")>0 and result.count("d")!=result.count("2")){
             throw cxxopts::OptionException(" please specify dump files for all libs, or for none");
         }
 
