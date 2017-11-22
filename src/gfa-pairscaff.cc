@@ -95,6 +95,7 @@ int main(int argc, char * argv[]) {
     //simple scaffolder:
 
     Scaffolder scaff(sg,mappers);
+    //TODO: a lot of repeats are small repeats creating a big "loop", account for those!
     scaff.find_canonical_repeats();
 
 
