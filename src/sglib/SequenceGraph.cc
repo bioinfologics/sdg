@@ -98,7 +98,6 @@ std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sg
                     if (l.dest == n or l.dest == -n){
                         auto s = l.source > 0 ? l.source:-l.source;
                         linked_to.push_back(s);
-                        //checked.push_back(s);
                         for (auto l_2:links[s]){
                             std::cout << "s: " << s << " source: " << l_2.source << " dest: " << l_2.dest<<std::endl;
                             auto s2 = l_2.source > 0 ? l_2.source:-l_2.source;
@@ -114,14 +113,12 @@ std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sg
                     } else if (l.source == n or l.source == -n) {
                         auto s = l.dest > 0 ? l.dest:-l.dest;
                         linked_to.push_back(s);
-                        //checked.push_back(s);
                         for (auto l_2:links[s]){
                             std::cout << "s: " << s << " source: " << l_2.source << " dest: " << l_2.dest<<std::endl;
 
                             auto s2 = l_2.source > 0 ? l_2.source:-l_2.source;
                             if (s2 !=s && s2 !=n){
                                 linked_2nd_degree[s2] += 1;
-                                //checked.push_back(s2);
 
                             }
                             auto d = l_2.dest > 0 ? l_2.dest:-l_2.dest;
@@ -133,10 +130,7 @@ std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sg
                     }
 
                 }
-                std::cout << "linked to:";
-                for (auto j: linked_to){
-                    std::cout << j << " ";
-                }
+
                 std::cout << "linked 2nd:";
                 for (auto j: linked_2nd_degree){
                     std::cout << j.first << " ";

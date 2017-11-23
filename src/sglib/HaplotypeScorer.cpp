@@ -255,3 +255,44 @@ std::vector<int>  HaplotypeScorer::winner_for_barcode(std::string barcode){
     }
     return winners;
 }
+
+
+void HaplotypeScorer::find_possible_haplotypes(std::vector<std::vector<sgNodeID_t >> bubbles){
+    // algorithm: https://stackoverflow.com/questions/1867030/combinations-of-multiple-vectors-elements-without-repetition
+    size_t P = 1;
+    auto N =bubbles.size();
+    for(size_t i=0;i<N;++i) {
+        P *= bubbles[i].size();
+    }
+    std::vector<std::vector<sgNodeID_t >> haps;
+    std::cout << P << " combinations to generate from " << N << " bubbles " << std::endl;
+    for (size_t m=0; m < P; m++ ) {
+        // this should hold the index to take from each bubble
+        std::vector<size_t> indices(N);
+        std::vector<sgNodeID_t > bubble;
+        std::cout << " bubble indices for permutation " << m << std::endl;
+        size_t m_curr = m;
+        for (size_t i = 0; i < N; ++i) {
+            indices[i] = m_curr% bubbles[i].size();
+            bubble.push_back(bubbles[i][indices[i]]);
+            std::cout << indices[i] << " ";
+            m_curr /= bubbles[i].size();
+        }
+
+        std::cout << std::endl << " bubble: " ;
+        for (auto b:bubble){
+            std::cout << b<<" ";
+        }
+        std::cout << std::endl;
+        haps.push_back(bubble);
+    }
+    std::cout << haps.size() << " haplotypes  generated " << std::endl;
+    for (auto b:haps){
+        for (auto n:b){
+            std::cout << n<<" ";
+        }
+        std::cout << std::endl;
+    }
+
+
+}

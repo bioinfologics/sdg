@@ -20,7 +20,7 @@ class HaplotypeScorer{
 public:
      HaplotypeScorer(SequenceGraph &);
     // functions we will need:
-    void find_possible_haplotypes(int, std::string);
+    void find_possible_haplotypes(std::vector<std::vector<sgNodeID_t >>);
     void load_haplotypes(std::string, int);
 
     void count_barcode_votes(std::string, std::string);

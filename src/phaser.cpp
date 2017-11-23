@@ -86,8 +86,11 @@ int main(int argc, char * argv[]) {
  */
 
     HaplotypeScorer hs(sg);
+    std::vector<std::vector<sgNodeID_t >> bubbles = {{1, 2}, {3,4,5,6}, {7,8}, {9, 10}};
+
+    hs.find_possible_haplotypes(bubbles);
     //find and phase each component of gfa
-    auto components = sg.connected_components();
+    /*auto components = sg.connected_components();
     // this finds 2 components for test graph...
     std::cout << "Found " << components.size() <<" connected components " << std::endl;
     for (auto component:components){
@@ -98,7 +101,7 @@ int main(int argc, char * argv[]) {
         // should
         auto bubbles = sg.find_bubbles(component);
 
-    }
+    }*/
     /*hs.load_haplotypes(bubble_contigs_filename, 2);
     hs.count_barcode_votes(reads1, reads2);
     hs.decide_barcode_haplotype_support();
