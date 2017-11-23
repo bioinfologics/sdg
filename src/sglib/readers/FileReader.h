@@ -123,8 +123,10 @@ public:
             std::swap(rec.qual, seq.qual);
             std::swap(rec.name, seq.name);
             std::swap(rec.comment, seq.comment);
+            std::cout << "numRecords " << numRecords <<std::endl;
             rec.id = numRecords;
             numRecords++;
+
             stats.totalLength+=rec.seq.size();
         } while (rec.seq.size() < params.min_length && l >= 0);
         stats.filteredRecords++;

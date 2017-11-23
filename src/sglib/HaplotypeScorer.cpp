@@ -127,8 +127,8 @@ void  HaplotypeScorer::load_haplotypes(std::string haplotype_filename, int degre
  * find mappings for each node in the bubble contigs. for each barcode, sum up the number of mappings for each node that a read with that barcode maps to
  *
  */
-void HaplotypeScorer::count_barcode_votes(std::string r1_filename, std::string r2_filename, uint64_t max_mem){
-    mapper.map_reads(r1_filename, r2_filename, prm10x, max_mem);
+void HaplotypeScorer::count_barcode_votes(std::string r1_filename, std::string r2_filename, std::string fasta_filename, uint64_t max_mem){
+    mapper.map_reads(r1_filename, r2_filename, fasta_filename, prm10x, max_mem);
     std::cout << "Mapped " << mapper.read_to_node.size() << " reads to " <<  mapper.reads_in_node.size() << "nodes" << std::endl;
     std::cout << "NOw counting barcode votes... " << std::endl;
     int counter = 0;

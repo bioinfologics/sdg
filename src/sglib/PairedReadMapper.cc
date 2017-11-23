@@ -8,7 +8,6 @@
 #include "PairedReadMapper.hpp"
 
 
-=======
 #define mem_limit 4
 
 uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::vector<KmerIDX> &unique_kmers, std::string filename, uint64_t offset , bool is_tagged=false) {
@@ -47,7 +46,12 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
 #pragma omp critical(add_mapped_tagged)
                 {
                     //TODO: inefficient
+                    std::cout << "read_to_tag.size()" << read_to_tag.size() <<  std::endl;
+                    std::cout << "read id" << read.id<<  std::endl;
+
+                    std::cout <<  "mapping.read_id " << mapping.read_id<<  std::endl;
                     if (read_to_tag.size()<=mapping.read_id) read_to_tag.resize(mapping.read_id);
+                    std::cout << "read_to_tag.size()" << read_to_tag.size() <<  std::endl;
                     read_to_tag[mapping.read_id] = tag;
                 }
             }
@@ -82,6 +86,13 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
             }
             if (mapping.node != 0 and mapping.unique_matches >= min_matches) {
                 //TODO: set read id and add to map collection
+                std::cout << "read id: " << read.id << std::endl;
+                std::cout << "offset " << offset<< std::endl;
+                std::cout << "mapping.read_id" << mapping.read_id<< std::endl;
+                std::cout << (read.id)*2+offset << std::endl;
+                //mapping.read_id= 1; this works, but (read.id)*2+offset is 1 and that doesn't
+                //read.id = 1;
+                //std::cout << "read id: " << read.id << std::endl; - this doesn't work
                 mapping.read_id=(read.id)*2+offset;
 #pragma omp critical(add_mapped)
                 reads_in_node[mapping.node].emplace_back(mapping);
@@ -112,7 +123,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
  * @todo add distribution computing on the fly
  * @todo support other kind of indexes and variable k-mer size
  */
-void PairedReadMapper::map_reads(std::string filename1, std::string filename2, prmReadType read_type, uint64_t max_mem) {
+void PairedReadMapper::map_reads(std::string filename1, std::string filename2, std::string assembly_filename, prmReadType read_type, uint64_t max_mem) {
     std::cout << "Mapping " << prmReadTypeDesc[read_type] << " reads from " << filename1 << " and " << filename2 << std::endl;
 
     std::cout << "Using memory up to " << max_mem << std::endl;
@@ -136,7 +147,7 @@ void PairedReadMapper::map_reads(std::string filename1, std::string filename2, p
 
     // Get the unique_kmers from the file
     std::cout << "Indexing assembly... " << std::endl;
-    unique_kmers = kmerIDX_SMR.read_from_file(output_prefix);
+    unique_kmers = kmerIDX_SMR.read_from_file(assembly_filename);
 
     std::vector<uint64_t> uniqKmer_statistics(kmerIDX_SMR.summaryStatistics());
     std::cout << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << std::endl;

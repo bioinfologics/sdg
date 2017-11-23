@@ -23,7 +23,7 @@ public:
     void find_possible_haplotypes(std::vector<std::vector<sgNodeID_t >>);
     void load_haplotypes(std::string, int);
 
-    void count_barcode_votes(std::string, std::string, uint64_t max_mem);
+    void count_barcode_votes(std::string, std::string, std::string , uint64_t );
     int score_haplotypes();
     int score_haplotypes2();
 

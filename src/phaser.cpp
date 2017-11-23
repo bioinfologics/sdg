@@ -61,9 +61,14 @@ int main(int argc, char * argv[]) {
 
 
     std::cout<< "Welcome to phaser"<<std::endl<<std::endl;
+    if (gfa_filename.size()<=4 or gfa_filename.substr(gfa_filename.size()-4,4)!=".gfa") {
 
+        throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '" +
+                                    gfa_filename.substr(gfa_filename.size() - 4, 4) + "'");
+    }
     PhaseScaffolder ps = PhaseScaffolder(gfa_filename);
-    ps.load_mappings(reads1, reads2, max_mem_gb);
+    auto fasta_filename=gfa_filename.substr(0,gfa_filename.size()-4)+".fasta";
+    ps.load_mappings(reads1, reads2, fasta_filename, max_mem_gb);
     ps.phase_components();
 
 

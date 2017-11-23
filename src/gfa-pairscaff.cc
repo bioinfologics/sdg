@@ -60,6 +60,12 @@ int main(int argc, char * argv[]) {
 
     std::cout<< "Welcome to gfa-pairscaff"<<std::endl<<std::endl;
 
+    if (gfa_filename.size()<=4 or gfa_filename.substr(gfa_filename.size()-4,4)!=".gfa") {
+
+        throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '" +
+                                    gfa_filename.substr(gfa_filename.size() - 4, 4) + "'");
+    }
+    auto fasta_filename=gfa_filename.substr(0,gfa_filename.size()-4)+".fasta";
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
 
@@ -87,7 +93,7 @@ int main(int argc, char * argv[]) {
     }
     for(int lib=0;lib<reads1.size();lib++) {
         mappers.emplace_back(sg);
-        mappers.back().map_reads(reads1[lib], reads2[lib], prmPE, max_mem_gb*1024L*1024L*1024L);
+        mappers.back().map_reads(reads1[lib], reads2[lib], fasta_filename, prmPE, max_mem_gb*1024L*1024L*1024L);
         mappers.back().print_stats();
         if (dump_mapped.size() > 0) {
             std::cout<<"dumping map to "<<dump_mapped[lib]<<std::endl;

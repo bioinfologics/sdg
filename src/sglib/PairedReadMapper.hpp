@@ -45,7 +45,7 @@ public:
     PairedReadMapper(SequenceGraph &_sg) : sg(_sg){
         reads_in_node.resize(sg.nodes.size());
     };
-    void map_reads(std::string filename1, std::string filename2, prmReadType read_type, uint64_t max_mem);
+    void map_reads(std::string , std::string , std::string , prmReadType , uint64_t );
     uint64_t process_reads_from_file(uint8_t, uint16_t, std::vector<KmerIDX> &, std::string , uint64_t, bool );
     void save_to_disk(std::string filename);
     void load_from_disk(std::string filename);

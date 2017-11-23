@@ -108,7 +108,9 @@ add_library(sequence_graph SHARED
             src/sglib/PairedReadMapper.cc
             src/sglib/Scaffolder.cc
             src/sglib/filesystem/check_or_create_directory.cc
-            src/sglib/filesystem/check_or_create_directory.h)
+            src/sglib/filesystem/check_or_create_directory.h
+            src/sglib/PhaseScaffolder.cpp
+            src/sglib/PhaseScaffolder.h)
 
 target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
