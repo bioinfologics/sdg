@@ -49,6 +49,28 @@ template <class RecordType, class RecordFactory, class FileReader, typename File
 class SMR {
 public:
 
+    /***
+     * @brief
+     * @param reader_parameters
+     * The arguments to the FileReader, generally initialised using list initialization aka the {} initialization.
+     * @param factory_parameters
+     * The arguments to the FactoryParamStruct, generally initialised using list initialization aka the {} initialization.
+     * @param maxMem
+     * Maximum amount of memory available for the SMR in bytes, generally the units are multiplied on call.
+     * I.E 4*GB, where GB is defined as (1024*1024*1024) on this header.
+     * @param min
+     * This refers to the *minimum* filter for the number of times a RecordType element has to be seen to be on the output.
+     * @param max
+     * This refers to the *maximum* filter for the number of times a RecordType element has to be seen to be on the output.
+     * @param outdir
+     * In order to reuse the results of the SMR, an output directory can be provided to store the final.kc file,
+     * generally this directory is associated with the base working directory. The SMR will then compound the outdir with
+     * another directory level "smr_files" and the "read_file" basename of the string passed to the read_from_file function call.
+     * @param Otmp
+     * To be able to execute multiple SMRs at the same time for different inputs, the Otmp parameter stores the path of the
+     * directory to be used for the batch files, each input file will generate a new directory from the basename of the argument
+     * passed to the read_from_file function call (read_file). The behaviour is equivalent to that of outdir.
+     */
     SMR(ReaderParamStruct reader_parameters, FactoryParamStruct factory_parameters, uint64_t maxMem, unsigned int min = 0, unsigned int max = std::numeric_limits<unsigned int>::max(),
         const std::string outdir = "./", const std::string &Otmp = "./") : reader_parameters(reader_parameters),
                                                                         factory_parameters(factory_parameters),
@@ -69,6 +91,7 @@ public:
     /**
      * @brief
      * Transforms the input file into a filtered RecordType vector using maxMem and merging subsets once every mergeCount times.
+     * Removes the tmp directory used for the external memory reduction.
      * @param read_file
      * Path to the file to be read
      * @return
@@ -84,7 +107,7 @@ public:
         std::ifstream final_file(finalFilePath+"final.kc");
         if (final_file.is_open()){
             std::cout << "Using precomputed sum file at " << outdir << "final.kc" << std::endl;
-            return readFinalkc(finalFilePath+"final.kc");
+            return readFinalkc(outdir+"final.kc");
         } else {
             uint64_t numFileRecords(0);
 
@@ -101,7 +124,7 @@ public:
             end = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsed_seconds = end - start;
             std::cout << "Done reduction in " << elapsed_seconds.count() << "s" << std::endl;
-
+            sglib::remove_directory(tmpInstance);
             return getRecords();
         }
     };
@@ -126,7 +149,7 @@ private:
      * @param tmpName
      * Name of the temporary output file to hold the batch
      * @param files
-     * Vector of filenames holding the disk batches to merge
+     * Vector of file names holding the disk batches to merge
      * @param elements
      * In memory batch of elements (represented as a vector)
      * @return
@@ -246,10 +269,11 @@ private:
     /***
      * @brief
      * Merges disk batches and applies a min,max filter for the element counts.
+     * Removes all the temporary files once it has finished using them.
      * @param tmpName
      * Temporary name of the output file
      * @param files
-     * Vector of filenames to merge
+     * Vector of file names to merge
      * @return
      * Number of elements merged and filtered
      */
@@ -440,6 +464,7 @@ private:
      * Sorts the _elements and then performs an inplace collapse of all equal elements using the merge function provided
      * by the RecordType, the _elements vector will be re-sized as to only contain the collapsed elements.
      * @param _elements
+     * In/out parameter of sorted elements which are collapsed and resized.
      */
     void collapse(std::vector<RecordType> &_elements){
         if (_elements.size() == 0) return;
@@ -487,7 +512,7 @@ private:
     }
     /**
      * @brief
-     * Does a final merge of all thread's data and returns a collapsed vector along with writing the results to disk.
+     * Does a final merge of all thread's data and returns a collapsed vector along with writing the results to the final.kc file.
      * @return
      * The final vector of collapsed elements
      */
