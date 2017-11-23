@@ -139,6 +139,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     std::string name,seq="";
     seq.reserve(10000000); //stupid hack but probably useful to reserve
     oldnames_to_ids.clear();
+    oldnames.push_back("");
     nodes.clear();
     links.clear();
     add_node(Node("")); //an empty node on 0, just to skip the space
@@ -152,6 +153,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
                 if (oldnames_to_ids.find(name) != oldnames_to_ids.end())
                     throw std::logic_error("sequence " + name + " is already defined");
                 oldnames_to_ids[name] = add_node(Node(seq));
+                oldnames.push_back(name);
                 //reverse seq if not canonical
                 if (!nodes.back().is_canonical()) {
                     nodes.back().make_rc();

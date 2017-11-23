@@ -16,13 +16,22 @@ void Scaffolder::find_canonical_repeats(){
             else if (sg.nodes[n].sequence.size()<4000) ++l4000;
             else if (sg.nodes[n].sequence.size()<10000) ++l10000;
             else ++big;
+            // check links around the sides
+            sgNodeID_t pn1=sg.get_bw_links(n)[0].dest;
+            sgNodeID_t pn2=sg.get_bw_links(n)[1].dest;
+            sgNodeID_t nn1=sg.get_fw_links(n)[0].dest;
+            sgNodeID_t nn2=sg.get_fw_links(n)[1].dest;
+            if (pn1==-pn2 or nn1==-nn2) {
+                auto l=pn1;
+                if (pn1==-pn2) l=(pn1>0?pn1:pn2);
+                else l=(nn1>0?nn1:nn2);
+                std::cout<<"Pin-hole loop found at old "<<sg.oldnames[n]<<" ("<<sg.nodes[n].sequence.size()
+                         <<"bp) around edge "<<sg.oldnames[l]<<" ("<<sg.nodes[l].sequence.size() <<"bp)"<<std::endl;
+            }
 
             if (sg.nodes[n].sequence.size()<4000) {
-                // check links around the sides
-                sgNodeID_t pn1=sg.get_bw_links(n)[0].dest;
-                sgNodeID_t pn2=sg.get_bw_links(n)[1].dest;
-                sgNodeID_t nn1=sg.get_fw_links(n)[0].dest;
-                sgNodeID_t nn2=sg.get_fw_links(n)[1].dest;
+
+
                 if (pn1!=pn2 and pn1!=nn1 and pn1!=nn2 and pn2!=nn1 and pn2!=nn2 and nn1!=nn2
                     and sg.nodes[(pn1>0?pn1:-pn1)].sequence.size()>500
                         and sg.nodes[(pn2>0?pn2:-pn2)].sequence.size()>500
@@ -37,9 +46,14 @@ void Scaffolder::find_canonical_repeats(){
                     auto s21 = count_reads_linking(pn2, nn1);
                     auto s22 = count_reads_linking(pn2, nn2);
                     ++checked;
-                    for (unsigned li=0; li<rmappers.size();++li)
-                        for (auto &rl:all_read_links(n,li)) std::cout<<"LIB"<<li<<": "<<rl.first<<"("<<rl.second<<")"<<std::endl;
-                    std::cout << s11 << " " << s22 << " / " << s21 << " " << s12 << " " << std::endl;
+//                    std::cout<<"Links for PREV#1 ("<<pn1<<")"<<std::endl;
+//                    for (unsigned li=0; li<rmappers.size();++li)
+//                        for (auto &rl:all_read_links(pn1,li)) std::cout<<"LIB"<<li<<": "<<rl.first<<"("<<rl.second<<")"<<std::endl;
+//                    std::cout<<"Links for PREV#2 ("<<pn2<<")"<<std::endl;
+//                    for (unsigned li=0; li<rmappers.size();++li)
+//                        for (auto &rl:all_read_links(pn2,li)) std::cout<<"LIB"<<li<<": "<<rl.first<<"("<<rl.second<<")"<<std::endl;
+//
+//                    std::cout << s11 << " " << s22 << " / " << s21 << " " << s12 << " " << std::endl;
                     //check reads supporting pn1->nn1 and pn2->nn2
                     if (s11 >= required_support and s22 >= required_support and s21 < required_support and
                         s12 < required_support)
@@ -90,5 +104,8 @@ std::vector<std::pair<sgNodeID_t,uint64_t>> Scaffolder::all_read_links(sgNodeID_
         if(it == links.end()) links.emplace_back(dest,1);
         else ++(it->second);
     }
+    std::sort(links.begin(),links.end(),[](auto &left, auto &right) {
+        return left.second > right.second;
+    });
     return links;
 }
