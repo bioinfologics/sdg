@@ -127,15 +127,15 @@ void  HaplotypeScorer::load_haplotypes(std::string haplotype_filename, int degre
  * find mappings for each node in the bubble contigs. for each barcode, sum up the number of mappings for each node that a read with that barcode maps to
  *
  */
-void HaplotypeScorer::count_barcode_votes(std::string r1_filename, std::string r2_filename){
-    mapper.map_reads(r1_filename, r2_filename, prm10x);
+void HaplotypeScorer::count_barcode_votes(std::string r1_filename, std::string r2_filename, uint64_t max_mem){
+    mapper.map_reads(r1_filename, r2_filename, prm10x, max_mem);
     std::cout << "Mapped " << mapper.read_to_node.size() << " reads to " <<  mapper.reads_in_node.size() << "nodes" << std::endl;
     std::cout << "NOw counting barcode votes... " << std::endl;
     int counter = 0;
     for (auto &node:haplotype_nodes){
         //std::cout << "Node: " <<node <<std::endl;
         for (auto &mapping:mapper.reads_in_node[node>0?node:-node]){
-            std::string barcode = mapper.read_ids_to_tags[mapping.read_id];
+            auto barcode = mapper.read_to_tag[mapping.read_id];
              barcode_node_mappings[barcode][node] += mapping.unique_matches;
             counter += 1;
         }
@@ -168,7 +168,7 @@ int HaplotypeScorer::score_haplotypes() {
     std::map<std::pair<int, int>, int> hap_pair_not_support;
     std::map<std::pair<int, int>, int> hap_pair_support;
     std::map<std::pair<int, int>, int> hap_pair_support_total_score;
-    std::string barcode;
+    prm10xTag_t barcode;
     for (auto &bm: barcode_haplotype_mappings) {
         barcode = bm.first;
         std::vector<int> winners = winner_for_barcode(barcode); // ideally should be length 1
@@ -239,7 +239,7 @@ int HaplotypeScorer::score_haplotypes() {
  * if more than2 have same support both are returned
  * \todo decide heuristics to vote for winner
  */
-std::vector<int>  HaplotypeScorer::winner_for_barcode(std::string barcode){
+std::vector<int>  HaplotypeScorer::winner_for_barcode(prm10xTag_t barcode){
     int max=0;
     std::vector<int> winners;
     for (auto h:barcode_haplotype_mappings[barcode]){

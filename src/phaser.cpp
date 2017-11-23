@@ -12,7 +12,7 @@
 int main(int argc, char * argv[]) {
     std::string gfa_filename,bubble_contigs_filename,output_prefix, reads1,reads2;
     std::vector<std::string>  dump_mapped, load_mapped;
-
+    uint64_t max_mem_gb=4;
     bool stats_only=0;
 
     try
@@ -28,7 +28,8 @@ int main(int argc, char * argv[]) {
                 ("1,read1", "input reads, left", cxxopts::value<std::string>(reads1))
                 ("2,read2", "input reads, right", cxxopts::value<std::string>(reads2))
                 ("d,dump_to", "dump mapped reads to file", cxxopts::value<std::vector<std::string>>(dump_mapped))
-                ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped));
+                ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped))
+                ("max_mem", "maximum_memory when mapping (GB, default: 4)", cxxopts::value<uint64_t>(max_mem_gb));
 
 
         auto result = options.parse(argc, argv);
@@ -77,7 +78,7 @@ int main(int argc, char * argv[]) {
      * \todo map reads to entire GFA
      * \todo find connected components
      * \todo find bubble contigs, allowing bubbles of varying degrees
-    * \todo phase components with > 1 bubbles in turn
+     * \todo phase components with > 1 bubbles in turn
 
      * \todo from bubble contigs, compute possible haplotypes - if too many, split so exponential growth doesn't kill us
      * \todo decide heurisitcs for picking barcode winner, overall winner, when to
@@ -97,7 +98,7 @@ int main(int argc, char * argv[]) {
         }
     }*/
     hs.load_haplotypes(bubble_contigs_filename, 2);
-    hs.count_barcode_votes(reads1, reads2);
+    hs.count_barcode_votes(reads1, reads2, max_mem_gb);
     hs.decide_barcode_haplotype_support();
     // now have mappings and barcode support
     if (hs.barcode_haplotype_mappings.size() > 0){
