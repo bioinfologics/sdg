@@ -17,7 +17,7 @@ matrix:
             - doxygen-gui
             - graphviz
       env:
-        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && DEPLOY=true"
     - os: osx
       osx_image: xcode8
       env:
@@ -39,3 +39,4 @@ deploy:
   local_dir: $TRAVIS_BUILD_DIR/build/docs/html
   on:
     branch: master
+    condition: $DEPLOY=true
