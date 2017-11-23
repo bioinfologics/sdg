@@ -7,35 +7,11 @@
 #define unlikely(x)     __builtin_expect((x),0)
 
 #include "cxxopts.hpp"
+#include "sglib/filesystem/check_or_create_directory.h"
 #include "sglib/readers/FileReader.h"
 #include "sglib/factories/KMerIDXFactory.h"
 #include "sglib/factories/ContigLink.h"
 #include "sglib/SMR.h"
-
-bool check_or_create_directory(std::string &output_prefix) {
-    if (output_prefix.back() != '/') {
-        output_prefix.push_back('/');
-    }
-    struct stat sb{};
-    bool validate_dir(false);
-    if (stat(output_prefix.c_str(), &sb) != 0) {
-        if (errno == ENOENT) {
-            mode_t mask = umask(0);
-            umask(mask);
-            mkdir(output_prefix.c_str(), mode_t(0777 - mask));
-            validate_dir = true;
-        }
-        if (stat(output_prefix.c_str(), &sb) != 0) {
-            perror(output_prefix.c_str());
-            validate_dir = false;
-        }
-    } else if (!S_ISDIR(sb.st_mode)) {
-        std::cout << output_prefix << " is not a directory " << std::endl;
-    } else {
-        validate_dir = true;
-    }
-    return validate_dir;
-}
 
 void log_kmer_density(const std::string &output_prefix, const std::vector<KmerIDX> &unique_kmers,
                       const std::unordered_map<int32_t, std::pair<uint64_t, uint32_t>> &sequences_fasta) {
@@ -129,7 +105,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    if (!check_or_create_directory(output_prefix)) {
+    if (!sglib::check_or_create_directory(output_prefix)) {
         exit(1);
     }
 
