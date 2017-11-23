@@ -29,7 +29,7 @@ before_install:
     - eval "${MATRIX_EVAL}"
 
 script:
-    mkdir build && cd build && cmake .. ${CMAKE_OPTIONS} && make && touch ./docs/html/.nojekyll
+    mkdir build && cd build && cmake .. ${CMAKE_OPTIONS} && make && (touch ./docs/html/.nojekyll || true)
 
 install: true
 deploy:
