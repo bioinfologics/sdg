@@ -7,6 +7,7 @@
 #include "cxxopts.hpp"
 #include "sglib/SequenceGraph.hpp"
 #include "sglib/HaplotypeScorer.hpp"
+#include "sglib/PhaseScaffolder.h"
 
 
 int main(int argc, char * argv[]) {
@@ -60,6 +61,9 @@ int main(int argc, char * argv[]) {
 
     std::cout<< "Welcome to phaser"<<std::endl<<std::endl;
 
+    PhaseScaffolder ps = PhaseScaffolder(gfa_filename);
+    ps.load_mappings(reads1, reads2);
+    ps.phase_components();
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
     std::cout << sg.oldnames_to_ids.size() << " sg oodes size: " << sg.nodes.size() << std::endl;
@@ -75,8 +79,6 @@ int main(int argc, char * argv[]) {
     /**
      * \todo Load entire GFA rather than subcomponent
      * \todo map reads to entire GFA
-     * \todo find connected components
-     * \todo find bubble contigs, allowing bubbles of varying degrees
     * \todo phase components with > 1 bubbles in turn
 
      * \todo from bubble contigs, compute possible haplotypes - if too many, split so exponential growth doesn't kill us
@@ -85,30 +87,6 @@ int main(int argc, char * argv[]) {
 
  */
 
-    HaplotypeScorer hs(sg);
-    std::vector<std::vector<sgNodeID_t >> bubbles = {{1, 2}, {3,4,5,6}, {7,8}, {9, 10}};
 
-    hs.find_possible_haplotypes(bubbles);
-    //find and phase each component of gfa
-    /*auto components = sg.connected_components();
-    // this finds 2 components for test graph...
-    std::cout << "Found " << components.size() <<" connected components " << std::endl;
-    for (auto component:components){
-        for (auto n:component){
-            std::cout << sg.oldnames[n] << std::endl; //" ";
-        }
-        std::cout << std::endl;
-        // should
-        auto bubbles = sg.find_bubbles(component);
-
-    }*/
-    /*hs.load_haplotypes(bubble_contigs_filename, 2);
-    hs.count_barcode_votes(reads1, reads2);
-    hs.decide_barcode_haplotype_support();
-    // now have mappings and barcode support
-    if (hs.barcode_haplotype_mappings.size() > 0){
-        hs.score_haplotypes();
-    }
-    sg.write_to_gfa(output_prefix+".gfa");*/
     return 0;
 }

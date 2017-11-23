@@ -284,9 +284,9 @@ void HaplotypeScorer::find_possible_haplotypes(std::vector<std::vector<sgNodeID_
             std::cout << b<<" ";
         }
         std::cout << std::endl;
-        haps.push_back(bubble);
+        haplotype_ids.push_back(bubble);
     }
-    std::cout << haps.size() << " haplotypes  generated " << std::endl;
+    std::cout << haplotype_ids.size() << " haplotypes  generated " << std::endl;
     for (auto b:haps){
         for (auto n:b){
             std::cout << n<<" ";

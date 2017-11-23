@@ -113,7 +113,7 @@ add_executable(phaser
                src/sglib/SequenceGraph.hpp
                src/sglib/SequenceGraph.cc
                src/sglib/PairedReadMapper.hpp
-               src/sglib/PairedReadMapper.cc src/sglib/HaplotypeScorer.hpp src/sglib/HaplotypeScorer.cpp)
+               src/sglib/PairedReadMapper.cc src/sglib/HaplotypeScorer.hpp src/sglib/HaplotypeScorer.cpp src/sglib/PhaseScaffolder.cpp src/sglib/PhaseScaffolder.h)
 
 add_executable(gfa-align
                src/gfa-align.cc)
