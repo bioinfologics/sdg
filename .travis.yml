@@ -39,4 +39,4 @@ deploy:
   local_dir: $TRAVIS_BUILD_DIR/build/docs/html
   on:
     branch: master
-    condition: $DEPLOY=true
+    condition: $DEPLOY = true
