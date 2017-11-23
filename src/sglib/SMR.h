@@ -21,6 +21,8 @@
 #include <set>
 #include <unordered_set>
 #include <cmath>
+#include <sglib/filesystem/check_or_create_directory.h>
+
 
 static const std::uint64_t GB(1024*1024*1024);
 
@@ -48,14 +50,16 @@ class SMR {
 public:
 
     SMR(ReaderParamStruct reader_parameters, FactoryParamStruct factory_parameters, uint64_t maxMem, unsigned int min = 0, unsigned int max = std::numeric_limits<unsigned int>::max(),
-        const std::string& outdir = "", const std::string &Otmp = "") : reader_parameters(reader_parameters),
+        const std::string outdir = "./", const std::string &Otmp = "./") : reader_parameters(reader_parameters),
                                                                         factory_parameters(factory_parameters),
                                                                         myBatches(0),
                                                                         totalFilteredRecords(0),
-                                                                        totalRecordsGenerated(0), tmp(Otmp),
+                                                                        totalRecordsGenerated(0), tmpBase(Otmp),
                                                                         outdir(outdir), minCount(min), maxCount(max),
                                                                         mergeCount(4), maxThreads((unsigned int) 1) {
-
+        this->outdir = std::string(outdir+"smr_files/");
+        sglib::check_or_create_directory(this->outdir);
+        sglib::check_or_create_directory(this->tmpBase);
         numElementsPerBatch = (maxMem / sizeof(RecordType) / maxThreads);
         std::cout<<"SMR created with elements of size "<<sizeof(RecordType)<<" using "<<maxThreads<<" threads and "
                  <<maxMem<<" Bytes of memory -> batches of "<<numElementsPerBatch<<" elements"<<std::endl;
@@ -71,10 +75,16 @@ public:
      * Filtered vector of RecordType elements
      */
     std::vector<RecordType> read_from_file(const std::string &read_file) {
-        std::ifstream final_file(outdir+"final.kc");
+        std::string readFileBasename(read_file.substr(0,read_file.find_last_of('.')).substr(read_file.find_last_of('/')+1));
+        std::string finalFilePath(outdir+readFileBasename);
+        tmpInstance = tmpBase+readFileBasename;
+        sglib::check_or_create_directory(finalFilePath);
+        outdir = finalFilePath;
+        sglib::check_or_create_directory(tmpInstance);
+        std::ifstream final_file(finalFilePath+"final.kc");
         if (final_file.is_open()){
             std::cout << "Using precomputed sum file at " << outdir << "final.kc" << std::endl;
-            return readFinalkc(outdir+"final.kc");
+            return readFinalkc(finalFilePath+"final.kc");
         } else {
             uint64_t numFileRecords(0);
 
@@ -387,7 +397,7 @@ private:
             dumpBatch(currentBatch, _elements);
         }
         _elements.clear();
-        rename(std::string(tmp + "thread_0_batch_0.tmc").c_str(), std::string(tmp + "thread_0.tmc").c_str());
+        rename(std::string(tmpInstance + "thread_0_batch_0.tmc").c_str(), std::string(tmpInstance + "thread_0.tmc").c_str());
     }
 
     /**
@@ -401,7 +411,7 @@ private:
     void dumpBatch(const unsigned int currentBatch, std::vector<RecordType> &_elements) {
         collapse(_elements);
         // Simply dump the file
-        std::string outBatchName(std::string(tmp + "thread_0" + "_batch_" + std::to_string(currentBatch) + ".tmc"));
+        std::string outBatchName(std::string(tmpInstance + "thread_0" + "_batch_" + std::to_string(currentBatch) + ".tmc"));
         // Simply dump the file
         std::ofstream outBatch(outBatchName.data(), std::ios_base::binary | std::ios_base::out | std::ios_base::trunc);
         auto size = _elements.size();
@@ -417,12 +427,12 @@ private:
 
         std::vector<std::string> inBatches(numFilesToMerge);
         for (auto batch=0; batch < numFilesToMerge; batch++) {
-            std::string filename(tmp+ "thread_0" + "_batch_" + std::to_string(batch)+ ".tmc");
+            std::string filename(tmpInstance+ "thread_0" + "_batch_" + std::to_string(batch)+ ".tmc");
             inBatches[batch] = filename;
         }
-        std::string threadFile(tmp+ "thread_0" + "_tmpBatch1.tmc");
+        std::string threadFile(tmpInstance+ "thread_0" + "_tmpBatch1.tmc");
         merge(threadFile, inBatches, _elements);
-        rename(std::string(tmp+ "thread_0" + "_tmpBatch1.tmc").c_str(), std::string(tmp+ "thread_0" + "_batch_0.tmc").c_str());
+        rename(std::string(tmpInstance+ "thread_0" + "_tmpBatch1.tmc").c_str(), std::string(tmpInstance+ "thread_0" + "_batch_0.tmc").c_str());
     }
 
     /**
@@ -486,7 +496,7 @@ private:
         std::vector<std::string> threadFiles(maxThreads);
 
         for (auto threadID = 0; threadID < maxThreads; threadID++) {
-            std::string name(tmp + "thread_" + std::to_string(threadID) + ".tmc");
+            std::string name(tmpInstance + "thread_" + std::to_string(threadID) + ".tmc");
 
             threadFiles[threadID] = name;
         }
@@ -509,7 +519,8 @@ private:
     uint64_t totalFilteredRecords;                  /// Total number of resulting elements after filtering and merging
     const int unsigned maxThreads;
     int mergeCount;                                 /// How many batches to keep rolling before merging
-    std::string tmp;                                /// Directory to store the temporary files
+    std::string tmpBase;                            /// Directory to store the temporary files
+    std::string tmpInstance;                        /// Directory to store the temporary files for the read_from_file argument
     std::string outdir;                             /// Output directory
 };
 
