@@ -24,7 +24,7 @@ public:
     PhaseScaffolder(std::string);
     SequenceGraph sg;
     void phase_components();
-    void load_mappings(std::string , std::string );
+    void load_mappings(std::string , std::string, uint64_t );
     PairedReadMapper mapper;
 
 };

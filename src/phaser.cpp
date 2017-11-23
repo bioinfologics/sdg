@@ -63,7 +63,7 @@ int main(int argc, char * argv[]) {
     std::cout<< "Welcome to phaser"<<std::endl<<std::endl;
 
     PhaseScaffolder ps = PhaseScaffolder(gfa_filename);
-    ps.load_mappings(reads1, reads2);
+    ps.load_mappings(reads1, reads2, max_mem_gb);
     ps.phase_components();
 
 
