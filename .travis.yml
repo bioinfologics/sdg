@@ -4,18 +4,18 @@ sudo: false
 
 matrix:
   include:
-  - os: linux
-    addons:
-      apt:
-        sources:
-        - ubuntu-toolchain-r-test
-        packages:
-        - g++-6
-        - doxygen
-        - doxygen-doc
-        - doxygen-latex
-        - doxygen-gui
-        - graphviz
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-6
+            - doxygen
+            - doxygen-doc
+            - doxygen-latex
+            - doxygen-gui
+            - graphviz
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
     - os: osx
@@ -28,8 +28,8 @@ matrix:
 before_install:
     - eval "${MATRIX_EVAL}"
 
-script: 
-    mkdir build && cd build && cmake .. ${CMAKE_OPTIONS} && make
+script:
+    mkdir build && cd build && cmake .. ${CMAKE_OPTIONS} && make && touch ./docs/html/.nojekyll
 
 install: true
 deploy:
