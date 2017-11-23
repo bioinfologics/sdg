@@ -15,7 +15,7 @@
 
 enum prmReadType {prmPE, prmLMP, prm10x};
 const std::string prmReadTypeDesc[]={"Paired End", "Long Mate Pair", "10x Linked Reads"};
-
+typedef uint32_t prm10xTag_t;
 
 class ReadMapping {
 public:
@@ -34,14 +34,18 @@ public:
     void merge(const ReadMapping &other){};
 };
 
-
-
+/**
+ * @brief A mapper for different kinds of paired short reads (Illumina).
+ *
+ * The mapper supports so far PE and 10x reads.
+ * 10x reads must be trimmed and have the tags at the end of the read name.
+ */
 class PairedReadMapper {
 public:
     PairedReadMapper(SequenceGraph &_sg) : sg(_sg){
         reads_in_node.resize(sg.nodes.size());
     };
-    void map_reads(std::string filename1, std::string filename2, prmReadType read_type=prmPE);
+    void map_reads(std::string filename1, std::string filename2, prmReadType read_type, uint64_t max_mem);
     uint64_t process_reads_from_file(uint8_t, uint16_t, std::vector<KmerIDX> &, std::string , uint64_t, bool );
     void save_to_disk(std::string filename);
     void load_from_disk(std::string filename);
@@ -50,10 +54,7 @@ public:
     SequenceGraph & sg;
     std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;
-    std::vector<std::string> read_to_tag;
-
-    // hack.... if we use this, not sure if the vector above is needed
-    std::map<sgNodeID_t , std::string> read_ids_to_tags;
+    std::vector<prm10xTag_t> read_to_tag;
 };
 
 

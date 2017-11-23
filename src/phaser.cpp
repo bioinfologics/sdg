@@ -13,7 +13,7 @@
 int main(int argc, char * argv[]) {
     std::string gfa_filename,bubble_contigs_filename,output_prefix, reads1,reads2;
     std::vector<std::string>  dump_mapped, load_mapped;
-
+    uint64_t max_mem_gb=4;
     bool stats_only=0;
 
     try
@@ -29,7 +29,8 @@ int main(int argc, char * argv[]) {
                 ("1,read1", "input reads, left", cxxopts::value<std::string>(reads1))
                 ("2,read2", "input reads, right", cxxopts::value<std::string>(reads2))
                 ("d,dump_to", "dump mapped reads to file", cxxopts::value<std::vector<std::string>>(dump_mapped))
-                ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped));
+                ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped))
+                ("max_mem", "maximum_memory when mapping (GB, default: 4)", cxxopts::value<uint64_t>(max_mem_gb));
 
 
         auto result = options.parse(argc, argv);
@@ -64,28 +65,7 @@ int main(int argc, char * argv[]) {
     PhaseScaffolder ps = PhaseScaffolder(gfa_filename);
     ps.load_mappings(reads1, reads2);
     ps.phase_components();
-    SequenceGraph sg;
-    sg.load_from_gfa(gfa_filename);
-    std::cout << sg.oldnames_to_ids.size() << " sg oodes size: " << sg.nodes.size() << std::endl;
-    std::cout << "Edge 0: " << sg.oldnames_to_ids["edge0"] << " " << sg.oldnames_to_ids["edge0+"] << std::endl;
 
-
-
-    /*(for (auto node: sg.nodes){
-        std::cout << node.sequence << " " << std::endl;
-    }*/
-    // currently takes gfa, file of possible phasings, and reads
-    // loads graph, loads phasings, maps reads and computes support:
-    /**
-     * \todo Load entire GFA rather than subcomponent
-     * \todo map reads to entire GFA
-    * \todo phase components with > 1 bubbles in turn
-
-     * \todo from bubble contigs, compute possible haplotypes - if too many, split so exponential growth doesn't kill us
-     * \todo decide heurisitcs for picking barcode winner, overall winner, when to
-     * with all phased, intersect barocdes supporting phasings on different contigs to build up phase blocks
-
- */
 
 
     return 0;

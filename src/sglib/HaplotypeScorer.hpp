@@ -23,14 +23,14 @@ public:
     void find_possible_haplotypes(std::vector<std::vector<sgNodeID_t >>);
     void load_haplotypes(std::string, int);
 
-    void count_barcode_votes(std::string, std::string);
+    void count_barcode_votes(std::string, std::string, uint64_t max_mem);
     int score_haplotypes();
     int score_haplotypes2();
 
-    std::map<std::string, std::map<sgNodeID_t , int> > barcode_node_mappings;
+    std::map<prm10xTag_t, std::map<sgNodeID_t , int> > barcode_node_mappings;
     void decide_barcode_haplotype_support();
-    std::map<std::string, std::map< int, int > > barcode_haplotype_mappings;
-    std::map<std::string, std::map< int, int > > barcode_haplotype_mappings2;
+    std::map<prm10xTag_t, std::map< int, int > > barcode_haplotype_mappings;
+    std::map<prm10xTag_t, std::map< int, int > > barcode_haplotype_mappings2;
 
 private:
     SequenceGraph & sg;
@@ -40,14 +40,14 @@ private:
     // each possible hsplotype
     std::vector<std::vector<sgNodeID_t> > haplotype_ids;
 
-    std::vector <std::string> unused_barcodes;
+    std::vector <prm10xTag_t> unused_barcodes;
     std::map<sgNodeID_t , std::vector<int> > node_id_haplotype_index_map;
     std::map<sgNodeID_t , std::string > id_to_contig_name;
 
-            std::vector<int>  winner_for_barcode(std::string barcode);
+    std::vector<int>  winner_for_barcode(prm10xTag_t barcode);
 
-    std::map<int, std::map<std::string, int > > haplotype_barcode_agree;
-    std::map<int, std::map<std::string, int > > haplotype_barcode_disagree;
+    std::map<int, std::map<prm10xTag_t, int > > haplotype_barcode_agree;
+    std::map<int, std::map<prm10xTag_t, int > > haplotype_barcode_disagree;
 
 };
 #endif //SG_HAPLOTYPE_SCORER_H
