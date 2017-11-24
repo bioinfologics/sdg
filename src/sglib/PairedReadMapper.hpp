@@ -20,7 +20,7 @@ typedef uint32_t prm10xTag_t;
 class ReadMapping {
 public:
     sgNodeID_t node;
-    uint32_t read_id;
+    uint64_t read_id;
     int32_t first_pos;
     int32_t last_pos;
     int32_t unique_matches;

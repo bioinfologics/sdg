@@ -13,6 +13,7 @@ bool sglib::check_or_create_directory(std::string &output_prefix) {
             if (errno == ENOENT) {
                 mode_t mask = umask(0);
                 umask(mask);
+                std::cout<<"Creating: " << output_prefix << std::endl;
                 mkdir(output_prefix.c_str(), mode_t(0777 - mask));
                 validate_dir = true;
             }
@@ -27,3 +28,7 @@ bool sglib::check_or_create_directory(std::string &output_prefix) {
         }
         return validate_dir;
     }
+void sglib::remove_directory(std::string path) {
+    std::cout << "Removing: " << path << std::endl;
+    ::rmdir(path.c_str());
+}

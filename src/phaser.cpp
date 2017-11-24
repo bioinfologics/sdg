@@ -58,7 +58,9 @@ int main(int argc, char * argv[]) {
                   <<"Use option --help to check command line arguments." << std::endl;
         exit(1);
     }
-
+    if (!sglib::check_or_create_directory(output_prefix)) {
+        exit(1);
+    }
 
     std::cout<< "Welcome to phaser"<<std::endl<<std::endl;
     if (gfa_filename.size()<=4 or gfa_filename.substr(gfa_filename.size()-4,4)!=".gfa") {

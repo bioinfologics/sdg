@@ -104,7 +104,7 @@ std::vector<std::pair<sgNodeID_t,uint64_t>> Scaffolder::all_read_links(sgNodeID_
         if(it == links.end()) links.emplace_back(dest,1);
         else ++(it->second);
     }
-    std::sort(links.begin(),links.end(),[](auto &left, auto &right) {
+    std::sort(links.begin(),links.end(),[](std::pair<sgNodeID_t,uint64_t> &left, std::pair<sgNodeID_t,uint64_t> &right) {
         return left.second > right.second;
     });
     return links;
