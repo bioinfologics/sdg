@@ -270,7 +270,6 @@ void HaplotypeScorer::find_possible_haplotypes(std::vector<std::vector<sgNodeID_
         // this should hold the index to take from each bubble
         std::vector<size_t> indices(N);
         std::vector<sgNodeID_t > bubble;
-        std::cout << " bubble indices for permutation " << m << std::endl;
         size_t m_curr = m;
         for (size_t i = 0; i < N; ++i) {
             indices[i] = m_curr% bubbles[i].size();
@@ -279,7 +278,6 @@ void HaplotypeScorer::find_possible_haplotypes(std::vector<std::vector<sgNodeID_
             m_curr /= bubbles[i].size();
         }
 
-        std::cout << std::endl << " bubble: " ;
         for (auto b:bubble){
             std::cout << b<<" ";
         }

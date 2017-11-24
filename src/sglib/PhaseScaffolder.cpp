@@ -6,9 +6,7 @@
 
 
 
-PhaseScaffolder::PhaseScaffolder(std::string gfa_filename): sg(SequenceGraph()), mapper(PairedReadMapper(sg)){
-    sg.load_from_gfa(gfa_filename);
-
+PhaseScaffolder::PhaseScaffolder(SequenceGraph & sg): sg(sg), mapper(sg){
 }
 
 void PhaseScaffolder::load_mappings(std::string r1_filename, std::string r2_filename, std::string fasta_filename, uint64_t max_mem_gb){

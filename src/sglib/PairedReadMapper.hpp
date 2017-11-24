@@ -19,12 +19,12 @@ typedef uint32_t prm10xTag_t;
 
 class ReadMapping {
 public:
-    sgNodeID_t node;
-    uint64_t read_id;
-    int32_t first_pos;
-    int32_t last_pos;
-    int32_t unique_matches;
-    bool rev;
+    sgNodeID_t node=0;
+    uint64_t read_id=0;
+    int32_t first_pos=0;
+    int32_t last_pos=0;
+    int32_t unique_matches=0;
+    bool rev=false;
     bool operator==(const ReadMapping &other){
         return this==&other;
     };
@@ -43,7 +43,10 @@ public:
 class PairedReadMapper {
 public:
     PairedReadMapper(SequenceGraph &_sg) : sg(_sg){
+        std::cout << "_sg size " << _sg.nodes.size();
+        std::cout << "sg size " << sg.nodes.size();
         reads_in_node.resize(sg.nodes.size());
+        std::cout << "reads_in_node size; " << reads_in_node.size() << std::endl;
     };
     void map_reads(std::string , std::string , std::string , prmReadType , uint64_t );
     uint64_t process_reads_from_file(uint8_t, uint16_t, std::vector<KmerIDX> &, std::string , uint64_t, bool );

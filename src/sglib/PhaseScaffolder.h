@@ -21,8 +21,8 @@
 
 class PhaseScaffolder {
 public:
-    PhaseScaffolder(std::string);
-    SequenceGraph sg;
+    PhaseScaffolder(SequenceGraph &);
+    SequenceGraph & sg;
     void phase_components();
     void load_mappings(std::string , std::string , std::string, uint64_t );
     PairedReadMapper mapper;

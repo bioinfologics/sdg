@@ -46,12 +46,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
 #pragma omp critical(add_mapped_tagged)
                 {
                     //TODO: inefficient
-                    std::cout << "read_to_tag.size()" << read_to_tag.size() <<  std::endl;
-                    std::cout << "read id" << read.id<<  std::endl;
-
-                    std::cout <<  "mapping.read_id " << mapping.read_id<<  std::endl;
-                    if (read_to_tag.size()<=mapping.read_id) read_to_tag.resize(mapping.read_id);
-                    std::cout << "read_to_tag.size()" << read_to_tag.size() <<  std::endl;
+                    if (read_to_tag.size()<=mapping.read_id) read_to_tag.resize(mapping.read_id + 1);
                     read_to_tag[mapping.read_id] = tag;
                 }
             }
@@ -86,16 +81,17 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
             }
             if (mapping.node != 0 and mapping.unique_matches >= min_matches) {
                 //TODO: set read id and add to map collection
-                std::cout << "read id: " << read.id << std::endl;
+                /*std::cout << "read id: " << read.id << std::endl;
                 std::cout << "offset " << offset<< std::endl;
                 std::cout << "mapping.read_id" << mapping.read_id<< std::endl;
                 std::cout << (read.id)*2+offset << std::endl;
                 //mapping.read_id= 1; this works, but (read.id)*2+offset is 1 and that doesn't
                 //read.id = 1;
-                //std::cout << "read id: " << read.id << std::endl; - this doesn't work
+                //std::cout << "read id: " << read.id << std::endl; - this doesn't work*/
                 mapping.read_id=(read.id)*2+offset;
+
 #pragma omp critical(add_mapped)
-                reads_in_node[mapping.node].emplace_back(mapping);
+                reads_in_node[mapping.node].push_back(mapping);
                 ++mapped_count;
             }
             auto tc=++total_count;
@@ -136,7 +132,7 @@ void PairedReadMapper::map_reads(std::string filename1, std::string filename2, s
     const int k = 31;
     const int max_coverage = 1;
     const int min_matches = 1;
-    const std::string output_prefix("smr_files");
+    const std::string output_prefix("./");
     SMR<KmerIDX,
             kmerIDXFactory<FastaRecord>,
             GraphNodeReader<FastaRecord>,

@@ -68,7 +68,10 @@ int main(int argc, char * argv[]) {
         throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '" +
                                     gfa_filename.substr(gfa_filename.size() - 4, 4) + "'");
     }
-    PhaseScaffolder ps = PhaseScaffolder(gfa_filename);
+    max_mem_gb *= GB;
+    SequenceGraph sg;
+    sg.load_from_gfa(gfa_filename);
+    PhaseScaffolder ps = PhaseScaffolder(sg);
     auto fasta_filename=gfa_filename.substr(0,gfa_filename.size()-4)+".fasta";
     ps.load_mappings(reads1, reads2, fasta_filename, max_mem_gb);
     ps.phase_components();
