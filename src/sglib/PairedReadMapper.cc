@@ -10,8 +10,6 @@
 
 
 #define mem_limit 4
-#define GB 1024*1024*1024
-
 
 uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::vector<KmerIDX> &unique_kmers, std::string filename, uint64_t offset , bool is_tagged=false) {
     std::cout<<"mapping reads!!!"<<std::endl;

@@ -20,10 +20,10 @@ if (APPLE)
 endif (APPLE)
 
 
-project (sg)
+project (bsg)
 
 ## Compiler flags
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -w -Wno-deprecated -std=c++14")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -w -Wno-deprecated -std=c++11")
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
@@ -88,10 +88,30 @@ include_directories("deps/kseqcpp/")
 
 ## Libraries
 add_library(sequence_graph SHARED
+            src/sglib/SMR.h
+            src/sglib/readers/Common.h
+            src/sglib/readers/FileReader.h
+            src/sglib/readers/SequenceGraphReader.h
+            src/sglib/factories/ContigBlockFactory.h
+            src/sglib/factories/ContigLink.h
+            src/sglib/factories/KMerFactory.h
+            src/sglib/factories/KMerIDXFactory.h
+            src/sglib/SequenceGraph.hpp
+            src/sglib/SequenceGraph.cc
+            src/sglib/PairedReadMapper.hpp
+            src/sglib/PairedReadMapper.cc
+            src/sglib/HaplotypeScorer.hpp
+            src/sglib/HaplotypeScorer.cpp
+            src/sglib/SequenceGraphJournal.hpp
+            src/sglib/SequenceGraphJournal.cc
             src/sglib/SequenceGraph.cc
             src/sglib/PairedReadMapper.cc
-            src/sglib/Scaffolder.cc)
+            src/sglib/Scaffolder.cc
+            src/sglib/filesystem/check_or_create_directory.cc
+            src/sglib/filesystem/check_or_create_directory.h)
+
 target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+
 ## add executables and respective sources
 add_executable(gfa-qc
         src/gfa-qc.cc)
@@ -105,15 +125,7 @@ add_executable(gfa-pairscaff
         src/gfa-pairscaff.cc)
 
 add_executable(phaser
-               src/phaser.cpp
-               src/sglib/readers/FileReader.h
-               src/sglib/factories/KMerFactory.h
-               src/sglib/factories/KMerIDXFactory.h
-               src/sglib/SMR.h
-               src/sglib/SequenceGraph.hpp
-               src/sglib/SequenceGraph.cc
-               src/sglib/PairedReadMapper.hpp
-               src/sglib/PairedReadMapper.cc src/sglib/HaplotypeScorer.hpp src/sglib/HaplotypeScorer.cpp)
+               src/phaser.cpp)
 
 add_executable(gfa-align
                src/gfa-align.cc)
@@ -127,6 +139,6 @@ add_executable(seq-sorter
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
-target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
-target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
-target_link_libraries (phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries (phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
