@@ -25,13 +25,13 @@ public:
     void load_haplotypes(std::string, int);
 
     void count_barcode_votes(PairedReadMapper &);
-    int score_haplotypes();
-    int score_haplotypes2();
+    int score_haplotypes(std::vector<std::string> );
 
     std::map<prm10xTag_t, std::map<sgNodeID_t , int> > barcode_node_mappings;
     void decide_barcode_haplotype_support();
     std::map<prm10xTag_t, std::map< int, int > > barcode_haplotype_mappings;
     std::map<prm10xTag_t, std::map< int, int > > barcode_haplotype_mappings2;
+    bool success = false; // if doing partial success replace with enum
 
 private:
 

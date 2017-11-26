@@ -90,7 +90,7 @@ void HaplotypeScorer::count_barcode_votes(PairedReadMapper & mapper){
         counter += 1;
     }
     for (auto &node:haplotype_nodes){
-        std::cout << "Node: " <<node << mapper.reads_in_node[node].size() << std::endl;
+        std::cout << "Node: " <<node << " mappings " << mapper.reads_in_node[node].size() << std::endl;
         for (auto &mapping:mapper.reads_in_node[node>0?node:-node]){
             auto barcode = mapper.read_to_tag[mapping.read_id];
              barcode_node_mappings[barcode][node] += mapping.unique_matches;
@@ -111,7 +111,7 @@ void HaplotypeScorer::count_barcode_votes(PairedReadMapper & mapper){
  * \todo decide criteria for winning haploype
  *
  */
-int HaplotypeScorer::score_haplotypes() {
+int HaplotypeScorer::score_haplotypes(std::vector<std::string> oldnames) {
     auto number_haplotypes = haplotype_ids.size();
 
     std::cout << "Finding most supported of " << number_haplotypes<< " possible haplotypes"<<std::endl;
@@ -174,9 +174,12 @@ int HaplotypeScorer::score_haplotypes() {
             support_winner.push_back(h);
         }
     }
-   for (auto w: support_winner){
+    std::cout << "hap " << *winner_index << " winning contigs: " << std::endl;
+
+    for (auto w: support_winner){
        for (auto h:haplotype_ids[w]){
-           std::cout << id_to_contig_name[h] << " ";
+
+           std::cout <<" c " << oldnames[h] << " ";
 
        }
        std::cout << std::endl;

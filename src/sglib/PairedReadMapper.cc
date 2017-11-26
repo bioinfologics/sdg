@@ -17,37 +17,55 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
      */
     FastqReader<FastqRecord> fastqReader({0},filename);
     std::atomic<uint64_t> mapped_count(0),total_count(0);
-#pragma omp parallel shared(fastqReader,reads_in_node)
+//#pragma omp parallel shared(fastqReader,reads_in_node)// this lione has out of bounds error on my weird read file AND  ‘PairedReadMapper::reads_in_node’ is not a variable in clause ‘shared’ when compiling on
     {
         FastqRecord read;
         std::vector<KmerIDX> readkmers;
         kmerIDXFactory<FastqRecord> kf({k});
         ReadMapping mapping;
         bool c ;
-#pragma omp critical(read_record)
+//#pragma omp critical(read_record)
         c = fastqReader.next_record(read);
         while (c) {
+            if (total_count == 4 ){
+                std::cout<<"= here!!!"<<std::endl;
+
+            }
             //get all kmers from read
             readkmers.clear();
             //process tag if 10x! this way even ummaped reads get tags
-            if (is_tagged){
-                std::string barcode = read.name.substr(read.name.size() - 16);
-                prm10xTag_t tag=0;
-                for (auto &b:barcode){
-                    tag<<=2;
-                    switch (b){
-                        case 'A': break;
-                        case 'C': tag+=1; break;
-                        case 'G': tag+=2; break;
-                        case 'T': tag+=3; break;
-                        default: tag=0; break; //invalid tags with non-ACGT chars
+            if (is_tagged) {
+                if (read.name.size() > 16) {
+                    std::string barcode = read.name.substr(read.name.size() - 16);
+                    prm10xTag_t tag = 0;
+                    for (auto &b:barcode) {
+                        tag <<= 2;
+                        switch (b) {
+                            case 'A':
+                                break;
+                            case 'C':
+                                tag += 1;
+                                break;
+                            case 'G':
+                                tag += 2;
+                                break;
+                            case 'T':
+                                tag += 3;
+                                break;
+                            default:
+                                tag = 0;
+                                break; //invalid tags with non-ACGT chars
+                        }
                     }
-                }
-#pragma omp critical(add_mapped_tagged)
-                {
-                    //TODO: inefficient
-                    if (read_to_tag.size()<=mapping.read_id) read_to_tag.resize(mapping.read_id + 1);
-                    read_to_tag[mapping.read_id] = tag;
+//#pragma omp critical(add_mapped_tagged)
+                    {
+                        //TODO: inefficient
+                        if (read_to_tag.size() <= mapping.read_id) read_to_tag.resize(mapping.read_id + 1);
+                        read_to_tag[mapping.read_id] = tag;
+                    }
+                } else {
+                    std::cout << "Read name too short to contain 10x barcode: " << read.name << std::endl;
+                    exit(1);
                 }
             }
             kf.setFileRecord(read);
@@ -90,13 +108,14 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
                 //std::cout << "read id: " << read.id << std::endl; - this doesn't work*/
                 mapping.read_id=(read.id)*2+offset;
 
-#pragma omp critical(add_mapped)
+//#pragma omp critical(add_mapped)
                 reads_in_node[mapping.node].push_back(mapping);
                 ++mapped_count;
             }
+            std::cout<<"total mapped: "<<total_count<<" / "<<total_count<<std::endl;
             auto tc=++total_count;
             if (tc % 100000 == 0) std::cout << mapped_count << " / " << tc << std::endl;
-#pragma omp critical(read_record)
+//#pragma omp critical(read_record)
             c = fastqReader.next_record(read);
         }
 

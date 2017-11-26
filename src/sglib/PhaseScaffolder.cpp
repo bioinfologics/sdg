@@ -33,7 +33,8 @@ void PhaseScaffolder::phase_components() {
         hs.decide_barcode_haplotype_support();
 // now have mappings and barcode support
         if (hs.barcode_haplotype_mappings.size() > 0) {
-            hs.score_haplotypes();
+            hs.score_haplotypes(sg.oldnames);
+            std::cout << "scored haplotypes " << hs.success << std::endl;
         }
     }
 }

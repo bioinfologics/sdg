@@ -70,6 +70,20 @@ int main(int argc, char * argv[]) {
     }
     max_mem_gb *= GB;
     SequenceGraph sg;
+    std::ifstream test(reads2);
+    std::ifstream test2(reads1);
+    int counter = 0;
+    int counter2 = 0;
+    std::string line;
+    while (std::getline(test, line)){
+        counter +=1;
+    }
+    while (std::getline(test2, line)){
+        counter2 +=1;
+    }
+    std::cout << "reads 2 line coubt: " << counter << std::endl;
+    std::cout << "reads 2 line coubt: " << counter2 << std::endl;
+
     sg.load_from_gfa(gfa_filename);
     PhaseScaffolder ps = PhaseScaffolder(sg);
     auto fasta_filename=gfa_filename.substr(0,gfa_filename.size()-4)+".fasta";
