@@ -18,12 +18,13 @@
 class HaplotypeScorer{
 
 public:
-     HaplotypeScorer(SequenceGraph &);
+    HaplotypeScorer::HaplotypeScorer();
+
     // functions we will need:
     void find_possible_haplotypes(std::vector<std::vector<sgNodeID_t >>);
     void load_haplotypes(std::string, int);
 
-    void count_barcode_votes(std::string, std::string, std::string , uint64_t );
+    void count_barcode_votes(PairedReadMapper &);
     int score_haplotypes();
     int score_haplotypes2();
 
@@ -33,8 +34,7 @@ public:
     std::map<prm10xTag_t, std::map< int, int > > barcode_haplotype_mappings2;
 
 private:
-    SequenceGraph & sg;
-    PairedReadMapper mapper;
+
     // each het node
     std::set<sgNodeID_t > haplotype_nodes;
     // each possible hsplotype

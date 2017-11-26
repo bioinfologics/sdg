@@ -104,6 +104,11 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
     // somehow for my test data with 700 reads, totak count is 834 for r2...
     std::cout<<"Reads mapped: "<<mapped_count<<" / "<<total_count<<std::endl;
     fastqReader.getSummaryStatistics();
+    int counter = 1;
+    for (auto r: reads_in_node){
+        std::cout << "Node " << counter << " contsins " << r.size() <<" mappings " <<std::endl;
+        counter += 1;
+    }
     return total_count;
 }
 

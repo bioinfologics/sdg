@@ -82,24 +82,20 @@ std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sg
     std::vector<sgNodeID_t > checked;
     // loop over all links in component, if 2 (or x) nodes have same source and dest, they are bubbles
     for (auto n: component){
-        std::cout << "Checking " << oldnames[n] << std::endl;
         std::vector<sgNodeID_t > bubble;
         bubble.push_back(n);
         // if we haven't checked this node
         if (std::find(checked.begin(), checked.end(), n) == checked.end()){
             auto links_n = links[n];
-            std::cout << oldnames[n] << " has " << links_n.size() << " links" << std::endl;
             // if l has exactly 2 links, one source and one dest, it may be a bubble
             if (links_n.size() == 2) {
                 std::vector<sgNodeID_t> linked_to;
                 std::map<sgNodeID_t, int> linked_2nd_degree;
                 for (auto l:links_n){
-                    std::cout << "Link source: " << l.source << " dest " << l.dest <<std::endl;
                     if (l.dest == n or l.dest == -n){
                         auto s = l.source > 0 ? l.source:-l.source;
                         linked_to.push_back(s);
                         for (auto l_2:links[s]){
-                            std::cout << "s: " << s << " source: " << l_2.source << " dest: " << l_2.dest<<std::endl;
                             auto s2 = l_2.source > 0 ? l_2.source:-l_2.source;
                             if (s2 !=s && s2 !=n) {
                                 linked_2nd_degree[s2]+=1;
@@ -114,8 +110,6 @@ std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sg
                         auto s = l.dest > 0 ? l.dest:-l.dest;
                         linked_to.push_back(s);
                         for (auto l_2:links[s]){
-                            std::cout << "s: " << s << " source: " << l_2.source << " dest: " << l_2.dest<<std::endl;
-
                             auto s2 = l_2.source > 0 ? l_2.source:-l_2.source;
                             if (s2 !=s && s2 !=n){
                                 linked_2nd_degree[s2] += 1;
@@ -131,25 +125,18 @@ std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sg
 
                 }
 
-                std::cout << "linked 2nd:";
-                for (auto j: linked_2nd_degree){
-                    std::cout << j.first << " ";
-                }
-                std::cout << std::endl;
+
                     // if n is a bubble, other bubble contigs will share source and dest
                     // nope... but each bubble contig should occur twice...
 
 
-                std::cout << "founr " << linked_2nd_degree.size() << " 2nd degree links " << std::endl;
                     // if an element is 2nd degree joined to n twice, and linked to the same nodes as n, its in a bubble
                     for (auto j:linked_2nd_degree){
-                        std::cout << "node joined to: " << j.first << " number of joins " << j.second << std::endl;
                         if (j.second == 2){
                             checked.push_back(j.first);
                             auto links_j = links[j.first];
                             std::vector<sgNodeID_t > joined_j;
                             for (auto l_j:links_j){
-                                std::cout << "j" << j.first << " joined to "<< l_j.source << " and " << l_j.dest << std::endl;
                                 if (l_j.source == j.first or l_j.source == -j.first){
                                     auto l_j_abs = l_j.dest > 0? l_j.dest: -l_j.dest;
                                     joined_j.push_back(l_j_abs);
@@ -160,13 +147,8 @@ std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sg
 
                                 }
                             }
-                            for (auto i:joined_j){
-                                std::cout << i <<" ";
-                            }
-                            std::cout << std::endl;
 
                             if (joined_j.size() > 0 && std::is_permutation(linked_to.begin(), linked_to.end(), joined_j.begin()) ){
-                                std::cout << "Bubble node: " << j.first << std::endl;
                                 bubble.push_back(j.first);
                             }
                         }
@@ -180,13 +162,6 @@ std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sg
         if (bubble.size() > 1){
             bubbles.push_back(bubble);
         }
-    }
-    for (auto bubble:bubbles){
-        for (auto n: bubble){
-            // id is index i other lists
-            std::cout << oldnames[n] << " ";
-        }
-        std::cout << std::endl;
     }
     std::cout << "Found " << bubbles.size() << " bubbles in component of " << component.size() << " nodes " <<std::endl;
     return bubbles;
