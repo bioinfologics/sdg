@@ -15,6 +15,32 @@ void PhaseScaffolder::load_mappings(std::string r1_filename, std::string r2_file
     std::cout << "Mapped " << mapper.read_to_node.size() << " reads to " <<  mapper.reads_in_node.size() << "nodes" << std::endl;
 }
 
+
+void PhaseScaffolder::output_bubbles(std::string bubble_filename) {
+
+        std::ofstream out(bubble_filename);
+//find each component of gfa
+    auto components = sg.connected_components();
+// this finds 2 components for test graph...
+    std::cout << "Found " << components.size() << " connected components " << std::endl;
+    int counter = 0;
+    for (auto component:components) {
+        auto bubbles = sg.find_bubbles(component);
+        if(bubbles.size() > 1){
+            for (auto bubble:bubbles)
+            {
+                for (auto bubble_c:bubble){
+                    out << ">"<<sg.oldnames[bubble_c] << "_" << counter << std::endl << sg.nodes[bubble_c].sequence << std::endl;
+                }
+
+            }
+
+        }
+        counter +=1;
+
+    }
+}
+
 void PhaseScaffolder::phase_components() {
 
 //find and phase each component of gfa
