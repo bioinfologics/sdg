@@ -30,6 +30,9 @@ public:
     Link( sgNodeID_t _src, sgNodeID_t _dst, int32_t _dist) : source(_src), dest(_dst), dist(_dist) {};
     sgNodeID_t source,dest;
     int32_t dist;
+
+    bool operator==( const  Link);
+
 };
 
 class SequenceGraph {

@@ -77,21 +77,39 @@ std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n){
     return r;
 }
 
+bool Link::operator==(const Link a){
+    if (a.source == this->source && a.dest == this->dest && a.dist == this->dest){
+        return true;
+    }
+    return false;
+}
+
 std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sgNodeID_t> component){
     std::vector<std::vector<sgNodeID_t >> bubbles;
     std::vector<sgNodeID_t > checked;
     // loop over all links in component, if 2 (or x) nodes have same source and dest, they are bubbles
     for (auto n: component){
+        std::cout << "name: " << oldnames[n] << std::endl;
         std::vector<sgNodeID_t > bubble;
         bubble.push_back(n);
         // if we haven't checked this node
         if (std::find(checked.begin(), checked.end(), n) == checked.end()){
             auto links_n = links[n];
+            std::set<Link> links_set;
+            std::vector<Link> links_uniq;
+
+            for (auto link:links_n){
+                std::cout << "source: " << link.source << " dest: " << link.dest << std::endl;
+                if (std::find(links_set.begin(), links_set.end(), link) == links_set.end()){
+                    links_uniq.push_back(link);
+                    links_set.insert(link);
+                }
+            }
             // if l has exactly 2 links, one source and one dest, it may be a bubble
-            if (links_n.size() == 2) {
+            if (links_uniq.size() == 2) {
                 std::vector<sgNodeID_t> linked_to;
                 std::map<sgNodeID_t, int> linked_2nd_degree;
-                for (auto l:links_n){
+                for (auto l:links_uniq){
                     if (l.dest == n or l.dest == -n){
                         auto s = l.source > 0 ? l.source:-l.source;
                         linked_to.push_back(s);

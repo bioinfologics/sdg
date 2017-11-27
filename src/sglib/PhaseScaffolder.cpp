@@ -32,7 +32,7 @@ void PhaseScaffolder::output_bubbles(std::string bubble_filename) {
             std::ofstream out(name);
             out << "H\tVN:Z:1.0"<<std::endl;
             for (sgNodeID_t n:component){
-                out<<"S\tseq"<<n<<"\t*\tLN:i:"<<sg.nodes[n].sequence.size()<<"\tUR:Z:"<<std::endl;
+                out<<"S\tseq"<<n<<"\t*\tLN:i:"<<sg.nodes[n].sequence.size()<<"\tUR:Z:"<< sg.nodes[n].sequence <<std::endl;
             }
 
             for ( sgNodeID_t n:component){
