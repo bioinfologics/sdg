@@ -173,7 +173,7 @@ std::vector<std::vector<sgNodeID_t>> SequenceGraph::connected_components(int max
     std::vector<bool> used(nodes.size());
     std::vector<std::vector<sgNodeID_t>> components;
     //TODO: first find all repeats, add them as independent components and mark them as used.
-
+    size_t max_component = 0;
     for (sgNodeID_t start_node=1;start_node<nodes.size();++start_node){
         if (false==used[start_node]){
             used[start_node]=true;
@@ -199,8 +199,12 @@ std::vector<std::vector<sgNodeID_t>> SequenceGraph::connected_components(int max
                 components.back().push_back(n);
                 used[n]=true;
             }
+            if (in_component.size() > max_component){
+                max_component = in_component.size();
+            }
         }
     }
+    std::cout << "Max component size: " << max_component << std::endl;
     return components;
 }
 

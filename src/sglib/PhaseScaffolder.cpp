@@ -20,15 +20,18 @@ void PhaseScaffolder::output_bubbles(std::string bubble_filename) {
 
         std::ofstream out(bubble_filename);
 //find each component of gfa
+    std::cout << "Finding components" << std::endl;
     auto components = sg.connected_components();
 // this finds 2 components for test graph...
     std::cout << "Found " << components.size() << " connected components " << std::endl;
     int counter = 0;
     for (auto component:components) {
         auto bubbles = sg.find_bubbles(component);
+        std::cout << "Component with " << component.size() << " nodes " << bubbles.size() << " bubbles " << std::endl;
         if(bubbles.size() > 1){
             for (auto bubble:bubbles)
             {
+
                 for (auto bubble_c:bubble){
                     out << ">"<<sg.oldnames[bubble_c] << "_" << counter << std::endl << sg.nodes[bubble_c].sequence << std::endl;
                 }
