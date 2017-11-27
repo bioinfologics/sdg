@@ -27,6 +27,26 @@ void PhaseScaffolder::output_bubbles(std::string bubble_filename) {
     int counter = 0;
     for (auto component:components) {
         auto bubbles = sg.find_bubbles(component);
+        if (component.size() > 6){
+            auto name = "component" + std::to_string(counter) + ".gfa";
+            std::ofstream out(name);
+            out << "H\tVN:Z:1.0"<<std::endl;
+            for (sgNodeID_t n:component){
+                out<<"S\tseq"<<n<<"\t*\tLN:i:"<<sg.nodes[n].sequence.size()<<"\tUR:Z:"<<std::endl;
+            }
+
+            for ( sgNodeID_t n:component){
+                for (auto &l:sg.links[n])
+                    if (l.source<=l.dest) {
+                        out<<"L\t";
+                        if (l.source>0) out<<"seq"<<l.source<<"\t-\t";
+                        else out<<"seq"<<-l.source<<"\t+\t";
+                        if (l.dest>0) out<<"seq"<<l.dest<<"\t+\t";
+                        else out<<"seq"<<-l.dest<<"\t-\t";
+                        out<<(l.dist<0 ? -l.dist : 0)<<"M"<<std::endl;
+                    }
+            }
+        }
         std::cout << "Component with " << component.size() << " nodes " << bubbles.size() << " bubbles " << std::endl;
         if(bubbles.size() > 1){
             for (auto bubble:bubbles)
