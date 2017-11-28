@@ -25,43 +25,49 @@ void PhaseScaffolder::output_bubbles(std::string bubble_filename) {
 // this finds 2 components for test graph...
     std::cout << "Found " << components.size() << " connected components " << std::endl;
     int counter = 0;
+    int counter2 = 0;
     for (auto component:components) {
-        auto bubbles = sg.find_bubbles(component);
-        /*if (component.size() > 6){
-            auto name = "component" + std::to_string(counter) + ".gfa";
-            std::ofstream out(name);
-            out << "H\tVN:Z:1.0"<<std::endl;
-            for (sgNodeID_t n:component){
-                out<<"S\tseq"<<n<<"\t*\tLN:i:"<<sg.nodes[n].sequence.size()<<"\tUR:Z:"<< sg.nodes[n].sequence <<std::endl;
-            }
+        if (component.size() >= 6) {
+            auto bubbles = sg.find_bubbles(component);
+            /*if (component.size() > 6){
+                auto name = "component" + std::to_string(counter) + ".gfa";
+                std::ofstream out(name);
+                out << "H\tVN:Z:1.0"<<std::endl;
+                for (sgNodeID_t n:component){
+                    out<<"S\tseq"<<n<<"\t*\tLN:i:"<<sg.nodes[n].sequence.size()<<"\tUR:Z:"<< sg.nodes[n].sequence <<std::endl;
+                }
 
-            for ( sgNodeID_t n:component){
-                for (auto &l:sg.links[n])
-                    if (l.source<=l.dest) {
-                        out<<"L\t";
-                        if (l.source>0) out<<"seq"<<l.source<<"\t-\t";
-                        else out<<"seq"<<-l.source<<"\t+\t";
-                        if (l.dest>0) out<<"seq"<<l.dest<<"\t+\t";
-                        else out<<"seq"<<-l.dest<<"\t-\t";
-                        out<<(l.dist<0 ? -l.dist : 0)<<"M"<<std::endl;
+                for ( sgNodeID_t n:component){
+                    for (auto &l:sg.links[n])
+                        if (l.source<=l.dest) {
+                            out<<"L\t";
+                            if (l.source>0) out<<"seq"<<l.source<<"\t-\t";
+                            else out<<"seq"<<-l.source<<"\t+\t";
+                            if (l.dest>0) out<<"seq"<<l.dest<<"\t+\t";
+                            else out<<"seq"<<-l.dest<<"\t-\t";
+                            out<<(l.dist<0 ? -l.dist : 0)<<"M"<<std::endl;
+                        }
+                }
+            }*/
+            //std::cout << "Component with " << component.size() << " nodes " << bubbles.size() << " bubbles "
+                      << std::endl;
+            if (bubbles.size() > 1) {
+                counter2+=1;
+                for (auto bubble:bubbles) {
+
+                    for (auto bubble_c:bubble) {
+                        out2 << ">" << sg.oldnames[bubble_c] << "_" << counter << std::endl
+                             << sg.nodes[bubble_c].sequence << std::endl;
                     }
-            }
-        }*/
-        std::cout << "Component with " << component.size() << " nodes " << bubbles.size() << " bubbles " << std::endl;
-        if(bubbles.size() > 1){
-            for (auto bubble:bubbles)
-            {
 
-                for (auto bubble_c:bubble){
-                    out2 << ">"<<sg.oldnames[bubble_c] << "_" << counter << std::endl << sg.nodes[bubble_c].sequence << std::endl;
                 }
 
             }
 
+            counter += 1;
         }
-        counter +=1;
-
     }
+    std::cout << counter << " components with enough contigs to be phaseable, " << counter2 << " contained more tan 1 bubble, i.e. are phaseable \n";
 }
 
 void PhaseScaffolder::phase_components() {
