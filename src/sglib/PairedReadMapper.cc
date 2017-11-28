@@ -36,7 +36,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
             readkmers.clear();
             //process tag if 10x! this way even ummaped reads get tags
             if (is_tagged) {
-                /*if (read.name.size() > 16) {
+                if (read.name.size() > 16) {
                     std::string barcode = read.name.substr(read.name.size() - 16);
                     prm10xTag_t tag = 0;
                     for (auto &b:barcode) {
@@ -67,7 +67,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
                 } else {
                     std::cout << "Read name too short to contain 10x barcode: " << read.name << std::endl;
                     exit(1);
-                }*/
+                }
             }
             kf.setFileRecord(read);
             kf.next_element(readkmers);

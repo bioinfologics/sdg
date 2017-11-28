@@ -104,7 +104,6 @@ public:
         std::cout << "Opening: " << filepath << "\n";
         gz_file = gzopen(filepath.c_str(), "r");
         ks = new kstream<gzFile, FunctorZlib>(gz_file, gzr);
-        std::cout << "pest";
     }
 
     /**

@@ -50,7 +50,7 @@ void PhaseScaffolder::output_bubbles(std::string bubble_filename) {
                 }
             }*/
             //std::cout << "Component with " << component.size() << " nodes " << bubbles.size() << " bubbles "
-                      << std::endl;
+              //        << std::endl;
             if (bubbles.size() > 1) {
                 counter2+=1;
                 for (auto bubble:bubbles) {
@@ -78,18 +78,20 @@ void PhaseScaffolder::phase_components() {
     std::cout << "Found " << components.size() << " connected components " << std::endl;
     for (auto component:components) {
         HaplotypeScorer hs;
+        if (component.size() >= 6) {
 
 // should
-        auto bubbles = sg.find_bubbles(component);
-        hs.find_possible_haplotypes(bubbles);
-        std::cout << "mapper.reads_in_node.size()  " << mapper.reads_in_node.size() <<std::endl;
+            auto bubbles = sg.find_bubbles(component);
+            hs.find_possible_haplotypes(bubbles);
+            std::cout << "mapper.reads_in_node.size()  " << mapper.reads_in_node.size() << std::endl;
 
-        hs.count_barcode_votes(mapper);
-        hs.decide_barcode_haplotype_support();
+            hs.count_barcode_votes(mapper);
+            hs.decide_barcode_haplotype_support();
 // now have mappings and barcode support
-        if (hs.barcode_haplotype_mappings.size() > 0) {
-            hs.score_haplotypes(sg.oldnames);
-            std::cout << "scored haplotypes " << hs.success << std::endl;
+            if (hs.barcode_haplotype_mappings.size() > 0) {
+                hs.score_haplotypes(sg.oldnames);
+                std::cout << "scored haplotypes " << hs.success << std::endl;
+            }
         }
     }
 }

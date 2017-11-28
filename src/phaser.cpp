@@ -74,11 +74,10 @@ int main(int argc, char * argv[]) {
 
     sg.load_from_gfa(gfa_filename);
     PhaseScaffolder ps = PhaseScaffolder(sg);
-    ps.output_bubbles("test.gfa");
-   /*     auto fasta_filename=gfa_filename.substr(0,gfa_filename.size()-4)+".fasta";
+       auto fasta_filename=gfa_filename.substr(0,gfa_filename.size()-4)+".fasta";
         ps.load_mappings(reads1, reads2, fasta_filename, max_mem_gb);
         ps.phase_components();
-*/
+
 
 
     return 0;
