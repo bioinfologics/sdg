@@ -32,6 +32,7 @@ public:
     int32_t dist;
 
     bool operator==( const  Link);
+    bool operator<(const Link)const;
 
 };
 

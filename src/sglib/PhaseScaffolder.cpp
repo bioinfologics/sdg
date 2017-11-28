@@ -18,7 +18,7 @@ void PhaseScaffolder::load_mappings(std::string r1_filename, std::string r2_file
 
 void PhaseScaffolder::output_bubbles(std::string bubble_filename) {
 
-        std::ofstream out(bubble_filename);
+        std::ofstream out2(bubble_filename);
 //find each component of gfa
     std::cout << "Finding components" << std::endl;
     auto components = sg.connected_components();
@@ -27,7 +27,7 @@ void PhaseScaffolder::output_bubbles(std::string bubble_filename) {
     int counter = 0;
     for (auto component:components) {
         auto bubbles = sg.find_bubbles(component);
-        if (component.size() > 6){
+        /*if (component.size() > 6){
             auto name = "component" + std::to_string(counter) + ".gfa";
             std::ofstream out(name);
             out << "H\tVN:Z:1.0"<<std::endl;
@@ -46,14 +46,14 @@ void PhaseScaffolder::output_bubbles(std::string bubble_filename) {
                         out<<(l.dist<0 ? -l.dist : 0)<<"M"<<std::endl;
                     }
             }
-        }
+        }*/
         std::cout << "Component with " << component.size() << " nodes " << bubbles.size() << " bubbles " << std::endl;
         if(bubbles.size() > 1){
             for (auto bubble:bubbles)
             {
 
                 for (auto bubble_c:bubble){
-                    out << ">"<<sg.oldnames[bubble_c] << "_" << counter << std::endl << sg.nodes[bubble_c].sequence << std::endl;
+                    out2 << ">"<<sg.oldnames[bubble_c] << "_" << counter << std::endl << sg.nodes[bubble_c].sequence << std::endl;
                 }
 
             }
