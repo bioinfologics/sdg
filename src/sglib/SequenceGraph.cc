@@ -98,7 +98,7 @@ std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sg
     std::vector<sgNodeID_t > checked;
     // loop over all links in component, if 2 (or x) nodes have same source and dest, they are bubbles
     for (auto n: component){
-        std::cout << "n " << "name: " << oldnames[n] << std::endl;
+        //std::cout << "n " << "name: " << oldnames[n] << std::endl;
         std::vector<sgNodeID_t > bubble;
         bubble.push_back(n);
         // if we haven't checked this node
@@ -111,18 +111,18 @@ std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sg
                 auto s = link.source > 0 ? link.source:-link.source;
                 auto d = link.dest > 0 ? link.dest:-link.dest;
 
-                std::cout << "source: " << oldnames[s] << " dest: " << oldnames[d] << std::endl;
+                //std::cout << "source: " << oldnames[s] << " dest: " << oldnames[d] << std::endl;
                 if (links_set.find(link) == links_set.end()){
-                    std::cout << "not duplicate " <<std::endl;
+                    //std::cout << "not duplicate " <<std::endl;
                     links_uniq.push_back(link);
                     links_set.insert(link);
                 }
             }
-            for (auto u:  links_uniq){
+            /*for (auto u:  links_uniq){
                 //std::cout << oldnames[u.source] << " " << oldnames[u.dest] << " \n";
                 std::cout << u.source << " " << u.dest << " \n";
             }
-            std::cout << "\nlinks unique: " << links_uniq.size() << " links set " << links_set.size() << std::endl;
+            std::cout << "\nlinks unique: " << links_uniq.size() << " links set " << links_set.size() << std::endl;*/
             // if l has exactly 2 links, one source and one dest, it may be a bubble
             if (links_uniq.size() == 2) {
                 std::vector<sgNodeID_t> linked_to;
@@ -181,11 +181,11 @@ std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sg
 
                 }
 
-for (auto link2:linked_2nd_degree){
+/*for (auto link2:linked_2nd_degree){
 
     auto s = link2.first > 0 ? link2.first:-link2.first;
     std::cout << "2nd degree l: " << oldnames[s] << " " << link2.second << " l first: " << link2.first << std::endl;
-}
+}*/
                     // if n is a bubble, other bubble contigs will share source and dest
                     // nope... but each bubble contig should occur twice...
 
@@ -209,25 +209,25 @@ for (auto link2:linked_2nd_degree){
                             }
 
                             auto s = j.first > 0 ? j.first:-j.first;
-                            std::cout << "j: " << oldnames[s] << " id: " << j.first;
+                            /*std::cout << "j: " << oldnames[s] << " id: " << j.first;
                             for (auto jhg:joined_j){
                                 auto d = jhg > 0 ? jhg:-jhg;
 
                                 std::cout << " "<< oldnames[d] << " ";
                             }
-                            std::cout << std::endl;
+                            std::cout << std::endl;*/
                             if (joined_j.size() == linked_to.size()){
                                 std::vector<sgNodeID_t > joined_vec;
                                 for (auto joined:joined_j){
                                     joined_vec.push_back(joined);
-                                    std::cout << joined << " ";
+                                    //std::cout << joined << " ";
                                 }
-                                std::cout <<std::endl;
+                                //std::cout <<std::endl;
                                 for (auto joined: linked_to){
                                     joined_vec.push_back(joined);
-                                    std::cout << joined << " ";
+                                    //std::cout << joined << " ";
                                 }
-                                std::cout << std::endl;
+                                //std::cout << std::endl;
 
                                 if (std::is_permutation(linked_to.begin(), linked_to.end(), joined_vec.begin()) ) {
                                     bubble.push_back(j.first);
