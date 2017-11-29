@@ -18,8 +18,6 @@
 class HaplotypeScorer{
 
 public:
-    HaplotypeScorer::HaplotypeScorer();
-
     // functions we will need:
     void find_possible_haplotypes(std::vector<std::vector<sgNodeID_t >>);
     void load_haplotypes(std::string, int);

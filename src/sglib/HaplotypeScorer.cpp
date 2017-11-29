@@ -248,7 +248,3 @@ void HaplotypeScorer::find_possible_haplotypes(std::vector<std::vector<sgNodeID_
     std::cout << "Haplotype nodes size: " << haplotype_nodes.size() << std::endl;
 
 }
-
-HaplotypeScorer::HaplotypeScorer() {
-
-}
