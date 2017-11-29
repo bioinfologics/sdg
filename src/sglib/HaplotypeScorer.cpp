@@ -4,9 +4,7 @@
 
 #include "HaplotypeScorer.hpp"
 
-HaplotypeScorer::HaplotypeScorer(SequenceGraph & sg): sg(sg), mapper(PairedReadMapper(sg)){
 
-}
 
 /**
  *
@@ -70,52 +68,6 @@ void HaplotypeScorer::decide_barcode_haplotype_support(){
 
 }
 
-/**
- *
- *
- * @brief
- * Load haplotypes, at this point from text file with hap contig per line, haps separated by 'next' - generate this with old phaser code
- * * @return
- * populate array eith possible haplotpyes: this should be every comination of bubble contigs
- * \todo add functionality to find bubbles on graph, and generate possible haplotypes
- */
-void  HaplotypeScorer::load_haplotypes(std::string haplotype_filename, int degree = 2){
-    std::ifstream infile(haplotype_filename);
-    std::string line;
-    std::vector<std::string> fields;
-    std::cout << "Loading haplotypes " << haplotype_filename << std::endl;
-    std::string res;
-    // no obvious way to access graph nodes directly, so store  names;
-    std::vector<std::vector<sgNodeID_t> > haplotypes;
-    while (std::getline(infile, line)) {
-        std::istringstream(line) >> res;
-        if (res == "next" ){
-            std::vector<sgNodeID_t> next_haplotype;
-            for (auto n:fields){
-                sgNodeID_t node = sg.oldnames_to_ids[n];
-                next_haplotype.push_back(node);
-                haplotype_nodes.insert(node);
-                node_id_haplotype_index_map[node].push_back(haplotypes.size());
-                id_to_contig_name[node] = n;
-                fields.clear();
-            }
-
-            haplotypes.push_back(next_haplotype);
-
-            continue;
-        } else {
-            fields.push_back(res);
-
-        }
-        //TODO: sanity check, no ids should be 0, all haps should be same length
-
-
-    }
-    haplotype_ids =  haplotypes;
-
-    std::cout << "Loaded " << haplotypes.size() << "haplotypes \n";
-}
-
 
 /**
  *
@@ -127,15 +79,20 @@ void  HaplotypeScorer::load_haplotypes(std::string haplotype_filename, int degre
  * find mappings for each node in the bubble contigs. for each barcode, sum up the number of mappings for each node that a read with that barcode maps to
  *
  */
-void HaplotypeScorer::count_barcode_votes(std::string r1_filename, std::string r2_filename){
-    mapper.map_reads(r1_filename, r2_filename, prm10x);
+void HaplotypeScorer::count_barcode_votes(PairedReadMapper & mapper){
     std::cout << "Mapped " << mapper.read_to_node.size() << " reads to " <<  mapper.reads_in_node.size() << "nodes" << std::endl;
     std::cout << "NOw counting barcode votes... " << std::endl;
+    std::cout << "Haplotype nodes size: " << haplotype_nodes.size() << std::endl;
+    std::cout << "mapper.reads_in_node.size()  " << mapper.reads_in_node.size() <<std::endl;
     int counter = 0;
+    for (auto r: mapper.reads_in_node){
+        std::cout << "Node " << counter << " contsins " << r.size() <<" mappings " <<std::endl;
+        counter += 1;
+    }
     for (auto &node:haplotype_nodes){
-        //std::cout << "Node: " <<node <<std::endl;
+        std::cout << "Node: " <<node << " mappings " << mapper.reads_in_node[node].size() << std::endl;
         for (auto &mapping:mapper.reads_in_node[node>0?node:-node]){
-            std::string barcode = mapper.read_ids_to_tags[mapping.read_id];
+            auto barcode = mapper.read_to_tag[mapping.read_id];
              barcode_node_mappings[barcode][node] += mapping.unique_matches;
             counter += 1;
         }
@@ -154,7 +111,7 @@ void HaplotypeScorer::count_barcode_votes(std::string r1_filename, std::string r
  * \todo decide criteria for winning haploype
  *
  */
-int HaplotypeScorer::score_haplotypes() {
+int HaplotypeScorer::score_haplotypes(std::vector<std::string> oldnames) {
     auto number_haplotypes = haplotype_ids.size();
 
     std::cout << "Finding most supported of " << number_haplotypes<< " possible haplotypes"<<std::endl;
@@ -168,7 +125,7 @@ int HaplotypeScorer::score_haplotypes() {
     std::map<std::pair<int, int>, int> hap_pair_not_support;
     std::map<std::pair<int, int>, int> hap_pair_support;
     std::map<std::pair<int, int>, int> hap_pair_support_total_score;
-    std::string barcode;
+    prm10xTag_t barcode;
     for (auto &bm: barcode_haplotype_mappings) {
         barcode = bm.first;
         std::vector<int> winners = winner_for_barcode(barcode); // ideally should be length 1
@@ -217,9 +174,12 @@ int HaplotypeScorer::score_haplotypes() {
             support_winner.push_back(h);
         }
     }
-   for (auto w: support_winner){
+    std::cout << "hap " << *winner_index << " winning contigs: " << std::endl;
+
+    for (auto w: support_winner){
        for (auto h:haplotype_ids[w]){
-           std::cout << id_to_contig_name[h] << " ";
+
+           std::cout <<" c " << oldnames[h] << " ";
 
        }
        std::cout << std::endl;
@@ -239,7 +199,7 @@ int HaplotypeScorer::score_haplotypes() {
  * if more than2 have same support both are returned
  * \todo decide heuristics to vote for winner
  */
-std::vector<int>  HaplotypeScorer::winner_for_barcode(std::string barcode){
+std::vector<int>  HaplotypeScorer::winner_for_barcode(prm10xTag_t barcode){
     int max=0;
     std::vector<int> winners;
     for (auto h:barcode_haplotype_mappings[barcode]){
@@ -254,4 +214,37 @@ std::vector<int>  HaplotypeScorer::winner_for_barcode(std::string barcode){
         }
     }
     return winners;
+}
+
+
+void HaplotypeScorer::find_possible_haplotypes(std::vector<std::vector<sgNodeID_t >> bubbles){
+    // algorithm: https://stackoverflow.com/questions/1867030/combinations-of-multiple-vectors-elements-without-repetition
+    size_t P = 1;
+    auto N =bubbles.size();
+    for(size_t i=0;i<N;++i) {
+        P *= bubbles[i].size();
+        haplotype_nodes.insert(bubbles[i].begin(), bubbles[i].end());
+    }
+    std::vector<std::vector<sgNodeID_t >> haps;
+    std::cout << P << " combinations to generate from " << N << " bubbles " << std::endl;
+    for (size_t m=0; m < P; m++ ) {
+        // this should hold the index to take from each bubble
+        std::vector<size_t> indices(N);
+        std::vector<sgNodeID_t > bubble;
+        size_t m_curr = m;
+        for (size_t i = 0; i < N; ++i) {
+            indices[i] = m_curr% bubbles[i].size();
+            bubble.push_back(bubbles[i][indices[i]]);
+            m_curr /= bubbles[i].size();
+        }
+
+        haplotype_ids.push_back(bubble);
+    }
+    std::cout << haplotype_ids.size() << " haplotypes  generated " << std::endl;
+
+    std::cout << "Haplotype nodes size: " << haplotype_nodes.size() << std::endl;
+
+    this->haplotype_nodes = haplotype_nodes;
+    std::cout << "Haplotype nodes size: " << haplotype_nodes.size() << std::endl;
+
 }

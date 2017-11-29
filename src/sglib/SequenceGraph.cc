@@ -77,12 +77,185 @@ std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n){
     return r;
 }
 
+bool Link::operator==(const Link a){
+    if (a.source == this->source && a.dest == this->dest && a.dist == this->dist){
+        return true;
+    }
+    return false;
+}
+
+bool Link::operator<(const Link a) const {
+    if (a.source < this->source){
+        return true;
+    } if (a.source == this->source && a.dest < this->dest) {
+        return  true;
+    }
+    return false;
+}
+
+std::vector<std::vector<sgNodeID_t >> SequenceGraph::find_bubbles(std::vector<sgNodeID_t> component){
+    std::vector<std::vector<sgNodeID_t >> bubbles;
+    std::vector<sgNodeID_t > checked;
+    // loop over all links in component, if 2 (or x) nodes have same source and dest, they are bubbles
+    for (auto n: component){
+        //std::cout << "n " << "name: " << oldnames[n] << std::endl;
+        std::vector<sgNodeID_t > bubble;
+        bubble.push_back(n);
+        // if we haven't checked this node
+        if (std::find(checked.begin(), checked.end(), n) == checked.end()){
+            auto links_n = links[n];
+            std::set<Link> links_set;
+            std::vector<Link> links_uniq;
+
+            for (auto link:links_n){
+                auto s = link.source > 0 ? link.source:-link.source;
+                auto d = link.dest > 0 ? link.dest:-link.dest;
+
+                //std::cout << "source: " << oldnames[s] << " dest: " << oldnames[d] << std::endl;
+                if (links_set.find(link) == links_set.end()){
+                    //std::cout << "not duplicate " <<std::endl;
+                    links_uniq.push_back(link);
+                    links_set.insert(link);
+                }
+            }
+            /*for (auto u:  links_uniq){
+                //std::cout << oldnames[u.source] << " " << oldnames[u.dest] << " \n";
+                std::cout << u.source << " " << u.dest << " \n";
+            }
+            std::cout << "\nlinks unique: " << links_uniq.size() << " links set " << links_set.size() << std::endl;*/
+            // if l has exactly 2 links, one source and one dest, it may be a bubble
+            if (links_uniq.size() == 2) {
+                std::vector<sgNodeID_t> linked_to;
+                std::map<sgNodeID_t, int> linked_2nd_degree;
+                for (auto l:links_uniq){
+                    if (l.dest == n or l.dest == -n){
+                        auto s = l.source > 0 ? l.source:-l.source;
+                        linked_to.push_back(s);
+                        std::set<sgNodeID_t > seen_s2;
+                        std::set<sgNodeID_t > seen_d;
+                        for (auto l_2:links[s]){
+                            auto s2 = l_2.source > 0 ? l_2.source:-l_2.source;
+                            if (seen_s2.find(s2) == seen_s2.end()) {
+                                if (s2 != s && s2 != n) {
+                                    linked_2nd_degree[s2] += 1;
+                                }
+                                seen_s2.insert(s2);
+                            }
+
+                            auto d = l_2.dest > 0 ? l_2.dest:-l_2.dest;
+                            if (seen_d.find(d) == seen_d.end()) {
+                                if (d != s && d != n) {
+
+                                    linked_2nd_degree[d] += 1;
+                                }
+                                seen_d.insert(d);
+                            }
+                        }
+                    } else if (l.source == n or l.source == -n) {
+                        auto s = l.dest > 0 ? l.dest:-l.dest;
+                        linked_to.push_back(s);
+
+                        std::set<sgNodeID_t > seen_s2;
+                        std::set<sgNodeID_t > seen_d;
+                        for (auto l_2:links[s]){
+                            auto s2 = l_2.source > 0 ? l_2.source:-l_2.source;
+                            if (seen_s2.find(s2) == seen_s2.end()) {
+
+                                if (s2 !=s && s2 !=n){
+                                linked_2nd_degree[s2] += 1;
+
+                            }
+                                seen_s2.insert(s2);
+                            }
+
+                             auto d = l_2.dest > 0 ? l_2.dest:-l_2.dest;
+                            if (seen_d.find(d) == seen_d.end()) {
+                                if (d != s && d != n) {
+                                linked_2nd_degree[d] += 1;
+                                //checked.push_back(d);
+                            }
+                                seen_d.insert(d);
+                            }
+                        }
+                    }
+
+                }
+
+/*for (auto link2:linked_2nd_degree){
+
+    auto s = link2.first > 0 ? link2.first:-link2.first;
+    std::cout << "2nd degree l: " << oldnames[s] << " " << link2.second << " l first: " << link2.first << std::endl;
+}*/
+                    // if n is a bubble, other bubble contigs will share source and dest
+                    // nope... but each bubble contig should occur twice...
+
+
+                    // if an element is 2nd degree joined to n twice, and linked to the same nodes as n, its in a bubble
+                    for (auto j:linked_2nd_degree){
+                        if (j.second == 2){
+                            checked.push_back(j.first);
+                            auto links_j = links[j.first];
+                            std::set<sgNodeID_t > joined_j;
+                            for (auto l_j:links_j){
+                                if (l_j.source == j.first or l_j.source == -j.first){
+                                    auto l_j_abs = l_j.dest > 0? l_j.dest: -l_j.dest;
+                                    joined_j.insert(l_j_abs);
+                                } else if (l_j.dest == j.first or l_j.dest == -j.first){
+                                    auto l_j_abs = l_j.source > 0? l_j.source: -l_j.source;
+
+                                    joined_j.insert(l_j_abs);
+
+                                }
+                            }
+
+                            auto s = j.first > 0 ? j.first:-j.first;
+                            /*std::cout << "j: " << oldnames[s] << " id: " << j.first;
+                            for (auto jhg:joined_j){
+                                auto d = jhg > 0 ? jhg:-jhg;
+
+                                std::cout << " "<< oldnames[d] << " ";
+                            }
+                            std::cout << std::endl;*/
+                            if (joined_j.size() == linked_to.size()){
+                                std::vector<sgNodeID_t > joined_vec;
+                                for (auto joined:joined_j){
+                                    joined_vec.push_back(joined);
+                                    //std::cout << joined << " ";
+                                }
+                                //std::cout <<std::endl;
+                                for (auto joined: linked_to){
+                                    joined_vec.push_back(joined);
+                                    //std::cout << joined << " ";
+                                }
+                                //std::cout << std::endl;
+
+                                if (std::is_permutation(linked_to.begin(), linked_to.end(), joined_vec.begin()) ) {
+                                    bubble.push_back(j.first);
+                                }
+                            }
+                        }
+
+                    }
+
+
+            }
+
+        }
+        if (bubble.size() > 1){
+            bubbles.push_back(bubble);
+        }
+    }
+    std::cout << "Found " << bubbles.size() << " bubbles in component of " << component.size() << " nodes " <<std::endl;
+    return bubbles;
+}
+
+
 std::vector<std::vector<sgNodeID_t>> SequenceGraph::connected_components(int max_nr_totalinks, int max_nr_dirlinks,
                                                                          int min_rsize) {
     std::vector<bool> used(nodes.size());
     std::vector<std::vector<sgNodeID_t>> components;
     //TODO: first find all repeats, add them as independent components and mark them as used.
-
+    size_t max_component = 0;
     for (sgNodeID_t start_node=1;start_node<nodes.size();++start_node){
         if (false==used[start_node]){
             used[start_node]=true;
@@ -108,8 +281,12 @@ std::vector<std::vector<sgNodeID_t>> SequenceGraph::connected_components(int max
                 components.back().push_back(n);
                 used[n]=true;
             }
+            if (in_component.size() > max_component){
+                max_component = in_component.size();
+            }
         }
     }
+    std::cout << "Max component size: " << max_component << std::endl;
     return components;
 }
 

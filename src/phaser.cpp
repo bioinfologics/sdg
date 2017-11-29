@@ -7,12 +7,13 @@
 #include "cxxopts.hpp"
 #include "sglib/SequenceGraph.hpp"
 #include "sglib/HaplotypeScorer.hpp"
+#include "sglib/PhaseScaffolder.h"
 
 
 int main(int argc, char * argv[]) {
     std::string gfa_filename,bubble_contigs_filename,output_prefix, reads1,reads2;
     std::vector<std::string>  dump_mapped, load_mapped;
-
+    uint64_t max_mem_gb=4;
     bool stats_only=0;
 
     try
@@ -28,7 +29,8 @@ int main(int argc, char * argv[]) {
                 ("1,read1", "input reads, left", cxxopts::value<std::string>(reads1))
                 ("2,read2", "input reads, right", cxxopts::value<std::string>(reads2))
                 ("d,dump_to", "dump mapped reads to file", cxxopts::value<std::vector<std::string>>(dump_mapped))
-                ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped));
+                ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped))
+                ("max_mem", "maximum_memory when mapping (GB, default: 4)", cxxopts::value<uint64_t>(max_mem_gb));
 
 
         auto result = options.parse(argc, argv);
@@ -56,53 +58,27 @@ int main(int argc, char * argv[]) {
                   <<"Use option --help to check command line arguments." << std::endl;
         exit(1);
     }
-
+    if (!sglib::check_or_create_directory(output_prefix)) {
+        exit(1);
+    }
 
     std::cout<< "Welcome to phaser"<<std::endl<<std::endl;
+    if (gfa_filename.size()<=4 or gfa_filename.substr(gfa_filename.size()-4,4)!=".gfa") {
 
-    SequenceGraph sg;
-    sg.load_from_gfa(gfa_filename);
-    std::cout << sg.oldnames_to_ids.size() << " sg oodes size: " << sg.nodes.size() << std::endl;
-    std::cout << "Edge 0: " << sg.oldnames_to_ids["edge0"] << " " << sg.oldnames_to_ids["edge0+"] << std::endl;
-
-
-
-    /*(for (auto node: sg.nodes){
-        std::cout << node.sequence << " " << std::endl;
-    }*/
-    // currently takes gfa, file of possible phasings, and reads
-    // loads graph, loads phasings, maps reads and computes support:
-    /**
-     * \todo Load entire GFA rather than subcomponent
-     * \todo map reads to entire GFA
-     * \todo find connected components
-     * \todo find bubble contigs, allowing bubbles of varying degrees
-    * \todo phase components with > 1 bubbles in turn
-
-     * \todo from bubble contigs, compute possible haplotypes - if too many, split so exponential growth doesn't kill us
-     * \todo decide heurisitcs for picking barcode winner, overall winner, when to
-     * with all phased, intersect barocdes supporting phasings on different contigs to build up phase blocks
-
- */
-
-    HaplotypeScorer hs(sg);
-    //find and phase each component of gfa
-    auto components = sg.connected_components();
-    /*for (auto component:components){
-        // should
-        auto n = component.find_bubbles();
-        if (n > 1){
-            component.find_possible_haplotypes();
-            // then as below for each
-        }
-    }*/
-    hs.load_haplotypes(bubble_contigs_filename, 2);
-    hs.count_barcode_votes(reads1, reads2);
-    hs.decide_barcode_haplotype_support();
-    // now have mappings and barcode support
-    if (hs.barcode_haplotype_mappings.size() > 0){
-        hs.score_haplotypes();
+        throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '" +
+                                    gfa_filename.substr(gfa_filename.size() - 4, 4) + "'");
     }
-    sg.write_to_gfa(output_prefix+".gfa");
+    max_mem_gb *= GB;
+    SequenceGraph sg;
+
+
+    sg.load_from_gfa(gfa_filename);
+    PhaseScaffolder ps = PhaseScaffolder(sg);
+       auto fasta_filename=gfa_filename.substr(0,gfa_filename.size()-4)+".fasta";
+        ps.load_mappings(reads1, reads2, fasta_filename, max_mem_gb);
+        ps.phase_components();
+
+
+
     return 0;
 }

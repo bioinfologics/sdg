@@ -54,7 +54,7 @@ public:
     bool next_record(FileRecord& rec) {
         int l;
         do {
-            l=(ks->read(seq));
+            l=(ks->readFasta(seq));
             std::swap(rec.seq, seq.seq);
             std::swap(rec.name, seq.name);
             rec.id = numRecords;
@@ -122,13 +122,14 @@ public:
     bool next_record(FileRecord& rec) {
         int l;
         do {
-            l=(ks->read(seq));
+            l=(ks->readFastq(seq));
             std::swap(rec.seq, seq.seq);
             std::swap(rec.qual, seq.qual);
             std::swap(rec.name, seq.name);
             std::swap(rec.comment, seq.comment);
             rec.id = numRecords;
             numRecords++;
+
             stats.totalLength+=rec.seq.size();
         } while (rec.seq.size() < params.min_length && l >= 0);
         stats.filteredRecords++;
@@ -138,7 +139,6 @@ public:
 
     ReaderStats getSummaryStatistics() {
         stats.totalRecords=numRecords;
-        std::cout << "Num records" << numRecords << "Total length" << stats.totalLength << " filtered records: " << stats.filteredRecords << "filtered length" << stats.filteredLength << std::endl;
         return stats;
     }
 

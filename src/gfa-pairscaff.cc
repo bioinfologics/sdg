@@ -10,6 +10,7 @@ int main(int argc, char * argv[]) {
     std::string gfa_filename,output_prefix;
     std::vector<std::string> reads1,reads2, dump_mapped, load_mapped;
     bool stats_only=0;
+    uint64_t max_mem_gb=4;
 
     try
     {
@@ -23,7 +24,8 @@ int main(int argc, char * argv[]) {
                 ("1,read1", "input reads, left", cxxopts::value<std::vector<std::string>>(reads1))
                 ("2,read2", "input reads, right", cxxopts::value<std::vector<std::string>>(reads2))
                 ("d,dump_to", "dump mapped reads to file", cxxopts::value<std::vector<std::string>>(dump_mapped))
-                ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped));
+                ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped))
+                ("max_mem", "maximum_memory when mapping (GB, default: 4)", cxxopts::value<uint64_t>(max_mem_gb));
 
 
         auto result(options.parse(argc, argv));
@@ -58,6 +60,12 @@ int main(int argc, char * argv[]) {
 
     std::cout<< "Welcome to gfa-pairscaff"<<std::endl<<std::endl;
 
+    if (gfa_filename.size()<=4 or gfa_filename.substr(gfa_filename.size()-4,4)!=".gfa") {
+
+        throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '" +
+                                    gfa_filename.substr(gfa_filename.size() - 4, 4) + "'");
+    }
+    auto fasta_filename=gfa_filename.substr(0,gfa_filename.size()-4)+".fasta";
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
 
@@ -85,7 +93,7 @@ int main(int argc, char * argv[]) {
     }
     for(int lib=0;lib<reads1.size();lib++) {
         mappers.emplace_back(sg);
-        mappers.back().map_reads(reads1[lib], reads2[lib], prmPE);
+        mappers.back().map_reads(reads1[lib], reads2[lib], fasta_filename, prmPE, max_mem_gb*1024L*1024L*1024L);
         mappers.back().print_stats();
         if (dump_mapped.size() > 0) {
             std::cout<<"dumping map to "<<dump_mapped[lib]<<std::endl;
