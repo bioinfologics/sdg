@@ -107,7 +107,7 @@ public:
         std::ifstream final_file(finalFilePath+"final.kc");
         if (final_file.is_open()){
             std::cout << "Using precomputed sum file at " << outdir << "final.kc" << std::endl;
-            return readFinalkc(finalFilePath+"final.kc");
+            return readFinalkc(outdir+"final.kc");
         } else {
             uint64_t numFileRecords(0);
 

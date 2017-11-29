@@ -179,9 +179,9 @@ int main(int argc, char **argv) {
      * and generates a list of links between contigs.
      */
     SMR<ContigLink,
-            ContigLinkFactory<FastaRecord>,
-            FastaReader<FastaRecord>,
-            FastaRecord, FastxReaderParams, FilterSetParams> contigLink_SMR({min_read_length},   // ReaderParams
+            ContigLinkFactory<FastqRecord>,
+            FastqReader<FastqRecord>,
+            FastqRecord, FastxReaderParams, FilterSetParams> contigLink_SMR({min_read_length},   // ReaderParams
                                                                             {output_prefix, k,   // FilterParams
                                                                              unique_kmers, sequences_fasta,
                                                                              min_kmers_to_call_match,

@@ -103,6 +103,10 @@ public:
     explicit FastqReader(FastxReaderParams params, const std::string &filepath) : params(params), numRecords(0) {
         std::cout << "Opening: " << filepath << "\n";
         gz_file = gzopen(filepath.c_str(), "r");
+        if (gz_file == Z_NULL) {
+            std::cout << "Error opening FASTA " << filepath << ": " << std::strerror(errno) << std::endl;
+            exit(1);
+        }
         ks = new kstream<gzFile, FunctorZlib>(gz_file, gzr);
     }
 
