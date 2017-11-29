@@ -54,7 +54,7 @@ public:
     bool next_record(FileRecord& rec) {
         int l;
         do {
-            l=(ks->read(seq));
+            l=(ks->readFasta(seq));
             std::swap(rec.seq, seq.seq);
             std::swap(rec.name, seq.name);
             rec.id = numRecords;
@@ -122,7 +122,7 @@ public:
     bool next_record(FileRecord& rec) {
         int l;
         do {
-            l=(ks->read(seq));
+            l=(ks->readFastq(seq));
             std::swap(rec.seq, seq.seq);
             std::swap(rec.qual, seq.qual);
             std::swap(rec.name, seq.name);
