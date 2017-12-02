@@ -391,9 +391,9 @@ void SequenceGraph::load_from_gfa(std::string filename) {
             add_link(src_id,dest_id,dist);
             ++lcount;
         }
-        if (dist_gt0 > lcount*0.5f) {
-            std::cout << "Warning: The loaded graph contains " << dist_gt0 << " non-overlapping links out of " << lcount << std::endl;
-        }
+    }
+    if (dist_gt0 > lcount*0.5f) {
+        std::cout << "Warning: The loaded graph contains " << dist_gt0 << " non-overlapping links out of " << lcount << std::endl;
     }
     std::cout<<nodes.size()-1<<" nodes after connecting with "<<lcount<<" links"<<std::endl;
 }
