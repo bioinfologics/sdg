@@ -353,8 +353,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     sgNodeID_t src_id,dest_id;
     int32_t dist;
     uint64_t lcount=0;
-    uint64_t dist_gt0(0);
-    Link l(0,0,0);
+    uint64_t dist_egt0(0);
     while(std::getline(gfaf, line) and !gfaf.eof()) {
         std::istringstream iss(line);
         iss >> gfa_rtype;
@@ -383,17 +382,16 @@ void SequenceGraph::load_from_gfa(std::string filename) {
             if (gfa_cigar.size()>1 and gfa_cigar[gfa_cigar.size()-1]=='M') {
                 //TODO: better checks for M
                 dist=-atoi(gfa_cigar.c_str());
-                if (dist!=0) {
-                    dist_gt0++;
+                if (dist>=0) {
+                    dist_egt0++;
                 }
-                //std::cout<<l.dist<<std::endl;
             }
             add_link(src_id,dest_id,dist);
             ++lcount;
         }
     }
-    if (dist_gt0 > lcount*0.5f) {
-        std::cout << "Warning: The loaded graph contains " << dist_gt0 << " non-overlapping links out of " << lcount << std::endl;
+    if (dist_egt0 > lcount*0.5f) {
+        std::cout << "Warning: The loaded graph contains " << dist_egt0 << " non-overlapping links out of " << lcount << std::endl;
     }
     std::cout<<nodes.size()-1<<" nodes after connecting with "<<lcount<<" links"<<std::endl;
 }
