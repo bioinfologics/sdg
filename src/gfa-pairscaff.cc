@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sglib/PairedReadMapper.hpp>
 #include <sglib/Scaffolder.hpp>
+#include <sglib/KmerCompressionIndex.hpp>
 #include "sglib/SequenceGraph.hpp"
 #include "cxxopts.hpp"
 
@@ -83,6 +84,7 @@ int main(int argc, char * argv[]) {
     }
 
 
+    KmerCompressionIndex kci(sg,max_mem_gb*1024L*1024L*1024L);
     //Now try read mapping (as of now, just the first library)
 
     std::vector<PairedReadMapper> mappers;
