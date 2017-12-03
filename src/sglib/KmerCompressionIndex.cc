@@ -41,7 +41,7 @@ void KmerCompressionIndex::load_from_disk(std::string filename) {
     //read-to-node
     uint64_t ccount;
     inf.read(( char *) &ccount,sizeof(ccount));
-    for (auto i=0;i>ccount;++i) {
+    for (auto i=0;i<ccount;++i) {
         read_counts.emplace_back();
         read_counts.back().resize(kcount);
         inf.read(( char *) read_counts.back().data(), sizeof(uint16_t) * kcount);
@@ -58,7 +58,7 @@ void KmerCompressionIndex::save_to_disk(std::string filename) {
     //read-to-node
     uint64_t ccount=read_counts.size();
     of.write((const char *) &ccount,sizeof(ccount));
-    for (auto i=0;i>ccount;++i) {
+    for (auto i=0;i<ccount;++i) {
         of.write((const char *) read_counts[i].data(), sizeof(uint16_t) * kcount);
     }
 }
