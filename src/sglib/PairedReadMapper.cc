@@ -8,8 +8,6 @@
 #include "PairedReadMapper.hpp"
 
 
-#define mem_limit 4
-
 uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::vector<KmerIDX> &unique_kmers, std::string filename, uint64_t offset , bool is_tagged=false) {
     std::cout<<"mapping reads!!!"<<std::endl;
     /*
@@ -27,7 +25,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
 //#pragma omp critical(read_record)
         c = fastqReader.next_record(read);
         while (c) {
-            std::cout << "Name: " << read.name << " seq: " << read.seq << " record number: " << read.id << std::endl;
+            //std::cout << "Name: " << read.name << " seq: " << read.seq << " record number: " << read.id << std::endl;
             if (total_count == 4 ){
                 std::cout<<"= here!!!"<<std::endl;
 
@@ -113,7 +111,6 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
                 reads_in_node[mapping.node].push_back(mapping);
                 ++mapped_count;
             }
-            std::cout<<"total mapped: "<<total_count<<" / "<<total_count<<std::endl;
             auto tc=++total_count;
             if (tc % 100000 == 0) std::cout << mapped_count << " / " << tc << std::endl;
 //#pragma omp critical(read_record)
@@ -223,7 +220,7 @@ void PairedReadMapper::print_stats() {
     std::cout<<"R2 only:         "<<status_counts[pair_status_onlyr2]<<std::endl;
     std::cout<<"Both different:  "<<status_counts[pair_status_different]<<std::endl;
     std::cout<<"Both same :      "<<status_counts[pair_status_same]<<std::endl;
-    std::cout<<"TOTAL     :      "<<read_to_node.size()<<std::endl;
+    std::cout<<"TOTAL     :      "<<read_to_node.size()/2<<std::endl;
     std::cout<<"---Node occupancy histogram ---"<<std::endl;
     uint64_t readcount[12];
     for (auto &rc:readcount)rc=0;
