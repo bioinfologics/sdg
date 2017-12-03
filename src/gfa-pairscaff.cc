@@ -112,7 +112,11 @@ int main(int argc, char * argv[]) {
 
     kci.compute_compression_stats();
 
-
+    for (sgNodeID_t i=1;i<sg.nodes.size();++i){
+        if (sg.nodes[i].sequence.size()>1000){
+            std::cout<<"Node #"<<i<<" length="<<sg.nodes[i].sequence.size()<<" compression="<<kci.compute_compression_for_node(i)<<","<<sg.oldnames[i]<<std::endl;
+        }
+    }
 
     //read mapping/loading
     std::vector<PairedReadMapper> mappers;

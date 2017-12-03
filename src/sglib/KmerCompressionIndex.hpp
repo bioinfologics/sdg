@@ -21,7 +21,7 @@ public:
     void load_from_disk(std::string filename);
     void compute_compression_stats();
 
-    void compute_compression_for_node(sgNodeID_t node);
+    double compute_compression_for_node(sgNodeID_t node, uint16_t max_graph_freq=10);
     SequenceGraph & sg;
     std::vector<KmerCount> graph_kmers;
     std::vector<std::vector<uint16_t>> read_counts;

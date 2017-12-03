@@ -129,3 +129,22 @@ void KmerCompressionIndex::compute_compression_stats() {
     uniq_mode=mode;
 
 }
+
+double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint16_t max_graph_freq) {
+    auto & node=sg.nodes[_node];
+
+    std::vector<uint64_t> nkmers;
+    StringKMerFactory skf(node.sequence,31);
+    skf.create_kmers(nkmers);
+
+    uint64_t kcount=0,kcov=0;
+    for (auto &kmer : nkmers){
+        auto nk = std::lower_bound(graph_kmers.begin(), graph_kmers.end(), KmerCount(kmer,0));
+        if (nk!=graph_kmers.end() and nk->kmer == kmer and nk->count==1) {
+            ++kcount;
+            kcov+=read_counts[0][nk-graph_kmers.begin()];
+        }
+    }
+
+    return (((double) kcov)/kcount )/uniq_mode;
+}
