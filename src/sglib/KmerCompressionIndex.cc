@@ -101,3 +101,31 @@ void KmerCompressionIndex::add_counts_from_file(std::string filename) {
     // somehow for my test data with 700 reads, totak count is 834 for r2...
     std::cout << rp << " reads processed "<< present <<" / " << present+absent << " kmers found" << std::endl;
 }
+
+
+
+void KmerCompressionIndex::compute_compression_stats() {
+    //compute mean, median and mode, as of now, only use the first read count
+
+    uint64_t covuniq[1001];
+    for (auto &c:covuniq)c=0;
+    uint64_t tuniq=0,cuniq=0;
+    for (uint64_t i=0; i<graph_kmers.size(); ++i){
+        if (graph_kmers[i].count==1){
+            tuniq+=read_counts[0][i];
+            ++cuniq;
+            ++covuniq[(read_counts[0][i]<1000 ? read_counts[0][i] : 1000 )];
+        }
+    }
+    uint64_t cseen=0,median=0;
+    while (cseen<cuniq/2) {cseen+=covuniq[median];++median;};
+    uint64_t mode=0;
+    for (auto i=0;i<1000;++i) if (covuniq[i]>covuniq[mode]) mode=i;
+    std::cout << "Mean coverage for unique kmers:   " << ((double)tuniq)/cuniq <<std::endl;
+    std::cout << "Median coverage for unique kmers: " << median <<std::endl;
+    std::cout << "Mode coverage for unique kmers:   " << mode <<std::endl;
+
+    if (median<.9*mode or median>.9*mode ) std::cout<<"WARNING -> median and mode highly divergent"<<std::endl;
+    uniq_mode=mode;
+
+}

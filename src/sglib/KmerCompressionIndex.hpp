@@ -26,6 +26,7 @@ public:
     std::vector<KmerCount> graph_kmers;
     std::vector<std::vector<uint16_t>> read_counts;
     uint64_t max_mem;
+    uint16_t uniq_mode=0;
 
 };
 
