@@ -8,8 +8,10 @@
 
 
 KmerCompressionIndex::KmerCompressionIndex(SequenceGraph &_sg, uint64_t _max_mem): sg(_sg) {
-    max_mem=_max_mem;
+    max_mem = _max_mem;
+}
 
+void KmerCompressionIndex::index_graph(){
     const int k = 31;
     const int max_coverage = 1;
     const std::string output_prefix("./");
@@ -27,6 +29,38 @@ KmerCompressionIndex::KmerCompressionIndex(SequenceGraph &_sg, uint64_t _max_mem
     std::vector<uint64_t> uniqKmer_statistics(kmerCount_SMR.summaryStatistics());
     std::cout << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << std::endl;
     std::cout << "Number of contigs from the assembly " << uniqKmer_statistics[2] << std::endl;
+}
+
+void KmerCompressionIndex::load_from_disk(std::string filename) {
+    std::ifstream inf(filename);
+    //read-to-tag
+    uint64_t kcount;
+    inf.read(( char *) &kcount,sizeof(kcount));
+    graph_kmers.resize(kcount);
+    inf.read(( char *) graph_kmers.data(),sizeof(KmerCount)*kcount);
+    //read-to-node
+    uint64_t ccount;
+    inf.read(( char *) &ccount,sizeof(ccount));
+    for (auto i=0;i>ccount;++i) {
+        read_counts.emplace_back();
+        read_counts.back().resize(kcount);
+        inf.read(( char *) read_counts.back().data(), sizeof(uint16_t) * kcount);
+    }
+
+}
+
+void KmerCompressionIndex::save_to_disk(std::string filename) {
+    std::ofstream of(filename);
+    //read-to-tag
+    uint64_t kcount=graph_kmers.size();
+    of.write((const char *) &kcount,sizeof(kcount));
+    of.write((const char *) graph_kmers.data(),sizeof(KmerCount)*kcount);
+    //read-to-node
+    uint64_t ccount=read_counts.size();
+    of.write((const char *) &ccount,sizeof(ccount));
+    for (auto i=0;i>ccount;++i) {
+        of.write((const char *) read_counts[i].data(), sizeof(uint16_t) * kcount);
+    }
 }
 
 void KmerCompressionIndex::start_new_count(){

@@ -32,7 +32,10 @@ struct KmerCount {
         return kmer==other.kmer;
     }
     void merge(const KmerCount &other) {
-        count += other.count;
+        if (other.count < 255-count) {
+            count += other.count;
+        }
+        else count=255;
     }
 
     KmerCount max() {

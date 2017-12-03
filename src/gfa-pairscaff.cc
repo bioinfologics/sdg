@@ -8,7 +8,7 @@
 
 
 int main(int argc, char * argv[]) {
-    std::string gfa_filename,output_prefix;
+    std::string gfa_filename,output_prefix, load_cidx, dump_cidx;
     std::vector<std::string> reads1,reads2,cidxreads1,cidxreads2, dump_mapped, load_mapped;
     bool stats_only=0;
     uint64_t max_mem_gb=4;
@@ -23,7 +23,10 @@ int main(int argc, char * argv[]) {
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
         options.add_options("Compression Index Options")
                 ("cidxread1", "compression index input reads, left", cxxopts::value<std::vector<std::string>>(cidxreads1))
-                ("cidxread2", "compression index input reads, right", cxxopts::value<std::vector<std::string>>(cidxreads2));
+                ("cidxread2", "compression index input reads, right", cxxopts::value<std::vector<std::string>>(cidxreads2))
+                ("load_cidx", "load compression index filename", cxxopts::value<std::string>(load_cidx))
+                ("dump_cidx", "dump compression index filename", cxxopts::value<std::string>(dump_cidx))
+                ;
         options.add_options("Paired reads options")
                 ("1,read1", "input reads, left", cxxopts::value<std::vector<std::string>>(reads1))
                 ("2,read2", "input reads, right", cxxopts::value<std::vector<std::string>>(reads2))
@@ -93,11 +96,22 @@ int main(int argc, char * argv[]) {
 
     //compression index
     KmerCompressionIndex kci(sg,max_mem_gb*1024L*1024L*1024L);
-    for(int lib=0;lib<cidxreads1.size();lib++) {
-        kci.start_new_count();
-        kci.add_counts_from_file(cidxreads1[lib]);
-        kci.add_counts_from_file(cidxreads2[lib]);
+    if (load_cidx!=""){
+        kci.load_from_disk(load_cidx);
+    } else {
+        kci.index_graph();
+        for(int lib=0;lib<cidxreads1.size();lib++) {
+            kci.start_new_count();
+            kci.add_counts_from_file(cidxreads1[lib]);
+            kci.add_counts_from_file(cidxreads2[lib]);
+        }
     }
+    if (dump_cidx!=""){
+        kci.save_to_disk(dump_cidx);
+    }
+
+    kci.compute_compression_stats();
+
 
 
     //read mapping/loading
