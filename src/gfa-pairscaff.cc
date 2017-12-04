@@ -8,6 +8,10 @@
 
 
 int main(int argc, char * argv[]) {
+    std::cout << "Welcome to gfa-pairscaff"<<std::endl<<std::endl;
+    std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
+    std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
+
     std::string gfa_filename,output_prefix, load_cidx, dump_cidx;
     std::vector<std::string> reads1,reads2,cidxreads1,cidxreads2, dump_mapped, load_mapped;
     bool stats_only=0;
@@ -69,7 +73,11 @@ int main(int argc, char * argv[]) {
     }
 
 
-    std::cout<< "Welcome to gfa-pairscaff"<<std::endl<<std::endl;
+    std::cout << "Executed command:"<<std::endl;
+    for (auto i=0;i<argc;i++) std::cout<<argv[i]<<" ";
+    std::cout<<std::endl<<std::endl;
+
+
 
     if (gfa_filename.size()<=4 or gfa_filename.substr(gfa_filename.size()-4,4)!=".gfa") {
 
