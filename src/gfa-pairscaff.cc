@@ -79,6 +79,8 @@ int main(int argc, char * argv[]) {
 
 
 
+
+    std::cout<<std::endl<<"=== Loading GFA ==="<<std::endl;
     if (gfa_filename.size()<=4 or gfa_filename.substr(gfa_filename.size()-4,4)!=".gfa") {
 
         throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '" +
@@ -88,20 +90,7 @@ int main(int argc, char * argv[]) {
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
 
-    //First, report on connected components.
-    {
-        std::ofstream ccf(output_prefix + "_initial_components.txt");
-        uint16_t i = 1;
-        std::map<sgNodeID_t, std::string> nodes_to_oldnames;
-        for (auto &nm:sg.oldnames_to_ids) nodes_to_oldnames[(nm.second > 0 ? nm.second : -nm.second)] = nm.first;
-        for (auto &c:sg.connected_components()) {
-            ccf << "Component #" << i++ << ":";
-            for (auto &n:c) ccf << " " << nodes_to_oldnames[n];
-            ccf << std::endl;
-        }
-    }
-
-
+    std::cout<<std::endl<<"=== Loading reads compression index ==="<<std::endl;
     //compression index
     KmerCompressionIndex kci(sg,max_mem_gb*1024L*1024L*1024L);
     if (load_cidx!=""){
@@ -126,6 +115,7 @@ int main(int argc, char * argv[]) {
         }
     }
 
+    std::cout<<std::endl<<"=== Mapping reads ==="<<std::endl;
     //read mapping/loading
     std::vector<PairedReadMapper> mappers;
     for(auto loadfile:load_mapped){
@@ -142,7 +132,8 @@ int main(int argc, char * argv[]) {
             mappers.back().save_to_disk(dump_mapped[lib]);
         }
     }
-    //simple scaffolder:
+
+    std::cout<<std::endl<<"=== Scaffolding ==="<<std::endl;
 
     Scaffolder scaff(sg,mappers);
     //TODO: a lot of repeats are small repeats creating a big "loop", account for those!
