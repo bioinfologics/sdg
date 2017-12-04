@@ -131,7 +131,8 @@ void KmerCompressionIndex::compute_compression_stats() {
 }
 
 double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint16_t max_graph_freq) {
-    auto & node=sg.nodes[_node];
+
+    auto & node=sg.nodes[_node>0 ? _node:-_node];
 
     std::vector<uint64_t> nkmers;
     StringKMerFactory skf(node.sequence,31);

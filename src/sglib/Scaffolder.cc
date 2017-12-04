@@ -4,6 +4,36 @@
 
 #include "Scaffolder.hpp"
 
+void Scaffolder::pop_unsupported_shortbubbles() {
+    std::cout<<"popping unsupported bubbles!"<<std::endl;
+    uint64_t max_length=1000;
+    //find short nodes with parallel nodes short like them
+    for (sgNodeID_t n=1; n<sg.nodes.size(); ++n) {
+        if (sg.nodes[n].sequence.size()>max_length) continue;
+        //one link on each end, not to self, not to the same node
+        if (sg.links[n].size()!=2) continue;
+        if (sg.links[n][0].source==sg.links[n][1].source) continue;
+        if (sg.links[n][0].dest==n or sg.links[n][0].dest==-n or sg.links[n][1].dest==n or sg.links[n][1].dest==-n) continue;
+        if (sg.links[n][0].dest==sg.links[n][1].dest or sg.links[n][0].dest==-sg.links[n][1].dest) continue;
+        //std::cout<<"Node "<<sg.oldnames[n]<<" passed first filter"<<std::endl;
+        for (sgNodeID_t m=n+1; m<sg.nodes.size(); ++m){
+            if (sg.nodes[m].sequence.size()>max_length) continue;
+            //one link on each end, not to self, not to the same node
+            if (sg.links[m].size()!=2) continue;
+            if (sg.links[m][0].source==sg.links[m][1].source) continue;
+            if (sg.links[m][0].dest==m or sg.links[m][0].dest==-m or sg.links[m][1].dest==m or sg.links[m][1].dest==-m) continue;
+            if (sg.links[m][0].dest==sg.links[m][1].dest or sg.links[m][0].dest==-sg.links[m][1].dest) continue;
+            if ( (sg.links[n][0].dest==sg.links[m][0].dest and sg.links[n][1].dest==sg.links[m][1].dest)
+                 or (sg.links[n][1].dest==sg.links[m][0].dest and sg.links[n][0].dest==sg.links[m][1].dest)){
+                std::cout<<"found potential short bubble between "<<sg.oldnames[n]<<" and "<<sg.oldnames[m]<<std::endl;
+                std::cout<<"kci: "<<kci.compute_compression_for_node(sg.links[n][0].dest)<<" -> [ "
+                         <<kci.compute_compression_for_node(n)<<" | "<<kci.compute_compression_for_node(m)
+                        <<" ] -> "<<kci.compute_compression_for_node(sg.links[n][1].dest)<<std::endl;
+            }
+        }
+    }
+}
+
 void Scaffolder::find_canonical_repeats(){
     const int required_support=3;
     uint64_t count=0, l700=0,l2000=0,l4000=0,l10000=0,big=0,checked=0,solvable=0;

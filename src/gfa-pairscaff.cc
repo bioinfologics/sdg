@@ -109,12 +109,6 @@ int main(int argc, char * argv[]) {
 
     kci.compute_compression_stats();
 
-    for (sgNodeID_t i=1;i<sg.nodes.size();++i){
-        if (sg.nodes[i].sequence.size()>1000){
-            std::cout<<"Node #"<<i<<" length="<<sg.nodes[i].sequence.size()<<" compression="<<kci.compute_compression_for_node(i)<<","<<sg.oldnames[i]<<std::endl;
-        }
-    }
-
     std::cout<<std::endl<<"=== Mapping reads ==="<<std::endl;
     //read mapping/loading
     std::vector<PairedReadMapper> mappers;
@@ -135,9 +129,11 @@ int main(int argc, char * argv[]) {
 
     std::cout<<std::endl<<"=== Scaffolding ==="<<std::endl;
 
-    Scaffolder scaff(sg,mappers);
+    Scaffolder scaff(sg,mappers,kci);
+
+    scaff.pop_unsupported_shortbubbles();
     //TODO: a lot of repeats are small repeats creating a big "loop", account for those!
-    scaff.find_canonical_repeats();
+    //scaff.find_canonical_repeats();
 
 
 

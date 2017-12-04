@@ -7,6 +7,7 @@
 
 #include "SequenceGraph.hpp"
 #include "PairedReadMapper.hpp"
+#include "KmerCompressionIndex.hpp"
 
 class Scaffolder {
 
@@ -14,9 +15,10 @@ public:
     ///
     /// \param _sg A SequenceGraph to scaffold
     /// \param _rms A vector of PairedReadmapper, containing the mapping of reads to _sg
-    Scaffolder(SequenceGraph &_sg, std::vector<PairedReadMapper> & _rms) : sg(_sg),rmappers(_rms){};
+    Scaffolder(SequenceGraph &_sg, std::vector<PairedReadMapper> & _rms, KmerCompressionIndex &_kci) : sg(_sg),rmappers(_rms),kci(_kci){};
 
 
+    void pop_unsupported_shortbubbles();
     void find_canonical_repeats();
 
     ///
@@ -36,9 +38,9 @@ public:
     //3: path finder?
 
 
-    SequenceGraph & sg;
+    SequenceGraph &sg;
     std::vector<PairedReadMapper> &rmappers;
-
+    KmerCompressionIndex &kci;
 
 
 
