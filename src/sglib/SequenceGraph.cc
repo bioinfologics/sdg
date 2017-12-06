@@ -64,11 +64,27 @@ sgNodeID_t SequenceGraph::add_node(Node n) {
     return (sgNodeID_t) nodes.size()-1;
 }
 
+void SequenceGraph::remove_node(sgNodeID_t n) {
+    sgNodeID_t node=(n>0? n:-n);
+    auto oldlinks=links[node];//this creates a copy to allow the iteration
+    for (auto &l:oldlinks) remove_link(l.source,l.dest);
+    nodes[n].status=sgNodeDeleted;
+    //TODO: remove read mappings
+}
+
 void SequenceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d) {
     Link l(source,dest,d);
     links[(source > 0 ? source : -source)].emplace_back(l);
     std::swap(l.source,l.dest);
     links[(dest > 0 ? dest : -dest)].emplace_back(l);
+}
+
+void SequenceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
+    auto & slinks = links[(source > 0 ? source : -source)];
+    slinks.erase(std::remove(slinks.begin(), slinks.end(), Link(source,dest,0)), slinks.end());
+    auto & dlinks = links[(dest > 0 ? dest : -dest)];
+    dlinks.erase(std::remove(dlinks.begin(), dlinks.end(), Link(dest,source,0)), dlinks.end());
+
 }
 
 std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n){
@@ -78,7 +94,7 @@ std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n){
 }
 
 bool Link::operator==(const Link a){
-    if (a.source == this->source && a.dest == this->dest && a.dist == this->dist){
+    if (a.source == this->source && a.dest == this->dest){
         return true;
     }
     return false;
@@ -416,6 +432,7 @@ void SequenceGraph::write_to_gfa(std::string filename){
     std::cout<<"Writing sequences to "<<fasta_filename<<std::endl;
 
     for (sgNodeID_t i=1;i<nodes.size();++i){
+        if (nodes[i].status==sgNodeDeleted) continue;
         fastaf<<">seq"<<i<<std::endl<<nodes[i].sequence<<std::endl;
         gfaf<<"S\tseq"<<i<<"\t*\tLN:i:"<<nodes[i].sequence.size()<<"\tUR:Z:"<<fasta_filename<<std::endl;
     }
@@ -506,4 +523,44 @@ std::string SequenceGraphPath::get_sequence() {
         pnode=-n;
     }
     return s;
+}
+
+std::vector<SequenceGraphPath> SequenceGraph::get_all_unitigs(uint16_t min_nodes) {
+    std::vector<SequenceGraphPath> unitigs;
+    std::vector<bool> used(nodes.size(),false);
+
+    for (auto n=1;n<nodes.size();++n){
+        if (used[n] or nodes[n].status==sgNodeDeleted) continue;
+        used[n]=true;
+        SequenceGraphPath path(*this,{n});
+
+        //two passes: 0->fw, 1->bw, path is inverted twice, so still n is +
+        for (auto pass=0; pass<2; ++pass) {
+            //walk til a "non-unitig" junction
+            for (auto fn = get_fw_links(path.nodes.back()); fn.size() == 1; fn = get_fw_links(path.nodes.back())) {
+                if (fn[0].dest != n and fn[0].dest != -n and get_bw_links(fn[0].dest).size() == 1) {
+                    path.nodes.emplace_back(fn[0].dest);
+                    used[fn[0].dest > 0 ? fn[0].dest : -fn[0].dest] = true;
+                } else break;
+            }
+            path.reverse();
+        }
+        if (path.nodes.size()>=min_nodes) unitigs.push_back(path);
+    }
+    return unitigs;
+}
+
+void SequenceGraph::join_all_unitigs() {
+    for (auto p:get_all_unitigs(2)){
+        std::cout << "Unitig found: ";
+        for (auto n:p.nodes) std::cout<< n<< " ";
+        std::cout<<std::endl;
+    }
+}
+
+void SequenceGraphPath::reverse(){
+    std::vector<sgNodeID_t> newn;
+    for (auto n=nodes.rbegin();n<nodes.rend();++n) newn.emplace_back(-*n);
+    //std::swap(nodes,newn);
+    nodes=newn;
 }

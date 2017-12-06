@@ -38,6 +38,14 @@ public:
     //3: path finder?
 
 
+    //This is a trivial strategy for the incorporation of long reads:
+    //1) create a path for each long read
+    //2) combine paths (OL)
+
+    void findLongreadPaths();
+    void joinLongreadPaths();
+    void applyLonreadPaths();
+
     SequenceGraph &sg;
     std::vector<PairedReadMapper> &rmappers;
     KmerCompressionIndex &kci;

@@ -132,6 +132,7 @@ int main(int argc, char * argv[]) {
     Scaffolder scaff(sg,mappers,kci);
 
     scaff.pop_unsupported_shortbubbles();
+    sg.join_all_unitigs();
     //TODO: a lot of repeats are small repeats creating a big "loop", account for those!
     //scaff.find_canonical_repeats();
 

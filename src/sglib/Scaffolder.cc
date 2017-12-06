@@ -25,10 +25,24 @@ void Scaffolder::pop_unsupported_shortbubbles() {
             if (sg.links[m][0].dest==sg.links[m][1].dest or sg.links[m][0].dest==-sg.links[m][1].dest) continue;
             if ( (sg.links[n][0].dest==sg.links[m][0].dest and sg.links[n][1].dest==sg.links[m][1].dest)
                  or (sg.links[n][1].dest==sg.links[m][0].dest and sg.links[n][0].dest==sg.links[m][1].dest)){
-                std::cout<<"found potential short bubble between "<<sg.oldnames[n]<<" and "<<sg.oldnames[m]<<std::endl;
-                std::cout<<"kci: "<<kci.compute_compression_for_node(sg.links[n][0].dest)<<" -> [ "
-                         <<kci.compute_compression_for_node(n)<<" | "<<kci.compute_compression_for_node(m)
-                        <<" ] -> "<<kci.compute_compression_for_node(sg.links[n][1].dest)<<std::endl;
+                //std::cout<<"found potential short bubble between #"<<n<<" "<<sg.oldnames[n]<<" and #"<<m<<" "<<sg.oldnames[m]<<std::endl;
+                auto kcic1=kci.compute_compression_for_node(sg.links[n][0].dest);
+                auto kcic2=kci.compute_compression_for_node(sg.links[n][1].dest);
+                auto kcin=kci.compute_compression_for_node(n);
+                auto kcim=kci.compute_compression_for_node(m);
+                //std::cout << "kci: " << kcic1 << " -> [ " << kcin << " | " << kcim << " ] -> " << kcic1 << std::endl;
+                //TODO: de-hardcode the 20% coverage rule
+                if (kcic1>.8 and kcic1<1.2 and kcic2>.8 and kcic2<1.2){ //connections are unique
+                    if (kcim<.2 and kcin>.5 and kcin<1.2) {
+                        sg.remove_node(m);
+                        std::cout<<"removed #"<<m<<std::endl;
+                    }
+                    if (kcin<.2 and kcim>.5 and kcim<1.2) {
+                        sg.remove_node(n);
+                        std::cout<<"removed #"<<n<<std::endl;
+                    }
+
+                }
             }
         }
     }

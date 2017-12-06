@@ -14,13 +14,13 @@
 
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
 
-
+enum sgNodeStatus_t {sgNodeActive,sgNodeDeleted};
 
 class Node{
 public:
-    Node(std::string _seq) : sequence(_seq){};
+    Node(std::string _seq) : sequence(_seq),status(sgNodeActive){};
     std::string sequence;
-    uint8_t status;
+    sgNodeStatus_t status;
     bool is_canonical();
     void make_rc();
 };
@@ -35,6 +35,8 @@ public:
     bool operator<(const Link)const;
 
 };
+
+class SequenceGraphPath;
 
 class SequenceGraph {
 public:
@@ -59,13 +61,16 @@ public:
     std::vector<std::vector<sgNodeID_t >> find_bubbles(std::vector<sgNodeID_t>);
 
     // remove_node
+    void remove_node(sgNodeID_t);
     // remove_link
-
+    void remove_link(sgNodeID_t source, sgNodeID_t dest);
     //These two need to mark expanded edges, and transfer read maps and unique kmers for non-expanded, but just read map for expanded.
-    // expand_path --> creates an edge with the consensus of a path, eliminates old nodes if only in path and unused edges
-    // simplify --> executes expand_path on every multi-sequence unitig
 
-    //find balanced repeat subgraphs
+    void join_path(SequenceGraphPath &p, bool consume_edges=true);
+    // expand_path --> creates an edge with the consensus of a path, eliminates old nodes if only in path and unused edges
+    void join_all_unitigs();
+    std::vector<SequenceGraphPath> get_all_unitigs(uint16_t min_nodes);
+    // simplify --> executes expand_path on every multi-sequence unitig
 
 
     // tip_clip -> eliminates tips.
@@ -95,6 +100,7 @@ public:
     explicit SequenceGraphPath(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
     std::string get_fasta_header();
     std::string get_sequence();
+    void reverse();
 
 private:
     SequenceGraph& sg;
