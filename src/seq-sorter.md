@@ -1,25 +1,26 @@
-## seq-sorter output files
+# seq-sorter output files
 
-![Link generation diagram](../img/block_match_diagram.png)
+## Link generation diagram
+@image html block_match_diagram.png
 
 ### read_block.log
 
 To identify why blocks are created. Each line is a read (in the same order that the input file).
 
 
-```blockCtgDif``` Number of blocks created by jumping to a new contig
+`blockCtgDif` Number of blocks created by jumping to a new contig
 
-```blockOffsetDif``` Number of blocks created because a change of offset
+`blockOffsetDif` Number of blocks created because a change of offset
 
-```Validblock``` Number of valid blocks in the read
+`Validblock` Number of valid blocks in the read
 
-```Tblock``` Total number of blocks generated on the read
+`Tblock` Total number of blocks generated on the read
 
 the parameter `--min_kmers_to_call_match uint` is the number of matched kmers required to build a valid block, will affect the number of `Validblock` generated and the output of this file. Increasing `--min_kmers_to_call_match` will decrease the number of blocks but each block will be more robust.
 
 
 ```
-blockCtgDif, blockOffsetDif, Validblock, Tblock
+blockCtgDif,blockOffsetDif,Validblock,Tblock
 2,2,2,3
 0,0,1,1
 0,0,0,1
@@ -64,7 +65,7 @@ This file show the amount of matched kmers and the kmers that formed a valid blo
 The parameter `--min_kmers_to_call_match` will affect the number of `validBlockKmers ` through changing the number of valid blocks.
 
 ```
-Mappedkmers, validBlockKmers, Tkmers
+Mappedkmers,validBlockKmers,Tkmers
 321,312,12125
 24,24,13050
 3,0,1438
@@ -81,7 +82,7 @@ Mappedkmers, validBlockKmers, Tkmers
 Just the length of the reads.
 
 ```
-Name, Length
+Name,Length
 SRR6031717.1,12155
 SRR6031717.2,13080
 SRR6031717.3,1468

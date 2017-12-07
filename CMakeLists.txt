@@ -70,7 +70,7 @@ if (DOXYGEN_FOUND)
 
     # note the option ALL which allows to build the docs together with the application
     add_custom_target(doc_doxygen ALL
-                      COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+                      COMMAND ${DOXYGEN_EXECUTABLE} -d markdown ${DOXYGEN_OUT}
                       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                       COMMENT "Generating API documentation with Doxygen"
                       VERBATIM)
