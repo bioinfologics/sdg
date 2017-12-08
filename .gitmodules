@@ -4,3 +4,6 @@
 [submodule "deps/cxxopts"]
 	path = deps/cxxopts
 	url = https://github.com/jarro2783/cxxopts.git
+[submodule "tests/googletest"]
+	path = tests/googletest
+	url = https://github.com/google/googletest

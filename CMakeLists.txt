@@ -70,7 +70,7 @@ if (DOXYGEN_FOUND)
 
     # note the option ALL which allows to build the docs together with the application
     add_custom_target(doc_doxygen ALL
-                      COMMAND ${DOXYGEN_EXECUTABLE} -d markdown ${DOXYGEN_OUT}
+                      COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
                       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                       COMMENT "Generating API documentation with Doxygen"
                       VERBATIM)
@@ -78,8 +78,10 @@ else (DOXYGEN_FOUND)
     message("Doxygen need to be installed to generate the doxygen documentation")
 endif (DOXYGEN_FOUND)
 
-
+add_subdirectory("tests/googletest")
 ## Include directories
+include_directories("tests/googletest/googletest/include/")
+include_directories("tests/googletest/googletest/src/")
 include_directories("src/")
 include_directories("deps/cxxopts/include")
 include_directories("deps/kseqcpp/")
@@ -143,4 +145,9 @@ target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries (phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+
+
+add_executable(runBasicTests tests/sglib/basic_check.cc)
+target_link_libraries(runBasicTests gtest gtest_main)
+target_link_libraries(runBasicTests sequence_graph)
