@@ -66,7 +66,7 @@ public:
     void remove_link(sgNodeID_t source, sgNodeID_t dest);
     //These two need to mark expanded edges, and transfer read maps and unique kmers for non-expanded, but just read map for expanded.
 
-    void join_path(SequenceGraphPath &p, bool consume_edges=true);
+    void join_path(SequenceGraphPath p, bool consume_nodes=true);
     // expand_path --> creates an edge with the consensus of a path, eliminates old nodes if only in path and unused edges
     void join_all_unitigs();
     std::vector<SequenceGraphPath> get_all_unitigs(uint16_t min_nodes);
@@ -101,6 +101,7 @@ public:
     std::string get_fasta_header();
     std::string get_sequence();
     void reverse();
+    bool is_canonical();
 
 private:
     SequenceGraph& sg;

@@ -68,7 +68,7 @@ void SequenceGraph::remove_node(sgNodeID_t n) {
     sgNodeID_t node=(n>0? n:-n);
     auto oldlinks=links[node];//this creates a copy to allow the iteration
     for (auto &l:oldlinks) remove_link(l.source,l.dest);
-    nodes[n].status=sgNodeDeleted;
+    nodes[node].status=sgNodeDeleted;
     //TODO: remove read mappings
 }
 
@@ -505,7 +505,6 @@ std::string SequenceGraphPath::get_sequence() {
                 std::cout<<"can't find a link between "<<pnode<<" and "<<-n<<std::endl;
                 throw std::runtime_error("path has no link");
             } else {
-                std::cout<<"validating distance between "<<pnode<<" and "<<n<<" of "<<l->dist<<std::endl;
                 if (l->dist>0){
                     for (auto c=l->dist;c>0;--c) s+="N";
                 }
@@ -514,7 +513,6 @@ std::string SequenceGraphPath::get_sequence() {
                     for (auto s1=s.c_str()+s.size()-ovl,s2=nseq.c_str();*s1!=NULL;++s1,++s2)
                         if (*s1!=*s2)
                             throw std::runtime_error("path overlap is invalid!");
-                    std::cout<<"Overlap validated!"<<std::endl;
                     nseq.erase(0,ovl);
                 }
             }
@@ -555,7 +553,37 @@ void SequenceGraph::join_all_unitigs() {
         std::cout << "Unitig found: ";
         for (auto n:p.nodes) std::cout<< n<< " ";
         std::cout<<std::endl;
+        join_path(p);
     }
+}
+
+void SequenceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
+    std::set<sgNodeID_t> pnodes;
+    for (auto n:p.nodes) {
+        pnodes.insert( n );
+        pnodes.insert( -n );
+    }
+    if (!p.is_canonical()) p.reverse();
+    sgNodeID_t new_node=add_node(Node(p.get_sequence()));
+    //TODO:check, this may have a problem with a circle
+    for (auto l:get_bw_links(p.nodes.front())) add_link(new_node,l.dest,l.dist);
+
+    for (auto l:get_fw_links(p.nodes.back())) add_link(-new_node,l.dest,l.dist);
+
+    //TODO: update read mappings
+    if (consume_nodes) {
+
+
+        for (auto n:p.nodes) {
+            //check if the node has neighbours not included in the path.
+            bool ext_neigh=false;
+            if (n!=p.nodes.back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest)==0) ext_neigh=true;
+            if (n!=p.nodes.front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest)==0) ext_neigh=true;
+            if (ext_neigh) continue;
+            remove_node(n);
+        }
+    }
+
 }
 
 void SequenceGraphPath::reverse(){
@@ -563,4 +591,10 @@ void SequenceGraphPath::reverse(){
     for (auto n=nodes.rbegin();n<nodes.rend();++n) newn.emplace_back(-*n);
     //std::swap(nodes,newn);
     nodes=newn;
+}
+
+bool SequenceGraphPath::is_canonical() {
+    auto rp=*this;
+    rp.reverse();
+    return this->get_sequence()<rp.get_sequence();
 }
