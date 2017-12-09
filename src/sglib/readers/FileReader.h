@@ -100,7 +100,7 @@ public:
      * @param filepath
      * Relative or absolute path to the file that is going to be read.
      */
-    explicit FastqReader(FastxReaderParams params, const std::string &filepath) : params(params), numRecords(0) {
+    explicit FastqReader(FastxReaderParams params, const std::string &filepath) : params(params), numRecords(0),eof_flag(false) {
         std::cout << "Opening: " << filepath << "\n";
         gz_file = gzopen(filepath.c_str(), "r");
         if (gz_file == Z_NULL) {
@@ -121,19 +121,26 @@ public:
     */
     bool next_record(FileRecord& rec) {
         int l;
-        do {
-            l=(ks->readFastq(seq));
-            std::swap(rec.seq, seq.seq);
-            std::swap(rec.qual, seq.qual);
-            std::swap(rec.name, seq.name);
-            std::swap(rec.comment, seq.comment);
-            rec.id = numRecords;
-            numRecords++;
+        if ( eof_flag) return false;
+        {
+            do {
+                l = (ks->readFastq(seq));
+                std::swap(rec.seq, seq.seq);
+                std::swap(rec.qual, seq.qual);
+                std::swap(rec.name, seq.name);
+                std::swap(rec.comment, seq.comment);
+                rec.id = numRecords;
+                numRecords++;
 
-            stats.totalLength+=rec.seq.size();
-        } while (rec.seq.size() < params.min_length && l >= 0);
-        stats.filteredRecords++;
-        stats.filteredLength+=rec.seq.size();
+                stats.totalLength += rec.seq.size();
+            } while (rec.seq.size() < params.min_length && l >= 0);
+        }
+        if (l<0) eof_flag=true;
+        else {
+            stats.filteredRecords++;
+            stats.filteredLength += rec.seq.size();
+        }
+
         return (l >= 0);
     }
 
@@ -152,6 +159,7 @@ private:
     FunctorZlib gzr;
     FastxReaderParams params;
     ReaderStats stats;
+    bool eof_flag;
 };
 
 #endif //SEQSORTER_FILEREADER_H

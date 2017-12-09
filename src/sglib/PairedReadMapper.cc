@@ -15,21 +15,18 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
      */
     FastqReader<FastqRecord> fastqReader({0},filename);
     std::atomic<uint64_t> mapped_count(0),total_count(0);
-//#pragma omp parallel shared(fastqReader,reads_in_node)// this lione has out of bounds error on my weird read file AND  ‘PairedReadMapper::reads_in_node’ is not a variable in clause ‘shared’ when compiling on
+#pragma omp parallel shared(fastqReader)// this lione has out of bounds error on my weird read file AND  ‘PairedReadMapper::reads_in_node’ is not a variable in clause ‘shared’ when compiling on
     {
         FastqRecord read;
         std::vector<KmerIDX> readkmers;
         kmerIDXFactory<FastqRecord> kf({k});
         ReadMapping mapping;
         bool c ;
-//#pragma omp critical(read_record)
-        c = fastqReader.next_record(read);
+#pragma omp critical
+        {
+            c = fastqReader.next_record(read);
+        }
         while (c) {
-            //std::cout << "Name: " << read.name << " seq: " << read.seq << " record number: " << read.id << std::endl;
-            if (total_count == 4 ){
-                std::cout<<"= here!!!"<<std::endl;
-
-            }
             //get all kmers from read
             readkmers.clear();
             //process tag if 10x! this way even ummaped reads get tags
@@ -56,7 +53,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
                                 break; //invalid tags with non-ACGT chars
                         }
                     }
-//#pragma omp critical(add_mapped_tagged)
+#pragma omp critical
                     {
                         //TODO: inefficient
                         if (read_to_tag.size() <= mapping.read_id) read_to_tag.resize(mapping.read_id + 1);
@@ -72,6 +69,11 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
 
             mapping.node = 0;
             mapping.unique_matches = 0;
+            mapping.first_pos = 0;
+            mapping.last_pos = 0;
+            mapping.read_id = 0;
+            mapping.rev = false;
+            mapping.unique_matches=0;
             for (auto &rk:readkmers) {
                 auto nk = std::lower_bound(unique_kmers.begin(), unique_kmers.end(), rk);
                 if (nk->kmer == rk.kmer) {
@@ -97,35 +99,29 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
                 }
             }
             if (mapping.node != 0 and mapping.unique_matches >= min_matches) {
-                //TODO: set read id and add to map collection
-                /*std::cout << "read id: " << read.id << std::endl;
-                std::cout << "offset " << offset<< std::endl;
-                std::cout << "mapping.read_id" << mapping.read_id<< std::endl;
-                std::cout << (read.id)*2+offset << std::endl;
-                //mapping.read_id= 1; this works, but (read.id)*2+offset is 1 and that doesn't
-                //read.id = 1;
-                //std::cout << "read id: " << read.id << std::endl; - this doesn't work*/
-                mapping.read_id=(read.id)*2+offset;
+                mapping.read_id = (read.id) * 2 + offset;
 
-//#pragma omp critical(add_mapped)
-                reads_in_node[mapping.node].push_back(mapping);
+#pragma omp critical
+                {
+                    reads_in_node[mapping.node].push_back(mapping);
+                }
                 ++mapped_count;
             }
             auto tc=++total_count;
             if (tc % 100000 == 0) std::cout << mapped_count << " / " << tc << std::endl;
-//#pragma omp critical(read_record)
-            c = fastqReader.next_record(read);
+#pragma omp critical
+            {
+                c = fastqReader.next_record(read);
+            }
         }
 
     }
-    // somehow for my test data with 700 reads, totak count is 834 for r2...
     std::cout<<"Reads mapped: "<<mapped_count<<" / "<<total_count<<std::endl;
-    fastqReader.getSummaryStatistics();
-    int counter = 1;
-    /*for (auto r: reads_in_node){
-        std::cout << "Node " << counter << " contsins " << r.size() <<" mappings " <<std::endl;
-        counter += 1;
-    }*/
+#pragma omp parallel for
+    for (sgNodeID_t n=1;n<reads_in_node.size();++n){
+        std::sort(reads_in_node[n].begin(),reads_in_node[n].end());
+    }
+
     return total_count;
 }
 
@@ -181,6 +177,7 @@ void PairedReadMapper::map_reads(std::string filename1, std::string filename2, s
         for (auto &rin:reads_in_node)
             for (auto &mr:rin)
                 read_to_node[mr.read_id] = mr.node;
+        read_to_tag.clear();
 
     } else if (read_type == prm10x) {
         auto r1c = process_reads_from_file(k, min_matches, unique_kmers, filename1, 1, true);
@@ -224,7 +221,7 @@ void PairedReadMapper::print_stats() {
     std::cout<<"---Node occupancy histogram ---"<<std::endl;
     uint64_t readcount[12];
     for (auto &rc:readcount)rc=0;
-    for (sgNodeID_t n; n<reads_in_node.size();++n){
+    for (sgNodeID_t n=1; n<reads_in_node.size();++n){
         auto c=reads_in_node[n].size();
         if (c>0) c=c/100+1;
         if (c>11) c=11;
@@ -249,7 +246,7 @@ void PairedReadMapper::save_to_disk(std::string filename) {
     //reads-in-node
     count=reads_in_node.size();
     of.write((const char *) &count, sizeof(count));
-    for (auto &rtn:reads_in_node) {
+    for (auto rtn:reads_in_node) {
         count=rtn.size();
         of.write((const char *) &count, sizeof(count));
         of.write((const char *) rtn.data(),sizeof(ReadMapping)*count);

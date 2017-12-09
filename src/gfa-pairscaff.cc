@@ -107,7 +107,7 @@ int main(int argc, char * argv[]) {
         kci.save_to_disk(dump_cidx);
     }
 
-    kci.compute_compression_stats();
+    if (kci.read_counts.size()>0) kci.compute_compression_stats();
 
     std::cout<<std::endl<<"=== Mapping reads ==="<<std::endl;
     //read mapping/loading
