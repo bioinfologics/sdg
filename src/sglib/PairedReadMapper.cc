@@ -27,6 +27,15 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
             c = fastqReader.next_record(read);
         }
         while (c) {
+            mapping.read_id = (read.id) * 2 + offset;
+            //this enables partial read re-mapping by setting read_to_node to 0
+            if (read_to_node.size()>mapping.read_id and 0!=read_to_node[mapping.read_id]) continue;
+            mapping.node = 0;
+            mapping.unique_matches = 0;
+            mapping.first_pos = 0;
+            mapping.last_pos = 0;
+            mapping.rev = false;
+            mapping.unique_matches=0;
             //get all kmers from read
             readkmers.clear();
             //process tag if 10x! this way even ummaped reads get tags
@@ -67,13 +76,8 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
             kf.setFileRecord(read);
             kf.next_element(readkmers);
 
-            mapping.node = 0;
-            mapping.unique_matches = 0;
-            mapping.first_pos = 0;
-            mapping.last_pos = 0;
-            mapping.read_id = 0;
-            mapping.rev = false;
-            mapping.unique_matches=0;
+
+
             for (auto &rk:readkmers) {
                 auto nk = std::lower_bound(unique_kmers.begin(), unique_kmers.end(), rk);
                 if (nk->kmer == rk.kmer) {
@@ -99,7 +103,6 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
                 }
             }
             if (mapping.node != 0 and mapping.unique_matches >= min_matches) {
-                mapping.read_id = (read.id) * 2 + offset;
 
 #pragma omp critical
                 {

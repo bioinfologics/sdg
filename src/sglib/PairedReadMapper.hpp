@@ -63,7 +63,7 @@ public:
 
     SequenceGraph & sg;
     std::vector<std::vector<ReadMapping>> reads_in_node;
-    std::vector<sgNodeID_t> read_to_node;
+    std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
     std::vector<prm10xTag_t> read_to_tag;
 };
 
