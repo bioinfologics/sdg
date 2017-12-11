@@ -24,7 +24,7 @@ void KmerCompressionIndex::index_graph(){
 
 
     std::cout << "Indexing assembly... " << std::endl;
-    graph_kmers = kmerCount_SMR.read_from_file("kcompidx");
+    graph_kmers = kmerCount_SMR.process_from_memory();
 
     std::vector<uint64_t> uniqKmer_statistics(kmerCount_SMR.summaryStatistics());
     std::cout << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << std::endl;

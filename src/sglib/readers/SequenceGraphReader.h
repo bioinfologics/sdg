@@ -18,7 +18,7 @@ struct GraphNodeReaderParams {
 template<typename FileRecord>
 class   GraphNodeReader {
 public:
-    explicit GraphNodeReader(GraphNodeReaderParams params, const std::string &filepath) : params(params), numRecords(1), sg(params.sgp) {
+    explicit GraphNodeReader(GraphNodeReaderParams params) : params(params), numRecords(1), sg(params.sgp) {
         min_length=params.min_length;//TODO: use this
     }
 

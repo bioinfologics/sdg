@@ -69,6 +69,8 @@ void SequenceGraph::remove_node(sgNodeID_t n) {
     auto oldlinks=links[node];//this creates a copy to allow the iteration
     for (auto &l:oldlinks) remove_link(l.source,l.dest);
     nodes[node].status=sgNodeDeleted;
+    //TODO: this is a lazy solution
+    nodes[node].sequence.clear();
     //TODO: remove read mappings
 }
 

@@ -43,7 +43,7 @@ int main(int argc, char * argv[]) {
 
         if (result.count("help"))
         {
-            std::cout << options.help({"","Paired reads options"}) << std::endl;
+            std::cout << options.help({"","Paired reads options","Compression Index Options"}) << std::endl;
             exit(0);
         }
 
@@ -119,7 +119,7 @@ int main(int argc, char * argv[]) {
     }
     for(int lib=0;lib<reads1.size();lib++) {
         mappers.emplace_back(sg);
-        mappers.back().map_reads(reads1[lib], reads2[lib], fasta_filename, prmPE, max_mem_gb*1024L*1024L*1024L);
+        mappers.back().map_reads(reads1[lib], reads2[lib], prmPE, max_mem_gb*1024L*1024L*1024L);
         mappers.back().print_stats();
         if (dump_mapped.size() > 0) {
             std::cout<<"dumping map to "<<dump_mapped[lib]<<std::endl;
@@ -133,6 +133,13 @@ int main(int argc, char * argv[]) {
 
     scaff.pop_unsupported_shortbubbles();
     sg.join_all_unitigs();
+    for (auto &m:mappers) {
+        std::cout<<"removing obsolete mappings from "<<m.read1filename<<" and "<<m.read2filename<<std::endl;
+        m.remove_obsolete_mappings();
+        m.print_stats();
+        m.remap_reads();
+        m.print_stats();
+    }
     //TODO: a lot of repeats are small repeats creating a big "loop", account for those!
     //scaff.find_canonical_repeats();
 
