@@ -17,6 +17,11 @@ enum prmReadType {prmPE, prmLMP, prm10x};
 const std::string prmReadTypeDesc[]={"Paired End", "Long Mate Pair", "10x Linked Reads"};
 typedef uint32_t prm10xTag_t;
 
+struct graphPosition{
+    sgNodeID_t node;
+    uint32_t pos;
+};
+
 class ReadMapping {
 public:
     ReadMapping(){
@@ -58,7 +63,7 @@ public:
     void map_reads(std::string , std::string , prmReadType , uint64_t );
     void remove_obsolete_mappings();
     void remap_reads();
-    uint64_t process_reads_from_file(uint8_t, uint16_t, std::vector<KmerIDX> &, std::string , uint64_t, bool );
+    uint64_t process_reads_from_file(uint8_t, uint16_t, std::unordered_map<uint64_t , graphPosition> &, std::string , uint64_t, bool );
     void save_to_disk(std::string filename);
     void load_from_disk(std::string filename);
     void print_stats();

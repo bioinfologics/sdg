@@ -8,7 +8,7 @@
 #include "PairedReadMapper.hpp"
 
 
-uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::vector<KmerIDX> &unique_kmers, std::string filename, uint64_t offset , bool is_tagged=false) {
+uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::unordered_map<uint64_t , graphPosition> & kmer_to_graphposition, std::string filename, uint64_t offset , bool is_tagged=false) {
     std::cout<<"mapping reads!!!"<<std::endl;
     /*
      * Read mapping in parallel,
@@ -78,26 +78,26 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
 
 
                 for (auto &rk:readkmers) {
-                    auto nk = std::lower_bound(unique_kmers.begin(), unique_kmers.end(), rk);
-                    if (nk->kmer == rk.kmer) {
+                    auto nk = kmer_to_graphposition.find(rk.kmer);
+                    if (kmer_to_graphposition.end()!=nk) {
                         //get the node just as node
-                        sgNodeID_t nknode = (nk->contigID > 0 ? nk->contigID : -nk->contigID);
+                        sgNodeID_t nknode = (nk->second.node > 0 ? nk->second.node : -nk->second.node);
                         //TODO: sort out the sign/orientation representation
                         if (mapping.node == 0) {
                             mapping.node = nknode;
-                            if ((nk->contigID > 0 and rk.contigID > 0) or
-                                (nk->contigID < 0 and rk.contigID < 0))
+                            if ((nk->second.node > 0 and rk.contigID > 0) or
+                                (nk->second.node < 0 and rk.contigID < 0))
                                 mapping.rev = false;
                             else mapping.rev = true;
-                            mapping.first_pos = nk->pos;
-                            mapping.last_pos = nk->pos;
+                            mapping.first_pos = nk->second.pos;
+                            mapping.last_pos = nk->second.pos;
                             ++mapping.unique_matches;
                         } else {
                             if (mapping.node != nknode) {
                                 mapping.node = 0;
                                 break; //exit -> multi-mapping read! TODO: allow mapping to consecutive nodes
                             } else {
-                                mapping.last_pos = nk->pos;
+                                mapping.last_pos = nk->second.pos;
                                 ++mapping.unique_matches;
                             }
                         }
@@ -191,11 +191,10 @@ void PairedReadMapper::remap_reads(){
             FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k}, memlimit, 0, max_coverage,
                                                                                   output_prefix);
 
-    std::vector<KmerIDX> unique_kmers;
-
-    // Get the unique_kmers from the file
+   // Get the unique_kmers from the graph into a map
     std::cout << "Indexing graph... " << std::endl;
-    unique_kmers = kmerIDX_SMR.process_from_memory();
+    std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;
+    for (auto &kidx :kmerIDX_SMR.process_from_memory()) kmer_to_graphposition[kidx.kmer]={kidx.contigID,kidx.pos};
 
     std::vector<uint64_t> uniqKmer_statistics(kmerIDX_SMR.summaryStatistics());
     std::cout << "Number of sequences in graph: " << uniqKmer_statistics[2] << std::endl;
@@ -203,8 +202,8 @@ void PairedReadMapper::remap_reads(){
     std::cout << "Number of " << int(k) << "-kmers in graph index " << uniqKmer_statistics[1] << std::endl;
 
     if (readType == prmPE) {
-        auto r1c = process_reads_from_file(k, min_matches, unique_kmers, read1filename, 1);
-        auto r2c = process_reads_from_file(k, min_matches, unique_kmers, read2filename, 2);
+        auto r1c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read1filename, 1);
+        auto r2c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read2filename, 2);
         //now populate the read_to_node array
         assert(r1c == r2c);
         read_to_node.resize(r1c * 2 + 1, 0);
@@ -214,8 +213,8 @@ void PairedReadMapper::remap_reads(){
         read_to_tag.clear();
 
     } else if (readType == prm10x) {
-        auto r1c = process_reads_from_file(k, min_matches, unique_kmers, read1filename, 1, true);
-        auto r2c = process_reads_from_file(k, min_matches, unique_kmers, read2filename, 2, true);
+        auto r1c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read1filename, 1, true);
+        auto r2c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read2filename, 2, true);
         //now populate the read_to_node array
         assert(r1c == r2c);
         read_to_node.resize(r1c * 2 + 1, 0);
