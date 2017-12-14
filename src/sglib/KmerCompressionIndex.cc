@@ -73,30 +73,54 @@ void KmerCompressionIndex::add_counts_from_file(std::string filename) {
     std::cout<<"counting from file"<<std::endl;
 
     FastqReader<FastqRecord> fastqReader({0},filename);
-    FastqRecord read;
-    std::vector<KmerCount> readkmers;
-    KmerCountFactory<FastqRecord> kf({31});
-    uint64_t present=0,absent=0,rp=0;
-    bool c ;
-    c = fastqReader.next_record(read);
-    while (c) {
-        readkmers.clear();
-        //process tag if 10x! this way even ummaped reads get tags
-        kf.setFileRecord(read);
-        kf.next_element(readkmers);
+    std::atomic_uint64_t present(0), absent(0), rp(0);
+    std::unordered_map<uint64_t,uint64_t> kmer_map;
+    for (uint64_t i=0;i<graph_kmers.size();++i) kmer_map[graph_kmers[i].kmer]=i;
 
-        for (auto &rk:readkmers) {
-            auto nk = std::lower_bound(graph_kmers.begin(), graph_kmers.end(), rk);
-            if (nk!=graph_kmers.end() and nk->kmer == rk.kmer) {
-                auto offset = nk - graph_kmers.begin();
-                read_counts.back()[offset]++;
-                ++present;
-            }
-            else ++absent;
-        }
-        ++rp;
-        if (rp % 100000 == 0) std::cout << rp << " reads processed "<< present <<" / " << present+absent << " kmers found" << std::endl;
+#pragma omp parallel shared(fastqReader)
+    {
+        std::vector<uint16_t> thread_counts(read_counts.back().size(),0);
+        FastqRecord read;
+        std::vector<KmerCount> readkmers;
+        KmerCountFactory<FastqRecord> kf({31});
+
+        bool c;
+#pragma omp critical(fastqreader)
         c = fastqReader.next_record(read);
+        while (c) {
+            readkmers.clear();
+            //process tag if 10x! this way even ummaped reads get tags
+            kf.setFileRecord(read);
+            kf.next_element(readkmers);
+
+            for (auto &rk:readkmers) {
+                /*auto nk = std::lower_bound(graph_kmers.begin(), graph_kmers.end(), rk);
+                if (nk != graph_kmers.end() and nk->kmer == rk.kmer) {
+                    auto offset = nk - graph_kmers.begin();
+                    ++thread_counts[offset];
+                    ++present;
+                } else ++absent;*/
+                auto findk = kmer_map.find(rk.kmer);
+                if (kmer_map.end() != findk){
+                    ++thread_counts[findk->second];
+                    ++present;
+                } else ++absent;
+
+
+            }
+            uint64_t a=++rp;
+            if (a % 100000 == 0)
+                std::cout << rp << " reads processed " << present << " / " << present + absent << " kmers found"
+                          << std::endl;
+#pragma omp critical(fastqreader)
+            c = fastqReader.next_record(read);
+        }
+
+        //Update shared counts
+#pragma omp critical(countupdate)
+        {
+            for (uint64_t i=0;i<read_counts.back().size();++i) read_counts.back()[i]+=thread_counts[i];
+        }
     }
     // somehow for my test data with 700 reads, totak count is 834 for r2...
     std::cout << rp << " reads processed "<< present <<" / " << present+absent << " kmers found" << std::endl;
