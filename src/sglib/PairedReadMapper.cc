@@ -41,7 +41,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
                 //process tag if 10x! this way even ummaped reads get tags
                 if (is_tagged) {
                     if (read.name.size() > 16) {
-                        std::string barcode = read.name.substr(read.name.size() - 16);
+                        std::string barcode = read.name.substr(1,16);
                         prm10xTag_t tag = 0;
                         for (auto &b:barcode) {
                             tag <<= 2;
@@ -62,10 +62,10 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
                                     break; //invalid tags with non-ACGT chars
                             }
                         }
-#pragma omp critical
+#pragma omp critical (read_to_tag)
                         {
                             //TODO: inefficient
-                            if (read_to_tag.size() <= mapping.read_id) read_to_tag.resize(mapping.read_id + 1);
+                            if (read_to_tag.size() <= mapping.read_id) read_to_tag.resize(mapping.read_id + 100000,0);
                             read_to_tag[mapping.read_id] = tag;
                         }
                     } else {
@@ -122,6 +122,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
 
     }
     std::cout<<"Reads mapped: "<<mapped_count<<" / "<<total_count<<std::endl;
+    read_to_tag.resize(total_count);
 #pragma omp parallel for
     for (sgNodeID_t n=1;n<reads_in_node.size();++n){
         std::sort(reads_in_node[n].begin(),reads_in_node[n].end());
@@ -251,6 +252,35 @@ void PairedReadMapper::print_stats() {
     std::cout<<"Both different:  "<<status_counts[pair_status_different]<<std::endl;
     std::cout<<"Both same :      "<<status_counts[pair_status_same]<<std::endl;
     std::cout<<"TOTAL     :      "<<read_to_node.size()/2<<std::endl<<std::endl;
+
+    if (read_to_tag.size()>0){
+        std::unordered_map<uint32_t,uint32_t> reads_in_tagmap;
+        for (uint64_t i=1;i<read_to_tag.size();++i) {
+            if (read_to_tag[i] and read_to_node[i]){
+                ++reads_in_tagmap[read_to_tag[i]];
+            }
+        }
+        std::cout<<"---Tag mapping Stats ---"<<std::endl;
+        std::cout<<"Tag count:     "<<reads_in_tagmap.size()<<std::endl;
+        uint32_t tagreadhist[1001];
+        uint64_t trc10=0,trc50=0,trc100=0,trc500=0;
+        for (auto i=0;i<1001;++i) tagreadhist[i]=0;
+        for (auto &tr:reads_in_tagmap) {
+            auto trc=(tr.second>1000 ? 1000: tr.second);
+            ++tagreadhist[trc];
+            if (trc>10) ++trc10;
+            if (trc>50) ++trc50;
+            if (trc>100) ++trc100;
+            if (trc>500) ++trc500;
+        }
+        std::cout<<"Tags with 10+ mapped reads:     "<<trc10<<std::endl;
+        std::cout<<"Tags with 50+ mapped reads:     "<<trc50<<std::endl;
+        std::cout<<"Tags with 100+ mapped reads:     "<<trc100<<std::endl;
+        std::cout<<"Tags with 500+ mapped reads:     "<<trc500<<std::endl;
+        std::ofstream tmhf("tag_map_histogram.csv");
+        for (auto i=0;i<1001;++i) tmhf<<i<<","<<tagreadhist[i]<<std::endl;
+
+    }
     /*std::cout<<"---Node occupancy histogram ---"<<std::endl;
     uint64_t readcount[12];
     for (auto &rc:readcount)rc=0;

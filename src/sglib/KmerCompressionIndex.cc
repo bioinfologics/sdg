@@ -154,6 +154,21 @@ void KmerCompressionIndex::compute_compression_stats() {
 
 }
 
+void KmerCompressionIndex::dump_histogram(std::string filename) {
+    std::ofstream kchf(filename);
+    uint64_t covuniq[1001];
+    for (auto &c:covuniq)c=0;
+    uint64_t tuniq=0,cuniq=0;
+    for (uint64_t i=0; i<graph_kmers.size(); ++i){
+        if (graph_kmers[i].count==1){
+            tuniq+=read_counts[0][i];
+            ++cuniq;
+            ++covuniq[(read_counts[0][i]<1000 ? read_counts[0][i] : 1000 )];
+        }
+    }
+    for (auto i=0;i<1000;++i) kchf<<i<<","<<covuniq[i]<<std::endl;
+}
+
 double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint16_t max_graph_freq) {
 
     auto & node=sg.nodes[_node>0 ? _node:-_node];

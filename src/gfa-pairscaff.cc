@@ -13,7 +13,7 @@ int main(int argc, char * argv[]) {
     std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
 
     std::string gfa_filename,output_prefix, load_cidx, dump_cidx;
-    std::vector<std::string> reads1,reads2,cidxreads1,cidxreads2, dump_mapped, load_mapped;
+    std::vector<std::string> reads1,reads2,reads_type,cidxreads1,cidxreads2, dump_mapped, load_mapped;
     bool stats_only=0;
     uint64_t max_mem_gb=4;
 
@@ -34,6 +34,7 @@ int main(int argc, char * argv[]) {
         options.add_options("Paired reads options")
                 ("1,read1", "input reads, left", cxxopts::value<std::vector<std::string>>(reads1))
                 ("2,read2", "input reads, right", cxxopts::value<std::vector<std::string>>(reads2))
+                ("read_type", "One of: pe,10x", cxxopts::value<std::vector<std::string>>(reads_type))
                 ("d,dump_to", "dump mapped reads to file", cxxopts::value<std::vector<std::string>>(dump_mapped))
                 ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped))
                 ("max_mem", "maximum_memory when mapping (GB, default: 4)", cxxopts::value<uint64_t>(max_mem_gb));
@@ -51,8 +52,8 @@ int main(int argc, char * argv[]) {
             throw cxxopts::OptionException(" please specify input files and output prefix");
         }
 
-        if ( result.count("1")!=result.count("2")){
-            throw cxxopts::OptionException(" please specify read1 and read2 files in pairs");
+        if ( result.count("1")!=result.count("2") or result.count("1")!=result.count("read_type")){
+            throw cxxopts::OptionException(" please specify read1, read2 and read_type files in triplets");
         }
 
         if ( result.count("cidxread1")!=result.count("cidxread2")){
@@ -107,7 +108,10 @@ int main(int argc, char * argv[]) {
         kci.save_to_disk(dump_cidx);
     }
 
-    if (kci.read_counts.size()>0) kci.compute_compression_stats();
+    if (kci.read_counts.size()>0) {
+        kci.compute_compression_stats();
+        kci.dump_histogram("kci_histogram.csv");
+    }
 
     std::cout<<std::endl<<"=== Mapping reads ==="<<std::endl;
     //read mapping/loading
@@ -119,7 +123,11 @@ int main(int argc, char * argv[]) {
     }
     for(int lib=0;lib<reads1.size();lib++) {
         mappers.emplace_back(sg);
-        mappers.back().map_reads(reads1[lib], reads2[lib], prmPE, max_mem_gb*1024L*1024L*1024L);
+        if (reads_type[lib]=="10x") {
+            mappers.back().map_reads(reads1[lib], reads2[lib], prm10x, max_mem_gb * 1024L * 1024L * 1024L);
+        } else {
+            mappers.back().map_reads(reads1[lib], reads2[lib], prmPE, max_mem_gb * 1024L * 1024L * 1024L);
+        }
         mappers.back().print_stats();
         if (dump_mapped.size() > 0) {
             std::cout<<"dumping map to "<<dump_mapped[lib]<<std::endl;
