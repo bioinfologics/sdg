@@ -21,9 +21,15 @@ endif (APPLE)
 
 
 project (bsg)
+ENABLE_TESTING()
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
+OPTION(BUILD_TESTING "Build tests." ON)
 
+IF(BUILD_TESTING)
+    # custom compiler option
+ENDIF(BUILD_TESTING)
 ## Compiler flags
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -w -Wno-deprecated -std=c++11")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -coverage -fpermissive -w -Wno-deprecated -std=c++11")
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
@@ -114,6 +120,8 @@ add_library(sequence_graph SHARED
             src/sglib/PhaseScaffolder.cpp
             src/sglib/PhaseScaffolder.h)
 
+set_target_properties(sequence_graph PROPERTIES LINK_FLAGS -coverage)
+
 target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
 ## add executables and respective sources
@@ -147,7 +155,10 @@ target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 
-
-add_executable(runBasicTests tests/sglib/basic_check.cc)
-target_link_libraries(runBasicTests gtest gtest_main)
-target_link_libraries(runBasicTests sequence_graph)
+IF(BUILD_TESTING)
+    add_executable(runBasicTests tests/sglib/basic_check.cc)
+    target_compile_options(runBasicTests PRIVATE -g -O0 -fprofile-arcs -ftest-coverage)
+    set_target_properties(runBasicTests PROPERTIES LINK_FLAGS -coverage)
+    target_link_libraries(runBasicTests gtest gtest_main sequence_graph)
+    add_test(basicTests runBasicTests)
+ENDIF()
