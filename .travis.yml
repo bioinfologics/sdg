@@ -16,6 +16,7 @@ matrix:
             - doxygen-latex
             - doxygen-gui
             - graphviz
+            - lcov
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && DEPLOY=true"
     - os: osx
