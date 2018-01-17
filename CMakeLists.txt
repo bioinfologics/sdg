@@ -1,5 +1,9 @@
 cmake_minimum_required (VERSION 2.8)
 
+if (POLICY CMP0048)
+    cmake_policy(SET CMP0048 NEW)
+endif (POLICY CMP0048)
+
 IF (MY_COMPILER_OPTION STREQUAL "Intel")
     FIND_PROGRAM(ICPC_PROGRAM icpc ...)
     IF(ICPC_PROGRAM)
@@ -41,9 +45,6 @@ if(OPENMP_FOUND)
 endif()
 
 add_definitions(${CMAKE_CXX_FLAGS})
-
-## To move the bins to the final location
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin")
 
 find_package(ZLIB REQUIRED)
 if (ZLIB_FOUND)
@@ -93,35 +94,41 @@ include_directories("deps/kseqcpp/")
 
 ## Libraries
 add_library(sequence_graph SHARED
-            src/sglib/SMR.h
-            src/sglib/readers/Common.h
-            src/sglib/readers/FileReader.h
-            src/sglib/readers/SequenceGraphReader.h
-            src/sglib/factories/ContigBlockFactory.h
-            src/sglib/factories/ContigLink.h
-            src/sglib/factories/KMerFactory.h
-            src/sglib/factories/KMerIDXFactory.h
-            src/sglib/SequenceGraph.hpp
             src/sglib/SequenceGraph.cc
-            src/sglib/PairedReadMapper.hpp
             src/sglib/PairedReadMapper.cc
-            src/sglib/HaplotypeScorer.hpp
             src/sglib/HaplotypeScorer.cpp
-            src/sglib/SequenceGraphJournal.hpp
             src/sglib/SequenceGraphJournal.cc
             src/sglib/SequenceGraph.cc
             src/sglib/PairedReadMapper.cc
             src/sglib/Scaffolder.cc
             src/sglib/filesystem/check_or_create_directory.cc
-            src/sglib/filesystem/check_or_create_directory.h
             src/sglib/PhaseScaffolder.cpp
-            src/sglib/PhaseScaffolder.h)
+            )
 
 set_target_properties(sequence_graph PROPERTIES
                       COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
                       LINK_FLAGS    "--coverage"
                       )
 target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+
+install(TARGETS sequence_graph DESTINATION lib)
+install(FILES
+        src/sglib/SMR.h
+        src/sglib/readers/Common.h
+        src/sglib/readers/FileReader.h
+        src/sglib/readers/SequenceGraphReader.h
+        src/sglib/factories/ContigBlockFactory.h
+        src/sglib/factories/ContigLink.h
+        src/sglib/factories/KMerFactory.h
+        src/sglib/factories/KMerIDXFactory.h
+        src/sglib/SequenceGraph.hpp
+        src/sglib/PairedReadMapper.hpp
+        src/sglib/HaplotypeScorer.hpp
+        src/sglib/SequenceGraphJournal.hpp
+        src/sglib/PhaseScaffolder.h
+        src/sglib/filesystem/check_or_create_directory.h
+        DESTINATION include
+        )
 
 ## add executables and respective sources
 add_executable(gfa-qc
@@ -163,3 +170,17 @@ IF(BUILD_TESTING)
     target_link_libraries(runBasicTests gtest gtest_main sequence_graph)
     add_test(basicTests runBasicTests)
 ENDIF()
+
+install(TARGETS
+        gfa-dumppath
+        gfa-qc
+        seq-sorter
+        gfa-pairscaff
+        gfa-align
+        phaser
+        runBasicTests
+        RUNTIME DESTINATION bin
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib/static)
+install(DIRECTORY src/sglib
+        DESTINATION include)
