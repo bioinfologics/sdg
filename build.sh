@@ -6,6 +6,7 @@ cmake .. ${CMAKE_OPTIONS}
 make -j8
 make test
 ctest
+
 touch ./docs/html/.nojekyll || true
 lcov --directory . --capture --output-file coverage.info
 lcov --remove coverage.info '/usr/*' --output-file coverage.info
