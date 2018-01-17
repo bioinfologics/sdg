@@ -4,8 +4,8 @@ mkdir build
 cd build
 cmake .. ${CMAKE_OPTIONS}
 make -j8
-make test
-ctest
+PATH=$PATH:./bin make test
+PATH=$PATH:./bin ctest
 
 touch ./docs/html/.nojekyll || true
 lcov --directory . --capture --output-file coverage.info
