@@ -25,9 +25,6 @@ ENABLE_TESTING()
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 OPTION(BUILD_TESTING "Build tests." ON)
 
-IF(BUILD_TESTING)
-    # custom compiler option
-ENDIF(BUILD_TESTING)
 ## Compiler flags
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage -coverage -fpermissive -w -Wno-deprecated -std=c++11")
 
