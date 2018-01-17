@@ -34,7 +34,7 @@ script: ./build.sh
 
 after_success:
     # Creating report
-  - cd ${TRAVIS_BUILD_DIR}/build
+  - cd ${TRAVIS_BUILD_DIR}
   - lcov --gcov-tool=gcov-6 --directory . --capture --output-file coverage.info # capture coverage info
   - lcov --gcov-tool=gcov-6 --remove coverage.info '/usr/*' --output-file coverage.info # filter out system
   - lcov --gcov-tool=gcov-6 --list coverage.info #debug info
