@@ -117,8 +117,10 @@ add_library(sequence_graph SHARED
             src/sglib/PhaseScaffolder.cpp
             src/sglib/PhaseScaffolder.h)
 
-set_target_properties(sequence_graph PROPERTIES LINK_FLAGS -coverage)
-
+set_target_properties(sequence_graph PROPERTIES
+                      COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
+                      LINK_FLAGS    "--coverage"
+                      )
 target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
 ## add executables and respective sources
@@ -154,8 +156,10 @@ target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 
 IF(BUILD_TESTING)
     add_executable(runBasicTests tests/sglib/basic_check.cc)
-    target_compile_options(runBasicTests PRIVATE -g -O0 -fprofile-arcs -ftest-coverage)
-    set_target_properties(runBasicTests PROPERTIES LINK_FLAGS -coverage)
+    set_target_properties(runBasicTests PROPERTIES
+                          COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
+                          LINK_FLAGS    "--coverage"
+                          )
     target_link_libraries(runBasicTests gtest gtest_main sequence_graph)
     add_test(basicTests runBasicTests)
 ENDIF()
