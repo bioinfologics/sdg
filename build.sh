@@ -3,12 +3,9 @@
 mkdir build
 cd build
 cmake .. ${CMAKE_OPTIONS}
-make -j8
-
-find . -iname "*.gcda"
+make all -j8
 
 make test
 ctest
 
-find . -iname "*.gcda"
 (touch ./docs/html/.nojekyll || true)
