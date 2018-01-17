@@ -7,9 +7,8 @@ make -j8
 
 find . -iname "*.gcda"
 
-PATH=$PATH:./bin make test
-PATH=$PATH:./bin ctest
+make test
+ctest
 
 find . -iname "*.gcda"
-
-touch ./docs/html/.nojekyll || true
+(touch ./docs/html/.nojekyll || true)
