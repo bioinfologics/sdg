@@ -5,5 +5,5 @@ cd build
 cmake .. ${CMAKE_OPTIONS}
 make all -j8
 pwd
-./bin/runBasicTests
+make test
 (touch ./docs/html/.nojekyll || true)
