@@ -139,15 +139,16 @@ int main(int argc, char * argv[]) {
 
     Scaffolder scaff(sg,mappers,kci);
 
-    scaff.pop_unsupported_shortbubbles();
-    sg.join_all_unitigs();
+    scaff.expand_bubbly_subgraphs();
+    //scaff.pop_unsupported_shortbubbles();
+    /*sg.join_all_unitigs();
     for (auto &m:mappers) {
         std::cout<<"removing obsolete mappings from "<<m.read1filename<<" and "<<m.read2filename<<std::endl;
         m.remove_obsolete_mappings();
         m.print_stats();
         m.remap_reads();
         m.print_stats();
-    }
+    }*/
     //TODO: a lot of repeats are small repeats creating a big "loop", account for those!
     //scaff.find_canonical_repeats();
 

@@ -19,6 +19,8 @@ public:
 
 
     void pop_unsupported_shortbubbles();
+    void expand_bubbly_subgraphs();
+    std::vector<std::vector<sgNodeID_t >> get_all_bubbly_subgraphs();
     void find_canonical_repeats();
 
     ///

@@ -120,6 +120,124 @@ void Scaffolder::find_canonical_repeats(){
     std::cout<<"Trivially solvable canonical repeats:                         "<<solvable<<"/"<<checked<<std::endl;
 }
 
+std::vector<std::vector<sgNodeID_t >> Scaffolder::get_all_bubbly_subgraphs() {
+    std::vector<std::vector<sgNodeID_t >> subgraphs;
+    std::vector<bool> used(sg.nodes.size(),false);
+    const double min_c1=0.75,max_c1=1.25,min_c2=1.5,max_c2=2.5;
+    /*
+     * the loop always keep the first and the last elements as c=2 collapsed nodes.
+     * it starts with a c=2 node, and goes thorugh all bubbles fw, then reverts the subgraph and repeats
+     */
+    for (auto n=1;n<sg.nodes.size();++n){
+        if (used[n] or sg.nodes[n].status==sgNodeDeleted) continue;
+        auto frontkci=kci.compute_compression_for_node(n);
+        if (frontkci>max_c2 or frontkci<min_c2) continue;
+        used[n]=true;
+
+        std::vector<sgNodeID_t > subgraph;
+        subgraph.push_back(n);
+
+        //two passes: 0->fw, 1->bw, path is inverted twice, so still n is +
+        for (auto pass=0; pass<2; ++pass) {
+            //while there's a possible bubble fw.
+            for (auto fn = sg.get_fw_links(subgraph.back()); fn.size() == 2; fn = sg.get_fw_links(subgraph.back())) {
+                //if it is not a real bubble, get out.
+                if (sg.get_bw_links(fn[0].dest).size()!=1 or sg.get_bw_links(fn[0].dest).size()!=1) break;
+                auto fl1=sg.get_fw_links(fn[0].dest);
+                if (fl1.size()!=1) break;
+                auto fl2=sg.get_fw_links(fn[1].dest);
+                if (fl2.size()!=1) break;
+                if (fl2[0].dest!=fl1[0].dest) break;
+
+                auto p1kci=kci.compute_compression_for_node(fn[0].dest);
+                if (p1kci<min_c1 or p1kci>max_c1) break;
+                auto p2kci=kci.compute_compression_for_node(fn[1].dest);
+                if (p2kci<min_c1 or p2kci>max_c1) break;
+
+                auto next_end=fl2[0].dest;
+                auto next_end_kci=kci.compute_compression_for_node(next_end);
+                if (next_end_kci<min_c2 or next_end_kci>max_c2) break;
+
+                //all conditions met, update subgraph
+                subgraph.push_back(fn[0].dest);
+                subgraph.push_back(fn[1].dest);
+                subgraph.push_back(next_end);
+                used[(next_end>0?next_end:-next_end)]=true;
+
+            }
+            std::vector<sgNodeID_t > new_subgraph;
+            for (auto it=subgraph.rbegin();it<subgraph.rend();++it) new_subgraph.push_back(-*it);
+            std::swap(new_subgraph,subgraph);
+        }
+        if (subgraph.size()>6) {
+            subgraphs.push_back(subgraph);
+            //std::cout<<"Bubbly path found: ";
+            //for (auto &n:subgraph) std::cout<<"  "<<n<<" ("<<sg.nodes[(n>0?n:-n)].sequence.size()<<"bp)";
+            //std::cout<<std::endl;
+        }
+    }
+    return subgraphs;
+}
+
+void Scaffolder::expand_bubbly_subgraphs() {
+    std::cout<<"Finding bubbly subgraphs"<<std::endl;
+    auto bubbly_subgraphs=get_all_bubbly_subgraphs();
+    std::cout<<"Expanding bubbly subgraphs"<<std::endl;
+    for (auto i=1;i<rmappers[0].read_to_tag.size();++i){
+        if(rmappers[0].read_to_tag[i]==0) {
+            if (i%2==1) rmappers[0].read_to_tag[i]=rmappers[0].read_to_tag[i+1];
+            else rmappers[0].read_to_tag[i]=rmappers[0].read_to_tag[i-1];
+        }
+    }
+    for (auto bubblysg:bubbly_subgraphs){
+        if (bubblysg.size()<16) continue; //skip small bubbly paths
+        //get all tags involved in region projected into nodes in the region
+        std::cout<<std::endl<<"Analysing bubbly subgraph:"<<std::endl;
+
+        std::set<uint32_t> tags;
+        for (auto node:bubblysg){
+            auto n=(node>0?node:-node);
+            for (auto r:rmappers[0].reads_in_node[n]) tags.insert(rmappers[0].read_to_tag[r.read_id]);
+        }
+        std::cout<<"There are "<<tags.size()<<" tags in the region"<<std::endl;
+        //create the node/tag read matrix.
+        std::map<uint32_t,uint32_t> tags_to_local;
+        std::vector<uint32_t>local_to_tag;
+        {
+            auto i=0;
+            for (auto it = tags.begin(); it != tags.end(); ++it, ++i) {
+                tags_to_local[*it] = i;
+                local_to_tag.push_back(*it);
+            }
+        }
+        std::cout<<"Local tag direct and reverse indexes done"<<std::endl;
+        std::vector<std::vector<uint64_t>> node_tag_readcount;
+        for (auto node:bubblysg) {
+            node_tag_readcount.emplace_back(std::vector<uint64_t>(tags.size()));
+            auto n = (node > 0 ? node : -node);
+            std::cout << "processing node #" << n << ":" << node;
+            for (auto r:rmappers[0].reads_in_node[n]) ++node_tag_readcount.back()[tags_to_local[rmappers[0].read_to_tag[r.read_id]]];
+        }
+        std::cout << "dumping matrix"<<std::endl;
+        std::ofstream node_tag_mx_file("node_tag_mx_"+std::to_string(bubblysg[0])+".csv");
+        node_tag_mx_file<<"tag";
+        for (auto n:bubblysg)node_tag_mx_file<<",node_"<<n;
+        node_tag_mx_file<<std::endl;
+        for (auto i=0;i<tags.size();++i){
+            node_tag_mx_file<<local_to_tag[i];
+            for (auto j=0;j<bubblysg.size();++j) node_tag_mx_file<<","<<node_tag_readcount[j][i];
+            node_tag_mx_file<<std::endl;
+        }
+
+
+        //find the right node groups and create two paths
+
+
+        //expand the bubles using sg.join_path
+
+    }
+}
+
 uint64_t Scaffolder::count_reads_linking(sgNodeID_t source, sgNodeID_t dest) {
     //std::cout<<"checking support for "<<source<<" -> "<<dest<<std::endl;
     uint64_t c=0;
@@ -152,4 +270,23 @@ std::vector<std::pair<sgNodeID_t,uint64_t>> Scaffolder::all_read_links(sgNodeID_
         return left.second > right.second;
     });
     return links;
+}
+
+//TODO: make simple binary that tests this by loading from disk. Then change it to return a vector of paths and validate un graph
+std::vector<std::vector<uint64_t>> phase_node_tag_readcount(uint16_t partitions, std::vector<std::vector<uint64_t>> node_tag_readcount){
+
+    //1) reduce dimensions: and uniq -c
+
+    //Insight: negative correlation (i.e. not seeing V3 when V2 was seen) is inmune to false negatives.
+    //i.e. if I look for what I NEVER see together I can phase easily.
+    //needs to create a list of partitions (tags can go into more than one partition or into none)
+
+    //use heuristics to create a score and a relevant starting point (i.e. start by choosing elements with high variability and low correlation).
+
+    //partition cohesion can be tested by stating how linked an element on the partion is to EVERY OTHER element in the partition.
+
+    //to create initial partitions, it can be started by joining very close neighbours with large numbers of nodes.
+    //then tags with less nodes can be put on their best matching partition.
+
+    //if you start with many more partitions than needed, the less-linked element can be moved into a new partition. or throw into the "bin" partition.
 }
