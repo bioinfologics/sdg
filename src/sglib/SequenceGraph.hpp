@@ -107,4 +107,14 @@ private:
     SequenceGraph& sg;
 };
 
+class SequenceSubGraph {
+public:
+    std::vector<sgNodeID_t> nodes;
+    explicit SequenceSubGraph(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
+    SequenceGraphPath make_path(); //returns empty path if not linear
+
+private:
+    SequenceGraph& sg;
+};
+
 #endif //SG_SEQUENCEGRAPH_HPP

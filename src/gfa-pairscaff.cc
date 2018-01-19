@@ -3,6 +3,7 @@
 #include <sglib/PairedReadMapper.hpp>
 #include <sglib/Scaffolder.hpp>
 #include <sglib/KmerCompressionIndex.hpp>
+#include <sglib/GraphPartitioner.hpp>
 #include "sglib/SequenceGraph.hpp"
 #include "cxxopts.hpp"
 
@@ -139,7 +140,16 @@ int main(int argc, char * argv[]) {
 
     Scaffolder scaff(sg,mappers,kci);
 
-    scaff.expand_bubbly_subgraphs();
+    std::cout<<std::endl<<"Testing GraphPartitioner with 10 subgraphs"<<std::endl;
+    auto bubblies=scaff.get_all_bubbly_subgraphs(10);
+    for (auto bubbly:bubblies){
+        GraphPartitioner partitioner(sg,scaff.rmappers,scaff.kci);
+        auto tp=partitioner.tags_patterns(bubbly);
+        auto parts=partitioner.generate_partitions(bubbly);
+        auto parts_score=partitioner.score_partition_set(bubbly,parts,tp);
+    }
+
+    //scaff.expand_bubbly_subgraphs();
     //scaff.pop_unsupported_shortbubbles();
     /*sg.join_all_unitigs();
     for (auto &m:mappers) {

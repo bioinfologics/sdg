@@ -151,7 +151,7 @@ add_library(sequence_graph SHARED
             src/sglib/filesystem/check_or_create_directory.cc
             src/sglib/filesystem/check_or_create_directory.h
             src/sglib/PhaseScaffolder.cpp
-            src/sglib/PhaseScaffolder.h src/sglib/KmerCompressionIndex.cc src/sglib/KmerCompressionIndex.hpp)
+            src/sglib/PhaseScaffolder.h src/sglib/KmerCompressionIndex.cc src/sglib/KmerCompressionIndex.hpp src/sglib/GraphPartitioner.cc src/sglib/GraphPartitioner.hpp)
 
 target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
