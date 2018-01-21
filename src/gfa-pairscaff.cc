@@ -143,10 +143,34 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<"Testing GraphPartitioner with 10 subgraphs"<<std::endl;
     auto bubblies=scaff.get_all_bubbly_subgraphs(10);
     for (auto bubbly:bubblies){
+        std::cout<<std::endl<<"=== Analysing subgraph with "<<bubbly.nodes.size()<<" nodes"<<std::endl;
         GraphPartitioner partitioner(sg,scaff.rmappers,scaff.kci);
         auto tp=partitioner.tags_patterns(bubbly);
+        std::cout<<"Tag patterns (from "<<tp.size()<<" tags):"<<std::endl;
+        for (auto stp:tp) {
+            for (auto p:stp) std::cout<<" "<<(p ? 1:0);
+            std::cout<<std::endl;
+        }
+        std::cout<<std::endl;
         auto parts=partitioner.generate_partitions(bubbly);
+        std::cout<<"Partitions:"<<std::endl;
+        unsigned pnumb=0;
+        for (auto &psg:parts){
+            std::cout<<"Partition #"<<pnumb++<<":";
+            for (auto n:psg) std::cout<<" "<<(n? 1:0);
+            std::cout<<std::endl;
+        }
+        std::cout<<std::endl;
         auto parts_score=partitioner.score_partition_set(bubbly,parts,tp);
+        auto subgraphs=partitioner.partitions_as_subgraphs(bubbly,parts);
+        std::cout<<"Partition solutions as nodes:"<<std::endl;
+        pnumb=0;
+        for (auto &psg:subgraphs){
+            std::cout<<"Partition #"<<pnumb++<<":";
+            for (auto n:psg.nodes) std::cout<<" "<<n;
+            std::cout<<std::endl;
+        }
+        std::cout<<"Scores: "<<parts_score.first<<" "<<parts_score.second<<std::endl;
     }
 
     //scaff.expand_bubbly_subgraphs();
