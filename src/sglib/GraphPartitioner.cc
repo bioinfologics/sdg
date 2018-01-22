@@ -106,7 +106,7 @@ std::pair<float,float> GraphPartitioner::score_partition_set(const SequenceSubGr
         }
         else if (!tag_parts_some[xt].empty()) ++tags_fail;
     }
-    std::cout<<"Scoring tags in partitions:   OK: "<<tags_ok<<" ("<<tags_unique<<" single-partition)    Fail: "<<tags_fail<<std::endl;
+    //std::cout<<"Scoring tags in partitions:   OK: "<<tags_ok<<" ("<<tags_unique<<" single-partition)    Fail: "<<tags_fail<<std::endl;
     return{ ((float)tags_ok)/(tags_ok+tags_fail),((float)tags_unique)/tags_ok};
 }
 
@@ -144,11 +144,11 @@ std::vector<std::vector<bool>> exclussions_from_patterns (const std::vector<std:
         }
     }
 
-    std::cout<<"Node exclusion matrix (float):"<<std::endl;
-    for (auto stp:emxf) {
-        for (auto p:stp) std::cout<<" "<<p;
-        std::cout<<std::endl;
-    }
+//    std::cout<<"Node exclusion matrix (float):"<<std::endl;
+//    for (auto stp:emxf) {
+//        for (auto p:stp) std::cout<<" "<<p;
+//        std::cout<<std::endl;
+//    }
 
     //If exclussion is more than 1/10*node_count in the number of nodes, then it is "real"?
     //TODO: the total number of reads/tags for a particular node influences its exclusion from others (size/map)
@@ -223,20 +223,40 @@ std::vector<std::vector<bool>> GraphPartitioner::generate_partitions(const Seque
         pes.push_back(spex);
     }
 
-    //try including unused nodes in their least exclusive partition
+    //try including nodes in their least exclusive partition if they are not used
     for (auto n=0;n<node_exclussions.size();++n) {
         bool used=false;
         for (auto p:partitions) if (p[n]) used=true;
         if (used) continue;
         float min_ex=1;
-        unsigned min_part=0;
-        for (auto xp=0;xp<partitions.size();++xp) if (pes[n][xp]<min_ex) {min_ex=pes[n][xp];min_part=xp;};
-        auto prev_score=score_partition_set(subgraph,partitions,tp);
-        partitions[min_part][n]=1;
-        auto new_score=score_partition_set(subgraph,partitions,tp);
-        if (prev_score.first>new_score.first) partitions[min_part][n]=0;
+        int min_part=-1;
+        for (auto xp=0;xp<partitions.size();++xp)
+            if ( !partitions[xp][n] and pes[n][xp]<min_ex) {min_ex=pes[n][xp];min_part=xp;};
+        if (min_part>-1) {
+            auto prev_score = score_partition_set(subgraph, partitions, tp);
+            partitions[min_part][n] = 1;
+            auto new_score = score_partition_set(subgraph, partitions, tp);
+            if (prev_score.first >= new_score.first or (new_score.first-prev_score.first<5*(prev_score.second-new_score.second))) partitions[min_part][n] = 0;
+        }
     }
 
+    //try removing multi-partition nodes from their most-exclussive partition
+    for (auto n=0;n<node_exclussions.size();++n) {
+        //bool used=false;
+        //for (auto p:partitions) if (p[n]) used=true;
+        //if (used) continue;
+        float max_ex=0;
+        int max_part=-1;
+        for (auto xp=0;xp<partitions.size();++xp)
+            if ( partitions[xp][n] and pes[n][xp]>max_ex) {max_ex=pes[n][xp];max_part=xp;};
+        if (max_part>-1) {
+            auto prev_score = score_partition_set(subgraph, partitions, tp);
+            partitions[max_part][n] = 0;
+            auto new_score = score_partition_set(subgraph, partitions, tp);
+            if (prev_score.first > new_score.first or (prev_score.first == new_score.first and prev_score.second > new_score.second))
+                partitions[max_part][n] = 1;
+        }
+    }
 
     //TODO: validate partitions as subgraphs with valid conectivity?
 

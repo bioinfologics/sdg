@@ -140,17 +140,20 @@ int main(int argc, char * argv[]) {
 
     Scaffolder scaff(sg,mappers,kci);
 
-    std::cout<<std::endl<<"Testing GraphPartitioner with 10 subgraphs"<<std::endl;
-    auto bubblies=scaff.get_all_bubbly_subgraphs(10);
+    std::cout<<std::endl<<"Testing GraphPartitioner"<<std::endl;
+
+    auto bubblies=scaff.get_all_bubbly_subgraphs();
+    std::cout<<"Starting with "<<bubblies.size()<<" possible bubbles"<<std::endl;
+    uint64_t solved_count=0;
     for (auto bubbly:bubblies){
         std::cout<<std::endl<<"=== Analysing subgraph with "<<bubbly.nodes.size()<<" nodes"<<std::endl;
         GraphPartitioner partitioner(sg,scaff.rmappers,scaff.kci);
         auto tp=partitioner.tags_patterns(bubbly);
-        std::cout<<"Tag patterns (from "<<tp.size()<<" tags):"<<std::endl;
+        /*std::cout<<"Tag patterns (from "<<tp.size()<<" tags):"<<std::endl;
         for (auto stp:tp) {
             for (auto p:stp) std::cout<<" "<<(p ? 1:0);
             std::cout<<std::endl;
-        }
+        }*/
         std::cout<<std::endl;
         auto parts=partitioner.generate_partitions(bubbly);
         std::cout<<"Partitions:"<<std::endl;
@@ -161,18 +164,39 @@ int main(int argc, char * argv[]) {
             std::cout<<std::endl;
         }
         std::cout<<std::endl;
-        auto parts_score=partitioner.score_partition_set(bubbly,parts,tp);
-        auto subgraphs=partitioner.partitions_as_subgraphs(bubbly,parts);
-        std::cout<<"Partition solutions as nodes:"<<std::endl;
-        pnumb=0;
-        for (auto &psg:subgraphs){
-            std::cout<<"Partition #"<<pnumb++<<":";
-            for (auto n:psg.nodes) std::cout<<" "<<n;
-            std::cout<<std::endl;
+        bool valid_part=true;
+        if (parts.size()==2) {
+            for (auto i = 0; i < bubbly.nodes.size(); ++i) {
+                if (0 == i % 3) {
+                    if (!parts[0][i] or !parts[1][i]) valid_part = false;
+                } else if (parts[0][i] == parts[1][i]) valid_part = false;
+                if (1 == i%3) if (parts[0][i]==parts[0][i+1]) valid_part = false;
+            }
         }
-        std::cout<<"Scores: "<<parts_score.first<<" "<<parts_score.second<<std::endl;
-    }
+        else valid_part=false;
+        if (valid_part) {
+            auto parts_score = partitioner.score_partition_set(bubbly, parts, tp);
+            auto subgraphs = partitioner.partitions_as_subgraphs(bubbly, parts);
+            std::cout << "Partition solutions as nodes:" << std::endl;
+            pnumb = 0;
+            for (auto &psg:subgraphs) {
+                std::cout << "Partition #" << pnumb++ << ":";
+                for (auto n:psg.nodes) std::cout << " " << n;
+                std::cout << std::endl;
 
+                sg.join_path(SequenceGraphPath(sg,psg.nodes));
+            }
+            std::cout << "Scores: " << parts_score.first << " " << parts_score.second << std::endl;
+            ++solved_count;
+        }
+        else {
+            std::cout<<"No valid solution found"<<std::endl;
+
+        }
+        //TODO: check the partition subgraphs can create paths, create paths if so, solve region.
+        //TODO: find regions that are not "bubbly" but "repeaty".
+    }
+    std::cout<<"Bubbly paths solved trivially: "<<solved_count<<" / "<<bubblies.size()<<std::endl;
     //scaff.expand_bubbly_subgraphs();
     //scaff.pop_unsupported_shortbubbles();
     /*sg.join_all_unitigs();
