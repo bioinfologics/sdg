@@ -56,4 +56,44 @@ private:
 };
 
 
+class StringKMerFactory : protected KMerFactory {
+public:
+    explicit StringKMerFactory(std::string & s, uint8_t k) : KMerFactory(k),s(s) {
+        fkmer=0;
+        rkmer=0;
+        last_unknown=0;
+    }
+
+    ~StringKMerFactory() {
+#pragma omp critical (KMerFactoryDestructor)
+        {
+            //std::cout << "Bases processed " << bases << "\n";
+        }
+    }
+
+    // TODO: Adjust for when K is larger than what fits in uint64_t!
+    const bool create_kmers(std::vector<uint64_t> &mers) {
+        uint64_t p(0);
+        while (p < s.size()) {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(s[p], p, fkmer, rkmer, last_unknown);
+            p++;
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(fkmer);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(rkmer);
+                }
+            }
+        }
+        return false;
+    }
+
+private:
+    std::string & s;
+};
+
 #endif //SEQ_SORTER_KMERFACTORY_H

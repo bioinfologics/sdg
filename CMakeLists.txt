@@ -29,6 +29,47 @@ ENABLE_TESTING()
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 OPTION(BUILD_TESTING "Build tests." ON)
 
+# Get the remote url
+execute_process(
+        COMMAND git remote get-url origin
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_ORIGIN_URL
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Get the current working branch
+execute_process(
+        COMMAND git rev-parse --abbrev-ref HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_BRANCH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Get the latest abbreviated commit hash of the working branch
+execute_process(
+        COMMAND git log -1 --format=%h
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_COMMIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Fill the version variables in case the compilation isn't done from a git repo
+if("${GIT_ORIGIN_URL}" STREQUAL "")
+    add_definitions("-DGIT_ORIGIN_URL=\"not set\"")
+else()
+    add_definitions("-DGIT_ORIGIN_URL=\"${GIT_ORIGIN_URL}\"")
+endif()
+if("${GIT_COMMIT_HASH}" STREQUAL "")
+    add_definitions("-DGIT_COMMIT_HASH=\"experimental\"")
+else()
+    add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+endif()
+if("${GIT_BRANCH}" STREQUAL "")
+    add_definitions("-DGIT_COMMIT_HASH=\"not from git\"")
+else()
+    add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
+endif()
+
 ## Compiler flags
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage -coverage -fpermissive -w -Wno-deprecated -std=c++11")
 
@@ -103,6 +144,8 @@ add_library(sequence_graph SHARED
             src/sglib/Scaffolder.cc
             src/sglib/filesystem/check_or_create_directory.cc
             src/sglib/PhaseScaffolder.cpp
+            src/sglib/KmerCompressionIndex.cc
+            src/sglib/GraphPartitioner.cc
             )
 
 set_target_properties(sequence_graph PROPERTIES
@@ -126,6 +169,8 @@ install(FILES
         src/sglib/HaplotypeScorer.hpp
         src/sglib/SequenceGraphJournal.hpp
         src/sglib/PhaseScaffolder.h
+        src/sglib/KmerCompressionIndex.hpp
+        src/sglib/GraphPartitioner.hpp
         src/sglib/filesystem/check_or_create_directory.h
         DESTINATION include
         )

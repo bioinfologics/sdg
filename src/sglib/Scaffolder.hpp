@@ -7,6 +7,7 @@
 
 #include "SequenceGraph.hpp"
 #include "PairedReadMapper.hpp"
+#include "KmerCompressionIndex.hpp"
 
 class Scaffolder {
 
@@ -14,9 +15,12 @@ public:
     ///
     /// \param _sg A SequenceGraph to scaffold
     /// \param _rms A vector of PairedReadmapper, containing the mapping of reads to _sg
-    Scaffolder(SequenceGraph &_sg, std::vector<PairedReadMapper> & _rms) : sg(_sg),rmappers(_rms){};
+    Scaffolder(SequenceGraph &_sg, std::vector<PairedReadMapper> & _rms, KmerCompressionIndex &_kci) : sg(_sg),rmappers(_rms),kci(_kci){};
 
 
+    void pop_unsupported_shortbubbles();
+    void expand_bubbly_subgraphs();
+    std::vector<SequenceSubGraph> get_all_bubbly_subgraphs(uint32_t maxsubgraphs=0);
     void find_canonical_repeats();
 
     ///
@@ -36,9 +40,17 @@ public:
     //3: path finder?
 
 
-    SequenceGraph & sg;
-    std::vector<PairedReadMapper> &rmappers;
+    //This is a trivial strategy for the incorporation of long reads:
+    //1) create a path for each long read
+    //2) combine paths (OL)
 
+    void findLongreadPaths();
+    void joinLongreadPaths();
+    void applyLonreadPaths();
+
+    SequenceGraph &sg;
+    std::vector<PairedReadMapper> &rmappers;
+    KmerCompressionIndex &kci;
 
 
 
