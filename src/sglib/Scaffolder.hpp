@@ -6,7 +6,7 @@
 #define SG_SCAFFOLDER_HPP
 
 #include "SequenceGraph.hpp"
-#include "PairedReadMapper.hpp"
+#include "PairedReadMapper.h"
 #include "KmerCompressionIndex.hpp"
 
 class Scaffolder {

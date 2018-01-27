@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/PairedReadMapper.hpp>
+#include <sglib/PairedReadMapper.h>
 #include <sglib/Scaffolder.hpp>
 #include <sglib/KmerCompressionIndex.hpp>
 #include <sglib/GraphPartitioner.hpp>
@@ -145,7 +145,7 @@ int main(int argc, char * argv[]) {
     auto bubblies=scaff.get_all_bubbly_subgraphs();
     std::cout<<"Starting with "<<bubblies.size()<<" possible bubbles"<<std::endl;
     uint64_t solved_count=0;
-    for (auto bubbly:bubblies){
+    for (auto bubbly:bubblies) {
         std::cout<<std::endl<<"=== Analysing subgraph with "<<bubbly.nodes.size()<<" nodes"<<std::endl;
         GraphPartitioner partitioner(sg,scaff.rmappers,scaff.kci);
         auto tp=partitioner.tags_patterns(bubbly);

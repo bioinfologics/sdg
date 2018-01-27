@@ -48,6 +48,7 @@ void Scaffolder::pop_unsupported_shortbubbles() {
     }
 }
 
+// TODO: Adapt for repeat resolution.
 void Scaffolder::find_canonical_repeats(){
     const int required_support=3;
     uint64_t count=0, l700=0,l2000=0,l4000=0,l10000=0,big=0,checked=0,solvable=0;

@@ -1,12 +1,115 @@
 //
 // Created by Bernardo Clavijo (EI) on 03/11/2017.
 //
+
 #include <iostream>
 #include <iomanip>
 #include <cassert>
 #include <atomic>
-#include "PairedReadMapper.hpp"
+#include "PairedReadMapper.h"
 
+uint64_t PairedReadMapper::process_longreads_from_file(uint8_t k, uint16_t min_matches, std::unordered_map<uint64_t , graphPosition> & kmer_to_graphposition, std::string filename, uint64_t offset) {
+    std::cout<<"mapping reads!!!"<<std::endl;
+    /*
+     * LongRead mapping in parallel
+     */
+    FastqReader<FastqRecord> fastqReader({0},filename);
+    std::atomic<uint64_t> mapped_count(0),total_count(0);
+#pragma omp parallel shared(fastqReader)
+    {
+        FastqRecord read;
+        std::vector<KmerIDX> readkmers;
+        kmerIDXFactory<FastqRecord> kf({k});
+        ReadMapping mapping;
+        bool c ;
+#pragma omp critical
+        {
+            c = fastqReader.next_record(read);
+        }
+        while (c) {
+            mapping.read_id = (read.id) * 2 + offset;
+            //this enables partial read re-mapping by setting read_to_node to 0
+            if (read_to_node.size()<=mapping.read_id or 0==read_to_node[mapping.read_id]) {
+                mapping.node = 0;
+                mapping.unique_matches = 0;
+                mapping.first_pos = 0;
+                mapping.last_pos = 0;
+                mapping.rev = false;
+                mapping.unique_matches = 0;
+                //get all kmers from read
+                readkmers.clear();
+#pragma omp critical (read_to_tag)
+                {
+                    //TODO: inefficient
+                    if (read_to_tag.size() <= mapping.read_id) read_to_tag.resize(mapping.read_id + 100000,0);
+                    read_to_tag[mapping.read_id] = read.id;
+                }
+                kf.setFileRecord(read);
+                kf.next_element(readkmers);
+
+                // For each kmer on read
+                std::vector<ReadMapping> read_mappings;
+                for (auto &rk:readkmers) {
+                    auto nk = kmer_to_graphposition.find(rk.kmer);
+                    // If kmer exists on graph
+                    if (kmer_to_graphposition.end() != nk) {
+                        // If first match
+                        if (mapping.node == 0) {
+                            mapped_count++;
+                            mapping.node = nk->second.node;
+                            if ((nk->second.node > 0 and rk.contigID > 0) or
+                                (nk->second.node < 0 and rk.contigID < 0))
+                                mapping.rev = false;
+                            else mapping.rev = true;
+                            mapping.first_pos = nk->second.pos;
+                            mapping.last_pos = nk->second.pos;
+                            mapping.unique_matches = 1;
+                        }// If not first match
+                        else {
+                            // If node is different, end match... Start new one
+                            if (mapping.node != nk->second.node) {
+                                mapping.last_pos = nk->second.pos;
+                                read_mappings.push_back(mapping);
+                                mapping.node = nk->second.node;
+                                mapping.first_pos = nk->second.pos;
+                                mapping.last_pos = nk->second.pos;
+                                mapping.unique_matches=1;
+                            } else {
+                                mapping.unique_matches++;
+                                mapping.last_pos = nk->second.pos;
+                            }
+                        }
+                    }
+                }
+                // TODO : Check if this last push_back is required
+                if (mapping.node != 0) read_mappings.push_back(mapping);
+
+                for (const auto &rm:read_mappings)
+                    if (rm.node != 0 and rm.unique_matches >= min_matches) {
+#pragma omp critical
+                        {
+                            reads_in_node[mapping.node].push_back(mapping);
+                        }
+                        ++mapped_count;
+                    }
+            }
+            auto tc = ++total_count;
+            if (tc % 100000 == 0) std::cout << mapped_count << " / " << tc << std::endl;
+#pragma omp critical
+            {
+                c = fastqReader.next_record(read);
+            }
+        }
+
+    }
+    std::cout<<"Reads mapped: "<<mapped_count<<" / "<<total_count<<std::endl;
+    read_to_tag.resize(total_count);
+#pragma omp parallel for
+    for (sgNodeID_t n=1;n<reads_in_node.size();++n){
+        std::sort(reads_in_node[n].begin(),reads_in_node[n].end());
+    }
+    return total_count;
+}
 
 uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::unordered_map<uint64_t , graphPosition> & kmer_to_graphposition, std::string filename, uint64_t offset , bool is_tagged=false) {
     std::cout<<"mapping reads!!!"<<std::endl;
@@ -15,7 +118,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
      */
     FastqReader<FastqRecord> fastqReader({0},filename);
     std::atomic<uint64_t> mapped_count(0),total_count(0);
-#pragma omp parallel shared(fastqReader)// this lione has out of bounds error on my weird read file AND  ‘PairedReadMapper::reads_in_node’ is not a variable in clause ‘shared’ when compiling on
+#pragma omp parallel shared(fastqReader)// this line has out of bounds error on my weird read file AND  ‘PairedReadMapper::reads_in_node’ is not a variable in clause ‘shared’ when compiling on
     {
         FastqRecord read;
         std::vector<KmerIDX> readkmers;
@@ -151,6 +254,14 @@ void PairedReadMapper::map_reads(std::string filename1, std::string filename2, p
     remap_reads();
 }
 
+void PairedReadMapper::map_reads(std::string long_reads, uint64_t max_mem) {
+    read1filename = long_reads;
+    read2filename = long_reads;
+    readType = prmReadType::prmLR;
+    memlimit = max_mem;
+    remap_reads();
+}
+
 void PairedReadMapper::remove_obsolete_mappings(){
     uint64_t nodes=0,reads=0;
     std::set<sgNodeID_t> updated_nodes;
@@ -224,6 +335,12 @@ void PairedReadMapper::remap_reads(){
                 read_to_node[mr.read_id] = mr.node;
 
             }
+    } else if (readType == prmLR) {
+        auto lrc = process_longreads_from_file(k, min_matches, kmer_to_graphposition, read1filename, 1);
+        read_to_node.resize(lrc*2+1,0);
+        for (const auto &rin:reads_in_node)
+            for (const auto &mr:rin)
+                read_to_node[mr.read_id] = mr.node;
     }
 }
 

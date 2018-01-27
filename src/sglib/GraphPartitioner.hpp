@@ -7,7 +7,7 @@
 
 
 #include "SequenceGraph.hpp"
-#include "PairedReadMapper.hpp"
+#include "PairedReadMapper.h"
 #include "KmerCompressionIndex.hpp"
 
 

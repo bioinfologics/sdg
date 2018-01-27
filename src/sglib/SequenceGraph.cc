@@ -559,7 +559,7 @@ void SequenceGraph::join_all_unitigs() {
     }
 }
 
-void SequenceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
+void SequenceGraph::join_path(SequenceGraphPath p, bool consume) {
     std::set<sgNodeID_t> pnodes;
     for (auto n:p.nodes) {
         pnodes.insert( n );
@@ -569,23 +569,24 @@ void SequenceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
     sgNodeID_t new_node=add_node(Node(p.get_sequence()));
     //TODO:check, this may have a problem with a circle
     for (auto l:get_bw_links(p.nodes.front())) add_link(new_node,l.dest,l.dist);
-
     for (auto l:get_fw_links(p.nodes.back())) add_link(-new_node,l.dest,l.dist);
 
     //TODO: update read mappings
-    if (consume_nodes) {
+    if (consume) {
+        consume_nodes(p, pnodes);
+    }
 
+}
 
-        for (auto n:p.nodes) {
+void SequenceGraph::consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes) {
+    for (auto n:p.nodes) {
             //check if the node has neighbours not included in the path.
             bool ext_neigh=false;
-            if (n!=p.nodes.back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest)==0) ext_neigh=true;
-            if (n!=p.nodes.front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest)==0) ext_neigh=true;
+            if (n!=p.nodes.back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
+            if (n!=p.nodes.front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
             if (ext_neigh) continue;
             remove_node(n);
         }
-    }
-
 }
 
 void SequenceGraphPath::reverse(){

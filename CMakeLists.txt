@@ -165,7 +165,7 @@ install(FILES
         src/sglib/factories/KMerFactory.h
         src/sglib/factories/KMerIDXFactory.h
         src/sglib/SequenceGraph.hpp
-        src/sglib/PairedReadMapper.hpp
+        src/sglib/PairedReadMapper.h
         src/sglib/HaplotypeScorer.hpp
         src/sglib/SequenceGraphJournal.hpp
         src/sglib/PhaseScaffolder.h
@@ -199,12 +199,20 @@ add_executable(kc_comp
 add_executable(seq-sorter
                src/seq-sorter.cpp)
 
+add_executable(repeat_resolver
+               src/repeat_resolver.cc)
+
+add_executable(map-lr
+               src/map-lr.cc)
+
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(repeat_resolver sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(map-lr sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 
 IF(BUILD_TESTING)
     add_executable(runBasicTests tests/sglib/basic_check.cc)
@@ -222,7 +230,9 @@ install(TARGETS
         seq-sorter
         gfa-pairscaff
         gfa-align
+        repeat_resolver
         phaser
+        map-lr
         runBasicTests
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib

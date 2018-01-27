@@ -13,8 +13,6 @@
 #include "sglib/readers/SequenceGraphReader.h"
 #include "SMR.h"
 
-enum prmReadType {prmPE, prmLMP, prm10x};
-const std::string prmReadTypeDesc[]={"Paired End", "Long Mate Pair", "10x Linked Reads"};
 typedef uint32_t prm10xTag_t;
 
 struct graphPosition{
@@ -36,12 +34,16 @@ public:
         return read_id<other.read_id;
     };
     void merge(const ReadMapping &other){};
+    friend std::ostream& operator<<(std::ostream& os, const ReadMapping& rm) {
+        os << rm.node << "\t" << rm.unique_matches;
+        return os;
+    }
 
-    sgNodeID_t node;
-    uint64_t read_id;
-    int32_t first_pos;
-    int32_t last_pos;
-    int32_t unique_matches;
+    sgNodeID_t node = 0;
+    uint64_t read_id = 0;
+    int32_t first_pos = 0;
+    int32_t last_pos = 0;
+    int32_t unique_matches = 0;
     bool rev=false;
 
 };
@@ -54,16 +56,20 @@ public:
  */
 class PairedReadMapper {
 public:
-    PairedReadMapper(SequenceGraph &_sg) : sg(_sg){
+    enum prmReadType {prmPE, prmLMP, prm10x, prmLR};
+
+    PairedReadMapper(SequenceGraph &_sg) : sg(_sg), prmReadTypeDesc{"Paired End", "Long Mate Pair", "10x Linked Reads"} {
         std::cout << "_sg size " << _sg.nodes.size();
         std::cout << "sg size " << sg.nodes.size();
         reads_in_node.resize(sg.nodes.size());
         std::cout << "reads_in_node size; " << reads_in_node.size() << std::endl;
     };
-    void map_reads(std::string , std::string , prmReadType , uint64_t );
+    void map_reads(std::string , std::string , PairedReadMapper::prmReadType , uint64_t );
+    void map_reads(std::string, uint64_t);
     void remove_obsolete_mappings();
     void remap_reads();
     uint64_t process_reads_from_file(uint8_t, uint16_t, std::unordered_map<uint64_t , graphPosition> &, std::string , uint64_t, bool );
+    uint64_t process_longreads_from_file(uint8_t, uint16_t, std::unordered_map<uint64_t , graphPosition> &, std::string , uint64_t );
     void save_to_disk(std::string filename);
     void load_from_disk(std::string filename);
     void print_stats();
@@ -75,6 +81,7 @@ public:
     std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
     std::vector<prm10xTag_t> read_to_tag;
+    const std::string prmReadTypeDesc[3];
 };
 
 

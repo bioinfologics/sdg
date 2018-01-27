@@ -4,6 +4,8 @@
 
 #ifndef SG_SEQUENCEGRAPHREADER_H
 #define SG_SEQUENCEGRAPHREADER_H
+
+#include "../SequenceGraph.hpp"
 #include "Common.h"
 
 /*

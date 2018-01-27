@@ -10,6 +10,7 @@
 #include <string>
 #include <map>
 #include <unordered_map>
+#include <set>
 #include "sglib/readers/FileReader.h"
 
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
@@ -91,6 +92,8 @@ public:
     std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids;
     std::vector<std::string> oldnames;
     std::string filename,fasta_filename;
+
+    void consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes);
 };
 
 
