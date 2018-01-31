@@ -63,7 +63,7 @@ public:
     void map_reads(std::string , std::string , prmReadType , uint64_t );
     void remove_obsolete_mappings();
     void remap_reads();
-    uint64_t process_reads_from_file(uint8_t, uint16_t, std::unordered_map<uint64_t , graphPosition> &, std::string , uint64_t, bool );
+    uint64_t process_reads_from_file(uint8_t, uint16_t, std::unordered_map<uint64_t , graphPosition> &, std::string , uint64_t, bool);
     void save_to_disk(std::string filename);
     void load_from_disk(std::string filename);
     void print_stats();
@@ -73,9 +73,8 @@ public:
     prmReadType readType;
     uint64_t memlimit;
     std::vector<std::vector<ReadMapping>> reads_in_node;
-    std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
+    std::vector<sgNodeID_t> read_to_node; //id of the main node if mapped, set to 0 to remap on next process
     std::vector<prm10xTag_t> read_to_tag;
 };
-
 
 #endif //SG_PAIREDREADMAPPER_HPP

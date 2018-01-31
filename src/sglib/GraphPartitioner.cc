@@ -50,7 +50,7 @@ std::vector<std::vector<bool>> GraphPartitioner::tags_patterns(const SequenceSub
         auto nodes=0;
         std::vector<bool> newpat;
         for (auto xn=0;xn<node_tag_readcount.size();++xn) {
-            newpat.emplace_back((node_tag_readcount[xn][xt]>0));
+            newpat.push_back((node_tag_readcount[xn][xt]>0));
             if (node_tag_readcount[xn][xt]>0) ++nodes;
         }
         if (nodes>1) {

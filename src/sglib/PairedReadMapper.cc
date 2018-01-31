@@ -15,7 +15,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
      */
     FastqReader<FastqRecord> fastqReader({0},filename);
     std::atomic<uint64_t> mapped_count(0),total_count(0);
-#pragma omp parallel shared(fastqReader)// this lione has out of bounds error on my weird read file AND  ‘PairedReadMapper::reads_in_node’ is not a variable in clause ‘shared’ when compiling on
+#pragma omp parallel shared(fastqReader) // this line has out of bounds error on my weird read file AND  ‘PairedReadMapper::reads_in_node’ is not a variable in clause ‘shared’ when compiling on
     {
         FastqRecord read;
         std::vector<KmerIDX> readkmers;
@@ -79,7 +79,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
 
                 for (auto &rk:readkmers) {
                     auto nk = kmer_to_graphposition.find(rk.kmer);
-                    if (kmer_to_graphposition.end()!=nk) {
+                    if (kmer_to_graphposition.end() != nk) {
                         //get the node just as node
                         sgNodeID_t nknode = (nk->second.node > 0 ? nk->second.node : -nk->second.node);
                         //TODO: sort out the sign/orientation representation
@@ -186,6 +186,7 @@ void PairedReadMapper::remap_reads(){
     const int max_coverage = 1;
     const int min_matches = 1;
     const std::string output_prefix("./");
+
     SMR<KmerIDX,
             kmerIDXFactory<FastaRecord>,
             GraphNodeReader<FastaRecord>,
