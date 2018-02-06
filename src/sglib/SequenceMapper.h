@@ -7,6 +7,7 @@
 
 #include "SequenceGraph.hpp"
 #include <iostream>
+#include <fstream>
 
 typedef uint64_t seqID_t;
 
@@ -67,7 +68,8 @@ public:
         mappings_in_node.resize(sg.nodes.size());
     }
 
-    void map_sequences(uint64_t min_matches, const std::string& filename) {
+    void map_sequences(uint64_t min_matches, const std::string& filename, const std::string& output) {
+        output_prefix = output;
         map_sequences_from_file(min_matches, filename);
     }
 
@@ -79,6 +81,8 @@ public:
             }
         }
     }
+
+    void mappings_paths();
 };
 
 

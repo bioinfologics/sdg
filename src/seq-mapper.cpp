@@ -68,8 +68,13 @@ int main(int argc, char **argv) {
 // CONSTRUCT SEQUENCE_MAPPER...
 
     SequenceMapper mppr(sg);
-    mppr.map_sequences(1, reference_filename);
+    mppr.map_sequences(1, reference_filename, output_prefix);
 
-    //mppr.print_mappings();
+    mppr.print_mappings();
+
+// CONNECT MAPPINGS...
+
+    mppr.mappings_paths();
+
 
 }

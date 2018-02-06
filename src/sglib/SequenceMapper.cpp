@@ -83,16 +83,22 @@ MappingDirection SequenceMapping::seq_direction() const {
 
 bool SequenceMapping::direction_will_continue(int32_t next_position) const {
     auto direction = node_direction();
+    //std::cout << "Node direction: " << direction << std::endl;
     if(direction == Forward) {
         return next_position > last_node_pos;
     } else if(direction == Backwards) {
         return next_position < last_node_pos;
+    } else if(direction == Nowhere) {
+        return true;
     }
 }
 
 bool SequenceMapping::mapping_continues(sgNodeID_t next_node, int32_t next_position) const {
+    //std::cout << "Deciding if mapping will continue..." << std::endl;
     auto same_node = absnode() == std::abs(next_node);
+    //std::cout << "Same node: " << same_node << std::endl;
     auto direction_continues = direction_will_continue(next_position);
+    //std::cout << "Direction continues: " << direction_continues << std::endl;
     return same_node and direction_continues;
 }
 
@@ -126,7 +132,7 @@ void SequenceMapper::map_sequences_from_file(const uint64_t min_matches, const s
         kmerIDXFactory<FastaRecord> kf({k});
         SequenceMapping mapping;
         bool c;
-#pragma omp critical
+#pragma omp critical (readrec)
         {
             c = fastaReader.next_record(sequence);
         }
@@ -154,10 +160,13 @@ void SequenceMapper::map_sequences_from_file(const uint64_t min_matches, const s
                         // THERE ARE TWO SITUATIONS WHERE WE WOULD START A NEW MAPPING...
                         // A). WE ARE MAPPING TO A COMPLETELY DIFFERENT NODE...
                         // B). THE DIRECTION OF THE MAPPING IS FLIPPED...
+                        //std::cout << "Current mapping: " << mapping << std::endl;
 
                         if (!mapping.mapping_continues(nk->second.node, nk->second.pos)) {
+                            //std::cout << "Mapping to new node, making new mapping..." << std::endl;
                             sequence_mappings.push_back(mapping);
                             mapping.start_new_mapping(nk->second.node, nk->second.pos, sk.pos);
+                            //std::cout << mapping << std::endl;
                         } else { // IF NODE KMER MAPS TO IS THE SAME, EXTEND THE CURRENT MAPPING...
                             mapping.extend(nk->second.pos, sk.pos);
                         }
@@ -169,25 +178,25 @@ void SequenceMapper::map_sequences_from_file(const uint64_t min_matches, const s
 
             for (const auto &sm:sequence_mappings)
                 if (sm.absnode() != 0 and sm.n_unique_matches() >= min_matches) {
-#pragma omp critical
+#pragma omp critical (storeA)
                     {
                         mappings_in_node[std::abs(sm.absnode())].emplace_back(sm);
                     }
                     ++mapped_kmers_count;
                 }
-
+/*
             for (const auto &sm:sequence_mappings) {
                 std::cout << sm << std::endl;
             }
-
-#pragma omp critical
+*/
+#pragma omp critical (storeB)
             {
                 mappings_of_sequence[sequence.id] = sequence_mappings;
             }
 
             auto tc = ++sequence_count;
             if (tc % 100000 == 0) std::cout << mapped_kmers_count << " / " << tc << std::endl;
-#pragma omp critical
+#pragma omp critical (readrec)
             {
                 c = fastaReader.next_record(sequence);
             }
@@ -200,4 +209,26 @@ void SequenceMapper::map_sequences_from_file(const uint64_t min_matches, const s
     }
 
     std::cout << "Mapped " << mapped_kmers_count << " Kmers from " << sequence_count << " sequences." << std::endl;
+}
+
+void SequenceMapper::mappings_paths() {
+    for(auto sequence_mappings = mappings_of_sequence.begin(); sequence_mappings != mappings_of_sequence.end(); ++sequence_mappings) {
+        std::cout << "Trying to make a path from mappings of sequence: " << sequence_mappings->first << std::endl;
+        std::cout << "Making node list..." << std::endl;
+        std::vector<sgNodeID_t> nodeList;
+        for(const auto &sm:sequence_mappings->second) {
+            auto dirnode = sm.node_direction() == Forward ? sm.absnode() : -sm.absnode();
+            nodeList.push_back(dirnode);
+        }
+        std::cout << "Constructing sequence path..." << std::endl;
+        SequenceGraphPath output_path(sg, nodeList);
+        auto mappedseq = output_path.get_sequence();
+        std::cout << "Constructed sequence!" << std::endl;
+        std::cout << "Managed to map reference sequence to genome graph!" << std::endl;
+        std::cout << "Writing " << mappedseq.length() << " of aligned reference to file!" << std::endl;
+        std::ofstream file(output_prefix + "mapped_sequence.fasta");
+        file << "> Mapped Sequence" << std::endl << mappedseq << std::endl;
+        file.close();
+    }
+
 }

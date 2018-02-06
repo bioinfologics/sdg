@@ -34,6 +34,11 @@ public:
     bool operator==( const  Link);
     bool operator<(const Link)const;
 
+    friend std::ostream& operator<<(std::ostream& s, Link& l) {
+        s << "Link from: " << l.source << " to: " << l.dest << " with a distance of: " << l.dist;
+        return s;
+    }
+
 };
 
 class SequenceGraphPath;
