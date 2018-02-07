@@ -95,6 +95,11 @@ std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n){
     return r;
 }
 
+std::vector<Link> SequenceGraph::get_bw_links(sgNodeID_t n) {
+    return get_fw_links (-n);
+}
+
+
 bool Link::operator==(const Link a){
     if (a.source == this->source && a.dest == this->dest){
         return true;
@@ -486,8 +491,11 @@ std::string SequenceGraphPath::get_fasta_header() {
 }
 
 std::string SequenceGraphPath::get_sequence() {
-    std::string s="";
-    sgNodeID_t pnode=0;
+    std::cout << "get_sequence for a SequenceGraphPath with nodes = [" ;
+    for (auto &n:nodes) std::cout<<" "<<n;
+    std::cout<<" ]"<<std::endl;
+    std::string s = "";
+    sgNodeID_t pnode = 0;
     // just iterate over every node in path - contig names are converted to ids at construction
     for (auto &n:nodes) {
         std::string nseq;
@@ -504,7 +512,7 @@ std::string SequenceGraphPath::get_sequence() {
             for (;l!=sg.links[(pnode>0 ? pnode:-pnode)].end();++l)
                 if (l->source==pnode and l->dest==n) break;
             if (l==sg.links[(pnode>0 ? pnode:-pnode)].end()) {
-                std::cout<<"can't find a link between "<<pnode<<" and "<<-n<<std::endl;
+                std::cout<<"can't find a link between "<<pnode<<" and "<<n<<std::endl;
                 throw std::runtime_error("path has no link");
             } else {
                 if (l->dist>0){
@@ -522,6 +530,9 @@ std::string SequenceGraphPath::get_sequence() {
         s+=nseq;
         pnode=-n;
     }
+    std::cout<<"get sequence finished successfully for SequenceGraphPath with nodes = [" ;
+    for (auto &n:nodes) std::cout<<" "<<n;
+    std::cout<<" ]"<<std::endl;
     return s;
 }
 
@@ -565,6 +576,7 @@ void SequenceGraph::join_path(SequenceGraphPath p, bool consume) {
         pnodes.insert( n );
         pnodes.insert( -n );
     }
+
     if (!p.is_canonical()) p.reverse();
     sgNodeID_t new_node=add_node(Node(p.get_sequence()));
     //TODO:check, this may have a problem with a circle
