@@ -149,7 +149,7 @@ void KmerCompressionIndex::compute_compression_stats() {
     std::cout << "Median coverage for unique kmers: " << median <<std::endl;
     std::cout << "Mode coverage for unique kmers:   " << mode <<std::endl;
 
-    if (median<.9*mode or median>.9*mode ) std::cout<<"WARNING -> median and mode highly divergent"<<std::endl;
+    if (median<mode-.1*mode or median>mode+.1*mode ) std::cout<<"WARNING -> median and mode highly divergent"<<std::endl;
     uniq_mode=mode;
 
 }
@@ -169,7 +169,7 @@ void KmerCompressionIndex::dump_histogram(std::string filename) {
     for (auto i=0;i<1000;++i) kchf<<i<<","<<covuniq[i]<<std::endl;
 }
 
-double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint16_t max_graph_freq) {
+double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint16_t max_graph_freq, uint16_t dataset) {
 
     auto & node=sg.nodes[_node>0 ? _node:-_node];
 
@@ -182,7 +182,7 @@ double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint
         auto nk = std::lower_bound(graph_kmers.begin(), graph_kmers.end(), KmerCount(kmer,0));
         if (nk!=graph_kmers.end() and nk->kmer == kmer and nk->count==1) {
             ++kcount;
-            kcov+=read_counts[0][nk-graph_kmers.begin()];
+            kcov+=read_counts[dataset][nk-graph_kmers.begin()];
         }
     }
 
