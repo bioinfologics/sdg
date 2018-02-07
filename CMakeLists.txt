@@ -29,6 +29,8 @@ ENABLE_TESTING()
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 OPTION(BUILD_TESTING "Build tests." ON)
 
+execute_process(COMMAND find ./ -type f -name "*.gcda" -exec rm -rf {} \;)
+
 # Get the remote url
 execute_process(
         COMMAND git remote get-url origin
@@ -150,8 +152,8 @@ add_library(sequence_graph SHARED
 
 set_target_properties(sequence_graph PROPERTIES
                       COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
-                      LINK_FLAGS    "--coverage"
-                      )
+                      LINK_FLAGS    "--coverage")
+
 target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
 install(TARGETS sequence_graph DESTINATION lib)
@@ -218,8 +220,8 @@ IF(BUILD_TESTING)
     add_executable(runBasicTests tests/sglib/basic_check.cc)
     set_target_properties(runBasicTests PROPERTIES
                           COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
-                          LINK_FLAGS    "--coverage"
-                          )
+                          LINK_FLAGS    "--coverage")
+
     target_link_libraries(runBasicTests gtest gtest_main sequence_graph)
     add_test(basicTests runBasicTests)
 ENDIF()

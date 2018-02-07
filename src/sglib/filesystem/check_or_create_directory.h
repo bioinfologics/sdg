@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 namespace sglib {
+    bool check_file(std::string &filepath);
     bool check_or_create_directory(std::string &output_prefix);
     void remove_directory(std::string path);
 }

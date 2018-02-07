@@ -3,6 +3,24 @@
 //
 
 #include "check_or_create_directory.h"
+
+bool sglib::check_file(std::string &filepath) {
+    struct stat sb{};
+    bool validate_dir(false);
+    if (stat(filepath.c_str(), &sb) != 0) {
+        if (stat(filepath.c_str(), &sb) != 0) {
+            perror(filepath.c_str());
+            validate_dir = false;
+        }
+    } else if (!S_ISDIR(sb.st_mode)) {
+        validate_dir = true;
+    } else {
+        std::cout << filepath << " is not a file " << std::endl;
+        validate_dir = false;
+    }
+
+    return validate_dir;
+}
 bool sglib::check_or_create_directory(std::string &output_prefix) {
         if (output_prefix.back() != '/') {
             output_prefix.push_back('/');

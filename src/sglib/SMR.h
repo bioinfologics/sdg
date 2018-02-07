@@ -133,8 +133,6 @@ public:
      * @brief
      * Transforms the input from memory into a filtered RecordType vector using maxMem and merging subsets once every mergeCount times.
      * Removes the tmp directory used for the external memory reduction.
-     * @param read_file
-     * Path to the file to be read
      * @return
      * Filtered vector of RecordType elements
      */

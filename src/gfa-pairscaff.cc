@@ -125,9 +125,9 @@ int main(int argc, char * argv[]) {
     for(int lib=0;lib<reads1.size();lib++) {
         mappers.emplace_back(sg);
         if (reads_type[lib]=="10x") {
-            mappers.back().map_reads(reads1[lib], reads2[lib], prm10x, max_mem_gb * 1024L * 1024L * 1024L);
+            mappers.back().map_reads(reads1[lib], reads2[lib], PairedReadMapper::prm10x, max_mem_gb * 1024L * 1024L * 1024L);
         } else {
-            mappers.back().map_reads(reads1[lib], reads2[lib], prmPE, max_mem_gb * 1024L * 1024L * 1024L);
+            mappers.back().map_reads(reads1[lib], reads2[lib], PairedReadMapper::prmPE, max_mem_gb * 1024L * 1024L * 1024L);
         }
         mappers.back().print_stats();
         if (dump_mapped.size() > 0) {

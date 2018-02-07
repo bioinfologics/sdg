@@ -48,14 +48,51 @@ void Scaffolder::pop_unsupported_shortbubbles() {
     }
 }
 
+std::vector<sgNodeID_t > Scaffolder::find_repeaty_nodes() {
+    std::vector<sgNodeID_t > repeaty_nodes;
+    const int required_support=3;
+    uint64_t count=0, l700=0,l2000=0,l4000=0,l10000=0,big=0,checked=0,solvable=0;
+
+    for (sgNodeID_t n=1; n < sg.nodes.size(); ++n) {
+        auto nfw_links = sg.get_fw_links(n).size();
+        auto nbw_links = sg.get_bw_links(n).size();
+        if ( nfw_links == nbw_links and nbw_links == 2 ){
+            ++count;
+
+            if (sg.nodes[n].sequence.size()<700) ++l700;
+            else if (sg.nodes[n].sequence.size()<2000) ++l2000;
+            else if (sg.nodes[n].sequence.size()<4000) ++l4000;
+            else if (sg.nodes[n].sequence.size()<10000) ++l10000;
+            else ++big;
+
+            if (sg.nodes[n].sequence.size()>3000) {
+                // std::cout << "evaluating trivial repeat at " << n << "(" << sg.nodes[n].sequence.size() << "bp)" << std::endl;
+                repeaty_nodes.push_back(n);
+            }
+        }
+    }
+
+    std::cout<<"Candidates for canonical repeat expansion:                    "<<count<<std::endl;
+    std::cout<<"Candidates for canonical repeat expansion <700bp:             "<<l700<<std::endl;
+    std::cout<<"Candidates for canonical repeat expansion >700bp & <2000bp:   "<<l2000<<std::endl;
+    std::cout<<"Candidates for canonical repeat expansion >2000bp & <4000bp:  "<<l4000<<std::endl;
+    std::cout<<"Candidates for canonical repeat expansion >4000bp & <10000bp: "<<l10000<<std::endl;
+    std::cout<<"Candidates for canonical repeat expansion >10000bp:           "<<big<<std::endl;
+    std::cout<<"Trivially solvable canonical repeats:                         "<<solvable<<"/"<<checked<<std::endl;
+
+    return repeaty_nodes;
+}
 // TODO: Adapt for repeat resolution.
 void Scaffolder::find_canonical_repeats(){
     const int required_support=3;
     uint64_t count=0, l700=0,l2000=0,l4000=0,l10000=0,big=0,checked=0,solvable=0;
 
     for (sgNodeID_t n=1;n<sg.nodes.size();++n){
-        if (sg.get_fw_links(n).size()==2 and sg.get_bw_links(n).size()==2){
+        if (sg.get_fw_links(n).size()>=2 and sg.get_bw_links(n).size()>=2){
             ++count;
+
+            //std::cout << "Considering node " << n << std::endl;
+
             if (sg.nodes[n].sequence.size()<700) ++l700;
             else if (sg.nodes[n].sequence.size()<2000) ++l2000;
             else if (sg.nodes[n].sequence.size()<4000) ++l4000;
@@ -75,7 +112,6 @@ void Scaffolder::find_canonical_repeats(){
             }
 
             if (sg.nodes[n].sequence.size()<4000) {
-
 
                 if (pn1!=pn2 and pn1!=nn1 and pn1!=nn2 and pn2!=nn1 and pn2!=nn2 and nn1!=nn2
                     and sg.nodes[(pn1>0?pn1:-pn1)].sequence.size()>500
@@ -97,8 +133,8 @@ void Scaffolder::find_canonical_repeats(){
 //                    std::cout<<"Links for PREV#2 ("<<pn2<<")"<<std::endl;
 //                    for (unsigned li=0; li<rmappers.size();++li)
 //                        for (auto &rl:all_read_links(pn2,li)) std::cout<<"LIB"<<li<<": "<<rl.first<<"("<<rl.second<<")"<<std::endl;
-//
-//                    std::cout << s11 << " " << s22 << " / " << s21 << " " << s12 << " " << std::endl;
+
+                    std::cout << s11 << " " << s22 << " / " << s21 << " " << s12 << " " << std::endl;
                     //check reads supporting pn1->nn1 and pn2->nn2
                     if (s11 >= required_support and s22 >= required_support and s21 < required_support and
                         s12 < required_support)

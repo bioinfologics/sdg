@@ -56,13 +56,15 @@ public:
  */
 class PairedReadMapper {
 public:
-    enum prmReadType {prmPE, prmLMP, prm10x, prmLR};
 
-    PairedReadMapper(SequenceGraph &_sg) : sg(_sg), prmReadTypeDesc{"Paired End", "Long Mate Pair", "10x Linked Reads"} {
-        std::cout << "_sg size " << _sg.nodes.size();
-        std::cout << "sg size " << sg.nodes.size();
+    enum prmReadType {prmPE, prmLMP, prm10x, prmLR};
+    const std::vector<std::string> prmReadTypeDesc = {"Paired End", "Long Mate Pair", "10x Linked Reads", "Long Reads"};
+
+    PairedReadMapper(SequenceGraph &_sg) : sg(_sg) {
+        std::cout << " _sg size " << _sg.nodes.size();
+        std::cout << " sg size " << sg.nodes.size();
         reads_in_node.resize(sg.nodes.size());
-        std::cout << "reads_in_node size; " << reads_in_node.size() << std::endl;
+        std::cout << " reads_in_node size; " << reads_in_node.size() << std::endl;
     };
     void map_reads(std::string , std::string , PairedReadMapper::prmReadType , uint64_t );
     void map_reads(std::string, uint64_t);
@@ -81,8 +83,6 @@ public:
     std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
     std::vector<prm10xTag_t> read_to_tag;
-    const std::string prmReadTypeDesc[3];
 };
-
 
 #endif //SG_PAIREDREADMAPPER_HPP

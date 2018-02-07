@@ -22,7 +22,7 @@ uint64_t PairedReadMapper::process_longreads_from_file(uint8_t k, uint16_t min_m
         kmerIDXFactory<FastqRecord> kf({k});
         ReadMapping mapping;
         bool c ;
-#pragma omp critical
+#pragma omp critical(lr_fastq_reader)
         {
             c = fastqReader.next_record(read);
         }
@@ -38,7 +38,7 @@ uint64_t PairedReadMapper::process_longreads_from_file(uint8_t k, uint16_t min_m
                 mapping.unique_matches = 0;
                 //get all kmers from read
                 readkmers.clear();
-#pragma omp critical (read_to_tag)
+#pragma omp critical (lr_read_to_tag)
                 {
                     //TODO: inefficient
                     if (read_to_tag.size() <= mapping.read_id) read_to_tag.resize(mapping.read_id + 100000,0);
@@ -68,7 +68,6 @@ uint64_t PairedReadMapper::process_longreads_from_file(uint8_t k, uint16_t min_m
                         else {
                             // If node is different, end match... Start new one
                             if (mapping.node != nk->second.node) {
-                                mapping.last_pos = nk->second.pos;
                                 read_mappings.push_back(mapping);
                                 mapping.node = nk->second.node;
                                 mapping.first_pos = nk->second.pos;
@@ -86,16 +85,16 @@ uint64_t PairedReadMapper::process_longreads_from_file(uint8_t k, uint16_t min_m
 
                 for (const auto &rm:read_mappings)
                     if (rm.node != 0 and rm.unique_matches >= min_matches) {
-#pragma omp critical
+#pragma omp critical(lr_reads_in_node)
                         {
-                            reads_in_node[mapping.node].push_back(mapping);
+                            reads_in_node[std::abs(rm.node)].push_back(rm);
                         }
                         ++mapped_count;
                     }
             }
             auto tc = ++total_count;
             if (tc % 100000 == 0) std::cout << mapped_count << " / " << tc << std::endl;
-#pragma omp critical
+#pragma omp critical(lr_fastq_reader)
             {
                 c = fastqReader.next_record(read);
             }
