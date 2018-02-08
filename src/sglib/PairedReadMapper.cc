@@ -14,7 +14,8 @@ uint64_t PairedReadMapper::process_longreads_from_file(uint8_t k, uint16_t min_m
      * LongRead mapping in parallel
      */
     FastqReader<FastqRecord> fastqReader({0},filename);
-    std::atomic<uint64_t> mapped_count(0),total_count(0);
+    std::atomic<uint64_t> mapped_count(1);
+    std::atomic<uint64_t> total_count(0);
 #pragma omp parallel shared(fastqReader)
     {
         FastqRecord read;
@@ -38,12 +39,7 @@ uint64_t PairedReadMapper::process_longreads_from_file(uint8_t k, uint16_t min_m
                 mapping.unique_matches = 0;
                 //get all kmers from read
                 readkmers.clear();
-#pragma omp critical (lr_read_to_tag)
-                {
-                    //TODO: inefficient
-                    if (read_to_tag.size() <= mapping.read_id) read_to_tag.resize(mapping.read_id + 100000,0);
-                    read_to_tag[mapping.read_id] = read.id;
-                }
+
                 kf.setFileRecord(read);
                 kf.next_element(readkmers);
 
@@ -55,7 +51,6 @@ uint64_t PairedReadMapper::process_longreads_from_file(uint8_t k, uint16_t min_m
                     if (kmer_to_graphposition.end() != nk) {
                         // If first match
                         if (mapping.node == 0) {
-                            mapped_count++;
                             mapping.node = nk->second.node;
                             if ((nk->second.node > 0 and rk.contigID > 0) or
                                 (nk->second.node < 0 and rk.contigID < 0))
@@ -83,13 +78,19 @@ uint64_t PairedReadMapper::process_longreads_from_file(uint8_t k, uint16_t min_m
                 // TODO : Check if this last push_back is required
                 if (mapping.node != 0) read_mappings.push_back(mapping);
 
-                for (const auto &rm:read_mappings)
+                for (auto &rm:read_mappings)
                     if (rm.node != 0 and rm.unique_matches >= min_matches) {
 #pragma omp critical(lr_reads_in_node)
                         {
+                            rm.read_id=mapped_count;
                             reads_in_node[std::abs(rm.node)].push_back(rm);
                         }
-                        ++mapped_count;
+                        mapped_count+=2;
+#pragma omp critical (lr_read_to_tag)
+                        {
+                            if (read_to_tag.size() <= rm.read_id) read_to_tag.resize(rm.read_id + 100000,0);
+                            read_to_tag[rm.read_id] = read.id;
+                        }
                     }
             }
             auto tc = ++total_count;
@@ -107,7 +108,7 @@ uint64_t PairedReadMapper::process_longreads_from_file(uint8_t k, uint16_t min_m
     for (sgNodeID_t n=1;n<reads_in_node.size();++n){
         std::sort(reads_in_node[n].begin(),reads_in_node[n].end());
     }
-    return total_count;
+    return mapped_count;
 }
 
 uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::unordered_map<uint64_t , graphPosition> & kmer_to_graphposition, std::string filename, uint64_t offset , bool is_tagged=false) {

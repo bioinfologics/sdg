@@ -13,11 +13,11 @@
 
 int main(int argc, char * argv[]) {
     std::string gfa_filename, bubble_contigs_filename, output_prefix, long_reads;
-    std::vector<std::string> dump_mapped, load_mapped, cidxreads1,cidxreads2;
-    bool execute_all(false);
+    std::string dump_mapped(""), load_mapped("");
+    std::string cidxreads1(""), cidxreads2(""), cidx_dump(""), cidx_load("");
+    unsigned int log_level(43);
     uint64_t max_mem_gb(4);
     bool stats_only(false);
-
     try {
 //@formatter:off
         cxxopts::Options options("map-lr", "Long read mapping tool");
@@ -25,14 +25,16 @@ int main(int argc, char * argv[]) {
                 ("help", "Print help", cxxopts::value<std::string>(),"")
                 ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename), "filepath")
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix), "path")
-                ("x,execute", "Do not reuse previous results (execute algorithms)", cxxopts::value<bool>(execute_all), "Y/N");
+                ("log_level", "output log level", cxxopts::value<unsigned int>(log_level), "uint");
         options.add_options("Compression Index Options")
-                ("cidxread1", "compression index input reads, left", cxxopts::value<std::vector<std::string>>(cidxreads1), "path")
-                ("cidxread2", "compression index input reads, right", cxxopts::value<std::vector<std::string>>(cidxreads2), "path");
+                ("cidxread1", "compression index input reads, left", cxxopts::value<std::string>(cidxreads1), "path")
+                ("cidxread2", "compression index input reads, right", cxxopts::value<std::string>(cidxreads2), "path")
+                ("dump_cidx", "dump compression index", cxxopts::value<std::string>(cidx_dump),"path")
+                ("load_cidx", "load compression index", cxxopts::value<std::string>(cidx_load),"path");
         options.add_options("Long Read Options")
                 ("r,long_reads", "input long reads", cxxopts::value<std::string>(long_reads), "filepath")
-                ("d,dump_to","dump mapped reads to file",cxxopts::value<std::vector<std::string>>(dump_mapped), "filepath")
-                ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped), "filepath")
+                ("d,dump_to","dump mapped reads to file",cxxopts::value<std::string>(dump_mapped), "filepath")
+                ("l,load_from", "load mapped reads from file", cxxopts::value<std::string>(load_mapped), "filepath")
                 ("max_mem", "maximum_memory when mapping (GB, default: 4)", cxxopts::value<uint64_t>(max_mem_gb)->default_value("4"), "GB");
 //@formatter:on
 
@@ -51,7 +53,10 @@ int main(int argc, char * argv[]) {
             throw cxxopts::OptionException(" please specify a long reads file");
 
         }
-
+        if (result.count("cidxread1") != 1 or result.count("cidxread2") != 1) {
+            throw cxxopts::OptionException(" please specify both cidxread1 and cidxread2 files for "
+                                                   "the kmer compression indexer");
+        }
 
     } catch (const cxxopts::OptionException &e) {
         std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
@@ -68,39 +73,39 @@ int main(int argc, char * argv[]) {
         throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '" +
                                     gfa_filename.substr(gfa_filename.size() - 4, 4) + "'");
     }
+    sglib::OutputLogLevel = static_cast<sglib::LogLevels>(log_level);
     max_mem_gb *= GB;
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
     std::vector<PairedReadMapper> mappers;
     mappers.emplace_back(sg);
     mappers.emplace_back(sg);
-    std::string lr_mapping_file(output_prefix+"lr_mappings.map");
-    std::string kci_path(output_prefix+"short_mappings.kci");
     // Map long reads or load previous mappings
-    if (sglib::check_file(lr_mapping_file) and !execute_all) {
-        std::cout << "Loading reads from file: " << lr_mapping_file << std::endl;
-        mappers[0].load_from_disk(lr_mapping_file);
+    if (!load_mapped.empty() and sglib::check_file(load_mapped)) {
+        std::cout << "Loading reads from file: " << load_mapped << std::endl;
+        mappers[0].load_from_disk(load_mapped);
         mappers[0].print_stats();
     } else {
         std::cout << "Mapping reads... " << std::endl;
         mappers[0].map_reads(long_reads, max_mem_gb);
-        std::cout << "Saving mappings to file: " << lr_mapping_file << std::endl;
-        mappers[0].save_to_disk(lr_mapping_file);
+        if (!dump_mapped.empty()) {
+            std::cout << "Saving mappings to file: " << dump_mapped << std::endl;
+            mappers[0].save_to_disk(dump_mapped);
+        }
     }
 
     std::cout<<std::endl<<"=== Loading reads compression index ==="<<std::endl;
     //compression index
     KmerCompressionIndex kci(sg,max_mem_gb);
-    if (sglib::check_file(kci_path) and !execute_all){
-        kci.load_from_disk(kci_path);
+    if (sglib::check_file(cidx_load)){
+        kci.load_from_disk(cidx_load);
     } else {
         kci.index_graph();
-        for (int lib = 0; lib < cidxreads1.size(); lib++) {
-            kci.start_new_count();
-            kci.add_counts_from_file(cidxreads1[lib]);
-            kci.add_counts_from_file(cidxreads2[lib]);
-        }
-        kci.save_to_disk(kci_path);
+        kci.start_new_count();
+        kci.add_counts_from_file(cidxreads1);
+        kci.add_counts_from_file(cidxreads2);
+        if (!cidx_dump.empty())
+        kci.save_to_disk(cidx_dump);
     }
 
     if (!kci.read_counts.empty()) {
