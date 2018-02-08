@@ -148,6 +148,7 @@ add_library(sequence_graph SHARED
             src/sglib/PhaseScaffolder.cpp
             src/sglib/KmerCompressionIndex.cc
             src/sglib/GraphPartitioner.cc
+            src/sglib/logger/OutputLog.cc
             )
 
 set_target_properties(sequence_graph PROPERTIES
@@ -174,6 +175,7 @@ install(FILES
         src/sglib/KmerCompressionIndex.hpp
         src/sglib/GraphPartitioner.hpp
         src/sglib/filesystem/check_or_create_directory.h
+        src/sglib/logger/OutputLog.h
         DESTINATION include
         )
 

@@ -2,6 +2,7 @@
 // Created by Luis Yanes (EI) on 23/11/2017.
 //
 
+#include <sys/param.h>
 #include "check_or_create_directory.h"
 
 bool sglib::check_file(std::string &filepath) {
@@ -49,4 +50,24 @@ bool sglib::check_or_create_directory(std::string &output_prefix) {
 void sglib::remove_directory(std::string path) {
     std::cout << "Removing: " << path << std::endl;
     ::rmdir(path.c_str());
+}
+
+std::string sglib::create_temp_directory(std::string prefix = "/tmp") {
+    const char * const tmplt (
+            (prefix.empty()) ?
+                std::string("/tmp/smr-tmp-XXXXXX").c_str() :
+                std::string(prefix + "/smr-tmp-XXXXXX").c_str()
+    );
+
+    char buffer[MAXPATHLEN] = {0};
+    strncpy(buffer, tmplt, strlen(tmplt));
+    auto result = mkdtemp(buffer);
+    if (result ==  nullptr) {
+        std::cerr << "Can't create " << buffer
+                  << ", reason: " << strerror(errno) << "\n";
+    } else {
+        std::cout << "Created " << result << "\n";
+    }
+
+    return std::string(buffer);
 }
