@@ -568,19 +568,17 @@ private:
 
         outf.unsetf(std::ios::skipws);
 
-        std::streampos fileSize;
+        uint64_t numElements;
         outf.seekg(0, std::ios::end);
-        fileSize = outf.tellg();
-        outf.seekg(sizeof(uint64_t), std::ios::beg);
+        outf >> numElements;
         // reserve capacity
         std::vector<RecordType> vec;
-        vec.reserve(fileSize);
+        vec.reserve(numElements);
 
         // read the data:
         vec.insert(vec.begin(), std::istream_iterator<RecordType>(outf), std::istream_iterator<RecordType>());
 
         return vec;
-
     }
     /**
      * @brief
