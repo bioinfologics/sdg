@@ -7,6 +7,96 @@
 #include <atomic>
 #include "PairedReadMapper.hpp"
 
+template<typename FileRecord>
+class FastqReaderFAST {
+public:
+
+    /**
+     * @brief
+     * Initialises the FastaReader, opens the file based on the format and instantiates a reader (plain, gzip or bzip2)
+     * @param params
+     * Parameters for filtering the records (i.e. min_size, max_size)
+     * @param filepath
+     * Relative or absolute path to the file that is going to be read.
+     */
+    explicit FastqReaderFAST(FastxReaderParams params, const std::string &filepath) : params(params), numRecords(0),eof_flag(false) {
+        std::cout << "Opening: " << filepath << "\n";
+        fd=fopen(filepath.c_str(),"r");
+    }
+
+    /**
+    * @brief
+    * Calls the file reader and places the fields from the file onto the FileRecord, the ID is set to the
+    * number of records seen so far.
+    * @param rec
+    * Input/Output parameter where the file fields will be stored.
+    * @return
+    * Whether the function will generate another object or not
+    */
+    bool next_record(FileRecord& rec) {
+        int l;
+        if ( feof(fd) ) {
+            eof_flag=true;
+            return false;
+        }
+        {
+            do {
+                /*if ( NULL != fgets(readbuffer,999,fd)){//read name, we need to save this one
+                    rec.name = std::string(readbuffer);
+                    rec.name.pop_back();
+                } else {eof_flag=true; return false;};
+                if ( NULL != fgets(readbuffer,999,fd)){//read seq, we need to save this one
+                    rec.seq = std::string(readbuffer);
+                    rec.seq.pop_back();
+                } else {rec.seq = ""; eof_flag=true; return false;};
+                if ( NULL == fgets(readbuffer,999,fd)) {eof_flag=true; return false;};
+                if ( NULL == fgets(readbuffer,999,fd)) {eof_flag=true; return false;};*/
+                bool end_flag=false;
+#pragma omp critical(fastqFASTread)
+                {
+                    if (NULL == fgets(readbuffer1, 999, fd) or
+                        NULL == fgets(readbuffer2, 999, fd) or
+                        NULL == fgets(readbuffer3, 999, fd) or
+                        NULL == fgets(readbuffer3, 999, fd)) {//read name, we need to save this one
+                        end_flag = true;
+                    }
+                }
+                if (end_flag) {eof_flag=true; return false;};
+                rec.name = std::string(readbuffer1);
+                rec.name.pop_back();
+                rec.seq = std::string(readbuffer2);
+                rec.seq.pop_back();
+                rec.id = numRecords;
+                numRecords++;
+                stats.totalLength += rec.seq.size();
+            } while (rec.seq.size() < params.min_length);
+        }
+        if (l<0) eof_flag=true;
+        else {
+            stats.filteredRecords++;
+            stats.filteredLength += rec.seq.size();
+        }
+
+        return true;
+    }
+
+    ReaderStats getSummaryStatistics() {
+        stats.totalRecords=numRecords;
+        return stats;
+    }
+
+private:
+    FILE * fd;
+    char readbuffer1[1000];
+    char readbuffer2[1000];
+    char readbuffer3[1000];
+    uint64_t numRecords;
+    FastxReaderParams params;
+    ReaderStats stats;
+    bool eof_flag;
+};
+
+
 
 uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::unordered_map<uint64_t , graphPosition> & kmer_to_graphposition, std::string filename, uint64_t offset , bool is_tagged, std::unordered_set<uint64_t> const & reads_to_remap) {
     std::cout<<"mapping reads!!!"<<std::endl;
@@ -14,7 +104,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
     /*
      * Read mapping in parallel,
      */
-    FastqReader<FastqRecord> fastqReader({0},filename);
+    FastqReaderFAST<FastqRecord> fastqReader({0},filename);
     std::atomic<uint64_t> mapped_count(0),total_count(0);
 #pragma omp parallel shared(fastqReader)// this lione has out of bounds error on my weird read file AND  ‘PairedReadMapper::reads_in_node’ is not a variable in clause ‘shared’ when compiling on
     {
@@ -23,10 +113,10 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
         kmerIDXFactory<FastqRecord> kf({k});
         ReadMapping mapping;
         bool c ;
-#pragma omp critical
-        {
+//#pragma omp critical
+//        {
             c = fastqReader.next_record(read);
-        }
+//        }
         while (c) {
             mapping.read_id = (read.id) * 2 + offset;
             //this enables partial read re-mapping by setting read_to_node to 0
@@ -115,10 +205,10 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
             }
             auto tc = ++total_count;
             if (tc % 100000 == 0) std::cout << mapped_count << " / " << tc << std::endl;
-#pragma omp critical
-            {
+//#pragma omp critical
+//            {
                 c = fastqReader.next_record(read);
-            }
+//            }
         }
 
     }
