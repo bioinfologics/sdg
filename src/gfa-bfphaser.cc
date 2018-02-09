@@ -5,6 +5,7 @@
 #include <sglib/KmerCompressionIndex.hpp>
 #include <sglib/GraphPartitioner.hpp>
 #include "sglib/SequenceGraph.hpp"
+#include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"
 
 
@@ -17,7 +18,7 @@ int main(int argc, char * argv[]) {
     std::vector<std::string> reads1,reads2,reads_type,cidxreads1,cidxreads2, dump_mapped, load_mapped;
     bool stats_only=0;
     uint64_t max_mem_gb=4;
-
+    sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
     try
     {
         cxxopts::Options options("gfa-bfphaser", "GFA Bubbles First Phaser");
@@ -135,6 +136,7 @@ int main(int argc, char * argv[]) {
             mappers[lib].read1filename=reads1[lib];
             mappers[lib].read2filename=reads2[lib];
             mappers[lib].readType=(reads_type[lib] == "10x" ? prm10x : prmPE);
+            mappers[lib].memlimit=max_mem_gb * 1024L * 1024L * 1024L;
         }
         if (dump_mapped.size() > lib) {
             std::cout<<"dumping map to "<<dump_mapped[lib]<<std::endl;
