@@ -13,8 +13,8 @@
 
 int main(int argc, char * argv[]) {
     std::string gfa_filename, bubble_contigs_filename, output_prefix, long_reads;
-    std::string dump_mapped(""), load_mapped("");
-    std::string cidxreads1(""), cidxreads2(""), cidx_dump(""), cidx_load("");
+    std::string dump_mapped, load_mapped;
+    std::string cidxreads1, cidxreads2, cidx_dump, cidx_load;
     unsigned int log_level(43);
     uint64_t max_mem_gb(4);
     bool stats_only(false);
@@ -157,7 +157,7 @@ int main(int argc, char * argv[]) {
             // Invalid partition
             if (psg.nodes.size() != 3) {
                 std::cerr << "Invalid partition size" << std::endl;
-                break;
+                continue;
             } else {
                 std::vector<sgNodeID_t > bw_nodes;
                 for(const auto &n:sg.get_bw_links(central_repeat_node)) {

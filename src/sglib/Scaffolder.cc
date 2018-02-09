@@ -56,7 +56,7 @@ std::vector<sgNodeID_t > Scaffolder::find_repeaty_nodes() {
     for (sgNodeID_t n=1; n < sg.nodes.size(); ++n) {
         auto nfw_links = sg.get_fw_links(n).size();
         auto nbw_links = sg.get_bw_links(n).size();
-        if ( nfw_links == nbw_links and nbw_links == 2 ){
+        if ( nfw_links == nbw_links and nfw_links>1){
             ++count;
 
             if (sg.nodes[n].sequence.size()<700) ++l700;
@@ -65,7 +65,7 @@ std::vector<sgNodeID_t > Scaffolder::find_repeaty_nodes() {
             else if (sg.nodes[n].sequence.size()<10000) ++l10000;
             else ++big;
 
-            if (sg.nodes[n].sequence.size()>3000) {
+            if (sg.nodes[n].sequence.size()>1000) {
                 // std::cout << "evaluating trivial repeat at " << n << "(" << sg.nodes[n].sequence.size() << "bp)" << std::endl;
                 repeaty_nodes.push_back(n);
             }
