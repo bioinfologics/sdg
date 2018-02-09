@@ -150,8 +150,10 @@ int main(int argc, char * argv[]) {
 
     std::cout<<std::endl<<"Step 1 - Solving trivial repeats"<<std::endl;
     bool mod=true;
+    int srpass=0;
     while (mod) {
         mod=false;
+        ++srpass;
         std::cout<<" Finding trivial repeats to analyse with tags"<<std::endl;
         std::vector<bool> used(sg.nodes.size());
         std::vector<SequenceGraphPath> paths_solved;
@@ -251,10 +253,13 @@ int main(int argc, char * argv[]) {
             }
 
         }
-        std::cout<<reads_to_remap.size()<<" pairs of read to remap"<<std::endl;
-        scaff.rmappers[0].remap_reads(/*reads_to_remap*/);
+        if (mod) {
+            sg.write_to_gfa(output_prefix + "_solved_repeats_" + std::to_string(srpass) + ".gfa");
+            std::cout << reads_to_remap.size() << " pairs of read to remap" << std::endl;
+            scaff.rmappers[0].remap_reads(/*reads_to_remap*/);
+        }
     }
-    sg.write_to_gfa(output_prefix+"_solved_repeats.gfa");
+
 
     std::cout<<std::endl<<"Testing GraphPartitioner"<<std::endl;
 
