@@ -60,14 +60,15 @@ public:
                         NULL == fgets(readbuffer3, 999, fd)) {//read name, we need to save this one
                         end_flag = true;
                     }
+                    rec.id = numRecords;
+                    numRecords++;
                 }
                 if (end_flag) {eof_flag=true; return false;};
                 rec.name = std::string(readbuffer1);
                 rec.name.pop_back();
                 rec.seq = std::string(readbuffer2);
                 rec.seq.pop_back();
-                rec.id = numRecords;
-                numRecords++;
+
                 stats.totalLength += rec.seq.size();
             } while (rec.seq.size() < params.min_length);
         }
