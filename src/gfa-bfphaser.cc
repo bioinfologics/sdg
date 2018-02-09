@@ -13,12 +13,16 @@ int main(int argc, char * argv[]) {
     std::cout << "Welcome to gfa-pairscaff"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
     std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
-
+    std::cout << "Executed command:"<<std::endl;
+    for (auto i=0;i<argc;i++) std::cout<<argv[i]<<" ";
+    std::cout<<std::endl<<std::endl;
+    
     std::string gfa_filename,output_prefix, load_cidx, dump_cidx;
     std::vector<std::string> reads1,reads2,reads_type,cidxreads1,cidxreads2, dump_mapped, load_mapped;
-    bool stats_only=0;
+    bool stats_only=0,reindex_kci=0;
     uint64_t max_mem_gb=4;
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
+    bool repeats_first=1;
     try
     {
         cxxopts::Options options("gfa-bfphaser", "GFA Bubbles First Phaser");
@@ -27,11 +31,12 @@ int main(int argc, char * argv[]) {
                 ("help", "Print help")
                 ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
-        options.add_options("Compression Index Options")
+        options.add_options("Compression index iptions")
                 ("cidxread1", "compression index input reads, left", cxxopts::value<std::vector<std::string>>(cidxreads1))
                 ("cidxread2", "compression index input reads, right", cxxopts::value<std::vector<std::string>>(cidxreads2))
                 ("load_cidx", "load compression index filename", cxxopts::value<std::string>(load_cidx))
                 ("dump_cidx", "dump compression index filename", cxxopts::value<std::string>(dump_cidx))
+                ("reindex_ci", "re-index compression index after loading", cxxopts::value<bool>(reindex_kci))
                 ;
         options.add_options("Paired reads options")
                 ("1,read1", "input reads, left", cxxopts::value<std::vector<std::string>>(reads1))
@@ -41,12 +46,17 @@ int main(int argc, char * argv[]) {
                 ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped))
                 ("max_mem", "maximum_memory when mapping (GB, default: 4)", cxxopts::value<uint64_t>(max_mem_gb));
 
+        options.add_options("Phasing and scaffolding options")
+                ("repeats_first", "solve_repeats before bubble phasing", cxxopts::value<bool>(repeats_first))
+                ;
+
+
 
         auto result(options.parse(argc, argv));
 
         if (result.count("help"))
         {
-            std::cout << options.help({"","Paired reads options","Compression Index Options"}) << std::endl;
+            std::cout << options.help({"","Paired reads options","Compression Index Options","Phasing and scaffolding options"}) << std::endl;
             exit(0);
         }
 
@@ -76,10 +86,6 @@ int main(int argc, char * argv[]) {
     }
 
 
-    std::cout << "Executed command:"<<std::endl;
-    for (auto i=0;i<argc;i++) std::cout<<argv[i]<<" ";
-    std::cout<<std::endl<<std::endl;
-
 
 
 
@@ -98,6 +104,7 @@ int main(int argc, char * argv[]) {
     KmerCompressionIndex kci(sg,max_mem_gb*1024L*1024L*1024L);
     if (load_cidx!=""){
         kci.load_from_disk(load_cidx);
+        if (reindex_kci) kci.reindex_graph();
     } else {
         kci.index_graph();
         for(int lib=0;lib<cidxreads1.size();lib++) {
@@ -118,11 +125,7 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<"=== Mapping reads ==="<<std::endl;
     //read mapping/loading
     std::vector<PairedReadMapper> mappers;
-    for(auto loadfile:load_mapped){
-        mappers.emplace_back(sg);
-        mappers.back().load_from_disk(loadfile);
-        mappers.back().print_stats();
-    }
+
     for(int lib=0;lib<reads1.size();lib++) {
         if (load_mapped.size()<=lib) {
             mappers.emplace_back(sg);
@@ -133,10 +136,14 @@ int main(int argc, char * argv[]) {
             }
             mappers.back().print_stats();
         } else {
+            std::cout<<"Library #"<<lib<<": load from disk at "<<load_mapped[lib]<<std::endl;
+            mappers.emplace_back(sg);
+            mappers.back().load_from_disk(load_mapped[lib]);
             mappers[lib].read1filename=reads1[lib];
             mappers[lib].read2filename=reads2[lib];
             mappers[lib].readType=(reads_type[lib] == "10x" ? prm10x : prmPE);
             mappers[lib].memlimit=max_mem_gb * 1024L * 1024L * 1024L;
+            mappers.back().print_stats();
         }
         if (dump_mapped.size() > lib) {
             std::cout<<"dumping map to "<<dump_mapped[lib]<<std::endl;
@@ -147,76 +154,89 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<"=== Scaffolding ==="<<std::endl;
 
     Scaffolder scaff(sg,mappers,kci);
+    if (repeats_first) {
+        std::cout << std::endl << "Step 1 - Solving trivial repeats" << std::endl;
+        bool mod = true;
+        int srpass = 0;
+        while (mod) {
+            mod = false;
+            ++srpass;
+            std::cout << " Finding trivial repeats to analyse with tags" << std::endl;
+            std::vector<bool> used(sg.nodes.size());
+            std::vector<SequenceGraphPath> paths_solved;
+            for (auto n = 1; n < sg.nodes.size(); ++n) {
+                if (used[n]) continue;
+                auto fwl = sg.get_fw_links(n);
+                auto bwl = sg.get_bw_links(n);
+                if (fwl.size() != 2 or bwl.size() != 2) continue;
+                auto f0 = fwl[0].dest;
+                auto f1 = fwl[1].dest;
+                auto b0 = bwl[0].dest;
+                auto b1 = bwl[1].dest;
+                if (used[(b0 > 0 ? b0 : -b0)] or used[(b1 > 0 ? b1 : -b1)] or used[(f0 > 0 ? f0 : -f0)] or
+                    used[(f1 > 0 ? f1 : -f1)])
+                    continue;
+                sgNodeID_t all[4] = {f0, f1, b0, b1};
+                bool ok = true;
+                for (auto x:all) if (x == n or x == -n or sg.nodes[(x > 0 ? x : -x)].sequence.size() < 399) ok = false;
+                for (auto j = 0; j < 3; ++j)
+                    for (auto i = j + 1; i < 4; ++i)
+                        if (all[i] == all[j] or all[i] == -all[j])ok = false; //looping node
+                if (!ok) continue;
 
-    std::cout<<std::endl<<"Step 1 - Solving trivial repeats"<<std::endl;
-    bool mod=true;
-    int srpass=0;
-    while (mod) {
-        mod=false;
-        ++srpass;
-        std::cout<<" Finding trivial repeats to analyse with tags"<<std::endl;
-        std::vector<bool> used(sg.nodes.size());
-        std::vector<SequenceGraphPath> paths_solved;
-        for (auto n=1;n<sg.nodes.size();++n){
-            if (used[n]) continue;
-            auto fwl=sg.get_fw_links(n);
-            auto bwl=sg.get_bw_links(n);
-            if (fwl.size()!=2 or bwl.size()!=2) continue;
-            auto f0=fwl[0].dest;
-            auto f1=fwl[1].dest;
-            auto b0=bwl[0].dest;
-            auto b1=bwl[1].dest;
-            if (used[(b0>0?b0:-b0)] or used[(b1>0?b1:-b1)] or used[(f0>0?f0:-f0)] or used[(f1>0?f1:-f1)]) continue;
-            sgNodeID_t all[4]={f0,f1,b0,b1};
-            bool ok=true;
-            for (auto x:all) if (x==n or x==-n or sg.nodes[(x>0?x:-x)].sequence.size()<399) ok=false;
-            for (auto j=0;j<3;++j) for (auto i=j+1;i<4;++i) if( all[i]==all[j] or all[i]==-all[j] ) ok=false; //looping node
-            if (!ok) continue;
+                //std::cout<<"Repeat: [ "<<-bwl[0].dest<<" | "<<-bwl[1].dest<<" ] <-> "<<n<<" <-> "<<
+                //"[ "<<fwl[0].dest<<" | "<<fwl[1].dest<<" ]"<<std::endl;
+                std::set<prm10xTag_t> b0tags, b1tags, f0tags, f1tags;
+                for (auto rm:scaff.rmappers[0].reads_in_node[(f0 > 0 ? f0 : -f0)])
+                    f0tags.insert(scaff.rmappers[0].read_to_tag[rm.read_id]);
+                for (auto rm:scaff.rmappers[0].reads_in_node[(f1 > 0 ? f1 : -f1)])
+                    f1tags.insert(scaff.rmappers[0].read_to_tag[rm.read_id]);
+                for (auto rm:scaff.rmappers[0].reads_in_node[(b0 > 0 ? b0 : -b0)])
+                    b0tags.insert(scaff.rmappers[0].read_to_tag[rm.read_id]);
+                for (auto rm:scaff.rmappers[0].reads_in_node[(b1 > 0 ? b1 : -b1)])
+                    b1tags.insert(scaff.rmappers[0].read_to_tag[rm.read_id]);
 
-            //std::cout<<"Repeat: [ "<<-bwl[0].dest<<" | "<<-bwl[1].dest<<" ] <-> "<<n<<" <-> "<<
-            //"[ "<<fwl[0].dest<<" | "<<fwl[1].dest<<" ]"<<std::endl;
-            std::set<prm10xTag_t> b0tags,b1tags,f0tags,f1tags;
-            for(auto rm:scaff.rmappers[0].reads_in_node[(f0>0?f0:-f0)]) f0tags.insert(scaff.rmappers[0].read_to_tag[rm.read_id]);
-            for(auto rm:scaff.rmappers[0].reads_in_node[(f1>0?f1:-f1)]) f1tags.insert(scaff.rmappers[0].read_to_tag[rm.read_id]);
-            for(auto rm:scaff.rmappers[0].reads_in_node[(b0>0?b0:-b0)]) b0tags.insert(scaff.rmappers[0].read_to_tag[rm.read_id]);
-            for(auto rm:scaff.rmappers[0].reads_in_node[(b1>0?b1:-b1)]) b1tags.insert(scaff.rmappers[0].read_to_tag[rm.read_id]);
+                f0tags.erase(0);
+                f1tags.erase(0);
+                b0tags.erase(0);
+                b1tags.erase(0);
 
-            f0tags.erase(0);
-            f1tags.erase(0);
-            b0tags.erase(0);
-            b1tags.erase(0);
+                std::set<prm10xTag_t> aa, bb, ba, ab;
+                std::set_intersection(b0tags.begin(), b0tags.end(), f0tags.begin(), f0tags.end(),
+                                      std::inserter(aa, aa.end()));
+                std::set_intersection(b0tags.begin(), b0tags.end(), f1tags.begin(), f1tags.end(),
+                                      std::inserter(ab, ab.end()));
+                std::set_intersection(b1tags.begin(), b1tags.end(), f0tags.begin(), f0tags.end(),
+                                      std::inserter(ba, ba.end()));
+                std::set_intersection(b1tags.begin(), b1tags.end(), f1tags.begin(), f1tags.end(),
+                                      std::inserter(bb, bb.end()));
+                //std::cout<<"Tags in   f0: "<<f0tags.size()<<"  f1: "<<f1tags.size()<<"  b0: "<<b0tags.size()<<"  b1: "<<b1tags.size()<<std::endl;
+                //std::cout<<"Tags support   aa: "<<aa.size()<<"  bb: "<<bb.size()<<"  ab: "<<ab.size()<<"  ba: "<<ba.size();
+                if (aa.size() > 3 and bb.size() > 3 and
+                    std::min(aa.size(), bb.size()) > 10 * std::max(ab.size(), ba.size())) {
+                    //std::cout << " Solved as AA BB !!!" << std::endl;
+                    used[(b0 > 0 ? b0 : -b0)] = true;
+                    used[(b1 > 0 ? b1 : -b1)] = true;
+                    used[n] = true;
+                    used[(f0 > 0 ? f0 : -f0)] = true;
+                    used[(f1 > 0 ? f1 : -f1)] = true;
+                    paths_solved.push_back(SequenceGraphPath(sg, {-b0, n, f0}));
+                    paths_solved.push_back(SequenceGraphPath(sg, {-b1, n, f1}));
 
-            std::set<prm10xTag_t> aa,bb,ba,ab;
-            std::set_intersection(b0tags.begin(),b0tags.end(),f0tags.begin(),f0tags.end(),std::inserter(aa,aa.end()));
-            std::set_intersection(b0tags.begin(),b0tags.end(),f1tags.begin(),f1tags.end(),std::inserter(ab,ab.end()));
-            std::set_intersection(b1tags.begin(),b1tags.end(),f0tags.begin(),f0tags.end(),std::inserter(ba,ba.end()));
-            std::set_intersection(b1tags.begin(),b1tags.end(),f1tags.begin(),f1tags.end(),std::inserter(bb,bb.end()));
-            //std::cout<<"Tags in   f0: "<<f0tags.size()<<"  f1: "<<f1tags.size()<<"  b0: "<<b0tags.size()<<"  b1: "<<b1tags.size()<<std::endl;
-            //std::cout<<"Tags support   aa: "<<aa.size()<<"  bb: "<<bb.size()<<"  ab: "<<ab.size()<<"  ba: "<<ba.size();
-            if (aa.size()>3 and bb.size()>3 and std::min(aa.size(),bb.size())>10*std::max(ab.size(),ba.size())) {
-                //std::cout << " Solved as AA BB !!!" << std::endl;
-                used[(b0>0?b0:-b0)]=true;
-                used[(b1>0?b1:-b1)]=true;
-                used[n]=true;
-                used[(f0>0?f0:-f0)]=true;
-                used[(f1>0?f1:-f1)]=true;
-                paths_solved.push_back(SequenceGraphPath(sg,{-b0,n,f0}));
-                paths_solved.push_back(SequenceGraphPath(sg,{-b1,n,f1}));
-
+                } else if (ba.size() > 3 and ab.size() > 3 and
+                           std::min(ba.size(), ab.size()) > 10 * std::max(aa.size(), bb.size())) {
+                    //std::cout << " Solved as AB BA !!!" << std::endl;
+                    used[(b0 > 0 ? b0 : -b0)] = true;
+                    used[(b1 > 0 ? b1 : -b1)] = true;
+                    used[n] = true;
+                    used[(f0 > 0 ? f0 : -f0)] = true;
+                    used[(f1 > 0 ? f1 : -f1)] = true;
+                    paths_solved.push_back(SequenceGraphPath(sg, {-b0, n, f1}));
+                    paths_solved.push_back(SequenceGraphPath(sg, {-b1, n, f0}));
+                }
+                //else std::cout<<" Unsolved"<<std::endl;
             }
-            else if (ba.size()>3 and ab.size()>3 and std::min(ba.size(),ab.size())>10*std::max(aa.size(),bb.size())) {
-                //std::cout << " Solved as AB BA !!!" << std::endl;
-                used[(b0>0?b0:-b0)]=true;
-                used[(b1>0?b1:-b1)]=true;
-                used[n]=true;
-                used[(f0>0?f0:-f0)]=true;
-                used[(f1>0?f1:-f1)]=true;
-                paths_solved.push_back(SequenceGraphPath(sg,{-b0,n,f1}));
-                paths_solved.push_back(SequenceGraphPath(sg,{-b1,n,f0}));
-            }
-            //else std::cout<<" Unsolved"<<std::endl;
-        }
-        //consolidate paths
+            //consolidate paths
 //        std::vector<SequenceGraphPath> consolidated_paths;
 //        while (paths_solved.size()>0){
 //            auto p=paths_solved.back();
@@ -240,28 +260,29 @@ int main(int argc, char * argv[]) {
 //            }
 //
 //        }
-        std::cout<<paths_solved.size()<<" paths to join"<<std::endl;
-        if (paths_solved.size()>0) mod=true;
-        std::unordered_set<uint64_t> reads_to_remap;
-        for (auto &p:paths_solved){
-            sg.join_path(p);
-            for (auto n:p.nodes){
-                for (auto rm:scaff.rmappers[0].reads_in_node[(n>0?n:-n)]){
-                    reads_to_remap.insert((rm.read_id%2?rm.read_id:rm.read_id-1));
-                    scaff.rmappers[0].read_to_node[rm.read_id]=0;
+            std::cout << paths_solved.size() << " paths to join" << std::endl;
+            if (paths_solved.size() > 0) mod = true;
+            std::unordered_set<uint64_t> reads_to_remap;
+            for (auto &p:paths_solved) {
+                sg.join_path(p);
+                for (auto n:p.nodes) {
+                    for (auto rm:scaff.rmappers[0].reads_in_node[(n > 0 ? n : -n)]) {
+                        reads_to_remap.insert((rm.read_id % 2 ? rm.read_id : rm.read_id - 1));
+                        scaff.rmappers[0].read_to_node[rm.read_id] = 0;
+                    }
                 }
-            }
 
-        }
-        if (mod) {
-            sg.write_to_gfa(output_prefix + "_solved_repeats_" + std::to_string(srpass) + ".gfa");
-            std::cout << reads_to_remap.size() << " pairs of read to remap" << std::endl;
-            scaff.rmappers[0].remap_reads(/*reads_to_remap*/);
+            }
+            if (mod) {
+                scaff.kci.reindex_graph();
+                sg.write_to_gfa(output_prefix + "_solved_repeats_" + std::to_string(srpass) + ".gfa");
+                std::cout << reads_to_remap.size() << " pairs of read to remap" << std::endl;
+                scaff.rmappers[0].remap_reads(/*reads_to_remap*/);
+            }
         }
     }
 
-
-    std::cout<<std::endl<<"Testing GraphPartitioner"<<std::endl;
+    std::cout<<std::endl<<"Step 2 - GraphPartitioner"<<std::endl;
 
     auto hps=scaff.get_all_haplotype_pairs();
     std::cout<<"Starting with "<<hps.size()<<" haplotype pairs"<<std::endl;
