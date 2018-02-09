@@ -14,6 +14,7 @@ class KmerCompressionIndex {
 public:
     KmerCompressionIndex(SequenceGraph &_sg, uint64_t max_mem);
     void index_graph();
+    void reindex_graph();
     void start_new_count();
     void add_counts_from_file(std::string filename);
 
