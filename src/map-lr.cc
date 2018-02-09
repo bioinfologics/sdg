@@ -144,9 +144,8 @@ int main(int argc, char * argv[]) {
         SequenceSubGraph ssg(sg, fn_repeat);
         GraphPartitioner gp(sg, mappers, kci);
         // Find solutions from the partitions
-        gp.tags_patterns(ssg);
-        auto parts = gp.generate_partitions(ssg);
         auto tp = gp.tags_patterns(ssg);
+        auto parts = gp.generate_partitions(ssg, tp, sg.get_bw_links(central_repeat_node).size());
         // Use the solutions to create new paths
         auto parts_score = gp.score_partition_set(ssg, parts, tp);
         auto subgraphs = gp.partitions_as_subgraphs(ssg, parts);
