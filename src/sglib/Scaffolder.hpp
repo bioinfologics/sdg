@@ -21,6 +21,7 @@ public:
     void pop_unsupported_shortbubbles();
     void expand_bubbly_subgraphs();
     std::vector<SequenceSubGraph> get_all_bubbly_subgraphs(uint32_t maxsubgraphs=0);
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> get_all_haplotype_pairs(uint32_t maxpairs=0);
     void find_canonical_repeats();
 
     ///

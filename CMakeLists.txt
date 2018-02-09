@@ -167,6 +167,9 @@ add_executable(gfa-dumppath
 add_executable(gfa-pairscaff
         src/gfa-pairscaff.cc)
 
+add_executable(gfa-bfphaser
+        src/gfa-bfphaser.cc)
+
 add_executable(phaser
                src/phaser.cpp)
 
@@ -183,5 +186,6 @@ target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(gfa-bfphaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries (phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})

@@ -504,7 +504,7 @@ std::string SequenceGraphPath::get_sequence() {
             for (;l!=sg.links[(pnode>0 ? pnode:-pnode)].end();++l)
                 if (l->source==pnode and l->dest==n) break;
             if (l==sg.links[(pnode>0 ? pnode:-pnode)].end()) {
-                std::cout<<"can't find a link between "<<pnode<<" and "<<-n<<std::endl;
+                std::cout<<"can't find a link between "<<pnode<<" and "<<n<<std::endl;
                 throw std::runtime_error("path has no link");
             } else {
                 if (l->dist>0){
@@ -574,8 +574,6 @@ void SequenceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
 
     //TODO: update read mappings
     if (consume_nodes) {
-
-
         for (auto n:p.nodes) {
             //check if the node has neighbours not included in the path.
             bool ext_neigh=false;
@@ -585,7 +583,6 @@ void SequenceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
             remove_node(n);
         }
     }
-
 }
 
 void SequenceGraphPath::reverse(){

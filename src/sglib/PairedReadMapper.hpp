@@ -62,8 +62,8 @@ public:
     };
     void map_reads(std::string , std::string , prmReadType , uint64_t );
     void remove_obsolete_mappings();
-    void remap_reads();
-    uint64_t process_reads_from_file(uint8_t, uint16_t, std::unordered_map<uint64_t , graphPosition> &, std::string , uint64_t, bool );
+    void remap_reads(std::unordered_set<uint64_t> const &  reads_to_remap={});
+    uint64_t process_reads_from_file(uint8_t, uint16_t, std::unordered_map<uint64_t , graphPosition> &, std::string , uint64_t, bool tags=false, std::unordered_set<uint64_t> const & reads_to_remap={});
     void save_to_disk(std::string filename);
     void load_from_disk(std::string filename);
     void print_stats();

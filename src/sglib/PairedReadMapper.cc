@@ -8,8 +8,9 @@
 #include "PairedReadMapper.hpp"
 
 
-uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::unordered_map<uint64_t , graphPosition> & kmer_to_graphposition, std::string filename, uint64_t offset , bool is_tagged=false) {
+uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_matches, std::unordered_map<uint64_t , graphPosition> & kmer_to_graphposition, std::string filename, uint64_t offset , bool is_tagged, std::unordered_set<uint64_t> const & reads_to_remap) {
     std::cout<<"mapping reads!!!"<<std::endl;
+    std::cout<<reads_to_remap.size()<<" selected reads"<<std::endl;
     /*
      * Read mapping in parallel,
      */
@@ -29,7 +30,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
         while (c) {
             mapping.read_id = (read.id) * 2 + offset;
             //this enables partial read re-mapping by setting read_to_node to 0
-            if (read_to_node.size()<=mapping.read_id or 0==read_to_node[mapping.read_id]) {
+            if (read_to_node.size()<=mapping.read_id or (reads_to_remap.size()>0 and reads_to_remap.count(mapping.read_id)>0) or(reads_to_remap.empty()) and 0==read_to_node[mapping.read_id]) {
                 mapping.node = 0;
                 mapping.unique_matches = 0;
                 mapping.first_pos = 0;
@@ -171,7 +172,7 @@ void PairedReadMapper::remove_obsolete_mappings(){
     std::cout << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
 }
 
-void PairedReadMapper::remap_reads(){
+void PairedReadMapper::remap_reads(std::unordered_set<uint64_t> const & reads_to_remap){
     std::cout << "Mapping " << prmReadTypeDesc[readType] << " reads from " << read1filename << " and " << read2filename << std::endl;
 
     std::cout << "Using memory up to " << memlimit << std::endl;
@@ -203,8 +204,8 @@ void PairedReadMapper::remap_reads(){
     std::cout << "Number of " << int(k) << "-kmers in graph index " << uniqKmer_statistics[1] << std::endl;
 
     if (readType == prmPE) {
-        auto r1c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read1filename, 1);
-        auto r2c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read2filename, 2);
+        auto r1c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read1filename, 1, false, reads_to_remap);
+        auto r2c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read2filename, 2, false, reads_to_remap);
         //now populate the read_to_node array
         assert(r1c == r2c);
         read_to_node.resize(r1c * 2 + 1, 0);
@@ -214,8 +215,8 @@ void PairedReadMapper::remap_reads(){
         read_to_tag.clear();
 
     } else if (readType == prm10x) {
-        auto r1c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read1filename, 1, true);
-        auto r2c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read2filename, 2, true);
+        auto r1c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read1filename, 1, true, reads_to_remap);
+        auto r2c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read2filename, 2, true, reads_to_remap);
         //now populate the read_to_node array
         assert(r1c == r2c);
         read_to_node.resize(r1c * 2 + 1, 0);

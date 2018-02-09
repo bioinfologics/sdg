@@ -240,6 +240,52 @@ void Scaffolder::expand_bubbly_subgraphs() {
     }
 }
 
+std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Scaffolder::get_all_haplotype_pairs(uint32_t maxpairs) {
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> hps;
+    std::vector<bool> used(sg.nodes.size(),false);
+    //TODO: check the coverages are actually correct?
+    const double min_c1=0.7,max_c1=1.30,min_c2=1.8,max_c2=2.8;
+    /*
+     * the loop always keep the first and the last elements as c=2 collapsed nodes.
+     * it starts with a c=2 node, and goes thorugh all bubbles fw, then reverts the subgraph and repeats
+     */
+    std::pair<sgNodeID_t,sgNodeID_t> hap={0,0};
+    for (auto n=1;n<sg.nodes.size();++n){
+        if (used[n] or sg.nodes[n].status==sgNodeDeleted) continue;
+        auto frontkci=kci.compute_compression_for_node(n);
+        if (frontkci>max_c2 or frontkci<min_c2) continue;
+        used[n]=true;
+        auto m=n;
+        //two passes: 0->fw, 1->bw,
+        for (auto pass=0; pass<2; ++pass,m=-m) {
+
+            //check bubble going forward ------------
+            auto fw_l = sg.get_fw_links(m);
+            //fork opening
+            if (fw_l.size() != 2) continue;
+            hap.first = fw_l[0].dest;
+            hap.second = fw_l[1].dest;
+            if (hap.first == n or hap.first == -n or hap.second == n or hap.second == -n or hap.first == hap.second) continue;
+            //fork.closing
+            auto hap0f = sg.get_fw_links(hap.first);
+            auto hap1f = sg.get_fw_links(hap.second);
+            if (hap0f.size() != 1 or hap1f.size() != 1 or hap0f[0].dest != hap1f[0].dest) continue;
+            auto h0kc = kci.compute_compression_for_node(hap.first);
+            if (h0kc > max_c1 or h0kc < min_c1) continue;
+            auto h1kc = kci.compute_compression_for_node(hap.second);
+            if (h1kc > max_c1 or h1kc < min_c1) continue;
+            auto ekc = kci.compute_compression_for_node(hap0f[0].dest);
+            if (ekc > max_c2 or ekc < min_c2) continue;
+            hps.push_back(hap);
+            if (hps.size()%100==0) std::cout<<hps.size()<<" haplotype pairs found"<<std::endl;
+            used[(hap.first>0?hap.first:-hap.first)]=true;
+            used[(hap.second>0?hap.second:-hap.second)]=true;
+            used[(hap0f[0].dest>0?hap0f[0].dest:-hap0f[0].dest)]=true;
+        }
+    }
+    return hps;
+}
+
 uint64_t Scaffolder::count_reads_linking(sgNodeID_t source, sgNodeID_t dest) {
     //std::cout<<"checking support for "<<source<<" -> "<<dest<<std::endl;
     uint64_t c=0;
