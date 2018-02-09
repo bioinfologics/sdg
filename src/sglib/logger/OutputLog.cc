@@ -2,6 +2,7 @@
 // Created by Bernardo Clavijo (TGAC) on 31/12/2016.
 //
 
+#include <ctime>
 #include "OutputLog.h"
 
 namespace sglib {

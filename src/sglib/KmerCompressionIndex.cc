@@ -18,8 +18,8 @@ void KmerCompressionIndex::index_graph(){
     SMR<KmerCount,
     KmerCountFactory<FastaRecord>,
     GraphNodeReader<FastaRecord>,
-    FastaRecord, GraphNodeReaderParams, KmerCountFactoryParams> kmerCount_SMR({1, sg}, {k}, max_mem, 0, max_coverage,
-                                                                          output_prefix);
+    FastaRecord, GraphNodeReaderParams, KmerCountFactoryParams> kmerCount_SMR({1, sg}, {k}, {max_mem, 0, max_coverage,
+                                                                          output_prefix});
 
 
 

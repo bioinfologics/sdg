@@ -300,8 +300,8 @@ void PairedReadMapper::remap_reads(){
     SMR<KmerIDX,
             kmerIDXFactory<FastaRecord>,
             GraphNodeReader<FastaRecord>,
-            FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k}, memlimit, 0, max_coverage,
-                                                                                  output_prefix);
+            FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k}, {memlimit, 0, max_coverage,
+                                                                                  output_prefix});
 
    // Get the unique_kmers from the graph into a map
     std::cout << "Indexing graph... " << std::endl;
