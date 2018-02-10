@@ -157,7 +157,7 @@ add_library(sequence_graph SHARED
             src/sglib/GraphPartitioner.cc
             src/sglib/GraphPartitioner.hpp
             src/sglib/logger/OutputLog.h
-            src/sglib/logger/OutputLog.cc)
+            src/sglib/logger/OutputLog.cc src/sglib/datastores/LinkedReadsDatastore.cc src/sglib/datastores/LinkedReadsDatastore.hpp)
 
 target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
