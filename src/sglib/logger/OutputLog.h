@@ -6,6 +6,7 @@
 #define BSG_OUTPUTLOG_H
 
 #include <iostream>
+#include <ctime>
 namespace sglib {
     enum LogLevels{INFO, WARN, DEBUG};
     extern LogLevels OutputLogLevel;

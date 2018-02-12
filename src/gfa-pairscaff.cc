@@ -155,7 +155,7 @@ int main(int argc, char * argv[]) {
             std::cout<<std::endl;
         }*/
         std::cout<<std::endl;
-        auto parts=partitioner.generate_partitions(bubbly);
+        auto parts=partitioner.generate_partitions(bubbly,tp);
         std::cout<<"Partitions:"<<std::endl;
         unsigned pnumb=0;
         for (auto &psg:parts){

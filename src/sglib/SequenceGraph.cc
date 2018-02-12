@@ -592,13 +592,13 @@ void SequenceGraph::join_path(SequenceGraphPath p, bool consume) {
 
 void SequenceGraph::consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes) {
     for (auto n:p.nodes) {
-            //check if the node has neighbours not included in the path.
-            bool ext_neigh=false;
-            if (n!=p.nodes.back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
-            if (n!=p.nodes.front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
-            if (ext_neigh) continue;
-            remove_node(n);
-        }
+        //check if the node has neighbours not included in the path.
+        bool ext_neigh=false;
+        if (n!=p.nodes.back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
+        if (n!=p.nodes.front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
+        if (ext_neigh) continue;
+        remove_node(n);
+    }
 }
 
 void SequenceGraphPath::reverse(){

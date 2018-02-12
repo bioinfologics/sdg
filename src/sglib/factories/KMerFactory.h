@@ -96,4 +96,5 @@ private:
     std::string & s;
 };
 
+
 #endif //SEQ_SORTER_KMERFACTORY_H

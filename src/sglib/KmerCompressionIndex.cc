@@ -23,9 +23,46 @@ void KmerCompressionIndex::index_graph(){
 
 
 
-    std::cout << "Indexing assembly... " << std::endl;
+    std::cout << "Indexing graph... " << std::endl;
     graph_kmers = kmerCount_SMR.process_from_memory();
 
+    std::vector<uint64_t> uniqKmer_statistics(kmerCount_SMR.summaryStatistics());
+    std::cout << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << std::endl;
+    std::cout << "Number of contigs from the assembly " << uniqKmer_statistics[2] << std::endl;
+}
+
+void KmerCompressionIndex::reindex_graph(){
+    const int k = 31;
+    const int max_coverage = 1;
+    const std::string output_prefix("./");
+    SMR<KmerCount,
+    KmerCountFactory<FastaRecord>,
+    GraphNodeReader<FastaRecord>,
+    FastaRecord, GraphNodeReaderParams, KmerCountFactoryParams> kmerCount_SMR({1, sg}, {k}, max_mem, 0, max_coverage,
+                                                                              output_prefix);
+
+
+
+    std::cout << "Re-indexing graph... " << std::endl;
+    auto new_graph_kmers = kmerCount_SMR.process_from_memory();
+    uint64_t deleted=0,changed=0,equal=0;
+    //std::sort(new_graph_kmers.begin(),new_graph_kmers.end());
+    for (auto i=0,j=0;i<graph_kmers.size() and j<new_graph_kmers.size();++j){
+        while (i<graph_kmers.size() and graph_kmers[i].kmer<new_graph_kmers[j].kmer) {
+            graph_kmers[i].count=0;
+            ++deleted;
+            ++i;
+        }
+        if (i<graph_kmers.size() and graph_kmers[i].kmer==new_graph_kmers[j].kmer){
+            if (graph_kmers[i].count==new_graph_kmers[j].count) ++equal;
+            else {
+                graph_kmers[i].count=new_graph_kmers[j].count;
+                ++changed;
+            }
+            ++i;
+        }
+    }
+    std::cout << deleted << " deleted,   "<<changed<<" changed,   "<<equal<<" equal"<<std::endl;
     std::vector<uint64_t> uniqKmer_statistics(kmerCount_SMR.summaryStatistics());
     std::cout << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << std::endl;
     std::cout << "Number of contigs from the assembly " << uniqKmer_statistics[2] << std::endl;

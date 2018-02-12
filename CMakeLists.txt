@@ -89,6 +89,9 @@ endif()
 
 add_definitions(${CMAKE_CXX_FLAGS})
 
+## To move the bins to the final location
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin")
+
 find_package(ZLIB REQUIRED)
 if (ZLIB_FOUND)
     add_definitions(-DHAVE_ZLIB)
@@ -149,7 +152,24 @@ add_library(sequence_graph SHARED
             src/sglib/KmerCompressionIndex.cc
             src/sglib/GraphPartitioner.cc
             src/sglib/logger/OutputLog.cc
+        src/sglib/datastores/LinkedReadsDatastore.cc
+        src/sglib/mappers/LinkedReadMapper.cc
+            src/sglib/SequenceGraph.cc
+            src/sglib/PairedReadMapper.cc
+            src/sglib/HaplotypeScorer.cpp
+            src/sglib/SequenceGraphJournal.cc
+            src/sglib/SequenceGraph.cc
+            src/sglib/PairedReadMapper.cc
+            src/sglib/Scaffolder.cc
+            src/sglib/filesystem/check_or_create_directory.cc
+            src/sglib/PhaseScaffolder.cpp
+            src/sglib/KmerCompressionIndex.cc
+            src/sglib/GraphPartitioner.cc
+            src/sglib/logger/OutputLog.cc
             )
+)
+
+target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
 set_target_properties(sequence_graph PROPERTIES
                       COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
@@ -159,23 +179,25 @@ target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
 install(TARGETS sequence_graph DESTINATION lib)
 install(FILES
-        src/sglib/SMR.h
-        src/sglib/readers/Common.h
-        src/sglib/readers/FileReader.h
-        src/sglib/readers/SequenceGraphReader.h
-        src/sglib/factories/ContigBlockFactory.h
-        src/sglib/factories/ContigLink.h
-        src/sglib/factories/KMerFactory.h
-        src/sglib/factories/KMerIDXFactory.h
-        src/sglib/SequenceGraph.hpp
-        src/sglib/PairedReadMapper.h
-        src/sglib/HaplotypeScorer.hpp
-        src/sglib/SequenceGraphJournal.hpp
-        src/sglib/PhaseScaffolder.h
-        src/sglib/KmerCompressionIndex.hpp
-        src/sglib/GraphPartitioner.hpp
-        src/sglib/filesystem/check_or_create_directory.h
-        src/sglib/logger/OutputLog.h
+            src/sglib/SMR.h
+            src/sglib/readers/Common.h
+            src/sglib/readers/FileReader.h
+            src/sglib/readers/SequenceGraphReader.h
+            src/sglib/factories/ContigBlockFactory.h
+            src/sglib/factories/ContigLink.h
+            src/sglib/factories/KMerFactory.h
+            src/sglib/factories/KMerIDXFactory.h
+            src/sglib/SequenceGraph.hpp
+            src/sglib/PairedReadMapper.hpp
+            src/sglib/HaplotypeScorer.hpp
+            src/sglib/SequenceGraphJournal.hpp
+            src/sglib/filesystem/check_or_create_directory.h
+            src/sglib/PhaseScaffolder.h
+            src/sglib/KmerCompressionIndex.hpp
+            src/sglib/GraphPartitioner.hpp
+            src/sglib/logger/OutputLog.h
+            src/sglib/datastores/LinkedReadsDatastore.hpp
+            src/sglib/mappers/LinkedReadMapper.hpp
         DESTINATION include
         )
 
@@ -190,6 +212,9 @@ add_executable(gfa-dumppath
 ## add executables and respective sources
 add_executable(gfa-pairscaff
         src/gfa-pairscaff.cc)
+
+add_executable(gfa-bfphaser
+        src/gfa-bfphaser.cc)
 
 add_executable(phaser
                src/phaser.cpp)
@@ -213,6 +238,7 @@ target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(gfa-bfphaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(repeat_resolver sequence_graph ${CMAKE_THREAD_LIBS_INIT})
