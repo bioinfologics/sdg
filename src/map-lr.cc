@@ -6,8 +6,7 @@
 #include <fstream>
 #include <sglib/factories/ContigBlockFactory.h>
 #include "cxxopts.hpp"
-#include "sglib/SequenceGraph.hpp"
-#include "sglib/HaplotypeScorer.hpp"
+#include "sglib/SequenceGraph.h"
 #include "sglib/Scaffolder.hpp"
 #include "sglib/GraphPartitioner.hpp"
 
@@ -155,7 +154,7 @@ int main(int argc, char * argv[]) {
     kci.index_graph();
     std::vector<LinkedReadMapper> linkedReadMappers;
     Scaffolder scaf(sg, mappers, linkedReadMappers, kci);
-    auto repeatyNodes (scaf.find_repeaty_nodes());
+    auto repeatyNodes (sg.find_repeaty_nodes());
     std::vector<SequenceGraphPath> solvable_paths;
     // For each repeaty node
     for (const auto &central_repeat_node:repeatyNodes) {

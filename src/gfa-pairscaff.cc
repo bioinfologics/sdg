@@ -4,7 +4,7 @@
 #include <sglib/Scaffolder.hpp>
 #include <sglib/KmerCompressionIndex.hpp>
 #include <sglib/GraphPartitioner.hpp>
-#include "sglib/SequenceGraph.hpp"
+#include "sglib/SequenceGraph.h"
 #include "cxxopts.hpp"
 
 

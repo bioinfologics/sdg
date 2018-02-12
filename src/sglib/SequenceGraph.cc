@@ -2,11 +2,14 @@
 // Created by Bernardo Clavijo (EI) on 18/10/2017.
 //
 
+#include "Scaffolder.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <set>
-#include "SequenceGraph.hpp"
+#include "SequenceGraph.h"
+#include <sglib/mappers/LinkedReadMapper.hpp>
+#include "sglib/readers/FileReader.h"
 
 bool Node::is_canonical() {
     for (size_t i=0,j=sequence.size()-1;i<j;++i,--j){
@@ -612,4 +615,39 @@ bool SequenceGraphPath::is_canonical() {
     auto rp=*this;
     rp.reverse();
     return this->get_sequence()<rp.get_sequence();
+}
+
+std::vector<sgNodeID_t > SequenceGraph::find_repeaty_nodes() {
+    std::vector<sgNodeID_t > repeaty_nodes;
+
+    uint64_t count=0, l700=0,l2000=0,l4000=0,l10000=0,big=0,checked=0,solvable=0;
+
+    for (sgNodeID_t n=1; n < nodes.size(); ++n) {
+        auto nfw_links = get_fw_links(n).size();
+        auto nbw_links = get_bw_links(n).size();
+        if ( nfw_links == nbw_links and nfw_links>1){
+            ++count;
+
+            if (nodes[n].sequence.size() < 700) ++l700;
+            else if (nodes[n].sequence.size() < 2000) ++l2000;
+            else if (nodes[n].sequence.size() < 4000) ++l4000;
+            else if (nodes[n].sequence.size() < 10000) ++l10000;
+            else ++big;
+
+            if (nodes[n].sequence.size() > 1000) {
+                // std::cout << "evaluating trivial repeat at " << n << "(" << sg.nodes[n].sequence.size() << "bp)" << std::endl;
+                repeaty_nodes.push_back(n);
+            }
+        }
+    }
+
+    std::cout << "Candidates for canonical repeat expansion:                    " << count << std::endl;
+    std::cout << "Candidates for canonical repeat expansion <700bp:             " << l700 << std::endl;
+    std::cout << "Candidates for canonical repeat expansion >700bp & <2000bp:   " << l2000 << std::endl;
+    std::cout << "Candidates for canonical repeat expansion >2000bp & <4000bp:  " << l4000 << std::endl;
+    std::cout << "Candidates for canonical repeat expansion >4000bp & <10000bp: " << l10000 << std::endl;
+    std::cout << "Candidates for canonical repeat expansion >10000bp:           " << big << std::endl;
+    std::cout << "Trivially solvable canonical repeats:                         " << solvable << "/" << checked << std::endl;
+
+    return repeaty_nodes;
 }

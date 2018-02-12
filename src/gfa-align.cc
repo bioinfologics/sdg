@@ -13,7 +13,7 @@
 #include <sglib/SMR.h>
 #include "cxxopts.hpp"
 #include "sglib/factories/ContigBlockFactory.h"
-#include "sglib/SequenceGraph.hpp"
+#include "sglib/SequenceGraph.h"
 
 int main(int argc, char * argv[]) {
     std::string gfa_filename,ref_gfa_filename,output_prefix;

@@ -5,6 +5,7 @@
 
 #include "KmerCompressionIndex.hpp"
 #include <atomic>
+#include <sglib/readers/FileReader.h>
 
 
 KmerCompressionIndex::KmerCompressionIndex(SequenceGraph &_sg, uint64_t _max_mem): sg(_sg) {

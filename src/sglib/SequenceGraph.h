@@ -11,8 +11,7 @@
 #include <map>
 #include <unordered_map>
 #include <set>
-#include "sglib/readers/FileReader.h"
-
+#include <iostream>
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
 
 enum sgNodeStatus_t {sgNodeActive,sgNodeDeleted};
@@ -99,6 +98,8 @@ public:
     std::string filename,fasta_filename;
 
     void consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes);
+
+    std::vector<sgNodeID_t > find_repeaty_nodes();
 };
 
 

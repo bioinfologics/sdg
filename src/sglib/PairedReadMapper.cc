@@ -401,7 +401,7 @@ void PairedReadMapper::remap_reads(std::unordered_set<uint64_t> const & reads_to
 
     const int k = 31;
     const int max_coverage = 1;
-    uint16_t min_matches = 1;
+    const int min_matches = 1;
     const std::string output_prefix("./");
     SMR<KmerIDX,
             kmerIDXFactory<FastaRecord>,
@@ -442,7 +442,6 @@ void PairedReadMapper::remap_reads(std::unordered_set<uint64_t> const & reads_to
 
             }
     } else if (readType == prmLR) {
-        min_matches = 4;
         auto lrc = process_longreads_from_file(k, min_matches, kmer_to_graphposition, read1filename, 1);
         read_to_node.resize(lrc*2+1,0);
         for (const auto &rin:reads_in_node)

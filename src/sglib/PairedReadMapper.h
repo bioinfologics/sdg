@@ -7,7 +7,7 @@
 
 #include <map>
 
-#include "SequenceGraph.hpp"
+#include "SequenceGraph.h"
 #include "sglib/factories/KMerIDXFactory.h"
 #include "sglib/readers/FileReader.h"
 #include "sglib/readers/SequenceGraphReader.h"

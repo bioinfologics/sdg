@@ -186,7 +186,7 @@ install(FILES
             src/sglib/factories/ContigLink.h
             src/sglib/factories/KMerFactory.h
             src/sglib/factories/KMerIDXFactory.h
-            src/sglib/SequenceGraph.hpp
+        src/sglib/SequenceGraph.h
             src/sglib/PairedReadMapper.hpp
             src/sglib/HaplotypeScorer.hpp
             src/sglib/SequenceGraphJournal.hpp

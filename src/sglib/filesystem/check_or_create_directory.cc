@@ -3,6 +3,7 @@
 //
 
 #include <sys/param.h>
+#include <cstring>
 #include "check_or_create_directory.h"
 
 bool sglib::check_file(std::string &filepath) {

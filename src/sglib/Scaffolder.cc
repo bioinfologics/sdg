@@ -48,40 +48,6 @@ void Scaffolder::pop_unsupported_shortbubbles() {
     }
 }
 
-std::vector<sgNodeID_t > Scaffolder::find_repeaty_nodes() {
-    std::vector<sgNodeID_t > repeaty_nodes;
-    const int required_support=3;
-    uint64_t count=0, l700=0,l2000=0,l4000=0,l10000=0,big=0,checked=0,solvable=0;
-
-    for (sgNodeID_t n=1; n < sg.nodes.size(); ++n) {
-        auto nfw_links = sg.get_fw_links(n).size();
-        auto nbw_links = sg.get_bw_links(n).size();
-        if ( nfw_links == nbw_links and nfw_links>1){
-            ++count;
-
-            if (sg.nodes[n].sequence.size()<700) ++l700;
-            else if (sg.nodes[n].sequence.size()<2000) ++l2000;
-            else if (sg.nodes[n].sequence.size()<4000) ++l4000;
-            else if (sg.nodes[n].sequence.size()<10000) ++l10000;
-            else ++big;
-
-            if (sg.nodes[n].sequence.size()>1000) {
-                // std::cout << "evaluating trivial repeat at " << n << "(" << sg.nodes[n].sequence.size() << "bp)" << std::endl;
-                repeaty_nodes.push_back(n);
-            }
-        }
-    }
-
-    std::cout<<"Candidates for canonical repeat expansion:                    "<<count<<std::endl;
-    std::cout<<"Candidates for canonical repeat expansion <700bp:             "<<l700<<std::endl;
-    std::cout<<"Candidates for canonical repeat expansion >700bp & <2000bp:   "<<l2000<<std::endl;
-    std::cout<<"Candidates for canonical repeat expansion >2000bp & <4000bp:  "<<l4000<<std::endl;
-    std::cout<<"Candidates for canonical repeat expansion >4000bp & <10000bp: "<<l10000<<std::endl;
-    std::cout<<"Candidates for canonical repeat expansion >10000bp:           "<<big<<std::endl;
-    std::cout<<"Trivially solvable canonical repeats:                         "<<solvable<<"/"<<checked<<std::endl;
-
-    return repeaty_nodes;
-}
 // TODO: Adapt for repeat resolution.
 void Scaffolder::find_canonical_repeats(){
     const int required_support=3;

@@ -8,7 +8,7 @@
 #include <string>
 
 
-#include "sglib/SequenceGraph.hpp"
+#include "sglib/SequenceGraph.h"
 #include <sglib/PairedReadMapper.h>
 #include <sglib/HaplotypeScorer.hpp>
 /**
