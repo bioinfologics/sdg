@@ -22,6 +22,8 @@ public:
     size_t size(){return read_offset.size()-1;};
 
     std::string get_read_sequence(size_t readID,FILE * file1, FILE * file2);
+    std::string get_read_sequence_fd(size_t readID,int fd1, int fd2);
+    void get_read_sequence_fd(size_t readID, int fd1, int fd2, char * dest);
     inline std::string get_read_sequence(size_t readID){return get_read_sequence(readID,fd1,fd2);};
     bsg10xTag get_read_tag(size_t readID);
     void dump_index_to_disk(std::string filename);

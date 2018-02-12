@@ -194,14 +194,13 @@ int main(int argc, char * argv[]) {
                         if (all[i] == all[j] or all[i] == -all[j])ok = false; //looping node
                 if (!ok) continue;
 
-                std::cout<<"Repeat: [ "<<-bwl[0].dest<<" | "<<-bwl[1].dest<<" ] <-> "<<n<<" <-> "<<
-                "[ "<<fwl[0].dest<<" | "<<fwl[1].dest<<" ]"<<std::endl;
+//                std::cout<<"Repeat: [ "<<-b0<<" | "<<-b1<<" ] <-> "<<n<<" <-> [ "<<f0<<" | "<<f1<<" ]"<<std::endl;
                 std::set<prm10xTag_t> b0tags, b1tags, f0tags, f1tags;
 
-                std::cout<<"Reads in nodes -> f0:"<<scaff.lrmappers[0].reads_in_node[(f0 > 0 ? f0 : -f0)].size()
-                        <<"   f1:"<<scaff.lrmappers[0].reads_in_node[(f1 > 0 ? f1 : -f1)].size()
-                        <<"   b0:"<<scaff.lrmappers[0].reads_in_node[(b0 > 0 ? b0 : -b0)].size()
-                        <<"   b1:"<<scaff.lrmappers[0].reads_in_node[(b1 > 0 ? b1 : -b1)].size()<<std::endl;
+//                std::cout<<"Reads in nodes -> f0:"<<scaff.lrmappers[0].reads_in_node[(f0 > 0 ? f0 : -f0)].size()
+//                        <<"   f1:"<<scaff.lrmappers[0].reads_in_node[(f1 > 0 ? f1 : -f1)].size()
+//                        <<"   b0:"<<scaff.lrmappers[0].reads_in_node[(b0 > 0 ? b0 : -b0)].size()
+//                        <<"   b1:"<<scaff.lrmappers[0].reads_in_node[(b1 > 0 ? b1 : -b1)].size()<<std::endl;
 
                 for (auto rm:scaff.lrmappers[0].reads_in_node[(f0 > 0 ? f0 : -f0)])
                     f0tags.insert(scaff.lrmappers[0].datastore.get_read_tag(rm.read_id));
@@ -226,8 +225,8 @@ int main(int argc, char * argv[]) {
                                       std::inserter(ba, ba.end()));
                 std::set_intersection(b1tags.begin(), b1tags.end(), f1tags.begin(), f1tags.end(),
                                       std::inserter(bb, bb.end()));
-                std::cout<<"Tags in   f0: "<<f0tags.size()<<"  f1: "<<f1tags.size()<<"  b0: "<<b0tags.size()<<"  b1: "<<b1tags.size()<<std::endl;
-                std::cout<<"Tags support   aa: "<<aa.size()<<"  bb: "<<bb.size()<<"  ab: "<<ab.size()<<"  ba: "<<ba.size();
+//                std::cout<<"Tags in   f0: "<<f0tags.size()<<"  f1: "<<f1tags.size()<<"  b0: "<<b0tags.size()<<"  b1: "<<b1tags.size()<<std::endl;
+//                std::cout<<"Tags support   aa: "<<aa.size()<<"  bb: "<<bb.size()<<"  ab: "<<ab.size()<<"  ba: "<<ba.size();
                 if (aa.size() > 3 and bb.size() > 3 and
                     std::min(aa.size(), bb.size()) > 10 * std::max(ab.size(), ba.size())) {
                     //std::cout << " Solved as AA BB !!!" << std::endl;
@@ -293,7 +292,8 @@ int main(int argc, char * argv[]) {
                 scaff.kci.reindex_graph();
                 sg.write_to_gfa(output_prefix + "_solved_repeats_" + std::to_string(srpass) + ".gfa");
                 std::cout << reads_to_remap.size() << " pairs of read to remap" << std::endl;
-                scaff.lrmappers[0].map_reads(/*reads_to_remap*/);
+                scaff.lrmappers[0].update_graph_index();
+                scaff.lrmappers[0].map_reads(reads_to_remap);
             }
         }
     }

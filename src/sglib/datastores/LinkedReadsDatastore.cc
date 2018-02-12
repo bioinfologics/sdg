@@ -19,7 +19,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename, std::str
     fd2=fopen(read2_filename.c_str(),"r");
     char readbuffer[1000];
     read_offset.resize(1);//leave read 0 empty.
-    uint16_t r1offset,r2offset;
+    uint64_t r1offset,r2offset;
     uint64_t g1offset=0,g2offset=0;
     uint64_t readCountInFile=0;
     uint64_t tagged_reads=0;
@@ -66,24 +66,65 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename, std::str
 }
 
 std::string LinkedReadsDatastore::get_read_sequence(size_t readID, FILE * file1, FILE * file2) {
-    char buffer[1000];
+#define SEQBUFFER_SIZE 260
+    char buffer[SEQBUFFER_SIZE];
     if (0==readID%2){
         auto pos_in_file=readID/2-1;
-//        std::cout<<"Read from file2, group "<<pos_in_file/group_size
+//        std::cout<<"Read "<<readID<<" from file2, group "<<pos_in_file/group_size
 //                 <<" group offset "<<group_offset2[pos_in_file/group_size]
 //                 << " read_offset "<< read_offset[readID]<<std::endl;
         fseek(file2,group_offset2[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
-        fread(buffer,1000,1,file2);
+        fread(buffer,SEQBUFFER_SIZE,1,file2);
+
     } else {
         auto pos_in_file=readID/2;
-//        std::cout<<"Read from file1, group "<<pos_in_file/group_size
+//        std::cout<<"Read "<<readID<<" from file1, group "<<pos_in_file/group_size
 //                 <<" group offset "<<group_offset1[pos_in_file/group_size]
 //                 << " read_offset "<< read_offset[readID]<<std::endl;
         fseek(file1,group_offset1[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
-        fread(buffer,1000,1,file1);
+        fread(buffer,SEQBUFFER_SIZE,1,file1);
     }
     for (auto &c:buffer) if (c=='\n') {c='\0'; break;}
     return std::string(buffer);
+}
+
+std::string LinkedReadsDatastore::get_read_sequence_fd(size_t readID, int fd1, int fd2) {
+#define SEQBUFFER_SIZE 260
+    char buffer[SEQBUFFER_SIZE];
+    if (0==readID%2){
+        auto pos_in_file=readID/2-1;
+//        std::cout<<"Read "<<readID<<" from file2, group "<<pos_in_file/group_size
+//                 <<" group offset "<<group_offset2[pos_in_file/group_size]
+//                 << " read_offset "<< read_offset[readID]<<std::endl;
+        lseek(fd2,group_offset2[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
+        //fread(buffer,SEQBUFFER_SIZE,1,file2);
+        read(fd2,buffer,SEQBUFFER_SIZE);
+
+    } else {
+        auto pos_in_file=readID/2;
+//        std::cout<<"Read "<<readID<<" from file1, group "<<pos_in_file/group_size
+//                 <<" group offset "<<group_offset1[pos_in_file/group_size]
+//                 << " read_offset "<< read_offset[readID]<<std::endl;
+        lseek(fd1,group_offset1[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
+        //fread(buffer,SEQBUFFER_SIZE,1,file1);
+        read(fd1,buffer,SEQBUFFER_SIZE);
+    }
+    for (auto &c:buffer) if (c=='\n') {c='\0'; break;}
+    return std::string(buffer);
+}
+
+void LinkedReadsDatastore::get_read_sequence_fd(size_t readID, int fd1, int fd2, char * dest) {
+#define SEQBUFFER_SIZE 260
+    if (0==readID%2){
+        auto pos_in_file=readID/2-1;
+        lseek(fd2,group_offset2[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
+        read(fd2,dest,SEQBUFFER_SIZE);
+
+    } else {
+        auto pos_in_file=readID/2;
+        lseek(fd1,group_offset1[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
+        read(fd1,dest,SEQBUFFER_SIZE);
+    }
 }
 
 bsg10xTag LinkedReadsDatastore::get_read_tag(size_t readID) {
