@@ -3,9 +3,8 @@
 //
 
 #include "SequenceMapper.h"
-#include "sglib/SMR.h"
-#include "sglib/factories/KMerIDXFactory.h"
-#include "sglib/readers/SequenceGraphReader.h"
+#include "factories/KmerIDXFactory.h"
+#include <numeric>
 
 SequenceMapping::SequenceMapping(){
     // Just clean the structure, OSX doesn't give you clean memory
@@ -29,8 +28,9 @@ std::ostream& operator<<(std::ostream& stream, const SequenceMapping& sm) {
     stream << "Sequence: " << sm.seq_id << " from: ";
     stream << sm.first_seq_pos << " : " << sm.last_seq_pos << " (" << seqdir << ")";
     stream << ", maps to node: " << sm.absnode();
-    stream << " from: " << sm.first_node_pos << " : " << sm.last_node_pos  << " (" << nodedir << ")";
-    stream << ", with " << sm.unique_matches << " unique matches.";
+    stream << " from: " << sm.first_node_pos << " : " << sm.last_node_pos  << " (" << nodedir << "). ";
+    stream << sm.matched_unique_kmers << " / " << sm.possible_unique_matches << " unique kmers matched.";
+    stream << " (" << sm.n_kmers_in_node << " kmers exist in node).";
     return stream;
 }
 
@@ -41,24 +41,27 @@ void SequenceMapping::initiate_mapping(uint64_t sequence_id) {
     node = 0;
     first_node_pos = 0;
     last_node_pos = 0;
-    unique_matches = 0;
+    matched_unique_kmers = 0;
+    possible_unique_matches = 0;
 }
 
 bool SequenceMapping::ismatched(){
     return node != 0;
 }
 
-void SequenceMapping::start_new_mapping(sgNodeID_t nodeid, int32_t nodepos, int32_t seqpos) {
+void SequenceMapping::start_new_mapping(const graphPosition& gpos, int32_t seqpos, const UniqueKmerIndex& index) {
     first_seq_pos = seqpos;
     last_seq_pos = seqpos;
-    node = nodeid;
-    first_node_pos = nodepos;
-    last_node_pos = nodepos;
-    unique_matches = 1;
+    node = gpos.node;
+    first_node_pos = gpos.pos;
+    last_node_pos = gpos.pos;
+    matched_unique_kmers = 1;
+    possible_unique_matches = index.unique_kmers_in_node(gpos.node);
+    n_kmers_in_node = index.total_kmers_in_node(gpos.node);
 }
 
 void SequenceMapping::extend(int32_t nodepos, int32_t seqpos) {
-    unique_matches++;
+    matched_unique_kmers++;
     last_node_pos = nodepos;
     last_seq_pos = seqpos;
 }
@@ -67,8 +70,12 @@ sgNodeID_t SequenceMapping::absnode() const {
     return std::abs(node);
 }
 
+sgNodeID_t SequenceMapping::dirnode() const {
+    return node_direction() == Forward ? absnode() : -absnode();
+}
+
 int32_t SequenceMapping::n_unique_matches() const {
-    return unique_matches;
+    return matched_unique_kmers;
 }
 
 MappingDirection SequenceMapping::node_direction() const {
@@ -93,31 +100,19 @@ bool SequenceMapping::direction_will_continue(int32_t next_position) const {
     }
 }
 
-bool SequenceMapping::mapping_continues(sgNodeID_t next_node, int32_t next_position) const {
+bool SequenceMapping::mapping_continues(const graphPosition& gpos) const {
     //std::cout << "Deciding if mapping will continue..." << std::endl;
-    auto same_node = absnode() == std::abs(next_node);
+    auto same_node = absnode() == std::abs(gpos.node);
     //std::cout << "Same node: " << same_node << std::endl;
-    auto direction_continues = direction_will_continue(next_position);
+    auto direction_continues = direction_will_continue(gpos.pos);
     //std::cout << "Direction continues: " << direction_continues << std::endl;
     return same_node and direction_continues;
 }
 
-
-
-void SequenceMapper::generate_unique_kmer_index(uint8_t k) {
-
-    SMR<KmerIDX, kmerIDXFactory<FastaRecord>,
-        GraphNodeReader<FastaRecord>, FastaRecord,
-        GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k}, 10*GB, 0, 1, output_prefix);
-
-    std::cout << "Generating unique graph " << k << "mers and building index..." << std::endl;
-    for (auto &kidx :kmerIDX_SMR.process_from_memory()) graph_kmer_index[kidx.kmer]={kidx.contigID,kidx.pos};
-    std::vector<uint64_t> uniqKmer_statistics(kmerIDX_SMR.summaryStatistics());
-    std::cout << "Number of sequences in graph: " << uniqKmer_statistics[2] << std::endl;
-    std::cout << "Number of " << int(k) << "-kmers in graph " << uniqKmer_statistics[0] << std::endl;
-    std::cout << "Number of " << int(k) << "-kmers in graph index " << uniqKmer_statistics[1] << std::endl;
-
+double SequenceMapping::POPUKM() const {
+    return matched_unique_kmers / possible_unique_matches;
 }
+
 
 void SequenceMapper::map_sequences_from_file(const uint64_t min_matches, const std::string& filename) {
 
@@ -132,10 +127,12 @@ void SequenceMapper::map_sequences_from_file(const uint64_t min_matches, const s
         kmerIDXFactory<FastaRecord> kf({k});
         SequenceMapping mapping;
         bool c;
+
 #pragma omp critical (readrec)
         {
             c = fastaReader.next_record(sequence);
         }
+
         while (c) {
             mapping.initiate_mapping((uint64_t)sequence.id);
 
@@ -145,30 +142,29 @@ void SequenceMapper::map_sequences_from_file(const uint64_t min_matches, const s
             kf.setFileRecord(sequence);
             kf.next_element(seqkmers);
 
-            // For each kmer on sequence.
+            // For each unique kmer on sequence.
             std::vector<SequenceMapping> sequence_mappings;
             for (auto &sk:seqkmers) {
-                auto nk = graph_kmer_index.find(sk.kmer);
+                bool found_kmer;
+                graphPosition graph_pos;
+                std::tie(found_kmer, graph_pos) = graph_kmer_index.find_unique_kmer_in_graph(sk.kmer);
                 // IF KMER EXISTS ON GRAPH
-                if (graph_kmer_index.end() != nk) {
+                if (found_kmer) {
                     mapped_kmers_count++;
                     // IF THE KMER MATCH IS THE FIRST MATCH FOR THE MAPPING...
                     if (!mapping.ismatched()) {
-                        mapping.start_new_mapping(nk->second.node, nk->second.pos, sk.pos);
+                        mapping.start_new_mapping(graph_pos, sk.pos, graph_kmer_index);
                     } // IF THE KMER MATCH IS NOT THE FIRST MATCH FOR THE MAPPING...
                     else {
                         // THERE ARE TWO SITUATIONS WHERE WE WOULD START A NEW MAPPING...
                         // A). WE ARE MAPPING TO A COMPLETELY DIFFERENT NODE...
                         // B). THE DIRECTION OF THE MAPPING IS FLIPPED...
-                        //std::cout << "Current mapping: " << mapping << std::endl;
 
-                        if (!mapping.mapping_continues(nk->second.node, nk->second.pos)) {
-                            //std::cout << "Mapping to new node, making new mapping..." << std::endl;
+                        if (!mapping.mapping_continues(graph_pos)) {
                             sequence_mappings.push_back(mapping);
-                            mapping.start_new_mapping(nk->second.node, nk->second.pos, sk.pos);
-                            //std::cout << mapping << std::endl;
+                            mapping.start_new_mapping(graph_pos, sk.pos, graph_kmer_index);
                         } else { // IF NODE KMER MAPS TO IS THE SAME, EXTEND THE CURRENT MAPPING...
-                            mapping.extend(nk->second.pos, sk.pos);
+                            mapping.extend(graph_pos.pos, sk.pos);
                         }
                     }
                 }
@@ -176,36 +172,19 @@ void SequenceMapper::map_sequences_from_file(const uint64_t min_matches, const s
             // TODO : Check if this last push_back is required
             if (mapping.ismatched()) sequence_mappings.push_back(mapping);
 
-            for (const auto &sm:sequence_mappings)
-                if (sm.absnode() != 0 and sm.n_unique_matches() >= min_matches) {
-#pragma omp critical (storeA)
-                    {
-                        mappings_in_node[std::abs(sm.absnode())].emplace_back(sm);
-                    }
-                    ++mapped_kmers_count;
-                }
-/*
-            for (const auto &sm:sequence_mappings) {
-                std::cout << sm << std::endl;
-            }
-*/
-#pragma omp critical (storeB)
+#pragma omp critical (store_seqmapping)
             {
                 mappings_of_sequence[sequence.id] = sequence_mappings;
             }
 
             auto tc = ++sequence_count;
             if (tc % 100000 == 0) std::cout << mapped_kmers_count << " / " << tc << std::endl;
-#pragma omp critical (readrec)
+
+            #pragma omp critical (readrec)
             {
                 c = fastaReader.next_record(sequence);
             }
         }
-    }
-
-#pragma omp parallel for
-    for (sgNodeID_t n = 1; n < mappings_in_node.size(); ++n){
-        std::sort(mappings_in_node[n].begin(), mappings_in_node[n].end());
     }
 
     std::cout << "Mapped " << mapped_kmers_count << " Kmers from " << sequence_count << " sequences." << std::endl;
@@ -213,22 +192,90 @@ void SequenceMapper::map_sequences_from_file(const uint64_t min_matches, const s
 
 void SequenceMapper::mappings_paths() {
     for(auto sequence_mappings = mappings_of_sequence.begin(); sequence_mappings != mappings_of_sequence.end(); ++sequence_mappings) {
-        std::cout << "Trying to make a path from mappings of sequence: " << sequence_mappings->first << std::endl;
-        std::cout << "Making node list..." << std::endl;
-        std::vector<sgNodeID_t> nodeList;
+
+        // For every sequence, initialize and empty sequence path, and a vector to store constructed paths.
+        std::cout << "Constructing mapping paths for sequence: " << sequence_mappings -> first << std::endl;
+        SequenceGraphPath sgpath(sg);
+        std::vector<std::vector<SequenceMapping>> seq_mapping_paths(0);
+        std::vector<SequenceMapping> mapping_path(0);
+
         for(const auto &sm:sequence_mappings->second) {
-            auto dirnode = sm.node_direction() == Forward ? sm.absnode() : -sm.absnode();
-            nodeList.push_back(dirnode);
+
+            // For every mapping hit the sequence has, try to append the node of the mapping hit to the current path.
+
+            std::cout << "CONSIDERING THE FOLLOWING MAPPING:" << std::endl << sm << std::endl;
+
+            //sgNodeID_t dirnode = sm.node_direction() == Forward ? sm.absnode() : -sm.absnode();
+            auto dn = sm.dirnode();
+
+            std::cout << "Trying to add to path as: " << dn << std::endl;
+
+            bool could_append = sgpath.append_to_path(dn);
+
+            if (could_append) {
+                std::cout << "Was able to append " << dn << " to the path." << std::endl;
+                std::cout << "Adding mapping to the path of mappings." << std::endl;
+                mapping_path.emplace_back(sm);
+                std::cout << "Current path of mappings is " << mapping_path.size() << " nodes long." << std::endl;
+            } else {
+                std::cout << "Was not able to append " << dn << " to the path." << std::endl;
+                std::cout << "Saving current path." << std::endl;
+                seq_mapping_paths.emplace_back(mapping_path);
+                std::cout << "Clearing path to start a new path." << std::endl;
+                mapping_path.clear();
+                sgpath.nodes.clear();
+                std::cout << "ADDING NODE TO NEW PATH..." << std::endl;
+                sgpath.append_to_path(dn);
+                mapping_path.emplace_back(sm);
+                std::cout << "Current path of mappings is " << mapping_path.size() << " nodes long." << std::endl;
+            }
         }
-        std::cout << "Constructing sequence path..." << std::endl;
-        SequenceGraphPath output_path(sg, nodeList);
-        auto mappedseq = output_path.get_sequence();
-        std::cout << "Constructed sequence!" << std::endl;
-        std::cout << "Managed to map reference sequence to genome graph!" << std::endl;
-        std::cout << "Writing " << mappedseq.length() << " of aligned reference to file!" << std::endl;
-        std::ofstream file(output_prefix + "mapped_sequence.fasta");
-        file << "> Mapped Sequence" << std::endl << mappedseq << std::endl;
-        file.close();
+
+        seq_mapping_paths.emplace_back(mapping_path);
+        paths_of_mappings_of_sequence[sequence_mappings -> first] = seq_mapping_paths;
+
     }
 
 }
+
+void SequenceMapper::paths_to_fasta(std::ofstream& output_file) const {
+    for(const auto& sp : paths_of_mappings_of_sequence) {
+        for(const auto& mapping_path : sp.second) {
+            std::vector<sgNodeID_t> nodes;
+            SequenceGraphPath p(sg);
+            output_file << ">Sequence_" << sp.first << "_path";
+            for(const auto& sm : mapping_path) {
+                auto dn = sm.dirnode();
+                p.nodes.emplace_back(dn);
+                output_file << '_' << dn;
+            }
+            auto sequence = p.get_sequence();
+            output_file << std::endl << sequence << std::endl;
+        }
+    }
+}
+
+void SequenceMapper::paint_paths(GraphDrawer& gd) const {
+    std::accumulate(
+            paths_of_mappings_of_sequence.begin(),
+            paths_of_mappings_of_sequence.end(),
+            0,
+            [](int a, int b){
+
+            });
+    auto hsv_colours = gd.brew_colours(paths_of_mappings_of_sequence.size());
+    auto abspathid = 0;
+    for (const auto& it : paths_of_mappings_of_sequence) {
+        auto pathid = 0;
+        for (const auto &path:it.second) {
+            SequenceGraphPath sgp(sg);
+            for (const auto &sm:path) {
+                sgp.append_to_path(sm.dirnode());
+            }
+            gd.add_path("mappingpath_" + std::to_string(pathid) + "_sequence_" + std::to_string(it.first), sgp, hsv_colours[abspathid], false);
+            pathid++;
+            abspathid++;
+        }
+    }
+}
+

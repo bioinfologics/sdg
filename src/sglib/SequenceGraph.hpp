@@ -28,15 +28,26 @@ public:
 class Link{
 public:
     Link( sgNodeID_t _src, sgNodeID_t _dst, int32_t _dist) : source(_src), dest(_dst), dist(_dist) {};
+    Link( const Link& l ) {
+        source = l.source;
+        dest = l.dest;
+        dist = l.dist;
+    };
     sgNodeID_t source,dest;
     int32_t dist;
 
-    bool operator==( const  Link);
+    bool operator==(const  Link);
     bool operator<(const Link)const;
 
     friend std::ostream& operator<<(std::ostream& s, Link& l) {
         s << "Link from: " << l.source << " to: " << l.dest << " with a distance of: " << l.dist;
         return s;
+    }
+
+    Link make_canonical() const {
+        Link rl(*this);
+        std::swap(rl.source, rl.dest);
+        return source < rl.source ? *this : rl;
     }
 
 };
@@ -88,6 +99,16 @@ public:
     //later
     //project spectra and use for flow
 
+    bool link_exists(sgNodeID_t from, sgNodeID_t to) {
+        // Look for link between starting node and the new node.
+        auto l = links[std::abs(from)].begin();
+        // TODO: Can this just be a std::find?
+        for (; l != links[std::abs(from)].end(); ++l){
+            if (l->source == from and l->dest == to) break;
+        }
+        return l != links[std::abs(from)].end();
+    }
+
 
     //=== internal variables ===
     std::vector<sgNodeID_t> oldnames_to_nodes(std::string _oldnames);
@@ -102,11 +123,52 @@ public:
 class SequenceGraphPath {
 public:
     std::vector<sgNodeID_t> nodes;
-    explicit SequenceGraphPath(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
+    explicit SequenceGraphPath(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={}) : sg(_sg) ,nodes(_nodes) {};
     std::string get_fasta_header();
     std::string get_sequence();
     void reverse();
     bool is_canonical();
+
+    bool append_to_path(sgNodeID_t newnode) {
+        if (nodes.empty()) {
+            //std::cout << "Path is new and empty." << std::endl;
+            nodes.emplace_back(newnode);
+            //std::cout << "Size of path is now: " << nodes.size() << std::endl;
+            return true;
+        }
+        sgNodeID_t from = -(nodes.back());
+        //std::cout << "Path is not new and empty: trying to append." << std::endl;
+        bool append_possible = sg.link_exists(from, newnode);
+        if (append_possible) {
+            //std::cout << "Append is possible, adding node to the back." << std::endl;
+            nodes.emplace_back(newnode);
+            //std::cout << "Size of path is now: " << nodes.size() << std::endl;
+        }
+        return append_possible;
+    }
+
+    std::vector<Link> collect_links() const {
+        std::vector<Link> s;
+        sgNodeID_t pnode = 0;
+        // just iterate over every node in path - contig names are converted to ids at construction
+        for (auto &n:nodes) {
+            if (pnode != 0) {
+                // find link between pnode' output (+pnode) and n's sink (-n)
+                auto l = sg.links[std::abs(pnode)].begin();
+                for (; l != sg.links[std::abs(pnode)].end(); ++l){
+                    if (l->source == pnode and l->dest == n) break;
+                }
+                if (l == sg.links[std::abs(pnode)].end()) {
+                    std::cout << "can't find a link between " << pnode << " and " << -n << std::endl;
+                    throw std::runtime_error("path has no link");
+                } else {
+                    s.emplace_back(*l);
+                }
+            }
+            pnode=-n;
+        }
+        return s;
+    }
 
 private:
     SequenceGraph& sg;

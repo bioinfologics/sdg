@@ -5,6 +5,7 @@
 #include "cxxopts.hpp"
 #include "sglib/SequenceMapper.h"
 #include "sglib/filesystem/check_or_create_directory.h"
+#include "sglib/GraphDrawer.h"
 
 int main(int argc, char **argv) {
 
@@ -64,17 +65,25 @@ int main(int argc, char **argv) {
     SequenceGraph sg;
     sg.load_from_gfa(graph_filename);
 
-
 // CONSTRUCT SEQUENCE_MAPPER...
-
     SequenceMapper mppr(sg);
     mppr.map_sequences(1, reference_filename, output_prefix);
-
     mppr.print_mappings();
 
 // CONNECT MAPPINGS...
-
     mppr.mappings_paths();
+    mppr.print_paths();
 
+// DUMP OUTPUT...
+    std::ofstream pathout("paths.fasta");
+    mppr.paths_to_fasta(pathout);
+    pathout.close();
+
+    // Draw graph...
+    //GraphDrawer picasso(sg);
+    //mppr.paint_paths(picasso);
+    //std::ofstream file("testpicture.gv");
+    //picasso.render_graph_as_dot(file);
+    //file.close();
 
 }

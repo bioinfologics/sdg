@@ -139,8 +139,12 @@ add_library(sequence_graph SHARED
             src/sglib/factories/KMerIDXFactory.h
             src/sglib/SequenceGraph.hpp
             src/sglib/SequenceGraph.cc
+            src/sglib/UniqueKmerIndex.h
+            src/sglib/UniqueKmerIndex.cpp
             src/sglib/SequenceMapper.h
             src/sglib/SequenceMapper.cpp
+            src/sglib/GraphDrawer.h
+            src/sglib/GraphDrawer.cpp
             src/sglib/PairedReadMapper.hpp
             src/sglib/PairedReadMapper.cc
             src/sglib/HaplotypeScorer.hpp

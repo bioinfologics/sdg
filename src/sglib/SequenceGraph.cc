@@ -503,7 +503,6 @@ std::string SequenceGraphPath::get_sequence() {
             auto l = sg.links[std::abs(pnode)].begin();
             for (; l != sg.links[std::abs(pnode)].end(); ++l){
                 if (l->source == pnode and l->dest == n) break;
-                //std::cout << *l << std::endl;
             }
 
             if (l == sg.links[std::abs(pnode)].end()) {
