@@ -5,7 +5,7 @@
 #ifndef BSG_LINKEDREADSDATASTORE_HPP
 #define BSG_LINKEDREADSDATASTORE_HPP
 
-#include <sglib/PairedReadMapper.hpp>
+#include <sglib/PairedReadMapper.h>
 #include <cstddef>
 
 typedef uint32_t bsg10xTag;

@@ -98,8 +98,22 @@ private:
     bool eof_flag;
 };
 
-uint64_t PairedReadMapper::process_longreads_from_file(uint8_t k, uint16_t min_matches, std::unordered_map<uint64_t , graphPosition> & kmer_to_graphposition, std::string filename, uint64_t offset) {
-    std::cout<<"mapping reads!!!"<<std::endl;
+/**
+ * @brief
+ * Map long reads as tagged reads, use same tag per read.
+ *
+ * Requires: min_matches >= 2.
+ * @param k
+ * @param min_matches
+ * @param kmer_to_graphposition
+ * @param filename
+ * @param offset
+ * @return
+ */
+uint64_t PairedReadMapper::process_longreads_from_file(uint8_t k, const uint16_t min_matches, std::unordered_map<uint64_t , graphPosition> & kmer_to_graphposition, std::string filename, uint64_t offset) {
+    if (min_matches < 2 ) {
+        throw("min_matches < 2, long reads can only be considered mapped if > 2 kmers are shared between read and sequence");
+    }
     /*
      * LongRead mapping in parallel
      */
@@ -387,7 +401,7 @@ void PairedReadMapper::remap_reads(std::unordered_set<uint64_t> const & reads_to
 
     const int k = 31;
     const int max_coverage = 1;
-    const int min_matches = 1;
+    uint16_t min_matches = 1;
     const std::string output_prefix("./");
     SMR<KmerIDX,
             kmerIDXFactory<FastaRecord>,
@@ -428,6 +442,7 @@ void PairedReadMapper::remap_reads(std::unordered_set<uint64_t> const & reads_to
 
             }
     } else if (readType == prmLR) {
+        min_matches = 4;
         auto lrc = process_longreads_from_file(k, min_matches, kmer_to_graphposition, read1filename, 1);
         read_to_node.resize(lrc*2+1,0);
         for (const auto &rin:reads_in_node)

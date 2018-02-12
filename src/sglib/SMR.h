@@ -119,6 +119,7 @@ public:
      */
     SMR(ReaderParamStruct reader_parameters, FactoryParamStruct factory_parameters, SMRParams smr_params) : reader_parameters(reader_parameters),
                                                                         factory_parameters(factory_parameters),
+                                                                        totalRecordsGenerated(0),
                                                                         tmpBase(smr_params.Otmp), outdir(smr_params.outdir), minCount(smr_params.min),
                                                                         maxCount(smr_params.max), mergeCount(smr_params.mergeCount),
                                                                         maxThreads((unsigned int) 1) {

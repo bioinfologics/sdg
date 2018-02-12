@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sglib/factories/ContigBlockFactory.h>
 #include "cxxopts.hpp"
 #include "sglib/SequenceGraph.hpp"
 #include "sglib/HaplotypeScorer.hpp"
@@ -80,6 +81,44 @@ int main(int argc, char * argv[]) {
     std::vector<PairedReadMapper> mappers;
     mappers.emplace_back(sg);
     mappers.emplace_back(sg);
+
+    SMR<KmerIDX,
+            kmerIDXFactory<FastaRecord>,
+            GraphNodeReader<FastaRecord>,
+            FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {31}, {4*GB, 0, 1,
+                                                                                                 output_prefix});
+
+    // Get the unique_kmers from the graph into a map
+    std::cout << "Indexing graph... " << std::endl;
+    std::vector<KmerIDX> uniq_mers(kmerIDX_SMR.process_from_memory());
+    std::unordered_set<KmerIDX> uniq_set(uniq_mers.begin(),uniq_mers.end());
+    std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;
+    for (auto &kidx :uniq_mers) kmer_to_graphposition[kidx.kmer]={kidx.contigID,kidx.pos};
+
+    /*
+     * Map the reads using the smr block factory, transform onto mappings and fill the appropriate vectors on the mapper.
+     */
+
+    SMR<Block,
+            ContigBlockFactory<FastqRecord>,
+            FastqReader<FastqRecord>,
+            FastqRecord, FastxReaderParams, FilterSetParams> contigBlock_SMR({0},   // ReaderParams
+                                                                            {"out", 31, uniq_set},
+                                                                            {4*GB});
+
+    std::vector<Block> read_blocks(contigBlock_SMR.read_from_file(long_reads));
+
+
+    /*
+     * Transform the blocks from vector to mapper
+     */
+
+    for (const auto &rb:read_blocks) {
+        mappers[0].read_to_node.emplace_back(rb.contigID);
+        mappers[0].read_to_node.emplace_back(0);
+    }
+
+
     // Map long reads or load previous mappings
     if (!load_mapped.empty() and sglib::check_file(load_mapped)) {
         std::cout << "Loading reads from file: " << load_mapped << std::endl;
@@ -114,7 +153,8 @@ int main(int argc, char * argv[]) {
     }
     // Identify repeaty nodes
     kci.index_graph();
-    Scaffolder scaf(sg, mappers, kci);
+    std::vector<LinkedReadMapper> linkedReadMappers;
+    Scaffolder scaf(sg, mappers, linkedReadMappers, kci);
     auto repeatyNodes (scaf.find_repeaty_nodes());
     std::vector<SequenceGraphPath> solvable_paths;
     // For each repeaty node

@@ -2,6 +2,7 @@
 // Created by Luis Yanes (EI) on 23/11/2017.
 //
 
+#include <sys/param.h>
 #include "check_or_create_directory.h"
 
 bool sglib::check_file(std::string &filepath) {

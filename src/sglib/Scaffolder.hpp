@@ -22,8 +22,7 @@ public:
      * @param _rms A vector of PairedReadmapper, containing the mapping of reads to _sg
      * @param _kci A KMerCompressionIndex object
      */
-    Scaffolder(SequenceGraph &_sg, std::vector<PairedReadMapper> & _rms, KmerCompressionIndex &_kci) : sg(_sg),rmappers(_rms),kci(_kci){};
-
+    Scaffolder(SequenceGraph &_sg, std::vector<PairedReadMapper> & _rms,  std::vector<LinkedReadMapper> & _lrms, KmerCompressionIndex &_kci) : sg(_sg),rmappers(_rms),lrmappers(_lrms),kci(_kci){};
 
     void pop_unsupported_shortbubbles();
     void expand_bubbly_subgraphs();

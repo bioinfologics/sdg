@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/PairedReadMapper.hpp>
+#include <sglib/PairedReadMapper.h>
 #include <sglib/Scaffolder.hpp>
 #include <sglib/KmerCompressionIndex.hpp>
 #include <sglib/GraphPartitioner.hpp>

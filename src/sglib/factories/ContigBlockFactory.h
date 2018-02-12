@@ -14,10 +14,11 @@
 #include <cmath>
 #include <numeric>
 #include <unordered_map>
+#include <algorithm>
 #include "KMerIDXFactory.h"
 
 struct FilterSetParams {
-    FilterSetParams(std::string output_prefix, uint8_t k, const std::unordered_set<KmerIDX> &uniq_kmers,
+    FilterSetParams(std::string output_prefix, uint8_t k, std::unordered_set<KmerIDX> &uniq_kmers,
                     uint32_t min_kmers_to_call_match = 1,
                     uint32_t min_seen_contig_to_write_output = 0) : k(k), uniq_kmers(uniq_kmers),
                                                                     min_kmers_to_call_match(min_kmers_to_call_match),
@@ -36,7 +37,7 @@ struct FilterSetParams {
 struct Block {
     Block() : start(0), end(0), contigID(0), offset(0), count(0) {};
 
-    Block(uint32_t start, int32_t contig, int64_t offset, uint16_t count, uint32_t end) : start(start), end(end),
+    Block(size_t readID, uint32_t start, int32_t contig, int64_t offset, uint16_t count, uint32_t end) : readID(readID), start(start), end(end),
                                                                                           contigID(contig),
                                                                                           offset(offset),
                                                                                           count(count) {
@@ -53,6 +54,7 @@ struct Block {
             end = val;
     }
 
+    size_t readID;
     uint32_t start;     // Block match start
     uint32_t end;       // Block match end
     int32_t contigID;   // Sign indicates direction
@@ -77,6 +79,23 @@ struct Block {
             return std::tie(a.start, a.contigID) < std::tie(o.start, o.contigID);
         }
     };
+
+    bool operator==(const Block &o) const {return std::tie(readID, contigID) == std::tie(o.readID,o.contigID);}
+    bool operator<(const Block &o) const {return std::tie(readID, contigID,start,end) < std::tie(o.readID,o.contigID,start,end);}
+    bool operator>(const Block &o) const {return std::tie(readID, contigID,start,end) < std::tie(o.readID,o.contigID,start,end);}
+
+    void merge(const Block &o) {
+        if (start > o.start) {start = o.start;}
+        if (end < o.end){end = o.end;}
+        if (std::abs(offset) > std::abs(o.offset)) offset = o.offset;
+        count++;
+    }
+
+    friend std::istream& operator>>(std::istream& is, const Block& block) {
+        is.read((char*)&block, sizeof(block));
+        return is;
+    }
+
 };
 
 struct Match {
@@ -193,7 +212,7 @@ public:
         uint32_t blkDif(0), offDif(0);
         if (!matches.empty()) {
             auto prev = matches.cbegin();
-            Block blk(prev->readPos, prev->dirContig, prev->offset, 1, 0);
+            Block blk(0, prev->readPos, prev->dirContig, prev->offset, 1, 0);
             auto curr = prev;
             ++curr;
             for (; curr != matches.cend(); ++curr) {
@@ -204,7 +223,7 @@ public:
                     if (blk.contigID != curr->dirContig) blkDif++;
                     if (abs(curr->offset - prev->offset) >= offset_limit) offDif++;
                     blocks.push_back(blk);
-                    blk = Block(curr->readPos, curr->dirContig, curr->offset, 1, 0);
+                    blk = Block(matches.begin()-curr, curr->readPos, curr->dirContig, curr->offset, 1, 0);
                 }
                 prev = curr;
             }
@@ -222,7 +241,7 @@ public:
         while (p < currentFileRecord.seq.size()) {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(currentFileRecord.seq[p], p, fkmer, rkmer, last_unknown);
+            fillKBuf(currentFileRecord.seq[p], fkmer, rkmer, last_unknown);
             p++;
             if (last_unknown >= K) {
                 // Generate all the kmer-contig matches with Direction, Contig, Offset and readPosition

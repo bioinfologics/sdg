@@ -30,8 +30,7 @@ public:
         return this==&other;
     };
     bool operator<(const ReadMapping &other) const {
-        if (node!=other.node) return node<other.node;
-        return read_id<other.read_id;
+        return std::tie(node, read_id) < std::tie(other.node, other.read_id);
     };
     void merge(const ReadMapping &other){};
     friend std::ostream& operator<<(std::ostream& os, const ReadMapping& rm) {

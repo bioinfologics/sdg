@@ -138,7 +138,8 @@ int main(int argc, char * argv[]) {
 
     std::cout<<std::endl<<"=== Scaffolding ==="<<std::endl;
 
-    Scaffolder scaff(sg,mappers,kci);
+    std::vector<LinkedReadMapper> linkedReadMapper;
+    Scaffolder scaff(sg,mappers, linkedReadMapper, kci);
 
     std::cout<<std::endl<<"Testing GraphPartitioner"<<std::endl;
 

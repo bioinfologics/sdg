@@ -263,7 +263,7 @@ public:
         while (p < currentFileRecord.seq.size()) {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(currentFileRecord.seq[p], p, fkmer, rkmer, last_unknown);
+            fillKBuf(currentFileRecord.seq[p], fkmer, rkmer, last_unknown);
             p++;
             if (last_unknown >= K) {
                 // Generate all the kmer-contig matches with Direction, Contig, Offset and readPosition
