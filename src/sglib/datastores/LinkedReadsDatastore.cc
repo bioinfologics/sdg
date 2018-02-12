@@ -13,6 +13,8 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename, std::str
     //std::cout<<"Memory used by every read's entry:"<< sizeof(LinkedRead)<<std::endl;
     //read each read, put it on the index and on the appropriate tag
     sglib::OutputLog(sglib::LogLevels::INFO)<<"Creating Datastore Index from "<<read1_filename<<" | "<<read2_filename<<std::endl;
+    filename1=read1_filename;
+    filename2=read2_filename;
     fd1=fopen(read1_filename.c_str(),"r");
     fd2=fopen(read2_filename.c_str(),"r");
     char readbuffer[1000];
@@ -20,6 +22,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename, std::str
     uint16_t r1offset,r2offset;
     uint64_t g1offset=0,g2offset=0;
     uint64_t readCountInFile=0;
+    uint64_t tagged_reads=0;
     while (!feof(fd1) and !feof(fd2)){
         //LinkedRead r1,r2;
         bsg10xTag newtag=0;
@@ -56,27 +59,28 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename, std::str
         read_offset.push_back(r2offset-g2offset);
         ++readCountInFile;
         read_tag.push_back(newtag);
+        if (0!=newtag) tagged_reads+=2;
     }
-    sglib::OutputLog(sglib::LogLevels::INFO)<<"Datastore with "<<read_offset.size()-1<<" reads "<<std::endl; //and "<<reads_in_tag.size()<<"tags"<<std::endl;
+    sglib::OutputLog(sglib::LogLevels::INFO)<<"Datastore with "<<read_offset.size()-1<<" reads, "<<tagged_reads<<" reads with tags"<<std::endl; //and "<<reads_in_tag.size()<<"tags"<<std::endl;
 
 }
 
-std::string LinkedReadsDatastore::get_read_sequence(size_t readID) {
+std::string LinkedReadsDatastore::get_read_sequence(size_t readID, FILE * file1, FILE * file2) {
     char buffer[1000];
     if (0==readID%2){
         auto pos_in_file=readID/2-1;
-        std::cout<<"Read from file2, group "<<pos_in_file/group_size
-                 <<" group offset "<<group_offset2[pos_in_file/group_size]
-                 << " read_offset "<< read_offset[readID]<<std::endl;
-        fseek(fd2,group_offset2[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
-        fread(buffer,1000,1,fd2);
+//        std::cout<<"Read from file2, group "<<pos_in_file/group_size
+//                 <<" group offset "<<group_offset2[pos_in_file/group_size]
+//                 << " read_offset "<< read_offset[readID]<<std::endl;
+        fseek(file2,group_offset2[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
+        fread(buffer,1000,1,file2);
     } else {
         auto pos_in_file=readID/2;
-        std::cout<<"Read from file1, group "<<pos_in_file/group_size
-                 <<" group offset "<<group_offset1[pos_in_file/group_size]
-                 << " read_offset "<< read_offset[readID]<<std::endl;
-        fseek(fd1,group_offset1[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
-        fread(buffer,1000,1,fd1);
+//        std::cout<<"Read from file1, group "<<pos_in_file/group_size
+//                 <<" group offset "<<group_offset1[pos_in_file/group_size]
+//                 << " read_offset "<< read_offset[readID]<<std::endl;
+        fseek(file1,group_offset1[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
+        fread(buffer,1000,1,file1);
     }
     for (auto &c:buffer) if (c=='\n') {c='\0'; break;}
     return std::string(buffer);

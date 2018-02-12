@@ -5,6 +5,7 @@
 #ifndef SG_SCAFFOLDER_HPP
 #define SG_SCAFFOLDER_HPP
 
+#include <sglib/mappers/LinkedReadMapper.hpp>
 #include "SequenceGraph.hpp"
 #include "PairedReadMapper.hpp"
 #include "KmerCompressionIndex.hpp"
@@ -15,7 +16,7 @@ public:
     ///
     /// \param _sg A SequenceGraph to scaffold
     /// \param _rms A vector of PairedReadmapper, containing the mapping of reads to _sg
-    Scaffolder(SequenceGraph &_sg, std::vector<PairedReadMapper> & _rms, KmerCompressionIndex &_kci) : sg(_sg),rmappers(_rms),kci(_kci){};
+    Scaffolder(SequenceGraph &_sg, std::vector<PairedReadMapper> & _rms,  std::vector<LinkedReadMapper> & _lrms, KmerCompressionIndex &_kci) : sg(_sg),rmappers(_rms),lrmappers(_lrms),kci(_kci){};
 
 
     void pop_unsupported_shortbubbles();
@@ -51,6 +52,7 @@ public:
 
     SequenceGraph &sg;
     std::vector<PairedReadMapper> &rmappers;
+    std::vector<LinkedReadMapper> &lrmappers;
     KmerCompressionIndex &kci;
 
 

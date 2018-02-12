@@ -4,6 +4,7 @@
 #include <sglib/Scaffolder.hpp>
 #include <sglib/KmerCompressionIndex.hpp>
 #include <sglib/GraphPartitioner.hpp>
+#include <sglib/mappers/LinkedReadMapper.hpp>
 #include "sglib/SequenceGraph.hpp"
 #include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"
@@ -16,7 +17,7 @@ int main(int argc, char * argv[]) {
     std::cout << "Executed command:"<<std::endl;
     for (auto i=0;i<argc;i++) std::cout<<argv[i]<<" ";
     std::cout<<std::endl<<std::endl;
-    
+
     std::string gfa_filename,output_prefix, load_cidx, dump_cidx;
     std::vector<std::string> reads1,reads2,reads_type,cidxreads1,cidxreads2, dump_mapped, load_mapped;
     bool stats_only=0,reindex_kci=0;
@@ -85,10 +86,6 @@ int main(int argc, char * argv[]) {
         exit(1);
     }
 
-
-
-
-
     std::cout<<std::endl<<"=== Loading GFA ==="<<std::endl;
     if (gfa_filename.size()<=4 or gfa_filename.substr(gfa_filename.size()-4,4)!=".gfa") {
 
@@ -98,6 +95,45 @@ int main(int argc, char * argv[]) {
     auto fasta_filename=gfa_filename.substr(0,gfa_filename.size()-4)+".fasta";
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
+
+    std::cout<<std::endl<<"=== Mapping reads ==="<<std::endl;
+    //read mapping/loading
+    std::vector<PairedReadMapper> prmappers;
+    std::vector<LinkedReadMapper> lrmappers;
+    std::vector<LinkedReadsDatastore> datastores;
+
+
+    for(int lib=0;lib<reads1.size();lib++) {
+        if (load_mapped.size()<=lib) {
+            if (reads_type[lib] == "10x") {
+
+                datastores.emplace_back(reads1[lib],reads2[lib],LinkedReadsFormat::UCDavis);
+                lrmappers.emplace_back(sg,datastores.back());
+                lrmappers.back().memlimit=max_mem_gb * 1024L * 1024L * 1024L;
+                lrmappers.back().update_graph_index();
+                lrmappers.back().map_reads();
+                //mappers.back().map_reads(reads1[lib], reads2[lib], prm10x, max_mem_gb * 1024L * 1024L * 1024L);
+            } else {
+                std::cout<<"Sorry, but only 10x read mapping is supported at this time"<<std::endl;
+            }
+            lrmappers.back().print_stats();
+        } else {
+            std::cout<<"Sorry, loading datastores and mappers is NOT supported at this time"<<std::endl;
+            /*std::cout<<"Library #"<<lib<<": load from disk at "<<load_mapped[lib]<<std::endl;
+            mappers.emplace_back(sg);
+            mappers.back().load_from_disk(load_mapped[lib]);
+            mappers[lib].read1filename=reads1[lib];
+            mappers[lib].read2filename=reads2[lib];
+            mappers[lib].readType=(reads_type[lib] == "10x" ? prm10x : prmPE);
+            mappers[lib].memlimit=max_mem_gb * 1024L * 1024L * 1024L;
+            mappers.back().print_stats();*/
+        }
+        if (dump_mapped.size() > lib) {
+            std::cout<<"Sorry, dumping datastores and mappers is NOT supported at this time"<<std::endl;
+            /*std::cout<<"dumping map to "<<dump_mapped[lib]<<std::endl;
+            mappers.back().save_to_disk(dump_mapped[lib]);*/
+        }
+    }
 
     std::cout<<std::endl<<"=== Loading reads compression index ==="<<std::endl;
     //compression index
@@ -122,38 +158,12 @@ int main(int argc, char * argv[]) {
         kci.dump_histogram("kci_histogram.csv");
     }
 
-    std::cout<<std::endl<<"=== Mapping reads ==="<<std::endl;
-    //read mapping/loading
-    std::vector<PairedReadMapper> mappers;
-
-    for(int lib=0;lib<reads1.size();lib++) {
-        if (load_mapped.size()<=lib) {
-            mappers.emplace_back(sg);
-            if (reads_type[lib] == "10x") {
-                mappers.back().map_reads(reads1[lib], reads2[lib], prm10x, max_mem_gb * 1024L * 1024L * 1024L);
-            } else {
-                mappers.back().map_reads(reads1[lib], reads2[lib], prmPE, max_mem_gb * 1024L * 1024L * 1024L);
-            }
-            mappers.back().print_stats();
-        } else {
-            std::cout<<"Library #"<<lib<<": load from disk at "<<load_mapped[lib]<<std::endl;
-            mappers.emplace_back(sg);
-            mappers.back().load_from_disk(load_mapped[lib]);
-            mappers[lib].read1filename=reads1[lib];
-            mappers[lib].read2filename=reads2[lib];
-            mappers[lib].readType=(reads_type[lib] == "10x" ? prm10x : prmPE);
-            mappers[lib].memlimit=max_mem_gb * 1024L * 1024L * 1024L;
-            mappers.back().print_stats();
-        }
-        if (dump_mapped.size() > lib) {
-            std::cout<<"dumping map to "<<dump_mapped[lib]<<std::endl;
-            mappers.back().save_to_disk(dump_mapped[lib]);
-        }
-    }
 
     std::cout<<std::endl<<"=== Scaffolding ==="<<std::endl;
 
-    Scaffolder scaff(sg,mappers,kci);
+
+    Scaffolder scaff(sg,prmappers,lrmappers,kci);
+
     if (repeats_first) {
         std::cout << std::endl << "Step 1 - Solving trivial repeats" << std::endl;
         bool mod = true;
@@ -184,17 +194,23 @@ int main(int argc, char * argv[]) {
                         if (all[i] == all[j] or all[i] == -all[j])ok = false; //looping node
                 if (!ok) continue;
 
-                //std::cout<<"Repeat: [ "<<-bwl[0].dest<<" | "<<-bwl[1].dest<<" ] <-> "<<n<<" <-> "<<
-                //"[ "<<fwl[0].dest<<" | "<<fwl[1].dest<<" ]"<<std::endl;
+                std::cout<<"Repeat: [ "<<-bwl[0].dest<<" | "<<-bwl[1].dest<<" ] <-> "<<n<<" <-> "<<
+                "[ "<<fwl[0].dest<<" | "<<fwl[1].dest<<" ]"<<std::endl;
                 std::set<prm10xTag_t> b0tags, b1tags, f0tags, f1tags;
-                for (auto rm:scaff.rmappers[0].reads_in_node[(f0 > 0 ? f0 : -f0)])
-                    f0tags.insert(scaff.rmappers[0].read_to_tag[rm.read_id]);
-                for (auto rm:scaff.rmappers[0].reads_in_node[(f1 > 0 ? f1 : -f1)])
-                    f1tags.insert(scaff.rmappers[0].read_to_tag[rm.read_id]);
-                for (auto rm:scaff.rmappers[0].reads_in_node[(b0 > 0 ? b0 : -b0)])
-                    b0tags.insert(scaff.rmappers[0].read_to_tag[rm.read_id]);
-                for (auto rm:scaff.rmappers[0].reads_in_node[(b1 > 0 ? b1 : -b1)])
-                    b1tags.insert(scaff.rmappers[0].read_to_tag[rm.read_id]);
+
+                std::cout<<"Reads in nodes -> f0:"<<scaff.lrmappers[0].reads_in_node[(f0 > 0 ? f0 : -f0)].size()
+                        <<"   f1:"<<scaff.lrmappers[0].reads_in_node[(f1 > 0 ? f1 : -f1)].size()
+                        <<"   b0:"<<scaff.lrmappers[0].reads_in_node[(b0 > 0 ? b0 : -b0)].size()
+                        <<"   b1:"<<scaff.lrmappers[0].reads_in_node[(b1 > 0 ? b1 : -b1)].size()<<std::endl;
+
+                for (auto rm:scaff.lrmappers[0].reads_in_node[(f0 > 0 ? f0 : -f0)])
+                    f0tags.insert(scaff.lrmappers[0].datastore.get_read_tag(rm.read_id));
+                for (auto rm:scaff.lrmappers[0].reads_in_node[(f1 > 0 ? f1 : -f1)])
+                    f1tags.insert(scaff.lrmappers[0].datastore.get_read_tag(rm.read_id));
+                for (auto rm:scaff.lrmappers[0].reads_in_node[(b0 > 0 ? b0 : -b0)])
+                    b0tags.insert(scaff.lrmappers[0].datastore.get_read_tag(rm.read_id));
+                for (auto rm:scaff.lrmappers[0].reads_in_node[(b1 > 0 ? b1 : -b1)])
+                    b1tags.insert(scaff.lrmappers[0].datastore.get_read_tag(rm.read_id));
 
                 f0tags.erase(0);
                 f1tags.erase(0);
@@ -210,8 +226,8 @@ int main(int argc, char * argv[]) {
                                       std::inserter(ba, ba.end()));
                 std::set_intersection(b1tags.begin(), b1tags.end(), f1tags.begin(), f1tags.end(),
                                       std::inserter(bb, bb.end()));
-                //std::cout<<"Tags in   f0: "<<f0tags.size()<<"  f1: "<<f1tags.size()<<"  b0: "<<b0tags.size()<<"  b1: "<<b1tags.size()<<std::endl;
-                //std::cout<<"Tags support   aa: "<<aa.size()<<"  bb: "<<bb.size()<<"  ab: "<<ab.size()<<"  ba: "<<ba.size();
+                std::cout<<"Tags in   f0: "<<f0tags.size()<<"  f1: "<<f1tags.size()<<"  b0: "<<b0tags.size()<<"  b1: "<<b1tags.size()<<std::endl;
+                std::cout<<"Tags support   aa: "<<aa.size()<<"  bb: "<<bb.size()<<"  ab: "<<ab.size()<<"  ba: "<<ba.size();
                 if (aa.size() > 3 and bb.size() > 3 and
                     std::min(aa.size(), bb.size()) > 10 * std::max(ab.size(), ba.size())) {
                     //std::cout << " Solved as AA BB !!!" << std::endl;
@@ -266,9 +282,9 @@ int main(int argc, char * argv[]) {
             for (auto &p:paths_solved) {
                 sg.join_path(p);
                 for (auto n:p.nodes) {
-                    for (auto rm:scaff.rmappers[0].reads_in_node[(n > 0 ? n : -n)]) {
+                    for (auto rm:scaff.lrmappers[0].reads_in_node[(n > 0 ? n : -n)]) {
                         reads_to_remap.insert((rm.read_id % 2 ? rm.read_id : rm.read_id - 1));
-                        scaff.rmappers[0].read_to_node[rm.read_id] = 0;
+                        scaff.lrmappers[0].read_to_node[rm.read_id] = 0;
                     }
                 }
 
@@ -277,7 +293,7 @@ int main(int argc, char * argv[]) {
                 scaff.kci.reindex_graph();
                 sg.write_to_gfa(output_prefix + "_solved_repeats_" + std::to_string(srpass) + ".gfa");
                 std::cout << reads_to_remap.size() << " pairs of read to remap" << std::endl;
-                scaff.rmappers[0].remap_reads(/*reads_to_remap*/);
+                scaff.lrmappers[0].map_reads(/*reads_to_remap*/);
             }
         }
     }
@@ -290,8 +306,8 @@ int main(int argc, char * argv[]) {
     auto hspnp_id=1;
     for (auto hp:hps) { //TODO: print node numbers and alternative tags -> then cluster/find neighbours
         std::vector<prm10xTag_t> h1tags,h2tags;
-        for(auto rm:scaff.rmappers[0].reads_in_node[(hp.first>0?hp.first:-hp.first)]) h1tags.push_back(scaff.rmappers[0].read_to_tag[rm.read_id]);
-        for(auto rm:scaff.rmappers[0].reads_in_node[(hp.second>0?hp.second:-hp.second)]) h2tags.push_back(scaff.rmappers[0].read_to_tag[rm.read_id]);
+        for(auto rm:scaff.lrmappers[0].reads_in_node[(hp.first>0?hp.first:-hp.first)]) h1tags.push_back(scaff.lrmappers[0].datastore.get_read_tag(rm.read_id));
+        for(auto rm:scaff.lrmappers[0].reads_in_node[(hp.second>0?hp.second:-hp.second)]) h2tags.push_back(scaff.lrmappers[0].datastore.get_read_tag(rm.read_id));
         std::sort(h1tags.begin(),h1tags.end());
         std::sort(h2tags.begin(),h2tags.end());
         hpsfile<<hspnp_id<<",A,"<<hp.first;
