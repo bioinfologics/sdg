@@ -83,7 +83,7 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
         std::vector<KmerIDX> readkmers;
         StreamKmerFactory skf(31);
         ReadMapping mapping;
-        auto blrs=BufferedLRSequenceGetter(datastore,256*1024,260);
+        auto blrs=BufferedLRSequenceGetter(datastore,128*1024,260);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
         auto & mapped_count=thread_mapped_count[omp_get_thread_num()];
         auto & total_count=thread_total_count[omp_get_thread_num()];

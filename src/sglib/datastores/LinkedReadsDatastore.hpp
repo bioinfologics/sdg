@@ -9,7 +9,7 @@
 #include <cstddef>
 
 typedef uint32_t bsg10xTag;
-enum LinkedReadsFormat {UCDavis,raw};
+enum LinkedReadsFormat {UCDavis,raw,seq};
 unsigned const group_size=30;
 
 
