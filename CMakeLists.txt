@@ -89,9 +89,6 @@ endif()
 
 add_definitions(${CMAKE_CXX_FLAGS})
 
-## To move the bins to the final location
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin")
-
 find_package(ZLIB REQUIRED)
 if (ZLIB_FOUND)
     add_definitions(-DHAVE_ZLIB)
@@ -152,8 +149,8 @@ add_library(sequence_graph SHARED
             src/sglib/KmerCompressionIndex.cc
             src/sglib/GraphPartitioner.cc
             src/sglib/logger/OutputLog.cc
-        src/sglib/datastores/LinkedReadsDatastore.cc
-        src/sglib/mappers/LinkedReadMapper.cc
+            src/sglib/datastores/LinkedReadsDatastore.cc
+            src/sglib/mappers/LinkedReadMapper.cc
             src/sglib/SequenceGraph.cc
             src/sglib/PairedReadMapper.cc
             src/sglib/HaplotypeScorer.cpp
@@ -186,7 +183,7 @@ install(FILES
             src/sglib/factories/ContigLink.h
             src/sglib/factories/KMerFactory.h
             src/sglib/factories/KMerIDXFactory.h
-        src/sglib/SequenceGraph.h
+            src/sglib/SequenceGraph.h
             src/sglib/PairedReadMapper.hpp
             src/sglib/HaplotypeScorer.hpp
             src/sglib/SequenceGraphJournal.hpp

@@ -67,9 +67,6 @@ int main(int argc, char * argv[]) {
     max_mem_gb *= GB;
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
-    std::vector<PairedReadMapper> mappers;
-    mappers.emplace_back(sg);
-    mappers.emplace_back(sg);
 
     unsigned int K = 15;
     uint16_t min_matches = 2;
@@ -79,30 +76,45 @@ int main(int argc, char * argv[]) {
 
     auto repeatyNodes (sg.find_canonical_repeats());
     std::vector<SequenceGraphPath> solvable_paths;
-    // For each repeaty node
 
+    // For each repeaty node
     unsigned int loops = 0;
+    std::vector<SequenceGraphPath> paths_solved;
     for (const auto &central_repeat_node:repeatyNodes) {
         sglib::OutputLog() << "* Evaluating central node " << central_repeat_node << ": " << std::endl;
         // Find AA,AB,BA,BB nodes
         auto forward_links = sg.get_fw_links(central_repeat_node);
         auto backward_links = sg.get_bw_links(central_repeat_node);
-        auto fwdA = forward_links[0].dest;
-        auto fwdB = forward_links[1].dest;
-        auto bwdA = backward_links[0].dest;
-        auto bwdB = backward_links[1].dest;
-
-        // Check it's not a loop
-        std::array<sgNodeID_t, 4> nodes = {fwdA, fwdB, bwdA, bwdB};
-        if (sg.is_loop(nodes)) {
+        auto nodeIDs = std::array<sgNodeID_t , 4>
+                {forward_links[0].dest, forward_links[1].dest, // fwdA,fwdB
+                 backward_links[0].dest,backward_links[1].dest}; // bwdA,bwdB
+        if (sg.is_loop(nodeIDs)) {
             loops++;
             continue;
         }
         // Find the reads that cross those nodes
-        std::set<uint32_t> readIDs;
-
+        std::array<std::set<uint32_t>,4> readIDs(rm.getReadSets(nodeIDs));
+        int min_coverage(3);
+        int set_distance_ratio(10);
+        // Check set AA,BB
+        std::set<uint32_t > AA,AB,BA,BB;
+        std::set_intersection(readIDs[0].cbegin(),readIDs[0].cend(),readIDs[2].cbegin(),readIDs[2].cend(), std::inserter(AA,AA.end()));
+        std::set_intersection(readIDs[0].cbegin(),readIDs[0].cend(),readIDs[3].cbegin(),readIDs[3].cend(), std::inserter(AB,AB.end()));
+        std::set_intersection(readIDs[1].cbegin(),readIDs[1].cend(),readIDs[2].cbegin(),readIDs[2].cend(), std::inserter(BA,BA.end()));
+        std::set_intersection(readIDs[1].cbegin(),readIDs[1].cend(),readIDs[3].cbegin(),readIDs[3].cend(), std::inserter(BB,BB.end()));
+        if (AA.size() > min_coverage and BB.size() > min_coverage and
+            std::min(AA.size(), BB.size()) > set_distance_ratio * std::max(AB.size(), BA.size())) {
+            //std::cout << " Solved as AA BB !!!" << std::endl;
+            paths_solved.push_back(SequenceGraphPath(sg, {-nodeIDs[2], central_repeat_node, nodeIDs[0]}));  // AA
+            paths_solved.push_back(SequenceGraphPath(sg, {-nodeIDs[3], central_repeat_node, nodeIDs[1]}));  // BB
+        } else if (BA.size() > min_coverage and AB.size() > min_coverage and
+                   std::min(BA.size(), AB.size()) > set_distance_ratio * std::max(AA.size(), BB.size())) {
+            //std::cout << " Solved as AB BA !!!" << std::endl;
+            paths_solved.push_back(SequenceGraphPath(sg, {-nodeIDs[3], central_repeat_node, nodeIDs[0]}));  // AB
+            paths_solved.push_back(SequenceGraphPath(sg, {-nodeIDs[2], central_repeat_node, nodeIDs[1]}));  // BA
+        }
         // Define the AA,BB or AB,BA sets and validate they don't cross over
-        sglib::OutputLog() <<"Repeat: [ "<< -bwdA <<" | "<< -bwdB <<" ] <-> "<< central_repeat_node <<" <-> [ "<< fwdA <<" | " << fwdB <<" ]"<<std::endl;
+        sglib::OutputLog() <<"Repeat: [ "<< -nodeIDs[2] <<" | "<< -nodeIDs[3] <<" ] <-> "<< central_repeat_node <<" <-> [ "<< nodeIDs[0] <<" | " << nodeIDs[1] <<" ]"<<std::endl;
 
     }
     sglib::OutputLog() << repeatyNodes.size() << " repeat nodes generated " << solvable_paths.size() << " solvable paths" << std::endl;

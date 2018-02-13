@@ -17,10 +17,11 @@ class LongReadMapper {
     SequenceGraph & sg;
     uint8_t k=31;
     std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;
+public:
     std::vector<std::vector<sgNodeID_t>> nodes_in_read;    // Nodes in read
     std::vector<std::vector<size_t >> reads_in_node;      // Reads in node
-public:
-    LongReadMapper(uint k, SequenceGraph sg) : sg(sg), k(k) {
+
+    LongReadMapper(uint k, SequenceGraph &sg) : sg(sg), k(k) {
         update_graph_index();
     }
 
@@ -68,7 +69,7 @@ public:
                 c = fastqReader.next_record(read);
             }
             while (c) {
-                mapping.read_id = read.id;
+                mapping.read_id = read.id+1;
                 //this enables partial read re-mapping by setting read_to_node to 0
                 if (nodes_in_read.size()<=mapping.read_id or nodes_in_read[mapping.read_id].empty()) {
                     mapping.node = 0;
@@ -123,7 +124,8 @@ public:
                         if (rm.node != 0 and rm.unique_matches >= min_matches) {
 #pragma omp critical(lr_reads_in_node)
                             {
-                                nodes_in_read[read.id].push_back(rm.node);
+                                if (nodes_in_read.size() < rm.read_id) {nodes_in_read.resize(rm.read_id+100000);}
+                                nodes_in_read[rm.read_id].push_back(rm.node);
                             }
                             mapped_count++;
                         }
@@ -137,17 +139,27 @@ public:
             }
 
         }
-        std::cout << k << "-mers found " << kmers_found <<std::endl;
+        std::cout << int(k) << "-mers found " << kmers_found <<std::endl;
         std::cout<<"Reads mapped: "<<mapped_count<<" / "<<total_count<<std::endl;
 
+        reads_in_node.resize(sg.nodes.size()+1);
         for (auto read = nodes_in_read.cbegin(); read != nodes_in_read.cend(); ++read){
             for (const auto &node:*read) {
-                reads_in_node[node].push_back(read - nodes_in_read.cbegin());
+                reads_in_node[std::abs(node)].push_back(read - nodes_in_read.cbegin());
             }
         }
 
         return mapped_count;
     }
+
+    std::array<std::set<uint32_t>, 4> getReadSets(std::array<sgNodeID_t,4> &nodes) {
+        std::array<std::set<uint32_t>, 4> readIDs;
+        readIDs[0].insert(reads_in_node[std::abs(nodes[0])].cbegin(), reads_in_node[std::abs(nodes[0])].cend());
+        readIDs[1].insert(reads_in_node[std::abs(nodes[1])].cbegin(), reads_in_node[std::abs(nodes[1])].cend());
+        readIDs[2].insert(reads_in_node[std::abs(nodes[2])].cbegin(), reads_in_node[std::abs(nodes[2])].cend());
+        readIDs[3].insert(reads_in_node[std::abs(nodes[3])].cbegin(), reads_in_node[std::abs(nodes[3])].cend());
+        return readIDs;
+    };
 };
 
 
