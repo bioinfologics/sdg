@@ -130,3 +130,28 @@ void LinkedReadsDatastore::get_read_sequence_fd(size_t readID, int fd1, int fd2,
 bsg10xTag LinkedReadsDatastore::get_read_tag(size_t readID) {
     return read_tag[(readID-1)/2];
 }
+
+const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {
+    if (0==readID%2){
+        auto pos_in_file=readID/2-1;
+        size_t read_offset_in_file;
+        read_offset_in_file=datastore.group_offset2[pos_in_file/group_size]+datastore.read_offset[readID];
+        if (read_offset_in_file<buffer2_offset or read_offset_in_file+chunk_size>buffer2_offset+bufsize) {
+            buffer2_offset=read_offset_in_file;
+            lseek(fd2,read_offset_in_file,SEEK_SET);
+            read(fd2,buffer2,bufsize);
+        }
+        return buffer2+(read_offset_in_file-buffer2_offset);
+
+    } else {
+        auto pos_in_file=readID/2;
+        size_t read_offset_in_file;
+        read_offset_in_file=datastore.group_offset1[pos_in_file/group_size]+datastore.read_offset[readID];
+        if (read_offset_in_file<buffer1_offset or read_offset_in_file+chunk_size>buffer1_offset+bufsize) {
+            buffer1_offset=read_offset_in_file;
+            lseek(fd1,read_offset_in_file,SEEK_SET);
+            read(fd1,buffer1,bufsize);
+        }
+        return buffer1+(read_offset_in_file-buffer1_offset);
+    }
+}
