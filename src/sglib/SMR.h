@@ -570,7 +570,6 @@ private:
         outf.unsetf(std::ios::skipws);
 
         uint64_t numElements;
-        outf.seekg(0, std::ios::end);
         outf >> numElements;
         // reserve capacity
         std::vector<RecordType> vec;
