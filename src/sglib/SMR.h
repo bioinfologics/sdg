@@ -180,7 +180,7 @@ public:
      * Filtered vector of RecordType elements
      */
     std::vector<RecordType> process_from_memory() {
-        tmpInstance = sglib::create_temp_directory(tmpBase);
+        tmpInstance = sglib::create_temp_directory(tmpBase) + "/";
 
         uint64_t numFileRecords(0);
 
@@ -197,9 +197,10 @@ public:
         end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;
         sglib::OutputLog(sglib::DEBUG) << "Done reduction in " << elapsed_seconds.count() << "s" << std::endl;
-        sglib::remove_directory(tmpInstance);
         //TODO: remove instance / never create the final files?
-        return getRecords();
+        std::vector<RecordType> result(getRecords());
+        sglib::remove_directory(tmpInstance);
+        return result;
     };
 
     /**
@@ -566,11 +567,8 @@ private:
 
     std::vector<RecordType> readFinalkc(std::string finalFile) {
         std::ifstream outf(finalFile, std::ios_base::binary);
-
-        outf.unsetf(std::ios::skipws);
-
         uint64_t numElements;
-        outf >> numElements;
+        outf.read(reinterpret_cast<char *>(&numElements), sizeof(numElements));
         // reserve capacity
         std::vector<RecordType> vec;
         vec.reserve(numElements);
