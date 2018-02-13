@@ -35,8 +35,9 @@ public:
 
         // Get the unique_kmers from the graph into a map
         std::cout << "Indexing graph... " << std::endl;
-        std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;
-        for (auto &kidx :kmerIDX_SMR.process_from_memory()) kmer_to_graphposition[kidx.kmer]={kidx.contigID,kidx.pos};
+        auto kmers(kmerIDX_SMR.process_from_memory());
+
+        for (auto &kidx : kmers) kmer_to_graphposition[kidx.kmer]={kidx.contigID,kidx.pos};
 
         std::vector<uint64_t> uniqKmer_statistics(kmerIDX_SMR.summaryStatistics());
         std::cout << "Number of sequences in graph: " << uniqKmer_statistics[2] << std::endl;
