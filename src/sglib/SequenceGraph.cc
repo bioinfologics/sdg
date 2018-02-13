@@ -617,7 +617,7 @@ bool SequenceGraphPath::is_canonical() {
     return this->get_sequence()<rp.get_sequence();
 }
 
-std::vector<sgNodeID_t > SequenceGraph::find_repeaty_nodes() {
+std::vector<sgNodeID_t > SequenceGraph::find_canonical_repeats() {
     std::vector<sgNodeID_t > repeaty_nodes;
 
     uint64_t count=0, l700=0,l2000=0,l4000=0,l10000=0,big=0,checked=0,solvable=0;
@@ -625,7 +625,7 @@ std::vector<sgNodeID_t > SequenceGraph::find_repeaty_nodes() {
     for (sgNodeID_t n=1; n < nodes.size(); ++n) {
         auto nfw_links = get_fw_links(n).size();
         auto nbw_links = get_bw_links(n).size();
-        if ( nfw_links == nbw_links and nfw_links>1){
+        if ( nfw_links == nbw_links and nfw_links==2){
             ++count;
 
             if (nodes[n].sequence.size() < 700) ++l700;

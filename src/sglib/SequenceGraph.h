@@ -12,6 +12,8 @@
 #include <unordered_map>
 #include <set>
 #include <iostream>
+#include <array>
+
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
 
 enum sgNodeStatus_t {sgNodeActive,sgNodeDeleted};
@@ -99,7 +101,13 @@ public:
 
     void consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes);
 
-    std::vector<sgNodeID_t > find_repeaty_nodes();
+    std::vector<sgNodeID_t > find_canonical_repeats();
+    bool is_loop(std::array<sgNodeID_t, 4> nodes) {
+        for (auto j = 0; j < 3; ++j)
+            for (auto i = j + 1; i < 4; ++i)
+                if (nodes[i] == nodes[j] or nodes[i] == -nodes[j]) return true; //looping node
+        return false;
+    }
 };
 
 
