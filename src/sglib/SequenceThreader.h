@@ -48,7 +48,7 @@ public:
     double POPUKM() const;
 };
 
-class SequenceMapper {
+class SequenceThreader {
     typedef std::unordered_map<seqID_t, std::vector<SequenceMapping>> SequenceMappingStore;
     typedef std::unordered_map<seqID_t, std::vector<std::vector<SequenceMapping>>> SequenceMappingPathsStore;
 
@@ -66,7 +66,7 @@ private:
     void map_sequences_from_file(uint64_t min_matches, const std::string& filename);
 
 public:
-    SequenceMapper(SequenceGraph &_sg, uint8_t _k = 31) : sg(_sg), k(_k), graph_kmer_index(sg, _k) {}
+    SequenceThreader(SequenceGraph &_sg, uint8_t _k = 31) : sg(_sg), k(_k), graph_kmer_index(sg, _k) {}
 
     void map_sequences(uint64_t min_matches, const std::string& filename, const std::string& output) {
         output_prefix = output;

@@ -2,7 +2,7 @@
 // Created by Ben Ward (EI) on 29/01/2018.
 //
 
-#include "SequenceMapper.h"
+#include "SequenceThreader.h"
 #include "factories/KmerIDXFactory.h"
 #include <numeric>
 
@@ -114,7 +114,7 @@ double SequenceMapping::POPUKM() const {
 }
 
 
-void SequenceMapper::map_sequences_from_file(const uint64_t min_matches, const std::string& filename) {
+void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const std::string& filename) {
 
     std::cout << "Mapping sequence kmers to graph..." << std::endl;
     FastaReader<FastaRecord> fastaReader({0}, filename);
@@ -134,7 +134,7 @@ void SequenceMapper::map_sequences_from_file(const uint64_t min_matches, const s
         }
 
         while (c) {
-            mapping.initiate_mapping((uint64_t)sequence.id);
+            mapping.initiate_mapping((uint64_t) sequence.id);
 
             // get all Kmers from sequence.
             seqkmers.clear();
@@ -190,55 +190,55 @@ void SequenceMapper::map_sequences_from_file(const uint64_t min_matches, const s
     std::cout << "Mapped " << mapped_kmers_count << " Kmers from " << sequence_count << " sequences." << std::endl;
 }
 
-void SequenceMapper::mappings_paths() {
-    for(auto sequence_mappings = mappings_of_sequence.begin(); sequence_mappings != mappings_of_sequence.end(); ++sequence_mappings) {
+void SequenceThreader::mappings_paths() {
+    for(const auto& sequence_mappings : mappings_of_sequence) {
 
         // For every sequence, initialize and empty sequence path, and a vector to store constructed paths.
-        std::cout << "Constructing mapping paths for sequence: " << sequence_mappings -> first << std::endl;
+        std::cout << "Constructing mapping paths for sequence: " << sequence_mappings.first << std::endl;
         SequenceGraphPath sgpath(sg);
         std::vector<std::vector<SequenceMapping>> seq_mapping_paths(0);
         std::vector<SequenceMapping> mapping_path(0);
 
-        for(const auto &sm:sequence_mappings->second) {
+        for(const auto &sm:sequence_mappings.second) {
 
             // For every mapping hit the sequence has, try to append the node of the mapping hit to the current path.
 
-            std::cout << "CONSIDERING THE FOLLOWING MAPPING:" << std::endl << sm << std::endl;
+            //std::cout << "CONSIDERING THE FOLLOWING MAPPING:" << std::endl << sm << std::endl;
 
             //sgNodeID_t dirnode = sm.node_direction() == Forward ? sm.absnode() : -sm.absnode();
             auto dn = sm.dirnode();
 
-            std::cout << "Trying to add to path as: " << dn << std::endl;
+            //std::cout << "Trying to add to path as: " << dn << std::endl;
 
             bool could_append = sgpath.append_to_path(dn);
 
             if (could_append) {
-                std::cout << "Was able to append " << dn << " to the path." << std::endl;
-                std::cout << "Adding mapping to the path of mappings." << std::endl;
+                //std::cout << "Was able to append " << dn << " to the path." << std::endl;
+                //std::cout << "Adding mapping to the path of mappings." << std::endl;
                 mapping_path.emplace_back(sm);
-                std::cout << "Current path of mappings is " << mapping_path.size() << " nodes long." << std::endl;
+                //std::cout << "Current path of mappings is " << mapping_path.size() << " nodes long." << std::endl;
             } else {
-                std::cout << "Was not able to append " << dn << " to the path." << std::endl;
-                std::cout << "Saving current path." << std::endl;
+                //std::cout << "Was not able to append " << dn << " to the path." << std::endl;
+                //std::cout << "Saving current path." << std::endl;
                 seq_mapping_paths.emplace_back(mapping_path);
-                std::cout << "Clearing path to start a new path." << std::endl;
+                //std::cout << "Clearing path to start a new path." << std::endl;
                 mapping_path.clear();
                 sgpath.nodes.clear();
-                std::cout << "ADDING NODE TO NEW PATH..." << std::endl;
+                //std::cout << "ADDING NODE TO NEW PATH..." << std::endl;
                 sgpath.append_to_path(dn);
                 mapping_path.emplace_back(sm);
-                std::cout << "Current path of mappings is " << mapping_path.size() << " nodes long." << std::endl;
+                //std::cout << "Current path of mappings is " << mapping_path.size() << " nodes long." << std::endl;
             }
         }
 
         seq_mapping_paths.emplace_back(mapping_path);
-        paths_of_mappings_of_sequence[sequence_mappings -> first] = seq_mapping_paths;
+        paths_of_mappings_of_sequence[sequence_mappings.first] = seq_mapping_paths;
 
     }
 
 }
 
-void SequenceMapper::paths_to_fasta(std::ofstream& output_file) const {
+void SequenceThreader::paths_to_fasta(std::ofstream& output_file) const {
     for(const auto& sp : paths_of_mappings_of_sequence) {
         for(const auto& mapping_path : sp.second) {
             std::vector<sgNodeID_t> nodes;
@@ -251,30 +251,6 @@ void SequenceMapper::paths_to_fasta(std::ofstream& output_file) const {
             }
             auto sequence = p.get_sequence();
             output_file << std::endl << sequence << std::endl;
-        }
-    }
-}
-
-void SequenceMapper::paint_paths(GraphDrawer& gd) const {
-    std::accumulate(
-            paths_of_mappings_of_sequence.begin(),
-            paths_of_mappings_of_sequence.end(),
-            0,
-            [](int a, int b){
-
-            });
-    auto hsv_colours = gd.brew_colours(paths_of_mappings_of_sequence.size());
-    auto abspathid = 0;
-    for (const auto& it : paths_of_mappings_of_sequence) {
-        auto pathid = 0;
-        for (const auto &path:it.second) {
-            SequenceGraphPath sgp(sg);
-            for (const auto &sm:path) {
-                sgp.append_to_path(sm.dirnode());
-            }
-            gd.add_path("mappingpath_" + std::to_string(pathid) + "_sequence_" + std::to_string(it.first), sgp, hsv_colours[abspathid], false);
-            pathid++;
-            abspathid++;
         }
     }
 }

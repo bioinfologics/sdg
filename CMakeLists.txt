@@ -141,8 +141,8 @@ add_library(sequence_graph SHARED
             src/sglib/SequenceGraph.cc
             src/sglib/UniqueKmerIndex.h
             src/sglib/UniqueKmerIndex.cpp
-            src/sglib/SequenceMapper.h
-            src/sglib/SequenceMapper.cpp
+        src/sglib/SequenceThreader.h
+        src/sglib/SequenceThreader.cpp
             src/sglib/GraphDrawer.h
             src/sglib/GraphDrawer.cpp
             src/sglib/PairedReadMapper.hpp
@@ -186,7 +186,7 @@ add_executable(seq-sorter
                src/seq-sorter.cpp)
 
 add_executable(ref-aligner
-        src/seq-mapper.cpp)
+        src/seq-thread.cpp)
 
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
