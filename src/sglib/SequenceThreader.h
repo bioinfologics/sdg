@@ -10,7 +10,6 @@
 #include <fstream>
 #include <vector>
 #include "UniqueKmerIndex.h"
-#include "GraphDrawer.h"
 
 typedef uint64_t seqID_t;
 
@@ -100,7 +99,6 @@ public:
     }
 
     void paths_to_fasta(std::ofstream& output_file) const;
-    void paint_paths(GraphDrawer& gd) const;
 };
 
 
