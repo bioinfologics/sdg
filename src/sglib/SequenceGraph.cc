@@ -441,13 +441,13 @@ void SequenceGraph::write_to_gfa(std::string filename){
 
     for (auto &ls:links){
         for (auto &l:ls)
-            if (l.source<=l.dest) {
-                gfaf<<"L\t";
-                if (l.source>0) gfaf<<"seq"<<l.source<<"\t-\t";
-                else gfaf<<"seq"<<-l.source<<"\t+\t";
-                if (l.dest>0) gfaf<<"seq"<<l.dest<<"\t+\t";
-                else gfaf<<"seq"<<-l.dest<<"\t-\t";
-                gfaf<<(l.dist<0 ? -l.dist : 0)<<"M"<<std::endl;
+            if (l.source <= l.dest) {
+                gfaf << "L\t";
+                if (l.source > 0) gfaf << "seq" << l.source << "\t-\t";
+                else gfaf << "seq" << -l.source << "\t+\t";
+                if (l.dest > 0) gfaf << "seq" << l.dest << "\t+\t";
+                else gfaf << "seq" << -l.dest << "\t-\t";
+                gfaf << (l.dist < 0 ? -l.dist : 0) << "M" << std::endl;
             }
     }
 
@@ -486,36 +486,38 @@ std::string SequenceGraphPath::get_fasta_header() {
 }
 
 std::string SequenceGraphPath::get_sequence() {
-    std::string s="";
-    sgNodeID_t pnode=0;
+    std::string s = "";
+    sgNodeID_t pnode = 0;
     // just iterate over every node in path - contig names are converted to ids at construction
     for (auto &n:nodes) {
         std::string nseq;
         if (n>0){
-            nseq=sg.nodes[n].sequence;
+            nseq = sg.nodes[n].sequence;
         } else {
-            auto rcn=sg.nodes[-n];
+            auto rcn = sg.nodes[-n];
             rcn.make_rc();
-            nseq=rcn.sequence;
+            nseq = rcn.sequence;
         }
-        if (pnode !=0){
-            //find link between pnode' output (+pnode) and n's sink (-n)
-            auto l=sg.links[(pnode>0 ? pnode:-pnode)].begin();
-            for (;l!=sg.links[(pnode>0 ? pnode:-pnode)].end();++l)
-                if (l->source==pnode and l->dest==n) break;
-            if (l==sg.links[(pnode>0 ? pnode:-pnode)].end()) {
-                std::cout<<"can't find a link between "<<pnode<<" and "<<-n<<std::endl;
+        if (pnode != 0){
+            // find link between pnode' output (+pnode) and n's sink (-n)
+            auto l = sg.links[std::abs(pnode)].begin();
+            for (; l != sg.links[std::abs(pnode)].end(); ++l){
+                if (l->source == pnode and l->dest == n) break;
+            }
+
+            if (l == sg.links[std::abs(pnode)].end()) {
+                std::cout << "can't find a link between " << pnode << " and " << -n << std::endl;
                 throw std::runtime_error("path has no link");
             } else {
-                if (l->dist>0){
-                    for (auto c=l->dist;c>0;--c) s+="N";
+                if (l->dist > 0){
+                    for (auto c = l->dist; c > 0; --c) s += "N";
                 }
                 else {
-                    auto ovl=-l->dist;
-                    for (auto s1=s.c_str()+s.size()-ovl,s2=nseq.c_str();*s1!=NULL;++s1,++s2)
-                        if (*s1!=*s2)
+                    auto ovl =- l->dist;
+                    for (auto s1 = s.c_str() + s.size() - ovl, s2 = nseq.c_str(); *s1 != NULL; ++s1, ++s2)
+                        if (*s1 != *s2)
                             throw std::runtime_error("path overlap is invalid!");
-                    nseq.erase(0,ovl);
+                    nseq.erase(0, ovl);
                 }
             }
         }

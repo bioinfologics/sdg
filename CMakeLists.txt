@@ -139,6 +139,10 @@ add_library(sequence_graph SHARED
             src/sglib/factories/KMerIDXFactory.h
             src/sglib/SequenceGraph.hpp
             src/sglib/SequenceGraph.cc
+            src/sglib/UniqueKmerIndex.h
+            src/sglib/UniqueKmerIndex.cpp
+            src/sglib/SequenceThreader.h
+            src/sglib/SequenceThreader.cpp
             src/sglib/PairedReadMapper.hpp
             src/sglib/PairedReadMapper.cc
             src/sglib/HaplotypeScorer.hpp
@@ -179,9 +183,13 @@ add_executable(kc_comp
 add_executable(seq-sorter
                src/seq-sorter.cpp)
 
+add_executable(ref-aligner
+        src/seq-thread.cpp)
+
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries (phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(ref-aligner sequence_graph)

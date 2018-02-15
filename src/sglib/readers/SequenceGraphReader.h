@@ -5,11 +5,11 @@
 #ifndef SG_SEQUENCEGRAPHREADER_H
 #define SG_SEQUENCEGRAPHREADER_H
 #include "Common.h"
+#include "../SequenceGraph.hpp"
 
 /*
  * Pseudo-reader that gets its sequences from the nodes of the graph.
  */
-class SequenceGraph;
 struct GraphNodeReaderParams {
     uint32_t min_length;
     const SequenceGraph& sgp;

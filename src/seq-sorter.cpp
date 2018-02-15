@@ -83,18 +83,18 @@ int main(int argc, char **argv) {
         if (asm_filename.empty()) {
             std::cout << "Error: The assembly file parameter wasn't specified, " << std::endl
                       << "Use option --help to check command line arguments." << std::endl;
-            fail=true;
+            fail = true;
         } else if (!std::ifstream(asm_filename)) {
             std::cout << asm_filename << " does not exist" << std::endl;
-            fail=true;
+            fail = true;
         }
         if (fastq_filename.empty()) {
             std::cout << "Error: The read file parameter wasn't specified, " << std::endl
                       << "Use option --help to check command line arguments." << std::endl;
-            fail=true;
+            fail = true;
         } else if (!std::ifstream(fastq_filename)) {
             std::cout << fastq_filename << " does not exist" << std::endl;
-            fail=true;
+            fail = true;
         }
 
         if (fail) {

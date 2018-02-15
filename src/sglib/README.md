@@ -12,7 +12,7 @@ sink (-) to source (+) in a canonical representation.
 end/source side marked '+'.
 * Nodes are canonical or palindromic sequences, else they are reverted.
 * Links are basically a pair of nodes with signs. +node denotes a connection using
-a node's source (end) and -node denotes a conection using a node's sink (start)
+a node's source (end) and -node denotes a connection using a node's sink (start)
 * Both nodes and links can be active or historical, and can be purged. See Operations.
 
 ### Graph operations
