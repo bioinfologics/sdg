@@ -7,9 +7,6 @@
 #include <sglib/factories/ContigBlockFactory.h>
 #include <sglib/mappers/LongReadMapper.h>
 #include "cxxopts.hpp"
-#include "sglib/SequenceGraph.h"
-#include "sglib/Scaffolder.hpp"
-#include "sglib/GraphPartitioner.hpp"
 
 
 int main(int argc, char * argv[]) {
@@ -71,12 +68,18 @@ int main(int argc, char * argv[]) {
     unsigned int K = 15;
     uint16_t min_matches = 2;
 
-    LongReadMapper rm(K, sg);
-    rm.map_reads(min_matches, long_reads);
+    LongReadMapper rm(K, 5, sg);
+    rm.map_reads(long_reads, 500);
+    /*
+     * Print the length of the node and the number of mapped reads
+     */
+    std::ofstream length_to_numMapped("NodesReadsMapped.tsv");
+    length_to_numMapped << "length\tnumMapped\n";
+    for (size_t i = 1; i< rm.reads_in_node.size(); ++i) {
+        length_to_numMapped << sg.nodes[i].sequence.length() << "\t" << rm.reads_in_node[i].size() << "\n";
+    }
 
     auto repeatyNodes (sg.find_canonical_repeats());
-    std::vector<SequenceGraphPath> solvable_paths;
-
     // For each repeaty node
     unsigned int loops = 0;
     std::vector<SequenceGraphPath> paths_solved;
@@ -90,6 +93,7 @@ int main(int argc, char * argv[]) {
                  backward_links[0].dest,backward_links[1].dest}; // bwdA,bwdB
         if (sg.is_loop(nodeIDs)) {
             loops++;
+            sglib::OutputLog() << "This repeat is loopy" << std::endl;
             continue;
         }
         // Find the reads that cross those nodes
@@ -102,14 +106,22 @@ int main(int argc, char * argv[]) {
         std::set_intersection(readIDs[0].cbegin(),readIDs[0].cend(),readIDs[3].cbegin(),readIDs[3].cend(), std::inserter(AB,AB.end()));
         std::set_intersection(readIDs[1].cbegin(),readIDs[1].cend(),readIDs[2].cbegin(),readIDs[2].cend(), std::inserter(BA,BA.end()));
         std::set_intersection(readIDs[1].cbegin(),readIDs[1].cend(),readIDs[3].cbegin(),readIDs[3].cend(), std::inserter(BB,BB.end()));
+
+        sglib::OutputLog() <<"Long reads in "
+                << "fA(" << sg.nodes[std::abs(nodeIDs[0])].sequence.length() << "): " << ""<<readIDs[0].size() << " "
+                << "fB(" << sg.nodes[std::abs(nodeIDs[1])].sequence.length() << "): " << ""<<readIDs[1].size() << " "
+                << "bA(" << sg.nodes[std::abs(nodeIDs[2])].sequence.length() << "): " << ""<<readIDs[2].size() << " "
+                << "bB(" << sg.nodes[std::abs(nodeIDs[3])].sequence.length() << "): " << ""<<readIDs[3].size() << "\n";
+        sglib::OutputLog() <<"Paths support AA: "<<AA.size()<<"  BB: "<<BB.size()<<"  AB: "<<AB.size()<<"  BA: "<<BA.size() << std::endl;
+
         if (AA.size() > min_coverage and BB.size() > min_coverage and
             std::min(AA.size(), BB.size()) > set_distance_ratio * std::max(AB.size(), BA.size())) {
-            //std::cout << " Solved as AA BB !!!" << std::endl;
+            sglib::OutputLog() << " Solved as AA BB !!!" << std::endl;
             paths_solved.push_back(SequenceGraphPath(sg, {-nodeIDs[2], central_repeat_node, nodeIDs[0]}));  // AA
             paths_solved.push_back(SequenceGraphPath(sg, {-nodeIDs[3], central_repeat_node, nodeIDs[1]}));  // BB
         } else if (BA.size() > min_coverage and AB.size() > min_coverage and
                    std::min(BA.size(), AB.size()) > set_distance_ratio * std::max(AA.size(), BB.size())) {
-            //std::cout << " Solved as AB BA !!!" << std::endl;
+            sglib::OutputLog() << " Solved as AB BA !!!" << std::endl;
             paths_solved.push_back(SequenceGraphPath(sg, {-nodeIDs[3], central_repeat_node, nodeIDs[0]}));  // AB
             paths_solved.push_back(SequenceGraphPath(sg, {-nodeIDs[2], central_repeat_node, nodeIDs[1]}));  // BA
         }
@@ -117,7 +129,7 @@ int main(int argc, char * argv[]) {
         sglib::OutputLog() <<"Repeat: [ "<< -nodeIDs[2] <<" | "<< -nodeIDs[3] <<" ] <-> "<< central_repeat_node <<" <-> [ "<< nodeIDs[0] <<" | " << nodeIDs[1] <<" ]"<<std::endl;
 
     }
-    sglib::OutputLog() << repeatyNodes.size() << " repeat nodes generated " << solvable_paths.size() << " solvable paths" << std::endl;
+    sglib::OutputLog() << repeatyNodes.size() << " repeat nodes generated " << paths_solved.size() << " solvable paths" << std::endl;
     sglib::OutputLog() << loops << " loops found in repeat nodes" << std::endl;
     sg.write_to_gfa("salida.gfa");
 }

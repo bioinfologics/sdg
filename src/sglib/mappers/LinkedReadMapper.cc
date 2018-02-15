@@ -47,7 +47,7 @@ void LinkedReadMapper::update_graph_index() {
     std::cout << "Number of " << int(k) << "-kmers in graph index " << uniqKmer_statistics[1] << std::endl;
 }
 
-void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
+void LinkedReadMapper::map_reads(std::unordered_set<uint64_t> const &reads_to_remap) {
     const int k = 31;
     std::cout<<"mapping reads!!!"<<std::endl;
     std::cout<<reads_to_remap.size()<<" selected reads"<<std::endl;
