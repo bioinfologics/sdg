@@ -1,23 +1,8 @@
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.0)
 
 if (POLICY CMP0048)
     cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
-
-IF (MY_COMPILER_OPTION STREQUAL "Intel")
-    FIND_PROGRAM(ICPC_PROGRAM icpc ...)
-    IF(ICPC_PROGRAM)
-        MESSAGE(STATUS "** Compiling with Intel settings **")
-        IF(ENV{CXX})
-            MESSAGE(WARNING "Overwriting CXX envvar")
-        ENDIF()
-        SET(ENV{CXX} "${ICPC_PROGRAM}")
-        SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -w")
-        SET(CMAKE_CXX_FLAGS_DEBUG "-g")
-    ELSE()
-        MESSAGE(FATAL_ERROR "Intel compiler not found")
-    ENDIF()
-ENDIF ()
 
 if (APPLE)
        set(CMAKE_MACOSX_RPATH ON)
@@ -93,12 +78,14 @@ find_package(ZLIB REQUIRED)
 if (ZLIB_FOUND)
     add_definitions(-DHAVE_ZLIB)
     include_directories(${ZLIB_INCLUDE_DIRS})
+    set(DEPENDENCY_LIBS ${DEPENDENCY_LIBS} ${ZLIB_LIBRARIES})
 endif()
 
-find_package(BZip2 REQUIRED)
+find_package(BZip2)
 if (BZIP2_FOUND)
     add_definitions(-DHAVE_BZIP2)
     include_directories(${BZIP2_INCLUDE_DIRS})
+    set(DEPENDENCY_LIBS ${DEPENDENCY_LIBS} ${BZIP2_LIBRARIES})
 endif()
 
 # first we can indicate the documentation build as an option and set it to ON by default
@@ -165,13 +152,13 @@ add_library(sequence_graph SHARED
             src/sglib/logger/OutputLog.cc
             )
 
-target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 
 set_target_properties(sequence_graph PROPERTIES
                       COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
                       LINK_FLAGS    "--coverage")
 
-target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 
 install(TARGETS sequence_graph DESTINATION lib)
 install(FILES
@@ -230,6 +217,9 @@ add_executable(repeat_resolver
 add_executable(map-lr
                src/map-lr.cc)
 
+add_executable(gfa-extract
+        src/gfa-extract.cc)
+
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
@@ -239,6 +229,7 @@ target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(repeat_resolver sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(map-lr sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(gfa-extract sequence_graph)
 
 IF(BUILD_TESTING)
     add_executable(runBasicTests tests/sglib/basic_check.cc)
