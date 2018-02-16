@@ -17,7 +17,7 @@ int main(int argc, char * argv[]) {
     bool stats_only(false);
     try {
 //@formatter:off
-        cxxopts::Options options("lr_repeat_resolver", "Long read repeat resolution");
+        cxxopts::Options options("map-lr", "LongRead Mapper");
         options.add_options()
                 ("help", "Print help", cxxopts::value<std::string>(),"")
                 ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename), "filepath")
@@ -73,11 +73,6 @@ int main(int argc, char * argv[]) {
     /*
      * Print the length of the node and the number of mapped reads
      */
-    std::ofstream length_to_numMapped("NodesReadsMapped.tsv");
-    length_to_numMapped << "length\tnumMapped\n";
-    for (size_t i = 1; i< rm.reads_in_node.size(); ++i) {
-        length_to_numMapped << sg.nodes[i].sequence.length() << "\t" << rm.reads_in_node[i].size() << "\n";
-    }
 
     auto repeatyNodes (sg.find_canonical_repeats());
     // For each repeaty node

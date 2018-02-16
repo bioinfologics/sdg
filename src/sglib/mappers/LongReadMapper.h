@@ -75,9 +75,11 @@ public:
         std::set<MinPosIDX> sketch;
         FastqRecord read;
         while(fastqReader.next_record(read)) {
-            std::cout << "Mapping read " << read.name << std::endl;
             std::vector<Hit> hits;
             kf.getMinSketch(read.seq, sketch);
+            std::cout << "Mapping read " << read.name << " sketch size " << sketch.size() << std::endl;
+            std::copy(sketch.begin(), sketch.end(), std::ostream_iterator<MinPosIDX>(std::cout, ","));
+            std::cout << std::endl;
             for (const auto &sk:sketch){
                 std::unordered_map<uint64_t, std::vector<graphStrandPos>>::const_iterator foundKey(kmer_to_graphposition.find(sk.hash));
                 if (foundKey == kmer_to_graphposition.end()) continue;
@@ -115,119 +117,6 @@ public:
         }
     }
 
-    /*
-    uint64_t map_reads(const uint16_t min_matches, std::string filename) {
-        if (min_matches < 2 ) {
-            throw std::invalid_argument("min_matches < 2, long reads can only be considered mapped if > 2 kmers are shared between read and sequence");
-        }
-        std::ofstream length_to_numMapped("ReadsNodesMapped.tsv");
-        length_to_numMapped << "readLength\tnumMapped\n";
-        FastqReader<FastqRecord> fastqReader({0},filename);
-        std::atomic<uint64_t> mapped_count(1);
-        std::atomic<uint64_t> total_count(0);
-        unsigned int kmers_found=0;
-#pragma omp parallel shared(fastqReader) reduction(+:kmers_found)
-        {
-            FastqRecord read;
-            std::vector<KmerIDX> readkmers;
-            kmerIDXFactory<FastqRecord> kf({this->k});
-            ReadMapping mapping;
-            bool c ;
-#pragma omp critical(lr_fastq_reader)
-            {
-                c = fastqReader.next_record(read);
-            }
-            while (c) {
-                mapping.read_id = read.id+1;
-                //this enables partial read re-mapping by setting read_to_node to 0
-                if (nodes_in_read.size()<=mapping.read_id or nodes_in_read[mapping.read_id].empty()) {
-                    mapping.node = 0;
-                    mapping.unique_matches = 0;
-                    mapping.first_pos = 0;
-                    mapping.last_pos = 0;
-                    mapping.rev = false;
-                    mapping.unique_matches = 0;
-                    //get all kmers from read
-                    readkmers.clear();
-
-                    kf.setFileRecord(read);
-                    kf.next_element(readkmers);
-
-                    // For each kmer on read
-                    std::vector<ReadMapping> read_mappings;
-                    for (auto &rk:readkmers) {
-                        const auto nk = kmer_to_graphposition.find(rk.kmer);
-                        // If kmer exists on graph
-                        if (nk != kmer_to_graphposition.cend()) {
-                            kmers_found++;
-                            // If first match
-                            if (mapping.node == 0) {
-                                mapping.node = nk->second.node;
-                                if ((nk->second.node > 0 and rk.contigID > 0) or
-                                    (nk->second.node < 0 and rk.contigID < 0))
-                                    mapping.rev = false;
-                                else mapping.rev = true;
-                                mapping.first_pos = nk->second.pos;
-                                mapping.last_pos = nk->second.pos;
-                                mapping.unique_matches = 1;
-                            }// If not first match
-                            else {
-                                // If node is different, end match... Start new one
-                                if (mapping.node != nk->second.node) {
-                                    read_mappings.push_back(mapping);
-                                    mapping.node = nk->second.node;
-                                    mapping.first_pos = nk->second.pos;
-                                    mapping.last_pos = nk->second.pos;
-                                    mapping.unique_matches=1;
-                                } else {
-                                    mapping.unique_matches++;
-                                    mapping.last_pos = nk->second.pos;
-                                }
-                            }
-                        }
-                    }
-                    // TODO : Check if this last push_back is required
-                    if (mapping.node != 0) read_mappings.push_back(mapping);
-
-                    unsigned int mappedNodes(0);
-                    for (auto &rm:read_mappings) {
-                        if (rm.node != 0 and rm.unique_matches >= min_matches) {
-#pragma omp critical(lr_reads_in_node)
-                            {
-                                if (nodes_in_read.size() < rm.read_id) { nodes_in_read.resize(rm.read_id + 100000); }
-                                nodes_in_read[rm.read_id].push_back(rm.node);
-                            }
-                            mapped_count++;
-                            mappedNodes++;
-                        }
-
-                    }
-#pragma omp critical(log_mapped_count)
-                    length_to_numMapped << read.seq.length() << "\t" << mappedNodes << "\n";
-                }
-                auto tc = ++total_count;
-                if (tc % 100000 == 0) std::cout << mapped_count << " / " << tc << std::endl;
-#pragma omp critical(lr_fastq_reader)
-                {
-                    c = fastqReader.next_record(read);
-                }
-            }
-
-        }
-        std::cout << int(k) << "-mers found " << kmers_found <<std::endl;
-        std::cout<<"Reads mapped: "<<mapped_count<<" / "<<total_count<<std::endl;
-
-        reads_in_node.resize(sg.nodes.size()+1);
-        for (auto read = nodes_in_read.cbegin(); read != nodes_in_read.cend(); ++read){
-            for (const auto &node:*read) {
-                reads_in_node[std::abs(node)].push_back(read - nodes_in_read.cbegin());
-            }
-        }
-
-        return mapped_count;
-    }
-
-*/
     uint64_t map_reads(std::unordered_set<uint64_t> const &  reads_to_remap={}) {
 
     }
