@@ -656,7 +656,7 @@ std::vector<sgNodeID_t > SequenceGraph::find_canonical_repeats() {
 }
 
 std::vector<sgNodeID_t>
-SequenceGraph::depth_first_search(std::vector<sgNodeID_t> &nodes, unsigned int size_limit) {
+SequenceGraph::breath_first_search(std::vector<sgNodeID_t> &nodes, unsigned int size_limit) {
     std::queue<sgNodeID_t> to_visit(std::deque<sgNodeID_t>(nodes.begin(),nodes.end()));
     std::set<sgNodeID_t> visited;
     std::unordered_map<sgNodeID_t, sgNodeID_t > meta;
@@ -675,7 +675,7 @@ SequenceGraph::depth_first_search(std::vector<sgNodeID_t> &nodes, unsigned int s
 }
 
 std::vector<sgNodeID_t>
-SequenceGraph::breath_first_search(std::vector<sgNodeID_t> &seeds, unsigned int size_limit, unsigned int edge_limit) {
+SequenceGraph::depth_first_search(std::vector<sgNodeID_t> &seeds, unsigned int size_limit, unsigned int edge_limit) {
     // Create a stack with the nodes and the path length
     struct visitor {
         sgNodeID_t node;

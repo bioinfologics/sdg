@@ -68,7 +68,7 @@ int main(int argc, char * argv[]) {
     std::cout << std::endl;
     std::cout << "Starting DFS" << std::endl;
 
-    auto subnodes(sg.breath_first_search(nds, size_limit, edge_limit));
+    auto subnodes(sg.depth_first_search(nds, size_limit, edge_limit));
     std::copy(subnodes.begin(), subnodes.end(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
     std::cout << std::endl;
     std::cout << subnodes.size() << " nodes in solution\n";
