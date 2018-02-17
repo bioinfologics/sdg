@@ -4,7 +4,7 @@
 
 
 #include "KmerCompressionIndex.hpp"
-
+#include <atomic>
 
 
 KmerCompressionIndex::KmerCompressionIndex(SequenceGraph &_sg, uint64_t _max_mem): sg(_sg) {
@@ -110,7 +110,7 @@ void KmerCompressionIndex::add_counts_from_file(std::string filename) {
     std::cout<<"counting from file"<<std::endl;
 
     FastqReader<FastqRecord> fastqReader({0},filename);
-    std::atomic_uint64_t present(0), absent(0), rp(0);
+    std::atomic<std::uint64_t> present(0), absent(0), rp(0);
     std::unordered_map<uint64_t,uint64_t> kmer_map;
     for (uint64_t i=0;i<graph_kmers.size();++i) kmer_map[graph_kmers[i].kmer]=i;
 
