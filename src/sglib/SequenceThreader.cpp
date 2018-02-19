@@ -120,7 +120,7 @@ void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const
     FastaReader<FastaRecord> fastaReader({0}, filename);
     std::atomic<uint64_t> mapped_kmers_count(0), sequence_count(0);
 
-#pragma omp parallel shared(fastaReader, mappings_in_node, mappings_of_sequence)
+#pragma omp parallel shared(fastaReader, mappings_of_sequence)
     {
         FastaRecord sequence;
         std::vector<KmerIDX> seqkmers;
