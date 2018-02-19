@@ -675,7 +675,7 @@ SequenceGraph::breath_first_search(std::vector<sgNodeID_t> &nodes, unsigned int 
 }
 
 std::vector<sgNodeID_t>
-SequenceGraph::depth_first_search(std::vector<sgNodeID_t> &seeds, unsigned int size_limit, unsigned int edge_limit) {
+SequenceGraph::depth_first_search(const sgNodeID_t seed, unsigned int size_limit, unsigned int edge_limit, std::set<sgNodeID_t> tabu={}) {
     // Create a stack with the nodes and the path length
     struct visitor {
         sgNodeID_t node;
@@ -684,16 +684,14 @@ SequenceGraph::depth_first_search(std::vector<sgNodeID_t> &seeds, unsigned int s
         visitor(sgNodeID_t n, uint d, uint p) : node(n), dist(d), path_length(p) {}
     };
     std::stack<visitor> to_visit;
-    for (const auto &n : seeds) {
-        to_visit.emplace(n,0,0);
-    }
-    std::set<sgNodeID_t > visited;
+    to_visit.emplace(seed,0,0);
+    std::set<sgNodeID_t > visited(tabu);
     while (!to_visit.empty()) {
         const auto activeNode(to_visit.top());
         to_visit.pop();
         if (visited.find(activeNode.node) == visited.end() and
-                activeNode.path_length < edge_limit and
-                activeNode.dist < size_limit)
+                (activeNode.path_length < edge_limit or edge_limit==0) and
+                (activeNode.dist < size_limit or size_limit==0) )
         {
             visited.emplace(activeNode.node);
             for (const auto &l: get_fw_links(activeNode.node)) {

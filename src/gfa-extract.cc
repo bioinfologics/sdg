@@ -35,10 +35,13 @@ int main(int argc, char * argv[]) {
             exit(0);
         }
         if (result.count("g") != 1) {
-            throw cxxopts::OptionException(" please specify graph file");
+            throw cxxopts::OptionException(" please specify graph file using the -g --gfa flag");
         }
         if (result.count("o") != 1) {
-            throw cxxopts::OptionException(" please specify output prefix");
+            throw cxxopts::OptionException(" please specify output prefix using the -o, --output flag");
+        }
+        if (result.count("n") != 1) {
+            throw cxxopts::OptionException(" please specify the query nodes using the -n --nodes flag");
         }
     } catch (const cxxopts::OptionException &e) {
         std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
@@ -61,17 +64,23 @@ int main(int argc, char * argv[]) {
     sglib::OutputLogLevel = static_cast<sglib::LogLevels>(log_level);
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
-    std::vector<sgNodeID_t > nds{7, 250};
 
     std::cout << std::endl;
     std::cout << std::endl;
     std::cout << std::endl;
     std::cout << "Starting DFS" << std::endl;
-
-    auto subnodes(sg.depth_first_search(nds, size_limit, edge_limit));
+    std::set<sgNodeID_t> subnodes;
+    for (const auto &n:nodes) {
+        // Go forward on n
+        auto v = sg.depth_first_search(n, size_limit, edge_limit, subnodes);
+        subnodes.insert(v.cbegin(),v.cend());
+        // Go backwards on n
+        v = sg.depth_first_search(-n, size_limit, edge_limit, subnodes);
+        subnodes.insert(v.cbegin(),v.cend());
+    }
     std::copy(subnodes.begin(), subnodes.end(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
     std::cout << std::endl;
     std::cout << subnodes.size() << " nodes in solution\n";
-    SequenceSubGraph ssg(sg, subnodes);
+    SequenceSubGraph ssg(sg, std::vector<sgNodeID_t>(subnodes.begin(),subnodes.end()));
 
 }

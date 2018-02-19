@@ -67,7 +67,7 @@ public:
     // find bubbles in component of graph
     std::vector<std::vector<sgNodeID_t >> find_bubbles(std::vector<sgNodeID_t>);
 
-    std::vector<sgNodeID_t> depth_first_search(std::vector<sgNodeID_t> &nodes, unsigned int size_limit, unsigned int edge_limit);
+    std::vector<sgNodeID_t> depth_first_search(sgNodeID_t node, unsigned int size_limit, unsigned int edge_limit, std::set<sgNodeID_t> tabu={});
 
     std::vector<sgNodeID_t> breath_first_search(std::vector<sgNodeID_t> &nodes, unsigned int size_limit);
 
