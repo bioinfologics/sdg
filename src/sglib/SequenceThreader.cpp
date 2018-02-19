@@ -5,6 +5,7 @@
 #include "SequenceThreader.h"
 #include "factories/KMerIDXFactory.h"
 #include <numeric>
+#include <atomic>
 
 SequenceMapping::SequenceMapping(){
     // Just clean the structure, OSX doesn't give you clean memory
