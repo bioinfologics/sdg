@@ -40,7 +40,7 @@ int main(int argc, char * argv[]) {
         if (result.count("o") != 1) {
             throw cxxopts::OptionException(" please specify output prefix using the -o, --output flag");
         }
-        if (result.count("n") != 1) {
+        if (result.count("n") == 0 ) {
             throw cxxopts::OptionException(" please specify the query nodes using the -n --nodes flag");
         }
     } catch (const cxxopts::OptionException &e) {
@@ -71,12 +71,14 @@ int main(int argc, char * argv[]) {
     std::cout << "Starting DFS" << std::endl;
     std::set<sgNodeID_t> subnodes;
     for (const auto &n:nodes) {
+        sglib::OutputLog() << "Processing " << n << std::endl;
         // Go forward on n
         auto v = sg.depth_first_search(n, size_limit, edge_limit, subnodes);
         subnodes.insert(v.cbegin(),v.cend());
         // Go backwards on n
         v = sg.depth_first_search(-n, size_limit, edge_limit, subnodes);
         subnodes.insert(v.cbegin(),v.cend());
+        sglib::OutputLog() << "Done" << std::endl;
     }
     std::copy(subnodes.begin(), subnodes.end(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
     std::cout << std::endl;
