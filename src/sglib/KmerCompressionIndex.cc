@@ -4,6 +4,7 @@
 
 
 #include "KmerCompressionIndex.hpp"
+#include <atomic>
 
 
 
