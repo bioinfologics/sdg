@@ -15,6 +15,8 @@
 #include <numeric>
 #include <unordered_map>
 #include <algorithm>
+#include <iterator>
+#include <map>
 #include "KMerIDXFactory.h"
 
 struct FilterSetParams {
@@ -69,6 +71,7 @@ struct Block {
 
     friend class byReadPos;
     friend class byCount;
+    friend class byContig;
     struct byCount {
         bool operator()(const Block &a, const Block &b) {
             return a.count < b.count;
@@ -77,6 +80,12 @@ struct Block {
     struct byReadPos {
         bool operator()(const Block &a, const Block &o) {
             return std::tie(a.start, a.contigID) < std::tie(o.start, o.contigID);
+        }
+    };
+
+    struct byContig {
+        bool operator()(const Block &a, const Block &o) {
+            return std::tie(a.contigID) < std::tie(o.contigID);
         }
     };
 
@@ -106,7 +115,7 @@ public:
 
     int32_t dirContig;  // Sign indicates direction
     int64_t offset;     // Pos_contig - Pos_read
-    uint32_t readPos;
+    uint32_t readPos;   // Pos on the read
 
     friend std::ostream &operator<<(std::ostream &os, const Match &match) {
         os << "(" << match.dirContig << "," << match.offset
@@ -117,10 +126,16 @@ public:
     }
 
     friend class byCtgOffset;
+    friend class byReadPos;
 
     struct byCtgOffset {
         bool operator()(const Match &a, const Match &b) {
             return std::tie(a.dirContig, a.offset) < std::tie(b.dirContig, b.offset);
+        }
+    };
+    struct byReadPos {
+        bool operator()(const Match &a, const Match &b) {
+            return std::tie(a.readPos) < std::tie(b.readPos);
         }
     };
 };
@@ -216,12 +231,12 @@ public:
             auto curr = prev;
             ++curr;
             for (; curr != matches.cend(); ++curr) {
-                if (blk.contigID == curr->dirContig and abs(curr->offset - prev->offset) < offset_limit) {
+                if (blk.contigID == curr->dirContig and std::abs(curr->offset - prev->offset) < offset_limit) {
                     blk.count++;
                     blk.setEnd(curr->readPos);
                 } else {
                     if (blk.contigID != curr->dirContig) blkDif++;
-                    if (abs(curr->offset - prev->offset) >= offset_limit) offDif++;
+                    if (std::abs(curr->offset - prev->offset) >= offset_limit) offDif++;
                     blocks.push_back(blk);
                     blk = Block(matches.begin()-curr, curr->readPos, curr->dirContig, curr->offset, 1, 0);
                 }
@@ -230,7 +245,7 @@ public:
             blocks.push_back(blk);
         }
         std::sort(blocks.begin(), blocks.end(), typename Block::byReadPos());
-//        read_block_stats << blkDif << "," << offDif; // First 2 values, missing validBlocks
+        read_block_stats << blkDif << "," << offDif; // First 2 values, missing validBlocks
         return blocks;
     }
 
@@ -256,37 +271,72 @@ public:
                     }
                     matches.emplace_back(kmer->contigID * read_kmer.second, offset, p);
                 }
-//                ctg_read << ((kmer != kmers.end()) ? abs(kmer->contigID) : 0) << " ";
+                ctg_read << ((kmer != kmers.end()) ? abs(kmer->contigID) : 0) << " ";
             }
         }
         // Sort matches by contig and offset
-        std::sort(matches.begin(), matches.end(), typename Match::byCtgOffset());
+        std::sort(matches.begin(), matches.end(), typename Match::byReadPos());
         return matches;
+    }
+
+    const std::vector<std::vector<std::pair<int32_t, uint>>> getTop(uint n, std::vector<Match> &matches, uint read_length, uint window) const {
+        std::vector<std::vector<std::pair<int32_t, uint>>> result(1+ read_length/window);
+        if (matches.empty()) return result;
+        auto pos (matches[0].readPos);
+
+        std::vector<Match>::const_iterator m(matches.cbegin());
+        std::vector<std::map<int32_t, uint>> contigMatch_section(1 + read_length/window);
+        for (; m != matches.cend(); ++m){
+            contigMatch_section[m->readPos/window][m->dirContig]++;
+        }
+
+        for (auto s = 0; s!=read_length/window; s++) {
+            std::vector<std::pair<int32_t , uint>> top(n);
+            std::partial_sort_copy(contigMatch_section[s].begin(),
+                                   contigMatch_section[s].end(),
+                                   top.begin(),
+                                   top.end(),
+                                   [](std::pair<const int32_t, uint> const& l,
+                                      std::pair<const int32_t, uint> const& r)
+                                   {
+                                       return l.second > r.second;
+                                   });
+            std::cout << "Section " << s << "\t";
+            for (const auto &t:top) {
+                std::cout << t.first << ':' << t.second << " | ";
+            }
+            std::cout << std::endl;
+            std::copy(top.begin(),top.end(), std::back_inserter(result[s]));
+        }
+        return result;
     }
 
     const bool next_element(std::vector<Block> &blocks) {
         blocks.clear();
 //        std::cout << currentFileRecord.name << "\t" << currentFileRecord.seq.size() << " ";
         bases+=currentFileRecord.seq.size();
-//        read_length << currentFileRecord.name << "," << currentFileRecord.seq.size() << std::endl;
-//        ctg_read << ">" << currentFileRecord.name << "(" << currentFileRecord.seq.size() << ")\n";
-//        ctg_read << std::endl;
+        read_length << currentFileRecord.name << "," << currentFileRecord.seq.size() << std::endl;
+        ctg_read << currentFileRecord.name << "(" << currentFileRecord.seq.size() << ")\n";
+        std::vector<Match> matches = getMatches();  // Return all matches sorted by position in the read
+        ctg_read<<std::endl;
 
-        std::vector<Match> matches = getMatches();
-//        std::copy(matches.begin(),matches.end(),std::ostream_iterator<Match>(std::cout, ";"));std::cout << std::endl;
+        std::cout << currentFileRecord.name << std::endl;
+        // Get contigs by "appearances" and "kmer matches" within 1kbp window for every 1kbp window of the read
+        auto tmpTop = getTop(5, matches, currentFileRecord.seq.length(), 1000);
 
+        std::sort(matches.begin(),matches.end(), typename Match::byCtgOffset());
         // Generate blocks which share the same ctgOffset
-        blocks = getBlocks(matches);
+        auto tmpBlocks = getBlocks(matches);
 
-        // Sort blocks by ReadPos and keep only the valid ones
-//        std::copy_if(blocks.begin(), blocks.end(), std::back_inserter(sortedMatchbyCtgOffset),
-//                     [&](const Match &b) { return isValid(b); });
-//        std::copy(validBlocks.cbegin(), validBlocks.cend(), std::ostream_iterator<Block>(std::cout, ";"));
+//         Sort blocks by ReadPos and keep only the valid ones
+        std::copy_if(tmpBlocks.begin(), tmpBlocks.end(), std::back_inserter(blocks),
+                     [&](const Block &b) { return isValid(b); });
+        std::copy(blocks.cbegin(), blocks.cend(), std::ostream_iterator<Block>(std::cout, ";"));
 
         // print the rest of the parameters for the blocks on this read
-//        read_block_stats << "," << validBlocks.size() << "," << blocks.size() << std::endl;
-//        std::cout << std::endl;
-//        read_link_stats << blocks.size() << std::endl;
+        read_block_stats << "," << blocks.size() << "," << blocks.size() << std::endl;
+        std::cout << std::endl;
+        read_link_stats << blocks.size() << std::endl;
         return false;
     }
 

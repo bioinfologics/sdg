@@ -65,66 +65,55 @@ int main(int argc, char * argv[]) {
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
 
-    unsigned int K = 15;
-    uint16_t min_matches = 2;
+    uint8_t k = 11;
+    uint16_t min_matches = 10;
 
-    LongReadMapper rm(K, 5, sg);
-    rm.map_reads(long_reads, 500);
+    std::cout << "Mapping sequences " << std::endl;
+    auto max_coverage(1);
+    auto maxmem(4*GB);
     /*
-     * Print the length of the node and the number of mapped reads
+     * Reads the reference/contigs file and generates the set of kmers and which entry number on the fasta they belong to
+     * along with their orientation in the form of a int32_t with + for fwd and - for rev, the output is filtered
+     * by min < coverage <= max
      */
+    SMR<KmerIDX,
+            kmerIDXFactory<FastaRecord>,
+            GraphNodeReader<FastaRecord>,
+            FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1,sg}, {k}, {maxmem, 0, max_coverage,
+                                                                                                output_prefix});
 
-    auto repeatyNodes (sg.find_canonical_repeats());
-    // For each repeaty node
-    unsigned int loops = 0;
-    std::vector<SequenceGraphPath> paths_solved;
-    for (const auto &central_repeat_node:repeatyNodes) {
-        sglib::OutputLog() << "* Evaluating central node " << central_repeat_node << ": " << std::endl;
-        // Find AA,AB,BA,BB nodes
-        auto forward_links = sg.get_fw_links(central_repeat_node);
-        auto backward_links = sg.get_bw_links(central_repeat_node);
-        auto nodeIDs = std::array<sgNodeID_t , 4>
-                {forward_links[0].dest, forward_links[1].dest, // fwdA,fwdB
-                 backward_links[0].dest,backward_links[1].dest}; // bwdA,bwdB
-        if (sg.is_loop(nodeIDs)) {
-            loops++;
-            sglib::OutputLog() << "This repeat is loopy" << std::endl;
-            continue;
-        }
-        // Find the reads that cross those nodes
-        std::array<std::set<uint32_t>,4> readIDs(rm.getReadSets(nodeIDs));
-        int min_coverage(3);
-        int set_distance_ratio(10);
-        // Check set AA,BB
-        std::set<uint32_t > AA,AB,BA,BB;
-        std::set_intersection(readIDs[0].cbegin(),readIDs[0].cend(),readIDs[2].cbegin(),readIDs[2].cend(), std::inserter(AA,AA.end()));
-        std::set_intersection(readIDs[0].cbegin(),readIDs[0].cend(),readIDs[3].cbegin(),readIDs[3].cend(), std::inserter(AB,AB.end()));
-        std::set_intersection(readIDs[1].cbegin(),readIDs[1].cend(),readIDs[2].cbegin(),readIDs[2].cend(), std::inserter(BA,BA.end()));
-        std::set_intersection(readIDs[1].cbegin(),readIDs[1].cend(),readIDs[3].cbegin(),readIDs[3].cend(), std::inserter(BB,BB.end()));
+    std::vector<KmerIDX> unique_kmers;
 
-        sglib::OutputLog() <<"Long reads in "
-                << "fA(" << sg.nodes[std::abs(nodeIDs[0])].sequence.length() << "): " << ""<<readIDs[0].size() << " "
-                << "fB(" << sg.nodes[std::abs(nodeIDs[1])].sequence.length() << "): " << ""<<readIDs[1].size() << " "
-                << "bA(" << sg.nodes[std::abs(nodeIDs[2])].sequence.length() << "): " << ""<<readIDs[2].size() << " "
-                << "bB(" << sg.nodes[std::abs(nodeIDs[3])].sequence.length() << "): " << ""<<readIDs[3].size() << "\n";
-        sglib::OutputLog() <<"Paths support AA: "<<AA.size()<<"  BB: "<<BB.size()<<"  AB: "<<AB.size()<<"  BA: "<<BA.size() << std::endl;
+    // Get the unique_kmers from the file
+    unique_kmers = kmerIDX_SMR.process_from_memory();
 
-        if (AA.size() > min_coverage and BB.size() > min_coverage and
-            std::min(AA.size(), BB.size()) > set_distance_ratio * std::max(AB.size(), BA.size())) {
-            sglib::OutputLog() << " Solved as AA BB !!!" << std::endl;
-            paths_solved.push_back(SequenceGraphPath(sg, {-nodeIDs[2], central_repeat_node, nodeIDs[0]}));  // AA
-            paths_solved.push_back(SequenceGraphPath(sg, {-nodeIDs[3], central_repeat_node, nodeIDs[1]}));  // BB
-        } else if (BA.size() > min_coverage and AB.size() > min_coverage and
-                   std::min(BA.size(), AB.size()) > set_distance_ratio * std::max(AA.size(), BB.size())) {
-            sglib::OutputLog() << " Solved as AB BA !!!" << std::endl;
-            paths_solved.push_back(SequenceGraphPath(sg, {-nodeIDs[3], central_repeat_node, nodeIDs[0]}));  // AB
-            paths_solved.push_back(SequenceGraphPath(sg, {-nodeIDs[2], central_repeat_node, nodeIDs[1]}));  // BA
-        }
-        // Define the AA,BB or AB,BA sets and validate they don't cross over
-        sglib::OutputLog() <<"Repeat: [ "<< -nodeIDs[2] <<" | "<< -nodeIDs[3] <<" ] <-> "<< central_repeat_node <<" <-> [ "<< nodeIDs[0] <<" | " << nodeIDs[1] <<" ]"<<std::endl;
+    std::vector<uint64_t > uniqKmer_statistics(kmerIDX_SMR.summaryStatistics());
+    std::cout << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << std::endl;
+    std::cout << "Number of " << int(k) << "-kmers that appear more than 0 < kmer_coverage <= " << max_coverage
+              << " in assembly " << uniqKmer_statistics[1] << std::endl;
+    std::cout << "Number of contigs from the assembly " << uniqKmer_statistics[2] << std::endl;
 
-    }
-    sglib::OutputLog() << repeatyNodes.size() << " repeat nodes generated " << paths_solved.size() << " solvable paths" << std::endl;
-    sglib::OutputLog() << loops << " loops found in repeat nodes" << std::endl;
-    sg.write_to_gfa("salida.gfa");
+    /*
+* Instantiate a ContigLinkFactory that takes the unique_kmers as a parameter, a fastq file with long/linked reads
+* and generates a list of links between contigs.
+*/
+    uint32_t min_kmers_to_call_match(5);
+    uint32_t min_seen_contig_to_write_output(1);
+    std::unordered_set<KmerIDX> us(unique_kmers.begin(), unique_kmers.end());
+
+    SMR<Block,
+            ContigBlockFactory<FastqRecord>,
+            FastqReader<FastqRecord>,
+            FastqRecord, FastxReaderParams, FilterSetParams> contigBlock(
+            {0},   // ReaderParams
+            {output_prefix, k, us, min_kmers_to_call_match, min_seen_contig_to_write_output},
+            {maxmem, 1, 100000, output_prefix});
+
+    std::vector<Block> blocks = contigBlock.read_from_file(long_reads, true);
+    auto blockReaderStats(contigBlock.summaryStatistics());
+    std::cout << "Total records generated " << blockReaderStats[0] << std::endl;
+    std::cout << "Total filtered records " << blockReaderStats[1] << std::endl;
+    std::cout << "Total read sequences " << blockReaderStats[2] << std::endl;
+    std::cout << "Total reader filtered sequences " << blockReaderStats[3] << std::endl;
+
 }
