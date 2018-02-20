@@ -187,7 +187,7 @@ void KmerCompressionIndex::compute_compression_stats() {
     std::cout << "Median coverage for unique kmers: " << median <<std::endl;
     std::cout << "Mode coverage for unique kmers:   " << mode <<std::endl;
 
-    if (median<mode-.1*mode or median>mode+.1*mode ) std::cout<<"WARNING -> median and mode highly divergent"<<std::endl;
+    if (median<.9*mode or median>.9*mode ) std::cout<<"WARNING -> median and mode highly divergent"<<std::endl;
     uniq_mode=mode;
 
 }

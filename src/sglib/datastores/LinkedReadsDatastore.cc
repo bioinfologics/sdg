@@ -23,43 +23,77 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename, std::str
     uint64_t g1offset=0,g2offset=0;
     uint64_t readCountInFile=0;
     uint64_t tagged_reads=0;
-    while (!feof(fd1) and !feof(fd2)){
-        //LinkedRead r1,r2;
-        bsg10xTag newtag=0;
-        if (NULL == fgets(readbuffer, 999, fd1)) continue;
-        //Tag to number from r1's name
-        for(auto i=1;i<17;++i){
-            newtag<<=2;
-            if (readbuffer[i]=='C') newtag+=1;
-            else if (readbuffer[i]=='G') newtag+=2;
-            else if (readbuffer[i]=='T') newtag+=3;
-            else if (readbuffer[i]!='A') {
-                newtag=0;
-                break;
+    if (format==LinkedReadsFormat::UCDavis) {
+        while (!feof(fd1) and !feof(fd2)) {
+            //LinkedRead r1,r2;
+            bsg10xTag newtag = 0;
+            if (NULL == fgets(readbuffer, 999, fd1)) continue;
+            //Tag to number from r1's name
+            for (auto i = 1; i < 17; ++i) {
+                newtag <<= 2;
+                if (readbuffer[i] == 'C') newtag += 1;
+                else if (readbuffer[i] == 'G') newtag += 2;
+                else if (readbuffer[i] == 'T') newtag += 3;
+                else if (readbuffer[i] != 'A') {
+                    newtag = 0;
+                    break;
+                }
             }
-        }
-        r1offset=ftell(fd1);
-        if (NULL == fgets(readbuffer, 999, fd1)) continue;
-        if (NULL == fgets(readbuffer, 999, fd1)) continue;
-        if (NULL == fgets(readbuffer, 999, fd1)) continue;
+            r1offset = ftell(fd1);
+            if (NULL == fgets(readbuffer, 999, fd1)) continue;
+            if (NULL == fgets(readbuffer, 999, fd1)) continue;
+            if (NULL == fgets(readbuffer, 999, fd1)) continue;
 
-        if (NULL == fgets(readbuffer, 999, fd2)) continue;
-        r2offset=ftell(fd2);
-        if (NULL == fgets(readbuffer, 999, fd2)) continue;
-        if (NULL == fgets(readbuffer, 999, fd2)) continue;
-        if (NULL == fgets(readbuffer, 999, fd2)) continue;
+            if (NULL == fgets(readbuffer, 999, fd2)) continue;
+            r2offset = ftell(fd2);
+            if (NULL == fgets(readbuffer, 999, fd2)) continue;
+            if (NULL == fgets(readbuffer, 999, fd2)) continue;
+            if (NULL == fgets(readbuffer, 999, fd2)) continue;
 
-        if (0==readCountInFile%group_size) {
-            g1offset=r1offset;
-            group_offset1.push_back(r1offset);
-            g2offset=r2offset;
-            group_offset2.push_back(r2offset);
+            if (0 == readCountInFile % group_size) {
+                g1offset = r1offset;
+                group_offset1.push_back(r1offset);
+                g2offset = r2offset;
+                group_offset2.push_back(r2offset);
+            }
+            read_offset.push_back(r1offset - g1offset);
+            read_offset.push_back(r2offset - g2offset);
+            ++readCountInFile;
+            read_tag.push_back(newtag);
+            if (0 != newtag) tagged_reads += 2;
         }
-        read_offset.push_back(r1offset-g1offset);
-        read_offset.push_back(r2offset-g2offset);
-        ++readCountInFile;
-        read_tag.push_back(newtag);
-        if (0!=newtag) tagged_reads+=2;
+    }
+    else if (format==LinkedReadsFormat::seq){
+        while (!feof(fd1) and !feof(fd2)) {
+            //LinkedRead r1,r2;
+            bsg10xTag newtag = 0;
+            r1offset = ftell(fd1)+16;
+            if (NULL == fgets(readbuffer, 999, fd1)) continue;
+            //Tag to number from r1's name
+            for (auto i = 0; i < 16; ++i) {
+                newtag <<= 2;
+                if (readbuffer[i] == 'C') newtag += 1;
+                else if (readbuffer[i] == 'G') newtag += 2;
+                else if (readbuffer[i] == 'T') newtag += 3;
+                else if (readbuffer[i] != 'A') {
+                    newtag = 0;
+                    break;
+                }
+            }
+            r2offset = ftell(fd2);
+            if (NULL == fgets(readbuffer, 999, fd2)) continue;
+            if (0 == readCountInFile % group_size) {
+                g1offset = r1offset;
+                group_offset1.push_back(r1offset);
+                g2offset = r2offset;
+                group_offset2.push_back(r2offset);
+            }
+            read_offset.push_back(r1offset - g1offset);
+            read_offset.push_back(r2offset - g2offset);
+            ++readCountInFile;
+            read_tag.push_back(newtag);
+            if (0 != newtag) tagged_reads += 2;
+        }
     }
     sglib::OutputLog(sglib::LogLevels::INFO)<<"Datastore with "<<read_offset.size()-1<<" reads, "<<tagged_reads<<" reads with tags"<<std::endl; //and "<<reads_in_tag.size()<<"tags"<<std::endl;
 
@@ -129,4 +163,29 @@ void LinkedReadsDatastore::get_read_sequence_fd(size_t readID, int fd1, int fd2,
 
 bsg10xTag LinkedReadsDatastore::get_read_tag(size_t readID) {
     return read_tag[(readID-1)/2];
+}
+
+const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {
+    if (0==readID%2){
+        auto pos_in_file=readID/2-1;
+        size_t read_offset_in_file;
+        read_offset_in_file=datastore.group_offset2[pos_in_file/group_size]+datastore.read_offset[readID];
+        if (read_offset_in_file<buffer2_offset or read_offset_in_file+chunk_size>buffer2_offset+bufsize) {
+            buffer2_offset=read_offset_in_file;
+            lseek(fd2,read_offset_in_file,SEEK_SET);
+            read(fd2,buffer2,bufsize);
+        }
+        return buffer2+(read_offset_in_file-buffer2_offset);
+
+    } else {
+        auto pos_in_file=readID/2;
+        size_t read_offset_in_file;
+        read_offset_in_file=datastore.group_offset1[pos_in_file/group_size]+datastore.read_offset[readID];
+        if (read_offset_in_file<buffer1_offset or read_offset_in_file+chunk_size>buffer1_offset+bufsize) {
+            buffer1_offset=read_offset_in_file;
+            lseek(fd1,read_offset_in_file,SEEK_SET);
+            read(fd1,buffer1,bufsize);
+        }
+        return buffer1+(read_offset_in_file-buffer1_offset);
+    }
 }

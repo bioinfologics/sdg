@@ -9,7 +9,7 @@
 #include <cstddef>
 
 typedef uint32_t bsg10xTag;
-enum LinkedReadsFormat {UCDavis,raw};
+enum LinkedReadsFormat {UCDavis,raw,seq};
 unsigned const group_size=30;
 
 
@@ -31,15 +31,42 @@ public:
     void load_from_disk(std::string filename,std::string read1_filename="",std::string read2_filename="");
     std::string filename1,filename2; //if store is in single file bsg format these two are the same as the index file.
 
-private:
-    std::vector<uint64_t> group_offset1,group_offset2;
+    std::vector<uint64_t> group_offset1;
+    std::vector<uint64_t> group_offset2;
     std::vector<uint16_t> read_offset;
+private:
     std::vector<uint32_t> read_tag;
     FILE * fd1=NULL;
     FILE * fd2=NULL;
     //TODO: read sequence cache (std::map with a limit of elements and use count)
 };
 
+class BufferedLRSequenceGetter{
+public:
+    BufferedLRSequenceGetter(const LinkedReadsDatastore &_ds, size_t _bufsize, size_t _chunk_size):
+            datastore(_ds),bufsize(_bufsize),chunk_size(_chunk_size){
+        buffer1=(char *)malloc(bufsize);
+        buffer2=(char *)malloc(bufsize);
+        fd1=open(datastore.filename1.c_str(),O_RDONLY);
+        fd2=open(datastore.filename2.c_str(),O_RDONLY);
+        buffer1_offset=SIZE_MAX;
+        buffer1_offset=SIZE_MAX;
+    }
+    const char * get_read_sequence(uint64_t readID);
+    ~BufferedLRSequenceGetter(){
+        free(buffer1);
+        free(buffer2);
+        close(fd1);
+        close(fd2);
+    }
+private:
+    const LinkedReadsDatastore &datastore;
+    char * buffer1;
+    char * buffer2;
+    size_t bufsize,chunk_size;
+    size_t buffer1_offset,buffer2_offset;
+    int fd1,fd2;
+};
 
 #endif //BSG_LINKEDREADSDATASTORE_HPP
 

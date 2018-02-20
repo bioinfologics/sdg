@@ -32,7 +32,7 @@ int main(int argc, char * argv[]) {
                 ("help", "Print help")
                 ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
-        options.add_options("Compression index iptions")
+        options.add_options("Compression index options")
                 ("cidxread1", "compression index input reads, left", cxxopts::value<std::vector<std::string>>(cidxreads1))
                 ("cidxread2", "compression index input reads, right", cxxopts::value<std::vector<std::string>>(cidxreads2))
                 ("load_cidx", "load compression index filename", cxxopts::value<std::string>(load_cidx))
@@ -57,7 +57,7 @@ int main(int argc, char * argv[]) {
 
         if (result.count("help"))
         {
-            std::cout << options.help({"","Paired reads options","Compression Index Options","Phasing and scaffolding options"}) << std::endl;
+            std::cout << options.help({"","Paired reads options","Compression index options","Phasing and scaffolding options"}) << std::endl;
             exit(0);
         }
 
@@ -105,9 +105,9 @@ int main(int argc, char * argv[]) {
 
     for(int lib=0;lib<reads1.size();lib++) {
         if (load_mapped.size()<=lib) {
-            if (reads_type[lib] == "10x") {
-
-                datastores.emplace_back(reads1[lib],reads2[lib],LinkedReadsFormat::UCDavis);
+            if (reads_type[lib] == "10x" or reads_type[lib] == "10xseq") {
+                datastores.emplace_back(reads1[lib],reads2[lib],
+                        (reads_type[lib] == "10xseq" ? LinkedReadsFormat::seq : LinkedReadsFormat::UCDavis));
                 lrmappers.emplace_back(sg,datastores.back());
                 lrmappers.back().memlimit=max_mem_gb * 1024L * 1024L * 1024L;
                 lrmappers.back().update_graph_index();
@@ -169,6 +169,7 @@ int main(int argc, char * argv[]) {
         bool mod = true;
         int srpass = 0;
         while (mod) {
+            uint64_t aa_count=0,ab_count=0,unsolved_count=0;
             mod = false;
             ++srpass;
             std::cout << " Finding trivial repeats to analyse with tags" << std::endl;
@@ -216,6 +217,13 @@ int main(int argc, char * argv[]) {
                 b0tags.erase(0);
                 b1tags.erase(0);
 
+                std::set<prm10xTag_t> shared1,shared2;
+
+                for (auto t:f0tags) if (f1tags.count(t)>0) {shared1.insert(t);};
+                for (auto t:shared1){f0tags.erase(t);f1tags.erase(t);};
+                for (auto t:b0tags) if (b1tags.count(t)>0) {shared2.insert(t);};
+                for (auto t:shared2) {b0tags.erase(t);b1tags.erase(t);};
+
                 std::set<prm10xTag_t> aa, bb, ba, ab;
                 std::set_intersection(b0tags.begin(), b0tags.end(), f0tags.begin(), f0tags.end(),
                                       std::inserter(aa, aa.end()));
@@ -237,6 +245,7 @@ int main(int argc, char * argv[]) {
                     used[(f1 > 0 ? f1 : -f1)] = true;
                     paths_solved.push_back(SequenceGraphPath(sg, {-b0, n, f0}));
                     paths_solved.push_back(SequenceGraphPath(sg, {-b1, n, f1}));
+                    ++aa_count;
 
                 } else if (ba.size() > 3 and ab.size() > 3 and
                            std::min(ba.size(), ab.size()) > 10 * std::max(aa.size(), bb.size())) {
@@ -248,33 +257,11 @@ int main(int argc, char * argv[]) {
                     used[(f1 > 0 ? f1 : -f1)] = true;
                     paths_solved.push_back(SequenceGraphPath(sg, {-b0, n, f1}));
                     paths_solved.push_back(SequenceGraphPath(sg, {-b1, n, f0}));
+                    ++ab_count;
                 }
-                //else std::cout<<" Unsolved"<<std::endl;
+                else ++unsolved_count;
             }
-            //consolidate paths
-//        std::vector<SequenceGraphPath> consolidated_paths;
-//        while (paths_solved.size()>0){
-//            auto p=paths_solved.back();
-//            paths_solved.pop_back();
-//            bool extended=true;
-//            while (extended){
-//                extended=false;
-//                for (auto &x:paths_solved){
-//                    if (-x.nodes.back()==p.nodes.back()) x.reverse();
-//                    if (x.nodes.front()==p.nodes.back()){
-//                        x.nodes.insert(x.nodes.end(),p.nodes.begin()+1,p.nodes.end());
-//                        extended=true;
-//                    }
-//                    else {
-//                        x.reverse();
-//                        x.nodes.insert(x.nodes.end(),p.nodes.begin()+1,p.nodes.end());
-//                        extended=true;
-//                    }
-//
-//                }
-//            }
-//
-//        }
+
             std::cout << paths_solved.size() << " paths to join" << std::endl;
             if (paths_solved.size() > 0) mod = true;
             std::unordered_set<uint64_t> reads_to_remap;
@@ -288,6 +275,7 @@ int main(int argc, char * argv[]) {
                 }
 
             }
+            std::cout<<"Path analysis summary AA:"<<aa_count<<" AB:"<<ab_count<<" Unsolved:"<<unsolved_count<<std::endl;
             if (mod) {
                 scaff.kci.reindex_graph();
                 sg.write_to_gfa(output_prefix + "_solved_repeats_" + std::to_string(srpass) + ".gfa");
