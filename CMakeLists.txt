@@ -211,12 +211,6 @@ add_executable(kc_comp
 add_executable(seq-sorter
                src/seq-sorter.cpp)
 
-add_executable(repeat_resolver
-               src/repeat_resolver.cc)
-
-add_executable(map-lr
-               src/map-lr.cc)
-
 add_executable(gfa-extract
         src/gfa-extract.cc)
 
@@ -227,8 +221,6 @@ target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-bfphaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(repeat_resolver sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(map-lr sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract sequence_graph)
 
 IF(BUILD_TESTING)
@@ -247,9 +239,7 @@ install(TARGETS
         seq-sorter
         gfa-pairscaff
         gfa-align
-        repeat_resolver
         phaser
-        map-lr
         runBasicTests
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib
