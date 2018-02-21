@@ -476,8 +476,8 @@ std::vector<sgNodeID_t> SequenceGraph::oldnames_to_nodes(std::string _oldnames) 
     return nv;
 }
 
-std::string SequenceGraphPath::get_fasta_header() {
-    std::string h=">sgPath_";
+std::string SequenceGraphPath::get_fasta_header() const {
+    std::string h = ">sgPath_";
     for (auto &n:nodes) {
         h += std::to_string(n)+",";
     }
@@ -485,7 +485,7 @@ std::string SequenceGraphPath::get_fasta_header() {
     return h;
 }
 
-std::string SequenceGraphPath::get_sequence() {
+std::string SequenceGraphPath::get_sequence() const {
     std::string s = "";
     sgNodeID_t pnode = 0;
     // just iterate over every node in path - contig names are converted to ids at construction
@@ -601,4 +601,21 @@ bool SequenceGraphPath::is_canonical() {
     auto rp=*this;
     rp.reverse();
     return this->get_sequence()<rp.get_sequence();
+}
+
+std::set<sgNodeID_t> SequenceGraphPath::make_set_of_nodes() const {
+    std::set<sgNodeID_t> s;
+    std::transform(nodes.begin(),
+                   nodes.end(),
+                   std::inserter(s, s.end()),
+                   [](const sgNodeID_t& n) -> sgNodeID_t { return std::abs(n); });
+    return s;
+}
+
+bool SequenceGraphPath::operator==(const SequenceGraphPath& rhs) const {
+    return make_set_of_nodes() == rhs.make_set_of_nodes();
+}
+
+bool SequenceGraphPath::operator<(const SequenceGraphPath& rhs) const {
+    return make_set_of_nodes() < rhs.make_set_of_nodes();
 }

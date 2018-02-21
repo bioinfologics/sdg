@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <set>
 #include "UniqueKmerIndex.h"
 
 typedef uint64_t seqID_t;
@@ -63,6 +64,7 @@ private:
     SequenceMappingPathsStore paths_of_mappings_of_sequence;
 
     void map_sequences_from_file(uint64_t min_matches, const std::string& filename);
+    std::set<SequenceGraphPath> all_unique_paths() const;
 
 public:
     SequenceThreader(SequenceGraph &_sg, uint8_t _k = 31) : sg(_sg), k(_k), graph_kmer_index(sg, _k) {}
@@ -99,6 +101,7 @@ public:
     }
 
     void paths_to_fasta(std::ofstream& output_file) const;
+    void print_unique_paths_sizes(std::ofstream& output_file) const;
 };
 
 

@@ -151,6 +151,7 @@ void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const
                 std::tie(found_kmer, graph_pos) = graph_kmer_index.find_unique_kmer_in_graph(sk.kmer);
                 // IF KMER EXISTS ON GRAPH
                 if (found_kmer) {
+                    std::cout << '(' << graph_pos.node << ", " << graph_pos.pos << "), ";
                     mapped_kmers_count++;
                     // IF THE KMER MATCH IS THE FIRST MATCH FOR THE MAPPING...
                     if (!mapping.ismatched()) {
@@ -256,3 +257,28 @@ void SequenceThreader::paths_to_fasta(std::ofstream& output_file) const {
     }
 }
 
+std::set<SequenceGraphPath> SequenceThreader::all_unique_paths() const {
+    std::set<SequenceGraphPath> paths;
+    for(const auto& sp : paths_of_mappings_of_sequence) {
+        for(const auto& mapping_path : sp.second) {
+            std::vector<sgNodeID_t> nodes;
+            SequenceGraphPath sgpath(sg);
+            for(const auto& sm : mapping_path) {
+                auto dn = sm.dirnode();
+                sgpath.nodes.emplace_back(dn);
+            }
+            paths.emplace(sgpath);
+        }
+    }
+    return paths;
+}
+
+void SequenceThreader::print_unique_paths_sizes(std::ofstream& output_file) const {
+    std::set<SequenceGraphPath> unique_paths = all_unique_paths();
+    for(auto& path : unique_paths) {
+        std::string seq = path.get_sequence();
+        auto seqsize = seq.length();
+        auto pathname = path.get_fasta_header().erase(0, 1);
+        output_file << pathname << '\t' << seqsize << std::endl;
+    }
+}

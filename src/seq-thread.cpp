@@ -63,6 +63,8 @@ int main(int argc, char **argv) {
     SequenceGraph sg;
     sg.load_from_gfa(graph_filename);
 
+    sg.nodes.front();
+
 // CONSTRUCT SEQUENCE_MAPPER...
     SequenceThreader tdr(sg);
     // Thread FASTA sequences into graph.
@@ -74,8 +76,10 @@ int main(int argc, char **argv) {
     tdr.print_paths();
 
 // DUMP OUTPUT...
-    std::ofstream pathout("mapped_paths.fasta");
+    std::ofstream pathout(output_prefix + "/mapped_paths.fasta");
     tdr.paths_to_fasta(pathout);
     pathout.close();
-
+    std::ofstream sizesout(output_prefix + "/paths_sizes.txt");
+    tdr.print_unique_paths_sizes(sizesout);
+    sizesout.close();
 }
