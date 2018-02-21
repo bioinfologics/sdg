@@ -5,7 +5,7 @@
 #ifndef BSG_SEQUENCEMAPPER_H
 #define BSG_SEQUENCEMAPPER_H
 
-#include "SequenceGraph.hpp"
+#include "SequenceGraph.h"
 #include <iostream>
 #include <fstream>
 #include <vector>

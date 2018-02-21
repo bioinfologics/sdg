@@ -119,10 +119,13 @@ class SequenceGraphPath {
 public:
     std::vector<sgNodeID_t> nodes;
     explicit SequenceGraphPath(SequenceGraph & _sg, const std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
-    std::string get_fasta_header();
-    std::string get_sequence();
+    std::string get_fasta_header() const;
+    std::string get_sequence() const;
     void reverse();
     bool is_canonical();
+    std::set<sgNodeID_t> make_set_of_nodes() const;
+    bool operator==(const SequenceGraphPath& rhs) const;
+    bool operator<(const SequenceGraphPath& rhs) const;
 
 private:
     SequenceGraph& sg;

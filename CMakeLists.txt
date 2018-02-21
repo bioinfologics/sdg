@@ -125,24 +125,10 @@ include_directories("deps/kseqcpp/")
 ## Libraries
 add_library(sequence_graph SHARED
             src/sglib/SequenceGraph.cc
-            src/sglib/PairedReadMapper.cc
             src/sglib/HaplotypeScorer.cpp
             src/sglib/SequenceGraphJournal.cc
-            src/sglib/SequenceGraph.cc
-            src/sglib/PairedReadMapper.cc
-            src/sglib/Scaffolder.cc
-            src/sglib/filesystem/check_or_create_directory.cc
-            src/sglib/PhaseScaffolder.cpp
-            src/sglib/KmerCompressionIndex.cc
-            src/sglib/GraphPartitioner.cc
-            src/sglib/logger/OutputLog.cc
             src/sglib/datastores/LinkedReadsDatastore.cc
             src/sglib/mappers/LinkedReadMapper.cc
-            src/sglib/SequenceGraph.cc
-            src/sglib/PairedReadMapper.cc
-            src/sglib/HaplotypeScorer.cpp
-            src/sglib/SequenceGraphJournal.cc
-            src/sglib/SequenceGraph.cc
             src/sglib/PairedReadMapper.cc
             src/sglib/Scaffolder.cc
             src/sglib/filesystem/check_or_create_directory.cc
@@ -150,6 +136,8 @@ add_library(sequence_graph SHARED
             src/sglib/KmerCompressionIndex.cc
             src/sglib/GraphPartitioner.cc
             src/sglib/logger/OutputLog.cc
+            src/sglib/SequenceThreader.cpp
+            src/sglib/UniqueKmerIndex.cpp
             )
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
@@ -171,11 +159,8 @@ install(FILES
             src/sglib/factories/KMerFactory.h
             src/sglib/factories/KMerIDXFactory.h
             src/sglib/SequenceGraph.hpp
-            src/sglib/SequenceGraph.cc
             src/sglib/UniqueKmerIndex.h
-            src/sglib/UniqueKmerIndex.cpp
             src/sglib/SequenceThreader.h
-            src/sglib/SequenceThreader.cpp
             src/sglib/PairedReadMapper.hpp
             src/sglib/HaplotypeScorer.hpp
             src/sglib/SequenceGraphJournal.hpp

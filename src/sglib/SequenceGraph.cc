@@ -496,7 +496,7 @@ std::string SequenceGraphPath::get_fasta_header() const {
     return h;
 }
 
-std::string SequenceGraphPath::get_sequence() {
+std::string SequenceGraphPath::get_sequence() const {
     std::cout << "get_sequence for a SequenceGraphPath with nodes = [" ;
     for (auto &n:nodes) std::cout<<" "<<n;
     std::cout<<" ]"<<std::endl;

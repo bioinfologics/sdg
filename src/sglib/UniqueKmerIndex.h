@@ -5,7 +5,7 @@
 #ifndef BSG_UNIQUEKMERINDEX_H
 #define BSG_UNIQUEKMERINDEX_H
 
-#include "SequenceGraph.hpp"
+#include "SequenceGraph.h"
 
 struct graphPosition{
     sgNodeID_t node;
