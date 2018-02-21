@@ -73,7 +73,7 @@ private:
     kstream<gzFile, FunctorZlib> *ks;
     kstream<BZFILE, FunctorBZlib2> *bzKS;
     kseq seq;
-    uint32_t numRecords;
+    uint32_t numRecords=0;
     gzFile gz_file;
     BZFILE * bz_File{};
     int fq_File{};
@@ -104,7 +104,7 @@ public:
         std::cout << "Opening: " << filepath << "\n";
         gz_file = gzopen(filepath.c_str(), "r");
         if (gz_file == Z_NULL) {
-            std::cout << "Error opening FASTA " << filepath << ": " << std::strerror(errno) << std::endl;
+            std::cout << "Error opening FASTQ " << filepath << ": " << std::strerror(errno) << std::endl;
             exit(1);
         }
         ks = new kstream<gzFile, FunctorZlib>(gz_file, gzr);
@@ -152,7 +152,7 @@ public:
 private:
     kstream<gzFile, FunctorZlib> *ks;
     kseq seq;
-    uint64_t numRecords;
+    uint64_t numRecords=0;
     gzFile gz_file;
     BZFILE * bz_File{};
     int fq_File{};

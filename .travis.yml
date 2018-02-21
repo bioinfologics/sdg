@@ -16,8 +16,10 @@ matrix:
             - doxygen-latex
             - doxygen-gui
             - graphviz
+            - lcov
       env:
-        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && DEPLOY=true"
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && GCOV=gcov-6 && DEPLOY=true"
+        - CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 -DINSTALL_GTEST=OFF -DINSTALL_GMOCK=OFF"
     - os: osx
       osx_image: xcode8
       env:
@@ -28,15 +30,23 @@ matrix:
 before_install:
     - eval "${MATRIX_EVAL}"
 
-script:
-    mkdir build && cd build && cmake .. ${CMAKE_OPTIONS} && make && (touch ./docs/html/.nojekyll || true)
+script: ./build.sh
+
+after_success:
+    # Creating report
+  - lcov --gcov-tool=gcov-6 --directory . --capture --output-file coverage.info # capture coverage info
+  - lcov --gcov-tool=gcov-6 --remove coverage.info '/usr/*' --output-file coverage.info # filter out system
+  - lcov --gcov-tool=gcov-6 --remove coverage.info '*googletest*' --output-file coverage.info # filter out googletest
+  - lcov --gcov-tool=gcov-6 --list coverage.info #debug info
+  # Uploading report to CodeCov
+  - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
 
 install: true
 deploy:
   provider: pages
   skip_cleanup: true
   github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
-  local_dir: $TRAVIS_BUILD_DIR/build/docs/html
+  local_dir: build/docs/html
   on:
     branch: master
     condition: $DEPLOY = true

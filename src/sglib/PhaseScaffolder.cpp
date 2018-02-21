@@ -11,7 +11,7 @@ PhaseScaffolder::PhaseScaffolder(SequenceGraph & sg): sg(sg), mapper(sg){
 
 void PhaseScaffolder::load_mappings(std::string r1_filename, std::string r2_filename, std::string fasta_filename, uint64_t max_mem_gb){
 
-    //mapper.map_reads(r1_filename, r2_filename, fasta_filename, prm10x, max_mem_gb);
+    mapper.map_reads(r1_filename, r2_filename, PairedReadMapper::prmReadType::prm10x, max_mem_gb);
     std::cout << "Mapped " << mapper.read_to_node.size() << " reads to " <<  mapper.reads_in_node.size() << "nodes" << std::endl;
 }
 

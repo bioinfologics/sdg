@@ -2,11 +2,17 @@
 // Created by Bernardo Clavijo (EI) on 18/10/2017.
 //
 
+#include "Scaffolder.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <set>
-#include "SequenceGraph.hpp"
+#include "SequenceGraph.h"
+#include <sglib/mappers/LinkedReadMapper.hpp>
+#include <list>
+#include <queue>
+#include <stack>
+#include "sglib/readers/FileReader.h"
 
 bool Node::is_canonical() {
     for (size_t i=0,j=sequence.size()-1;i<j;++i,--j){
@@ -94,6 +100,11 @@ std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n){
     for (auto &l:links[(n>0 ? n : -n)]) if (l.source==-n) r.emplace_back(l);
     return r;
 }
+
+std::vector<Link> SequenceGraph::get_bw_links(sgNodeID_t n) {
+    return get_fw_links (-n);
+}
+
 
 bool Link::operator==(const Link a){
     if (a.source == this->source && a.dest == this->dest){
@@ -485,7 +496,10 @@ std::string SequenceGraphPath::get_fasta_header() const {
     return h;
 }
 
-std::string SequenceGraphPath::get_sequence() const {
+std::string SequenceGraphPath::get_sequence() {
+    std::cout << "get_sequence for a SequenceGraphPath with nodes = [" ;
+    for (auto &n:nodes) std::cout<<" "<<n;
+    std::cout<<" ]"<<std::endl;
     std::string s = "";
     sgNodeID_t pnode = 0;
     // just iterate over every node in path - contig names are converted to ids at construction
@@ -498,15 +512,13 @@ std::string SequenceGraphPath::get_sequence() const {
             rcn.make_rc();
             nseq = rcn.sequence;
         }
-        if (pnode != 0){
-            // find link between pnode' output (+pnode) and n's sink (-n)
-            auto l = sg.links[std::abs(pnode)].begin();
-            for (; l != sg.links[std::abs(pnode)].end(); ++l){
-                if (l->source == pnode and l->dest == n) break;
-            }
-
-            if (l == sg.links[std::abs(pnode)].end()) {
-                std::cout << "can't find a link between " << pnode << " and " << -n << std::endl;
+        if (pnode !=0){
+            //find link between pnode' output (+pnode) and n's sink (-n)
+            auto l=sg.links[(pnode>0 ? pnode:-pnode)].begin();
+            for (;l!=sg.links[(pnode>0 ? pnode:-pnode)].end();++l)
+                if (l->source==pnode and l->dest==n) break;
+            if (l==sg.links[(pnode>0 ? pnode:-pnode)].end()) {
+                std::cout<<"can't find a link between "<<pnode<<" and "<<n<<std::endl;
                 throw std::runtime_error("path has no link");
             } else {
                 if (l->dist > 0){
@@ -524,6 +536,9 @@ std::string SequenceGraphPath::get_sequence() const {
         s+=nseq;
         pnode=-n;
     }
+    std::cout<<"get sequence finished successfully for SequenceGraphPath with nodes = [" ;
+    for (auto &n:nodes) std::cout<<" "<<n;
+    std::cout<<" ]"<<std::endl;
     return s;
 }
 
@@ -561,33 +576,35 @@ void SequenceGraph::join_all_unitigs() {
     }
 }
 
-void SequenceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
+void SequenceGraph::join_path(SequenceGraphPath p, bool consume) {
     std::set<sgNodeID_t> pnodes;
     for (auto n:p.nodes) {
         pnodes.insert( n );
         pnodes.insert( -n );
     }
+
     if (!p.is_canonical()) p.reverse();
     sgNodeID_t new_node=add_node(Node(p.get_sequence()));
     //TODO:check, this may have a problem with a circle
     for (auto l:get_bw_links(p.nodes.front())) add_link(new_node,l.dest,l.dist);
-
     for (auto l:get_fw_links(p.nodes.back())) add_link(-new_node,l.dest,l.dist);
 
     //TODO: update read mappings
-    if (consume_nodes) {
-
-
-        for (auto n:p.nodes) {
-            //check if the node has neighbours not included in the path.
-            bool ext_neigh=false;
-            if (n!=p.nodes.back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest)==0) ext_neigh=true;
-            if (n!=p.nodes.front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest)==0) ext_neigh=true;
-            if (ext_neigh) continue;
-            remove_node(n);
-        }
+    if (consume) {
+        consume_nodes(p, pnodes);
     }
 
+}
+
+void SequenceGraph::consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes) {
+    for (auto n:p.nodes) {
+        //check if the node has neighbours not included in the path.
+        bool ext_neigh=false;
+        if (n!=p.nodes.back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
+        if (n!=p.nodes.front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
+        if (ext_neigh) continue;
+        remove_node(n);
+    }
 }
 
 void SequenceGraphPath::reverse(){
@@ -618,4 +635,86 @@ bool SequenceGraphPath::operator==(const SequenceGraphPath& rhs) const {
 
 bool SequenceGraphPath::operator<(const SequenceGraphPath& rhs) const {
     return make_set_of_nodes() < rhs.make_set_of_nodes();
+}
+
+std::vector<sgNodeID_t > SequenceGraph::find_canonical_repeats() {
+    std::vector<sgNodeID_t > repeaty_nodes;
+
+    uint64_t count=0, l700=0,l2000=0,l4000=0,l10000=0,big=0,checked=0,solvable=0;
+
+    for (sgNodeID_t n=1; n < nodes.size(); ++n) {
+        auto nfw_links = get_fw_links(n).size();
+        auto nbw_links = get_bw_links(n).size();
+        if ( nfw_links == nbw_links and nfw_links==2){
+            ++count;
+
+            if (nodes[n].sequence.size() < 700) ++l700;
+            else if (nodes[n].sequence.size() < 2000) ++l2000;
+            else if (nodes[n].sequence.size() < 4000) ++l4000;
+            else if (nodes[n].sequence.size() < 10000) ++l10000;
+            else ++big;
+
+            if (nodes[n].sequence.size() > 1000) {
+                // std::cout << "evaluating trivial repeat at " << n << "(" << sg.nodes[n].sequence.size() << "bp)" << std::endl;
+                repeaty_nodes.push_back(n);
+            }
+        }
+    }
+
+    std::cout << "Candidates for canonical repeat expansion:                    " << count << std::endl;
+    std::cout << "Candidates for canonical repeat expansion <700bp:             " << l700 << std::endl;
+    std::cout << "Candidates for canonical repeat expansion >700bp & <2000bp:   " << l2000 << std::endl;
+    std::cout << "Candidates for canonical repeat expansion >2000bp & <4000bp:  " << l4000 << std::endl;
+    std::cout << "Candidates for canonical repeat expansion >4000bp & <10000bp: " << l10000 << std::endl;
+    std::cout << "Candidates for canonical repeat expansion >10000bp:           " << big << std::endl;
+    std::cout << "Trivially solvable canonical repeats:                         " << solvable << "/" << checked << std::endl;
+
+    return repeaty_nodes;
+}
+
+std::vector<sgNodeID_t>
+SequenceGraph::breath_first_search(std::vector<sgNodeID_t> &nodes, unsigned int size_limit) {
+    std::queue<sgNodeID_t> to_visit(std::deque<sgNodeID_t>(nodes.begin(),nodes.end()));
+    std::set<sgNodeID_t> visited;
+    std::unordered_map<sgNodeID_t, sgNodeID_t > meta;
+
+    while (!to_visit.empty() and visited.size() < size_limit) {
+        const auto activeNode(to_visit.front());
+        to_visit.pop();
+        for (const auto &neighboor: get_fw_links(activeNode)) {
+            if (visited.find(neighboor.dest) == visited.end()) {
+                to_visit.push(neighboor.dest);
+                visited.insert(neighboor.dest);
+            }
+        }
+    }
+    return std::vector<sgNodeID_t>(visited.begin(), visited.end());
+}
+
+std::vector<sgNodeID_t>
+SequenceGraph::depth_first_search(const sgNodeID_t seed, unsigned int size_limit, unsigned int edge_limit, std::set<sgNodeID_t> tabu) {
+    // Create a stack with the nodes and the path length
+    struct visitor {
+        sgNodeID_t node;
+        uint dist;
+        uint path_length;
+        visitor(sgNodeID_t n, uint d, uint p) : node(n), dist(d), path_length(p) {}
+    };
+    std::stack<visitor> to_visit;
+    to_visit.emplace(seed,0,0);
+    std::set<sgNodeID_t > visited(tabu);
+    while (!to_visit.empty()) {
+        const auto activeNode(to_visit.top());
+        to_visit.pop();
+        if (visited.find(activeNode.node) == visited.end() and
+                (activeNode.path_length < edge_limit or edge_limit==0) and
+                (activeNode.dist < size_limit or size_limit==0) )
+        {
+            visited.emplace(activeNode.node);
+            for (const auto &l: get_fw_links(activeNode.node)) {
+                to_visit.emplace(l.dest,activeNode.dist+nodes[l.dest>0?l.dest:-l.dest].sequence.length(),activeNode.path_length+1);
+            }
+        }
+    }
+    return std::vector<sgNodeID_t>(visited.begin(), visited.end());
 }

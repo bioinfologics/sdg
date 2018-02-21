@@ -13,7 +13,7 @@
 #include <sglib/SMR.h>
 #include "cxxopts.hpp"
 #include "sglib/factories/ContigBlockFactory.h"
-#include "sglib/SequenceGraph.hpp"
+#include "sglib/SequenceGraph.h"
 
 int main(int argc, char * argv[]) {
     std::string gfa_filename,ref_gfa_filename,output_prefix;
@@ -78,9 +78,9 @@ int main(int argc, char * argv[]) {
     SMR<KmerIDX,
     kmerIDXFactory<FastaRecord>,
     FastaReader<FastaRecord>,
-    FastaRecord, FastxReaderParams, KMerIDXFactoryParams> ref_kmerIDX_SMR({1}, {k}, mem_limit*GB, 0,
+    FastaRecord, FastxReaderParams, KMerIDXFactoryParams> ref_kmerIDX_SMR({1}, {k}, {mem_limit*GB, 0,
                                                                           max_coverage,
-                                                                          output_prefix);
+                                                                          output_prefix});
     std::vector<KmerIDX> vector_unique_kmers(ref_kmerIDX_SMR.read_from_file(ref_gfa_filename));
 
 //    FastaReader<FastaRecord> referenceReader({1}, ref_gfa_filename.substr(0, ref_gfa_filename.length()-4)+".fasta");

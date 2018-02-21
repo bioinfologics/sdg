@@ -6,8 +6,8 @@
 #define BSG_GRAPHPARTITIONER_HPP
 
 
-#include "SequenceGraph.hpp"
-#include "PairedReadMapper.hpp"
+#include "SequenceGraph.h"
+#include "PairedReadMapper.h"
 #include "KmerCompressionIndex.hpp"
 
 

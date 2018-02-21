@@ -1,19 +1,8 @@
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.0)
 
-IF (MY_COMPILER_OPTION STREQUAL "Intel")
-    FIND_PROGRAM(ICPC_PROGRAM icpc ...)
-    IF(ICPC_PROGRAM)
-        MESSAGE(STATUS "** Compiling with Intel settings **")
-        IF(ENV{CXX})
-            MESSAGE(WARNING "Overwriting CXX envvar")
-        ENDIF()
-        SET(ENV{CXX} "${ICPC_PROGRAM}")
-        SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -w")
-        SET(CMAKE_CXX_FLAGS_DEBUG "-g")
-    ELSE()
-        MESSAGE(FATAL_ERROR "Intel compiler not found")
-    ENDIF()
-ENDIF ()
+if (POLICY CMP0048)
+    cmake_policy(SET CMP0048 NEW)
+endif (POLICY CMP0048)
 
 if (APPLE)
        set(CMAKE_MACOSX_RPATH ON)
@@ -21,6 +10,11 @@ endif (APPLE)
 
 
 project (bsg)
+ENABLE_TESTING()
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
+OPTION(BUILD_TESTING "Build tests." ON)
+
+execute_process(COMMAND find ./ -type f -name "*.gcda" -exec rm -rf {} \;)
 
 # Get the remote url
 execute_process(
@@ -80,19 +74,18 @@ endif()
 
 add_definitions(${CMAKE_CXX_FLAGS})
 
-## To move the bins to the final location
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin")
-
 find_package(ZLIB REQUIRED)
 if (ZLIB_FOUND)
     add_definitions(-DHAVE_ZLIB)
     include_directories(${ZLIB_INCLUDE_DIRS})
+    set(DEPENDENCY_LIBS ${DEPENDENCY_LIBS} ${ZLIB_LIBRARIES})
 endif()
 
-find_package(BZip2 REQUIRED)
+find_package(BZip2)
 if (BZIP2_FOUND)
     add_definitions(-DHAVE_BZIP2)
     include_directories(${BZIP2_INCLUDE_DIRS})
+    set(DEPENDENCY_LIBS ${DEPENDENCY_LIBS} ${BZIP2_LIBRARIES})
 endif()
 
 # first we can indicate the documentation build as an option and set it to ON by default
@@ -119,8 +112,10 @@ else (DOXYGEN_FOUND)
     message("Doxygen need to be installed to generate the doxygen documentation")
 endif (DOXYGEN_FOUND)
 
-
+add_subdirectory("tests/googletest")
 ## Include directories
+include_directories("tests/googletest/googletest/include/")
+include_directories("tests/googletest/googletest/src/")
 include_directories("src/")
 include_directories("deps/cxxopts/include")
 include_directories("deps/kseqcpp/")
@@ -129,6 +124,44 @@ include_directories("deps/kseqcpp/")
 
 ## Libraries
 add_library(sequence_graph SHARED
+            src/sglib/SequenceGraph.cc
+            src/sglib/PairedReadMapper.cc
+            src/sglib/HaplotypeScorer.cpp
+            src/sglib/SequenceGraphJournal.cc
+            src/sglib/SequenceGraph.cc
+            src/sglib/PairedReadMapper.cc
+            src/sglib/Scaffolder.cc
+            src/sglib/filesystem/check_or_create_directory.cc
+            src/sglib/PhaseScaffolder.cpp
+            src/sglib/KmerCompressionIndex.cc
+            src/sglib/GraphPartitioner.cc
+            src/sglib/logger/OutputLog.cc
+            src/sglib/datastores/LinkedReadsDatastore.cc
+            src/sglib/mappers/LinkedReadMapper.cc
+            src/sglib/SequenceGraph.cc
+            src/sglib/PairedReadMapper.cc
+            src/sglib/HaplotypeScorer.cpp
+            src/sglib/SequenceGraphJournal.cc
+            src/sglib/SequenceGraph.cc
+            src/sglib/PairedReadMapper.cc
+            src/sglib/Scaffolder.cc
+            src/sglib/filesystem/check_or_create_directory.cc
+            src/sglib/PhaseScaffolder.cpp
+            src/sglib/KmerCompressionIndex.cc
+            src/sglib/GraphPartitioner.cc
+            src/sglib/logger/OutputLog.cc
+            )
+
+target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
+
+set_target_properties(sequence_graph PROPERTIES
+                      COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
+                      LINK_FLAGS    "--coverage")
+
+target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
+
+install(TARGETS sequence_graph DESTINATION lib)
+install(FILES
             src/sglib/SMR.h
             src/sglib/readers/Common.h
             src/sglib/readers/FileReader.h
@@ -144,20 +177,17 @@ add_library(sequence_graph SHARED
             src/sglib/SequenceThreader.h
             src/sglib/SequenceThreader.cpp
             src/sglib/PairedReadMapper.hpp
-            src/sglib/PairedReadMapper.cc
             src/sglib/HaplotypeScorer.hpp
-            src/sglib/HaplotypeScorer.cpp
             src/sglib/SequenceGraphJournal.hpp
-            src/sglib/SequenceGraphJournal.cc
-            src/sglib/SequenceGraph.cc
-            src/sglib/PairedReadMapper.cc
-            src/sglib/Scaffolder.cc
-            src/sglib/filesystem/check_or_create_directory.cc
             src/sglib/filesystem/check_or_create_directory.h
-            src/sglib/PhaseScaffolder.cpp
-            src/sglib/PhaseScaffolder.h src/sglib/KmerCompressionIndex.cc src/sglib/KmerCompressionIndex.hpp src/sglib/GraphPartitioner.cc src/sglib/GraphPartitioner.hpp)
-
-target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+            src/sglib/PhaseScaffolder.h
+            src/sglib/KmerCompressionIndex.hpp
+            src/sglib/GraphPartitioner.hpp
+            src/sglib/logger/OutputLog.h
+            src/sglib/datastores/LinkedReadsDatastore.hpp
+            src/sglib/mappers/LinkedReadMapper.hpp
+        DESTINATION include
+        )
 
 ## add executables and respective sources
 add_executable(gfa-qc
@@ -170,6 +200,9 @@ add_executable(gfa-dumppath
 ## add executables and respective sources
 add_executable(gfa-pairscaff
         src/gfa-pairscaff.cc)
+
+add_executable(gfa-bfphaser
+        src/gfa-bfphaser.cc)
 
 add_executable(phaser
                src/phaser.cpp)
@@ -186,10 +219,40 @@ add_executable(seq-sorter
 add_executable(ref-aligner
         src/seq-thread.cpp)
 
+add_executable(gfa-extract
+        src/gfa-extract.cc)
+
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(gfa-bfphaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(ref-aligner sequence_graph)
+target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(gfa-extract sequence_graph)
+
+IF(BUILD_TESTING)
+    add_executable(runBasicTests tests/sglib/basic_check.cc)
+    set_target_properties(runBasicTests PROPERTIES
+                          COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
+                          LINK_FLAGS    "--coverage")
+
+    target_link_libraries(runBasicTests gtest gtest_main sequence_graph)
+    add_test(basicTests runBasicTests)
+ENDIF()
+
+install(TARGETS
+        gfa-dumppath
+        gfa-qc
+        seq-sorter
+        gfa-pairscaff
+        gfa-align
+        phaser
+        runBasicTests
+        RUNTIME DESTINATION bin
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib/static)
+install(DIRECTORY src/sglib
+        DESTINATION include)

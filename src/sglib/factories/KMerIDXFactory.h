@@ -97,7 +97,7 @@ public:
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
             bases++;
-            fillKBuf(currentRecord.seq[p], p, fkmer, rkmer, last_unknown);
+            fillKBuf(currentRecord.seq[p], fkmer, rkmer, last_unknown);
             p++;
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
@@ -116,4 +116,33 @@ private:
     FileRecord currentRecord;
     uint64_t bases;
 };
+
+
+class StreamKmerFactory : public  KMerFactory {
+public:
+    explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
+    inline void produce_all_kmers(const int64_t seqID, const char * seq, std::vector<KmerIDX> &mers){
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        last_unknown=0;
+        fkmer=0;
+        rkmer=0;
+        auto s=seq;
+        while (*s!='\0' and *s!='\n') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(fkmer);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(rkmer);
+                }
+            }
+            ++s;
+        }
+    }
+};
+
 #endif //SEQSORTER_KMERIDX_H

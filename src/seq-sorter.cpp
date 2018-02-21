@@ -121,8 +121,8 @@ int main(int argc, char **argv) {
     SMR<KmerIDX,
             kmerIDXFactory<FastaRecord>,
             FastaReader<FastaRecord>,
-            FastaRecord, FastxReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1}, {k}, maxmem, 0, max_coverage,
-                                                                              output_prefix);
+            FastaRecord, FastxReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1}, {k}, {maxmem, 0, max_coverage,
+                                                                              output_prefix});
 
     std::vector<KmerIDX> unique_kmers;
 
@@ -186,8 +186,8 @@ int main(int argc, char **argv) {
                                                                              unique_kmers, sequences_fasta,
                                                                              min_kmers_to_call_match,
                                                                              min_seen_contig_to_write_output},
-                                                                            maxmem,
-                                                                            min_count, max_count, output_prefix);
+                                                                            {maxmem, min_count, max_count,
+                                                                             output_prefix});
 
     std::vector<ContigLink> links(contigLink_SMR.read_from_file(pacbio_reads_file));
     std::vector<uint64_t > link_statistics(contigLink_SMR.summaryStatistics());

@@ -22,14 +22,17 @@ std::vector<std::vector<bool>> GraphPartitioner::tags_patterns(const SequenceSub
     for (auto node:subgraph.nodes){
         auto n=(node>0?node:-node);
         for (auto r:rmappers[0].reads_in_node[n])
-            if (rmappers[0].read_to_tag[r.read_id]>0) tags.insert(rmappers[0].read_to_tag[r.read_id]);
+            if (rmappers[0].read_to_tag[r.read_id]>0) {
+                auto tag(rmappers[0].read_to_tag[r.read_id]);
+                tags.insert(tag);
+            }
     }
 
     //create the node/tag read matrix.
     std::map<uint32_t,uint32_t> tags_to_local;
     std::vector<uint32_t>local_to_tag;
     {
-        auto i=0;
+        uint i=0;
         for (auto it = tags.begin(); it != tags.end(); ++it, ++i) {
             tags_to_local[*it] = i;
             local_to_tag.push_back(*it);
@@ -49,13 +52,13 @@ std::vector<std::vector<bool>> GraphPartitioner::tags_patterns(const SequenceSub
     for (auto xt=0;xt<node_tag_readcount.back().size();++xt){
         auto nodes=0;
         std::vector<bool> newpat;
-        for (auto xn=0;xn<node_tag_readcount.size();++xn) {
-            newpat.push_back((node_tag_readcount[xn][xt]>0));
-            if (node_tag_readcount[xn][xt]>0) ++nodes;
+        for (auto &xn : node_tag_readcount) {
+            newpat.push_back((xn[xt]>0));
+            if (xn[xt]>0) ++nodes;
         }
         if (nodes>1) {
             bool repeated=false;
-            for (auto t:tp) if (newpat==t) {repeated=true;break;}
+            for (const auto &t:tp) if (newpat==t) {repeated=true;break;}
             if (!repeated) tp.push_back(newpat);
         }
     }
@@ -164,18 +167,18 @@ std::vector<std::vector<bool>> GraphPartitioner::generate_partitions(const Seque
                                                                     unsigned p) {
 
     auto tp=tag_patterns;
-    if (tag_patterns.size()==0){
+    if (tag_patterns.empty()){
         tp=tags_patterns(subgraph);
     }
-    if (tp.size()==0) return {};
+    if (tp.empty()) return {};
 
     auto emxb=exclussions_from_patterns(tp);
 
-    std::cout<<"Node exclusion matrix:"<<std::endl;
-    for (auto stp:emxb) {
-        for (auto p:stp) std::cout<<" "<<(p ? 1:0);
-        std::cout<<std::endl;
-    }
+//    std::cout<<"Node exclusion matrix:"<<std::endl;
+//    for (auto stp:emxb) {
+//        for (auto p:stp) std::cout<<" "<<(p ? 1:0);
+//        std::cout<<std::endl;
+//    }
 
     std::vector<std::vector<bool>> partitions;
     std::vector<unsigned> node_exclussions(tp.back().size());

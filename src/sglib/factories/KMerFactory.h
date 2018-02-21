@@ -11,6 +11,7 @@
 
 #define unlikely(x)     __builtin_expect((x),0)
 
+class KmerIDX;
 class KMerFactory {
 public:
     const uint8_t K;
@@ -18,7 +19,7 @@ public:
     uint64_t fkmer{};
     uint64_t rkmer{};
 
-    inline void fillKBuf(const char b, const uint64_t p, uint64_t &rkmer, uint64_t &fkmer, int64_t &last) {
+    inline void fillKBuf(const char b, uint64_t &rkmer, uint64_t &fkmer, int64_t &last) {
         if (unlikely(b2f[b] == 4)) {
             last = 0;
             fkmer = ((fkmer << 2) + 0) & KMER_MASK;
@@ -55,7 +56,6 @@ private:
     char b2r[255]{4};
 };
 
-
 class StringKMerFactory : protected KMerFactory {
 public:
     explicit StringKMerFactory(std::string & s, uint8_t k) : KMerFactory(k),s(s) {
@@ -77,7 +77,7 @@ public:
         while (p < s.size()) {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(s[p], p, fkmer, rkmer, last_unknown);
+            fillKBuf(s[p], fkmer, rkmer, last_unknown);
             p++;
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
@@ -95,5 +95,6 @@ public:
 private:
     std::string & s;
 };
+
 
 #endif //SEQ_SORTER_KMERFACTORY_H

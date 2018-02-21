@@ -5,22 +5,30 @@
 #ifndef SG_SCAFFOLDER_HPP
 #define SG_SCAFFOLDER_HPP
 
-#include "SequenceGraph.hpp"
-#include "PairedReadMapper.hpp"
+#include <sglib/mappers/LinkedReadMapper.hpp>
+#include "SequenceGraph.h"
+#include "PairedReadMapper.h"
 #include "KmerCompressionIndex.hpp"
 
 class Scaffolder {
 
 public:
-    ///
-    /// \param _sg A SequenceGraph to scaffold
-    /// \param _rms A vector of PairedReadmapper, containing the mapping of reads to _sg
-    Scaffolder(SequenceGraph &_sg, std::vector<PairedReadMapper> & _rms, KmerCompressionIndex &_kci) : sg(_sg),rmappers(_rms),kci(_kci){};
-
+    /**
+     * @brief
+     * The Scaffolder object provides functions to locate or resolve regions
+     * of repetitions and haplotype originated bubbles.
+     * It requires a valid SequenceGraph, a vector of ReadMappers and a KmerCompressionIndex.
+     * @param _sg A SequenceGraph to scaffold
+     * @param _rms A vector of PairedReadmapper, containing the mapping of reads to _sg
+     * @param _kci A KMerCompressionIndex object
+     */
+    Scaffolder(SequenceGraph &_sg, std::vector<PairedReadMapper> & _rms,  std::vector<LinkedReadMapper> & _lrms, KmerCompressionIndex &_kci) : sg(_sg),rmappers(_rms),lrmappers(_lrms),kci(_kci){};
 
     void pop_unsupported_shortbubbles();
     void expand_bubbly_subgraphs();
     std::vector<SequenceSubGraph> get_all_bubbly_subgraphs(uint32_t maxsubgraphs=0);
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> get_all_haplotype_pairs(uint32_t maxpairs=0);
+
     void find_canonical_repeats();
 
     ///
@@ -50,6 +58,7 @@ public:
 
     SequenceGraph &sg;
     std::vector<PairedReadMapper> &rmappers;
+    std::vector<LinkedReadMapper> &lrmappers;
     KmerCompressionIndex &kci;
 
 

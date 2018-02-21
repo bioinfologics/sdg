@@ -21,16 +21,60 @@
 #include <set>
 #include <unordered_set>
 #include <cmath>
+#include "sglib/logger/OutputLog.h"
 #include <sglib/filesystem/check_or_create_directory.h>
 
 
 static const std::uint64_t GB(1024*1024*1024);
+
+struct SMRParams {
+    uint64_t getFromEnv() {
+        uint64_t parsed_mem;
+
+        std::string smr_maxmem_env_raw(std::getenv("SMR_BATCH_MEM"));
+        std::transform(smr_maxmem_env_raw.begin(),smr_maxmem_env_raw.end(), smr_maxmem_env_raw.begin(), toupper);
+        auto gb_pos(smr_maxmem_env_raw.find("GB"));
+        auto g_pos(smr_maxmem_env_raw.find('G'));
+        if ( gb_pos != std::string::npos) {
+            parsed_mem = GB*std::atoi(std::string(smr_maxmem_env_raw.begin(), smr_maxmem_env_raw.begin()+gb_pos).c_str());
+        }
+        else if (g_pos != std::string::npos) {
+            parsed_mem = GB*std::atoi(std::string(smr_maxmem_env_raw.begin(), smr_maxmem_env_raw.begin()+g_pos).c_str());
+        }
+        else {
+            if ( std::all_of(smr_maxmem_env_raw.begin(),smr_maxmem_env_raw.end(), ::isdigit) )
+                parsed_mem = GB*std::atoi(smr_maxmem_env_raw.c_str());
+            else
+                parsed_mem = 4 * GB;
+        }
+        return parsed_mem;
+    }
+
+    SMRParams(uint64_t maxMemory = 0, unsigned int min = 0, unsigned int max = std::numeric_limits<unsigned int>::max(),
+                       const std::string &outdir = "./", const std::string &Otmp = "", unsigned int mergeCount = 4) :
+            mergeCount(mergeCount), Otmp(Otmp), maxMem(maxMemory), outdir(outdir), min(min), max(max)
+    {
+        // Max mem is not initialised, take from environment variable
+        if (0 == maxMemory) {
+            maxMem=getFromEnv();
+        }
+    }
+
+    unsigned int mergeCount = 0;
+    uint64_t maxMem = 0;
+    unsigned int min = 0;
+    unsigned int max = std::numeric_limits<unsigned int>::max();
+    const std::string outdir = "./";
+    const std::string Otmp = "";
+};
 
 /**
  * @brief
  * SMR is an external memory map reduce engine with configurable memory bounds
  * it requires a RecordFactory and a FileReader. The FileReader takes elements from the file
  * and sends them to the RecordFactory for parsing into single RecordType elements.
+ *
+ * Reads the SMR_BATCH_MEM environment variable if the maxMem parameter is not passed to the constructor
  *
  * @tparam RecordType
  * The RecordType class requires strict weak ordering and equivalence comparison functions.
@@ -58,6 +102,8 @@ public:
      * @param maxMem
      * Maximum amount of memory available for the SMR in bytes, generally the units are multiplied on call.
      * I.E 4*GB, where GB is defined as (1024*1024*1024) on this header.
+     *
+     * If not passed to the constructor the SMR_BATCH_MEM environment variable value is used
      * @param min
      * This refers to the *minimum* filter for the number of times a RecordType element has to be seen to be on the output.
      * @param max
@@ -71,20 +117,17 @@ public:
      * directory to be used for the batch files, each input file will generate a new directory from the basename of the argument
      * passed to the read_from_file function call (read_file). The behaviour is equivalent to that of outdir.
      */
-    SMR(ReaderParamStruct reader_parameters, FactoryParamStruct factory_parameters, uint64_t maxMem, unsigned int min = 0, unsigned int max = std::numeric_limits<unsigned int>::max(),
-        const std::string outdir = "./", const std::string &Otmp = "./") : reader_parameters(reader_parameters),
+    SMR(ReaderParamStruct reader_parameters, FactoryParamStruct factory_parameters, SMRParams smr_params) : reader_parameters(reader_parameters),
                                                                         factory_parameters(factory_parameters),
-                                                                        myBatches(0),
-                                                                        totalFilteredRecords(0),
-                                                                        totalRecordsGenerated(0), tmpBase(Otmp),
-                                                                        outdir(outdir), minCount(min), maxCount(max),
-                                                                        mergeCount(4), maxThreads((unsigned int) 1) {
+                                                                        totalRecordsGenerated(0),
+                                                                        tmpBase(smr_params.Otmp), outdir(smr_params.outdir), minCount(smr_params.min),
+                                                                        maxCount(smr_params.max), mergeCount(smr_params.mergeCount),
+                                                                        maxThreads((unsigned int) 1) {
         this->outdir = std::string(outdir+"smr_files/");
         sglib::check_or_create_directory(this->outdir);
-        sglib::check_or_create_directory(this->tmpBase);
-        numElementsPerBatch = (maxMem / sizeof(RecordType) / maxThreads);
-        std::cout<<"SMR created with elements of size "<<sizeof(RecordType)<<" using "<<maxThreads<<" threads and "
-                 <<maxMem<<" Bytes of memory -> batches of "<<numElementsPerBatch<<" elements"<<std::endl;
+        numElementsPerBatch = (smr_params.maxMem / sizeof(RecordType) / maxThreads);
+        sglib::OutputLog(sglib::DEBUG)<<"SMR created with elements of size "<<sizeof(RecordType)<<" using "<<maxThreads<<" threads and "
+                 <<smr_params.maxMem<<" Bytes of memory -> batches of "<<numElementsPerBatch<<" elements"<<std::endl;
 
     }
 
@@ -97,16 +140,16 @@ public:
      * @return
      * Filtered vector of RecordType elements
      */
-    std::vector<RecordType> read_from_file(const std::string &read_file) {
+    std::vector<RecordType> read_from_file(const std::string &read_file, const bool do_work=true) {
         std::string readFileBasename(read_file.substr(0,read_file.find_last_of('.')).substr(read_file.find_last_of('/')+1));
         std::string finalFilePath(outdir+readFileBasename);
         tmpInstance = tmpBase+readFileBasename;
         sglib::check_or_create_directory(finalFilePath);
         outdir = finalFilePath;
-        sglib::check_or_create_directory(tmpInstance);
+        tmpInstance = sglib::create_temp_directory(tmpBase);
         std::ifstream final_file(finalFilePath+"final.kc");
-        if (final_file.is_open()){
-            std::cout << "Using precomputed sum file at " << outdir << "final.kc" << std::endl;
+        if (final_file.is_open() and !do_work){
+            sglib::OutputLog(sglib::DEBUG) << "Using precomputed sum file at " << outdir << "final.kc" << std::endl;
             return readFinalkc(outdir+"final.kc");
         } else {
             uint64_t numFileRecords(0);
@@ -114,16 +157,16 @@ public:
             std::chrono::time_point<std::chrono::system_clock> start, end;
             start = std::chrono::system_clock::now();
 
-            std::cout << "Reading file: " << read_file << std::endl;
+            sglib::OutputLog(sglib::DEBUG) << "Reading file: " << read_file << std::endl;
             FileReader myFileReader(reader_parameters, read_file);
-            std::cout << "Begin reduction using " << numElementsPerBatch << " elements per batch (" << ceil(uint64_t((numElementsPerBatch*sizeof(RecordType)*maxThreads)) / (1.0f*1024*1024*1024)) << "GB)" << std::endl;
+            sglib::OutputLog(sglib::DEBUG) << "Begin reduction using " << numElementsPerBatch << " elements per batch (" << ceil(uint64_t((numElementsPerBatch*sizeof(RecordType)*maxThreads)) / (1.0f*1024*1024*1024)) << "GB)" << std::endl;
             mapElementsToBatches(myFileReader, numFileRecords);
 
             readerStatistics = myFileReader.getSummaryStatistics();
 
             end = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsed_seconds = end - start;
-            std::cout << "Done reduction in " << elapsed_seconds.count() << "s" << std::endl;
+            sglib::OutputLog(sglib::DEBUG) << "Done reduction in " << elapsed_seconds.count() << "s" << std::endl;
             sglib::remove_directory(tmpInstance);
             return getRecords();
         }
@@ -133,38 +176,38 @@ public:
      * @brief
      * Transforms the input from memory into a filtered RecordType vector using maxMem and merging subsets once every mergeCount times.
      * Removes the tmp directory used for the external memory reduction.
-     * @param read_file
-     * Path to the file to be read
      * @return
      * Filtered vector of RecordType elements
      */
-    std::vector<RecordType> process_from_memory() {
-        std::string finalFilePath(outdir+"SMR_mem");
-        tmpInstance = tmpBase+"SMR_mem";
-        sglib::check_or_create_directory(finalFilePath);
-        outdir = finalFilePath;
-        sglib::check_or_create_directory(tmpInstance);
-        std::ifstream final_file(finalFilePath+"final.kc");
+    std::vector<RecordType> process_from_memory(const bool do_work = true) {
+        tmpInstance = sglib::create_temp_directory(tmpBase) + "/";
+        std::ifstream final_file(outdir+"final.kc");
+        if (final_file.is_open() and !do_work) {
+            sglib::OutputLog(sglib::DEBUG) << "Using precomputed sum file at " << outdir << "final.kc" << std::endl;
+            return readFinalkc(outdir + "final.kc");
+        } else {
+            uint64_t numFileRecords(0);
 
-        uint64_t numFileRecords(0);
+            std::chrono::time_point<std::chrono::system_clock> start, end;
+            start = std::chrono::system_clock::now();
 
-        std::chrono::time_point<std::chrono::system_clock> start, end;
-        start = std::chrono::system_clock::now();
+            sglib::OutputLog(sglib::DEBUG) << "Reading From memory" << std::endl;
+            FileReader myFileReader(reader_parameters);
+            sglib::OutputLog(sglib::DEBUG) << "Begin reduction using " << numElementsPerBatch << " elements per batch ("
+                                           << ceil(uint64_t((numElementsPerBatch * sizeof(RecordType) * maxThreads)) /
+                                                   (1.0f * 1024 * 1024 * 1024)) << "GB)" << std::endl;
+            mapElementsToBatches(myFileReader, numFileRecords);
 
-        std::cout << "Reading From memory"<< std::endl;
-        FileReader myFileReader(reader_parameters);
-        std::cout << "Begin reduction using " << numElementsPerBatch << " elements per batch (" << ceil(uint64_t((numElementsPerBatch*sizeof(RecordType)*maxThreads)) / (1.0f*1024*1024*1024)) << "GB)" << std::endl;
-        mapElementsToBatches(myFileReader, numFileRecords);
+            readerStatistics = myFileReader.getSummaryStatistics();
 
-        readerStatistics = myFileReader.getSummaryStatistics();
-
-        end = std::chrono::system_clock::now();
-        std::chrono::duration<double> elapsed_seconds = end - start;
-        std::cout << "Done reduction in " << elapsed_seconds.count() << "s" << std::endl;
-        sglib::remove_directory(tmpInstance);
-        //TODO: remove instance / never create the final files?
-        return getRecords();
-
+            end = std::chrono::system_clock::now();
+            std::chrono::duration<double> elapsed_seconds = end - start;
+            sglib::OutputLog(sglib::DEBUG) << "Done reduction in " << elapsed_seconds.count() << "s" << std::endl;
+            //TODO: remove instance / never create the final files?
+            std::vector<RecordType> result(getRecords());
+            sglib::remove_directory(tmpInstance);
+            return result;
+        }
     };
 
     /**
@@ -217,7 +260,7 @@ private:
             in_fds[i] = ::open(files[i].c_str(), O_RDONLY);
             uint64_t size;
             ::read(in_fds[i], &size, sizeof(size));
-            //std::cout << files[i] << " size " << size << " in disk " << sizeof(size) + size* sizeof(RecordType) << std::endl;
+            //sglib::OutputLog(sglib::DEBUG) << files[i] << " size " << size << " in disk " << sizeof(size) + size* sizeof(RecordType) << std::endl;
             next_element_from_file[i] = (RecordType*) malloc(bufferSize* sizeof(RecordType));
             count_element_from_file[i] = 0;
             size_element_from_file[i]=
@@ -339,7 +382,7 @@ private:
             in_fds[i] = ::open(files[i].c_str(), O_RDONLY);
             uint64_t size;
             ::read(in_fds[i], &size, sizeof(size));
-            //std::cout << files[i] << " size " << size << " in disk " << sizeof(size) + size* sizeof(RecordType) << std::endl;
+            //sglib::OutputLog(sglib::DEBUG) << files[i] << " size " << size << " in disk " << sizeof(size) + size* sizeof(RecordType) << std::endl;
             next_element_from_file[i] = (RecordType*) malloc(bufferSize* sizeof(RecordType));
             count_element_from_file[i] = 0;
             size_element_from_file[i]=
@@ -531,22 +574,16 @@ private:
 
     std::vector<RecordType> readFinalkc(std::string finalFile) {
         std::ifstream outf(finalFile, std::ios_base::binary);
-
-        outf.unsetf(std::ios::skipws);
-
-        std::streampos fileSize;
-        outf.seekg(0, std::ios::end);
-        fileSize = outf.tellg();
-        outf.seekg(sizeof(uint64_t), std::ios::beg);
+        uint64_t numElements;
+        outf.read(reinterpret_cast<char *>(&numElements), sizeof(numElements));
         // reserve capacity
         std::vector<RecordType> vec;
-        vec.reserve(fileSize);
+        vec.reserve(numElements);
 
         // read the data:
         vec.insert(vec.begin(), std::istream_iterator<RecordType>(outf), std::istream_iterator<RecordType>());
 
         return vec;
-
     }
     /**
      * @brief
@@ -579,10 +616,10 @@ private:
     ReaderStats readerStatistics;
 
     std::atomic<uint64_t> totalRecordsGenerated;    /// Total number of records
-    uint64_t totalFilteredRecords;                  /// Total number of resulting elements after filtering and merging
-    const int unsigned maxThreads;
-    int mergeCount;                                 /// How many batches to keep rolling before merging
-    std::string tmpBase;                            /// Directory to store the temporary files
+    uint64_t totalFilteredRecords = 0;                  /// Total number of resulting elements after filtering and merging
+    const int unsigned maxThreads = 1;
+    int mergeCount = 4;                                 /// How many batches to keep rolling before merging
+    const std::string tmpBase;                      /// Directory to store the temporary files
     std::string tmpInstance;                        /// Directory to store the temporary files for the read_from_file argument
     std::string outdir;                             /// Output directory
 };

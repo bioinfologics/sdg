@@ -1,10 +1,10 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/PairedReadMapper.hpp>
+#include <sglib/PairedReadMapper.h>
 #include <sglib/Scaffolder.hpp>
 #include <sglib/KmerCompressionIndex.hpp>
 #include <sglib/GraphPartitioner.hpp>
-#include "sglib/SequenceGraph.hpp"
+#include "sglib/SequenceGraph.h"
 #include "cxxopts.hpp"
 
 
@@ -125,9 +125,9 @@ int main(int argc, char * argv[]) {
     for(int lib=0;lib<reads1.size();lib++) {
         mappers.emplace_back(sg);
         if (reads_type[lib]=="10x") {
-            mappers.back().map_reads(reads1[lib], reads2[lib], prm10x, max_mem_gb * 1024L * 1024L * 1024L);
+            mappers.back().map_reads(reads1[lib], reads2[lib], PairedReadMapper::prm10x, max_mem_gb * 1024L * 1024L * 1024L);
         } else {
-            mappers.back().map_reads(reads1[lib], reads2[lib], prmPE, max_mem_gb * 1024L * 1024L * 1024L);
+            mappers.back().map_reads(reads1[lib], reads2[lib], PairedReadMapper::prmPE, max_mem_gb * 1024L * 1024L * 1024L);
         }
         mappers.back().print_stats();
         if (dump_mapped.size() > 0) {
@@ -138,14 +138,15 @@ int main(int argc, char * argv[]) {
 
     std::cout<<std::endl<<"=== Scaffolding ==="<<std::endl;
 
-    Scaffolder scaff(sg,mappers,kci);
+    std::vector<LinkedReadMapper> linkedReadMapper;
+    Scaffolder scaff(sg,mappers, linkedReadMapper, kci);
 
     std::cout<<std::endl<<"Testing GraphPartitioner"<<std::endl;
 
     auto bubblies=scaff.get_all_bubbly_subgraphs();
     std::cout<<"Starting with "<<bubblies.size()<<" possible bubbles"<<std::endl;
     uint64_t solved_count=0;
-    for (auto bubbly:bubblies){
+    for (auto bubbly:bubblies) {
         std::cout<<std::endl<<"=== Analysing subgraph with "<<bubbly.nodes.size()<<" nodes"<<std::endl;
         GraphPartitioner partitioner(sg,scaff.rmappers,scaff.kci);
         auto tp=partitioner.tags_patterns(bubbly);
@@ -155,7 +156,7 @@ int main(int argc, char * argv[]) {
             std::cout<<std::endl;
         }*/
         std::cout<<std::endl;
-        auto parts=partitioner.generate_partitions(bubbly);
+        auto parts=partitioner.generate_partitions(bubbly,tp);
         std::cout<<"Partitions:"<<std::endl;
         unsigned pnumb=0;
         for (auto &psg:parts){
