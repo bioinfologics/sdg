@@ -10,6 +10,7 @@
 #include <string>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include "sglib/readers/FileReader.h"
 
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
@@ -38,12 +39,14 @@ public:
 
 class SequenceGraphPath;
 
+class SequenceSubGraph;
+
 class SequenceGraph {
 public:
     SequenceGraph(){};
     //=== I/O functions ===
     void load_from_gfa(std::string filename);
-    void write_to_gfa(std::string filename);
+    void write_to_gfa(std::string filename,const std::unordered_set<sgNodeID_t> & marked_red={});
 
     //=== graph operations ===
     sgNodeID_t add_node(Node n);
@@ -60,6 +63,8 @@ public:
     // find bubbles in component of graph
     std::vector<std::vector<sgNodeID_t >> find_bubbles(std::vector<sgNodeID_t>);
 
+
+
     // remove_node
     void remove_node(sgNodeID_t);
     // remove_link
@@ -71,6 +76,7 @@ public:
     void join_all_unitigs();
     std::vector<SequenceGraphPath> get_all_unitigs(uint16_t min_nodes);
     // simplify --> executes expand_path on every multi-sequence unitig
+    std::vector<SequenceSubGraph> get_all_tribbles();
 
 
     // tip_clip -> eliminates tips.

@@ -414,7 +414,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     std::cout<<nodes.size()-1<<" nodes after connecting with "<<lcount<<" links"<<std::endl;
 }
 
-void SequenceGraph::write_to_gfa(std::string filename){
+void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<sgNodeID_t> & mark_red){
     std::string fasta_filename;
     //check the filename ends in .gfa
     if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
@@ -436,7 +436,7 @@ void SequenceGraph::write_to_gfa(std::string filename){
     for (sgNodeID_t i=1;i<nodes.size();++i){
         if (nodes[i].status==sgNodeDeleted) continue;
         fastaf<<">seq"<<i<<std::endl<<nodes[i].sequence<<std::endl;
-        gfaf<<"S\tseq"<<i<<"\t*\tLN:i:"<<nodes[i].sequence.size()<<"\tUR:Z:"<<fasta_filename<<std::endl;
+        gfaf<<"S\tseq"<<i<<"\t*\tLN:i:"<<nodes[i].sequence.size()<<"\tCL:Z:"<<(mark_red.count(i)?"red":"black")<<"\tUR:Z:"<<fasta_filename<<std::endl;
     }
 
     for (auto &ls:links){
@@ -596,4 +596,30 @@ bool SequenceGraphPath::is_canonical() {
     auto rp=*this;
     rp.reverse();
     return this->get_sequence()<rp.get_sequence();
+}
+
+std::vector<SequenceSubGraph> SequenceGraph::get_all_tribbles() {
+
+
+    for (sgNodeID_t n=1;n<nodes.size();++n) {
+        //Heuristic to find "tribbles"
+        // A --- B -- C -- H
+        //  \     \      /
+        //   \     E    /
+        //    \     \  /
+        //      F -- G
+        // A->[B-F]
+        // B->[C-E]
+        // C->H
+        // E->G
+        // F->G
+        // F->H
+        auto a_fw=get_fw_links(n);
+        if (a_fw.size()!=2) continue;
+        auto b_fw=get_fw_links(a_fw[0].dist);
+
+        sgNodeID_t A, B, C, D, E, F, G, H;
+    }
+
+
 }

@@ -165,6 +165,14 @@ add_library(sequence_graph SHARED
 
 target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
+add_executable(bsg-datastore
+        src/bsg-datastore.cc
+        src/sglib/datastores/LinkedReadsDatastore.hpp
+        src/sglib/datastores/LinkedReadsDatastore.cc
+        src/sglib/logger/OutputLog.h
+        src/sglib/logger/OutputLog.cc
+        )
+
 ## add executables and respective sources
 add_executable(gfa-qc
         src/gfa-qc.cc)
