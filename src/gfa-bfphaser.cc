@@ -18,8 +18,8 @@ int main(int argc, char * argv[]) {
     for (auto i=0;i<argc;i++) std::cout<<argv[i]<<" ";
     std::cout<<std::endl<<std::endl;
 
-    std::string gfa_filename,output_prefix, load_cidx, dump_cidx;
-    std::vector<std::string> cidxreads1,cidxreads2, dump_mapped, linked_reads;
+    std::string gfa_filename,output_prefix, load_cidx;
+    std::vector<std::string> dump_mapped, linked_reads;
     bool stats_only=0,reindex_kci=0;
     uint64_t max_mem_gb=4;
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
@@ -34,11 +34,8 @@ int main(int argc, char * argv[]) {
                 ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
         options.add_options("Compression index options")
-                ("cidxread1", "compression index input reads, left", cxxopts::value<std::vector<std::string>>(cidxreads1))
-                ("cidxread2", "compression index input reads, right", cxxopts::value<std::vector<std::string>>(cidxreads2))
-                ("load_cidx", "load compression index filename", cxxopts::value<std::string>(load_cidx))
-                ("dump_cidx", "dump compression index filename", cxxopts::value<std::string>(dump_cidx))
-                ("reindex_ci", "re-index compression index after loading", cxxopts::value<bool>(reindex_kci))
+                ("k,kmer_spectra", "kmer spectra file (for KCI)", cxxopts::value<std::string>(load_cidx))
+                ("reindex_kci", "re-index compression index after loading", cxxopts::value<bool>(reindex_kci))
                 ;
         options.add_options("Paired reads options")
                 ("l,linked_reads", "load linked reads datastore from file", cxxopts::value<std::vector<std::string>>(linked_reads))
@@ -98,20 +95,8 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<"=== Loading reads compression index ==="<<std::endl;
     //compression index
     KmerCompressionIndex kci(sg,max_mem_gb*1024L*1024L*1024L);
-    if (load_cidx!=""){
-        kci.load_from_disk(load_cidx);
-        if (reindex_kci) kci.reindex_graph();
-    } else {
-        kci.index_graph();
-        for(int lib=0;lib<cidxreads1.size();lib++) {
-            kci.start_new_count();
-            kci.add_counts_from_file(cidxreads1[lib]);
-            kci.add_counts_from_file(cidxreads2[lib]);
-        }
-    }
-    if (dump_cidx!=""){
-        kci.save_to_disk(dump_cidx);
-    }
+    kci.load_from_disk(load_cidx);
+    if (reindex_kci) kci.reindex_graph();
 
     if (kci.read_counts.size()>0) {
         kci.compute_compression_stats();

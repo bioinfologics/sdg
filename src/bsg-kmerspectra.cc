@@ -13,7 +13,7 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<std::endl;
 
     if (argc <2){
-        std::cout<<"Please specify one of: make, update, view"<<std::endl;
+        std::cout<<"Please specify one of: make, stats, project"<<std::endl;
         exit(1);
     }
 
@@ -55,20 +55,21 @@ int main(int argc, char * argv[]) {
         kci.index_graph();
         kci.start_new_count();
         kci.add_counts_from_file(fastq_files);
+        kci.compute_compression_stats();
         kci.save_to_disk(output);
 
 
 
     }
-    else if (0==strcmp(argv[1],"view")) {
-        std::vector<std::string> filenames;
+    else if (0==strcmp(argv[1],"stats")) {
+        std::string filename;
         try {
 
-            cxxopts::Options options("bsg-kmerspectra view", "BSG view kmer spectra");
+            cxxopts::Options options("bsg-kmerspectra stats", "BSG kmer spectra stats");
 
             options.add_options()
                     ("help", "Print help")
-                    ("s,kmerspectra", "kmerspectra name (multi)", cxxopts::value<std::vector<std::string>>(filenames));
+                    ("s,kmerspectra", "kmerspectra name", cxxopts::value<std::string>(filename));
 
             auto newargc=argc-1;
             auto newargv=&argv[1];
@@ -78,8 +79,8 @@ int main(int argc, char * argv[]) {
                 exit(0);
             }
 
-            if (result.count("datastore")==0) {
-                throw cxxopts::OptionException(" please specify datastore file (s)");
+            if (result.count("kmerspectra")==0) {
+                throw cxxopts::OptionException(" please specify kmer spectra file");
             }
 
 
@@ -88,7 +89,11 @@ int main(int argc, char * argv[]) {
                       << "Use option --help to check command line arguments." << std::endl;
             exit(1);
         }
-
+        SequenceGraph sg;
+        KmerCompressionIndex kci(sg);
+        kci.load_from_disk(filename);
+        sglib::OutputLog()<<kci.graph_kmers.size()<<" kmers in spectra loaded from disk"<<std::endl;
+        kci.compute_compression_stats();
 
 
     }
@@ -96,7 +101,7 @@ int main(int argc, char * argv[]) {
         std::cout<<"Kmerspectra updates not implemented yet."<<std::endl;
     }
     else {
-        std::cout<<"Please specify one of: make, update, view"<<std::endl;
+        std::cout<<"Please specify one of: make, stats, view"<<std::endl;
     }
 }
 
