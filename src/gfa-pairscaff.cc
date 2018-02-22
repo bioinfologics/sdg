@@ -101,8 +101,8 @@ int main(int argc, char * argv[]) {
         kci.index_graph();
         for(int lib=0;lib<cidxreads1.size();lib++) {
             kci.start_new_count();
-            kci.add_counts_from_file(cidxreads1[lib]);
-            kci.add_counts_from_file(cidxreads2[lib]);
+            kci.add_counts_from_file({cidxreads1[lib]});
+            kci.add_counts_from_file({cidxreads2[lib]});
         }
     }
     if (dump_cidx!=""){

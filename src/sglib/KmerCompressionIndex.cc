@@ -7,33 +7,47 @@
 #include <atomic>
 
 
-KmerCompressionIndex::KmerCompressionIndex(SequenceGraph &_sg, uint64_t _max_mem): sg(_sg) {
-    max_mem = _max_mem;
-}
-
 void KmerCompressionIndex::index_graph(){
+    sglib::OutputLog(sglib::INFO) << "Indexing graph, Counting..."<<std::endl;
     const int k = 31;
     const int max_coverage = 1;
-    const std::string output_prefix("./");
-    SMR<KmerCount,
-    KmerCountFactory<FastaRecord>,
-    GraphNodeReader<FastaRecord>,
-    FastaRecord, GraphNodeReaderParams, KmerCountFactoryParams> kmerCount_SMR({1, sg}, {k}, max_mem, 0, max_coverage,
-                                                                          output_prefix);
+    uint64_t total_k=0;
+    for (auto &n:sg.nodes) if (n.sequence.size()>=k) total_k+=n.sequence.size()+1-k;
+    graph_kmers.reserve(total_k);
+    FastaRecord r;
+    KmerCountFactory<FastaRecord>kcf({k});
+    for (sgNodeID_t n=1;n<sg.nodes.size();++n){
+        if (sg.nodes[n].sequence.size()>=k){
+            r.id=n;
+            r.seq=sg.nodes[n].sequence;
+            kcf.setFileRecord(r);
+            kcf.next_element(graph_kmers);
+        }
+    }
+    sglib::OutputLog(sglib::INFO)<<graph_kmers.size()<<" kmers in total"<<std::endl;
+    sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
+    std::sort(graph_kmers.begin(),graph_kmers.end());
+    sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
+    auto wi=graph_kmers.begin();
+    auto ri=graph_kmers.begin();
+    while (ri<graph_kmers.end()){
+        if (wi.base()==ri.base()) ++ri;
+        else if (*wi<*ri) {++wi; *wi=*ri;}
+        else if (*wi==*ri){wi->merge(*ri);++ri;}
+    }
 
+    graph_kmers.resize(wi+1-graph_kmers.begin());
+    sglib::OutputLog(sglib::INFO)<<graph_kmers.size()<<" kmers in index, "<< sizeof(KmerCount) << " bytes per kmer"<<std::endl;
+    //TODO: remove kmers with more than X in count
 
-
-    std::cout << "Indexing graph... " << std::endl;
-    graph_kmers = kmerCount_SMR.process_from_memory();
-
-    std::vector<uint64_t> uniqKmer_statistics(kmerCount_SMR.summaryStatistics());
-    std::cout << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << std::endl;
-    std::cout << "Number of contigs from the assembly " << uniqKmer_statistics[2] << std::endl;
+//    std::vector<uint64_t> uniqKmer_statistics(kmerCount_SMR.summaryStatistics());
+//    std::cout << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << std::endl;
+//    std::cout << "Number of contigs from the assembly " << uniqKmer_statistics[2] << std::endl;
 }
 
 void KmerCompressionIndex::reindex_graph(){
     const int k = 31;
-    const int max_coverage = 1;
+    const int max_coverage = 20;
     const std::string output_prefix("./");
     SMR<KmerCount,
     KmerCountFactory<FastaRecord>,
@@ -43,7 +57,7 @@ void KmerCompressionIndex::reindex_graph(){
 
 
 
-    std::cout << "Re-indexing graph... " << std::endl;
+    std::cout << "Indexing graph kmers... " << std::endl;
     auto new_graph_kmers = kmerCount_SMR.process_from_memory();
     uint64_t deleted=0,changed=0,equal=0;
     //std::sort(new_graph_kmers.begin(),new_graph_kmers.end());
@@ -105,62 +119,74 @@ void KmerCompressionIndex::start_new_count(){
     read_counts.back().resize(graph_kmers.size(),0);
 }
 
-void KmerCompressionIndex::add_counts_from_file(std::string filename) {
+void KmerCompressionIndex::add_counts_from_file(std::vector<std::string> filenames) {
 
-    std::cout<<"counting from file"<<std::endl;
 
-    FastqReader<FastqRecord> fastqReader({0},filename);
-    std::atomic<std::uint64_t> present(0), absent(0), rp(0);
+    uint64_t present(0), absent(0), rp(0);
+    sglib::OutputLog(sglib::INFO)<<"Populating lookup map"<<std::endl;
     std::unordered_map<uint64_t,uint64_t> kmer_map;
+    kmer_map.reserve(graph_kmers.size());
     for (uint64_t i=0;i<graph_kmers.size();++i) kmer_map[graph_kmers[i].kmer]=i;
+    sglib::OutputLog(sglib::INFO)<<"Map populated, processing files"<<std::endl;
+    for (auto filename:filenames) {
+        sglib::OutputLog(sglib::INFO) << "Counting from file: " << filename << std::endl;
+        FastqReader<FastqRecord> fastqReader({0}, filename);
 
 #pragma omp parallel shared(fastqReader)
-    {
-        std::vector<uint16_t> thread_counts(read_counts.back().size(),0);
-        FastqRecord read;
-        std::vector<KmerCount> readkmers;
-        KmerCountFactory<FastqRecord> kf({31});
+        {
+            uint64_t thread_present(0), thread_absent(0), thread_rp(0);
+            const size_t local_kmers_size = 2000000;
+            std::vector<uint64_t> found_kmers;
+            found_kmers.reserve(local_kmers_size);
+            FastqRecord read;
+            std::vector<KmerCount> readkmers;
+            KmerCountFactory<FastqRecord> kf({31});
 
-        bool c;
-#pragma omp critical(fastqreader)
-        c = fastqReader.next_record(read);
-        while (c) {
-            readkmers.clear();
-            //process tag if 10x! this way even ummaped reads get tags
-            kf.setFileRecord(read);
-            kf.next_element(readkmers);
-
-            for (auto &rk:readkmers) {
-                /*auto nk = std::lower_bound(graph_kmers.begin(), graph_kmers.end(), rk);
-                if (nk != graph_kmers.end() and nk->kmer == rk.kmer) {
-                    auto offset = nk - graph_kmers.begin();
-                    ++thread_counts[offset];
-                    ++present;
-                } else ++absent;*/
-                auto findk = kmer_map.find(rk.kmer);
-                if (kmer_map.end() != findk){
-                    ++thread_counts[findk->second];
-                    ++present;
-                } else ++absent;
-
-
-            }
-            uint64_t a=++rp;
-            if (a % 100000 == 0)
-                std::cout << rp << " reads processed " << present << " / " << present + absent << " kmers found"
-                          << std::endl;
+            bool c;
 #pragma omp critical(fastqreader)
             c = fastqReader.next_record(read);
-        }
+            while (c) {
+                readkmers.clear();
+                kf.setFileRecord(read);
+                kf.next_element(readkmers);
 
-        //Update shared counts
-#pragma omp critical(countupdate)
-        {
-            for (uint64_t i=0;i<read_counts.back().size();++i) read_counts.back()[i]+=thread_counts[i];
+                for (auto &rk:readkmers) {
+                    auto findk = kmer_map.find(rk.kmer);
+                    if (kmer_map.end() != findk) {
+                        //++thread_counts[findk->second];
+                        found_kmers.emplace_back(findk->second);
+                        if (found_kmers.size() == local_kmers_size) {
+                            bool printstatus = false;
+#pragma omp critical(results_merge)
+                            {
+                                auto &arc = read_counts.back();
+                                for (auto &x:found_kmers) if (arc[x] < UINT16_MAX) ++arc[x];
+                                if (rp / 1000000 != (rp + thread_rp) / 1000000) printstatus = true;
+                                rp += thread_rp;
+                                present += thread_present;
+                                absent += thread_absent;
+                            }
+                            found_kmers.clear();
+                            thread_absent = 0;
+                            thread_present = 0;
+                            thread_rp = 0;
+                            if (printstatus)
+                                sglib::OutputLog(sglib::INFO) << rp << " reads processed " << present << " / "
+                                                              << present + absent << " kmers found" << std::endl;
+                        }
+                        ++thread_present;
+                    } else ++thread_absent;
+
+
+                }
+                ++thread_rp;
+#pragma omp critical(fastqreader)
+                c = fastqReader.next_record(read);
+            }
         }
+        sglib::OutputLog(sglib::INFO) << rp << " reads processed " << present << " / " << present + absent
+                                      << " kmers found" << std::endl;
     }
-    // somehow for my test data with 700 reads, totak count is 834 for r2...
-    std::cout << rp << " reads processed "<< present <<" / " << present+absent << " kmers found" << std::endl;
 }
 
 

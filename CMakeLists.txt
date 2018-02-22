@@ -173,6 +173,19 @@ add_executable(bsg-datastore
         src/sglib/logger/OutputLog.cc
         )
 
+add_executable(bsg-kmerspectra
+        src/bsg-kmerspectra.cc
+        src/sglib/SequenceGraph.hpp
+        src/sglib/SequenceGraph.cc
+        src/sglib/filesystem/check_or_create_directory.h
+        src/sglib/filesystem/check_or_create_directory.cc
+        src/sglib/KmerCompressionIndex.hpp
+        src/sglib/KmerCompressionIndex.cc
+        src/sglib/logger/OutputLog.h
+        src/sglib/logger/OutputLog.cc
+        )
+target_link_libraries(bsg-kmerspectra ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+
 ## add executables and respective sources
 add_executable(gfa-qc
         src/gfa-qc.cc)

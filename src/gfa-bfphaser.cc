@@ -95,21 +95,6 @@ int main(int argc, char * argv[]) {
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
 
-
-    std::cout<<std::endl<<"=== Mapping reads ==="<<std::endl;
-    //read mapping/loading
-    std::vector<PairedReadMapper> prmappers;
-    std::vector<LinkedReadMapper> lrmappers;
-    std::vector<LinkedReadsDatastore> datastores;
-
-    for (auto lrf:linked_reads){
-        datastores.emplace_back(lrf);
-        lrmappers.emplace_back(sg,datastores.back());
-        lrmappers.back().memlimit=max_mem_gb*1024L*1024L*1024L;
-        lrmappers.back().update_graph_index();
-        lrmappers.back().map_reads();
-    }
-
     std::cout<<std::endl<<"=== Loading reads compression index ==="<<std::endl;
     //compression index
     KmerCompressionIndex kci(sg,max_mem_gb*1024L*1024L*1024L);
@@ -132,6 +117,22 @@ int main(int argc, char * argv[]) {
         kci.compute_compression_stats();
         kci.dump_histogram("kci_histogram.csv");
     }
+
+    std::cout<<std::endl<<"=== Mapping reads ==="<<std::endl;
+    //read mapping/loading
+    std::vector<PairedReadMapper> prmappers;
+    std::vector<LinkedReadMapper> lrmappers;
+    std::vector<LinkedReadsDatastore> datastores;
+
+    for (auto lrf:linked_reads){
+        datastores.emplace_back(lrf);
+        lrmappers.emplace_back(sg,datastores.back());
+        lrmappers.back().memlimit=max_mem_gb*1024L*1024L*1024L;
+        lrmappers.back().update_graph_index();
+        lrmappers.back().map_reads();
+    }
+
+
 
 
     std::cout<<std::endl<<"=== Scaffolding ==="<<std::endl;
