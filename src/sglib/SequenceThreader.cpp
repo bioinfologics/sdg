@@ -2,10 +2,12 @@
 // Created by Ben Ward (EI) on 29/01/2018.
 //
 
-#include "SequenceThreader.h"
-#include "factories/KMerIDXFactory.h"
 #include <numeric>
 #include <atomic>
+#include <sglib/SequenceThreader.h>
+#include <sglib/factories/KMerIDXFactory.h>
+#include <sglib/readers/FileReader.h>
+#include <sglib/logger/OutputLog.h>
 
 SequenceMapping::SequenceMapping(){
     // Just clean the structure, OSX doesn't give you clean memory
@@ -117,7 +119,7 @@ double SequenceMapping::POPUKM() const {
 
 void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const std::string& filename) {
 
-    std::cout << "Mapping sequence kmers to graph..." << std::endl;
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Mapping sequence kmers to graph." << std::endl;
     FastaReader<FastaRecord> fastaReader({0}, filename);
     std::atomic<uint64_t> mapped_kmers_count(0), sequence_count(0);
 
@@ -151,21 +153,26 @@ void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const
                 std::tie(found_kmer, graph_pos) = graph_kmer_index.find_unique_kmer_in_graph(sk.kmer);
                 // IF KMER EXISTS ON GRAPH
                 if (found_kmer) {
-                    std::cout << '(' << graph_pos.node << ", " << graph_pos.pos << "), ";
+                    sglib::OutputLog(sglib::LogLevels::DEBUG) << "Found kmer: " << sk.kmer << "in graph" << std::endl;
+                    sglib::OutputLog(sglib::LogLevels::DEBUG) << '(' << graph_pos.node << ", " << graph_pos.pos << ')' << std::endl;
                     mapped_kmers_count++;
                     // IF THE KMER MATCH IS THE FIRST MATCH FOR THE MAPPING...
                     if (!mapping.ismatched()) {
+                        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Kmer match is the first for the mapping." << std::endl;
                         mapping.start_new_mapping(graph_pos, sk.pos, graph_kmer_index);
                     } // IF THE KMER MATCH IS NOT THE FIRST MATCH FOR THE MAPPING...
                     else {
+                        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Kmer match is not the first match for the mapping." << std::endl;
                         // THERE ARE TWO SITUATIONS WHERE WE WOULD START A NEW MAPPING...
                         // A). WE ARE MAPPING TO A COMPLETELY DIFFERENT NODE...
                         // B). THE DIRECTION OF THE MAPPING IS FLIPPED...
 
                         if (!mapping.mapping_continues(graph_pos)) {
+                            sglib::OutputLog(sglib::LogLevels::DEBUG) << "Kmer match does not continues the current mapping." << std::endl;
                             sequence_mappings.push_back(mapping);
                             mapping.start_new_mapping(graph_pos, sk.pos, graph_kmer_index);
                         } else { // IF NODE KMER MAPS TO IS THE SAME, EXTEND THE CURRENT MAPPING...
+                            sglib::OutputLog(sglib::LogLevels::DEBUG) << "Kmer match continues the current mapping." << std::endl;
                             mapping.extend(graph_pos.pos, sk.pos);
                         }
                     }
@@ -179,9 +186,6 @@ void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const
                 mappings_of_sequence[sequence.id] = sequence_mappings;
             }
 
-            auto tc = ++sequence_count;
-            if (tc % 100000 == 0) std::cout << mapped_kmers_count << " / " << tc << std::endl;
-
             #pragma omp critical (readrec)
             {
                 c = fastaReader.next_record(sequence);
@@ -189,14 +193,17 @@ void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const
         }
     }
 
-    std::cout << "Mapped " << mapped_kmers_count << " Kmers from " << sequence_count << " sequences." << std::endl;
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Mapped " << mapped_kmers_count << " Kmers from " << sequence_count << " sequences." << std::endl;
 }
 
 void SequenceThreader::mappings_paths() {
+
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Assembling mappings into paths." << std::endl;
+
     for(const auto& sequence_mappings : mappings_of_sequence) {
 
         // For every sequence, initialize and empty sequence path, and a vector to store constructed paths.
-        std::cout << "Constructing mapping paths for sequence: " << sequence_mappings.first << std::endl;
+        sglib::OutputLog(sglib::LogLevels::DEBUG) << "For sequence: " << sequence_mappings.first << std::endl;
         SequenceGraphPath sgpath(sg);
         std::vector<std::vector<SequenceMapping>> seq_mapping_paths(0);
         std::vector<SequenceMapping> mapping_path(0);
@@ -205,32 +212,29 @@ void SequenceThreader::mappings_paths() {
 
             // For every mapping hit the sequence has, try to append the node of the mapping hit to the current path.
 
-            //std::cout << "CONSIDERING THE FOLLOWING MAPPING:" << std::endl << sm << std::endl;
+            sglib::OutputLog(sglib::LogLevels::DEBUG) << "Considering the mapping:" << std::endl << sm << std::endl;
 
-            //sgNodeID_t dirnode = sm.node_direction() == Forward ? sm.absnode() : -sm.absnode();
             auto dn = sm.dirnode();
 
-            //std::cout << "Trying to add to path as: " << dn << std::endl;
+            sglib::OutputLog(sglib::LogLevels::DEBUG) << "Trying to add to path as: " << dn << std::endl;
 
             bool could_append = sgpath.append_to_path(dn);
 
             if (could_append) {
-                //std::cout << "Was able to append " << dn << " to the path." << std::endl;
-                //std::cout << "Adding mapping to the path of mappings." << std::endl;
+                sglib::OutputLog(sglib::LogLevels::DEBUG) << "Was able to append " << dn << " to the path." << std::endl;
                 mapping_path.emplace_back(sm);
-                //std::cout << "Current path of mappings is " << mapping_path.size() << " nodes long." << std::endl;
             } else {
-                //std::cout << "Was not able to append " << dn << " to the path." << std::endl;
-                //std::cout << "Saving current path." << std::endl;
+                sglib::OutputLog(sglib::LogLevels::DEBUG) << "Was not able to append " << dn << " to the path." << std::endl;
+                sglib::OutputLog(sglib::LogLevels::DEBUG) << "Saving current path." << std::endl;
                 seq_mapping_paths.emplace_back(mapping_path);
-                //std::cout << "Clearing path to start a new path." << std::endl;
+                sglib::OutputLog(sglib::LogLevels::DEBUG) << "Clearing path to start a new path." << std::endl;
                 mapping_path.clear();
                 sgpath.nodes.clear();
-                //std::cout << "ADDING NODE TO NEW PATH..." << std::endl;
+                sglib::OutputLog(sglib::LogLevels::DEBUG) << "Adding node to new path." << std::endl;
                 sgpath.append_to_path(dn);
                 mapping_path.emplace_back(sm);
-                //std::cout << "Current path of mappings is " << mapping_path.size() << " nodes long." << std::endl;
             }
+            sglib::OutputLog(sglib::LogLevels::DEBUG) << "Current path of mappings is " << mapping_path.size() << " nodes long." << std::endl;
         }
 
         seq_mapping_paths.emplace_back(mapping_path);
@@ -280,5 +284,30 @@ void SequenceThreader::print_unique_paths_sizes(std::ofstream& output_file) cons
         auto seqsize = seq.length();
         auto pathname = path.get_fasta_header().erase(0, 1);
         output_file << pathname << '\t' << seqsize << std::endl;
+    }
+}
+
+void SequenceThreader::print_mappings() const {
+    for( auto it = mappings_of_sequence.begin(); it != mappings_of_sequence.end(); ++it) {
+        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Mappings for query sequence: " << it->first << ":" << std::endl;
+        if(sglib::OutputLogLevel == sglib::LogLevels::DEBUG)
+            for (const auto &sm:it->second) {
+                std::cout << sm << std::endl;
+            }
+    }
+}
+
+void SequenceThreader::print_paths() const {
+    for( auto it = paths_of_mappings_of_sequence.begin(); it != paths_of_mappings_of_sequence.end(); ++it) {
+        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Paths for query sequence: " << it->first << std::endl;
+        if(sglib::OutputLogLevel == sglib::LogLevels::DEBUG)
+            for (const auto &path:it->second) {
+                std::cout << "Path of " << path.size() << " mappings: ";
+                for (const auto &sm:path) {
+                    sgNodeID_t dirnode = sm.node_direction() == Forward ? sm.absnode() : -sm.absnode();
+                    std::cout << dirnode << ", ";
+                }
+                std::cout << std::endl;
+            }
     }
 }

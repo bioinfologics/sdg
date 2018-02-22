@@ -112,6 +112,16 @@ public:
                 if (nodes[i] == nodes[j] or nodes[i] == -nodes[j]) return true; //looping node
         return false;
     }
+
+    bool link_exists(sgNodeID_t from, sgNodeID_t to) {
+        // Look for link between starting node and the new node.
+        auto l = links[std::abs(from)].begin();
+        // TODO: Can this just be a std::find?
+        for (; l != links[std::abs(from)].end(); ++l){
+            if (l->source == from and l->dest == to) break;
+        }
+        return l != links[std::abs(from)].end();
+    }
 };
 
 
@@ -126,6 +136,7 @@ public:
     std::set<sgNodeID_t> make_set_of_nodes() const;
     bool operator==(const SequenceGraphPath& rhs) const;
     bool operator<(const SequenceGraphPath& rhs) const;
+    bool append_to_path(sgNodeID_t newnode);
 
 private:
     SequenceGraph& sg;

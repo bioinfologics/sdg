@@ -201,7 +201,7 @@ add_executable(kc_comp
 add_executable(seq-sorter
                src/seq-sorter.cpp)
 
-add_executable(ref-aligner
+add_executable(seq-thread
         src/seq-thread.cpp)
 
 add_executable(gfa-extract
@@ -214,7 +214,7 @@ target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-bfphaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(ref-aligner sequence_graph)
+target_link_libraries(seq-thread sequence_graph)
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract sequence_graph)
 
@@ -235,6 +235,7 @@ install(TARGETS
         gfa-pairscaff
         gfa-align
         phaser
+        seq-thread
         runBasicTests
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib

@@ -9,7 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <fcntl.h>
-#include "Common.h"
+#include <sglib/readers/Common.h>
 #include "kseq.hpp"
 
 struct FastxReaderParams {

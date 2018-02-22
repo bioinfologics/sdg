@@ -5,6 +5,7 @@
 #include "cxxopts.hpp"
 #include "sglib/SequenceThreader.h"
 #include "sglib/filesystem/check_or_create_directory.h"
+#include <sglib/logger/OutputLog.h>
 
 int main(int argc, char **argv) {
 
@@ -12,6 +13,7 @@ int main(int argc, char **argv) {
     std::string graph_filename;
     std::string reference_filename;
     std::string output_prefix;
+    int log_level;
 
     // DEFAULT PARAMETERS... FIXED FOR NOW.
 
@@ -20,17 +22,16 @@ int main(int argc, char **argv) {
 
     std::string outdefault("THREADER_1");
 
+// @formatter:off
     cxxopts::Options options("seq-threader", "Locating query sequences in genome assembly graphs.");
 
-    options.add_options()("help", "Print help")
-    ("r,reference", "Reference FASTA of sequences to locate in graph", cxxopts::value<std::string>(reference_filename), "FASTA - Sequence file")
+    options.add_options()
+            ("help", "Print help")
+            ("r,reference", "Reference FASTA of sequences to locate in graph", cxxopts::value<std::string>(reference_filename), "FASTA - Sequence file")
             ("g,graph", "Genome graph in GFA format", cxxopts::value<std::string>(graph_filename), "GFA file")
-            ("o,output", "Output file prefix", cxxopts::value<std::string>(output_prefix)->default_value(outdefault), "prefix_dir");
-
-    options.add_options("Skip-mer shape (m every n, total k)")
-            ("m,used_bases", "m (1)", cxxopts::value<uint8_t>(m))
-            ("n,skipped_bases", "n (1)", cxxopts::value<uint8_t>(n))
-            ("k,total_bases", "k (31)", cxxopts::value<uint8_t>(k));
+            ("o,output", "Output file prefix", cxxopts::value<std::string>(output_prefix) -> default_value(outdefault), "prefix_dir")
+            ("l,logging", "Logging level (0: INFO, 1: WARN, 2: DEBUG)", cxxopts::value<int>(log_level) -> default_value("0"), "log_level");
+// @formatter:on
 
     auto result (options.parse(argc, argv));
 
@@ -38,6 +39,8 @@ int main(int argc, char **argv) {
         std::cout << options.help({""}) << std::endl;
         exit(0);
     }
+
+    sglib::OutputLogLevel = (sglib::LogLevels) log_level;
 
     auto fail = false;
 
@@ -50,20 +53,18 @@ int main(int argc, char **argv) {
         fail = true;
     }
 
-    if (fail) {
-        exit(1);
-    }
-
     if (!sglib::check_or_create_directory(output_prefix)) {
         std::cout << "Could not find or create output directory: " << output_prefix << '.' << std::endl;
+        fail = true;
+    }
+
+    if (fail) {
         exit(1);
     }
 
 // LOAD GENOME GRAPH...
     SequenceGraph sg;
     sg.load_from_gfa(graph_filename);
-
-    sg.nodes.front();
 
 // CONSTRUCT SEQUENCE_MAPPER...
     SequenceThreader tdr(sg);

@@ -2,19 +2,20 @@
 // Created by Ben Ward (EI) on 07/02/2018.
 //
 
-#include "UniqueKmerIndex.h"
-#include "sglib/SMR.h"
-#include "sglib/factories/KMerIDXFactory.h"
-#include "sglib/readers/SequenceGraphReader.h"
 #include <tuple>
+#include <sglib/UniqueKmerIndex.h>
+#include <sglib/SMR.h>
+#include <sglib/factories/KMerIDXFactory.h>
+#include <sglib/readers/FileReader.h>
+#include <sglib/readers/SequenceGraphReader.h>
 
 UniqueKmerIndex::UniqueKmerIndex(const SequenceGraph& sg, const uint8_t k) : sg(sg) {
 
     SMR<KmerIDX, kmerIDXFactory<FastaRecord>,
     GraphNodeReader<FastaRecord>, FastaRecord,
-    GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k}, 10 * GB, 0, 1, "default");
+    GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k}, {10 * GB, 0, 1, "default"});
 
-    std::cout << "Generating unique graph " << k << "mers and building index..." << std::endl;
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Generating unique graph " << int(k) << "mers and building unique kmer index." << std::endl;
 
     unique_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
     total_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
@@ -29,8 +30,8 @@ UniqueKmerIndex::UniqueKmerIndex(const SequenceGraph& sg, const uint8_t k) : sg(
     }
 
     std::vector<uint64_t> uniqKmer_statistics(kmerIDX_SMR.summaryStatistics());
-    std::cout << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << std::endl;
-    std::cout << "Number of contigs from the assembly " << uniqKmer_statistics[2] << std::endl;
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << '.' << std::endl;
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Number of contigs from the assembly " << uniqKmer_statistics[2] << '.' << std::endl;
 
 }
 

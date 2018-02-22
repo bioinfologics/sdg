@@ -75,31 +75,9 @@ public:
         map_sequences_from_file(min_matches, filename);
     }
 
-    void print_mappings() const {
-        for( auto it = mappings_of_sequence.begin(); it != mappings_of_sequence.end(); ++it) {
-            std::cout << "Mappings for query sequence: " << it->first << ":" << std::endl;
-            for (const auto &sm:it->second) {
-                std::cout << sm << std::endl;
-            }
-        }
-    }
-
+    void print_mappings() const;
     void mappings_paths();
-
-    void print_paths() const {
-        for( auto it = paths_of_mappings_of_sequence.begin(); it != paths_of_mappings_of_sequence.end(); ++it) {
-            std::cout << "Paths for query sequence: " << it->first << ":" << std::endl;
-            for (const auto &path:it->second) {
-                std::cout << "Path of " << path.size() << " mappings: ";
-                for (const auto &sm:path) {
-                    sgNodeID_t dirnode = sm.node_direction() == Forward ? sm.absnode() : -sm.absnode();
-                    std::cout << dirnode << ", ";
-                }
-                std::cout << std::endl;
-            }
-        }
-    }
-
+    void print_paths() const;
     void paths_to_fasta(std::ofstream& output_file) const;
     void print_unique_paths_sizes(std::ofstream& output_file) const;
 };
