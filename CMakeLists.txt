@@ -9,12 +9,11 @@ if (APPLE)
 endif (APPLE)
 
 
-project (bsg)
+PROJECT (bsg)
 ENABLE_TESTING()
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 OPTION(BUILD_TESTING "Build tests." ON)
-
-execute_process(COMMAND find ./ -type f -name "*.gcda" -exec rm -rf {} \;)
+OPTION(BUILD_DOC "Build documentation" OFF)
+OPTION(BUILD_COV "Build coverage" OFF)
 
 # Get the remote url
 execute_process(
@@ -88,38 +87,38 @@ if (BZIP2_FOUND)
     set(DEPENDENCY_LIBS ${DEPENDENCY_LIBS} ${BZIP2_LIBRARIES})
 endif()
 
-# first we can indicate the documentation build as an option and set it to ON by default
-option(BUILD_DOC "Build documentation" ON)
-
 # check if Doxygen is installed
-find_package(Doxygen)
-if (DOXYGEN_FOUND)
-    # set input and output files
-    set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-    set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+IF(BUILD_DOC)
+    find_package(Doxygen)
+    if (DOXYGEN_FOUND)
+        # set input and output files
+        set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
+        set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
-    # request to configure the file
-    configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-    message("Doxygen build started")
+        # request to configure the file
+        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+        message("Doxygen build started")
 
-    # note the option ALL which allows to build the docs together with the application
-    add_custom_target(doc_doxygen ALL
-                      COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                      COMMENT "Generating API documentation with Doxygen"
-                      VERBATIM)
-else (DOXYGEN_FOUND)
-    message("Doxygen need to be installed to generate the doxygen documentation")
-endif (DOXYGEN_FOUND)
+        # note the option ALL which allows to build the docs together with the application
+        add_custom_target(doc_doxygen ALL
+                          COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+                          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                          COMMENT "Generating API documentation with Doxygen"
+                          VERBATIM)
+    else (DOXYGEN_FOUND)
+        message("Doxygen need to be installed to generate the doxygen documentation")
+    endif (DOXYGEN_FOUND)
+ENDIF()
 
-add_subdirectory("tests/googletest")
+if(BUILD_TESTING)
+    add_subdirectory("tests/googletest")
+    include_directories("tests/googletest/googletest/include/")
+    include_directories("tests/googletest/googletest/src/")
+ENDIF()
 ## Include directories
-include_directories("tests/googletest/googletest/include/")
-include_directories("tests/googletest/googletest/src/")
 include_directories("src/")
 include_directories("deps/cxxopts/include")
 include_directories("deps/kseqcpp/")
-
 ## Set sources variables
 
 ## Libraries
@@ -142,9 +141,11 @@ add_library(sequence_graph SHARED
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 
-set_target_properties(sequence_graph PROPERTIES
+if (BUILD_COV)
+    set_target_properties(sequence_graph PROPERTIES
                       COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
                       LINK_FLAGS    "--coverage")
+endif()
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 
@@ -204,6 +205,9 @@ add_executable(seq-sorter
 add_executable(seq-thread
         src/seq-thread.cpp)
 
+add_executable(map-lr
+               src/map-lr.cc)
+
 add_executable(gfa-extract
         src/gfa-extract.cc)
 
@@ -216,14 +220,16 @@ target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(seq-thread sequence_graph)
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(map-lr sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract sequence_graph)
 
 IF(BUILD_TESTING)
     add_executable(runBasicTests tests/sglib/basic_check.cc)
-    set_target_properties(runBasicTests PROPERTIES
+    IF(BUILD_COV)
+        set_target_properties(runBasicTests PROPERTIES
                           COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
                           LINK_FLAGS    "--coverage")
-
+    ENDIF()
     target_link_libraries(runBasicTests gtest gtest_main sequence_graph)
     add_test(basicTests runBasicTests)
 ENDIF()

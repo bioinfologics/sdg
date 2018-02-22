@@ -5,8 +5,6 @@
 #include <iostream>
 #include <fstream>
 
-#include <sys/stat.h>
-
 #include <sglib/filesystem/check_or_create_directory.h>
 #include <sglib/factories/KMerIDXFactory.h>
 #include <sglib/readers/FileReader.h>
@@ -20,21 +18,22 @@ int main(int argc, char * argv[]) {
     std::uint32_t min_contig_length(0);
     unsigned int mem_limit(10);
     unsigned int min_matches(1);
-    bool stats_only=0;
+    bool stats_only= false;
+    cxxopts::Options options("gfa-align", "GFA Alignment tool");
+
+    options.add_options()
+            ("help", "Print help", cxxopts::value<bool>(),"")
+            ("r,reference", "reference FASTA", cxxopts::value<std::string>(ref_gfa_filename), "filepath")
+            ("l,min_contig_length", "Minimum contig length", cxxopts::value<uint32_t>(min_contig_length)->default_value("1000"),"uint")
+            ("m,min_matches", "Minimum kmers to match before calling a block", cxxopts::value<unsigned int>(min_matches)->default_value("1000"),"uint")
+            ("o,output", "output directory prefix", cxxopts::value<std::string>(output_prefix), "string")
+            ("s,stats_only", "do not dump detailed information", cxxopts::value<bool>(stats_only)->default_value("false"), "uint");
+
+    options.add_options("Performance")
+            ("mem_limit", "Memory limit in GB",cxxopts::value<unsigned int>(mem_limit)->default_value("10"), "uint");
+
     try
     {
-        cxxopts::Options options("gfa-align", "GFA Alignment tool");
-
-        options.add_options()
-                ("help", "Print help", cxxopts::value<bool>(),"")
-                ("r,reference", "reference FASTA", cxxopts::value<std::string>(ref_gfa_filename), "filepath")
-                ("l,min_contig_length", "Minimum contig length", cxxopts::value<uint32_t>(min_contig_length)->default_value("1000"),"uint")
-                ("m,min_matches", "Minimum kmers to match before calling a block", cxxopts::value<unsigned int>(min_matches)->default_value("1000"),"uint")
-                ("o,output", "output directory prefix", cxxopts::value<std::string>(output_prefix), "string")
-                ("s,stats_only", "do not dump detailed information", cxxopts::value<bool>(stats_only)->default_value("false"), "uint");
-
-        options.add_options("Performance")
-                ("mem_limit", "Memory limit in GB",cxxopts::value<unsigned int>(mem_limit)->default_value("10"), "uint");
 
         auto result = options.parse(argc, argv);
 
@@ -50,8 +49,8 @@ int main(int argc, char * argv[]) {
 
     } catch (const cxxopts::OptionException& e)
     {
-        std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
-                  <<"Use option --help to check command line arguments." << std::endl;
+        std::cout << "Error parsing options: " << e.what() << std::endl;
+        std::cout << options.help({""}) << std::endl;
         exit(1);
     }
 
