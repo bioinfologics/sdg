@@ -69,7 +69,7 @@ int main(int argc, char * argv[]) {
     uint16_t min_matches = 10;
 
     std::cout << "Mapping sequences " << std::endl;
-    auto max_coverage(1);
+    unsigned int max_coverage(1);
     auto maxmem(4*GB);
     /*
      * Reads the reference/contigs file and generates the set of kmers and which entry number on the fasta they belong to

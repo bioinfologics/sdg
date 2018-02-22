@@ -20,6 +20,7 @@ public:
      * It requires a valid SequenceGraph, a vector of ReadMappers and a KmerCompressionIndex.
      * @param _sg A SequenceGraph to scaffold
      * @param _rms A vector of PairedReadmapper, containing the mapping of reads to _sg
+     * @param _lrms A vector of LinkedReadMapper, containing the mapping of linked reads to _sg
      * @param _kci A KMerCompressionIndex object
      */
     Scaffolder(SequenceGraph &_sg, std::vector<PairedReadMapper> & _rms,  std::vector<LinkedReadMapper> & _lrms, KmerCompressionIndex &_kci) : sg(_sg),rmappers(_rms),lrmappers(_lrms),kci(_kci){};

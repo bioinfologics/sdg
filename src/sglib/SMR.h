@@ -137,6 +137,8 @@ public:
      * Removes the tmp directory used for the external memory reduction.
      * @param read_file
      * Path to the file to be read
+     * @param do_work
+     * If false, the SMR will try first to load the precomputed file from disk.
      * @return
      * Filtered vector of RecordType elements
      */

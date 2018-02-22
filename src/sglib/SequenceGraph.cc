@@ -675,7 +675,7 @@ SequenceGraph::breath_first_search(std::vector<sgNodeID_t> &nodes, unsigned int 
 }
 
 std::vector<sgNodeID_t>
-SequenceGraph::depth_first_search(const sgNodeID_t seed, unsigned int size_limit, unsigned int edge_limit, std::set<sgNodeID_t> tabu={}) {
+SequenceGraph::depth_first_search(const sgNodeID_t seed, unsigned int size_limit, unsigned int edge_limit, std::set<sgNodeID_t> tabu) {
     // Create a stack with the nodes and the path length
     struct visitor {
         sgNodeID_t node;
