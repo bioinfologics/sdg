@@ -32,7 +32,7 @@ void KmerCompressionIndex::index_graph(){
     auto ri=graph_kmers.begin();
     while (ri<graph_kmers.end()){
         if (wi.base()==ri.base()) ++ri;
-        else if (*wi<*ri) {++wi; *wi=*ri;}
+        else if (*wi<*ri) {++wi; *wi=*ri;++ri;}
         else if (*wi==*ri){wi->merge(*ri);++ri;}
     }
 
