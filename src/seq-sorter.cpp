@@ -1,8 +1,6 @@
 #include <string>
 #include <unordered_map>
 
-#include <sys/stat.h>
-
 //#define likely(x)       __builtin_expect((x),1)
 #define unlikely(x)     __builtin_expect((x),0)
 
@@ -39,69 +37,58 @@ int main(int argc, char **argv) {
     std::string output_prefix;
 
     uint8_t m(1),n(1),k(31);
+    std::time_t t = std::time(nullptr);
+    std::tm tm = *std::localtime(&t);
+    std::string outdefault(
+            std::to_string(tm.tm_year + 1900) + '-' + std::to_string(tm.tm_mon) + '-' + std::to_string(tm.tm_mday) +
+            '_' + std::to_string(tm.tm_hour) + std::to_string(tm.tm_min));
+
+    cxxopts::Options options("seq-sorter", "Sequence linking tool using long/linked reads.");
+//@formatter:off
+    options.add_options()("help", "Print help", cxxopts::value<std::string>()->implicit_value(""), "")
+            ("a,assembly", "Sequence reference to link",cxxopts::value<std::string>(asm_filename), "FASTA - Sequence file")
+            ("r,long_reads", "Reads to generate sequence-to-sequence links",cxxopts::value<std::string>(fastq_filename), "FASTQ - Reads")
+            ("min_count","Minimum count to consider a link",cxxopts::value<uint16_t>(min_count)->default_value("10"),"uint")
+            ("max_count","Maximum count to consider a link",cxxopts::value<uint32_t>(max_count)->default_value("100000"), "uint")
+            ("max_coverage", "max coverage for a kmer to be considered",cxxopts::value<uint16_t>(max_coverage)->default_value("1"), "uint")
+            ("min_read_length","minimum contig length",cxxopts::value<uint32_t>(min_read_length)->default_value("1000"), "uint")
+            ("min_contig_length", "minimum read length",cxxopts::value<uint32_t>(min_contig_length)->default_value("1000"), "uint")
+            ("min_kmers_to_call_match","minimum number of kmers to call a Read->Contig match",cxxopts::value<uint32_t>(min_kmers_to_call_match)->default_value("10"), "uint")
+            ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix)->default_value(outdefault),"prefix_dir");
+
+    options.add_options("Output options")
+            ("min_seen_contig_to_write_output","minimum number of seen contigs to report read on output",cxxopts::value<uint32_t>(min_seen_contig_to_write_output)->default_value("1"), "uint");
+
+    options.add_options("Skip-mer shape (m every n, total k)")
+            ("m,used_bases", "m", cxxopts::value<uint8_t>(m)->default_value("1"), "uint")
+            ("n,skipped_bases", "n", cxxopts::value<uint8_t>(n)->default_value("1"), "uint")
+            ("k,total_bases", "k",cxxopts::value<uint8_t>(k)->default_value("31"), "uint");
+
+    options.add_options("Performance")
+            ("mem_limit", "Memory limit in GB",cxxopts::value<unsigned int>(mem_limit)->default_value("10"), "uint");
+//@formatter:on
 
     try
     {
-        std::time_t t = std::time(nullptr);
-        std::tm tm = *std::localtime(&t);
-        std::string outdefault(
-                std::to_string(tm.tm_year + 1900) + '-' + std::to_string(tm.tm_mon) + '-' + std::to_string(tm.tm_mday) +
-                '_' + std::to_string(tm.tm_hour) + std::to_string(tm.tm_min));
-
-        cxxopts::Options options("seq-sorter", "Sequence linking tool using long/linked reads.");
-//@formatter:off
-        options.add_options()("help", "Print help")
-        ("a,assembly", "Sequence reference to link",cxxopts::value<std::string>(asm_filename), "FASTA - Sequence file")
-        ("r,long_reads", "Reads to generate sequence-to-sequence links",cxxopts::value<std::string>(fastq_filename), "FASTQ - Reads")
-        ("min_count","Minimum count to consider a link",cxxopts::value<uint16_t>(min_count)->default_value("10"),"uint")
-        ("max_count","Maximum count to consider a link",cxxopts::value<uint32_t>(max_count)->default_value("100000"), "uint")
-        ("max_coverage", "max coverage for a kmer to be considered",cxxopts::value<uint16_t>(max_coverage)->default_value("1"), "uint")
-        ("min_read_length","minimum contig length",cxxopts::value<uint32_t>(min_read_length)->default_value("1000"), "uint")
-        ("min_contig_length", "minimum read length",cxxopts::value<uint32_t>(min_contig_length)->default_value("1000"), "uint")
-        ("min_kmers_to_call_match","minimum number of kmers to call a Read->Contig match",cxxopts::value<uint32_t>(min_kmers_to_call_match)->default_value("10"), "uint")
-        ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix)->default_value(outdefault),"prefix_dir");
-
-        options.add_options("Output options")
-        ("min_seen_contig_to_write_output","minimum number of seen contigs to report read on output (1)",cxxopts::value<uint32_t>(min_seen_contig_to_write_output));
-
-        options.add_options("Skip-mer shape (m every n, total k)")
-        ("m,used_bases", "m (1)", cxxopts::value<uint8_t>(m))
-        ("n,skipped_bases", "n (1)", cxxopts::value<uint8_t>(n))
-        ("k,total_bases", "k (31)",cxxopts::value<uint8_t>(k));
-
-        options.add_options("Performance")
-        ("mem_limit", "Memory limit in GB",cxxopts::value<unsigned int>(mem_limit)->default_value("10"));
-//@formatter:on
         auto result (options.parse(argc, argv));
 
         if (0 != result.count("help")) {
             std::cout << options.help({"", "Performance"}) << std::endl;
             exit(0);
         }
-
-        auto fail = false;
         if (asm_filename.empty()) {
-            std::cout << "Error: The assembly file parameter wasn't specified, " << std::endl
-                      << "Use option --help to check command line arguments." << std::endl;
-            fail=true;
+            throw cxxopts::OptionException("The assembly file parameter wasn't specified");
         } else if (!std::ifstream(asm_filename)) {
-            std::cout << asm_filename << " does not exist" << std::endl;
-            fail=true;
+            cxxopts::OptionException("FASTA file doesn't exist");
         }
         if (fastq_filename.empty()) {
-            std::cout << "Error: The read file parameter wasn't specified, " << std::endl
-                      << "Use option --help to check command line arguments." << std::endl;
-            fail=true;
+            cxxopts::missing_argument_exception("The read file parameter wasn't specified");
         } else if (!std::ifstream(fastq_filename)) {
-            std::cout << fastq_filename << " does not exist" << std::endl;
-            fail=true;
-        }
-
-        if (fail) {
-            exit(1);
+            cxxopts::OptionException("FASTQ file doesn't exist");
         }
     } catch (const cxxopts::OptionException& e) {
         std::cout << "error parsing options: " << e.what() << std::endl;
+        std::cout << options.help({""}) << std::endl;
         exit(1);
     }
 

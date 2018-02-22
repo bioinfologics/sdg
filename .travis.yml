@@ -19,7 +19,7 @@ matrix:
             - lcov
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && GCOV=gcov-6 && DEPLOY=true"
-        - CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 -DINSTALL_GTEST=OFF -DINSTALL_GMOCK=OFF"
+        - CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 -DBUILD_COV=ON -DBUILD_DOC=ON -DINSTALL_GTEST=OFF -DINSTALL_GMOCK=OFF"
     - os: osx
       osx_image: xcode8
       env:
