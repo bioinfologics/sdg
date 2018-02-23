@@ -13,7 +13,7 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<std::endl;
 
     if (argc <2){
-        std::cout<<"Please specify one of: make, stats, project"<<std::endl;
+        std::cout<<"Please specify one of: make, stats, apply"<<std::endl;
         exit(1);
     }
 
@@ -97,8 +97,49 @@ int main(int argc, char * argv[]) {
 
 
     }
-    else if(0==strcmp(argv[1],"update")){
-        std::cout<<"Kmerspectra updates not implemented yet."<<std::endl;
+    else if(0==strcmp(argv[1],"apply")){
+        std::string kci_filename,gfa_filename,output;
+        int maxfreq=10;
+        bool reindex=false;
+        try {
+
+            cxxopts::Options options("bsg-kmerspectra apply", "BSG kmer spectra apply");
+
+            options.add_options()
+                    ("help", "Print help")
+                    ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename))
+                    ("s,kmerspectra", "kmerspectra name", cxxopts::value<std::string>(kci_filename))
+                    ("f,max_freq", "maximum graph frequency (default:10)", cxxopts::value<int>(maxfreq))
+                    ("r,reindex", "re-index the graph counts (default: false)", cxxopts::value<bool>(reindex))
+                    ("o,output", "output gfa file with depth", cxxopts::value<std::string>(output));
+
+            auto newargc=argc-1;
+            auto newargv=&argv[1];
+            auto result=options.parse(newargc,newargv);
+            if (result.count("help")) {
+                std::cout << options.help({""}) << std::endl;
+                exit(0);
+            }
+
+            if (result.count("kmerspectra")==0 or result.count("gfa")==0 or result.count("output")==0) {
+                throw cxxopts::OptionException(" please specify gfa, kmer spectra and output files");
+            }
+
+
+        } catch (const cxxopts::OptionException &e) {
+            std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
+                      << "Use option --help to check command line arguments." << std::endl;
+            exit(1);
+        }
+        SequenceGraph sg;
+        KmerCompressionIndex kci(sg);
+        sg.load_from_gfa(gfa_filename);
+        kci.load_from_disk(kci_filename);
+        sglib::OutputLog()<<kci.graph_kmers.size()<<" kmers in spectra loaded from disk"<<std::endl;
+        if (reindex) kci.reindex_graph();
+        kci.compute_compression_stats();
+        kci.compute_all_nodes_kci(maxfreq);
+        sg.write_to_gfa(output,{},kci.nodes_depth);
     }
     else {
         std::cout<<"Please specify one of: make, stats, view"<<std::endl;

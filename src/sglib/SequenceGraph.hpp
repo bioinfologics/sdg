@@ -46,7 +46,7 @@ public:
     SequenceGraph(){};
     //=== I/O functions ===
     void load_from_gfa(std::string filename);
-    void write_to_gfa(std::string filename,const std::unordered_set<sgNodeID_t> & marked_red={});
+    void write_to_gfa(std::string filename,const std::unordered_set<sgNodeID_t> & marked_red={}, const std::vector<double> & depths={});
 
     //=== graph operations ===
     sgNodeID_t add_node(Node n);

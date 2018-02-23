@@ -10,7 +10,6 @@
 void KmerCompressionIndex::index_graph(){
     sglib::OutputLog(sglib::INFO) << "Indexing graph, Counting..."<<std::endl;
     const int k = 31;
-    const int max_coverage = 1;
     uint64_t total_k=0;
     for (auto &n:sg.nodes) if (n.sequence.size()>=k) total_k+=n.sequence.size()+1-k;
     graph_kmers.reserve(total_k);
@@ -37,7 +36,7 @@ void KmerCompressionIndex::index_graph(){
     }
 
     graph_kmers.resize(wi+1-graph_kmers.begin());
-    sglib::OutputLog(sglib::INFO)<<graph_kmers.size()<<" kmers in index, "<< sizeof(KmerCount) << " bytes per kmer"<<std::endl;
+    sglib::OutputLog(sglib::INFO)<<graph_kmers.size()<<" kmers in index"<<std::endl;
     //TODO: remove kmers with more than X in count
 
 //    std::vector<uint64_t> uniqKmer_statistics(kmerCount_SMR.summaryStatistics());
@@ -46,40 +45,31 @@ void KmerCompressionIndex::index_graph(){
 }
 
 void KmerCompressionIndex::reindex_graph(){
+    sglib::OutputLog(sglib::INFO) << "Re-indexing graph, Counting..."<<std::endl;
+    std::vector<uint8_t> new_counts(graph_kmers.size());
+
     const int k = 31;
-    const int max_coverage = 20;
-    const std::string output_prefix("./");
-    SMR<KmerCount,
-    KmerCountFactory<FastaRecord>,
-    GraphNodeReader<FastaRecord>,
-    FastaRecord, GraphNodeReaderParams, KmerCountFactoryParams> kmerCount_SMR({1, sg}, {k}, max_mem, 0, max_coverage,
-                                                                              output_prefix);
-
-
-
-    std::cout << "Indexing graph kmers... " << std::endl;
-    auto new_graph_kmers = kmerCount_SMR.process_from_memory();
-    uint64_t deleted=0,changed=0,equal=0;
-    //std::sort(new_graph_kmers.begin(),new_graph_kmers.end());
-    for (auto i=0,j=0;i<graph_kmers.size() and j<new_graph_kmers.size();++j){
-        while (i<graph_kmers.size() and graph_kmers[i].kmer<new_graph_kmers[j].kmer) {
-            graph_kmers[i].count=0;
-            ++deleted;
-            ++i;
-        }
-        if (i<graph_kmers.size() and graph_kmers[i].kmer==new_graph_kmers[j].kmer){
-            if (graph_kmers[i].count==new_graph_kmers[j].count) ++equal;
-            else {
-                graph_kmers[i].count=new_graph_kmers[j].count;
-                ++changed;
+    std::vector<KmerCount> nodekmers;
+    FastaRecord r;
+    KmerCountFactory<FastaRecord>kcf({k});
+    for (sgNodeID_t n=1;n<sg.nodes.size();++n){
+        if (sg.nodes[n].sequence.size()>=k){
+            r.id=n;
+            r.seq=sg.nodes[n].sequence;
+            kcf.setFileRecord(r);
+            kcf.next_element(nodekmers);
+            for (auto &nk:nodekmers){
+                auto gk=std::lower_bound(graph_kmers.begin(),graph_kmers.end(),nk);
+                if (gk->kmer==nk.kmer and new_counts[gk-graph_kmers.begin()]<255) ++new_counts[gk-graph_kmers.begin()];
             }
-            ++i;
+            nodekmers.clear();
         }
     }
-    std::cout << deleted << " deleted,   "<<changed<<" changed,   "<<equal<<" equal"<<std::endl;
-    std::vector<uint64_t> uniqKmer_statistics(kmerCount_SMR.summaryStatistics());
-    std::cout << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << std::endl;
-    std::cout << "Number of contigs from the assembly " << uniqKmer_statistics[2] << std::endl;
+    sglib::OutputLog(sglib::INFO) << "  Updating counts..."<<std::endl;
+    for (auto i=0;i<graph_kmers.size();++i){
+        graph_kmers[i].count=new_counts[i];
+    }
+    sglib::OutputLog(sglib::INFO) << "Re-indexing done."<<std::endl;
 }
 
 void KmerCompressionIndex::load_from_disk(std::string filename) {
@@ -237,21 +227,53 @@ void KmerCompressionIndex::dump_histogram(std::string filename) {
 }
 
 double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint16_t max_graph_freq) {
+    const int k=31;
+    auto n=_node>0 ? _node:-_node;
+    auto & node=sg.nodes[n];
 
-    auto & node=sg.nodes[_node>0 ? _node:-_node];
-
+    //eliminate "overlapping" kmers
+    int32_t max_bw_ovlp=0;
+    int32_t max_fw_ovlp=0;
+    for (auto bl:sg.get_bw_links(n)) {
+        if (bl.dist<0){
+            auto ovl=-bl.dist+1-k;
+            if (ovl>max_bw_ovlp) max_bw_ovlp=ovl;
+        }
+    }
+    for (auto fl:sg.get_fw_links(n)) {
+        if (fl.dist<0){
+            auto ovl=-fl.dist+1-k;
+            if (ovl>max_fw_ovlp) max_fw_ovlp=ovl;
+        }
+    }
+    int64_t newsize=node.sequence.size();
+    newsize=newsize-max_bw_ovlp-max_fw_ovlp;
+    //if (n/10==50400){
+    //    std::cout<<"node "<<n<<" size="<<node.sequence.size()<<" max_bw_olv="<<max_bw_ovlp<<" max_fw_ovl="<<max_fw_ovlp<<" newlength="<<newsize<<std::endl;
+    //}
+    if (newsize<k) return ((double)0/0);
+    auto s=node.sequence.substr(max_bw_ovlp,newsize);
     std::vector<uint64_t> nkmers;
-    StringKMerFactory skf(node.sequence,31);
+    StringKMerFactory skf(s,k);
+
+
     skf.create_kmers(nkmers);
 
     uint64_t kcount=0,kcov=0;
     for (auto &kmer : nkmers){
         auto nk = std::lower_bound(graph_kmers.begin(), graph_kmers.end(), KmerCount(kmer,0));
-        if (nk!=graph_kmers.end() and nk->kmer == kmer and nk->count==1) {
-            ++kcount;
+        if (nk!=graph_kmers.end() and nk->kmer == kmer and nk->count<=max_graph_freq) {
+            kcount+=nk->count;
             kcov+=read_counts[0][nk-graph_kmers.begin()];
         }
     }
 
     return (((double) kcov)/kcount )/uniq_mode;
+}
+
+void KmerCompressionIndex::compute_all_nodes_kci(uint16_t max_graph_freq) {
+    nodes_depth.resize(sg.nodes.size());
+    for (auto n=1;n<sg.nodes.size();++n) {
+        nodes_depth[n]=compute_compression_for_node(n, max_graph_freq);
+    }
 }
