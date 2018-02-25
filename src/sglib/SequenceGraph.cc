@@ -309,6 +309,44 @@ std::vector<std::vector<sgNodeID_t>> SequenceGraph::connected_components(int max
     return components;
 }
 
+void SequenceGraph::write(std::ofstream & output_file) {
+    uint64_t count;
+    count=nodes.size();
+    output_file.write((char *) &count,sizeof(count));
+    for (auto &n:nodes){
+        output_file.write((char *) &n.status,sizeof(n.status));
+        count=n.sequence.size();
+        output_file.write((char *) &count,sizeof(count));
+        output_file.write((char *) n.sequence.c_str(),count);
+    }
+    count=links.size();
+    output_file.write((char *) &count,sizeof(count));
+    output_file.write((char *) links.data(),sizeof(Link)*count);
+}
+
+void SequenceGraph::read(std::ifstream & input_file) {
+    uint64_t count;
+    input_file.read((char *) &count,sizeof(count));
+    nodes.clear();
+    nodes.reserve(count);
+    uint64_t active=0;
+    for (auto i=0;i<count;++i){
+        uint64_t seqsize;
+        std::string seq;
+        sgNodeStatus_t status;
+        input_file.read((char *) &status,sizeof(status));
+        input_file.read((char *) &seqsize,sizeof(seqsize));
+        seq.resize(seqsize);
+        input_file.read((char *) seq.c_str(),seqsize);
+        nodes.emplace_back(seq);
+        nodes.back().status=status;
+        if (nodes.back().status==sgNodeStatus_t::sgNodeActive) ++active;
+    }
+    input_file.read((char *) &count,sizeof(count));
+    links.resize(count);
+    input_file.read((char *) links.data(),sizeof(Link)*count);
+}
+
 void SequenceGraph::load_from_gfa(std::string filename) {
     std::string line;
     this->filename=filename;
@@ -338,7 +376,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     oldnames.push_back("");
     nodes.clear();
     links.clear();
-    add_node(Node("")); //an empty node on 0, just to skip the space
+    add_node(Node("",sgNodeStatus_t::sgNodeDeleted)); //an empty deleted node on 0, just to skip the space
     sgNodeID_t nextid=1;
     uint64_t rcnodes=0;
     while(!fastaf.eof()){

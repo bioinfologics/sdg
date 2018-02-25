@@ -72,36 +72,42 @@ void KmerCompressionIndex::reindex_graph(){
     sglib::OutputLog(sglib::INFO) << "Re-indexing done."<<std::endl;
 }
 
-void KmerCompressionIndex::load_from_disk(std::string filename) {
-    std::ifstream inf(filename);
-    //read-to-tag
+void KmerCompressionIndex::read(std::ifstream &input_file) {
     uint64_t kcount;
-    inf.read(( char *) &kcount,sizeof(kcount));
+    input_file.read(( char *) &kcount,sizeof(kcount));
     graph_kmers.resize(kcount);
-    inf.read(( char *) graph_kmers.data(),sizeof(KmerCount)*kcount);
+    input_file.read(( char *) graph_kmers.data(),sizeof(KmerCount)*kcount);
     //read-to-node
     uint64_t ccount;
-    inf.read(( char *) &ccount,sizeof(ccount));
+    input_file.read(( char *) &ccount,sizeof(ccount));
     for (auto i=0;i<ccount;++i) {
         read_counts.emplace_back();
         read_counts.back().resize(kcount);
-        inf.read(( char *) read_counts.back().data(), sizeof(uint16_t) * kcount);
+        input_file.read(( char *) read_counts.back().data(), sizeof(uint16_t) * kcount);
     }
-
 }
 
+void KmerCompressionIndex::load_from_disk(std::string filename) {
+    std::ifstream inf(filename);
+    //read-to-tag
+    read(inf);
+
+}
+void KmerCompressionIndex::write(std::ofstream &output_file) {
+    uint64_t kcount=graph_kmers.size();
+    output_file.write((const char *) &kcount,sizeof(kcount));
+    output_file.write((const char *) graph_kmers.data(),sizeof(KmerCount)*kcount);
+    //read-to-node
+    uint64_t ccount=read_counts.size();
+    output_file.write((const char *) &ccount,sizeof(ccount));
+    for (auto i=0;i<ccount;++i) {
+        output_file.write((const char *) read_counts[i].data(), sizeof(uint16_t) * kcount);
+    }
+}
 void KmerCompressionIndex::save_to_disk(std::string filename) {
     std::ofstream of(filename);
     //read-to-tag
-    uint64_t kcount=graph_kmers.size();
-    of.write((const char *) &kcount,sizeof(kcount));
-    of.write((const char *) graph_kmers.data(),sizeof(KmerCount)*kcount);
-    //read-to-node
-    uint64_t ccount=read_counts.size();
-    of.write((const char *) &ccount,sizeof(ccount));
-    for (auto i=0;i<ccount;++i) {
-        of.write((const char *) read_counts[i].data(), sizeof(uint16_t) * kcount);
-    }
+    write(of);
 }
 
 void KmerCompressionIndex::start_new_count(){

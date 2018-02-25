@@ -19,6 +19,7 @@ enum sgNodeStatus_t {sgNodeActive,sgNodeDeleted};
 
 class Node{
 public:
+    Node(std::string _seq, sgNodeStatus_t _st) : sequence(_seq),status(_st){};
     Node(std::string _seq) : sequence(_seq),status(sgNodeActive){};
     std::string sequence;
     sgNodeStatus_t status;
@@ -47,6 +48,8 @@ public:
     //=== I/O functions ===
     void load_from_gfa(std::string filename);
     void write_to_gfa(std::string filename,const std::unordered_set<sgNodeID_t> & marked_red={}, const std::vector<double> & depths={});
+    void write(std::ofstream & output_file);
+    void read(std::ifstream & input_file);
 
     //=== graph operations ===
     sgNodeID_t add_node(Node n);
@@ -91,12 +94,13 @@ public:
 
 
     //=== internal variables ===
-    std::vector<sgNodeID_t> oldnames_to_nodes(std::string _oldnames);
+
     std::vector<Node> nodes;
     std::vector<std::vector<Link>> links;
-    std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids;
-    std::vector<std::string> oldnames;
     std::string filename,fasta_filename;
+    std::vector<sgNodeID_t> oldnames_to_nodes(std::string _oldnames);
+    std::vector<std::string> oldnames;
+    std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids;
 };
 
 
