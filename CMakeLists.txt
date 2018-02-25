@@ -173,7 +173,9 @@ add_library(sequence_graph SHARED
         src/sglib/datastores/LinkedReadsDatastore.cc
         src/sglib/datastores/LinkedReadsDatastore.hpp
         src/sglib/mappers/LinkedReadMapper.cc
-        src/sglib/mappers/LinkedReadMapper.hpp src/sglib/WorkSpace.cc src/sglib/WorkSpace.hpp)
+        src/sglib/mappers/LinkedReadMapper.hpp
+        src/sglib/WorkSpace.cc
+        src/sglib/WorkSpace.hpp)
 
 target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
@@ -195,6 +197,11 @@ add_executable(bsg-kmerspectra
         src/sglib/KmerCompressionIndex.cc
         src/sglib/logger/OutputLog.h
         src/sglib/logger/OutputLog.cc
+        )
+target_link_libraries(bsg-kmerspectra ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+
+add_executable(bsg-workspace
+        src/bsg-workspace.cc
         )
 target_link_libraries(bsg-kmerspectra ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
@@ -225,6 +232,7 @@ add_executable(kc_comp
 add_executable(seq-sorter
                src/seq-sorter.cpp)
 
+target_link_libraries(bsg-workspace sequence_graph)
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
