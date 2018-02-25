@@ -46,6 +46,14 @@ execute_process(
         OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
+# Check if the git directory is clean
+execute_process(
+        COMMAND git status -s
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_STATUS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 # Fill the version variables in case the compilation isn't done from a git repo
 if("${GIT_ORIGIN_URL}" STREQUAL "")
     add_definitions("-DGIT_ORIGIN_URL=\"not set\"")
@@ -55,7 +63,11 @@ endif()
 if("${GIT_COMMIT_HASH}" STREQUAL "")
     add_definitions("-DGIT_COMMIT_HASH=\"experimental\"")
 else()
-    add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+    if("${GIT_STATUS}" STREQUAL "")
+        add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+    else()
+        add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH} (dirty)\"")
+    endif()
 endif()
 if("${GIT_BRANCH}" STREQUAL "")
     add_definitions("-DGIT_COMMIT_HASH=\"not from git\"")
@@ -161,7 +173,7 @@ add_library(sequence_graph SHARED
         src/sglib/datastores/LinkedReadsDatastore.cc
         src/sglib/datastores/LinkedReadsDatastore.hpp
         src/sglib/mappers/LinkedReadMapper.cc
-        src/sglib/mappers/LinkedReadMapper.hpp)
+        src/sglib/mappers/LinkedReadMapper.hpp src/sglib/WorkSpace.cc src/sglib/WorkSpace.hpp)
 
 target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
