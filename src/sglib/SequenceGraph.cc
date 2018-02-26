@@ -34,7 +34,7 @@ bool Node::is_canonical() {
             case 'N':
                 break;
             default:
-            std::cout<<"unexpected character in fasta file: '"<<r<<"'"<<std::endl;
+                sglib::OutputLog(sglib::LogLevels::WARN) << "Unexpected character in fasta file: '" << r << "'" << std::endl;
         }
         if (f<r) return true;
         if (r<f) return false;
@@ -337,8 +337,6 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     sglib::OutputLog(sglib::LogLevels::INFO) << "Graph fasta filesname: " << fasta_filename << std::endl;
     if (!fastaf) throw std::invalid_argument("Can't read graph fasta file");
 
-
-
     //load all sequences from fasta file if they're not canonical, flip and remember they're flipped
     sglib::OutputLog(sglib::LogLevels::INFO) << "Loading sequences from " << fasta_filename << std::endl;
 
@@ -354,6 +352,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     while(!fastaf.eof()){
         std::getline(fastaf,line);
         if (fastaf.eof() or line[0] == '>'){
+
             if (!name.empty()) {
                 //rough ansi C and C++ mix but it works
                 if (oldnames_to_ids.find(name) != oldnames_to_ids.end())
@@ -367,11 +366,14 @@ void SequenceGraph::load_from_gfa(std::string filename) {
                     ++rcnodes;
                 }
             }
+
+            // Clear the name and set name to the new name, this is a new sequence!
             name.clear();
             for (auto i = 1; i < line.size() and line[i] != ' '; ++i) name += line[i];
             seq = "";
         } else {
-            seq+=line;
+            seq += line;
+
         }
     }
     sglib::OutputLog(sglib::LogLevels::INFO) << nodes.size()-1 << " nodes loaded (" << rcnodes << " canonised)." << std::endl;

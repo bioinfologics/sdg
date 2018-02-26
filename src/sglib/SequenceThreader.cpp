@@ -116,7 +116,6 @@ double SequenceMapping::POPUKM() const {
     return matched_unique_kmers / possible_unique_matches;
 }
 
-
 void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const std::string& filename) {
 
     sglib::OutputLog(sglib::LogLevels::INFO) << "Mapping sequence kmers to graph." << std::endl;
@@ -244,13 +243,13 @@ void SequenceThreader::mappings_paths() {
 
 }
 
-void SequenceThreader::paths_to_fasta(std::ofstream& output_file) const {
-    for(const auto& sp : paths_of_mappings_of_sequence) {
-        for(const auto& mapping_path : sp.second) {
+void SequenceThreader::graph_paths_to_fasta(std::ofstream& output_file) const {
+    for (const auto& sp : paths_of_mappings_of_sequence) {
+        for (const auto& mapping_path : sp.second) {
             std::vector<sgNodeID_t> nodes;
             SequenceGraphPath p(sg);
             output_file << ">Sequence_" << sp.first << "_path";
-            for(const auto& sm : mapping_path) {
+            for (const auto& sm : mapping_path) {
                 auto dn = sm.dirnode();
                 p.nodes.emplace_back(dn);
                 output_file << '_' << dn;
@@ -258,6 +257,35 @@ void SequenceThreader::paths_to_fasta(std::ofstream& output_file) const {
             auto sequence = p.get_sequence();
             output_file << std::endl << sequence << std::endl;
         }
+    }
+}
+
+void SequenceThreader::print_mapping_path_name(const std::vector<SequenceMapping>& path, std::ofstream& output_file) const {
+    output_file << "[ ";
+    for (const auto& mapping : path) {
+        output_file << mapping.dirnode() << ", ";
+    }
+    output_file << " ]";
+}
+
+void SequenceThreader::query_paths_to_fasta(std::ofstream& output_file) const {
+    FastaRecord sequence;
+    FastaReader<FastaRecord> fastaReader({0}, query_seq_file);
+    bool c;
+    c = fastaReader.next_record(sequence);
+    while (c) {
+        const std::vector<std::vector<SequenceMapping>>& mapping_paths = paths_of_mappings_of_sequence.at((seqID_t)sequence.id);
+        for (const auto& mapping_path : mapping_paths) {
+            auto first_idx = mapping_path.front().first_seq_pos;
+            auto final_idx = mapping_path.back().last_seq_pos;
+            output_file << '>' << sequence.name << ' ';
+            print_mapping_path_name(mapping_path, output_file);
+            if (first_idx > final_idx) std::swap(first_idx, final_idx);
+            size_t len = size_t(final_idx) - size_t(first_idx) + 1;
+            auto subseq = sequence.seq.substr((size_t) first_idx, len);
+            output_file << std::endl << subseq << std::endl;
+        }
+        c = fastaReader.next_record(sequence);
     }
 }
 

@@ -77,10 +77,13 @@ int main(int argc, char **argv) {
     tdr.print_paths();
 
 // DUMP OUTPUT...
-    std::ofstream pathout(output_prefix + "/mapped_paths.fasta");
-    tdr.paths_to_fasta(pathout);
-    pathout.close();
+    std::ofstream graph_paths_out(output_prefix + "/mapped_paths.fasta");
+    tdr.graph_paths_to_fasta(graph_paths_out);
+    graph_paths_out.close();
     std::ofstream sizesout(output_prefix + "/paths_sizes.txt");
     tdr.print_unique_paths_sizes(sizesout);
     sizesout.close();
+    std::ofstream query_paths_out(output_prefix + "/query_mapped_paths.fasta");
+    tdr.query_paths_to_fasta(query_paths_out);
+    query_paths_out.close();
 }
