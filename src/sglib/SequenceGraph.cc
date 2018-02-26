@@ -321,7 +321,11 @@ void SequenceGraph::write(std::ofstream & output_file) {
     }
     count=links.size();
     output_file.write((char *) &count,sizeof(count));
-    output_file.write((char *) links.data(),sizeof(Link)*count);
+    for (auto nl:links) {
+        uint64_t lcount=nl.size();
+        output_file.write((char *) &lcount,sizeof(lcount));
+        output_file.write((char *) nl.data(), sizeof(Link) * lcount);
+    }
 }
 
 void SequenceGraph::read(std::ifstream & input_file) {
@@ -344,7 +348,12 @@ void SequenceGraph::read(std::ifstream & input_file) {
     }
     input_file.read((char *) &count,sizeof(count));
     links.resize(count);
-    input_file.read((char *) links.data(),sizeof(Link)*count);
+    for (auto &nl:links) {
+        uint64_t lcount;
+        input_file.read((char *) &lcount,sizeof(lcount));
+        nl.resize(lcount,{0,0,0});
+        input_file.read((char *) nl.data(), sizeof(Link) * lcount);
+    }
 }
 
 void SequenceGraph::load_from_gfa(std::string filename) {

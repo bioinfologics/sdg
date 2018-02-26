@@ -15,6 +15,7 @@ enum LinkedReadsFormat {UCDavis,raw,seq};
 
 class LinkedReadsDatastore {
 public:
+    LinkedReadsDatastore(){};
     LinkedReadsDatastore(std::string filename){
         load_index_from_disk(filename);
     };

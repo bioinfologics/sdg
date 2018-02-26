@@ -66,6 +66,10 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     //todo: read all datastores and mappers!!!
     wsfile.read((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
+        linked_read_datastores.emplace_back();
+        linked_read_datastores.back().read_index(wsfile);
+        linked_read_mappers.emplace_back(sg,linked_read_datastores.back());
+        linked_read_mappers.back().read(wsfile);
 
     }
 

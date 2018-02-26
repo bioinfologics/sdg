@@ -205,6 +205,8 @@ add_executable(bsg-workspace
         )
 target_link_libraries(bsg-kmerspectra ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
+add_executable(bsg-untangler
+        src/bsg-untangler.cc)
 ## add executables and respective sources
 add_executable(gfa-qc
         src/gfa-qc.cc)
@@ -238,5 +240,6 @@ target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-bfphaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries (phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
