@@ -122,6 +122,11 @@ public:
         }
         return l != links[std::abs(from)].end();
     }
+
+    std::string& nodeID_to_name(sgNodeID_t id) {
+        return oldnames[id];
+    }
+
 };
 
 

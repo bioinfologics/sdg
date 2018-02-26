@@ -252,7 +252,8 @@ void SequenceThreader::graph_paths_to_fasta(std::ofstream& output_file) const {
             for (const auto& sm : mapping_path) {
                 auto dn = sm.dirnode();
                 p.nodes.emplace_back(dn);
-                output_file << '_' << dn;
+                char dir = dn > 0 ? '+' : '-';
+                output_file << ' ' << dir << sg.nodeID_to_name(std::abs(dn));
             }
             auto sequence = p.get_sequence();
             output_file << std::endl << sequence << std::endl;
@@ -278,7 +279,7 @@ void SequenceThreader::query_paths_to_fasta(std::ofstream& output_file) const {
         for (const auto& mapping_path : mapping_paths) {
             auto first_idx = mapping_path.front().first_seq_pos;
             auto final_idx = mapping_path.back().last_seq_pos;
-            output_file << '>' << sequence.name << ' ';
+            output_file << sequence.name << '[' << first_idx << " -> " << final_idx << "] ";
             print_mapping_path_name(mapping_path, output_file);
             if (first_idx > final_idx) std::swap(first_idx, final_idx);
             size_t len = size_t(final_idx) - size_t(first_idx) + 1;
