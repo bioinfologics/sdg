@@ -36,6 +36,7 @@ public:
     std::vector<LinkedReadsDatastore> linked_read_datastores;
     std::vector<LinkedReadMapper> linked_read_mappers;
     KmerCompressionIndex kci;
+    std::string verbose_log="";
 };
 
 

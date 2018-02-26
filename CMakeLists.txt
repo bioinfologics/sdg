@@ -185,7 +185,7 @@ add_executable(bsg-datastore
         src/sglib/datastores/LinkedReadsDatastore.cc
         src/sglib/logger/OutputLog.h
         src/sglib/logger/OutputLog.cc
-        )
+        src/sglib/processors/Untangler.cc src/sglib/processors/Untangler.hpp)
 
 add_executable(bsg-kmerspectra
         src/bsg-kmerspectra.cc
@@ -206,7 +206,9 @@ add_executable(bsg-workspace
 target_link_libraries(bsg-kmerspectra ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
 add_executable(bsg-untangler
-        src/bsg-untangler.cc)
+        src/bsg-untangler.cc
+        src/sglib/processors/Untangler.hpp
+        src/sglib/processors/Untangler.cc)
 ## add executables and respective sources
 add_executable(gfa-qc
         src/gfa-qc.cc)
