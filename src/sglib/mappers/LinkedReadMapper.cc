@@ -8,6 +8,35 @@
 #include <omp.h>
 #include "LinkedReadMapper.hpp"
 
+void LinkedReadMapper::write(std::ofstream &output_file) {
+    //read-to-node
+    uint64_t count=read_to_node.size();
+    output_file.write((const char *) &count,sizeof(count));
+    output_file.write((const char *) read_to_node.data(),sizeof(sgNodeID_t)*count);
+    //mappings
+    count=reads_in_node.size();
+    output_file.write((const char *) &count,sizeof(count));
+    for (auto i=0;i<count;++i) {
+        uint64_t mcount=reads_in_node[i].size();
+        output_file.write((const char *) &mcount,sizeof(mcount));
+        output_file.write((const char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
+    }
+}
+
+void LinkedReadMapper::read(std::ifstream &input_file) {
+    uint64_t count;
+    input_file.read(( char *) &count,sizeof(count));
+    read_to_node.resize(count);
+    input_file.read(( char *) read_to_node.data(),sizeof(sgNodeID_t)*count);
+    input_file.read(( char *) &count,sizeof(count));
+    reads_in_node.resize(count);
+    for (auto i=0;i<count;++i) {
+        uint64_t mcount;
+        input_file.read(( char *) &mcount,sizeof(mcount));
+        reads_in_node[i].resize(mcount);
+        input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
+    }
+}
 
 void LinkedReadMapper::update_graph_index() {
     const int k = 31;
@@ -77,7 +106,7 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
     uint64_t thread_mapped_count[omp_get_max_threads()],thread_total_count[omp_get_max_threads()],thread_multimap_count[omp_get_max_threads()];
     std::vector<ReadMapping> thread_mapping_results[omp_get_max_threads()];
     sglib::OutputLog(sglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
-#pragma omp parallel// this lione has out of bounds error on my weird read file AND  ‘LinkedReadMapper::reads_in_node’ is not a variable in clause ‘shared’ when compiling on
+#pragma omp parallel
     {
         const int min_matches=1;
         std::vector<KmerIDX> readkmers;
@@ -136,7 +165,7 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                     }
                 }
                 if (mapping.node != 0 and mapping.unique_matches >= min_matches) {
-                    //TODO: optimisation: just save the mapping in a thread private collection for now, have a single thread putting from that into de structure at the end
+                    //optimisation: just save the mapping in a thread private collection for now, have a single thread putting from that into de structure at the end
                     private_results.push_back(mapping);
                     ++mapped_count;
                 }

@@ -29,7 +29,13 @@ void WorkSpace::dump_to_disk(std::string filename) {
     //dump KCI
     kci.write(of);
 
-    //todo: write all datastores and mappers!!!
+    //linker read datastores
+    count=linked_read_datastores.size();
+    of.write((char *) &count,sizeof(count));
+    for (auto i=0;i<count;++i){
+        linked_read_datastores[i].write_index(of);
+        linked_read_mappers[i].write(of);
+    }
     //dump element type then use that element's own dump to dump it to this file
 }
 
@@ -55,9 +61,13 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     if (log_only) return;
     //read element type, then use that element's read
     sg.read(wsfile);
+    std::cout<<"Loaded graph with "<<sg.nodes.size()-1<<" nodes" <<std::endl;
     kci.read(wsfile);
     //todo: read all datastores and mappers!!!
-    std::cout<<"Loaded graph with "<<sg.nodes.size()-1<<" nodes" <<std::endl;
+    wsfile.read((char *) &count,sizeof(count));
+    for (auto i=0;i<count;++i){
+
+    }
 
 }
 

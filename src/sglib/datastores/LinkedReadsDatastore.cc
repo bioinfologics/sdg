@@ -99,40 +99,48 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename, std::str
 
 }
 
+void LinkedReadsDatastore::write_index(std::ofstream &output_file) {
+    uint64_t s;
+    s=filename1.size(); output_file.write((const char *) &s,sizeof(s));
+    output_file<<filename1;
+    s=filename2.size(); output_file.write((const char *) &s,sizeof(s));
+    output_file<<filename2;
+    s=group_size; output_file.write((const char *) &s,sizeof(s));
+    s=group_offset1.size(); output_file.write((const char *) &s,sizeof(s));
+    s=group_offset2.size(); output_file.write((const char *) &s,sizeof(s));
+    s=read_tag.size(); output_file.write((const char *) &s,sizeof(s));
+    s=read_offset.size(); output_file.write((const char *) &s,sizeof(s));
+    output_file.write((const char *)group_offset1.data(),group_offset1.size()*sizeof(group_offset1[0]));
+    output_file.write((const char *)group_offset2.data(),group_offset2.size()*sizeof(group_offset2[0]));
+    output_file.write((const char *)read_tag.data(),read_tag.size()*sizeof(read_tag[0]));
+    output_file.write((const char *)read_offset.data(),read_offset.size()*sizeof(read_offset[0]));
+}
+
 void LinkedReadsDatastore::dump_index_to_disk(std::string filename) {
     std::ofstream f(filename);
+    write_index(f);
+}
+
+void LinkedReadsDatastore::read_index(std::ifstream &input_file) {
     uint64_t s;
-    s=filename1.size(); f.write((const char *) &s,sizeof(s));
-    f<<filename1;
-    s=filename2.size(); f.write((const char *) &s,sizeof(s));
-    f<<filename2;
-    s=group_size; f.write((const char *) &s,sizeof(s));
-    s=group_offset1.size(); f.write((const char *) &s,sizeof(s));
-    s=group_offset2.size(); f.write((const char *) &s,sizeof(s));
-    s=read_tag.size(); f.write((const char *) &s,sizeof(s));
-    s=read_offset.size(); f.write((const char *) &s,sizeof(s));
-    f.write((const char *)group_offset1.data(),group_offset1.size()*sizeof(group_offset1[0]));
-    f.write((const char *)group_offset2.data(),group_offset2.size()*sizeof(group_offset2[0]));
-    f.write((const char *)read_tag.data(),read_tag.size()*sizeof(read_tag[0]));
-    f.write((const char *)read_offset.data(),read_offset.size()*sizeof(read_offset[0]));
+    input_file.read((char *) &s,sizeof(s)); filename1.resize(s);
+    input_file.read((char *) filename1.data(),s*sizeof(filename1[0]));
+    input_file.read((char *) &s,sizeof(s)); filename2.resize(s);
+    input_file.read((char *) filename2.data(),s*sizeof(filename2[0]));
+    input_file.read((char *) &s,sizeof(s)); group_size=s;
+    input_file.read((char *) &s,sizeof(s)); group_offset1.resize(s);
+    input_file.read((char *) &s,sizeof(s)); group_offset2.resize(s);
+    input_file.read((char *) &s,sizeof(s)); read_tag.resize(s);
+    input_file.read((char *) &s,sizeof(s)); read_offset.resize(s);
+    input_file.read((char *)group_offset1.data(),group_offset1.size()*sizeof(group_offset1[0]));
+    input_file.read((char *)group_offset2.data(),group_offset2.size()*sizeof(group_offset2[0]));
+    input_file.read((char *)read_tag.data(),read_tag.size()*sizeof(read_tag[0]));
+    input_file.read((char *)read_offset.data(),read_offset.size()*sizeof(read_offset[0]));
 }
 
 void LinkedReadsDatastore::load_index_from_disk(std::string filename) {
     std::ifstream f(filename);
-    uint64_t s;
-    f.read((char *) &s,sizeof(s)); filename1.resize(s);
-    f.read((char *) filename1.data(),s*sizeof(filename1[0]));
-    f.read((char *) &s,sizeof(s)); filename2.resize(s);
-    f.read((char *) filename2.data(),s*sizeof(filename2[0]));
-    f.read((char *) &s,sizeof(s)); group_size=s;
-    f.read((char *) &s,sizeof(s)); group_offset1.resize(s);
-    f.read((char *) &s,sizeof(s)); group_offset2.resize(s);
-    f.read((char *) &s,sizeof(s)); read_tag.resize(s);
-    f.read((char *) &s,sizeof(s)); read_offset.resize(s);
-    f.read((char *)group_offset1.data(),group_offset1.size()*sizeof(group_offset1[0]));
-    f.read((char *)group_offset2.data(),group_offset2.size()*sizeof(group_offset2[0]));
-    f.read((char *)read_tag.data(),read_tag.size()*sizeof(read_tag[0]));
-    f.read((char *)read_offset.data(),read_offset.size()*sizeof(read_offset[0]));
+    read_index(f);
 }
 
 

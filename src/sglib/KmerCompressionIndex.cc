@@ -97,7 +97,6 @@ void KmerCompressionIndex::write(std::ofstream &output_file) {
     uint64_t kcount=graph_kmers.size();
     output_file.write((const char *) &kcount,sizeof(kcount));
     output_file.write((const char *) graph_kmers.data(),sizeof(KmerCount)*kcount);
-    //read-to-node
     uint64_t ccount=read_counts.size();
     output_file.write((const char *) &ccount,sizeof(ccount));
     for (auto i=0;i<ccount;++i) {
@@ -106,7 +105,6 @@ void KmerCompressionIndex::write(std::ofstream &output_file) {
 }
 void KmerCompressionIndex::save_to_disk(std::string filename) {
     std::ofstream of(filename);
-    //read-to-tag
     write(of);
 }
 

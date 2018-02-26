@@ -22,6 +22,8 @@ public:
         build_from_fastq(read1_filename,read2_filename,format);
     };
     void build_from_fastq(std::string read1_filename,std::string read2_filename,LinkedReadsFormat format);
+    void write_index(std::ofstream & output_file);
+    void read_index(std::ifstream & input_file);
     void dump_index_to_disk(std::string filename);
     void load_index_from_disk(std::string filename);
     void dump_full_store_to_disk(std::string filename);
