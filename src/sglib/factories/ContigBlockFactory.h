@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <iterator>
 #include <map>
+#include <sglib/logger/OutputLog.h>
 #include "KMerIDXFactory.h"
 
 struct FilterSetParams {
@@ -109,16 +110,18 @@ struct Block {
 
 struct Match {
 public:
-    Match() : dirContig(0), offset(0), readPos(0) {};
+    Match() : dirContig(0), offset(0), readPos(0), refPos(0) {};
 
-    Match(int32_t contig, int64_t offset, uint32_t readPos) : dirContig(contig), offset(offset), readPos(readPos) {}
+    Match(int32_t contig, int64_t offset, uint32_t readPos, uint32_t refPos) :
+            dirContig(contig), offset(offset), readPos(readPos), refPos(refPos) {}
 
     int32_t dirContig;  // Sign indicates direction
     int64_t offset;     // Pos_contig - Pos_read
     uint32_t readPos;   // Pos on the read
+    uint32_t refPos;    // Ref pos
 
     friend std::ostream &operator<<(std::ostream &os, const Match &match) {
-        os << "(" << match.dirContig << "," << match.offset
+        os << "(" << match.dirContig << "," << match.refPos
            //               << ","
            //               << match.readPos
            << ")";
@@ -127,6 +130,7 @@ public:
 
     friend class byCtgOffset;
     friend class byReadPos;
+    friend class byRefPos;
 
     struct byCtgOffset {
         bool operator()(const Match &a, const Match &b) {
@@ -136,6 +140,11 @@ public:
     struct byReadPos {
         bool operator()(const Match &a, const Match &b) {
             return std::tie(a.readPos) < std::tie(b.readPos);
+        }
+    };
+    struct byRefPos {
+        bool operator()(const Match &a, const Match &b) {
+            return std::tie(a.refPos) < std::tie(b.refPos);
         }
     };
 };
@@ -267,15 +276,15 @@ public:
                     if (kmer->contigID * read_kmer.second > 0) {
                         offset = kmer->pos - p;
                     } else {
-                        offset = kmer->pos - currentFileRecord.seq.size() + p;
+                        offset = kmer->pos + p;
                     }
-                    matches.emplace_back(kmer->contigID * read_kmer.second, offset, p);
+                    matches.emplace_back(kmer->contigID * read_kmer.second, offset, p, kmer->pos);
                 }
                 ctg_read << ((kmer != kmers.end()) ? abs(kmer->contigID) : 0) << " ";
             }
         }
         // Sort matches by contig and offset
-        std::sort(matches.begin(), matches.end(), typename Match::byReadPos());
+        std::sort(matches.begin(), matches.end(), typename Match::byRefPos());
         return matches;
     }
 
@@ -319,19 +328,21 @@ public:
         ctg_read << currentFileRecord.name << "(" << currentFileRecord.seq.size() << ")\n";
         std::vector<Match> matches = getMatches();  // Return all matches sorted by position in the read
         ctg_read<<std::endl;
-
+        std::copy(matches.begin(),matches.end(), std::ostream_iterator<Match>(sglib::OutputLog(sglib::DEBUG, false)," -> "));
+        std::cout << std::endl;
         std::cout << currentFileRecord.name << std::endl;
         // Get contigs by "appearances" and "kmer matches" within 1kbp window for every 1kbp window of the read
         auto tmpTop = getTop(5, matches, currentFileRecord.seq.length(), 1000);
 
-        std::sort(matches.begin(),matches.end(), typename Match::byCtgOffset());
+        std::sort(matches.begin(),matches.end(), typename Match::byReadPos());
         // Generate blocks which share the same ctgOffset
         auto tmpBlocks = getBlocks(matches);
+        std::copy(tmpBlocks.cbegin(), tmpBlocks.cend(), std::ostream_iterator<Block>(std::cout, ";"));
 
 //         Sort blocks by ReadPos and keep only the valid ones
         std::copy_if(tmpBlocks.begin(), tmpBlocks.end(), std::back_inserter(blocks),
                      [&](const Block &b) { return isValid(b); });
-        std::copy(blocks.cbegin(), blocks.cend(), std::ostream_iterator<Block>(std::cout, ";"));
+//        std::copy(blocks.cbegin(), blocks.cend(), std::ostream_iterator<Block>(std::cout, ";"));
 
         // print the rest of the parameters for the blocks on this read
         read_block_stats << "," << blocks.size() << "," << blocks.size() << std::endl;

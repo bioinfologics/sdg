@@ -63,7 +63,7 @@ int main(int argc, char * argv[]) {
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
 
-    uint8_t k = 11;
+    uint8_t k = 15;
     uint16_t min_matches = 10;
 
     std::cout << "Mapping sequences " << std::endl;
@@ -92,9 +92,10 @@ int main(int argc, char * argv[]) {
     std::cout << "Number of contigs from the assembly " << uniqKmer_statistics[2] << std::endl;
 
     /*
-* Instantiate a ContigLinkFactory that takes the unique_kmers as a parameter, a fastq file with long/linked reads
-* and generates a list of links between contigs.
-*/
+     * Instantiate a ContigLinkFactory that takes the unique_kmers as a parameter, a fastq file with long/linked reads
+     * and generates a list of links between contigs.
+     */
+
     uint32_t min_kmers_to_call_match(5);
     uint32_t min_seen_contig_to_write_output(1);
     std::unordered_set<KmerIDX> us(unique_kmers.begin(), unique_kmers.end());
