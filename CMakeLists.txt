@@ -237,6 +237,7 @@ add_executable(seq-sorter
                src/seq-sorter.cpp)
 
 target_link_libraries(bsg-workspace sequence_graph)
+target_link_libraries(bsg-datastore sequence_graph)
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
