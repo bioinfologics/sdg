@@ -121,8 +121,7 @@ if (DOXYGEN_FOUND)
     configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
     message("Doxygen build started")
 
-    # note the option ALL which allows to build the docs together with the application
-    add_custom_target(doc_doxygen ALL
+    add_custom_target(doc_doxygen
                       COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
                       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                       COMMENT "Generating API documentation with Doxygen"
@@ -210,30 +209,30 @@ add_executable(bsg-untangler
         src/sglib/processors/Untangler.hpp
         src/sglib/processors/Untangler.cc)
 ## add executables and respective sources
-add_executable(gfa-qc
+add_executable(gfa-qc EXCLUDE_FROM_ALL
         src/gfa-qc.cc)
 
 ## add executables and respective sources
-add_executable(gfa-dumppath
+add_executable(gfa-dumppath EXCLUDE_FROM_ALL
         src/gfa-dumppath.cc)
 
 ## add executables and respective sources
-add_executable(gfa-pairscaff
+add_executable(gfa-pairscaff EXCLUDE_FROM_ALL
         src/gfa-pairscaff.cc)
 
-add_executable(gfa-bfphaser
+add_executable(gfa-bfphaser EXCLUDE_FROM_ALL
         src/gfa-bfphaser.cc)
 
-add_executable(phaser
+add_executable(phaser EXCLUDE_FROM_ALL
                src/phaser.cpp)
 
-add_executable(gfa-align
+add_executable(gfa-align EXCLUDE_FROM_ALL
                src/gfa-align.cc)
 
-add_executable(kc_comp
+add_executable(kc_comp EXCLUDE_FROM_ALL
                src/comp_kc.cc)
 
-add_executable(seq-sorter
+add_executable(seq-sorter EXCLUDE_FROM_ALL
                src/seq-sorter.cpp)
 
 target_link_libraries(bsg-workspace sequence_graph)
