@@ -5,7 +5,10 @@
 #include <iostream>
 #include <fstream>
 #include <sglib/factories/ContigBlockFactory.h>
-#include <sglib/mappers/LongReadMapper.h>
+#include <sglib/filesystem/check_or_create_directory.h>
+#include <sglib/readers/FileReader.h>
+#include <sglib/readers/SequenceGraphReader.h>
+#include <sglib/SMR.h>
 #include "cxxopts.hpp"
 
 
