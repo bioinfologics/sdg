@@ -35,6 +35,7 @@ public:
     void save_to_disk(std::string filename);
     void load_from_disk(std::string filename);*/
     void print_stats(){};
+    std::unordered_set<bsg10xTag> get_node_tags(sgNodeID_t n);
 
     SequenceGraph & sg;
     LinkedReadsDatastore &datastore;

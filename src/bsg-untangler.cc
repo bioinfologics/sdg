@@ -8,6 +8,70 @@
 #include "cxxopts.hpp"
 
 
+void walk_from(sgNodeID_t n, WorkSpace &ws){
+    class StreamKmerFactory : public  KMerFactory {
+    public:
+        explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
+        inline void produce_all_kmers(const char * seq, std::unordered_set<uint64_t> &mers){
+            // TODO: Adjust for when K is larger than what fits in uint64_t!
+            last_unknown=0;
+            fkmer=0;
+            rkmer=0;
+            auto s=seq;
+            while (*s!='\0' and *s!='\n') {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        mers.insert(fkmer);
+                    } else {
+                        // Is bwd
+                        mers.insert(rkmer);
+                    }
+                }
+                ++s;
+            }
+        }
+    };
+    StreamKmerFactory skf(31);
+    std::cout<<"Starting walk on "<<n<<"... "<<std::flush;
+    auto tags=ws.linked_read_mappers[0].get_node_tags(n);
+    std::cout<<tags.size()<<" tags... "<<std::flush;
+    auto kmers=ws.linked_read_datastores[0].get_tags_kmers(31,3,tags);
+    std::cout<<kmers.size()<<" kmers."<<std::endl;
+    SequenceGraphPath p(ws.sg,{n});
+    while (true){
+        auto fwl=ws.sg.get_fw_links(p.nodes.back());
+        if (fwl.empty()) break;
+        sgNodeID_t best=0,second=0;
+        double best_score=0,second_score=0;
+        for (auto &l:fwl){
+            std::unordered_set<uint64_t> lkmers, inters;
+            skf.produce_all_kmers(ws.sg.nodes[(l.dest>0?l.dest:-l.dest)].sequence.c_str(),lkmers);
+            std::set_intersection(lkmers.begin(),lkmers.end(),kmers.begin(),kmers.end(),std::inserter(inters,inters.end()));
+
+            auto score=(double)(inters.size())/lkmers.size();
+            std::cout<<"scoring transition to "<<l.dest<<": "<<inters.size()<<"/"<<lkmers.size()<<"="<<score<<std::endl;
+            uint64_t hits=0;
+            for (auto i:lkmers) if (kmers.count(i)) ++hits;
+            score=(double)(hits)/lkmers.size();
+            std::cout<<"scoring transition to "<<l.dest<<": "<<hits<<"/"<<lkmers.size()<<"="<<score<<std::endl;
+            if (best==0 or score>best_score) {second=best;best=l.dest;second_score=best_score;best_score=score;}
+            else if (second==0 or score>second_score) {second=l.dest;second_score=score;}
+        }
+        if (best_score==0) break;
+        std::cout<<best_score<<" - "<<second_score<<std::endl;
+        bool b=false;
+        for (auto n:p.nodes) if (n==best) b=true;
+        if (b) break;
+        p.nodes.push_back(best);
+        std::cout<<std::endl;
+    }
+    for (auto n:p.nodes) std::cout<<"seq"<<n<<", ";
+}
+
 int main(int argc, char * argv[]) {
     std::cout << "Welcome to bsg-untangler"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
@@ -20,7 +84,7 @@ int main(int argc, char * argv[]) {
     bool stats_only=0,reindex_kci=0;
     uint64_t max_mem_gb=4;
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
-    bool repeats_first=1,pop_bubles=0,skip_remap=0;
+    bool repeats_first=1,pop_bubles=0,skip_remap=0,print_HSPNPs=1,haplotype_walk=0;
     std::string verbose_log="";
     try
     {
@@ -33,9 +97,11 @@ int main(int argc, char * argv[]) {
                 ("max_mem", "maximum_memory when mapping (GB, default: 4)", cxxopts::value<uint64_t>(max_mem_gb));
 
         options.add_options("Heuristics")
-                ("skip_remap", "skip remapping the reads after loading workspace", cxxopts::value<bool>(skip_remap))
-                ("pop_short", "pop unsupported short bubbles first", cxxopts::value<bool>(pop_bubles))
-                ("repeats_first", "solve_repeats before bubble phasing", cxxopts::value<bool>(repeats_first))
+                ("skip_remap", "skip remapping reads on loading workspace (default false)", cxxopts::value<bool>(skip_remap))
+                ("pop_short", "pop unsupported short bubbles first (default false)", cxxopts::value<bool>(pop_bubles))
+                ("repeats_first", "solve_repeats before bubble phasing (default true)", cxxopts::value<bool>(repeats_first))
+                ("print_hspnps", "print HSPNPs (default true)", cxxopts::value<bool>(print_HSPNPs))
+                ("hwalk", "haplotype walk (default false)", cxxopts::value<bool>(haplotype_walk))
                 ("heuristics_verbose_log", "dump heuristics verbose log to file", cxxopts::value<std::string>(verbose_log))
                 ;
 
@@ -125,24 +191,33 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<"Finding HSPNPs"<<std::endl;
     Untangler u(ws);
     auto hps=u.get_all_HSPNPs();
-    std::cout<<"Starting with "<<hps.size()<<" HSPNPs"<<std::endl;
-    std::ofstream hpsfile(output_prefix+"_hps.csv");
-    auto hspnp_id=1;
-    for (auto hp:hps) { //TODO: print node numbers and alternative tags -> then cluster/find neighbours
-        std::vector<prm10xTag_t> h1tags,h2tags;
-        for(auto rm:ws.linked_read_mappers[0].reads_in_node[(hp.first>0?hp.first:-hp.first)]) h1tags.push_back(ws.linked_read_mappers[0].datastore.get_read_tag(rm.read_id));
-        for(auto rm:ws.linked_read_mappers[0].reads_in_node[(hp.second>0?hp.second:-hp.second)]) h2tags.push_back(ws.linked_read_mappers[0].datastore.get_read_tag(rm.read_id));
-        std::sort(h1tags.begin(),h1tags.end());
-        std::sort(h2tags.begin(),h2tags.end());
-        hpsfile<<hspnp_id<<",A,"<<hp.first;
-        for (auto t:h1tags) if (t) hpsfile<<","<<t;
-        hpsfile<<std::endl;
-        hpsfile<<hspnp_id<<",B,"<<hp.second;
-        for (auto t:h2tags) if (t) hpsfile<<","<<t;
-        hpsfile<<std::endl;
-        ++hspnp_id;
+    if (print_HSPNPs) {
+        std::cout << "Starting with " << hps.size() << " HSPNPs" << std::endl;
+        std::ofstream hpsfile(output_prefix + "_hps.csv");
+        auto hspnp_id = 1;
+        for (auto hp:hps) { //TODO: print node numbers and alternative tags -> then cluster/find neighbours
+            std::vector<prm10xTag_t> h1tags, h2tags;
+            for (auto rm:ws.linked_read_mappers[0].reads_in_node[(hp.first > 0 ? hp.first : -hp.first)])
+                h1tags.push_back(ws.linked_read_mappers[0].datastore.get_read_tag(rm.read_id));
+            for (auto rm:ws.linked_read_mappers[0].reads_in_node[(hp.second > 0 ? hp.second : -hp.second)])
+                h2tags.push_back(ws.linked_read_mappers[0].datastore.get_read_tag(rm.read_id));
+            std::sort(h1tags.begin(), h1tags.end());
+            std::sort(h2tags.begin(), h2tags.end());
+            hpsfile << hspnp_id << ",A," << hp.first;
+            for (auto t:h1tags) if (t) hpsfile << "," << t;
+            hpsfile << std::endl;
+            hpsfile << hspnp_id << ",B," << hp.second;
+            for (auto t:h2tags) if (t) hpsfile << "," << t;
+            hpsfile << std::endl;
+            ++hspnp_id;
+        }
     }
-
+    if (haplotype_walk){
+        for (auto hp:hps) {
+            walk_from(hp.first,ws);
+            walk_from(hp.second,ws);
+        }
+    }
 
 
 

@@ -30,12 +30,12 @@ public:
     void dump_full_store_to_disk(std::string filename);
 
     size_t size(){return read_offset.size()-1;};
-
     std::string get_read_sequence(size_t readID,FILE * file1, FILE * file2);
     std::string get_read_sequence_fd(size_t readID,int fd1, int fd2);
     void get_read_sequence_fd(size_t readID, int fd1, int fd2, char * dest);
     inline std::string get_read_sequence(size_t readID){return get_read_sequence(readID,fd1,fd2);};
     bsg10xTag get_read_tag(size_t readID);
+    std::unordered_set<uint64_t> get_tags_kmers(int k, int min_tag_cov, std::unordered_set<bsg10xTag> tags);
 
     std::string filename1,filename2; //if store is in single file bsg format these two are the same as the index file.
 

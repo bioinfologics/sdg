@@ -136,6 +136,8 @@ void LinkedReadsDatastore::read_index(std::ifstream &input_file) {
     input_file.read((char *)group_offset2.data(),group_offset2.size()*sizeof(group_offset2[0]));
     input_file.read((char *)read_tag.data(),read_tag.size()*sizeof(read_tag[0]));
     input_file.read((char *)read_offset.data(),read_offset.size()*sizeof(read_offset[0]));
+    fd1=fopen(filename1.c_str(),"r");
+    fd2=fopen(filename2.c_str(),"r");
 }
 
 void LinkedReadsDatastore::load_index_from_disk(std::string filename) {
@@ -208,6 +210,62 @@ void LinkedReadsDatastore::get_read_sequence_fd(size_t readID, int fd1, int fd2,
 
 bsg10xTag LinkedReadsDatastore::get_read_tag(size_t readID) {
     return read_tag[(readID-1)/2];
+}
+
+
+std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min_tag_cov, std::unordered_set<bsg10xTag> tags) {
+    class StreamKmerFactory : public  KMerFactory {
+    public:
+        explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
+        inline void produce_all_kmers(const char * seq, std::vector<KmerIDX> &mers){
+            // TODO: Adjust for when K is larger than what fits in uint64_t!
+            last_unknown=0;
+            fkmer=0;
+            rkmer=0;
+            auto s=seq;
+            while (*s!='\0' and *s!='\n') {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        mers.emplace_back(fkmer);
+                    } else {
+                        // Is bwd
+                        mers.emplace_back(rkmer);
+                    }
+                    mers.back().count=1;
+                }
+                ++s;
+            }
+        }
+    };
+    StreamKmerFactory skf(31);
+    std::vector<KmerIDX> all_kmers;
+    uint64_t readcount=0;
+    for (uint64_t i=0;i<read_tag.size();++i) {
+        if (tags.count(read_tag[i])>0) {
+            readcount+=2;
+            auto rid=i*2+1;
+            skf.produce_all_kmers(get_read_sequence(rid).c_str(),all_kmers);
+            skf.produce_all_kmers(get_read_sequence(rid+1).c_str(),all_kmers);
+        }
+    }
+    std::cout<< " (readcount "<<readcount<<", "<<all_kmers.size()<<" kmers) "<<std::flush;
+    std::sort(all_kmers.begin(),all_kmers.end());
+    auto wi=all_kmers.begin();
+    auto ri=all_kmers.begin();
+    while (ri<all_kmers.end()){
+        if (wi.base()==ri.base()) ++ri;
+        else if (*wi<*ri) {if (wi->count>=min_tag_cov) ++wi; *wi=*ri;++ri;}
+        else if (*wi==*ri){wi->merge(*ri);++ri;}
+    }
+    if (wi!=all_kmers.end() and wi->count>=min_tag_cov) ++wi;
+    all_kmers.resize(wi-all_kmers.begin());
+    std::unordered_set<uint64_t> kset;
+    for (auto &kc:all_kmers) kset.insert(kc.kmer);
+    return kset;
 }
 
 const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {
