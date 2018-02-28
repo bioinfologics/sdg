@@ -23,6 +23,7 @@
 #include <cmath>
 #include "sglib/logger/OutputLog.h"
 #include <sglib/filesystem/check_or_create_directory.h>
+#include <sglib/readers/Common.h>
 
 
 static const std::uint64_t GB(1024*1024*1024);

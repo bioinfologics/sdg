@@ -288,25 +288,25 @@ public:
         return matches;
     }
 
-    const std::vector<std::vector<std::pair<int32_t, uint>>> getTop(uint n, std::vector<Match> &matches, uint read_length, uint window) const {
-        std::vector<std::vector<std::pair<int32_t, uint>>> result(1+ read_length/window);
+    const std::vector<std::vector<std::pair<int32_t, unsigned int>>> getTop(unsigned int n, std::vector<Match> &matches, unsigned int read_length, unsigned int window) const {
+        std::vector<std::vector<std::pair<int32_t, unsigned int>>> result(1+ read_length/window);
         if (matches.empty()) return result;
         auto pos (matches[0].readPos);
 
         std::vector<Match>::const_iterator m(matches.cbegin());
-        std::vector<std::map<int32_t, uint>> contigMatch_section(1 + read_length/window);
+        std::vector<std::map<int32_t, unsigned int>> contigMatch_section(1 + read_length/window);
         for (; m != matches.cend(); ++m){
             contigMatch_section[m->readPos/window][m->dirContig]++;
         }
 
         for (auto s = 0; s!=read_length/window; s++) {
-            std::vector<std::pair<int32_t , uint>> top(n);
+            std::vector<std::pair<int32_t , unsigned int>> top(n);
             std::partial_sort_copy(contigMatch_section[s].begin(),
                                    contigMatch_section[s].end(),
                                    top.begin(),
                                    top.end(),
-                                   [](std::pair<const int32_t, uint> const& l,
-                                      std::pair<const int32_t, uint> const& r)
+                                   [](std::pair<const int32_t, unsigned int> const& l,
+                                      std::pair<const int32_t, unsigned int> const& r)
                                    {
                                        return l.second > r.second;
                                    });
