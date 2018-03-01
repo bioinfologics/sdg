@@ -87,12 +87,10 @@ void LinkedReadMapper::update_graph_index() {
     auto wi=kidxv.begin();
     auto ri=kidxv.begin();
     auto nri=kidxv.begin();
-    uint64_t unique=0;
     while (ri<kidxv.end()){
         while (nri!=kidxv.end() and nri->kmer==ri->kmer) ++nri;
         //std::cout<<"kmer["<<nri-kidxv.begin()<<"]="<<nri->kmer<<" != kmer["<<ri-kidxv.begin()<<"]="<<ri->kmer<<std::endl;
         if (nri-ri==1) {
-            ++unique;
             *wi=*ri;
             ++wi;
         }
@@ -101,7 +99,6 @@ void LinkedReadMapper::update_graph_index() {
     }
 
     kidxv.resize(wi-kidxv.begin());
-    //sglib::OutputLog(sglib::INFO)<<unique<<" unique kmers in index, creating map"<<std::endl;
     sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
     std::unordered_set<int32_t> seen_contigs;
     seen_contigs.reserve(sg.nodes.size());
@@ -109,7 +106,7 @@ void LinkedReadMapper::update_graph_index() {
         kmer_to_graphposition[kidx.kmer]={kidx.contigID,kidx.pos};
         seen_contigs.insert((kidx.contigID>0?kidx.contigID:-kidx.contigID));
     }
-    std::cout<<seen_contigs.size()<<" with indexed kmers"<<std::endl;
+    sglib::OutputLog(sglib::INFO)<<seen_contigs.size()<<" nodes with indexed kmers"<<std::endl;
 }
 
 
