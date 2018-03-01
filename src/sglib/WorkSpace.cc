@@ -33,7 +33,7 @@ void WorkSpace::dump_to_disk(std::string filename) {
     count=linked_read_datastores.size();
     of.write((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
-        linked_read_datastores[i].write_index(of);
+        linked_read_datastores[i].write(of);
         linked_read_mappers[i].write(of);
     }
     //dump element type then use that element's own dump to dump it to this file
@@ -67,7 +67,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     wsfile.read((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
         linked_read_datastores.emplace_back();
-        linked_read_datastores.back().read_index(wsfile);
+        linked_read_datastores.back().read(wsfile);
         linked_read_mappers.emplace_back(sg,linked_read_datastores.back());
         linked_read_mappers.back().read(wsfile);
 

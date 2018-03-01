@@ -132,6 +132,7 @@ int main(int argc, char * argv[]) {
     WorkSpace ws;
     std::cout<<std::endl<<"=== Loading Workspace ==="<<std::endl;
     ws.load_from_disk(workspace_file);
+    std::cout<<"Datastore size: "<<ws.linked_read_datastores[0].size()<<std::endl;
     ws.add_log_entry("bsg-untangler run started");
     ws.kci.compute_compression_stats();
     for (auto &m:ws.linked_read_mappers) m.memlimit=max_mem_gb*1024*1024*1024;

@@ -98,8 +98,9 @@ public:
 void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 31;
     std::cout<<"mapping reads!!!"<<std::endl;
-    std::cout<<reads_to_remap.size()<<" selected reads"<<std::endl;
     read_to_node.resize(datastore.size()+1);
+    std::cout<<reads_to_remap.size()<<" selected reads / "<<read_to_node.size()-1<<" total"<<std::endl;
+
     /*
      * Read mapping in parallel,
      */
@@ -121,6 +122,7 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
         total_count=0;
         multimap_count=0;
         bool c ;
+        //std::cout<<omp_get_thread_num()<<std::endl;
 #pragma omp for
         for (uint64_t readID=1;readID<read_to_node.size();++readID) {
             mapping.read_id = readID;

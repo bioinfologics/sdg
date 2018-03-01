@@ -4,29 +4,30 @@
 
 #include "LinkedReadsDatastore.hpp"
 
-void LinkedReadsDatastore::build_from_fastq(std::string read1_filename, std::string read2_filename,
-                                            LinkedReadsFormat format) {
-    if (format==LinkedReadsFormat::raw) {
-        std::cout<<"Raw 10x format not supported yet, datastore not populated!!!"<<std::endl;
-        return;
-    }
+void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int _rs, size_t chunksize) {
+
     //std::cout<<"Memory used by every read's entry:"<< sizeof(LinkedRead)<<std::endl;
     //read each read, put it on the index and on the appropriate tag
+    readsize=_rs;
     sglib::OutputLog(sglib::LogLevels::INFO)<<"Creating Datastore Index from "<<read1_filename<<" | "<<read2_filename<<std::endl;
-    filename1=read1_filename;
-    filename2=read2_filename;
-    fd1=fopen(read1_filename.c_str(),"r");
-    fd2=fopen(read2_filename.c_str(),"r");
+    auto fd1=fopen(read1_filename.c_str(),"r");
+    auto fd2=fopen(read2_filename.c_str(),"r");
     char readbuffer[1000];
-    read_offset.resize(1);//leave read 0 empty.
     uint64_t r1offset,r2offset;
-    uint64_t g1offset=0,g2offset=0;
-    uint64_t readCountInFile=0;
     uint64_t tagged_reads=0;
-    if (format==LinkedReadsFormat::UCDavis) {
-        while (!feof(fd1) and !feof(fd2)) {
+    //first, build an index of tags and offsets
+    sglib::OutputLog()<<"Building tag sorted chunks of "<<chunksize<<" pairs"<<std::endl;
+    std::vector<readData> readdatav;
+    readdatav.reserve(chunksize);
+    std::vector<std::ifstream> chunkfiles;
+    std::vector<readData> next_in_chunk;
+    readData currrent_read;
+    //First, create the chunk files
+    uint64_t pairs=0;
+    while (!feof(fd1) and !feof(fd2)) {
+        bsg10xTag newtag = 0;
+        if (format==LinkedReadsFormat::UCDavis) {
             //LinkedRead r1,r2;
-            bsg10xTag newtag = 0;
             if (NULL == fgets(readbuffer, 999, fd1)) continue;
             //Tag to number from r1's name
             for (auto i = 1; i < 17; ++i) {
@@ -39,35 +40,21 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename, std::str
                     break;
                 }
             }
-            r1offset = ftell(fd1);
+            currrent_read.tag=newtag;
             if (NULL == fgets(readbuffer, 999, fd1)) continue;
+            currrent_read.seq1=std::string(readbuffer);
+            if (currrent_read.seq1.back()=='\n') currrent_read.seq1.resize(currrent_read.seq1.size()-1);
             if (NULL == fgets(readbuffer, 999, fd1)) continue;
             if (NULL == fgets(readbuffer, 999, fd1)) continue;
 
             if (NULL == fgets(readbuffer, 999, fd2)) continue;
-            r2offset = ftell(fd2);
+            if (NULL == fgets(readbuffer, 999, fd2)) continue;
+            currrent_read.seq2=std::string(readbuffer);
+            if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
             if (NULL == fgets(readbuffer, 999, fd2)) continue;
             if (NULL == fgets(readbuffer, 999, fd2)) continue;
-            if (NULL == fgets(readbuffer, 999, fd2)) continue;
-
-            if (0 == readCountInFile % group_size) {
-                g1offset = r1offset;
-                group_offset1.push_back(r1offset);
-                g2offset = r2offset;
-                group_offset2.push_back(r2offset);
-            }
-            read_offset.push_back(r1offset - g1offset);
-            read_offset.push_back(r2offset - g2offset);
-            ++readCountInFile;
-            read_tag.push_back(newtag);
-            if (0 != newtag) tagged_reads += 2;
         }
-    }
-    else if (format==LinkedReadsFormat::seq){
-        while (!feof(fd1) and !feof(fd2)) {
-            //LinkedRead r1,r2;
-            bsg10xTag newtag = 0;
-            r1offset = ftell(fd1)+16;
+        else if (format==LinkedReadsFormat::seq){
             if (NULL == fgets(readbuffer, 999, fd1)) continue;
             //Tag to number from r1's name
             for (auto i = 0; i < 16; ++i) {
@@ -80,132 +67,141 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename, std::str
                     break;
                 }
             }
-            r2offset = ftell(fd2);
+            currrent_read.tag=newtag;
+            currrent_read.seq1=std::string(readbuffer+16);
+            if (currrent_read.seq1.back()=='\n') currrent_read.seq1.resize(currrent_read.seq1.size()-1);
             if (NULL == fgets(readbuffer, 999, fd2)) continue;
-            if (0 == readCountInFile % group_size) {
-                g1offset = r1offset;
-                group_offset1.push_back(r1offset);
-                g2offset = r2offset;
-                group_offset2.push_back(r2offset);
+            currrent_read.seq2=std::string(readbuffer);
+            if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
+        }
+        if (0 != newtag) tagged_reads += 2;
+        ++pairs;
+        readdatav.push_back(currrent_read);
+        if (readdatav.size()==chunksize){
+            //sort
+            std::sort(readdatav.begin(),readdatav.end());
+            //dump
+            std::ofstream ofile("sorted_chunk_"+std::to_string(chunkfiles.size())+".data");
+            sglib::OutputLog()<<readdatav.size()<<" pairs dumping on chunk "<<chunkfiles.size()<<std::endl;
+            //add file to vector of files
+            char buffer[2*readsize+2];
+            for (auto &r:readdatav){
+                ofile.write((const char * ) &r.tag,sizeof(r.tag));
+                bzero(buffer,2*readsize+2);
+                memcpy(buffer,r.seq1.data(),(r.seq1.size()>readsize ? readsize : r.seq1.size()));
+                memcpy(buffer+readsize+1,r.seq2.data(),(r.seq2.size()>readsize ? readsize : r.seq2.size()));
+                ofile.write(buffer,2*readsize+2);
             }
-            read_offset.push_back(r1offset - g1offset);
-            read_offset.push_back(r2offset - g2offset);
-            ++readCountInFile;
-            read_tag.push_back(newtag);
-            if (0 != newtag) tagged_reads += 2;
+            ofile.close();
+            chunkfiles.emplace_back("sorted_chunk_"+std::to_string(chunkfiles.size())+".data");
+            readdatav.clear();
+            sglib::OutputLog()<<"dumped!"<<std::endl;
         }
     }
-    sglib::OutputLog(sglib::LogLevels::INFO)<<"Datastore with "<<read_offset.size()-1<<" reads, "<<tagged_reads<<" reads with tags"<<std::endl; //and "<<reads_in_tag.size()<<"tags"<<std::endl;
-
+    if (readdatav.size()>0) {
+        //sort
+        std::sort(readdatav.begin(), readdatav.end());
+        //dump
+        std::ofstream ofile("sorted_chunk_" + std::to_string(chunkfiles.size()) + ".data");
+        sglib::OutputLog() << readdatav.size() << " pairs dumping on chunk " << chunkfiles.size() << std::endl;
+        //add file to vector of files
+        char buffer[2 * readsize + 2];
+        for (auto &r:readdatav) {
+            ofile.write((const char *) &r.tag, sizeof(r.tag));
+            bzero(buffer, 2 * readsize + 2);
+            memcpy(buffer, r.seq1.data(), (r.seq1.size() > readsize ? readsize : r.seq1.size()));
+            memcpy(buffer + readsize + 1, r.seq2.data(), (r.seq2.size() > readsize ? readsize : r.seq2.size()));
+            ofile.write(buffer, 2 * readsize + 2);
+        }
+        ofile.close();
+        chunkfiles.emplace_back("sorted_chunk_" + std::to_string(chunkfiles.size()) + ".data");
+        readdatav.clear();
+        sglib::OutputLog() << "dumped!" << std::endl;
+    }
+    sglib::OutputLog() << "performing merge from disk" << std::endl;
+    //TODO: save space first for the tag index!!!
+    std::ofstream output(output_filename.c_str());
+    output.write((const char *) &readsize,sizeof(readsize));
+    read_tag.resize(pairs+1);
+    sglib::OutputLog() << "leaving space for " <<pairs<<" read_tag entries"<< std::endl;
+    uint64_t rts=read_tag.size();
+    output.write((const char *) &rts, sizeof(rts));
+    output.write((const char *) read_tag.data(),sizeof(bsg10xTag)*read_tag.size());
+    //multi_way merge of the chunks
+    int openfiles=chunkfiles.size();
+    bsg10xTag next_tags[chunkfiles.size()];
+    char buffer[2 * readsize + 2];
+    //read a bit from each file
+    for (auto i=0;i<chunkfiles.size();++i) chunkfiles[i].read((char *)&next_tags[i],sizeof(bsg10xTag));
+    read_tag.resize(1);
+    while(openfiles){
+        bsg10xTag mintag=UINT32_MAX;
+        //find the minimum tag
+        for (auto &t:next_tags) if (t<mintag) mintag=t;
+        //copy from each file till the next tag is > than minimum
+        for (auto i=0;i<chunkfiles.size();++i){
+            while (!chunkfiles[i].eof() and next_tags[i]==mintag){
+                //read buffer from file and write to final file
+                chunkfiles[i].read(buffer,2*readsize+2);
+                output.write(buffer,2*readsize+2);
+                read_tag.push_back(mintag);
+                //read next tag... eof? tag=UINT32_MAX
+                chunkfiles[i].read((char *)&next_tags[i],sizeof(bsg10xTag));
+                if (chunkfiles[i].eof()) {
+                    --openfiles;
+                    next_tags[i]=UINT32_MAX;
+                    sglib::OutputLog() << "chunk "<<i<<" finished"<<std::endl;
+                }
+            }
+        }
+    }
+    //go back to the beginning of the file and write the read_tag part again
+    output.seekp(sizeof(readsize));
+    sglib::OutputLog() << "writing down " <<pairs<<" read_tag entries"<< std::endl;
+    rts=read_tag.size();
+    output.write((const char *) &rts, sizeof(rts));
+    output.write((const char *) read_tag.data(),sizeof(bsg10xTag)*read_tag.size());
+    output.close();
+    //delete all temporary chunk files
+    for (auto &c:chunkfiles) c.close();
+    for (auto i=0;i<chunkfiles.size();++i) ::unlink(("sorted_chunk_"+std::to_string(i)+".data").c_str());
+    //DONE!
+    sglib::OutputLog(sglib::LogLevels::INFO)<<"Datastore with "<<(read_tag.size()-1)*2<<" reads, "<<tagged_reads<<" reads with tags"<<std::endl; //and "<<reads_in_tag.size()<<"tags"<<std::endl;
+    filename=output_filename;
+    fd=fopen(filename.c_str(),"r");
 }
 
-void LinkedReadsDatastore::write_index(std::ofstream &output_file) {
+void LinkedReadsDatastore::read(std::ifstream &input_file) {
+    //read filename
     uint64_t s;
-    s=filename1.size(); output_file.write((const char *) &s,sizeof(s));
-    output_file<<filename1;
-    s=filename2.size(); output_file.write((const char *) &s,sizeof(s));
-    output_file<<filename2;
-    s=group_size; output_file.write((const char *) &s,sizeof(s));
-    s=group_offset1.size(); output_file.write((const char *) &s,sizeof(s));
-    s=group_offset2.size(); output_file.write((const char *) &s,sizeof(s));
-    s=read_tag.size(); output_file.write((const char *) &s,sizeof(s));
-    s=read_offset.size(); output_file.write((const char *) &s,sizeof(s));
-    output_file.write((const char *)group_offset1.data(),group_offset1.size()*sizeof(group_offset1[0]));
-    output_file.write((const char *)group_offset2.data(),group_offset2.size()*sizeof(group_offset2[0]));
-    output_file.write((const char *)read_tag.data(),read_tag.size()*sizeof(read_tag[0]));
-    output_file.write((const char *)read_offset.data(),read_offset.size()*sizeof(read_offset[0]));
+    input_file.read((char *) &s, sizeof(s));
+    filename.resize(s);
+    input_file.read((char *) filename.data(), filename.size());
+    load_index(filename);
 }
 
-void LinkedReadsDatastore::dump_index_to_disk(std::string filename) {
-    std::ofstream f(filename);
-    write_index(f);
-}
-
-void LinkedReadsDatastore::read_index(std::ifstream &input_file) {
+void LinkedReadsDatastore::load_index(std::string _filename){
     uint64_t s;
-    input_file.read((char *) &s,sizeof(s)); filename1.resize(s);
-    input_file.read((char *) filename1.data(),s*sizeof(filename1[0]));
-    input_file.read((char *) &s,sizeof(s)); filename2.resize(s);
-    input_file.read((char *) filename2.data(),s*sizeof(filename2[0]));
-    input_file.read((char *) &s,sizeof(s)); group_size=s;
-    input_file.read((char *) &s,sizeof(s)); group_offset1.resize(s);
-    input_file.read((char *) &s,sizeof(s)); group_offset2.resize(s);
-    input_file.read((char *) &s,sizeof(s)); read_tag.resize(s);
-    input_file.read((char *) &s,sizeof(s)); read_offset.resize(s);
-    input_file.read((char *)group_offset1.data(),group_offset1.size()*sizeof(group_offset1[0]));
-    input_file.read((char *)group_offset2.data(),group_offset2.size()*sizeof(group_offset2[0]));
-    input_file.read((char *)read_tag.data(),read_tag.size()*sizeof(read_tag[0]));
-    input_file.read((char *)read_offset.data(),read_offset.size()*sizeof(read_offset[0]));
-    fd1=fopen(filename1.c_str(),"r");
-    fd2=fopen(filename2.c_str(),"r");
+    filename=_filename;
+    fd=fopen(filename.c_str(),"r");
+    fread( &readsize,sizeof(readsize),1,fd);
+    fread(&s,sizeof(s),1,fd); read_tag.resize(s);
+    fread(read_tag.data(),sizeof(read_tag[0]),read_tag.size(),fd);
 }
 
-void LinkedReadsDatastore::load_index_from_disk(std::string filename) {
-    std::ifstream f(filename);
-    read_index(f);
+void LinkedReadsDatastore::write(std::ofstream &output_file) {
+    //read filename
+    uint64_t s=filename.size();
+    output_file.write((char *) &s,sizeof(s));
+    output_file.write((char *)filename.data(),filename.size());
 }
 
-
-std::string LinkedReadsDatastore::get_read_sequence(size_t readID, FILE * file1, FILE * file2) {
-#define SEQBUFFER_SIZE 260
-    char buffer[SEQBUFFER_SIZE];
-    if (0==readID%2){
-        auto pos_in_file=readID/2-1;
-//        std::cout<<"Read "<<readID<<" from file2, group "<<pos_in_file/group_size
-//                 <<" group offset "<<group_offset2[pos_in_file/group_size]
-//                 << " read_offset "<< read_offset[readID]<<std::endl;
-        fseek(file2,group_offset2[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
-        fread(buffer,SEQBUFFER_SIZE,1,file2);
-
-    } else {
-        auto pos_in_file=readID/2;
-//        std::cout<<"Read "<<readID<<" from file1, group "<<pos_in_file/group_size
-//                 <<" group offset "<<group_offset1[pos_in_file/group_size]
-//                 << " read_offset "<< read_offset[readID]<<std::endl;
-        fseek(file1,group_offset1[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
-        fread(buffer,SEQBUFFER_SIZE,1,file1);
-    }
-    for (auto &c:buffer) if (c=='\n') {c='\0'; break;}
+std::string LinkedReadsDatastore::get_read_sequence(size_t readID) {
+    char buffer[readsize+1];
+    size_t read_offset_in_file=(readsize+1)*readID;
+    fseek(fd,read_offset_in_file,SEEK_SET);
+    fread(buffer,readsize+1,1,fd);
     return std::string(buffer);
-}
-
-std::string LinkedReadsDatastore::get_read_sequence_fd(size_t readID, int fd1, int fd2) {
-#define SEQBUFFER_SIZE 260
-    char buffer[SEQBUFFER_SIZE];
-    if (0==readID%2){
-        auto pos_in_file=readID/2-1;
-//        std::cout<<"Read "<<readID<<" from file2, group "<<pos_in_file/group_size
-//                 <<" group offset "<<group_offset2[pos_in_file/group_size]
-//                 << " read_offset "<< read_offset[readID]<<std::endl;
-        lseek(fd2,group_offset2[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
-        //fread(buffer,SEQBUFFER_SIZE,1,file2);
-        read(fd2,buffer,SEQBUFFER_SIZE);
-
-    } else {
-        auto pos_in_file=readID/2;
-//        std::cout<<"Read "<<readID<<" from file1, group "<<pos_in_file/group_size
-//                 <<" group offset "<<group_offset1[pos_in_file/group_size]
-//                 << " read_offset "<< read_offset[readID]<<std::endl;
-        lseek(fd1,group_offset1[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
-        //fread(buffer,SEQBUFFER_SIZE,1,file1);
-        read(fd1,buffer,SEQBUFFER_SIZE);
-    }
-    for (auto &c:buffer) if (c=='\n') {c='\0'; break;}
-    return std::string(buffer);
-}
-
-void LinkedReadsDatastore::get_read_sequence_fd(size_t readID, int fd1, int fd2, char * dest) {
-#define SEQBUFFER_SIZE 260
-    if (0==readID%2){
-        auto pos_in_file=readID/2-1;
-        lseek(fd2,group_offset2[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
-        read(fd2,dest,SEQBUFFER_SIZE);
-
-    } else {
-        auto pos_in_file=readID/2;
-        lseek(fd1,group_offset1[pos_in_file/group_size]+read_offset[readID],SEEK_SET);
-        read(fd1,dest,SEQBUFFER_SIZE);
-    }
 }
 
 bsg10xTag LinkedReadsDatastore::get_read_tag(size_t readID) {
@@ -269,26 +265,11 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
 }
 
 const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {
-    if (0==readID%2){
-        auto pos_in_file=readID/2-1;
-        size_t read_offset_in_file;
-        read_offset_in_file=datastore.group_offset2[pos_in_file/datastore.group_size]+datastore.read_offset[readID];
-        if (read_offset_in_file<buffer2_offset or read_offset_in_file+chunk_size>buffer2_offset+bufsize) {
-            buffer2_offset=read_offset_in_file;
-            lseek(fd2,read_offset_in_file,SEEK_SET);
-            read(fd2,buffer2,bufsize);
+        size_t read_offset_in_file=(datastore.readsize+1)*readID;;
+        if (read_offset_in_file<buffer_offset or read_offset_in_file+chunk_size>buffer_offset+bufsize) {
+            buffer_offset=read_offset_in_file;
+            lseek(fd,read_offset_in_file,SEEK_SET);
+            read(fd,buffer,bufsize);
         }
-        return buffer2+(read_offset_in_file-buffer2_offset);
-
-    } else {
-        auto pos_in_file=readID/2;
-        size_t read_offset_in_file;
-        read_offset_in_file=datastore.group_offset1[pos_in_file/datastore.group_size]+datastore.read_offset[readID];
-        if (read_offset_in_file<buffer1_offset or read_offset_in_file+chunk_size>buffer1_offset+bufsize) {
-            buffer1_offset=read_offset_in_file;
-            lseek(fd1,read_offset_in_file,SEEK_SET);
-            read(fd1,buffer1,bufsize);
-        }
-        return buffer1+(read_offset_in_file-buffer1_offset);
-    }
+        return buffer+(read_offset_in_file-buffer_offset);
 }
