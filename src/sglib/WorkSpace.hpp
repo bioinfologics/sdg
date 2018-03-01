@@ -21,6 +21,7 @@ class WorkSpace {
 
 public:
     WorkSpace():kci(sg){};
+    WorkSpace(const WorkSpace& that) = delete; //we definitely do not want copy constructors here, thank you
     void print_log();
 
     void add_log_entry(std::string text);

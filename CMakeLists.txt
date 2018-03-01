@@ -207,7 +207,7 @@ target_link_libraries(bsg-kmerspectra ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 add_executable(bsg-untangler
         src/bsg-untangler.cc
         src/sglib/processors/Untangler.hpp
-        src/sglib/processors/Untangler.cc)
+        src/sglib/processors/Untangler.cc src/sglib/processors/TagWalker.cc src/sglib/processors/TagWalker.hpp)
 ## add executables and respective sources
 add_executable(gfa-qc EXCLUDE_FROM_ALL
         src/gfa-qc.cc)

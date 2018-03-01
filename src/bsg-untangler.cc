@@ -4,6 +4,7 @@
 #include <sglib/GraphPartitioner.hpp>
 #include <sglib/Scaffolder.hpp>
 #include <sglib/processors/Untangler.hpp>
+#include <sglib/processors/TagWalker.hpp>
 #include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"
 
@@ -215,8 +216,10 @@ int main(int argc, char * argv[]) {
     }
     if (haplotype_walk){
         for (auto hp:hps) {
-            walk_from(hp.first,ws);
-            walk_from(hp.second,ws);
+            TagWalker tw(ws,hp);
+            tw.remove_crosstalk();
+            //walk_from(hp.first,ws);
+            //walk_from(hp.second,ws);
         }
     }
 
