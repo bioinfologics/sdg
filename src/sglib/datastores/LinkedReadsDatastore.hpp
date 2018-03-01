@@ -45,9 +45,11 @@ public:
     std::string filename; //if store is in single file bsg format these two are the same as the index file.
 
     uint64_t readsize;
+    uint64_t readpos_offset;
 private:
     std::vector<uint32_t> read_tag;
     FILE * fd=NULL;
+
     //TODO: read sequence cache (std::map with a limit of elements and use count)
 };
 
@@ -55,6 +57,7 @@ class BufferedLRSequenceGetter{
 public:
     BufferedLRSequenceGetter(const LinkedReadsDatastore &_ds, size_t _bufsize, size_t _chunk_size):
             datastore(_ds),bufsize(_bufsize),chunk_size(_chunk_size){
+        fd=open(datastore.filename.c_str(),O_RDONLY);
         buffer=(char *)malloc(bufsize);
         buffer_offset=SIZE_MAX;
     }

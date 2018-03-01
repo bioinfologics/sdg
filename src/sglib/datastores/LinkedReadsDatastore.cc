@@ -187,6 +187,7 @@ void LinkedReadsDatastore::load_index(std::string _filename){
     fread( &readsize,sizeof(readsize),1,fd);
     fread(&s,sizeof(s),1,fd); read_tag.resize(s);
     fread(read_tag.data(),sizeof(read_tag[0]),read_tag.size(),fd);
+    readpos_offset=ftell(fd);
 }
 
 void LinkedReadsDatastore::write(std::ofstream &output_file) {
@@ -198,7 +199,7 @@ void LinkedReadsDatastore::write(std::ofstream &output_file) {
 
 std::string LinkedReadsDatastore::get_read_sequence(size_t readID) {
     char buffer[readsize+1];
-    size_t read_offset_in_file=(readsize+1)*readID;
+    size_t read_offset_in_file=readpos_offset+(readsize+1)*readID;
     fseek(fd,read_offset_in_file,SEEK_SET);
     fread(buffer,readsize+1,1,fd);
     return std::string(buffer);
@@ -265,7 +266,7 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
 }
 
 const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {
-        size_t read_offset_in_file=(datastore.readsize+1)*readID;;
+        size_t read_offset_in_file=datastore.readpos_offset+(datastore.readsize+1)*readID;;
         if (read_offset_in_file<buffer_offset or read_offset_in_file+chunk_size>buffer_offset+bufsize) {
             buffer_offset=read_offset_in_file;
             lseek(fd,read_offset_in_file,SEEK_SET);

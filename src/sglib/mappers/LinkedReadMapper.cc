@@ -82,6 +82,7 @@ void LinkedReadMapper::update_graph_index() {
         seen_contigs.insert((kidx.contigID>0?kidx.contigID:-kidx.contigID));
     }
     sglib::OutputLog(sglib::INFO)<<seen_contigs.size()<<" nodes with indexed kmers"<<std::endl;
+    reads_in_node.resize(sg.nodes.size());
 }
 
 
