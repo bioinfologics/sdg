@@ -40,29 +40,6 @@ void LinkedReadMapper::read(std::ifstream &input_file) {
 }
 
 void LinkedReadMapper::update_graph_index() {
-/*    const int k = 31;
-    const int max_coverage = 1;
-    const std::string output_prefix("./");
-
-    SMR<KmerIDX,
-            kmerIDXFactory<FastaRecord>,
-            GraphNodeReader<FastaRecord>,
-            FastaRecord,
-            GraphNodeReaderParams,
-            KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k}, memlimit, 0, max_coverage, output_prefix);
-
-   // Get the unique_kmers from the graph into a map
-    std::cout << "Indexing graph... " << std::endl;
-
-    kmer_to_graphposition.clear();
-    reads_in_node.resize(sg.nodes.size());
-    std::unordered_set<int32_t> seen_contigs;
-    for (auto &kidx :kmerIDX_SMR.process_from_memory()) {
-        kmer_to_graphposition[kidx.kmer]={kidx.contigID,kidx.pos};
-        seen_contigs.insert((kidx.contigID>0?kidx.contigID:-kidx.contigID));
-    }
-    std::cout<<seen_contigs.size()<<" with indexed kmers"<<std::endl;
-*/
     sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
     const int k = 31;
     uint64_t total_k=0;
@@ -83,13 +60,11 @@ void LinkedReadMapper::update_graph_index() {
     sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
     std::sort(kidxv.begin(),kidxv.end());
     sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
-    //for (auto i=0;i<25;++i) std::cout<<kidxv[i].kmer<<std::endl;
     auto wi=kidxv.begin();
     auto ri=kidxv.begin();
     auto nri=kidxv.begin();
     while (ri<kidxv.end()){
         while (nri!=kidxv.end() and nri->kmer==ri->kmer) ++nri;
-        //std::cout<<"kmer["<<nri-kidxv.begin()<<"]="<<nri->kmer<<" != kmer["<<ri-kidxv.begin()<<"]="<<ri->kmer<<std::endl;
         if (nri-ri==1) {
             *wi=*ri;
             ++wi;
