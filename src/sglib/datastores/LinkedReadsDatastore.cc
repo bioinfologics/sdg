@@ -205,6 +205,16 @@ std::string LinkedReadsDatastore::get_read_sequence(size_t readID) {
     return std::string(buffer);
 }
 
+std::vector<uint64_t> LinkedReadsDatastore::get_tag_reads(bsg10xTag tag) {
+    std::vector<uint64_t> rids;
+    rids.reserve(10000);
+    for (auto n=std::lower_bound(read_tag.begin(),read_tag.end(),tag)-read_tag.begin();read_tag[n]==tag;++n) {
+        rids.emplace_back( n * 2 + 1);
+        rids.emplace_back( n * 2 + 2);
+    }
+    return rids;
+}
+
 bsg10xTag LinkedReadsDatastore::get_read_tag(size_t readID) {
     return read_tag[(readID-1)/2];
 }
@@ -238,13 +248,12 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
             }
         }
     };
-    StreamKmerFactory skf(31);
+    StreamKmerFactory skf(k);
     std::vector<KmerIDX> all_kmers;
     uint64_t readcount=0;
-    for (uint64_t i=0;i<read_tag.size();++i) {
-        if (tags.count(read_tag[i])>0) {
+    for (auto tr:tags) {
+        for (auto rid:get_tag_reads(tr)){
             readcount+=2;
-            auto rid=i*2+1;
             skf.produce_all_kmers(get_read_sequence(rid).c_str(),all_kmers);
             skf.produce_all_kmers(get_read_sequence(rid+1).c_str(),all_kmers);
         }
