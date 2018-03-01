@@ -12,6 +12,7 @@ void KmerCompressionIndex::index_graph(){
     const int k = 31;
     uint64_t total_k=0;
     for (auto &n:sg.nodes) if (n.sequence.size()>=k) total_k+=n.sequence.size()+1-k;
+    graph_kmers.clear();
     graph_kmers.reserve(total_k);
     FastaRecord r;
     KmerCountFactory<FastaRecord>kcf({k});
