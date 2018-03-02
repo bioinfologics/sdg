@@ -14,9 +14,10 @@ public:
         tagsA=ws.linked_read_mappers[0].get_node_tags(nodeA);
         tagsB=ws.linked_read_mappers[0].get_node_tags(nodeB);
     };
-    void remove_crosstalk();
+    float remove_crosstalk();
     void dump_reads(std::string prefix);
     SequenceGraphPath walk(float min_winner,float max_looser);
+    std::vector<std::unordered_set<uint64_t>> get_distinctive_kmers(std::vector<sgNodeID_t>);
 
 private:
     WorkSpace &ws;
