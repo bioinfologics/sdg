@@ -145,6 +145,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
      * it starts with a c=2 node, and goes thorugh all bubbles fw, then reverts the subgraph and repeats
      */
     std::pair<sgNodeID_t,sgNodeID_t> hap={0,0};
+#pragma omp parallel for schedule(static, 10)
     for (auto n=1;n<ws.sg.nodes.size();++n){
         if (ws.sg.nodes[n].status==sgNodeDeleted) continue;
         auto frontkci=ws.kci.compute_compression_for_node(n);
@@ -159,6 +160,17 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
             if (fw_l.size() != 2) continue;
             hap.first = fw_l[0].dest;
             hap.second = fw_l[1].dest;
+            bool used_hspnp;
+            #pragma omp critical(find_hspnp_used)
+            {
+                used_hspnp = (used[(hap.first > 0 ? hap.first : -hap.first)] or
+                              used[(hap.second > 0 ? hap.second : -hap.second)]);
+                if (!used_hspnp){
+                    used[(hap.first>0?hap.first:-hap.first)]=true;
+                    used[(hap.second>0?hap.second:-hap.second)]=true;
+                }
+            }
+            if (used_hspnp) continue;
             if (hap.first == n or hap.first == -n or hap.second == n or hap.second == -n or hap.first == hap.second) continue;
             //fork.closing
             auto hap0f = ws.sg.get_fw_links(hap.first);
