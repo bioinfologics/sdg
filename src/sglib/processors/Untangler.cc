@@ -182,15 +182,12 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
             if (h1kc > max_c1 or h1kc < min_c1) continue;
             auto ekc = ws.kci.compute_compression_for_node(hap0f[0].dest);
             if (ekc > max_c2 or ekc < min_c2) continue;
-            if (used[(hap.first>0?hap.first:-hap.first)] or used[(hap.second>0?hap.second:-hap.second)]){
-                if (not used[(hap.second>0?hap.second:-hap.second)] or not used[(hap.second>0?hap.second:-hap.second)])
-                    std::cout<<"WARNING: unusual use pattern on HSPNP"<<std::endl;
-                continue;
+
+#pragma omp critical(hps)
+            {
+                hps.push_back(hap);
+                if (hps.size()%100==0) std::cout<<hps.size()<<" haplotype pairs found"<<std::endl;
             }
-            hps.push_back(hap);
-            if (hps.size()%100==0) std::cout<<hps.size()<<" haplotype pairs found"<<std::endl;
-            used[(hap.first>0?hap.first:-hap.first)]=true;
-            used[(hap.second>0?hap.second:-hap.second)]=true;
         }
     }
     return hps;
