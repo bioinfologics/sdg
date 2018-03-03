@@ -59,59 +59,78 @@ std::vector<std::unordered_set<uint64_t>> TagWalker::get_distinctive_kmers(std::
 SequenceGraphPath TagWalker::walk(float min_winner, float max_looser) {
     //option: start from HSPNPs HSPNTs HSPN*, kmerize in any kmer size, find exclussive kmers, get all involved kmers,
     // - Select completely-classified tags, and walk with those.
-    auto n=nodeA;
+    SequenceGraphPath pathA(ws.sg,{}),pathB(ws.sg,{});
+    for(auto pass=0;pass<2;++pass) {
 
-    std::cout<<"Starting walk on "<<n<<"... "<<std::flush;
-    auto tags=ws.linked_read_mappers[0].get_node_tags(llabs(n));
-    std::cout<<tags.size()<<" tags... "<<std::flush;
-    auto kmers=ws.linked_read_datastores[0].get_tags_kmers(31,3,tags);
-    std::cout<<kmers.size()<<" kmers."<<std::endl;
-    SequenceGraphPath p(ws.sg,{n});
-    {
-        auto lkmers=get_distinctive_kmers({n})[0];
-        double score;
-        uint64_t hits=0;
-        for (auto x:lkmers) if (kmers.count(x)) ++hits;
-        score=(double)hits/lkmers.size();
-        std::cout<<"Self-score: "<<hits<<"/"<<lkmers.size()<<"="<<score<<std::endl;
-    }
-    while (true){
-        auto fwl=ws.sg.get_fw_links(p.nodes.back());
-        if (fwl.empty()) break;
-        std::vector<sgNodeID_t> fw_nodes;
-        for (auto l:fwl) fw_nodes.push_back(l.dest);
-        auto distinctivekmers=get_distinctive_kmers(fw_nodes);
+        sgNodeID_t n= (pass==0?nodeA:nodeB);
 
-
-        sgNodeID_t best=0,second=0;
-        double best_score=0,second_score=0;
-
-        for (auto i=0;i<fw_nodes.size();++i){
-            std::unordered_set<uint64_t> inters;
-            auto &lkmers=distinctivekmers[i];
+        std::cout << "Starting walk on " << n << "... " << std::flush;
+        auto tags = ws.linked_read_mappers[0].get_node_tags(llabs(n));
+        std::cout << tags.size() << " tags... " << std::flush;
+        auto kmers = ws.linked_read_datastores[0].get_tags_kmers(31, 3, tags);
+        std::cout << kmers.size() << " kmers." << std::endl;
+        SequenceGraphPath p(ws.sg, {n});
+        {
+            auto lkmers = get_distinctive_kmers({n})[0];
             double score;
-            uint64_t hits=0;
+            uint64_t hits = 0;
             for (auto x:lkmers) if (kmers.count(x)) ++hits;
-            score=(double)hits/lkmers.size();
-            std::cout<<"scoring transition to "<<fw_nodes[i]<<": "<<hits<<"/"<<lkmers.size()<<"="<<score<<std::endl;
-            if (best==0 or score>best_score) {second=best;best=fw_nodes[i];second_score=best_score;best_score=score;}
-            else if (second==0 or score>second_score) {second=fw_nodes[i];second_score=score;}
+            score = (double) hits / lkmers.size();
+            std::cout << "Self-score: " << hits << "/" << lkmers.size() << "=" << score << std::endl;
         }
-        std::cout<<best_score<<" - "<<second_score<<std::endl;
-        if (best_score==0 or best_score<min_winner or second_score>max_looser) {
-            std::cout<<"stopping because of score uncertainty"<<std::endl;
-            break;
+        for (auto i = 0; i < 2; ++i) {
+            while (true) {
+                auto fwl = ws.sg.get_fw_links(p.nodes.back());
+                if (fwl.empty()) break;
+                std::vector<sgNodeID_t> fw_nodes;
+                for (auto l:fwl) fw_nodes.push_back(l.dest);
+                auto distinctivekmers = get_distinctive_kmers(fw_nodes);
+
+
+                sgNodeID_t best = 0, second = 0;
+                double best_score = 0, second_score = 0;
+
+                for (auto i = 0; i < fw_nodes.size(); ++i) {
+                    std::unordered_set<uint64_t> inters;
+                    auto &lkmers = distinctivekmers[i];
+                    double score;
+                    uint64_t hits = 0;
+                    for (auto x:lkmers) if (kmers.count(x)) ++hits;
+                    score = (double) hits / lkmers.size();
+                    std::cout << "scoring transition to " << fw_nodes[i] << ": " << hits << "/" << lkmers.size() << "="
+                              << score << std::endl;
+                    if (best == 0 or score > best_score) {
+                        second = best;
+                        best = fw_nodes[i];
+                        second_score = best_score;
+                        best_score = score;
+                    } else if (second == 0 or score > second_score) {
+                        second = fw_nodes[i];
+                        second_score = score;
+                    }
+                }
+                std::cout << best_score << " - " << second_score << std::endl;
+                if (best_score == 0 or best_score < min_winner or second_score > max_looser) {
+                    std::cout << "stopping because of score uncertainty" << std::endl;
+                    break;
+                }
+                bool b = false;
+                for (auto n:p.nodes) if (llabs(n) == llabs(best)) b = true;
+                if (b) {
+                    std::cout << "stopping on circular path" << std::endl;
+                    break;
+                }
+                p.nodes.push_back(best);
+            }
+            p.reverse();
+            (pass==0?pathA:pathB).nodes=p.nodes;
         }
-        bool b=false;
-        for (auto n:p.nodes) if (n==best) b=true;
-        if (b) {
-            std::cout<<"stopping on circular path"<<std::endl;
-            break;
-        }
-        p.nodes.push_back(best);
     }
-    for (auto n:p.nodes) std::cout<<"seq"<<n<<", ";
+    std::cout<<"PATH A ("<<pathA.get_sequence().size()<<" bp): ";
+    for (auto n:pathA.nodes) std::cout<<"seq"<<llabs(n)<<", ";
+    std::cout<<std::endl<<"PATH B("<<pathB.get_sequence().size()<<" bp): ";
+    for (auto n:pathB.nodes) std::cout<<"seq"<<llabs(n)<<", ";
     std::cout<<std::endl;
-    return p;
+    return pathA;
 
 }

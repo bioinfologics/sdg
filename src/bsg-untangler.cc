@@ -216,11 +216,11 @@ int main(int argc, char * argv[]) {
     }
     if (haplotype_walk){
         for (auto hp:hps) {
-            if (ws.sg.nodes[llabs(hp.first)].sequence.size()<2000 or ws.sg.nodes[llabs(hp.second)].sequence.size()<2000 ) continue;
+            //if (ws.sg.nodes[llabs(hp.first)].sequence.size()<2000 or ws.sg.nodes[llabs(hp.second)].sequence.size()<2000 ) continue;
             TagWalker tw(ws,hp);
             auto ct= tw.remove_crosstalk();
             if (ct>0) continue;
-            tw.walk(.95,.1);
+            tw.walk(.98,.02);
             //tw.dump_reads("HPSNP_"+std::to_string(llabs(hp.first))+"_"+std::to_string(llabs(hp.second)));
 
 
