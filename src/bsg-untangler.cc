@@ -5,71 +5,6 @@
 #include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"
 
-
-void walk_from(sgNodeID_t n, WorkSpace &ws){
-    class StreamKmerFactory : public  KMerFactory {
-    public:
-        explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
-        inline void produce_all_kmers(const char * seq, std::unordered_set<uint64_t> &mers){
-            // TODO: Adjust for when K is larger than what fits in uint64_t!
-            last_unknown=0;
-            fkmer=0;
-            rkmer=0;
-            auto s=seq;
-            while (*s!='\0' and *s!='\n') {
-                //fkmer: grows from the right (LSB)
-                //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
-                if (last_unknown >= K) {
-                    if (fkmer <= rkmer) {
-                        // Is fwd
-                        mers.insert(fkmer);
-                    } else {
-                        // Is bwd
-                        mers.insert(rkmer);
-                    }
-                }
-                ++s;
-            }
-        }
-    };
-    StreamKmerFactory skf(31);
-    std::cout<<"Starting walk on "<<n<<"... "<<std::flush;
-    auto tags=ws.linked_read_mappers[0].get_node_tags(n);
-    std::cout<<tags.size()<<" tags... "<<std::flush;
-    auto kmers=ws.linked_read_datastores[0].get_tags_kmers(31,3,tags);
-    std::cout<<kmers.size()<<" kmers."<<std::endl;
-    SequenceGraphPath p(ws.sg,{n});
-    while (true){
-        auto fwl=ws.sg.get_fw_links(p.nodes.back());
-        if (fwl.empty()) break;
-        sgNodeID_t best=0,second=0;
-        double best_score=0,second_score=0;
-        for (auto &l:fwl){
-            std::unordered_set<uint64_t> lkmers, inters;
-            skf.produce_all_kmers(ws.sg.nodes[(l.dest>0?l.dest:-l.dest)].sequence.c_str(),lkmers);
-            std::set_intersection(lkmers.begin(),lkmers.end(),kmers.begin(),kmers.end(),std::inserter(inters,inters.end()));
-
-            auto score=(double)(inters.size())/lkmers.size();
-            std::cout<<"scoring transition to "<<l.dest<<": "<<inters.size()<<"/"<<lkmers.size()<<"="<<score<<std::endl;
-            uint64_t hits=0;
-            for (auto i:lkmers) if (kmers.count(i)) ++hits;
-            score=(double)(hits)/lkmers.size();
-            std::cout<<"scoring transition to "<<l.dest<<": "<<hits<<"/"<<lkmers.size()<<"="<<score<<std::endl;
-            if (best==0 or score>best_score) {second=best;best=l.dest;second_score=best_score;best_score=score;}
-            else if (second==0 or score>second_score) {second=l.dest;second_score=score;}
-        }
-        if (best_score==0) break;
-        std::cout<<best_score<<" - "<<second_score<<std::endl;
-        bool b=false;
-        for (auto n:p.nodes) if (n==best) b=true;
-        if (b) break;
-        p.nodes.push_back(best);
-        std::cout<<std::endl;
-    }
-    for (auto n:p.nodes) std::cout<<"seq"<<n<<", ";
-}
-
 int main(int argc, char * argv[]) {
     std::cout << "Welcome to bsg-untangler"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
@@ -126,42 +61,32 @@ int main(int argc, char * argv[]) {
         exit(1);
     }
 
-
+    std::cout<<std::endl;
     WorkSpace ws;
-    std::cout<<std::endl<<"=== Loading Workspace ==="<<std::endl;
+    sglib::OutputLog()<<"Loading Workspace..."<<std::endl;
     ws.load_from_disk(workspace_file);
-    std::cout<<"Datastore size: "<<ws.linked_read_datastores[0].size()<<std::endl;
     ws.add_log_entry("bsg-untangler run started");
+    sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     ws.kci.compute_compression_stats();
     for (auto &m:ws.linked_read_mappers) m.memlimit=max_mem_gb*1024*1024*1024;
     if (skip_remap==false) {
-        std::cout<<std::endl<<"=== Mapping reads ==="<<std::endl;
+        sglib::OutputLog()<<"Mapping reads..."<<std::endl;
         for (auto &m:ws.linked_read_mappers) {
             m.update_graph_index();
             m.map_reads();
         }
         ws.add_log_entry("reads re-mapped to current graph");
         ws.dump_to_disk(output_prefix+"_mapped.bsgws");
+        sglib::OutputLog()<<"Mapping reads DONE."<<std::endl;
     }
 
 
 
 
-    std::cout<<std::endl<<"=== Scaffolding ==="<<std::endl;
-
-    std::vector<PairedReadMapper> prmappers;
     std::ofstream verbose_log_file;
     if (verbose_log!=""){
         verbose_log_file.open(verbose_log);
     }
-    /*if (pop_bubles) {
-        scaff.pop_unsupported_shortbubbles();
-        for (auto & lrm: scaff.lrmappers) {
-            lrm.remove_obsolete_mappings();
-            lrm.update_graph_index();
-            lrm.map_reads();
-        }
-    }*/
 
     if (repeats_first) {
         std::cout << std::endl << "Solving trivial repeats" << std::endl;
@@ -187,12 +112,12 @@ int main(int argc, char * argv[]) {
         }
     }
 
-    std::cout<<std::endl<<"Finding HSPNPs"<<std::endl;
     Untangler u(ws);
     if (haplotype_walk){
         u.extend_HSPNPs_by_tagwalking();
     }
     if (print_HSPNPs) {
+        std::cout<<std::endl<<"Finding HSPNPs"<<std::endl;
         auto hps=u.get_all_HSPNPs();
         std::cout << "Starting with " << hps.size() << " HSPNPs" << std::endl;
         std::ofstream hpsfile(output_prefix + "_hps.csv");
@@ -216,9 +141,11 @@ int main(int argc, char * argv[]) {
     }
 
 
-
+    sglib::OutputLog()<<"Dumping final Workspace..."<<std::endl;
     ws.dump_to_disk(output_prefix+"_final.bsgws");
+    sglib::OutputLog()<<"Dumping scaffolded GFA..."<<std::endl;
     ws.sg.write_to_gfa(output_prefix+"_scaffolded.gfa");
+    sglib::OutputLog()<<"All DONE!!!"<<std::endl;
     return 0;
 }
 

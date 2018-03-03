@@ -189,10 +189,10 @@ void KmerCompressionIndex::add_counts_from_file(std::vector<std::string> filenam
 void KmerCompressionIndex::compute_compression_stats() {
     //compute mean, median and mode, as of now, only use the first read count
     uint64_t graphcov[10]={0,0,0,0,0,0,0,0,0,0};
-    std::cout << "Coverage in graph:" <<std::endl;
+    //std::cout << "Coverage in graph:" <<std::endl;
     for (auto &gk:graph_kmers) ++graphcov[(gk.count<10?gk.count-1:9)];
     for (auto i=1;i<10;++i) std::cout << i <<":   "<<graphcov[i-1]<<std::endl;
-    std::cout <<"10+: "<<graphcov[9]<<std::endl;
+    //std::cout <<"10+: "<<graphcov[9]<<std::endl;
     uint64_t covuniq[1001];
     for (auto &c:covuniq)c=0;
     uint64_t tuniq=0,cuniq=0;
@@ -207,11 +207,11 @@ void KmerCompressionIndex::compute_compression_stats() {
     while (cseen<cuniq/2) {cseen+=covuniq[median];++median;};
     uint64_t mode=0;
     for (auto i=0;i<1000;++i) if (covuniq[i]>covuniq[mode]) mode=i;
-    std::cout << "Mean coverage for unique kmers:   " << ((double)tuniq)/cuniq <<std::endl;
-    std::cout << "Median coverage for unique kmers: " << median <<std::endl;
-    std::cout << "Mode coverage for unique kmers:   " << mode <<std::endl;
+    sglib::OutputLog()<<"KCI Mean coverage for unique kmers:   " << ((double)tuniq)/cuniq <<std::endl;
+    sglib::OutputLog()<<"KCI Median coverage for unique kmers: " << median <<std::endl;
+    sglib::OutputLog()<<"KCI Mode coverage for unique kmers:   " << mode <<std::endl;
 
-    if (median<.9*mode or median>.9*mode ) std::cout<<"WARNING -> median and mode highly divergent"<<std::endl;
+    if (median<.9*mode or median>.9*mode ) sglib::OutputLog()<<"WARNING -> median and mode highly divergent"<<std::endl;
     uniq_mode=mode;
 
 }
