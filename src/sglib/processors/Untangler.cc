@@ -196,10 +196,14 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
 }
 
 uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
-    auto hps=get_all_HSPNPs();
-    for (auto hp:hps) {
+    auto const hps=get_all_HSPNPs();
+    std::atomic_uint64_t processing(0);
+#pragma omp parallel for
+    for (auto i=0;i<hps.size();++i) {
+        uint64_t p;
+        if ((p=++processing)%100==0) sglib::OutputLog()<<"Procesing HSPNP #"<<p<<std::endl;
         //if (ws.sg.nodes[llabs(hp.first)].sequence.size()<2000 or ws.sg.nodes[llabs(hp.second)].sequence.size()<2000 ) continue;
-        TagWalker tw(ws,hp);
+        TagWalker tw(ws,hps[i]);
         auto ct= tw.remove_crosstalk();
         if (ct>0) continue;
         tw.walk(.98,.02);

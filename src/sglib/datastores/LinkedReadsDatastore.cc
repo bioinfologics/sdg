@@ -220,7 +220,7 @@ bsg10xTag LinkedReadsDatastore::get_read_tag(size_t readID) {
 }
 
 
-std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min_tag_cov, std::unordered_set<bsg10xTag> tags) {
+std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min_tag_cov, std::unordered_set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg) {
     class StreamKmerFactory : public  KMerFactory {
     public:
         explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
@@ -251,15 +251,21 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
     StreamKmerFactory skf(k);
     std::vector<KmerIDX> all_kmers;
     uint64_t readcount=0;
+    //std::cout<<"getting kmers..."<<std::endl;
     for (auto tr:tags) {
+        //std::cout<<"producing kmers from tag "<<tr<<std::endl;
         for (auto rid:get_tag_reads(tr)){
             readcount+=2;
-            skf.produce_all_kmers(get_read_sequence(rid).c_str(),all_kmers);
-            skf.produce_all_kmers(get_read_sequence(rid+1).c_str(),all_kmers);
+            //
+            skf.produce_all_kmers(blrsg.get_read_sequence(rid),all_kmers);
+            //std::cout<<"kmers from sequence for read"<<rid+1<<std::endl;
+            skf.produce_all_kmers(blrsg.get_read_sequence(rid+1),all_kmers);
+            //std::cout<<"all kmers for this pair done"<<rid<<std::endl;
         }
     }
-    //std::cout<< " (readcount "<<readcount<<", "<<all_kmers.size()<<" kmers) "<<std::flush;
+    //std::cout<< " (readcount "<<readcount<<", "<<all_kmers.size()<<" kmers) "<<std::endl;
     std::sort(all_kmers.begin(),all_kmers.end());
+    //std::cout<< " sorted "<<std::endl;
     auto wi=all_kmers.begin();
     auto ri=all_kmers.begin();
     while (ri<all_kmers.end()){
@@ -270,8 +276,10 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
     if (wi!=all_kmers.end() and wi->count>=min_tag_cov) ++wi;
     all_kmers.resize(wi-all_kmers.begin());
     std::unordered_set<uint64_t> kset;
+    kset.reserve(all_kmers.size());
     for (auto &kc:all_kmers) kset.insert(kc.kmer);
-    return kset;
+    //std::cout<< " returning "<<std::endl;
+    return std::move(kset);
 }
 
 const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {

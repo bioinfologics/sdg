@@ -65,7 +65,8 @@ void TagWalker::walk(float min_winner, float max_looser) {
         //std::cout << "Starting walk on " << n << "... " << std::flush;
         auto tags = ws.linked_read_mappers[0].get_node_tags(llabs(n));
         //std::cout << tags.size() << " tags... " << std::flush;
-        auto kmers = ws.linked_read_datastores[0].get_tags_kmers(31, 3, tags);
+        BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0],1000000,1000);
+        auto kmers = ws.linked_read_datastores[0].get_tags_kmers(31, 3, tags,blrsg);
         //std::cout << kmers.size() << " kmers." << std::endl;
         SequenceGraphPath p(ws.sg, {n});
 //        {

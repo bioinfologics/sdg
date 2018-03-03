@@ -19,7 +19,7 @@ struct readData {
         return false;
     }
 };
-
+class BufferedLRSequenceGetter;
 
 class LinkedReadsDatastore {
 public:
@@ -40,7 +40,7 @@ public:
     std::string get_read_sequence(size_t readID);
     //inline std::string get_read_sequence(size_t readID){return get_read_sequence(readID,fd1,fd2);};
     bsg10xTag get_read_tag(size_t readID);
-    std::unordered_set<uint64_t> get_tags_kmers(int k, int min_tag_cov, std::unordered_set<bsg10xTag> tags);
+    std::unordered_set<uint64_t> get_tags_kmers(int k, int min_tag_cov, std::unordered_set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg);
     std::vector<uint64_t> get_tag_reads(bsg10xTag tag);
 
     std::string filename; //if store is in single file bsg format these two are the same as the index file.
