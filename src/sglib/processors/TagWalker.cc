@@ -12,7 +12,7 @@ float TagWalker::remove_crosstalk() {
         tagsA.erase(st);
         tagsB.erase(st);
     }
-    std::cout<<tags_shared.size()<<" tags removed as cross-talk, now A has "<<tagsA.size()<<" and B has "<<tagsB.size()<<" tags"<<std::endl;
+    //std::cout<<tags_shared.size()<<" tags removed as cross-talk, now A has "<<tagsA.size()<<" and B has "<<tagsB.size()<<" tags"<<std::endl;
     return (tags_shared.size()>0 ? ((float) tags_shared.size()) / (tags_shared.size()+tagsA.size()+tagsB.size()) : 0);
 }
 
@@ -62,20 +62,20 @@ void TagWalker::walk(float min_winner, float max_looser) {
 
         sgNodeID_t n= (pass==0?nodeA:nodeB);
 
-        std::cout << "Starting walk on " << n << "... " << std::flush;
+        //std::cout << "Starting walk on " << n << "... " << std::flush;
         auto tags = ws.linked_read_mappers[0].get_node_tags(llabs(n));
-        std::cout << tags.size() << " tags... " << std::flush;
+        //std::cout << tags.size() << " tags... " << std::flush;
         auto kmers = ws.linked_read_datastores[0].get_tags_kmers(31, 3, tags);
-        std::cout << kmers.size() << " kmers." << std::endl;
+        //std::cout << kmers.size() << " kmers." << std::endl;
         SequenceGraphPath p(ws.sg, {n});
-        {
-            auto lkmers = get_distinctive_kmers({n})[0];
-            double score;
-            uint64_t hits = 0;
-            for (auto x:lkmers) if (kmers.count(x)) ++hits;
-            score = (double) hits / lkmers.size();
-            //std::cout << "Self-score: " << hits << "/" << lkmers.size() << "=" << score << std::endl;
-        }
+//        {
+//            auto lkmers = get_distinctive_kmers({n})[0];
+//            double score;
+//            uint64_t hits = 0;
+//            for (auto x:lkmers) if (kmers.count(x)) ++hits;
+//            score = (double) hits / lkmers.size();
+//            //std::cout << "Self-score: " << hits << "/" << lkmers.size() << "=" << score << std::endl;
+//        }
         for (auto i = 0; i < 2; ++i) {
             while (true) {
                 auto fwl = ws.sg.get_fw_links(p.nodes.back());

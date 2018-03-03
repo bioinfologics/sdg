@@ -188,10 +188,10 @@ void KmerCompressionIndex::add_counts_from_file(std::vector<std::string> filenam
 
 void KmerCompressionIndex::compute_compression_stats() {
     //compute mean, median and mode, as of now, only use the first read count
-    uint64_t graphcov[10]={0,0,0,0,0,0,0,0,0,0};
+    //uint64_t graphcov[10]={0,0,0,0,0,0,0,0,0,0};
     //std::cout << "Coverage in graph:" <<std::endl;
-    for (auto &gk:graph_kmers) ++graphcov[(gk.count<10?gk.count-1:9)];
-    for (auto i=1;i<10;++i) std::cout << i <<":   "<<graphcov[i-1]<<std::endl;
+    //for (auto &gk:graph_kmers) ++graphcov[(gk.count<10?gk.count-1:9)];
+    //for (auto i=1;i<10;++i) std::cout << i <<":   "<<graphcov[i-1]<<std::endl;
     //std::cout <<"10+: "<<graphcov[9]<<std::endl;
     uint64_t covuniq[1001];
     for (auto &c:covuniq)c=0;

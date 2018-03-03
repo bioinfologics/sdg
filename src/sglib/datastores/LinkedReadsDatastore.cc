@@ -258,7 +258,7 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
             skf.produce_all_kmers(get_read_sequence(rid+1).c_str(),all_kmers);
         }
     }
-    std::cout<< " (readcount "<<readcount<<", "<<all_kmers.size()<<" kmers) "<<std::flush;
+    //std::cout<< " (readcount "<<readcount<<", "<<all_kmers.size()<<" kmers) "<<std::flush;
     std::sort(all_kmers.begin(),all_kmers.end());
     auto wi=all_kmers.begin();
     auto ri=all_kmers.begin();
