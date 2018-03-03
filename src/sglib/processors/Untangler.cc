@@ -144,9 +144,10 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
      * the loop always keep the first and the last elements as c=2 collapsed nodes.
      * it starts with a c=2 node, and goes thorugh all bubbles fw, then reverts the subgraph and repeats
      */
-    std::pair<sgNodeID_t,sgNodeID_t> hap={0,0};
+
 #pragma omp parallel for schedule(static, 10)
     for (auto n=1;n<ws.sg.nodes.size();++n){
+        std::pair<sgNodeID_t,sgNodeID_t> hap={0,0};
         if (ws.sg.nodes[n].status==sgNodeDeleted) continue;
         auto frontkci=ws.kci.compute_compression_for_node(n);
         if (frontkci>max_c2 or frontkci<min_c2) continue;
@@ -186,10 +187,11 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
 #pragma omp critical(hps)
             {
                 hps.push_back(hap);
-                if (hps.size()%100==0) std::cout<<hps.size()<<" haplotype pairs found"<<std::endl;
+                if (hps.size()%1000==0) sglib::OutputLog()<<hps.size()<<" haplotype pairs found"<<std::endl;
             }
         }
     }
+    sglib::OutputLog()<<hps.size()<<" haplotype pairs found (DONE)"<<std::endl;
     return hps;
 }
 
