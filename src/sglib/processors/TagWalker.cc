@@ -125,10 +125,12 @@ void TagWalker::walk(float min_winner, float max_looser) {
             (pass==0?pathA:pathB).nodes=p.nodes;
         }
     }
-//    std::cout<<"PATH A ("<<pathA.get_sequence().size()<<" bp): ";
-//    for (auto n:pathA.nodes) std::cout<<"seq"<<llabs(n)<<", ";
-//    std::cout<<std::endl<<"PATH B("<<pathB.get_sequence().size()<<" bp): ";
-//    for (auto n:pathB.nodes) std::cout<<"seq"<<llabs(n)<<", ";
-//    std::cout<<std::endl;
-
+//#pragma omp critical (print_paths)
+//    {
+//        std::cout << std::endl << "PATH A (" << pathA.get_sequence().size() << " bp): ";
+//        for (auto n:pathA.nodes) std::cout << "seq" << llabs(n) << ", ";
+//        std::cout << std::endl << "PATH B(" << pathB.get_sequence().size() << " bp): ";
+//        for (auto n:pathB.nodes) std::cout << "seq" << llabs(n) << ", ";
+//        std::cout << std::endl;
+//    }
 }

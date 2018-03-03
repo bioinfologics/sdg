@@ -224,7 +224,7 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
     class StreamKmerFactory : public  KMerFactory {
     public:
         explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
-        inline void produce_all_kmers(const char * seq, std::vector<KmerIDX> &mers){
+        inline void produce_all_kmers(const char * seq, std::vector<uint64_t> &mers){
             // TODO: Adjust for when K is larger than what fits in uint64_t!
             last_unknown=0;
             fkmer=0;
@@ -242,43 +242,33 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
                         // Is bwd
                         mers.emplace_back(rkmer);
                     }
-                    mers.back().count=1;
                 }
                 ++s;
             }
         }
     };
     StreamKmerFactory skf(k);
-    std::vector<KmerIDX> all_kmers;
-    uint64_t readcount=0;
-    //std::cout<<"getting kmers..."<<std::endl;
-    for (auto tr:tags) {
-        //std::cout<<"producing kmers from tag "<<tr<<std::endl;
-        for (auto rid:get_tag_reads(tr)){
-            readcount+=2;
-            //
+
+    //reserve space by counting reads first, save only the integer, do not merge just count and insert in the set
+    std::vector<uint64_t> all_kmers;
+    std::vector<uint64_t> read_ids;
+    for (auto t:tags) {
+        auto reads=get_tag_reads(t);
+        read_ids.insert(read_ids.end(),reads.begin(),reads.end());
+    }
+    all_kmers.reserve(read_ids.size()*(readsize-k+1));
+    for (auto rid:read_ids){
             skf.produce_all_kmers(blrsg.get_read_sequence(rid),all_kmers);
-            //std::cout<<"kmers from sequence for read"<<rid+1<<std::endl;
-            skf.produce_all_kmers(blrsg.get_read_sequence(rid+1),all_kmers);
-            //std::cout<<"all kmers for this pair done"<<rid<<std::endl;
-        }
-    }
-    //std::cout<< " (readcount "<<readcount<<", "<<all_kmers.size()<<" kmers) "<<std::endl;
+     }
     std::sort(all_kmers.begin(),all_kmers.end());
-    //std::cout<< " sorted "<<std::endl;
-    auto wi=all_kmers.begin();
-    auto ri=all_kmers.begin();
-    while (ri<all_kmers.end()){
-        if (wi.base()==ri.base()) ++ri;
-        else if (*wi<*ri) {if (wi->count>=min_tag_cov) ++wi; *wi=*ri;++ri;}
-        else if (*wi==*ri){wi->merge(*ri);++ri;}
-    }
-    if (wi!=all_kmers.end() and wi->count>=min_tag_cov) ++wi;
-    all_kmers.resize(wi-all_kmers.begin());
     std::unordered_set<uint64_t> kset;
-    kset.reserve(all_kmers.size());
-    for (auto &kc:all_kmers) kset.insert(kc.kmer);
-    //std::cout<< " returning "<<std::endl;
+    auto ri=all_kmers.begin();
+    auto nri=all_kmers.begin();
+    while (ri<all_kmers.end()){
+        while (nri<all_kmers.end() and *nri==*ri) ++nri;
+        if (nri-ri>=min_tag_cov) kset.insert(*ri);
+        ri=nri;
+    }
     return std::move(kset);
 }
 
