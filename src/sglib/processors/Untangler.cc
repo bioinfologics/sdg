@@ -3,6 +3,7 @@
 //
 
 #include "Untangler.hpp"
+#include "TagWalker.hpp"
 
 uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t> &reads_to_remap) {
     std::unordered_set<sgNodeID_t> unsolved_repeats;
@@ -181,4 +182,20 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
         }
     }
     return hps;
+}
+
+uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
+    auto hps=get_all_HSPNPs();
+    for (auto hp:hps) {
+        //if (ws.sg.nodes[llabs(hp.first)].sequence.size()<2000 or ws.sg.nodes[llabs(hp.second)].sequence.size()<2000 ) continue;
+        TagWalker tw(ws,hp);
+        auto ct= tw.remove_crosstalk();
+        if (ct>0) continue;
+        tw.walk(.98,.02);
+        //tw.dump_reads("HPSNP_"+std::to_string(llabs(hp.first))+"_"+std::to_string(llabs(hp.second)));
+
+
+        //walk_from(hp.first,ws);
+        //walk_from(hp.second,ws);
+    }
 }

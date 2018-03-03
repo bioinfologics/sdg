@@ -56,10 +56,8 @@ std::vector<std::unordered_set<uint64_t>> TagWalker::get_distinctive_kmers(std::
     return distinctive_kmers;
 }
 
-SequenceGraphPath TagWalker::walk(float min_winner, float max_looser) {
+void TagWalker::walk(float min_winner, float max_looser) {
     //option: start from HSPNPs HSPNTs HSPN*, kmerize in any kmer size, find exclussive kmers, get all involved kmers,
-    // - Select completely-classified tags, and walk with those.
-    SequenceGraphPath pathA(ws.sg,{}),pathB(ws.sg,{});
     for(auto pass=0;pass<2;++pass) {
 
         sgNodeID_t n= (pass==0?nodeA:nodeB);
@@ -76,7 +74,7 @@ SequenceGraphPath TagWalker::walk(float min_winner, float max_looser) {
             uint64_t hits = 0;
             for (auto x:lkmers) if (kmers.count(x)) ++hits;
             score = (double) hits / lkmers.size();
-            std::cout << "Self-score: " << hits << "/" << lkmers.size() << "=" << score << std::endl;
+            //std::cout << "Self-score: " << hits << "/" << lkmers.size() << "=" << score << std::endl;
         }
         for (auto i = 0; i < 2; ++i) {
             while (true) {
@@ -97,8 +95,8 @@ SequenceGraphPath TagWalker::walk(float min_winner, float max_looser) {
                     uint64_t hits = 0;
                     for (auto x:lkmers) if (kmers.count(x)) ++hits;
                     score = (double) hits / lkmers.size();
-                    std::cout << "scoring transition to " << fw_nodes[i] << ": " << hits << "/" << lkmers.size() << "="
-                              << score << std::endl;
+                    //std::cout << "scoring transition to " << fw_nodes[i] << ": " << hits << "/" << lkmers.size() << "="
+                    //          << score << std::endl;
                     if (best == 0 or score > best_score) {
                         second = best;
                         best = fw_nodes[i];
@@ -109,15 +107,15 @@ SequenceGraphPath TagWalker::walk(float min_winner, float max_looser) {
                         second_score = score;
                     }
                 }
-                std::cout << best_score << " - " << second_score << std::endl;
+                //std::cout << best_score << " - " << second_score << std::endl;
                 if (best_score == 0 or best_score < min_winner or second_score > max_looser) {
-                    std::cout << "stopping because of score uncertainty" << std::endl;
+                    //std::cout << "stopping because of score uncertainty" << std::endl;
                     break;
                 }
                 bool b = false;
                 for (auto n:p.nodes) if (llabs(n) == llabs(best)) b = true;
                 if (b) {
-                    std::cout << "stopping on circular path" << std::endl;
+                    //std::cout << "stopping on circular path" << std::endl;
                     break;
                 }
                 p.nodes.push_back(best);
@@ -126,11 +124,10 @@ SequenceGraphPath TagWalker::walk(float min_winner, float max_looser) {
             (pass==0?pathA:pathB).nodes=p.nodes;
         }
     }
-    std::cout<<"PATH A ("<<pathA.get_sequence().size()<<" bp): ";
-    for (auto n:pathA.nodes) std::cout<<"seq"<<llabs(n)<<", ";
-    std::cout<<std::endl<<"PATH B("<<pathB.get_sequence().size()<<" bp): ";
-    for (auto n:pathB.nodes) std::cout<<"seq"<<llabs(n)<<", ";
-    std::cout<<std::endl;
-    return pathA;
+//    std::cout<<"PATH A ("<<pathA.get_sequence().size()<<" bp): ";
+//    for (auto n:pathA.nodes) std::cout<<"seq"<<llabs(n)<<", ";
+//    std::cout<<std::endl<<"PATH B("<<pathB.get_sequence().size()<<" bp): ";
+//    for (auto n:pathB.nodes) std::cout<<"seq"<<llabs(n)<<", ";
+//    std::cout<<std::endl;
 
 }

@@ -183,8 +183,7 @@ add_executable(bsg-datastore
         src/sglib/datastores/LinkedReadsDatastore.hpp
         src/sglib/datastores/LinkedReadsDatastore.cc
         src/sglib/logger/OutputLog.h
-        src/sglib/logger/OutputLog.cc
-        src/sglib/processors/Untangler.cc src/sglib/processors/Untangler.hpp)
+        src/sglib/logger/OutputLog.cc)
 
 add_executable(bsg-kmerspectra
         src/bsg-kmerspectra.cc

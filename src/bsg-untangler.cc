@@ -1,10 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sglib/WorkSpace.hpp>
-#include <sglib/GraphPartitioner.hpp>
-#include <sglib/Scaffolder.hpp>
 #include <sglib/processors/Untangler.hpp>
-#include <sglib/processors/TagWalker.hpp>
 #include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"
 
@@ -192,8 +189,11 @@ int main(int argc, char * argv[]) {
 
     std::cout<<std::endl<<"Finding HSPNPs"<<std::endl;
     Untangler u(ws);
-    auto hps=u.get_all_HSPNPs();
+    if (haplotype_walk){
+        u.extend_HSPNPs_by_tagwalking();
+    }
     if (print_HSPNPs) {
+        auto hps=u.get_all_HSPNPs();
         std::cout << "Starting with " << hps.size() << " HSPNPs" << std::endl;
         std::ofstream hpsfile(output_prefix + "_hps.csv");
         auto hspnp_id = 1;
@@ -214,21 +214,6 @@ int main(int argc, char * argv[]) {
             ++hspnp_id;
         }
     }
-    if (haplotype_walk){
-        for (auto hp:hps) {
-            //if (ws.sg.nodes[llabs(hp.first)].sequence.size()<2000 or ws.sg.nodes[llabs(hp.second)].sequence.size()<2000 ) continue;
-            TagWalker tw(ws,hp);
-            auto ct= tw.remove_crosstalk();
-            if (ct>0) continue;
-            tw.walk(.98,.02);
-            //tw.dump_reads("HPSNP_"+std::to_string(llabs(hp.first))+"_"+std::to_string(llabs(hp.second)));
-
-
-            //walk_from(hp.first,ws);
-            //walk_from(hp.second,ws);
-        }
-    }
-
 
 
 
