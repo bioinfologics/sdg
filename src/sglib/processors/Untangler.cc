@@ -204,6 +204,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
 uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
     auto const hps=get_all_HSPNPs();
     std::atomic_uint64_t processing(0);
+    std::vector<SequenceGraphPath> new_paths;
 #pragma omp parallel for
     for (auto i=0;i<hps.size();++i) {
         uint64_t p;
@@ -221,18 +222,35 @@ uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
         //walk_from(hp.second,ws);
 #pragma omp critical (print_paths)
         {
+
             std::cout << std::endl << "PATH A (" << wp[0].get_sequence().size() << " bp): ";
             for (auto n:wp[0].nodes) std::cout << "seq" << llabs(n) << ", ";
             std::cout << std::endl << "PATH B (" << wp[1].get_sequence().size() << " bp): ";
             for (auto n:wp[1].nodes) std::cout << "seq" << llabs(n) << ", ";
             std::cout << std::endl;
-            std::cout << std::endl << "PARALLEL PATH A (" << parallelpaths[0].get_sequence().size() << " bp): ";
-            for (auto n:parallelpaths[0].nodes) std::cout << "seq" << llabs(n) << ", ";
-            std::cout << std::endl << "PARALLEL PATH B (" << parallelpaths[1].get_sequence().size() << " bp): ";
-            for (auto n:parallelpaths[1].nodes) std::cout << "seq" << llabs(n) << ", ";
-            std::cout << std::endl;
+            if (parallelpaths[0].nodes.size()<3 or not all_nodes_consumed(parallelpaths)){
+                std::cout << std::endl <<"NO ALL-CONSUMING PARALLEL PATHS"<<std::endl;
+            }
+            else {
+                for (auto &p:parallelpaths) new_paths.emplace_back(p);
+                std::cout << std::endl << "PARALLEL PATH A (" << parallelpaths[0].get_sequence().size() << " bp): ";
+                for (auto n:parallelpaths[0].nodes) std::cout << "seq" << llabs(n) << ", ";
+                std::cout << std::endl << "PARALLEL PATH B (" << parallelpaths[1].get_sequence().size() << " bp): ";
+                for (auto n:parallelpaths[1].nodes) std::cout << "seq" << llabs(n) << ", ";
+                std::cout << std::endl;
+            }
         }
 
+    }
+    std::cout<<"List of "<<new_paths.size()<<" new paths follows: "<<std::endl;
+    for (auto &p:new_paths) {
+        for (auto n:p.nodes) std::cout << "seq" << llabs(n) << ", ";
+        std::cout<<std::endl;
+    }
+    std::cout<<"List of "<<new_paths.size()<<" new paths follows (as signed nodes): "<<std::endl;
+    for (auto &p:new_paths) {
+        for (auto n:p.nodes) std::cout << n << ", ";
+        std::cout<<std::endl;
     }
 }
 
@@ -271,5 +289,16 @@ std::vector<SequenceGraphPath> Untangler::make_parallel_paths(std::vector<Sequen
  * @return
  */
 bool Untangler::all_nodes_consumed(std::vector<SequenceGraphPath> parallel_paths){
+    std::unordered_set<sgNodeID_t> all_nodes;
+    for (auto &p:parallel_paths) for (auto &n:p.nodes) {all_nodes.insert(n);all_nodes.insert(-n);}
+
+    for (auto &p:parallel_paths){
+        for (auto ix=p.nodes.begin()+1;ix<p.nodes.end()-1;++ix) {
+            for (auto fc:ws.sg.get_fw_links(*ix))if (all_nodes.count(fc.dest) == 0) return false;
+            for (auto bc:ws.sg.get_bw_links(*ix))if (all_nodes.count(bc.dest) == 0) return false;
+        }
+
+    }
+    return true;
 
 }
