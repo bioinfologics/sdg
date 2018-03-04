@@ -56,7 +56,7 @@ std::vector<std::unordered_set<uint64_t>> TagWalker::get_distinctive_kmers(std::
     return distinctive_kmers;
 }
 
-void TagWalker::walk(float min_winner, float max_looser) {
+std::vector<SequenceGraphPath> TagWalker::walk(float min_winner, float max_looser) {
     //option: start from HSPNPs HSPNTs HSPN*, kmerize in any kmer size, find exclussive kmers, get all involved kmers,
     for(auto pass=0;pass<2;++pass) {
 
@@ -125,12 +125,5 @@ void TagWalker::walk(float min_winner, float max_looser) {
             (pass==0?pathA:pathB).nodes=p.nodes;
         }
     }
-//#pragma omp critical (print_paths)
-//    {
-//        std::cout << std::endl << "PATH A (" << pathA.get_sequence().size() << " bp): ";
-//        for (auto n:pathA.nodes) std::cout << "seq" << llabs(n) << ", ";
-//        std::cout << std::endl << "PATH B(" << pathB.get_sequence().size() << " bp): ";
-//        for (auto n:pathB.nodes) std::cout << "seq" << llabs(n) << ", ";
-//        std::cout << std::endl;
-//    }
+    return {pathA,pathB};
 }

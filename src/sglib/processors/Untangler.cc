@@ -5,6 +5,7 @@
 #include "Untangler.hpp"
 #include "TagWalker.hpp"
 
+
 uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t> &reads_to_remap) {
     std::unordered_set<sgNodeID_t> unsolved_repeats;
     unsolved_repeats.clear();
@@ -195,6 +196,11 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
     return hps;
 }
 
+
+/**
+ * @brief generates tag walk for each HSPNPs, finds common extensions and extends the bubbles
+ * @return
+ */
 uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
     auto const hps=get_all_HSPNPs();
     std::atomic_uint64_t processing(0);
@@ -206,11 +212,64 @@ uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
         TagWalker tw(ws,hps[i]);
         auto ct= tw.remove_crosstalk();
         if (ct>0) continue;
-        tw.walk(.98,.02);
+        auto wp=tw.walk(.98,.02);
+        auto parallelpaths=make_parallel_paths(wp);
         //tw.dump_reads("HPSNP_"+std::to_string(llabs(hp.first))+"_"+std::to_string(llabs(hp.second)));
 
 
         //walk_from(hp.first,ws);
         //walk_from(hp.second,ws);
+#pragma omp critical (print_paths)
+        {
+            std::cout << std::endl << "PATH A (" << wp[0].get_sequence().size() << " bp): ";
+            for (auto n:wp[0].nodes) std::cout << "seq" << llabs(n) << ", ";
+            std::cout << std::endl << "PATH B (" << wp[1].get_sequence().size() << " bp): ";
+            for (auto n:wp[1].nodes) std::cout << "seq" << llabs(n) << ", ";
+            std::cout << std::endl;
+            std::cout << std::endl << "PARALLEL PATH A (" << parallelpaths[0].get_sequence().size() << " bp): ";
+            for (auto n:parallelpaths[0].nodes) std::cout << "seq" << llabs(n) << ", ";
+            std::cout << std::endl << "PARALLEL PATH B (" << parallelpaths[1].get_sequence().size() << " bp): ";
+            for (auto n:parallelpaths[1].nodes) std::cout << "seq" << llabs(n) << ", ";
+            std::cout << std::endl;
+        }
+
     }
+}
+
+/**
+ * @brief finds a common source and a common sink, so the paths run parallel through a region
+ * @return new paths that start and finish on the common source and sink nodes
+ */
+std::vector<SequenceGraphPath> Untangler::make_parallel_paths(std::vector<SequenceGraphPath> paths){
+    sgNodeID_t source=0,sink=0;
+    for (auto na:paths[0].nodes){
+        bool missing=false;
+        for (auto op=paths.begin()+1;op<paths.end();++op)
+            if (std::find(op->nodes.begin(),op->nodes.end(),na)==op->nodes.end()) {
+                missing=true;
+                break;
+            }
+        if (missing) continue;
+        if (source==0) source=na;
+        sink=na;
+    }
+    std::vector<SequenceGraphPath> pp;
+    for (auto p:paths){
+        pp.emplace_back(ws.sg);
+        bool started=false,finished=false;
+        for (auto n:p.nodes){
+            if (n==source) started=true;
+            if(started and not finished) pp.back().nodes.emplace_back(n);
+            if (n==sink) finished=true;
+        }
+    }
+    return pp;
+}
+
+/**
+ * @brief validates that a parallel path set uses all nodes between the common source and sink
+ * @return
+ */
+bool Untangler::all_nodes_consumed(std::vector<SequenceGraphPath> parallel_paths){
+
 }

@@ -18,6 +18,9 @@ public:
     WorkSpace &ws;
 
 
+    std::vector<SequenceGraphPath> make_parallel_paths(std::vector<SequenceGraphPath>);
+
+    bool all_nodes_consumed(std::vector<SequenceGraphPath>);
 };
 
 

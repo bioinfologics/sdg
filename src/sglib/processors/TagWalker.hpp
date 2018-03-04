@@ -17,7 +17,7 @@ public:
     };
     float remove_crosstalk();
     void dump_reads(std::string prefix);
-    void walk(float min_winner,float max_looser);
+    std::vector<SequenceGraphPath> walk(float min_winner,float max_looser);
     std::vector<std::unordered_set<uint64_t>> get_distinctive_kmers(std::vector<sgNodeID_t>);
 
 private:
