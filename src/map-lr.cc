@@ -86,7 +86,7 @@ int main(int argc, char * argv[]) {
     std::vector<KmerIDX> unique_kmers;
 
     // Get the unique_kmers from the file
-    unique_kmers = kmerIDX_SMR.process_from_memory();
+    unique_kmers = kmerIDX_SMR.process_from_memory(false);
 
     std::vector<uint64_t > uniqKmer_statistics(kmerIDX_SMR.summaryStatistics());
     std::cout << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << std::endl;
@@ -103,7 +103,7 @@ int main(int argc, char * argv[]) {
     uint32_t min_seen_contig_to_write_output(1);
     std::unordered_set<KmerIDX> us(unique_kmers.begin(), unique_kmers.end());
 
-    SMR<Block,
+    SMR<ContigBlockFactory<FastqRecord>::Block,
             ContigBlockFactory<FastqRecord>,
             FastqReader<FastqRecord>,
             FastqRecord, FastxReaderParams, FilterSetParams> contigBlock(
@@ -111,7 +111,7 @@ int main(int argc, char * argv[]) {
             {output_prefix, k, us, min_kmers_to_call_match, min_seen_contig_to_write_output},
             {maxmem, 1, 100000, output_prefix});
 
-    std::vector<Block> blocks = contigBlock.read_from_file(long_reads, true);
+    std::vector<ContigBlockFactory<FastqRecord>::Block> blocks = contigBlock.read_from_file(long_reads, true);
     auto blockReaderStats(contigBlock.summaryStatistics());
     std::cout << "Total records generated " << blockReaderStats[0] << std::endl;
     std::cout << "Total filtered records " << blockReaderStats[1] << std::endl;
