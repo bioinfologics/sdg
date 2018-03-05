@@ -603,9 +603,11 @@ private:
 
             threadFiles[threadID] = name;
         }
-
-        totalFilteredRecords = merge(outdir + "final.kc", threadFiles);
-
+        if (threadFiles.size() == 1) {
+            rename(threadFiles[0].c_str(), std::string(outdir+"final.kc").c_str());
+        } else {
+            totalFilteredRecords = merge(outdir + "final.kc", threadFiles);
+        }
         return readFinalkc(outdir+"final.kc");
     }
 
