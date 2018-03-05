@@ -54,14 +54,14 @@ void sglib::remove_directory(std::string path) {
 }
 
 std::string sglib::create_temp_directory(std::string prefix = "/tmp") {
-    const char * const tmplt (
+    std::string tmplt (
             (prefix.empty()) ?
                 std::string("/tmp/smr-tmp-XXXXXX").c_str() :
                 std::string(prefix + "/smr-tmp-XXXXXX").c_str()
     );
 
     char buffer[MAXPATHLEN] = {0};
-    strncpy(buffer, tmplt, strlen(tmplt));
+    strncpy(buffer, tmplt.c_str(), tmplt.size());
     auto result = mkdtemp(buffer);
     if (result ==  nullptr) {
         std::cerr << "Can't create " << buffer
