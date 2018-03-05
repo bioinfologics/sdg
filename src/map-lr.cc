@@ -9,9 +9,72 @@
 #include <sglib/readers/FileReader.h>
 #include <sglib/readers/SequenceGraphReader.h>
 #include <sglib/SMR.h>
+#include <sglib/mappers/LongReadMapper.h>
 #include "cxxopts.hpp"
 
+void map_using_unique_kmers(SequenceGraph &sg, std::string output_prefix, std::string long_reads){
+    uint8_t k = 15;
+    uint16_t min_matches = 10;
 
+    std::cout << "Mapping sequences " << std::endl;
+    unsigned int max_coverage(1);
+    auto maxmem(4 * GB);
+    /*
+     * Reads the reference/contigs file and generates the set of kmers and which entry number on the fasta they belong to
+     * along with their orientation in the form of a int32_t with + for fwd and - for rev, the output is filtered
+     * by min < coverage <= max
+     */
+    SMR<KmerIDX,
+            kmerIDXFactory<FastaRecord>,
+            GraphNodeReader<FastaRecord>,
+            FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k},
+                                                                                  {maxmem, 0, max_coverage,
+                                                                                   output_prefix});
+
+    std::vector<KmerIDX> unique_kmers;
+
+    // Get the unique_kmers from the file
+    unique_kmers = kmerIDX_SMR.process_from_memory(false);
+
+    std::vector<uint64_t> uniqKmer_statistics(kmerIDX_SMR.summaryStatistics());
+    std::cout << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << std::endl;
+    std::cout << "Number of " << int(k) << "-kmers that appear more than 0 < kmer_coverage <= " << max_coverage
+              << " in assembly " << uniqKmer_statistics[1] << std::endl;
+    std::cout << "Number of contigs from the assembly " << uniqKmer_statistics[2] << std::endl;
+
+    /*
+     * Instantiate a ContigLinkFactory that takes the unique_kmers as a parameter, a fastq file with long/linked reads
+     * and generates a list of links between contigs.
+     */
+
+    uint32_t min_kmers_to_call_match(5);
+    uint32_t min_seen_contig_to_write_output(1);
+    std::unordered_set<KmerIDX> us(unique_kmers.begin(), unique_kmers.end());
+
+    SMR<ContigBlockFactory<FastqRecord>::Block,
+            ContigBlockFactory<FastqRecord>,
+            FastqReader<FastqRecord>,
+            FastqRecord, FastxReaderParams, FilterSetParams> contigBlock(
+            {0},   // ReaderParams
+            {output_prefix, k, us, min_kmers_to_call_match, min_seen_contig_to_write_output},
+            {maxmem, 1, 100000, output_prefix});
+
+    std::vector<ContigBlockFactory<FastqRecord>::Block> blocks = contigBlock.read_from_file(long_reads, true);
+    auto blockReaderStats(contigBlock.summaryStatistics());
+    std::cout << "Total records generated " << blockReaderStats[0] << std::endl;
+    std::cout << "Total filtered records " << blockReaderStats[1] << std::endl;
+    std::cout << "Total read sequences " << blockReaderStats[2] << std::endl;
+    std::cout << "Total reader filtered sequences " << blockReaderStats[3] << std::endl;
+
+}
+
+void map_using_sketches(SequenceGraph &sg, std::string output_prefix, std::string long_reads) {
+    unsigned int K = 15;
+
+    LongReadMapper rm(K, 5, sg);
+    rm.map_reads(long_reads, 500);
+
+}
 int main(int argc, char * argv[]) {
     std::string gfa_filename, bubble_contigs_filename, output_prefix, long_reads;
     std::string dump_mapped, load_mapped;
@@ -66,56 +129,10 @@ int main(int argc, char * argv[]) {
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
 
-    uint8_t k = 15;
-    uint16_t min_matches = 10;
-
-    std::cout << "Mapping sequences " << std::endl;
-    unsigned int max_coverage(1);
-    auto maxmem(4*GB);
-    /*
-     * Reads the reference/contigs file and generates the set of kmers and which entry number on the fasta they belong to
-     * along with their orientation in the form of a int32_t with + for fwd and - for rev, the output is filtered
-     * by min < coverage <= max
-     */
-    SMR<KmerIDX,
-            kmerIDXFactory<FastaRecord>,
-            GraphNodeReader<FastaRecord>,
-            FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1,sg}, {k}, {maxmem, 0, max_coverage,
-                                                                                                output_prefix});
-
-    std::vector<KmerIDX> unique_kmers;
-
-    // Get the unique_kmers from the file
-    unique_kmers = kmerIDX_SMR.process_from_memory(false);
-
-    std::vector<uint64_t > uniqKmer_statistics(kmerIDX_SMR.summaryStatistics());
-    std::cout << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << std::endl;
-    std::cout << "Number of " << int(k) << "-kmers that appear more than 0 < kmer_coverage <= " << max_coverage
-              << " in assembly " << uniqKmer_statistics[1] << std::endl;
-    std::cout << "Number of contigs from the assembly " << uniqKmer_statistics[2] << std::endl;
-
-    /*
-     * Instantiate a ContigLinkFactory that takes the unique_kmers as a parameter, a fastq file with long/linked reads
-     * and generates a list of links between contigs.
-     */
-
-    uint32_t min_kmers_to_call_match(5);
-    uint32_t min_seen_contig_to_write_output(1);
-    std::unordered_set<KmerIDX> us(unique_kmers.begin(), unique_kmers.end());
-
-    SMR<ContigBlockFactory<FastqRecord>::Block,
-            ContigBlockFactory<FastqRecord>,
-            FastqReader<FastqRecord>,
-            FastqRecord, FastxReaderParams, FilterSetParams> contigBlock(
-            {0},   // ReaderParams
-            {output_prefix, k, us, min_kmers_to_call_match, min_seen_contig_to_write_output},
-            {maxmem, 1, 100000, output_prefix});
-
-    std::vector<ContigBlockFactory<FastqRecord>::Block> blocks = contigBlock.read_from_file(long_reads, true);
-    auto blockReaderStats(contigBlock.summaryStatistics());
-    std::cout << "Total records generated " << blockReaderStats[0] << std::endl;
-    std::cout << "Total filtered records " << blockReaderStats[1] << std::endl;
-    std::cout << "Total read sequences " << blockReaderStats[2] << std::endl;
-    std::cout << "Total reader filtered sequences " << blockReaderStats[3] << std::endl;
-
+    if (0) {
+        map_using_unique_kmers(sg, output_prefix, long_reads);
+    }
+    if (1) {
+        map_using_sketches(sg, output_prefix, long_reads);
+    }
 }
