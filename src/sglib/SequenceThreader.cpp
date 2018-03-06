@@ -311,32 +311,39 @@ void SequenceThreader::print_unique_paths_sizes(std::ofstream& output_file) cons
     for(auto& path : unique_paths) {
         std::string seq = path.get_sequence();
         auto seqsize = seq.length();
-        auto pathname = path.get_fasta_header().erase(0, 1);
+        auto pathname = path.get_fasta_header(true).erase(0, 1);
         output_file << pathname << '\t' << seqsize << std::endl;
     }
 }
 
-void SequenceThreader::print_mappings() const {
+void SequenceThreader::print_mappings(std::ostream& out) const {
     for( auto it = mappings_of_sequence.begin(); it != mappings_of_sequence.end(); ++it) {
-        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Mappings for query sequence: " << it->first << ":" << std::endl;
-        if(sglib::OutputLogLevel == sglib::LogLevels::DEBUG)
-            for (const auto &sm:it->second) {
-                std::cout << sm << std::endl;
-            }
+        out << "Mappings for query sequence: " << it->first << ":" << std::endl;
+        for (const auto &sm:it->second) {
+            out << sm << std::endl;
+        }
     }
 }
 
-void SequenceThreader::print_paths() const {
-    for( auto it = paths_of_mappings_of_sequence.begin(); it != paths_of_mappings_of_sequence.end(); ++it) {
-        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Paths for query sequence: " << it->first << std::endl;
-        if(sglib::OutputLogLevel == sglib::LogLevels::DEBUG)
-            for (const auto &path:it->second) {
-                std::cout << "Path of " << path.size() << " mappings: ";
-                for (const auto &sm:path) {
-                    sgNodeID_t dirnode = sm.node_direction() == Forward ? sm.absnode() : -sm.absnode();
-                    std::cout << dirnode << ", ";
-                }
-                std::cout << std::endl;
+void SequenceThreader::print_paths(std::ostream& out, bool use_oldnames) const {
+    for(auto it = paths_of_mappings_of_sequence.begin(); it != paths_of_mappings_of_sequence.end(); ++it) {
+        out << "Paths for query sequence: " << it->first << std::endl;
+        for(const auto &path:it->second){
+            out << "Path of " << path.size() << " mappings: ";
+            for (const auto &sm:path){
+                out << (sm.node_direction() == Forward ? '+' : '-');
+                sgNodeID_t n = sm.absnode();
+                out << (use_oldnames ? sg.nodeID_to_name(n) : std::to_string(n)) << ", ";
             }
+            out << std::endl;
+        }
+    }
+}
+
+void SequenceThreader::print_dark_nodes(std::ofstream& output_file) const {
+    for(sgNodeID_t i = 1; i <= sg.nodes.size(); i++){
+        if (graph_kmer_index.is_unmappable(i)) {
+            output_file << sg.nodeID_to_name(i) << std::endl;
+        }
     }
 }

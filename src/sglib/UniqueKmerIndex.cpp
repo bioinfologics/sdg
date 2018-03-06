@@ -3,6 +3,7 @@
 //
 
 #include <tuple>
+#include <stack>
 #include <sglib/UniqueKmerIndex.h>
 #include <sglib/SMR.h>
 #include <sglib/factories/KMerIDXFactory.h>
@@ -44,3 +45,36 @@ std::tuple<bool, graphPosition> UniqueKmerIndex::find_unique_kmer_in_graph(uint6
     }
     return std::make_tuple(exists, p);
 }
+
+bool UniqueKmerIndex::is_unmappable(sgNodeID_t id) const {
+    return 0 == unique_kmers_per_node[std::abs(id)];
+}
+/*
+bool UniqueKmerIndex::traverse_dark_nodes(const sgNodeID_t start, const sgNodeID_t goal) {
+    // Create a stack with the nodes and the path length
+    struct visitor {
+        sgNodeID_t node;
+        uint dist;
+        uint path_length;
+        visitor(sgNodeID_t n, uint d, uint p) : node(n), dist(d), path_length(p) {}
+    };
+    std::stack<visitor> to_visit;
+    to_visit.emplace(start, 0, 0);
+    std::set<sgNodeID_t> visited;
+    while (!to_visit.empty()) {
+        const auto activeNode(to_visit.top());
+        to_visit.pop();
+        if (visited.find(activeNode.node) == visited.end() and
+            (activeNode.path_length < edge_limit or edge_limit==0) and
+            (activeNode.dist < size_limit or size_limit==0) )
+        {
+            visited.emplace(activeNode.node);
+            for (const auto &l: get_fw_links(activeNode.node)) {
+                to_visit.emplace(l.dest,activeNode.dist+nodes[l.dest>0?l.dest:-l.dest].sequence.length(),activeNode.path_length+1);
+            }
+        }
+    }
+    //return std::vector<sgNodeID_t>(visited.begin(), visited.end());
+    return true;
+}
+ */

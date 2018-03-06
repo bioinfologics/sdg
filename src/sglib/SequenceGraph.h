@@ -134,7 +134,7 @@ class SequenceGraphPath {
 public:
     std::vector<sgNodeID_t> nodes;
     explicit SequenceGraphPath(SequenceGraph & _sg, const std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
-    std::string get_fasta_header() const;
+    std::string get_fasta_header(bool use_oldnames = false) const;
     std::string get_sequence() const;
     void reverse();
     bool is_canonical();

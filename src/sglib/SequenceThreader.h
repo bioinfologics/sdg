@@ -47,12 +47,13 @@ public:
         map_sequences_from_file(min_matches, filename);
     }
 
-    void print_mappings() const;
+    void print_mappings(std::ostream& out) const;
     void mappings_paths();
-    void print_paths() const;
+    void print_paths(std::ostream& out, bool use_oldnames = false) const;
     void graph_paths_to_fasta(std::ofstream& output_file) const;
     void query_paths_to_fasta(std::ofstream& output_file) const;
     void print_unique_paths_sizes(std::ofstream& output_file) const;
+    void print_dark_nodes(std::ofstream& output_file) const;
 };
 
 class SequenceMapping {

@@ -27,6 +27,7 @@ int main(int argc, char **argv) {
 
     options.add_options()
             ("help", "Print help")
+            ("k", "Kmer size", cxxopts::value<uint8_t>(k)->default_value("31"), "1-31")
             ("r,reference", "Reference FASTA of sequences to locate in graph", cxxopts::value<std::string>(reference_filename), "FASTA - Sequence file")
             ("g,graph", "Genome graph in GFA format", cxxopts::value<std::string>(graph_filename), "GFA file")
             ("o,output", "Output file prefix", cxxopts::value<std::string>(output_prefix) -> default_value(outdefault), "prefix_dir")
@@ -67,22 +68,41 @@ int main(int argc, char **argv) {
     sg.load_from_gfa(graph_filename);
 
 // CONSTRUCT SEQUENCE_MAPPER...
-    SequenceThreader tdr(sg);
+    SequenceThreader tdr(sg, k);
     // Thread FASTA sequences into graph.
     tdr.map_sequences(1, reference_filename, output_prefix);
-    tdr.print_mappings();
 
 // CONNECT MAPPINGS...
     tdr.mappings_paths();
-    tdr.print_paths();
 
 // DUMP OUTPUT...
+
+    // Mappings dump.
+    std::ofstream mappingdumpout(output_prefix + "mappings_dump.txt");
+    tdr.print_mappings(mappingdumpout);
+    mappingdumpout.close();
+
+    // Paths dump.
+    std::ofstream pathdumpout(output_prefix + "/paths_dump.txt");
+    tdr.print_paths(pathdumpout);
+    pathdumpout.close();
+
+    // Dark nodes dump.
+    std::ofstream darkdump(output_prefix + "dark_nodes.txt");
+    tdr.print_dark_nodes(darkdump);
+    darkdump.close();
+
+    std::ofstream pathdumpold(output_prefix + "/paths_dump_oldnames.txt");
+    tdr.print_paths(pathdumpold, true);
+    pathdumpold.close();
+
     std::ofstream graph_paths_out(output_prefix + "/mapped_paths.fasta");
     tdr.graph_paths_to_fasta(graph_paths_out);
     graph_paths_out.close();
     std::ofstream sizesout(output_prefix + "/paths_sizes.txt");
     tdr.print_unique_paths_sizes(sizesout);
     sizesout.close();
+
     std::ofstream query_paths_out(output_prefix + "/query_mapped_paths.fasta");
     tdr.query_paths_to_fasta(query_paths_out);
     query_paths_out.close();
