@@ -316,11 +316,20 @@ void SequenceThreader::print_unique_paths_sizes(std::ofstream& output_file) cons
     }
 }
 
-void SequenceThreader::print_mappings(std::ostream& out) const {
+void SequenceThreader::print_mappings(std::ostream& out, bool use_oldnames) const {
     for( auto it = mappings_of_sequence.begin(); it != mappings_of_sequence.end(); ++it) {
-        out << "Mappings for query sequence: " << it->first << ":" << std::endl;
         for (const auto &sm:it->second) {
-            out << sm << std::endl;
+            auto sd = sm.seq_direction();
+            auto nd = sm.node_direction();
+            auto seqdir = sd == Forward ? "Forward" : sd == Backwards ? "Backwards" : "DIRERR";
+            auto nodedir = nd == Forward ? "Forward" : nd == Backwards ? "Backwards" : "DIRERR";
+            out << "Sequence: " << sm.seq_id << " from: ";
+            out << sm.first_seq_pos << " : " << sm.last_seq_pos << " (" << seqdir << ")";
+            out << ", maps to node: " << use_oldnames ? sg.nodeID_to_name(sm.absnode()) : std::to_string(sm.absnode());
+            out << " from: " << sm.first_node_pos << " : " << sm.last_node_pos  << " (" << nodedir << "). ";
+            out << sm.matched_unique_kmers << " / " << sm.possible_unique_matches << " unique kmers matched.";
+            out << " (" << sm.n_kmers_in_node << " kmers exist in node).";
+            out << std::endl;
         }
     }
 }

@@ -47,7 +47,7 @@ public:
         map_sequences_from_file(min_matches, filename);
     }
 
-    void print_mappings(std::ostream& out) const;
+    void print_mappings(std::ostream& out, bool use_oldnames = false) const;
     void mappings_paths();
     void print_paths(std::ostream& out, bool use_oldnames = false) const;
     void graph_paths_to_fasta(std::ofstream& output_file) const;
@@ -58,6 +58,7 @@ public:
 
 class SequenceMapping {
     friend void SequenceThreader::query_paths_to_fasta(std::ofstream& output_file) const;
+    friend void SequenceThreader::print_mappings(std::ostream &out, bool use_oldnames) const;
 private:
     seqID_t seq_id;
     int32_t first_seq_pos;

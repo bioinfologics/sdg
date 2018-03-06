@@ -82,19 +82,23 @@ int main(int argc, char **argv) {
     tdr.print_mappings(mappingdumpout);
     mappingdumpout.close();
 
+    std::ofstream mappingdumpold(output_prefix + "mappings_dump_oldnames.txt");
+    tdr.print_mappings(mappingdumpold);
+    mappingdumpold.close();
+
     // Paths dump.
     std::ofstream pathdumpout(output_prefix + "/paths_dump.txt");
     tdr.print_paths(pathdumpout);
     pathdumpout.close();
 
+    std::ofstream pathdumpold(output_prefix + "/paths_dump_oldnames.txt");
+    tdr.print_paths(pathdumpold, true);
+    pathdumpold.close();
+
     // Dark nodes dump.
     std::ofstream darkdump(output_prefix + "dark_nodes.txt");
     tdr.print_dark_nodes(darkdump);
     darkdump.close();
-
-    std::ofstream pathdumpold(output_prefix + "/paths_dump_oldnames.txt");
-    tdr.print_paths(pathdumpold, true);
-    pathdumpold.close();
 
     std::ofstream graph_paths_out(output_prefix + "/mapped_paths.fasta");
     tdr.graph_paths_to_fasta(graph_paths_out);

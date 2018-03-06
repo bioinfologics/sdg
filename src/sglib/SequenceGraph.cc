@@ -99,7 +99,7 @@ void SequenceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
 
 }
 
-std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n){
+std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n) const {
     std::vector<Link> r;
     for (auto &l:links[(n>0 ? n : -n)]) if (l.source==-n) r.emplace_back(l);
     return r;
@@ -752,72 +752,3 @@ SequenceGraph::depth_first_search(const sgNodeID_t seed, unsigned int size_limit
     }
     return std::vector<sgNodeID_t>(visited.begin(), visited.end());
 }
-
-/*
-bool
-SequenceGraph::uniform_cost_search(sgNodeID_t start,
-                                   sgNodeID_t goal,
-                                   unsigned int size_limit,
-                                   unsigned int edge_limit,
-                                   std::set<sgNodeID_t> tabu) {
-    struct visitor {
-        sgNodeID_t node;
-        unsigned long dist;
-        unsigned long path_length;
-        visitor(sgNodeID_t n, uint d, uint p) : node(n), dist(d), path_length(p) {}
-        bool operator<(const visitor& rhs) const {
-            return std::tie(dist, path_length) < std::tie(rhs.dist, rhs.path_length);
-        }
-        bool operator<(const visitor& rhs) {
-            return std::tie(dist, path_length) < std::tie(rhs.dist, rhs.path_length);
-        }
-        bool operator>(const visitor& rhs) const {
-            return std::tie(dist, path_length) > std::tie(rhs.dist, rhs.path_length);
-        }
-        bool under_edge_limit(uint limit) const {
-            return path_length < limit or limit == 0;
-        }
-        bool under_size_limit(uint limit) const {
-            return dist < limit or limit == 0;
-        }
-        bool unexplored(const std::set<sgNodeID_t>& exp) const {
-            return exp.find(node) == exp.end();
-        }
-    };
-
-    // Set up frontier, adding the starting node with 0 cost.
-    std::vector<visitor> frontier;
-    frontier.emplace_back(start, 0, 0);
-    std::make_heap(frontier.begin(), frontier.end(), std::greater<visitor>()); // Don't think I need this for 1 element.
-
-    // Keep track of whether the node has been explored or not.
-    std::set<sgNodeID_t> explored;
-
-    while (!frontier.empty()) {
-        // Get node from front of the queue / top of the heap.
-        std::pop_heap(frontier.begin(), frontier.end(), std::greater<visitor>());
-        const visitor activeNode(frontier.back());
-        frontier.pop_back();
-
-
-        if(activeNode.unexplored(explored) and activeNode.under_edge_limit(edge_limit) and activeNode.under_size_limit(size_limit)) {
-            explored.emplace(activeNode.node);
-            for (const auto &l: get_fw_links(activeNode.node)) {
-
-                const visitor v(l.dest, activeNode.dist + nodes[std::abs(l.dest)].sequence.length(), activeNode.path_length + 1);
-
-                const auto node_in_frontier = std::find_if(frontier.begin(), frontier.end(), [&v](const visitor& vn) -> bool {vn.node == v.node;});
-
-                if (v.unexplored(explored) and node_in_frontier == frontier.end()) {
-                    // Add the visitor to the frontier.
-                    frontier.push_back(v);
-                    std::push_heap(frontier.begin(), frontier.end(), std::greater<visitor>());
-                } else if (node_in_frontier != frontier.end() and v < *node_in_frontier) {
-                    *node_in_frontier = v;
-                }
-            }
-        }
-    }
-    return false;
-}
- */

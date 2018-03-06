@@ -56,7 +56,7 @@ public:
     sgNodeID_t add_node(Node n);
     void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
 
-    std::vector<Link> get_fw_links( sgNodeID_t n);
+    std::vector<Link> get_fw_links( sgNodeID_t n) const ;
     std::vector<Link> get_bw_links( sgNodeID_t n);
 
     /*
