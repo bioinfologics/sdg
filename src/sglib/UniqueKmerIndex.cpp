@@ -23,7 +23,7 @@ UniqueKmerIndex::UniqueKmerIndex(const SequenceGraph& sg, const uint8_t k) : sg(
 
     for (auto &kidx :kmerIDX_SMR.process_from_memory()) {
         kmer_to_node_map[kidx.kmer] = { kidx.contigID, kidx.pos };
-        unique_kmers_per_node[std::abs(kidx.contigID)] += 1; // TODO: Ask bj if KmerCompression Index is useful for this, or is overkill?
+        unique_kmers_per_node[std::abs(kidx.contigID)] += 1;
     }
 
     for (sgNodeID_t node = 0; node < sg.nodes.size(); node++) {
@@ -39,7 +39,7 @@ UniqueKmerIndex::UniqueKmerIndex(const SequenceGraph& sg, const uint8_t k) : sg(
 std::tuple<bool, graphPosition> UniqueKmerIndex::find_unique_kmer_in_graph(uint64_t kmer) const {
     auto nk = kmer_to_node_map.find(kmer);
     auto exists = kmer_to_node_map.end() != nk;
-    graphPosition p{};
+    graphPosition p;
     if (exists) {
         p = nk->second;
     }
@@ -49,32 +49,56 @@ std::tuple<bool, graphPosition> UniqueKmerIndex::find_unique_kmer_in_graph(uint6
 bool UniqueKmerIndex::is_unmappable(sgNodeID_t id) const {
     return 0 == unique_kmers_per_node[std::abs(id)];
 }
-/*
+
 bool UniqueKmerIndex::traverse_dark_nodes(const sgNodeID_t start, const sgNodeID_t goal) {
     // Create a stack with the nodes and the path length
     struct visitor {
         sgNodeID_t node;
-        uint dist;
-        uint path_length;
+        unsigned long dist;
+        unsigned long path_length;
         visitor(sgNodeID_t n, uint d, uint p) : node(n), dist(d), path_length(p) {}
+        bool operator<(const visitor& rhs) const {
+            return std::tie(dist, path_length) < std::tie(rhs.dist, rhs.path_length);
+        }
+        bool operator<(const visitor& rhs) {
+            return std::tie(dist, path_length) < std::tie(rhs.dist, rhs.path_length);
+        }
+        bool operator>(const visitor& rhs) const {
+            return std::tie(dist, path_length) > std::tie(rhs.dist, rhs.path_length);
+        }
+        bool under_edge_limit(uint limit) const {
+            return path_length < limit or limit == 0;
+        }
+        bool under_size_limit(uint limit) const {
+            return dist < limit or limit == 0;
+        }
+        bool unexplored(const std::set<sgNodeID_t>& exp) const {
+            return exp.find(node) == exp.end();
+        }
     };
+
+
     std::stack<visitor> to_visit;
     to_visit.emplace(start, 0, 0);
-    std::set<sgNodeID_t> visited;
+    std::set<sgNodeID_t> explored;
     while (!to_visit.empty()) {
+        // Consider the current node, assign it to activeNode.
         const auto activeNode(to_visit.top());
         to_visit.pop();
-        if (visited.find(activeNode.node) == visited.end() and
-            (activeNode.path_length < edge_limit or edge_limit==0) and
-            (activeNode.dist < size_limit or size_limit==0) )
-        {
-            visited.emplace(activeNode.node);
-            for (const auto &l: get_fw_links(activeNode.node)) {
-                to_visit.emplace(l.dest,activeNode.dist+nodes[l.dest>0?l.dest:-l.dest].sequence.length(),activeNode.path_length+1);
+        // Check if the node has already been explored.
+        // If it hasn't, add it to the set of explored nodes and continue.
+        if (activeNode.unexplored(explored)) {
+            explored.emplace(activeNode.node);
+            // Now, find the children that are dark nodes, if any exist, place them on the to_visit column.
+            for (const auto &l : sg.get_fw_links(activeNode.node)) {
+                if (l.dest == goal) {
+
+                } else if (is_unmappable(l.dest)) {
+                    to_visit.emplace(l.dest, activeNode.dist + sg.nodes[std::abs(l.dest)].sequence.length(), activeNode.path_length + 1);
+                }
             }
         }
     }
     //return std::vector<sgNodeID_t>(visited.begin(), visited.end());
     return true;
 }
- */

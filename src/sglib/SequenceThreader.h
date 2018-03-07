@@ -11,12 +11,24 @@
 #include <set>
 #include <sglib/SequenceGraph.h>
 #include <sglib/UniqueKmerIndex.h>
+#include <sglib/factories/KMerIDXFactory.h>
 
 typedef uint64_t seqID_t;
 
 class SequenceMapping;
 
 enum MappingDirection {Nowhere, Forward, Backwards};
+
+class MappingSummary {
+public:
+    bool operator<(MappingSummary rhs) {
+        return id < rhs.id;
+    }
+private:
+    unsigned long mapped_kmers, unmapped_kmers;
+    seqID_t id;
+    std::string name;
+};
 
 class SequenceThreader {
     typedef std::unordered_map<seqID_t, std::vector<SequenceMapping>> SequenceMappingStore;
@@ -32,6 +44,7 @@ private:
     uint64_t memory_limit;
     SequenceMappingStore mappings_of_sequence;
     SequenceMappingPathsStore paths_of_mappings_of_sequence;
+    std::vector<KmerIDX> unmapped_kmers;
 
     void map_sequences_from_file(uint64_t min_matches, const std::string& filename);
     std::set<SequenceGraphPath> all_unique_paths() const;
@@ -54,6 +67,8 @@ public:
     void query_paths_to_fasta(std::ofstream& output_file) const;
     void print_unique_paths_sizes(std::ofstream& output_file) const;
     void print_dark_nodes(std::ofstream& output_file) const;
+    void print_full_node_diagnostics(std::ofstream& output_file) const;
+    void print_unmapped_nodes(std::ofstream& output_file) const;
 };
 
 class SequenceMapping {

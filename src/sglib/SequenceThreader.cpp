@@ -4,8 +4,8 @@
 
 #include <numeric>
 #include <atomic>
+#include <algorithm>
 #include <sglib/SequenceThreader.h>
-#include <sglib/factories/KMerIDXFactory.h>
 #include <sglib/readers/FileReader.h>
 #include <sglib/logger/OutputLog.h>
 
@@ -122,7 +122,7 @@ void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const
     FastaReader<FastaRecord> fastaReader({0}, filename);
     std::atomic<uint64_t> mapped_kmers_count(0), sequence_count(0);
 
-#pragma omp parallel shared(fastaReader, mappings_of_sequence)
+#pragma omp parallel shared(fastaReader, mappings_of_sequence, unmapped_kmers)
     {
         FastaRecord sequence;
         std::vector<KmerIDX> seqkmers;
@@ -136,6 +136,7 @@ void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const
         }
 
         while (c) {
+            sequence_count++;
             mapping.initiate_mapping((uint64_t) sequence.id);
 
             // get all Kmers from sequence.
@@ -175,6 +176,11 @@ void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const
                             mapping.extend(graph_pos.pos, sk.pos);
                         }
                     }
+                } else {
+#pragma omp critical (save_unmapped_kmer)
+                    {
+                        unmapped_kmers.emplace_back(sk.kmer);
+                    }
                 }
             }
             // TODO : Check if this last push_back is required
@@ -185,7 +191,7 @@ void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const
                 mappings_of_sequence[sequence.id] = sequence_mappings;
             }
 
-            #pragma omp critical (readrec)
+#pragma omp critical (readrec)
             {
                 c = fastaReader.next_record(sequence);
             }
@@ -193,7 +199,8 @@ void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const
     }
 
     sglib::OutputLog(sglib::LogLevels::INFO) << "Mapped " << mapped_kmers_count << " Kmers from " << sequence_count << " sequences." << std::endl;
-}
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Failed to map " << unmapped_kmers.size() << " unique kmers from the reference." << std::endl;
+ }
 
 void SequenceThreader::mappings_paths() {
 
@@ -325,7 +332,7 @@ void SequenceThreader::print_mappings(std::ostream& out, bool use_oldnames) cons
             auto nodedir = nd == Forward ? "Forward" : nd == Backwards ? "Backwards" : "DIRERR";
             out << "Sequence: " << sm.seq_id << " from: ";
             out << sm.first_seq_pos << " : " << sm.last_seq_pos << " (" << seqdir << ")";
-            out << ", maps to node: " << use_oldnames ? sg.nodeID_to_name(sm.absnode()) : std::to_string(sm.absnode());
+            out << ", maps to node: " << (use_oldnames ? sg.nodeID_to_name(sm.absnode()) : std::to_string(sm.absnode()));
             out << " from: " << sm.first_node_pos << " : " << sm.last_node_pos  << " (" << nodedir << "). ";
             out << sm.matched_unique_kmers << " / " << sm.possible_unique_matches << " unique kmers matched.";
             out << " (" << sm.n_kmers_in_node << " kmers exist in node).";
@@ -354,5 +361,39 @@ void SequenceThreader::print_dark_nodes(std::ofstream& output_file) const {
         if (graph_kmer_index.is_unmappable(i)) {
             output_file << sg.nodeID_to_name(i) << std::endl;
         }
+    }
+}
+
+void SequenceThreader::print_full_node_diagnostics(std::ofstream &output_file) const {
+    output_file << "nodeID\tseq_size\tn_kmers\tn_unique_kmers\tn_forward_links\tn_backward_links" << std::endl;
+    for(sgNodeID_t i = 1; i <= sg.nodes.size(); i++){
+        output_file << sg.nodeID_to_name(i) << '\t' << sg.nodes[i].sequence.size() << '\t';
+        output_file << std::to_string(graph_kmer_index.total_kmers_in_node(i)) << '\t';
+        output_file << std::to_string(graph_kmer_index.unique_kmers_in_node(i)) << '\t';
+        output_file << std::to_string(sg.get_fw_links(i).size()) << '\t';
+        output_file << std::to_string(sg.get_bw_links(i).size()) << '\t';
+        output_file << std::endl;
+    }
+}
+
+void SequenceThreader::print_unmapped_nodes(std::ofstream& output_file) const {
+    output_file << "nodeID\tseq_size\tn_kmers\tn_unique_kmers\tn_forward_links\tn_backward_links" << std::endl;
+    std::set<sgNodeID_t> mapped, all, diff;
+    for (sgNodeID_t i = 1; i <= sg.nodes.size(); i++) {
+        all.insert(i);
+    }
+    for (const auto& sm : mappings_of_sequence) {
+        for (const auto& m : sm.second) {
+            mapped.insert(m.absnode());
+        }
+    }
+    std::set_difference(all.begin(), all.end(), mapped.begin(), mapped.end(), std::inserter(diff, diff.end()));
+    for (const auto& node : diff) {
+        output_file << sg.nodeID_to_name(node) << '\t' << sg.nodes[node].sequence.size() << '\t';
+        output_file << std::to_string(graph_kmer_index.total_kmers_in_node(node)) << '\t';
+        output_file << std::to_string(graph_kmer_index.unique_kmers_in_node(node)) << '\t';
+        output_file << std::to_string(sg.get_fw_links(node).size()) << '\t';
+        output_file << std::to_string(sg.get_bw_links(node).size()) << '\t';
+        output_file << std::endl;
     }
 }

@@ -14,6 +14,8 @@ int main(int argc, char **argv) {
     std::string reference_filename;
     std::string output_prefix;
     int log_level;
+    bool dump_unmapped, dump_mappings, dump_paths;
+
 
     // DEFAULT PARAMETERS... FIXED FOR NOW.
 
@@ -31,6 +33,9 @@ int main(int argc, char **argv) {
             ("r,reference", "Reference FASTA of sequences to locate in graph", cxxopts::value<std::string>(reference_filename), "FASTA - Sequence file")
             ("g,graph", "Genome graph in GFA format", cxxopts::value<std::string>(graph_filename), "GFA file")
             ("o,output", "Output file prefix", cxxopts::value<std::string>(output_prefix) -> default_value(outdefault), "prefix_dir")
+            ("u", "Dump non-mapped graph nodes", cxxopts::value<bool>(dump_unmapped))
+            ("m", "Dump graph node mappings", cxxopts::value<bool>(dump_mappings))
+            ("p", "Dump connected paths", cxxopts::value<bool>(dump_paths))
             ("l,logging", "Logging level (0: INFO, 1: WARN, 2: DEBUG)", cxxopts::value<int>(log_level) -> default_value("0"), "log_level");
 // @formatter:on
 
@@ -78,36 +83,36 @@ int main(int argc, char **argv) {
 // DUMP OUTPUT...
 
     // Mappings dump.
-    std::ofstream mappingdumpout(output_prefix + "mappings_dump.txt");
-    tdr.print_mappings(mappingdumpout);
-    mappingdumpout.close();
+    if (dump_mappings) {
+        sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping all mappings." << std::endl;
+        std::ofstream mapping_dump(output_prefix + "/mappings.txt");
+        tdr.print_mappings(mapping_dump, true);
+        mapping_dump.close();
+    }
 
-    std::ofstream mappingdumpold(output_prefix + "mappings_dump_oldnames.txt");
-    tdr.print_mappings(mappingdumpold);
-    mappingdumpold.close();
+    // Unmapped node diagnostics dump.
+    if (dump_unmapped) {
+        sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping unmapped nodes." << std::endl;
+        std::ofstream unmapped(output_prefix + "/unmapped_nodes.txt");
+        tdr.print_unmapped_nodes(unmapped);
+        unmapped.close();
+    }
 
     // Paths dump.
-    std::ofstream pathdumpout(output_prefix + "/paths_dump.txt");
-    tdr.print_paths(pathdumpout);
-    pathdumpout.close();
+    if (dump_paths) {
+        sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping paths." << std::endl;
+        std::ofstream pathdumpout(output_prefix + "/paths_list.txt");
+        tdr.print_paths(pathdumpout, true);
+        pathdumpout.close();
+    }
 
-    std::ofstream pathdumpold(output_prefix + "/paths_dump_oldnames.txt");
-    tdr.print_paths(pathdumpold, true);
-    pathdumpold.close();
+    // Print out mapped FASTA sequences.
 
-    // Dark nodes dump.
-    std::ofstream darkdump(output_prefix + "dark_nodes.txt");
-    tdr.print_dark_nodes(darkdump);
-    darkdump.close();
-
-    std::ofstream graph_paths_out(output_prefix + "/mapped_paths.fasta");
+    std::ofstream graph_paths_out(output_prefix + "/mapped_paths_graph.fasta");
     tdr.graph_paths_to_fasta(graph_paths_out);
     graph_paths_out.close();
-    std::ofstream sizesout(output_prefix + "/paths_sizes.txt");
-    tdr.print_unique_paths_sizes(sizesout);
-    sizesout.close();
 
-    std::ofstream query_paths_out(output_prefix + "/query_mapped_paths.fasta");
+    std::ofstream query_paths_out(output_prefix + "/mapped_paths_query.fasta");
     tdr.query_paths_to_fasta(query_paths_out);
     query_paths_out.close();
 }
