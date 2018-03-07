@@ -203,8 +203,10 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
  */
 uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
     auto const hps=get_all_HSPNPs();
+    //std::cout<<"limiting HSPNs to 1000!!! (for test purposes)"<<std::endl;
+    //hps.resize(100);
     std::atomic_uint64_t processing(0);
-    std::vector<SequenceGraphPath> new_paths;
+    std::vector<std::vector<SequenceGraphPath>> new_ppaths;
 #pragma omp parallel for
     for (auto i=0;i<hps.size();++i) {
         uint64_t p;
@@ -212,7 +214,7 @@ uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
         //if (ws.sg.nodes[llabs(hp.first)].sequence.size()<2000 or ws.sg.nodes[llabs(hp.second)].sequence.size()<2000 ) continue;
         TagWalker tw(ws,hps[i]);
         auto ct= tw.remove_crosstalk();
-        if (ct>0) continue;
+        if (ct>0.01) continue;
         auto wp=tw.walk(.98,.02);
         auto parallelpaths=make_parallel_paths(wp);
         //tw.dump_reads("HPSNP_"+std::to_string(llabs(hp.first))+"_"+std::to_string(llabs(hp.second)));
@@ -223,35 +225,65 @@ uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
 #pragma omp critical (print_paths)
         {
 
-            std::cout << std::endl << "PATH A (" << wp[0].get_sequence().size() << " bp): ";
-            for (auto n:wp[0].nodes) std::cout << "seq" << llabs(n) << ", ";
-            std::cout << std::endl << "PATH B (" << wp[1].get_sequence().size() << " bp): ";
-            for (auto n:wp[1].nodes) std::cout << "seq" << llabs(n) << ", ";
-            std::cout << std::endl;
-            if (parallelpaths[0].nodes.size()<3 or not all_nodes_consumed(parallelpaths)){
-                std::cout << std::endl <<"NO ALL-CONSUMING PARALLEL PATHS"<<std::endl;
+            //std::cout << std::endl << "PATH A (" << wp[0].get_sequence().size() << " bp): ";
+            //for (auto n:wp[0].nodes) std::cout << "seq" << llabs(n) << ", ";
+            //std::cout << std::endl << "PATH B (" << wp[1].get_sequence().size() << " bp): ";
+            //for (auto n:wp[1].nodes) std::cout << "seq" << llabs(n) << ", ";
+            //std::cout << std::endl;
+            if (parallelpaths[0].nodes.size()<4 or not all_nodes_consumed(parallelpaths)){
+                //std::cout << std::endl <<"NO ALL-CONSUMING PARALLEL PATHS"<<std::endl;
             }
             else {
-                for (auto &p:parallelpaths) new_paths.emplace_back(p);
-                std::cout << std::endl << "PARALLEL PATH A (" << parallelpaths[0].get_sequence().size() << " bp): ";
-                for (auto n:parallelpaths[0].nodes) std::cout << "seq" << llabs(n) << ", ";
-                std::cout << std::endl << "PARALLEL PATH B (" << parallelpaths[1].get_sequence().size() << " bp): ";
-                for (auto n:parallelpaths[1].nodes) std::cout << "seq" << llabs(n) << ", ";
-                std::cout << std::endl;
+                new_ppaths.emplace_back(parallelpaths);
+                //std::cout << "PARALLEL PATHS #"<<new_ppaths.size()-1;
+                //std::cout << std::endl << "PARALLEL PATH A (" << parallelpaths[0].get_sequence().size() << " bp): ";
+                //for (auto n:parallelpaths[0].nodes) std::cout << "seq" << llabs(n) << ", ";
+                //std::cout << std::endl << "PARALLEL PATH B (" << parallelpaths[1].get_sequence().size() << " bp): ";
+                //for (auto n:parallelpaths[1].nodes) std::cout << "seq" << llabs(n) << ", ";
+                //std::cout << std::endl;
             }
         }
 
     }
-    std::cout<<"List of "<<new_paths.size()<<" new paths follows: "<<std::endl;
-    for (auto &p:new_paths) {
-        for (auto n:p.nodes) std::cout << "seq" << llabs(n) << ", ";
-        std::cout<<std::endl;
+    //get the "best neighbour" for each pp
+//    for (auto i1=0;i1<new_ppaths.size();++i1){
+//        for (auto i2=i1+1;i2<new_ppaths.size();++i2){
+//            auto shared=shared_nodes({new_ppaths[i1],new_ppaths[i2]});
+//            if (shared.size()>1) {
+//                std::cout<<"Parallel paths #"<<i1<<" and #"<<i2<<" share "<<shared.size()<<" nodes"<<std::endl;
+//            }
+//        }
+//    }
+    //execute merging/conflict
+
+    //now join the paths that survived
+    std::sort(new_ppaths.begin(),new_ppaths.end(),
+              [](const std::vector<SequenceGraphPath> &a,const std::vector<SequenceGraphPath> &b)
+              {return a[0].nodes.size()>b[0].nodes.size();});
+    std::vector<bool> used(ws.sg.nodes.size());
+    for (auto pp:new_ppaths){
+        if (pp[0].nodes.size()<4) continue;
+        bool skip=false;
+        for (auto &p:pp) for (auto n:p.nodes) if (used[llabs(n)]) {skip=true; break;}
+        if (skip) continue;
+        std::cout << "JOINING PARALLEL PATHS #"<<new_ppaths.size()-1;
+        std::cout << std::endl << "PARALLEL PATH A (" << pp[0].get_sequence().size() << " bp): ";
+        for (auto n:pp[0].nodes) std::cout << "seq" << llabs(n) << ", ";
+        std::cout << std::endl << "PARALLEL PATH B (" << pp[1].get_sequence().size() << " bp): ";
+        for (auto n:pp[1].nodes) std::cout << "seq" << llabs(n) << ", ";
+        std::cout << std::endl;
+        for (auto &p:pp) {
+            std::vector<sgNodeID_t> middle_nodes;
+            for (auto it=p.nodes.begin()+1;it<p.nodes.end()-1;++it) middle_nodes.push_back(*it);
+            for (auto n:middle_nodes) used[llabs(n)]=true;
+            ws.sg.join_path(SequenceGraphPath(ws.sg,middle_nodes),true);
+        }
     }
-    std::cout<<"List of "<<new_paths.size()<<" new paths follows (as signed nodes): "<<std::endl;
-    for (auto &p:new_paths) {
-        for (auto n:p.nodes) std::cout << n << ", ";
-        std::cout<<std::endl;
-    }
+    ws.sg.write_to_gfa("graph_after_joining_walks.gfa");
+    ws.linked_read_mappers[0].remove_obsolete_mappings();
+    ws.linked_read_mappers[0].update_graph_index();
+    ws.linked_read_mappers[0].map_reads();
+    ws.kci.reindex_graph();
 }
 
 /**
@@ -300,5 +332,85 @@ bool Untangler::all_nodes_consumed(std::vector<SequenceGraphPath> parallel_paths
 
     }
     return true;
+
+}
+
+std::vector<sgNodeID_t> Untangler::shared_nodes(std::vector<std::vector<SequenceGraphPath>> parallel_paths){
+    std::set<sgNodeID_t> seen_nodes, current_nodes, shared;
+    std::vector<sgNodeID_t > r;
+    //checks if any of the nodes are present in more than 1 of the PP
+    for (auto &pp:parallel_paths){
+        current_nodes.clear();
+        for (auto &p:pp) for (auto n:p.nodes) current_nodes.insert(llabs(n));
+        std::set_intersection(seen_nodes.begin(),seen_nodes.end(),current_nodes.begin(),current_nodes.end(),std::inserter(shared,shared.end()));
+        for (auto &n:current_nodes) seen_nodes.insert(n);
+    }
+    for (auto n:shared) r.emplace_back(n);
+    return r;
+}
+
+std::vector<SequenceGraphPath> Untangler::combine(std::vector<SequenceGraphPath> parallel_paths1, std::vector<SequenceGraphPath> parallel_paths2){
+//    bool fw=false,rev=false;
+//    int shared[parallel_paths1.size()][parallel_paths2.size()];
+//    int i1=0,i2=0;
+//    for (auto & pp1:parallel_paths1) {
+//        i2=0;
+//        for  (auto & pp2:parallel_paths2){
+//            shared[i1][i2]=0;
+//            for (auto n1:pp1..nodes) {
+//                for (auto n2:pp2.nodes) {
+//                    if (n1==n2) {
+//                        fw=true;
+//                        ++shared[i1][i2];
+//                    }
+//                    if (n1==-n2) {
+//                        rev=true;
+//                        ++shared[i1][i2];
+//                    }
+//                }
+//            }
+//            ++i2;
+//        }
+//        ++i1;
+//    }
+//    if (fw and rev) return {};
+//    if (!fw and !rev) return {};
+//    if (rev) for (auto &pp:parallel_paths2) pp.reverse(); //now we're forward;
+//
+//    if (parallel_paths1.size()!=2 or parallel_paths2.size()!=2){
+//        std::cout<<"Warning: parallel paths not merging because size>2"<<std::endl;
+//        return {};
+//    }
+//    auto & a1=parallel_paths1[0];
+//    auto & b1=parallel_paths1[1];
+//    auto & a2=parallel_paths2[0];
+//    auto & b2=parallel_paths2[1];
+//    if (shared[0][1]>shared[0][0] and shared[1][0]>shared[1][1]){
+//        std::swap(a2.nodes,b2.nodes);
+//    }
+//    //
+//    int aoff=-1;
+//    for (auto i=0;i<a1.nodes.size();++i) {
+//        if (a1.nodes[i] == a2.nodes[0]) {
+//            aoff = i;
+//            break;
+//        }
+//    }
+//    if (aoff<0) std::swap(a2.nodes,a1.nodes);
+//    for (auto i=0;i<a1.nodes.size();++i) {
+//        if (a1.nodes[i] == a2.nodes[0]) {
+//            aoff = i;
+//            break;
+//        }
+//    }
+//    if (aoff<0) return {};
+//
+//    //pp1.uniqueA intersection pp2.uniqueA? pp2.uniqueB? -pp2.uniqueA? -pp2.uniqueB?
+//
+//    //set A1 A2, B1, B2 to be the paths that must be combined.
+//
+//    //for each side
+//        //find start of overlap
+//        //check overlap ==
 
 }

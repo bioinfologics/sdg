@@ -110,6 +110,7 @@ public:
     explicit SequenceGraphPath(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
     std::string get_fasta_header();
     std::string get_sequence();
+    bool extend_if_coherent(SequenceGraphPath s);
     void reverse();
     bool is_canonical();
 

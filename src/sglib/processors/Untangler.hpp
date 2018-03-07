@@ -21,6 +21,10 @@ public:
     std::vector<SequenceGraphPath> make_parallel_paths(std::vector<SequenceGraphPath>);
 
     bool all_nodes_consumed(std::vector<SequenceGraphPath>);
+
+    std::vector<sgNodeID_t> shared_nodes(std::vector<std::vector<SequenceGraphPath>> parallel_paths);
+
+    std::vector<SequenceGraphPath> combine( std::vector<SequenceGraphPath> parallel_paths1, std::vector<SequenceGraphPath> parallel_paths2 );
 };
 
 
