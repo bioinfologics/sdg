@@ -26,7 +26,7 @@ int main(int argc, char * argv[]) {
         options.add_options()
                 ("help", "Print help")
                 ("w,workspace", "input workspace", cxxopts::value<std::string>(workspace_file))
-                ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
+                ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
                 ("max_mem", "maximum_memory when mapping (GB, default: 4)", cxxopts::value<uint64_t>(max_mem_gb));
 
         options.add_options("Heuristics")
