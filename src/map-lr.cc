@@ -12,8 +12,7 @@
 #include <sglib/mappers/LongReadMapper.h>
 #include "cxxopts.hpp"
 
-void map_using_unique_kmers(SequenceGraph &sg, std::string output_prefix, std::string long_reads){
-    uint8_t k = 15;
+void map_using_unique_kmers(uint8_t k, SequenceGraph &sg, std::string &output_prefix, std::string &long_reads){
     uint16_t min_matches = 10;
 
     std::cout << "Mapping sequences " << std::endl;
@@ -68,10 +67,10 @@ void map_using_unique_kmers(SequenceGraph &sg, std::string output_prefix, std::s
 
 }
 
-void map_using_sketches(SequenceGraph &sg, std::string output_prefix, std::string long_reads) {
-    unsigned int K = 15;
+void map_using_sketches(uint8_t k, SequenceGraph &sg, std::string &output_prefix, std::string &long_reads) {
+    uint8_t w = 1;
 
-    LongReadMapper rm(K, 5, sg);
+    LongReadMapper rm(k, w, sg);
     rm.map_reads(long_reads, 500);
 
 }
@@ -81,10 +80,12 @@ int main(int argc, char * argv[]) {
     unsigned int log_level(4);
     uint64_t max_mem_gb(4);
     bool stats_only(false);
+    uint8_t K(31);
 //@formatter:off
     cxxopts::Options options("map-lr", "LongRead Mapper");
     options.add_options()
             ("help", "Print help", cxxopts::value<std::string>(),"")
+            ("k,mer_size", "K-mer size for indexing/mapping", cxxopts::value<uint8_t>(K)->default_value("31"), "0-31")
             ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename), "filepath")
             ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix), "path")
             ("log_level", "output log level", cxxopts::value<unsigned int>(log_level), "uint");
@@ -130,9 +131,9 @@ int main(int argc, char * argv[]) {
     sg.load_from_gfa(gfa_filename);
 
     if (0) {
-        map_using_unique_kmers(sg, output_prefix, long_reads);
+        map_using_unique_kmers(K, sg, output_prefix, long_reads);
     }
     if (1) {
-        map_using_sketches(sg, output_prefix, long_reads);
+        map_using_sketches(K, sg, output_prefix, long_reads);
     }
 }
