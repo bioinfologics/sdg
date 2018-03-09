@@ -60,8 +60,6 @@ int main(int argc, char * argv[]) {
 
     sglib::OutputLog() << "Welcome to gfa-extract" << std::endl << std::endl;
 
-    sglib::OutputLog() << "Welcome to map-lr" << std::endl << std::endl;
-
     if (gfa_filename.size() <= 4 or gfa_filename.substr(gfa_filename.size() - 4, 4) != ".gfa") {
 
         throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '" +
@@ -74,32 +72,49 @@ int main(int argc, char * argv[]) {
     std::cout << std::endl;
     std::cout << std::endl;
     std::cout << std::endl;
+    std::cout << "Starting DFS" << std::endl;
     if (!nodes.empty()) {
-        std::cout << "Starting DFS" << std::endl;
-        std::set<sgNodeID_t> forward_subnodes;
-        std::set<sgNodeID_t> backward_subnodes;
+        std::set<nodeVisitor> resultNodes;
+        // For each node in the list
         for (const auto &n:nodes) {
             auto id = sg.oldnames_to_ids[n];
-            sglib::OutputLog() << "Processing " << sg.oldnames_to_ids[n] << std::endl;
-            // Go forward on n
-            auto v = sg.depth_first_search(id, size_limit, edge_limit, forward_subnodes);
-            forward_subnodes.insert(v.cbegin(), v.cend());
-            // Go backwards on n
-            v = sg.depth_first_search(-id, size_limit, edge_limit, backward_subnodes);
-            backward_subnodes.insert(v.cbegin(), v.cend());
-            sglib::OutputLog() << "Done" << std::endl;
+            std::set<nodeVisitor> results;
+            results.emplace(id, 0, 0);
+            results.emplace(-id, 0, 0);
+            do {
+                auto toVisit = results.begin();
+                results.erase(toVisit);
+                // Explore node forward
+                auto visitedNodes = sg.depth_first_search(*toVisit, size_limit, edge_limit, resultNodes);
+                for (const auto &node:visitedNodes) {
+                    if (node == *toVisit) continue;
+
+                    auto visitedNode(resultNodes.find(node));
+                    if (visitedNode != resultNodes.end()) {
+                        if (node < *visitedNode) {
+                            resultNodes.erase(visitedNode);
+                        } else {
+                            continue;
+                        }
+                    }
+                    results.emplace(node);
+                    results.emplace(node.reverseDirection());
+                    resultNodes.insert(node);
+                }
+                // While exploration results > 0 explore resulting nodes
+            } while (!results.empty());
+
         }
-        for (const auto &n:forward_subnodes) {
-            std::cout << sg.oldnames[std::abs(n)] << " ";
-        }
-        for (const auto &n:backward_subnodes) {
-            std::cout << sg.oldnames[std::abs(n)] << " ";
+
+        for (const auto &n: resultNodes) {
+            std::cout << sg.oldnames[std::abs(n.node)] << " ";
         }
         std::cout << std::endl;
-        std::set<sgNodeID_t> subnodes;
-        subnodes.insert(backward_subnodes.begin(),backward_subnodes.end());
-        subnodes.insert(forward_subnodes.begin(),forward_subnodes.end());
-        std::cout << backward_subnodes.size() << " nodes in solution\n";
-        SequenceSubGraph ssg(sg, std::vector<sgNodeID_t>(subnodes.begin(), subnodes.end()));
+        std::cout << resultNodes.size() << " nodes in solution\n";
+        std::vector<sgNodeID_t > subnodes;
+        for (const auto &n:resultNodes) {
+            subnodes.emplace_back(n.node);
+        }
+        SequenceSubGraph ssg(sg, subnodes);
     }
 }

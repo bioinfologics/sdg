@@ -12,6 +12,7 @@
 #include <list>
 #include <queue>
 #include <stack>
+#include <tuple>
 #include "sglib/readers/FileReader.h"
 
 bool Node::is_canonical() {
@@ -674,30 +675,43 @@ SequenceGraph::breath_first_search(std::vector<sgNodeID_t> &nodes, unsigned int 
     return std::vector<sgNodeID_t>(visited.begin(), visited.end());
 }
 
-std::vector<sgNodeID_t>
-SequenceGraph::depth_first_search(const sgNodeID_t seed, unsigned int size_limit, unsigned int edge_limit, std::set<sgNodeID_t> tabu) {
+std::vector<nodeVisitor>
+SequenceGraph::depth_first_search(const nodeVisitor seed, unsigned int size_limit, unsigned int edge_limit, std::set<nodeVisitor> tabu) {
     // Create a stack with the nodes and the path length
-    struct visitor {
-        sgNodeID_t node;
-        uint dist;
-        uint path_length;
-        visitor(sgNodeID_t n, uint d, uint p) : node(n), dist(d), path_length(p) {}
-    };
-    std::stack<visitor> to_visit;
-    to_visit.emplace(seed,0,0);
-    std::set<sgNodeID_t > visited(tabu);
+
+    std::stack<nodeVisitor> to_visit;
+    to_visit.emplace(seed);
+    std::set<nodeVisitor> visited_set;
+    for (const auto &n:tabu) {
+        visited_set.emplace(n);
+    }
+
     while (!to_visit.empty()) {
         const auto activeNode(to_visit.top());
         to_visit.pop();
-        if (visited.find(activeNode.node) == visited.end() and
-                (activeNode.path_length < edge_limit or edge_limit==0) and
-                (activeNode.dist < size_limit or size_limit==0) )
+        auto visitedNode(visited_set.find( nodeVisitor(activeNode.node,0,0) ) );
+        if (visitedNode == visited_set.end() and
+                (activeNode.path_length < edge_limit or edge_limit==0) and  // Is within path limits
+                (activeNode.dist < size_limit or size_limit==0) ) // Is within sequence limits
         {
-            visited.emplace(activeNode.node);
+            visited_set.emplace(activeNode.node, activeNode.dist, activeNode.path_length);
             for (const auto &l: get_fw_links(activeNode.node)) {
-                to_visit.emplace(l.dest,activeNode.dist+nodes[l.dest>0?l.dest:-l.dest].sequence.length(),activeNode.path_length+1);
+                to_visit.emplace(l.dest,
+                                 activeNode.dist+nodes[l.dest>0?l.dest:-l.dest].sequence.length(),
+                                 activeNode.path_length+1);
             }
+        } else if (visitedNode != visited_set.end() and // If the node has been visited
+                (visitedNode->path_length > activeNode.path_length or visitedNode->dist > activeNode.dist)) // but is closer than the last time I saw it
+        {
+            visited_set.erase(visitedNode); // Remove it from the visited nodes and
+            to_visit.emplace(activeNode.node, activeNode.dist, activeNode.path_length); // add it to the list of nodes to visit
         }
     }
-    return std::vector<sgNodeID_t>(visited.begin(), visited.end());
+
+    std::vector<nodeVisitor > result;
+    for (const auto &v:visited_set) {
+        if (v.node == seed.node) continue;
+        result.emplace_back(v);
+    }
+    return result;
 }
