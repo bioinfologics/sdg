@@ -25,7 +25,8 @@ public:
      */
     Scaffolder(SequenceGraph &_sg, std::vector<PairedReadMapper> & _rms,  std::vector<LinkedReadMapper> & _lrms, KmerCompressionIndex &_kci) : sg(_sg),rmappers(_rms),lrmappers(_lrms),kci(_kci){};
 
-    void pop_unsupported_shortbubbles();
+
+    void pop_unsupported_shortbubbles(uint64_t max_length=450);
     void expand_bubbly_subgraphs();
     std::vector<SequenceSubGraph> get_all_bubbly_subgraphs(uint32_t maxsubgraphs=0);
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> get_all_haplotype_pairs(uint32_t maxpairs=0);
