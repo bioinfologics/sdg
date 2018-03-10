@@ -20,7 +20,7 @@ Flow FlowFollower::flow_from_node(sgNodeID_t n,float min_winner,float max_looser
             if (fwl.empty()) break;
             std::vector<sgNodeID_t> fw_nodes;
             for (auto l:fwl) fw_nodes.push_back(l.dest);
-            auto distinctivekmers = get_distinctive_kmers_truncated(fw_nodes);//XXX: now using truncated it should be a first pass with normal, a second with truncated if needed
+            auto distinctivekmers = get_distinctive_kmers(fw_nodes);//XXX: now using truncated it should be a first pass with normal, a second with truncated if needed
             for (auto &dk:distinctivekmers) {
                 if (dk.size()==0){
                     std::cout<<"WARNING: no distinctive kmers for at least one node: ";
@@ -30,30 +30,45 @@ Flow FlowFollower::flow_from_node(sgNodeID_t n,float min_winner,float max_looser
             }
 
             sgNodeID_t best = 0, second = 0;
-            double best_score = 0, second_score = 0;
+            uint64_t best_score = 100000, second_score = 1000000;
 
             for (auto i = 0; i < fw_nodes.size(); ++i) {
                 std::unordered_set<uint64_t> inters;
                 auto &lkmers = distinctivekmers[i];
-                double score;
-                uint64_t hits = 0;
-                for (auto x:lkmers) if (kmers.count(x)) ++hits;
-                score = (double) hits / lkmers.size();
-                //std::cout << "scoring transition to " << fw_nodes[i] << ": " << hits << "/" << lkmers.size() << "="
-                //          << score << std::endl;
-                if (best == 0 or score > best_score) {
+                uint64_t hits=0,misses = 0;
+                for (auto x:lkmers) {
+                    if (kmers.count(x)) ++hits;
+                    else ++misses;
+                }
+                if (misses<best_score) {
                     second = best;
                     best = fw_nodes[i];
                     second_score = best_score;
-                    best_score = score;
-                } else if (second == 0 or score > second_score) {
+                    best_score = misses;
+                } else if (misses < second_score) {
                     second = fw_nodes[i];
-                    second_score = score;
+                    second_score = misses;
                 }
+
+//                score = (double) hits / lkmers.size();
+//                if (best == 0 or score > best_score) {
+//                    second = best;
+//                    best = fw_nodes[i];
+//                    second_score = best_score;
+//                    best_score = score;
+//                } else if (second == 0 or score > second_score) {
+//                    second = fw_nodes[i];
+//                    second_score = score;
+//                }
             }
             //std::cout << best_score << " - " << second_score << std::endl;
-            if (best_score == 0 or best_score < min_winner or second_score > max_looser) {
-                std::cout << "stopping because of score uncertainty "<< best_score << " - " << second_score << std::endl;
+//            if (best_score == 0 or best_score < min_winner or second_score > max_looser) {
+//                std::cout << "stopping because of score uncertainty "<< best_score << " - " << second_score << std::endl;
+//                break;
+//            }
+            if (best_score != 0 or second_score==0) {
+                std::cout << "stopping because of score uncertainty " << best_score << " - " << second_score
+                          << std::endl;
                 break;
             }
             bool b = false;
@@ -130,30 +145,43 @@ std::vector<std::unordered_set<uint64_t>> FlowFollower::get_distinctive_kmers_tr
     //now go through the nodes:
     //  if the kmers are not in the "shared" set add to temp list
     //  if kmers in "shared_by_all" list, move temp list to distinctive collection.
-    std::vector<std::unordered_set<uint64_t>> distinctive_kmers;
+    std::vector<std::unordered_set<uint64_t>> distinctive_kmers,temp_distinctive;
+
     if (nodes.size()==1) {
         distinctive_kmers.emplace_back();
         for (auto x:node_kmers[0]) distinctive_kmers.back().insert(x);
     }
     else {
         for (auto nk:node_kmers) {
-            std::vector<uint64_t> temp_distinctive;
             distinctive_kmers.emplace_back();
+            temp_distinctive.emplace_back();
             for (auto x:nk) {
                 if (kmer_counts[x] == 1) {
-                    temp_distinctive.push_back(x);
+                    temp_distinctive.back().insert(x);
 
                 } else if (kmer_counts[x] == nodes.size()) {
-                    for (auto y:temp_distinctive) distinctive_kmers.back().insert(y);
-                    temp_distinctive.clear();
+                    for (auto y:temp_distinctive.back()) distinctive_kmers.back().insert(y);
+                    temp_distinctive.back().clear();
                 }
             }
-            //if (distinctive_kmers.back().size()==0 and temp_distinctive.size()>0) recover_short=true;
+            if (distinctive_kmers.back().size()==0 and temp_distinctive.back().size()>0) recover_short=true;
         }
+        if (recover_short) {
+            uint64_t mind=temp_distinctive[0].size();
+            for (auto td:temp_distinctive) if (td.size()<mind) mind=td.size();
+            distinctive_kmers.clear();
+            for (auto nk:node_kmers) {
+                distinctive_kmers.emplace_back();
+                for (auto x:nk) {
+                    if (kmer_counts[x] == 1) {
+                        distinctive_kmers.back().insert(x);
+                        if (distinctive_kmers.back().size()>=mind) break;
+                    }
+                }
+            }
+        }
+
     }
-    //if (recover_short) {
-    //
-    //}
 
     return distinctive_kmers;
 }

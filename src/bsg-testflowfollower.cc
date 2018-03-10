@@ -58,6 +58,7 @@ int main(int argc, char * argv[]) {
     WorkSpace ws;
     sglib::OutputLog()<<"Loading Workspace..."<<std::endl;
     ws.load_from_disk(workspace_file);
+    //ws.sg.write_to_gfa("initial_graph.gfa",{},{},{});
     ws.add_log_entry("bsg-untangler run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     //ws.kci.compute_compression_stats();
