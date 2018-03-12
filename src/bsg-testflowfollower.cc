@@ -17,7 +17,7 @@ int main(int argc, char * argv[]) {
     std::string workspace_file,output_prefix;
     uint64_t max_mem_gb=4;
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
-    sgNodeID_t start_node,end_node;
+    sgNodeID_t start_node=0,end_node=0;
     uint64_t max_nodes=10000;
     try
     {
@@ -63,35 +63,51 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     //ws.kci.compute_compression_stats();
     //for (auto &m:ws.linked_read_mappers) m.memlimit=max_mem_gb*1024*1024*1024;
-
-    //find the path
-    std::unordered_set<sgNodeID_t> region_nodes={start_node};
-    uint64_t last_size=0;
-    bool end_found=false;
-    while (region_nodes.size()<max_nodes and last_size<region_nodes.size()){
-        last_size=region_nodes.size();
-        std::vector<sgNodeID_t> new_nodes;
-        for (auto n:region_nodes){
-            if (n!=end_node) {
-                for (auto l:ws.sg.get_fw_links(n)) new_nodes.push_back(l.dest);
-            } else end_found=true;
-            if (n!=start_node) {
-                for (auto l:ws.sg.get_bw_links(n)) new_nodes.push_back(-l.dest);;
+    std::unordered_set<sgNodeID_t> region_nodes;
+    if (start_node!=0 and end_node!=0) {
+        //find the path
+        region_nodes.insert(start_node);
+        uint64_t last_size = 0;
+        bool end_found = false;
+        while (region_nodes.size() < max_nodes and last_size < region_nodes.size()) {
+            last_size = region_nodes.size();
+            std::vector<sgNodeID_t> new_nodes;
+            for (auto n:region_nodes) {
+                if (n != end_node) {
+                    for (auto l:ws.sg.get_fw_links(n)) new_nodes.push_back(l.dest);
+                } else end_found = true;
+                if (n != start_node) {
+                    for (auto l:ws.sg.get_bw_links(n)) new_nodes.push_back(-l.dest);;
+                }
             }
+            for (auto n:new_nodes) region_nodes.insert(n);
         }
-        for (auto n:new_nodes) region_nodes.insert(n);
-    }
-    if (region_nodes.size()>=max_nodes){
-        std::cout<<"Aborting after growing the region to "<<region_nodes.size()<<" nodes"<<std::endl;
-        exit(0);
-    }
-    std::cout<<"Found a region with "<<region_nodes.size()<<" nodes"<<std::endl;
+        if (region_nodes.size() >= max_nodes) {
+            std::cout << "Aborting after growing the region to " << region_nodes.size() << " nodes" << std::endl;
+            exit(0);
+        }
+        std::cout << "Found a region with " << region_nodes.size() << " nodes" << std::endl;
 
-    ws.sg.write_to_gfa(output_prefix+"_flowregion.gfa",{},{},region_nodes);
+        ws.sg.write_to_gfa(output_prefix + "_flowregion.gfa", {}, {}, region_nodes);
+    }
+    else {
+        for (auto i=1;i<ws.sg.nodes.size();++i) {
+            if (ws.sg.nodes[i].status!= sgNodeDeleted) region_nodes.insert(i);
+        }
+        std::cout << "Using the whole graph with " << region_nodes.size() << " nodes" << std::endl;
+    }
 
     FlowFollower ff(ws,region_nodes);
+    std::cout<<"Creating flows..."<<std::endl;
     ff.create_flows();
-
+    auto skatepaths=ff.skate_from_all(3,20000);
+    std::ofstream pf(output_prefix+"_skatepaths.lst"),sf(output_prefix+"_skatepaths.fasta");
+    for (auto &sp:skatepaths) {
+        auto s=sp.get_sequence();
+        pf<<s.size()<<", ";
+        for (auto n:sp.nodes) pf<<"seq"<<llabs(n)<<(n!=sp.nodes.back() ? ", ":"\n");
+        sf<<">p"<<sp.nodes.front()<<"_"<<sp.nodes.back()<<"_"<<s.size()<<"bp"<<std::endl<<s<<std::endl;
+    }
 //    sglib::OutputLog()<<"Dumping final Workspace..."<<std::endl;
 //    ws.dump_to_disk(output_prefix+"_final.bsgws");
 //    sglib::OutputLog()<<"Dumping scaffolded GFA..."<<std::endl;

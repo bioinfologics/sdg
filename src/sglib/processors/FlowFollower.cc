@@ -11,7 +11,7 @@ Flow FlowFollower::flow_from_node(sgNodeID_t n,float min_winner,float max_looser
     auto tags = ws.linked_read_mappers[0].get_node_tags(llabs(n));
     //std::cout << tags.size() << " tags... " << std::flush;
     BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0],1000000,1000);
-    auto kmers = ws.linked_read_datastores[0].get_tags_kmers(31, 3, tags,blrsg);
+    auto kmers = ws.linked_read_datastores[0].get_tags_kmers(31, 4, tags,blrsg);
     //std::cout << kmers.size() << " kmers." << std::endl;
     SequenceGraphPath p(ws.sg, {n});
 //    for (auto i = 0; i < 2; ++i) {
@@ -67,8 +67,7 @@ Flow FlowFollower::flow_from_node(sgNodeID_t n,float min_winner,float max_looser
 //                break;
 //            }
             if (best_score != 0 or second_score==0) {
-                std::cout << "stopping because of score uncertainty " << best_score << " - " << second_score
-                          << std::endl;
+                //std::cout << "stopping because of score uncertainty " << best_score << " - " << second_score << std::endl;
                 break;
             }
             bool b = false;
@@ -187,21 +186,104 @@ std::vector<std::unordered_set<uint64_t>> FlowFollower::get_distinctive_kmers_tr
 }
 
 void FlowFollower::create_flows() {
-    for (auto n:nodes){
-        flows[n]=flow_from_node(n,1,0);
-        std::cout<<"flows["<<n<<"]= ";
+    std::vector<sgNodeID_t> nv(nodes.size());
+    for (auto &n:nodes)nv.push_back(n);
+#pragma omp parallel for schedule(static,1)
+    for (auto i=0;i<nv.size();++i){
+        auto ff=flow_from_node(nv[i],1,0);
+        auto rf=flow_from_node(-nv[i],1,0);
+#pragma omp critical
+        {
+            flows[nv[i]] =ff;
+            flows[-nv[i]] =rf;
+        }
+        std::cout<<"."<<std::flush;
+        /**std::cout<<"flows["<<n<<"]= ";
         for (auto m:flows[n].nodes) std::cout<<m<<", ";
         std::cout<<std::endl;
         std::cout<<" PATH: ";
         for (auto m:flows[n].nodes) std::cout<<"seq"<<llabs(m)<<", ";
         std::cout<<std::endl;
-        flows[-n]=flow_from_node(-n,1,0);
         std::cout<<"flows["<<-n<<"]= ";
         for (auto m:flows[-n].nodes) std::cout<<m<<", ";
         std::cout<<std::endl;
         std::cout<<" PATH: ";
         for (auto m:flows[-n].nodes) std::cout<<"seq"<<llabs(m)<<", ";
-        std::cout<<std::endl;
-
+        std::cout<<std::endl;**/
     }
+    std::cout<<std::endl;
+}
+
+/**
+ * @brief starts from node, goes + first, - later. Incorporates all transversed flows while deciding. Turns back.
+ * @return
+ */
+SequenceGraphPath FlowFollower::skate_from_node(sgNodeID_t n) {
+    struct used_flow_t{Flow flow; bool active; uint32_t pos;} ;
+    std::vector<struct used_flow_t> used_flows;
+    SequenceGraphPath path(ws.sg,{n});
+
+    //std::cout<<"Starting to skate from node "<<n<<std::endl;
+    for (auto pass=0;pass<2;++pass) {
+        while (true) {
+            auto fwls = path.get_next_links();
+            if (fwls.empty()) break;
+            //std::cout<<"Adding flow from node "<<path.nodes.back()<<std::endl;
+            if (flows.count(path.nodes.back())>0)used_flows.push_back({flows[path.nodes.back()], true, 0});
+            sgNodeID_t next = 0;
+            for (auto &f:used_flows) {
+                //check if flow active
+                if (!f.active) continue;
+                if (f.pos == f.flow.nodes.size() - 1) {
+                    f.active = false;
+                    continue;
+                }
+
+                ++f.pos;
+                //, option==0 or option==this flow, check if flow is finished
+                //raise conflict if flow different (and stop)
+                if (0 == next) {
+                    next = f.flow.nodes[f.pos];
+                } else if (next != f.flow.nodes[f.pos]) {
+                    next = 0;
+                    break;
+                }
+
+            }
+            if (next != 0) path.nodes.push_back(next);
+            else break;
+        }
+        path.reverse();
+        used_flows.clear();
+    }
+    return path;
+}
+
+std::vector<SequenceGraphPath> FlowFollower::skate_from_all(int min_node_flow, uint64_t min_path_length) {
+    std::vector<SequenceGraphPath> r;
+    std::vector<sgNodeID_t> nv(nodes.size());
+    for (auto &n:nodes)nv.push_back(n);
+#pragma omp parallel for schedule(static,1)
+    for (auto i=0;i<nv.size();++i){
+        auto n=nv[i];
+        if (flows[n].nodes.size()>=min_node_flow or flows[-n].nodes.size()>=min_node_flow){
+            auto p=skate_from_node(n);
+            if (p.get_sequence().size()>min_path_length) {
+                if (llabs(p.nodes.front())>llabs(p.nodes.back())) p.reverse();
+#pragma omp critical
+                {
+                    r.push_back(p);
+
+                    std::cout << "PATH skated from " << n << std::endl;
+                    for (auto x:p.nodes) std::cout << "seq" << llabs(x) << ",";
+                    std::cout << std::endl;
+                }
+            }
+        }
+    }
+    std::cout<<"Sorting paths."<<std::endl;
+    std::sort(r.begin(),r.end());
+    r.erase(std::unique(r.begin(),r.end()),r.end());
+    std::cout<<"Skate from all finished."<<std::endl;
+    return r;
 }

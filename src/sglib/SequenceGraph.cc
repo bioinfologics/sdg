@@ -650,6 +650,23 @@ bool SequenceGraphPath::is_canonical() {
     return this->get_sequence()<rp.get_sequence();
 }
 
+const bool SequenceGraphPath::operator<(const SequenceGraphPath &other) {
+    for (auto i=0;i<nodes.size();++i){
+        if (other.nodes.size()<i) return true;
+        if (nodes[i]<other.nodes[i]) return true;
+        if (nodes[i]>other.nodes[i]) return false;
+    }
+    return false;
+}
+
+const bool SequenceGraphPath::operator==(const SequenceGraphPath &other) {
+    if (other.nodes.size()!=nodes.size()) return false;
+    for (auto i=0;i<nodes.size();++i){
+        if (nodes[i]!=other.nodes[i]) return false;
+    }
+    return true;
+}
+
 bool SequenceGraphPath::extend_if_coherent(SequenceGraphPath s) {
 //    int offset=-1;
 //    for (auto i=0;i<nodes.size();++i) {

@@ -107,12 +107,17 @@ public:
 class SequenceGraphPath {
 public:
     std::vector<sgNodeID_t> nodes;
+    SequenceGraphPath (const SequenceGraphPath& other): sg(other.sg),nodes(other.nodes){};
+    SequenceGraphPath& operator=(const SequenceGraphPath& other){nodes=other.nodes;return *this;};
     explicit SequenceGraphPath(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
     std::string get_fasta_header();
     std::string get_sequence();
+    std::vector<Link> get_next_links() { return sg.get_fw_links(nodes.back());}
     bool extend_if_coherent(SequenceGraphPath s);
     void reverse();
     bool is_canonical();
+    const bool operator< (const SequenceGraphPath & other);
+    const bool operator== (const SequenceGraphPath & other);
 
 private:
     SequenceGraph& sg;

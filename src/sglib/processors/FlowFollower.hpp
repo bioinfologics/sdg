@@ -22,6 +22,8 @@ public:
     std::vector<std::unordered_set<uint64_t>> get_distinctive_kmers(std::vector<sgNodeID_t>);
     std::vector<std::unordered_set<uint64_t>> get_distinctive_kmers_truncated(std::vector<sgNodeID_t>);
     Flow flow_from_node(sgNodeID_t n,float min_winner,float max_looser);
+    std::vector<SequenceGraphPath> skate_from_all(int min_node_flow, uint64_t min_path_length);
+    SequenceGraphPath skate_from_node(sgNodeID_t);
     WorkSpace &ws;
     std::unordered_set<sgNodeID_t> nodes;
     std::map<sgNodeID_t,Flow> flows;
