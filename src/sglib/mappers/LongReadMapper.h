@@ -12,7 +12,7 @@
 #include <sglib/readers/SequenceGraphReader.h>
 #include <sglib/SMR.h>
 #include <sglib/PairedReadMapper.h>
-#include <sglib/factories/StrandedMinimiserSketchFactory.h>
+#include <sglib/factories/StrandedMinSketchFactory.h>
 
 template <typename A, typename B>
 std::multimap<B, A> flip_map(std::map<A,B> & src) {
