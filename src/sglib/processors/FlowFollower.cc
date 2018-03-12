@@ -11,7 +11,7 @@ Flow FlowFollower::flow_from_node(sgNodeID_t n,float min_winner,float max_looser
     auto tags = ws.linked_read_mappers[0].get_node_tags(llabs(n));
     //std::cout << tags.size() << " tags... " << std::flush;
     BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0],1000000,1000);
-    auto kmers = ws.linked_read_datastores[0].get_tags_kmers(31, 4, tags,blrsg);
+    auto kmers = ws.linked_read_datastores[0].get_tags_kmers(31, 6, tags,blrsg);
     //std::cout << kmers.size() << " kmers." << std::endl;
     SequenceGraphPath p(ws.sg, {n});
 //    for (auto i = 0; i < 2; ++i) {
@@ -19,16 +19,18 @@ Flow FlowFollower::flow_from_node(sgNodeID_t n,float min_winner,float max_looser
             auto fwl = ws.sg.get_fw_links(p.nodes.back());
             if (fwl.empty()) break;
             std::vector<sgNodeID_t> fw_nodes;
+            bool no_distinctive=false;
             for (auto l:fwl) fw_nodes.push_back(l.dest);
-            auto distinctivekmers = get_distinctive_kmers(fw_nodes);//XXX: now using truncated it should be a first pass with normal, a second with truncated if needed
+            auto distinctivekmers = get_distinctive_kmers(fw_nodes);
             for (auto &dk:distinctivekmers) {
                 if (dk.size()==0){
-                    std::cout<<"WARNING: no distinctive kmers for at least one node: ";
-                    for (auto i=0;i<fw_nodes.size();++i) std::cout<<fw_nodes[i]<<"("<<distinctivekmers[i].size()<<") ";
-                    std::cout<<std::endl;
+                    //std::cout<<"WARNING: no distinctive kmers for at least one node: ";
+                    //for (auto i=0;i<fw_nodes.size();++i) std::cout<<fw_nodes[i]<<"("<<distinctivekmers[i].size()<<") ";
+                    //std::cout<<std::endl;
+                    no_distinctive=true;
                 }
             }
-
+            if (no_distinctive) break;
             sgNodeID_t best = 0, second = 0;
             uint64_t best_score = 100000, second_score = 1000000;
 
@@ -223,19 +225,24 @@ SequenceGraphPath FlowFollower::skate_from_node(sgNodeID_t n) {
     std::vector<struct used_flow_t> used_flows;
     SequenceGraphPath path(ws.sg,{n});
 
-    //std::cout<<"Starting to skate from node "<<n<<std::endl;
+    std::cout<<"Starting to skate from node "<<n<<std::endl;
     for (auto pass=0;pass<2;++pass) {
         while (true) {
             auto fwls = path.get_next_links();
             if (fwls.empty()) break;
-            //std::cout<<"Adding flow from node "<<path.nodes.back()<<std::endl;
-            if (flows.count(path.nodes.back())>0)used_flows.push_back({flows[path.nodes.back()], true, 0});
+            std::cout<<"Adding node "<<path.nodes.back()<<std::endl;
+            if (flows.count(path.nodes.back())>0 and flows[path.nodes.back()].nodes.size()>3) {
+                used_flows.push_back({flows[path.nodes.back()], true, 0});
+                std::cout<<"Node has a flow with "<<flows[path.nodes.back()].nodes.size()<<" nodes, added as #"<<used_flows.size()-1<<std::endl;
+            }
             sgNodeID_t next = 0;
-            for (auto &f:used_flows) {
+            for (auto i=0;i<used_flows.size();++i) {
+                auto &f=used_flows[i];
                 //check if flow active
                 if (!f.active) continue;
                 if (f.pos == f.flow.nodes.size() - 1) {
                     f.active = false;
+                    std::cout<<"Flow #"<<i<<" closed"<<std::endl;
                     continue;
                 }
 
@@ -263,14 +270,14 @@ std::vector<SequenceGraphPath> FlowFollower::skate_from_all(int min_node_flow, u
     std::vector<SequenceGraphPath> r;
     std::vector<sgNodeID_t> nv(nodes.size());
     for (auto &n:nodes)nv.push_back(n);
-#pragma omp parallel for schedule(static,1)
+//#pragma omp parallel for schedule(static,1)
     for (auto i=0;i<nv.size();++i){
         auto n=nv[i];
         if (flows[n].nodes.size()>=min_node_flow or flows[-n].nodes.size()>=min_node_flow){
             auto p=skate_from_node(n);
             if (p.get_sequence().size()>min_path_length) {
                 if (llabs(p.nodes.front())>llabs(p.nodes.back())) p.reverse();
-#pragma omp critical
+//#pragma omp critical
                 {
                     r.push_back(p);
 
