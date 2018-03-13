@@ -744,7 +744,7 @@ void SequenceSubGraph::write_to_gfa(std::string filename) {
 
     for (const auto &n:nodes_in_links){
         fastaf<<">seq"<<n<<std::endl<<sg.nodes[std::abs(n)].sequence<<std::endl;
-        gfaf<<"S\tseq"<<n<<"\t*\tLN:i:"<<sg.nodes[std::abs(n)].sequence<<"\tUR:Z:"<<fasta_filename<<std::endl;
+        gfaf<<"S\tseq"<<n<<"\t*\tLN:i:"<<sg.nodes[std::abs(n)].sequence.length()<<"\tUR:Z:"<<fasta_filename<<std::endl;
     }
 
     for (const auto &n:nodes) {
