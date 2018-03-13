@@ -101,5 +101,6 @@ int main(int argc, char * argv[]) {
         subnodes.insert(forward_subnodes.begin(),forward_subnodes.end());
         std::cout << backward_subnodes.size() << " nodes in solution\n";
         SequenceSubGraph ssg(sg, std::vector<sgNodeID_t>(subnodes.begin(), subnodes.end()));
+        ssg.write_to_gfa(output_prefix+"subgraph.gfa");
     }
 }

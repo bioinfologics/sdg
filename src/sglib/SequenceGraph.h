@@ -134,6 +134,7 @@ public:
     explicit SequenceSubGraph(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
     SequenceGraphPath make_path(); //returns empty path if not linear
 
+    void write_to_gfa(std::string filename);
 private:
     SequenceGraph& sg;
 };
