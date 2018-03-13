@@ -86,9 +86,9 @@ int main(int argc, char * argv[]) {
     b.load_from_gfa(subgraphB);
 
     std::set<std::string > nodes_a, nodes_b;
-    for (auto n = 0ul; n < a.nodes.size(); ++n)
+    for (auto n = 1ul; n < a.nodes.size(); ++n)
         nodes_a.insert(a.oldnames[n]);
-    for (auto n = 0ul; n < b.nodes.size(); ++n)
+    for (auto n = 1ul; n < b.nodes.size(); ++n)
         nodes_b.insert(b.oldnames[n]);
 
     std::set<std::string > result_nodes;
@@ -107,7 +107,8 @@ int main(int argc, char * argv[]) {
 
     std::vector<sgNodeID_t > fin_nodes;
     for (const auto &n: result_nodes) {
-        auto pos = sg.oldnames_to_ids.find(n);
+        std::unordered_map<std::string, sgNodeID_t >::const_iterator
+                pos = sg.oldnames_to_ids.find(n);
         fin_nodes.push_back(pos->second);
     }
     SequenceSubGraph ssg(sg, std::vector<sgNodeID_t >(fin_nodes.begin(), fin_nodes.end()));
