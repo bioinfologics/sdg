@@ -100,7 +100,7 @@ void SequenceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
 
 }
 
-std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n) const {
+std::vector<Link> SequenceGraph::get_fw_links(sgNodeID_t n) const {
     std::vector<Link> r;
     for (auto &l:links[(n>0 ? n : -n)]) if (l.source==-n) r.emplace_back(l);
     return r;
@@ -109,7 +109,6 @@ std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n) const {
 std::vector<Link> SequenceGraph::get_bw_links(sgNodeID_t n) {
     return get_fw_links (-n);
 }
-
 
 bool Link::operator==(const Link a){
     if (a.source == this->source && a.dest == this->dest){
@@ -543,18 +542,19 @@ std::vector<sgNodeID_t> SequenceGraph::oldnames_to_nodes(std::string _oldnames) 
 }
 
 std::string SequenceGraphPath::get_fasta_header(bool use_oldnames) const {
-    std::string h = ">sgPath_";
+    std::string h = ">sgPath_[";
     if (use_oldnames) {
         for (auto &n:nodes) {
             h += n > 0 ? '+' : '-';
-            h += sg.nodeID_to_name(std::abs(n)) + ",";
+            h += sg.nodeID_to_name(std::abs(n)) + ", ";
         }
     } else {
         for (auto &n:nodes) {
-            h += std::to_string(n)+",";
+            h += std::to_string(n)+", ";
         }
     }
     h.resize(h.size()-1);
+    h += ']';
     return h;
 }
 

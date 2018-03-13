@@ -13,6 +13,7 @@
 #include <set>
 #include <iostream>
 #include <array>
+#include <unordered_set>
 
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
 
@@ -20,6 +21,7 @@ enum sgNodeStatus_t {sgNodeActive,sgNodeDeleted};
 
 class Node{
 public:
+    Node(std::string _seq, sgNodeStatus_t _status) : sequence(_seq), status(_status){};
     Node(std::string _seq) : sequence(_seq),status(sgNodeActive){};
     std::string sequence;
     sgNodeStatus_t status;
@@ -49,8 +51,10 @@ class SequenceGraph {
 public:
     SequenceGraph(){};
     //=== I/O functions ===
+    void write(std::ofstream & output_file);
+    void read(std::ifstream & input_file);
     void load_from_gfa(std::string filename);
-    void write_to_gfa(std::string filename);
+    void write_to_gfa(std::string filename, const std::unordered_set<sgNodeID_t> & mark_red = {}, const std::vector<double> & depths = {});
 
     //=== graph operations ===
     sgNodeID_t add_node(Node n);
@@ -81,6 +85,7 @@ public:
     // expand_path --> creates an edge with the consensus of a path, eliminates old nodes if only in path and unused edges
     void join_all_unitigs();
     std::vector<SequenceGraphPath> get_all_unitigs(uint16_t min_nodes);
+    std::vector<SequenceSubGraph> get_all_tribbles();
     // simplify --> executes expand_path on every multi-sequence unitig
 
 
@@ -134,6 +139,18 @@ class SequenceGraphPath {
 public:
     std::vector<sgNodeID_t> nodes;
     explicit SequenceGraphPath(SequenceGraph & _sg, const std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
+
+    SequenceGraphPath(const SequenceGraphPath& sgp) : nodes(sgp.nodes), sg(sgp.sg) {};
+
+    SequenceGraphPath& operator=(const SequenceGraphPath other) {
+        if (&other == this) {
+            return *this;
+        }
+        nodes = other.nodes;
+        sg = other.sg;
+        return *this;
+    }
+
     std::string get_fasta_header(bool use_oldnames = false) const;
     std::string get_sequence() const;
     void reverse();
@@ -142,6 +159,10 @@ public:
     bool operator==(const SequenceGraphPath& rhs) const;
     bool operator<(const SequenceGraphPath& rhs) const;
     bool append_to_path(sgNodeID_t newnode);
+    bool extend_if_coherent(SequenceGraphPath s);
+    void clear() {
+        nodes.clear();
+    };
 
 private:
     SequenceGraph& sg;
@@ -151,7 +172,7 @@ class SequenceSubGraph {
 public:
     std::vector<sgNodeID_t> nodes;
     explicit SequenceSubGraph(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
-    SequenceGraphPath make_path(); //returns empty path if not linear
+    SequenceGraphPath make_path(); // Returns empty path if not linear.
 
 private:
     SequenceGraph& sg;

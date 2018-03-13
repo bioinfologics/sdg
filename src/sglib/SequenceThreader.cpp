@@ -5,6 +5,7 @@
 #include <numeric>
 #include <atomic>
 #include <algorithm>
+#include <stack>
 #include <sglib/SequenceThreader.h>
 #include <sglib/readers/FileReader.h>
 #include <sglib/logger/OutputLog.h>
@@ -104,19 +105,12 @@ bool SequenceMapping::direction_will_continue(int32_t next_position) const {
 }
 
 bool SequenceMapping::mapping_continues(const graphPosition& gpos) const {
-    //std::cout << "Deciding if mapping will continue..." << std::endl;
     auto same_node = absnode() == std::abs(gpos.node);
-    //std::cout << "Same node: " << same_node << std::endl;
     auto direction_continues = direction_will_continue(gpos.pos);
-    //std::cout << "Direction continues: " << direction_continues << std::endl;
     return same_node and direction_continues;
 }
 
-double SequenceMapping::POPUKM() const {
-    return matched_unique_kmers / possible_unique_matches;
-}
-
-void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const std::string& filename) {
+void SequenceThreader::map_sequences_from_file(const std::string &filename) {
 
     sglib::OutputLog(sglib::LogLevels::INFO) << "Mapping sequence kmers to graph." << std::endl;
     FastaReader<FastaRecord> fastaReader({0}, filename);
@@ -197,129 +191,171 @@ void SequenceThreader::map_sequences_from_file(const uint64_t min_matches, const
             }
         }
     }
-
     sglib::OutputLog(sglib::LogLevels::INFO) << "Mapped " << mapped_kmers_count << " Kmers from " << sequence_count << " sequences." << std::endl;
     sglib::OutputLog(sglib::LogLevels::INFO) << "Failed to map " << unmapped_kmers.size() << " unique kmers from the reference." << std::endl;
  }
 
-void SequenceThreader::mappings_paths() {
-
-    sglib::OutputLog(sglib::LogLevels::INFO) << "Assembling mappings into paths." << std::endl;
-
+void SequenceThreader::thread_mappings() {
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Assembling mappings into contiguous threads." << std::endl;
     for(const auto& sequence_mappings : mappings_of_sequence) {
 
         // For every sequence, initialize and empty sequence path, and a vector to store constructed paths.
         sglib::OutputLog(sglib::LogLevels::DEBUG) << "For sequence: " << sequence_mappings.first << std::endl;
-        SequenceGraphPath sgpath(sg);
-        std::vector<std::vector<SequenceMapping>> seq_mapping_paths(0);
-        std::vector<SequenceMapping> mapping_path(0);
+        SequenceMappingThread mapping_thread(sg);
+        std::vector<SequenceMappingThread> mapping_threads;
 
-        for(const auto &sm:sequence_mappings.second) {
+        for(const auto &sm : sequence_mappings.second) {
 
             // For every mapping hit the sequence has, try to append the node of the mapping hit to the current path.
 
             sglib::OutputLog(sglib::LogLevels::DEBUG) << "Considering the mapping:" << std::endl << sm << std::endl;
 
-            auto dn = sm.dirnode();
+            bool could_append = mapping_thread.append_mapping(sm);
 
-            sglib::OutputLog(sglib::LogLevels::DEBUG) << "Trying to add to path as: " << dn << std::endl;
-
-            bool could_append = sgpath.append_to_path(dn);
-
-            if (could_append) {
-                sglib::OutputLog(sglib::LogLevels::DEBUG) << "Was able to append " << dn << " to the path." << std::endl;
-                mapping_path.emplace_back(sm);
-            } else {
-                sglib::OutputLog(sglib::LogLevels::DEBUG) << "Was not able to append " << dn << " to the path." << std::endl;
+            if (!could_append) {
                 sglib::OutputLog(sglib::LogLevels::DEBUG) << "Saving current path." << std::endl;
-                seq_mapping_paths.emplace_back(mapping_path);
+                mapping_threads.emplace_back(mapping_thread);
                 sglib::OutputLog(sglib::LogLevels::DEBUG) << "Clearing path to start a new path." << std::endl;
-                mapping_path.clear();
-                sgpath.nodes.clear();
+                mapping_thread.clear();
                 sglib::OutputLog(sglib::LogLevels::DEBUG) << "Adding node to new path." << std::endl;
-                sgpath.append_to_path(dn);
-                mapping_path.emplace_back(sm);
+                mapping_thread.append_mapping(sm);
             }
-            sglib::OutputLog(sglib::LogLevels::DEBUG) << "Current path of mappings is " << mapping_path.size() << " nodes long." << std::endl;
+            sglib::OutputLog(sglib::LogLevels::DEBUG) << "Current path of mappings is " << mapping_thread.size() << " nodes long." << std::endl;
         }
-
-        seq_mapping_paths.emplace_back(mapping_path);
-        paths_of_mappings_of_sequence[sequence_mappings.first] = seq_mapping_paths;
-
+        mapping_threads.emplace_back(mapping_thread);
+        mapping_threads_of_sequence[sequence_mappings.first] = mapping_threads;
     }
-
 }
 
-void SequenceThreader::graph_paths_to_fasta(std::ofstream& output_file) const {
-    for (const auto& sp : paths_of_mappings_of_sequence) {
-        for (const auto& mapping_path : sp.second) {
-            std::vector<sgNodeID_t> nodes;
-            SequenceGraphPath p(sg);
-            output_file << ">Sequence_" << sp.first << "_path";
-            for (const auto& sm : mapping_path) {
-                auto dn = sm.dirnode();
-                p.nodes.emplace_back(dn);
-                char dir = dn > 0 ? '+' : '-';
-                output_file << ' ' << dir << sg.nodeID_to_name(std::abs(dn));
+
+std::vector<SequenceGraphPath> SequenceThreader::collect_paths(const sgNodeID_t seed, const sgNodeID_t target, unsigned int size_limit, unsigned int edge_limit) {
+
+    struct visitor {
+        sgNodeID_t node;
+        uint dist;
+        uint path_length;
+        visitor(sgNodeID_t n, uint d, uint p) : node(n), dist(d), path_length(p) {}
+    };
+
+    std::vector<SequenceGraphPath> collected_paths;
+    std::vector<sgNodeID_t> current_path;
+
+    std::stack<visitor> to_visit;
+    to_visit.emplace(seed, 0, 0);
+    std::set<sgNodeID_t> visited;
+
+    while (!to_visit.empty()) {
+        const auto activeNode(to_visit.top());
+        to_visit.pop();
+        if (visited.find(activeNode.node) == visited.end() and (activeNode.path_length < edge_limit or edge_limit==0) and (activeNode.dist < size_limit or size_limit==0) )
+        {
+            visited.emplace(activeNode.node);
+
+            //
+            if (current_path.size() > activeNode.path_length) {
+                current_path[activeNode.path_length] = activeNode.node;
+                current_path.resize(activeNode.path_length + 1);
+            } else {
+                current_path.emplace_back(activeNode.node);
             }
-            auto sequence = p.get_sequence();
-            output_file << std::endl << sequence << std::endl;
+
+            for (const auto &l : sg.get_fw_links(activeNode.node)) {
+                // For each child of the current node, create a child visitor object, and enter it into the parent map.
+                visitor child { l.dest, activeNode.dist + uint(sg.nodes[l.dest > 0 ? l.dest : -l.dest].sequence.length()), activeNode.path_length + 1 };
+
+                // If I've found the target along this dfs path, I need to collect it and put it into a SequenceGraphPath object.
+                if (child.node == target) {
+                    current_path.emplace_back(target);
+                    collected_paths.emplace_back(sg, current_path);
+                } else {
+                    to_visit.emplace(child);
+                }
+            }
+        }
+    }
+    return collected_paths;
+}
+
+void SequenceThreader::connect_threads() {
+    FastaReader<FastaRecord> fastareader({0}, query_seq_file);
+    FastaRecord refsequence;
+    std::vector<KmerIDX> ref_seq_kmers;
+    kmerIDXFactory<FastaRecord> kmerfactory({k});
+    bool c;
+    c = fastareader.next_record(refsequence);
+    while (c) {
+        std::vector<SequenceMappingThread> threads = mapping_threads_of_sequence[refsequence.id];
+        for (auto second_thread = std::next(threads.begin()); second_thread != threads.end(); second_thread++) {
+            auto first_thread = std::prev(second_thread);
+
+            auto from_mapping = first_thread->last_mapping();
+            auto to_mapping = second_thread->first_mapping();
+
+            auto first_idx = from_mapping.query_start();
+            auto final_idx = to_mapping.query_end();
+            if (first_idx > final_idx) {
+                std::swap(first_idx, final_idx);
+            }
+            size_t len = size_t(final_idx) - size_t(first_idx) + 1;
+            std::string refsubstr = refsequence.seq.substr((size_t) first_idx, len);
+
+            // Try to collect some paths....
+            auto graphpaths = collect_paths(from_mapping.dirnode(), to_mapping.dirnode(), 0, 10);
+            if (graphpaths.size() > 0) {
+                std::cout << "Found paths between two threads..." << std::endl;
+
+                for(const auto& path : graphpaths) {
+                    std::cout << path.get_fasta_header(true) << std::endl;
+                }
+
+            } else {
+                std::cout << "Did not find paths between two threads..." << std::endl;
+            }
+        }
+        c = fastareader.next_record(refsequence);
+    }
+}
+
+
+
+
+void SequenceThreader::graph_threads_to_fasta(std::ofstream& output_file, bool use_oldnames) const {
+    for (const auto& sp : mapping_threads_of_sequence) {
+        for (const auto& mapping_thread : sp.second) {
+            output_file << ">Sequence_" << sp.first << '[';
+            output_file << mapping_thread.query_start() << ", ";
+            output_file << mapping_thread.query_end() << "] ";
+            mapping_thread.print_path_header(output_file, use_oldnames);
+            output_file << std::endl;
+            mapping_thread.print_sequence(output_file);
+            output_file << std::endl;
         }
     }
 }
 
-void SequenceThreader::print_mapping_path_name(const std::vector<SequenceMapping>& path, std::ofstream& output_file) const {
-    output_file << "[ ";
-    for (const auto& mapping : path) {
-        output_file << mapping.dirnode() << ", ";
-    }
-    output_file << " ]";
-}
-
-void SequenceThreader::query_paths_to_fasta(std::ofstream& output_file) const {
+void SequenceThreader::query_threads_to_fasta(std::ofstream& output_file, bool use_oldnames) const {
     FastaRecord sequence;
     FastaReader<FastaRecord> fastaReader({0}, query_seq_file);
     bool c;
     c = fastaReader.next_record(sequence);
     while (c) {
-        const std::vector<std::vector<SequenceMapping>>& mapping_paths = paths_of_mappings_of_sequence.at((seqID_t)sequence.id);
-        for (const auto& mapping_path : mapping_paths) {
-            auto first_idx = mapping_path.front().first_seq_pos;
-            auto final_idx = mapping_path.back().last_seq_pos;
-            output_file << sequence.name << '[' << first_idx << " -> " << final_idx << "] ";
-            print_mapping_path_name(mapping_path, output_file);
-            if (first_idx > final_idx) std::swap(first_idx, final_idx);
+        const auto& sequence_threads = mapping_threads_of_sequence.at((seqID_t)sequence.id);
+        for (const auto& thread : sequence_threads) {
+            output_file << ">Sequence_" << sequence.id << '[';
+            output_file << thread.query_start() << ", ";
+            output_file << thread.query_end() << "] ";
+            thread.print_path_header(output_file, use_oldnames);
+            output_file << std::endl;
+            uint32_t first_idx = thread.query_start();
+            uint32_t final_idx = thread.query_end();
+            if (first_idx > final_idx) {
+                std::swap(first_idx, final_idx);
+            }
             size_t len = size_t(final_idx) - size_t(first_idx) + 1;
             auto subseq = sequence.seq.substr((size_t) first_idx, len);
-            output_file << std::endl << subseq << std::endl;
+            output_file << subseq << std::endl;
         }
         c = fastaReader.next_record(sequence);
-    }
-}
-
-std::set<SequenceGraphPath> SequenceThreader::all_unique_paths() const {
-    std::set<SequenceGraphPath> paths;
-    for(const auto& sp : paths_of_mappings_of_sequence) {
-        for(const auto& mapping_path : sp.second) {
-            std::vector<sgNodeID_t> nodes;
-            SequenceGraphPath sgpath(sg);
-            for(const auto& sm : mapping_path) {
-                auto dn = sm.dirnode();
-                sgpath.nodes.emplace_back(dn);
-            }
-            paths.emplace(sgpath);
-        }
-    }
-    return paths;
-}
-
-void SequenceThreader::print_unique_paths_sizes(std::ofstream& output_file) const {
-    std::set<SequenceGraphPath> unique_paths = all_unique_paths();
-    for(auto& path : unique_paths) {
-        std::string seq = path.get_sequence();
-        auto seqsize = seq.length();
-        auto pathname = path.get_fasta_header(true).erase(0, 1);
-        output_file << pathname << '\t' << seqsize << std::endl;
     }
 }
 
@@ -342,17 +378,8 @@ void SequenceThreader::print_mappings(std::ostream& out, bool use_oldnames) cons
 }
 
 void SequenceThreader::print_paths(std::ostream& out, bool use_oldnames) const {
-    for(auto it = paths_of_mappings_of_sequence.begin(); it != paths_of_mappings_of_sequence.end(); ++it) {
-        out << "Paths for query sequence: " << it->first << std::endl;
-        for(const auto &path:it->second){
-            out << "Path of " << path.size() << " mappings: ";
-            for (const auto &sm:path){
-                out << (sm.node_direction() == Forward ? '+' : '-');
-                sgNodeID_t n = sm.absnode();
-                out << (use_oldnames ? sg.nodeID_to_name(n) : std::to_string(n)) << ", ";
-            }
-            out << std::endl;
-        }
+    for(auto it = mapping_threads_of_sequence.begin(); it != mapping_threads_of_sequence.end(); ++it) {
+        out << "Threads for query sequence: " << it->first << std::endl;
     }
 }
 
@@ -379,7 +406,7 @@ void SequenceThreader::print_full_node_diagnostics(std::ofstream &output_file) c
 void SequenceThreader::print_unmapped_nodes(std::ofstream& output_file) const {
     output_file << "nodeID\tseq_size\tn_kmers\tn_unique_kmers\tn_forward_links\tn_backward_links" << std::endl;
     std::set<sgNodeID_t> mapped, all, diff;
-    for (sgNodeID_t i = 1; i <= sg.nodes.size(); i++) {
+    for (sgNodeID_t i = 0; i < sg.nodes.size(); i++) {
         all.insert(i);
     }
     for (const auto& sm : mappings_of_sequence) {

@@ -75,10 +75,13 @@ int main(int argc, char **argv) {
 // CONSTRUCT SEQUENCE_MAPPER...
     SequenceThreader tdr(sg, k);
     // Thread FASTA sequences into graph.
-    tdr.map_sequences(1, reference_filename, output_prefix);
+    tdr.map_sequences(reference_filename, output_prefix);
 
 // CONNECT MAPPINGS...
-    tdr.mappings_paths();
+    tdr.thread_mappings();
+
+// TEST THE CONNECT_THREADS METHOD SO FAR...
+    tdr.connect_threads();
 
 // DUMP OUTPUT...
 
@@ -109,10 +112,10 @@ int main(int argc, char **argv) {
     // Print out mapped FASTA sequences.
 
     std::ofstream graph_paths_out(output_prefix + "/mapped_paths_graph.fasta");
-    tdr.graph_paths_to_fasta(graph_paths_out);
+    tdr.graph_threads_to_fasta(graph_paths_out, true);
     graph_paths_out.close();
 
     std::ofstream query_paths_out(output_prefix + "/mapped_paths_query.fasta");
-    tdr.query_paths_to_fasta(query_paths_out);
+    tdr.query_threads_to_fasta(query_paths_out);
     query_paths_out.close();
 }

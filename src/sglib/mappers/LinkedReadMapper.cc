@@ -13,7 +13,10 @@ int omp_get_max_threads(){return 1;}
 int omp_get_thread_num(){return 0;}
 #endif
 #include "LinkedReadMapper.hpp"
+
+#ifndef __APPLE__
 #include <parallel/algorithm>
+#endif
 
 void LinkedReadMapper::write(std::ofstream &output_file) {
     //read-to-node
@@ -90,36 +93,6 @@ void LinkedReadMapper::update_graph_index() {
     sglib::OutputLog(sglib::INFO)<<seen_contigs.size()<<" nodes with indexed kmers"<<std::endl;
     reads_in_node.resize(sg.nodes.size());
 }
-
-
-
-class StreamKmerFactory : public  KMerFactory {
-public:
-    explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
-    inline void produce_all_kmers(const int64_t seqID, const char * seq, std::vector<KmerIDX> &mers){
-        // TODO: Adjust for when K is larger than what fits in uint64_t!
-        last_unknown=0;
-        fkmer=0;
-        rkmer=0;
-        auto s=seq;
-        while (*s!='\0' and *s!='\n') {
-            //fkmer: grows from the right (LSB)
-            //rkmer: grows from the left (MSB)
-            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
-            if (last_unknown >= K) {
-                if (fkmer <= rkmer) {
-                    // Is fwd
-                    mers.emplace_back(fkmer);
-                } else {
-                    // Is bwd
-                    mers.emplace_back(rkmer);
-                }
-            }
-            ++s;
-        }
-    }
-};
-
 
 void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 31;

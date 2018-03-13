@@ -135,20 +135,24 @@ include_directories("deps/kseqcpp/")
 
 ## Libraries
 add_library(sequence_graph SHARED
-            src/sglib/SequenceGraph.cc
-            src/sglib/HaplotypeScorer.cpp
-            src/sglib/SequenceGraphJournal.cc
             src/sglib/datastores/LinkedReadsDatastore.cc
-            src/sglib/mappers/LinkedReadMapper.cc
-            src/sglib/PairedReadMapper.cc
-            src/sglib/Scaffolder.cc
+            src/sglib/factories/StrandedMinimiserSketchFactory.cc
             src/sglib/filesystem/check_or_create_directory.cc
-            src/sglib/PhaseScaffolder.cpp
-            src/sglib/KmerCompressionIndex.cc
-            src/sglib/GraphPartitioner.cc
             src/sglib/logger/OutputLog.cc
+            src/sglib/mappers/LinkedReadMapper.cc
+            src/sglib/processors/TagWalker.cc
+            src/sglib/processors/Untangler.cc
+            src/sglib/GraphPartitioner.cc
+            src/sglib/HaplotypeScorer.cpp
+            src/sglib/KmerCompressionIndex.cc
+            src/sglib/PairedReadMapper.cc
+            src/sglib/PhaseScaffolder.cpp
+            src/sglib/Scaffolder.cc
+            src/sglib/SequenceGraph.cc
+            src/sglib/SequenceGraphJournal.cc
             src/sglib/SequenceThreader.cpp
             src/sglib/UniqueKmerIndex.cpp
+            src/sglib/WorkSpace.cc
             )
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
@@ -163,86 +167,78 @@ target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 
 install(TARGETS sequence_graph DESTINATION lib)
 install(FILES
-            src/sglib/SMR.h
-            src/sglib/readers/Common.h
-            src/sglib/readers/FileReader.h
-            src/sglib/readers/SequenceGraphReader.h
+            src/sglib/datastores/LinkedReadsDatastore.hpp
             src/sglib/factories/ContigBlockFactory.h
             src/sglib/factories/ContigLink.h
             src/sglib/factories/KMerFactory.h
             src/sglib/factories/KMerIDXFactory.h
-            src/sglib/SequenceGraph.hpp
-            src/sglib/UniqueKmerIndex.h
-            src/sglib/SequenceThreader.h
-            src/sglib/PairedReadMapper.hpp
-            src/sglib/HaplotypeScorer.hpp
-            src/sglib/SequenceGraphJournal.hpp
+            src/sglib/factories/StrandedMinimiserSketchFactory.h
             src/sglib/filesystem/check_or_create_directory.h
-            src/sglib/PhaseScaffolder.h
-            src/sglib/KmerCompressionIndex.hpp
-            src/sglib/GraphPartitioner.hpp
             src/sglib/logger/OutputLog.h
-            src/sglib/logger/OutputLog.cc
-        src/sglib/datastores/LinkedReadsDatastore.cc
-        src/sglib/mappers/LinkedReadMapper.cc
+            src/sglib/mappers/LinkedReadMapper.hpp
+            src/sglib/processors/TagWalker.hpp
+            src/sglib/processors/Untangler.hpp
+            src/sglib/readers/Common.h
+            src/sglib/readers/FileReader.h
+            src/sglib/readers/SequenceGraphReader.h
+            src/sglib/GraphPartitioner.hpp
+            src/sglib/HaplotypeScorer.hpp
+            src/sglib/KmerCompressionIndex.hpp
+            src/sglib/PairedReadMapper.hpp
+            src/sglib/PhaseScaffolder.h
+            src/sglib/Scaffolder.hpp
+            src/sglib/SequenceGraph.hpp
+            src/sglib/SequenceGraphJournal.hpp
+            src/sglib/SequenceThreader.h
+            src/sglib/SMR.h
+            src/sglib/UniqueKmerIndex.h
+            src/sglib/WorkSpace.hpp
         DESTINATION include
         )
-        src/sglib/WorkSpace.cc
+
 
 
 add_executable(bsg-datastore
         src/bsg-datastore.cc
-        src/sglib/datastores/LinkedReadsDatastore.hpp
-        src/sglib/datastores/LinkedReadsDatastore.cc
-        src/sglib/logger/OutputLog.h
-        src/sglib/logger/OutputLog.cc)
+        )
 
 add_executable(bsg-kmerspectra
         src/bsg-kmerspectra.cc
-        src/sglib/SequenceGraph.hpp
-        src/sglib/SequenceGraph.cc
-        src/sglib/filesystem/check_or_create_directory.h
-        src/sglib/filesystem/check_or_create_directory.cc
-        src/sglib/KmerCompressionIndex.hpp
-        src/sglib/KmerCompressionIndex.cc
-        src/sglib/logger/OutputLog.h
-        src/sglib/logger/OutputLog.cc
         )
 
 add_executable(bsg-workspace
         src/bsg-workspace.cc
         )
-target_link_libraries(bsg-kmerspectra ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
 add_executable(bsg-untangler
         src/bsg-untangler.cc
-        src/sglib/processors/Untangler.hpp
-        src/sglib/processors/Untangler.cc src/sglib/processors/TagWalker.cc src/sglib/processors/TagWalker.hpp)
+        )
+
 ## add executables and respective sources
-add_executable(gfa-qc EXCLUDE_FROM_ALL
+add_executable(gfa-qc
         src/gfa-qc.cc)
 
 ## add executables and respective sources
-add_executable(gfa-dumppath EXCLUDE_FROM_ALL
+add_executable(gfa-dumppath
         src/gfa-dumppath.cc)
 
 ## add executables and respective sources
-add_executable(gfa-pairscaff EXCLUDE_FROM_ALL
+add_executable(gfa-pairscaff
         src/gfa-pairscaff.cc)
 
-add_executable(gfa-bfphaser EXCLUDE_FROM_ALL
+add_executable(gfa-bfphaser
         src/gfa-bfphaser.cc)
 
-add_executable(phaser EXCLUDE_FROM_ALL
+add_executable(phaser
                src/phaser.cpp)
 
-add_executable(gfa-align EXCLUDE_FROM_ALL
+add_executable(gfa-align
                src/gfa-align.cc)
 
-add_executable(kc_comp EXCLUDE_FROM_ALL
+add_executable(kc_comp
                src/comp_kc.cc)
 
-add_executable(seq-sorter EXCLUDE_FROM_ALL
+add_executable(seq-sorter
                src/seq-sorter.cpp)
 
 add_executable(seq-thread
