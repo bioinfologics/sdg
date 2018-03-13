@@ -43,6 +43,18 @@ public:
 
 };
 
+struct nodeVisitor {
+    sgNodeID_t node;
+    uint dist;
+    uint path_length;
+    nodeVisitor(sgNodeID_t n, uint d, uint p) : node(n), dist(d), path_length(p) {}
+    bool operator<(const nodeVisitor &o) const {return node < o.node;}
+    bool operator==(const nodeVisitor &o) const {return node == o.node;}
+    nodeVisitor reverseDirection() const {
+        return nodeVisitor(-node, dist, path_length);
+    }
+};
+
 class SequenceGraphPath;
 class SequenceSubGraph;
 class SequenceGraph {
@@ -67,7 +79,7 @@ public:
     // find bubbles in component of graph
     std::vector<std::vector<sgNodeID_t >> find_bubbles(std::vector<sgNodeID_t>);
 
-    std::vector<sgNodeID_t> depth_first_search(sgNodeID_t node, unsigned int size_limit, unsigned int edge_limit, std::set<sgNodeID_t> tabu={});
+    std::vector<nodeVisitor> depth_first_search(nodeVisitor node, unsigned int size_limit, unsigned int edge_limit, std::set<nodeVisitor> tabu={});
 
     std::vector<sgNodeID_t> breath_first_search(std::vector<sgNodeID_t> &nodes, unsigned int size_limit);
 
