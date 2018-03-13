@@ -743,17 +743,17 @@ void SequenceSubGraph::write_to_gfa(std::string filename) {
     }
 
     for (const auto &n:nodes_in_links){
-        fastaf<<">seq"<<n<<std::endl<<sg.nodes[std::abs(n)].sequence<<std::endl;
-        gfaf<<"S\tseq"<<n<<"\t*\tLN:i:"<<sg.nodes[std::abs(n)].sequence.length()<<"\tUR:Z:"<<fasta_filename<<std::endl;
+        fastaf<<">"<<sg.oldnames[n]<<std::endl<<sg.nodes[std::abs(n)].sequence<<std::endl;
+        gfaf<<"S\t"<<sg.oldnames[n]<<"\t*\tLN:i:"<<sg.nodes[std::abs(n)].sequence.length()<<"\tUR:Z:"<<fasta_filename<<std::endl;
     }
 
     for (const auto &n:nodes) {
         for (auto &l:sg.links[std::abs(n)]) {
             gfaf << "L\t";
-            if (l.source > 0) gfaf << "seq" << l.source << "\t-\t";
-            else gfaf << "seq" << -l.source << "\t+\t";
-            if (l.dest > 0) gfaf << "seq" << l.dest << "\t+\t";
-            else gfaf << "seq" << -l.dest << "\t-\t";
+            if (l.source > 0) gfaf << "" << sg.oldnames[std::abs(l.source)] << "\t-\t";
+            else gfaf << "" << sg.oldnames[std::abs(l.source)] << "\t+\t";
+            if (l.dest > 0) gfaf << "" << sg.oldnames[std::abs(l.dest)] << "\t+\t";
+            else gfaf << "" << sg.oldnames[std::abs(l.dest)] << "\t-\t";
             gfaf << (l.dist < 0 ? -l.dist : 0) << "M" << std::endl;
         }
     }

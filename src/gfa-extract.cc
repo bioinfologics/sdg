@@ -18,6 +18,7 @@ int main(int argc, char * argv[]) {
     unsigned int log_level;
     std::string query_file;
     std::vector<std::string> nodes;
+    std::string subgraph;
     uint64_t max_mem_gb(4);
     bool stats_only(false);
 //@formatter:off
@@ -27,9 +28,10 @@ int main(int argc, char * argv[]) {
             ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename), "file path")
             ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix), "path")
             ("log_level", "output log level", cxxopts::value<unsigned int>(log_level)->default_value("4"), "uint")
-            ("s,size_limit", "size limit for region to depth_first_search", cxxopts::value<unsigned int>(size_limit)->default_value("1000"), "uint")
-            ("e,edge_limit", "limit of edges to depth_first_search", cxxopts::value<unsigned int>(edge_limit)->default_value("10"), "uint")
-            ("n,nodes", "use the following nodes as seeds", cxxopts::value<std::vector<std::string>>(nodes), "list of nodes (n1,n2)");
+            ("s,size_limit", "size limit in base pairs for region to explore", cxxopts::value<unsigned int>(size_limit)->default_value("1000"), "uint")
+            ("e,edge_limit", "limit number of edges to explore", cxxopts::value<unsigned int>(edge_limit)->default_value("10"), "uint")
+            ("n,nodes", "use the following node as a seed (this option can be specified multiple times)", cxxopts::value<std::vector<std::string>>(nodes), "string")
+            ("subgraph", "use the following subgraph as a seed", cxxopts::value<std::string>(subgraph), "file path");
 //@formatter:on
     try {
         auto result = options.parse(argc, argv);
@@ -43,8 +45,10 @@ int main(int argc, char * argv[]) {
         if (result.count("o") != 1) {
             throw cxxopts::OptionException(" please specify output prefix using the -o, --output flag");
         }
-        if (result.count("n") == 0) {
-            throw cxxopts::OptionException(" please specify the query nodes using the -n --nodes flag or a FASTA file using -q --query");
+        if (result.count("n") == 0 and subgraph.empty()) {
+            throw cxxopts::OptionException(" please specify the query nodes using the -n --nodes flag, "
+                                                   "a subgraph using the -s --subgraph flag "
+                                                   "or a FASTA file using -q --query");
         }
     } catch (const cxxopts::OptionException &e) {
         std::cout << "Error parsing options: " << e.what() << std::endl;
@@ -69,10 +73,18 @@ int main(int argc, char * argv[]) {
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
 
+    if (nodes.empty() and !subgraph.empty()) {
+        SequenceGraph ssg;
+        ssg.load_from_gfa(subgraph);
+        for (auto n = 1ul; n < ssg.nodes.size(); ++n) {
+            nodes.push_back(ssg.oldnames[n]);
+        }
+    }
+
     std::cout << std::endl;
     std::cout << std::endl;
     std::cout << std::endl;
-    std::cout << "Starting DFS" << std::endl;
+    sglib::OutputLog() << "Starting DFS" << std::endl;
     if (!nodes.empty()) {
         std::set<nodeVisitor> resultNodes;
         // For each node in the list
@@ -110,7 +122,7 @@ int main(int argc, char * argv[]) {
             std::cout << sg.oldnames[std::abs(n.node)] << " ";
         }
         std::cout << std::endl;
-        std::cout << resultNodes.size() << " nodes in solution\n";
+        sglib::OutputLog() << resultNodes.size() << " nodes in solution\n";
         std::vector<sgNodeID_t > subnodes;
         for (const auto &n:resultNodes) {
             subnodes.emplace_back(n.node);
@@ -118,4 +130,6 @@ int main(int argc, char * argv[]) {
         SequenceSubGraph ssg(sg, subnodes);
         ssg.write_to_gfa(output_prefix+"subgraph.gfa");
     }
+
+    sglib::OutputLog() << "Done";
 }
