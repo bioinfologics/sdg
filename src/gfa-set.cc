@@ -10,6 +10,19 @@
 #include <sglib/factories/KMerIDXFactory.h>
 #include <sglib/factories/ContigBlockFactory.h>
 
+enum string_code {
+    union_,
+    intersection_,
+    difference_,
+};
+
+string_code hashit (std::string const& inString) {
+    if (inString == "union") return union_;
+    if (inString == "intersection") return intersection_;
+    if (inString == "difference") return difference_;
+    std::logic_error("Function not yet implemented");
+}
+
 int main(int argc, char * argv[]) {
     std::string help;
     std::string operation;
@@ -72,50 +85,32 @@ int main(int argc, char * argv[]) {
     a.load_from_gfa(subgraphA);
     b.load_from_gfa(subgraphB);
 
-    std::unordered_set<sgNodeID_t > nodes_a, nodes_b;
-    std::unordered_set<sgNodeID_t > links_a, links_b;
-    for (const auto &n:a.nodes)
-        nodes_a.insert(n);
-    for (const auto &n:b.nodes)
-        nodes_b.insert(n);
+    std::set<std::string > nodes_a, nodes_b;
+    for (auto n = 0ul; n < a.nodes.size(); ++n)
+        nodes_a.insert(a.oldnames[n]);
+    for (auto n = 0ul; n < b.nodes.size(); ++n)
+        nodes_b.insert(b.oldnames[n]);
 
-    for (const auto &l:a.links)
-        links_a.insert(l);
-    for (const auto &l:b.links)
-        links_b.insert(l);
-
-    enum string_code {
-        union_,
-        intersection_,
-        difference_,
-    };
-
-    string_code hashit (std::string const& inString) {
-        if (inString == "union") return union_;
-        if (inString == "intersection") return intersection_;
-        if (inString == "difference") return difference_;
-        std::logic_error("Function not yet implemented");
-    }
-
-    std::unordered_set<sgNodeID_t > result_nodes;
-    std::unordered_set<Link> result_links;
+    std::set<std::string > result_nodes;
 
     switch (hashit(operation)){
         case intersection_:
-            std::set_intersection(nodes_a.begin(),nodes_a.end(),nodes_b.begin(), nodes_b.end(), result_nodes);
-            std::set_intersection(links_a.begin(),links_a.end(),links_b.begin(), links_b.end(), result_links);
+            std::set_intersection(nodes_a.begin(),nodes_a.end(),nodes_b.begin(), nodes_b.end(), std::inserter(result_nodes, result_nodes.begin()));
             break;
         case union_:
-            std::set_union(nodes_a.begin(),nodes_a.end(),nodes_b.begin(), nodes_b.end(), result_nodes);
-            std::set_union(links_a.begin(),links_a.end(),links_b.begin(), links_b.end(), result_links);
+            std::set_union(nodes_a.begin(),nodes_a.end(),nodes_b.begin(), nodes_b.end(), std::inserter(result_nodes, result_nodes.begin()));
             break;
         case difference_:
-            std::set_difference(nodes_a.begin(),nodes_a.end(),nodes_b.begin(), nodes_b.end(), result_nodes);
-            std::set_difference(links_a.begin(),links_a.end(),links_b.begin(), links_b.end(), result_links);
+            std::set_difference(nodes_a.begin(),nodes_a.end(),nodes_b.begin(), nodes_b.end(), std::inserter(result_nodes, result_nodes.begin()));
             break;
     }
 
-    SequenceSubGraph ssg(sg, std::vector<sgNodeID_t >(result_nodes.begin(), result_nodes.end()));
+    std::vector<sgNodeID_t > fin_nodes;
+    for (const auto &n: result_nodes) {
+        auto pos = sg.oldnames_to_ids.find(n);
+        fin_nodes.push_back(pos->second);
+    }
+    SequenceSubGraph ssg(sg, std::vector<sgNodeID_t >(fin_nodes.begin(), fin_nodes.end()));
     ssg.write_to_gfa("result.gfa");
     sglib::OutputLog() << "Done" << std::endl;
 }
