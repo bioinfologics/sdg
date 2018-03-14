@@ -695,17 +695,17 @@ SequenceGraph::depth_first_search(const nodeVisitor seed, unsigned int size_limi
                 (activeNode.path_length < edge_limit or edge_limit==0) and  // Is within path limits
                 (activeNode.dist < size_limit or size_limit==0) ) // Is within sequence limits
         {
-            visited_set.emplace(activeNode.node, activeNode.dist, activeNode.path_length);
+            visited_set.insert(nodeVisitor(activeNode.node, activeNode.dist, activeNode.path_length));
             for (const auto &l: get_fw_links(activeNode.node)) {
-                to_visit.emplace(l.dest,
-                                 activeNode.dist+nodes[l.dest>0?l.dest:-l.dest].sequence.length(),
-                                 activeNode.path_length+1);
+                to_visit.push(nodeVisitor(l.dest,
+                                 static_cast<uint>(activeNode.dist + nodes[l.dest > 0 ? l.dest : -l.dest].sequence.length()),
+                                 activeNode.path_length+1));
             }
         } else if (visitedNode != visited_set.end() and // If the node has been visited
                 (visitedNode->path_length > activeNode.path_length or visitedNode->dist > activeNode.dist)) // but is closer than the last time I saw it
         {
             visited_set.erase(visitedNode); // Remove it from the visited nodes and
-            to_visit.emplace(activeNode.node, activeNode.dist, activeNode.path_length); // add it to the list of nodes to visit
+            to_visit.push(nodeVisitor(activeNode.node, activeNode.dist, activeNode.path_length)); // add it to the list of nodes to visit
         }
     }
 
