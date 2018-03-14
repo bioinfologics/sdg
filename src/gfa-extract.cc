@@ -101,11 +101,11 @@ int main(int argc, char * argv[]) {
                     }
                     sglib::OutputLog(sglib::DEBUG, false) << std::endl;
                 }
-                auto toVisit = results.begin();
+                auto toVisit = *results.begin();
                 results.erase(toVisit);
                 // Explore node forward
-                sglib::OutputLog(sglib::DEBUG) << "Visiting " << toVisit->node << ":" << toVisit->path_length << std::endl;
-                auto visitedNodes = sg.depth_first_search(*toVisit, size_limit, edge_limit, resultNodes);
+                sglib::OutputLog(sglib::DEBUG) << "Visiting " << toVisit.node << ":" << toVisit.path_length << std::endl;
+                auto visitedNodes = sg.depth_first_search(toVisit, size_limit, edge_limit, resultNodes);
 
                 if (sglib::OutputLogLevel >= sglib::DEBUG) {
                     sglib::OutputLog(sglib::DEBUG) << "Visited nodes ";
@@ -118,7 +118,7 @@ int main(int argc, char * argv[]) {
                 // For each visited node
                 for (const auto &node:visitedNodes) {
                     // If is the same as the node I am visiting, do nothing
-                    if (node == *toVisit) continue;
+                    if (node == toVisit) continue;
 
                     auto visitedNode(resultNodes.find(node));
 
