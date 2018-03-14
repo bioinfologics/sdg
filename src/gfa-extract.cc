@@ -94,6 +94,13 @@ int main(int argc, char * argv[]) {
             results.emplace(id, 0, 0);
             results.emplace(-id, 0, 0);
             do {
+                if (sglib::OutputLogLevel >= sglib::DEBUG) {
+                    sglib::OutputLog(sglib::DEBUG) << "To visit nodes ";
+                    for (const auto &n:results) {
+                        sglib::OutputLog(sglib::DEBUG, false) << n.node << ":" << n.path_length << ", ";
+                    }
+                    sglib::OutputLog(sglib::DEBUG, false) << std::endl;
+                }
                 auto toVisit = results.begin();
                 results.erase(toVisit);
                 // Explore node forward
@@ -124,9 +131,11 @@ int main(int argc, char * argv[]) {
                             continue;
                         }
                     }
-                    results.emplace(node);
-                    nodeVisitor rev(-node.node, node.path_length, node.dist);
-                    results.emplace(rev);
+                    sglib::OutputLog(sglib::DEBUG) << "Inserting node to visit: " << node << std::endl;
+                    results.insert(node);
+                    nodeVisitor rev = nodeVisitor(-1*node.node, node.dist, node.path_length);
+                    sglib::OutputLog(sglib::DEBUG) << "Inserting node to visit: " << rev << std::endl;
+                    results.insert(rev);
                     resultNodes.emplace(node);
                     if (sglib::OutputLogLevel >= sglib::DEBUG) {
                         sglib::OutputLog(sglib::DEBUG) << "Result nodes ";
@@ -156,5 +165,5 @@ int main(int argc, char * argv[]) {
         ssg.write_to_gfa(output_prefix+"subgraph.gfa");
     }
 
-    sglib::OutputLog() << "Done";
+    sglib::OutputLog() << "Done" << std::endl;
 }

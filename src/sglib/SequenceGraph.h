@@ -44,14 +44,18 @@ public:
 };
 
 struct nodeVisitor {
-    sgNodeID_t node;
-    uint dist;
-    uint path_length;
+    sgNodeID_t node = 0;
+    uint dist = 0;
+    uint path_length = 0;
     nodeVisitor(sgNodeID_t n, uint d, uint p) : node(n), dist(d), path_length(p) {}
     bool operator<(const nodeVisitor &o) const {return std::tie(node) < std::tie(o.node);}
     bool operator==(const nodeVisitor &o) const {return node == o.node;}
     nodeVisitor reverseDirection() const {
         return {-node, dist, path_length};
+    }
+    friend std::ostream &operator<<(std::ostream &os, const nodeVisitor &visitor) {
+        os << visitor.node << ":" << visitor.path_length;
+        return os;
     }
 };
 
