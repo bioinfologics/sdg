@@ -91,10 +91,15 @@ int main(int argc, char * argv[]) {
         ws.sg.write_to_gfa(output_prefix + "_flowregion.gfa", {}, {}, region_nodes);
     }
     else {
-        for (auto i=1;i<ws.sg.nodes.size();++i) {
-            if (ws.sg.nodes[i].status!= sgNodeDeleted) region_nodes.insert(i);
+        ws.kci.reindex_graph();
+        ws.kci.compute_compression_stats();
+        Untangler untangler(ws);
+        auto HSPNPs=untangler.get_all_HSPNPs();
+        for (auto h:HSPNPs) {
+            region_nodes.insert(h.first);
+            region_nodes.insert(h.second);
         }
-        std::cout << "Using the whole graph with " << region_nodes.size() << " nodes" << std::endl;
+        std::cout << "Using the whole graph with " << region_nodes.size() << " nodes from HSPNPs" << std::endl;
     }
 
     FlowFollower ff(ws,region_nodes);

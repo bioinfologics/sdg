@@ -140,7 +140,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> hps;
     std::vector<bool> used(ws.sg.nodes.size(),false);
     //TODO: check the coverages are actually correct?
-    const double min_c1=0.7,max_c1=1.30,min_c2=1.8,max_c2=2.8;
+    const double min_c1=0.75,max_c1=1.25,min_c2=1.5,max_c2=2.5;
     /*
      * the loop always keep the first and the last elements as c=2 collapsed nodes.
      * it starts with a c=2 node, and goes thorugh all bubbles fw, then reverts the subgraph and repeats
