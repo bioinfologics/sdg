@@ -689,7 +689,8 @@ SequenceGraph::depth_first_search(const nodeVisitor seed, unsigned int size_limi
     while (!to_visit.empty()) {
         const auto activeNode(to_visit.top());
         to_visit.pop();
-        auto visitedNode(visited_set.find( nodeVisitor(activeNode.node,0,0) ) );
+        auto looker = nodeVisitor(activeNode.node,0,0);
+        auto visitedNode(visited_set.find( looker ) );
         if (visitedNode == visited_set.end() and
                 (activeNode.path_length < edge_limit or edge_limit==0) and  // Is within path limits
                 (activeNode.dist < size_limit or size_limit==0) ) // Is within sequence limits
