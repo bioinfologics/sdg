@@ -48,10 +48,10 @@ struct nodeVisitor {
     uint dist;
     uint path_length;
     nodeVisitor(sgNodeID_t n, uint d, uint p) : node(n), dist(d), path_length(p) {}
-    bool operator<(const nodeVisitor &o) const {return node < o.node;}
+    bool operator<(const nodeVisitor &o) const {return std::tie(node) < std::tie(o.node);}
     bool operator==(const nodeVisitor &o) const {return node == o.node;}
     nodeVisitor reverseDirection() const {
-        return nodeVisitor(-node, dist, path_length);
+        return {-node, dist, path_length};
     }
 };
 

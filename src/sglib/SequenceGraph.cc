@@ -680,10 +680,10 @@ SequenceGraph::depth_first_search(const nodeVisitor seed, unsigned int size_limi
     // Create a stack with the nodes and the path length
 
     std::stack<nodeVisitor> to_visit;
-    to_visit.emplace(seed);
+    to_visit.push(seed);
     std::set<nodeVisitor> visited_set;
     for (const auto &n:tabu) {
-        visited_set.emplace(n);
+        visited_set.insert(n);
     }
 
     while (!to_visit.empty()) {
@@ -711,7 +711,7 @@ SequenceGraph::depth_first_search(const nodeVisitor seed, unsigned int size_limi
     std::vector<nodeVisitor > result;
     for (const auto &v:visited_set) {
         if (v.node == seed.node) continue;
-        result.emplace_back(v);
+        result.push_back(v);
     }
     return result;
 }
