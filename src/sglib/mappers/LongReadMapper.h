@@ -13,6 +13,7 @@
 #include <sglib/SMR.h>
 #include <sglib/PairedReadMapper.h>
 #include <sglib/factories/StrandedMinSketchFactory.h>
+#include <sglib/indexers/minSketchIndex.hpp>
 
 template <typename A, typename B>
 std::multimap<B, A> flip_map(std::map<A,B> & src) {
@@ -27,15 +28,8 @@ std::multimap<B, A> flip_map(std::map<A,B> & src) {
 
 class LongReadMapper {
 
-
-    struct graphStrandPos{
-        sgNodeID_t node;
-        int32_t pos;
-
-        graphStrandPos(sgNodeID_t node, int32_t pos) : node(node), pos(pos) {}
-    };
-
     SequenceGraph & sg;
+    minSketchIndex index;
     uint8_t k=15;
     uint8_t w=5;
     std::unordered_map<uint64_t, std::vector<graphStrandPos>> kmer_to_graphposition;
@@ -236,8 +230,8 @@ class LongReadMapper {
         auto read_sketch_num(kf.getMinSketch(seq, sketch));
 
         for (auto sk = sketch.begin(); sk != sketch.end(); ++sk){
-            std::unordered_map<uint64_t, std::vector<graphStrandPos>>::const_iterator foundKey(kmer_to_graphposition.find(sk->hash));
-            if (foundKey == kmer_to_graphposition.end()) {
+            std::unordered_map<uint64_t, std::vector<graphStrandPos>>::const_iterator foundKey(index.find(sk->hash));
+            if (foundKey == index.end()) {
                 sketch_not_in_index++;
                 continue;
             }
@@ -254,26 +248,7 @@ class LongReadMapper {
     }
 
 public:
-    LongReadMapper(uint8_t k, uint8_t w, SequenceGraph &sg) : sg(sg), k(k), w(w) {
-        build_minimiser_index();
-    }
-
-    void build_minimiser_index() {
-        StrandedMinimiserSketchFactory kf(k, w);
-        std::set<MinPosIDX> sketch;
-        GraphNodeReader<FastaRecord> gnr({0,sg});
-        FastaRecord node;
-        while (gnr.next_record(node)) {
-            kf.getMinSketch(node.seq, sketch);
-//            std::cout << "Node " << node.name << " sketch ";
-//            std::copy(sketch.cbegin(),sketch.cend(),std::ostream_iterator<MinPosIDX>(std::cout, "; "));
-//            std::cout << std::endl;
-            for (const auto &sk : sketch) {
-                kmer_to_graphposition[sk.hash].emplace_back(node.id * (std::signbit(sk.pos)?-1:1), std::abs(sk.pos));
-            }
-            sketch.clear();
-        }
-    }
+    LongReadMapper(uint8_t k, uint8_t w, SequenceGraph &sg) : sg(sg), k(k), w(w), index(sg, k, w) {}
 
     uint64_t map_reads2(std::string &filename, uint32_t error) {
         FastqReader<FastqRecord> fastqReader({0},filename);
