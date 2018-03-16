@@ -8,6 +8,7 @@
 #include "sglib/filesystem/check_or_create_directory.h"
 #include "sglib/readers/FileReader.h"
 #include "sglib/factories/KMerIDXFactory.h"
+#include <sglib/types/KmerTypes.hpp>
 #include "sglib/factories/ContigLink.h"
 #include "sglib/SMR.h"
 

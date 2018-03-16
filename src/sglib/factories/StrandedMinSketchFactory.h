@@ -11,22 +11,6 @@
 #include <set>
 #include "KMerFactory.h"
 
-class MinPosIDX {
-public:
-    uint64_t hash = 0;
-    int32_t pos = 0;
-
-    MinPosIDX(uint64_t hash, int32_t pos) : hash(hash), pos(pos) {}
-    bool operator<(const MinPosIDX &o) const {
-        return hash < o.hash;
-    }
-
-    friend std::ostream& operator<<(std::ostream& os, const MinPosIDX& m) {
-        os << m.hash;
-        return os;
-    }
-};
-
 /**
  * @brief
  * This class generates a stranded minimiser sketch for a DNA sequence, assumes the sequence contains no N's!!

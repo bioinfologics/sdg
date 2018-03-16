@@ -9,13 +9,7 @@
 #include <sglib/readers/FileReader.h>
 #include <sglib/readers/SequenceGraphReader.h>
 #include <cmath>
-
-struct graphStrandPos{
-    sgNodeID_t node;
-    int32_t pos;
-
-    graphStrandPos(sgNodeID_t node, int32_t pos) : node(node), pos(pos) {}
-};
+#include <sglib/types/KmerTypes.hpp>
 
 class minSketchIndex {
     std::unordered_map<uint64_t, std::vector<graphStrandPos>> kmer_to_graphposition;

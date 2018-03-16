@@ -19,7 +19,8 @@
 #include <map>
 #include <sglib/logger/OutputLog.h>
 #include <sglib/readers/Common.h>
-#include "KMerIDXFactory.h"
+#include <sglib/types/KmerTypes.hpp>
+#include <sglib/factories/KMerFactory.h>
 
 struct FilterSetParams {
     FilterSetParams(std::string output_prefix, uint8_t k, std::unordered_set<KmerIDX> &uniq_kmers,

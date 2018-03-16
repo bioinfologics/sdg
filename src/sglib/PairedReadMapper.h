@@ -6,6 +6,7 @@
 #define SG_PAIREDREADMAPPER_HPP
 
 #include <map>
+#include <sglib/types/KmerTypes.hpp>
 
 #include "SequenceGraph.h"
 #include "sglib/factories/KMerIDXFactory.h"
@@ -14,11 +15,6 @@
 #include "SMR.h"
 
 typedef uint32_t prm10xTag_t;
-
-struct graphPosition{
-    sgNodeID_t node;
-    uint32_t pos;
-};
 
 class ReadMapping {
 public:

@@ -165,5 +165,9 @@ int main(int argc, char * argv[]) {
         ssg.write_to_gfa(output_prefix+"subgraph.gfa");
     }
 
+    if (!query_file.empty()) {
+
+    }
+
     sglib::OutputLog() << "Done" << std::endl;
 }

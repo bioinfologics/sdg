@@ -3,6 +3,7 @@
 //
 #include "gtest/gtest.h"
 #include <sglib/SMR.h>
+#include <sglib/types/KmerTypes.hpp>
 #include <sglib/readers/FileReader.h>
 #include <sglib/readers/SequenceGraphReader.h>
 #include <sglib/factories/KMerIDXFactory.h>

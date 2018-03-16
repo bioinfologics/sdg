@@ -15,6 +15,7 @@
 #include <sglib/SMR.h>
 #include <sglib/PairedReadMapper.h>
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
+#include <sglib/types/KmerTypes.hpp>
 
 class uniqueKmerIndex {
     SequenceGraph & sg;
