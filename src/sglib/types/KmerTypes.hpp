@@ -79,6 +79,8 @@ public:
     uint64_t hash = 0;
     int32_t pos = 0;
 
+    MinPosIDX() : hash(0), pos(0) {}
+
     MinPosIDX(uint64_t hash, int32_t pos) : hash(hash), pos(pos) {}
     bool operator<(const MinPosIDX &o) const {
         return hash < o.hash;

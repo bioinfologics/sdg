@@ -2,20 +2,16 @@
 // Created by Luis Yanes (EI) on 20/10/2017.
 //
 
-#ifndef SEQ_SORTER_KMERFACTORY_H
-#define SEQ_SORTER_KMERFACTORY_H
+#ifndef SEQ_SORTER_SKIPKMERFACTORY_H
+#define SEQ_SORTER_SKIPKMERFACTORY_H
 
 #include <cstdint>
 #include <iostream>
 #include <vector>
 
 #define unlikely(x)     __builtin_expect((x),0)
-struct SkipMerIDXFactoryParams {
-    uint8_t k;
-    uint8_t m;
-    uint8_t n;
-};
-class KmerIDX;
+
+
 class SkipMerFactory {
 public:
     const uint8_t K;
@@ -70,4 +66,4 @@ private:
     char b2r[255]{4};
 };
 
-#endif //SEQ_SORTER_KMERFACTORY_H
+#endif //SEQ_SORTER_SKIPKMERFACTORY_H

@@ -221,6 +221,9 @@ add_executable(gfa-extract
 add_executable(gfa-set
         src/gfa-set.cc)
 
+add_executable(gfa-indexer
+        src/gfa-indexer.cc)
+
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
@@ -231,6 +234,7 @@ target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(map-lr sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract sequence_graph)
 target_link_libraries(gfa-set sequence_graph)
+target_link_libraries(gfa-indexer sequence_graph)
 
 IF(BUILD_TESTING)
     add_executable(runBasicTests tests/sglib/basic_check.cc)
