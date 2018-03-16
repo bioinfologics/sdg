@@ -11,5 +11,6 @@ namespace sglib {
     enum LogLevels{INFO, WARN, DEBUG};
     extern LogLevels OutputLogLevel;
     std::ostream &OutputLog(LogLevels level = LogLevels::INFO, bool include_date = true);
+    std::ostream &OutputLog(bool include_date);
 };
 #endif //BSG_OUTPUTLOG_H

@@ -7,12 +7,12 @@
 
 
 int main(int argc, char * argv[]) {
-    std::cout << "Welcome to gfa-indexer"<<std::endl<<std::endl;
-    std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
-    std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
-    std::cout << "Executed command:"<<std::endl;
-    for (auto i=0;i<argc;i++) std::cout<<argv[i]<<" ";
-    std::cout<<std::endl<<std::endl;
+    sglib::OutputLog() << "Welcome to gfa-indexer"<<std::endl<<std::endl;
+    sglib::OutputLog() << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
+    sglib::OutputLog() << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
+    sglib::OutputLog() << "Executed command:"<<std::endl;
+    for (auto i=0;i<argc;i++) sglib::OutputLog(false) <<argv[i]<<" ";
+    sglib::OutputLog(false) <<std::endl<<std::endl;
 
     std::string gfa_filename,output_prefix;
     uint64_t max_mem_gb=4;
@@ -43,12 +43,23 @@ int main(int argc, char * argv[]) {
         exit(1);
     }
 
-    std::cout<<std::endl<<"=== Loading GFA ==="<<std::endl;
+    sglib::OutputLog(false)<<std::endl<<"=== Loading GFA ==="<<std::endl;
+    std::string tFile("test.it");
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
 
-    SkipMerIndex skmNDX(sg, 15, 1, 3, 100);
+    SkipMerIndex skmNDX(15, 1, 3);
+    skmNDX.generate_index(sg);
+    skmNDX.write_to_file(tFile);
 
+    SkipMerIndex skmNDX2;
+    skmNDX2.load_from_file(tFile);
+
+    if ( skmNDX.getMap() == skmNDX2.getMap() ) {
+        sglib::OutputLog() << "Indexes are equal" << std::endl;
+    } else {
+        sglib::OutputLog() << "Indexes are different" << std::endl;
+    }
     return 0;
 }
 

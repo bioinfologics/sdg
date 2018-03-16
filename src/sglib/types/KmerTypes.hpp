@@ -72,6 +72,10 @@ struct graphStrandPos{
     int32_t pos;
 
     graphStrandPos(sgNodeID_t node, int32_t pos) : node(node), pos(pos) {}
+
+    bool operator==(const graphStrandPos &o) const {
+        return (std::tie(node, pos) == std::tie(o.node,o.pos));
+    }
 };
 
 class MinPosIDX {
