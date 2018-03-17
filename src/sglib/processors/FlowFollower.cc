@@ -5,8 +5,6 @@
 #include "FlowFollower.hpp"
 
 Flow FlowFollower::flow_from_node(sgNodeID_t n,float min_winner,float max_looser) {
-
-
     //std::cout << "Starting walk on " << n << "... " << std::flush;
     auto tags = ws.linked_read_mappers[0].get_node_tags(llabs(n));
     //std::cout << tags.size() << " tags... " << std::flush;
@@ -52,28 +50,13 @@ Flow FlowFollower::flow_from_node(sgNodeID_t n,float min_winner,float max_looser
                     second_score = misses;
                 }
 
-//                score = (double) hits / lkmers.size();
-//                if (best == 0 or score > best_score) {
-//                    second = best;
-//                    best = fw_nodes[i];
-//                    second_score = best_score;
-//                    best_score = score;
-//                } else if (second == 0 or score > second_score) {
-//                    second = fw_nodes[i];
-//                    second_score = score;
-//                }
             }
-            //std::cout << best_score << " - " << second_score << std::endl;
-//            if (best_score == 0 or best_score < min_winner or second_score > max_looser) {
-//                std::cout << "stopping because of score uncertainty "<< best_score << " - " << second_score << std::endl;
-//                break;
-//            }
             if (best_score != 0 or second_score==0) {
                 //std::cout << "stopping because of score uncertainty " << best_score << " - " << second_score << std::endl;
                 break;
             }
             bool b = false;
-            for (auto n:p.nodes) if (llabs(n) == llabs(best)) b = true;
+            for (auto x:p.nodes) if (llabs(x) == llabs(best)) b = true;
             if (b) {
                 //std::cout << "stopping on circular path" << std::endl;
                 break;
@@ -257,8 +240,11 @@ SequenceGraphPath FlowFollower::skate_from_node(sgNodeID_t n) {
                 }
 
             }
-            if (next != 0) path.nodes.push_back(next);
-            else break;
+            if (next == 0) break;
+            bool b=false;
+            for (auto x:path.nodes) if (llabs(x)==llabs(next)) b=true;
+            if (b) break;
+            path.nodes.push_back(next);
         }
         path.reverse();
         used_flows.clear();
