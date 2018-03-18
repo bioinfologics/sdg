@@ -200,6 +200,142 @@ void FlowFollower::create_flows() {
 }
 
 /**
+ * @brief sorts nodes so consecutive nodes share tags, then uses a tag kmer cache to speed up flows.
+ *
+ */
+void FlowFollower::create_flows_all_fast() {
+    struct node_tag_t{
+        sgNodeID_t node;
+        //uint16_t unused_rounds=0;
+        std::set<bsg10xTag> tags;
+        float shared_perc(const struct node_tag_t & other){
+            uint64_t shared=0;
+            auto i1=tags.begin();
+            auto i2=other.tags.begin();
+            while (i1!=tags.end() and i2!=other.tags.end()){
+                if (*i1==*i2) {
+                    ++shared;
+                    ++i1;
+                    ++i2;
+                }
+                else if (*i1<*i2) ++i1;
+                else ++i2;
+            }
+            return ((float) shared) / tags.size();
+        };
+        uint64_t shared(const std::set<bsg10xTag> &td ){
+            uint64_t shared=0;
+            for (auto t1=tags.begin(),t2=td.begin();t1!=tags.end() and t2!=td.end();){
+                if (*t1==*t2) {
+                    ++shared;
+                    ++t1;
+                    ++t2;
+                }
+                else if (*t1<*t2) ++t1;
+                else ++t2;
+            }
+            return shared;
+        };
+        uint64_t shared_est(const std::set<bsg10xTag> &td ){
+            uint64_t shared=0;
+            auto t1lim=tags.size()/10;
+            size_t t1c=0;
+            for (auto t1=tags.begin(),t2=td.begin();t1c<t1lim and t2!=td.end();){
+                if (*t1==*t2) {
+                    ++shared;
+                    ++t1;
+                    ++t1c;
+                    ++t2;
+                }
+                else if (*t1<*t2) {
+                    ++t1;
+                    ++t1c;
+                }
+                else ++t2;
+            }
+            return 10*shared;
+        };
+    };
+    uint64_t tnodes=0,ttags=0;
+    std::vector<struct node_tag_t> node_tags;
+    node_tags.reserve(ws.sg.nodes.size());
+    for (auto n=1;n<ws.sg.nodes.size();++n){
+        auto ntags=ws.linked_read_mappers[0].get_node_tags(n);
+        if (ntags.size()>=50) {
+            ++tnodes;
+            node_tags.emplace_back();
+            node_tags.back().node=n;
+            for (auto &t:ntags) node_tags.back().tags.insert(t);
+            ttags+=node_tags.back().tags.size();
+        }
+    }
+    std::cout << "There are "<<tnodes<<" / "<<ws.sg.nodes.size()<<" nodes with 50+ tags, totalling "<<ttags<<" tags"<< std::endl;
+
+
+    for (auto perc:{.25}) {
+        std::vector<bsg10xTag> cached_tags;
+        std::set<bsg10xTag > cached_tags_set;
+        for (auto &t:node_tags[0].tags) {
+            cached_tags.push_back(t);
+            cached_tags_set.insert(t);
+        }
+        uint64_t cache_size=2000;
+        uint64_t total_uses=node_tags[0].tags.size(),total_reads=node_tags[0].tags.size(),total_swaps=0;
+        uint64_t last_offset=1;
+        for (uint64_t i = 1; i < node_tags.size(); ++i) {
+            //std::cout<<"Finding good candidates for position "<<i<<std::endl;
+            uint64_t j;
+            for (auto jb = 0; jb < node_tags.size()-i; ++jb) {
+                j = last_offset+jb;
+                //std::cout<<"jb="<<jb<<" j="<<j<<" node_tags.size()="<<node_tags.size()<<std::endl;
+                if (j>=node_tags.size()) {
+                    //std::cout<<"j = i + j - node_tags.size() = "<<i<<" + "<<j<<" - "<<node_tags.size()<<" = ";
+                    j=i+j-node_tags.size();
+                    //std::cout<<j<<std::endl;
+                }
+                if (j<i) {
+                    std::cout<<"j<i, how the ??"<<std::endl;
+                    std::cout<<"i="<<i<<" last_offset="<<last_offset<<" jb="<<jb<<" node_tags.size()="<<node_tags.size()<<" j="<<j<<std::endl;
+                }
+                auto shared_count = node_tags[j].shared_est(cached_tags_set);
+                if (shared_count >= perc * node_tags[j].tags.size()) {
+                    //std::cout<<"Found close node at "<<j<<" ("<<shared_count<<"/"<<node_tags[j].tags.size()<<")"<<std::endl;
+                    if (j != i) {
+                        ++total_swaps;
+                        std::swap(node_tags[i].node, node_tags[j].node);
+                        std::swap(node_tags[i].tags, node_tags[j].tags);
+                    }
+                    break;
+                }
+
+            }
+            last_offset = (j>i? j: i+1);
+            std::vector<bsg10xTag> new_cache;
+            new_cache.reserve(cache_size);
+            new_cache.insert(new_cache.end(), node_tags[i].tags.begin(), node_tags[i].tags.end());
+            for (auto &t:cached_tags) {
+                if (new_cache.size() >= cache_size) break;
+                if (std::find(node_tags[i].tags.begin(), node_tags[i].tags.end(), t) == node_tags[i].tags.end()) {
+                    new_cache.push_back(t);
+                }
+            }
+            auto shared_count = node_tags[i].shared(cached_tags_set);
+            std::swap(cached_tags, new_cache);
+            cached_tags_set.clear();
+            for (auto &t:cached_tags) cached_tags_set.insert(t);
+
+            total_uses += node_tags[i].tags.size();
+            total_reads += node_tags[i].tags.size() - shared_count;
+
+            if (0 == i % 1000) std::cout << "Position " << i << " : " << total_reads << " / " << total_uses << std::endl;
+        }
+        std::cout << "After " << total_swaps << " swaps, there will be " << total_reads << " reads for a total of "
+                  << total_uses << " uses" << std::endl;
+    }
+
+}
+
+/**
  * @brief starts from node, goes + first, - later. Incorporates all transversed flows while deciding. Turns back.
  * @return
  */

@@ -19,6 +19,7 @@ int main(int argc, char * argv[]) {
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
     sgNodeID_t start_node=0,end_node=0;
     uint64_t max_nodes=10000;
+    bool all_flows_fast=false;
     try
     {
         cxxopts::Options options("bsg-testflowfollower", "a test following flows in a parallel region of the graph");
@@ -29,6 +30,7 @@ int main(int argc, char * argv[]) {
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
                 ("s,start", "starting node (with direction flowing towards end)", cxxopts::value<sgNodeID_t>(start_node))
                 ("e,end", "ending node (with direction flowing from start)", cxxopts::value<sgNodeID_t>(end_node))
+                ("all_flows_fast", "use the all-nodes fast analysis", cxxopts::value<bool>(all_flows_fast))
                 ("n,max_nodes", "maximum number of nodes to explore (default: 10000)", cxxopts::value<uint64_t >(max_nodes));
 
 
@@ -63,48 +65,51 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     //ws.kci.compute_compression_stats();
     //for (auto &m:ws.linked_read_mappers) m.memlimit=max_mem_gb*1024*1024*1024;
-    std::unordered_set<sgNodeID_t> region_nodes;
-    if (start_node!=0 and end_node!=0) {
-        //find the path
-        region_nodes.insert(start_node);
-        uint64_t last_size = 0;
-        bool end_found = false;
-        while (region_nodes.size() < max_nodes and last_size < region_nodes.size()) {
-            last_size = region_nodes.size();
-            std::vector<sgNodeID_t> new_nodes;
-            for (auto n:region_nodes) {
-                if (n != end_node) {
-                    for (auto l:ws.sg.get_fw_links(n)) new_nodes.push_back(l.dest);
-                } else end_found = true;
-                if (n != start_node) {
-                    for (auto l:ws.sg.get_bw_links(n)) new_nodes.push_back(-l.dest);;
-                }
-            }
-            for (auto n:new_nodes) region_nodes.insert(n);
-        }
-        if (region_nodes.size() >= max_nodes) {
-            std::cout << "Aborting after growing the region to " << region_nodes.size() << " nodes" << std::endl;
-            exit(0);
-        }
-        std::cout << "Found a region with " << region_nodes.size() << " nodes" << std::endl;
 
-        ws.sg.write_to_gfa(output_prefix + "_flowregion.gfa", {}, {}, region_nodes);
-    }
-    else {
-        ws.kci.reindex_graph();
-        ws.kci.compute_compression_stats();
-        Untangler untangler(ws);
-        auto HSPNPs=untangler.get_all_HSPNPs();
-        for (auto h:HSPNPs) {
-            region_nodes.insert(h.first);
-            region_nodes.insert(h.second);
+    std::unordered_set<sgNodeID_t> region_nodes;
+    if (not all_flows_fast) {
+        if (start_node != 0 and end_node != 0) {
+            //find the path
+            region_nodes.insert(start_node);
+            uint64_t last_size = 0;
+            bool end_found = false;
+            while (region_nodes.size() < max_nodes and last_size < region_nodes.size()) {
+                last_size = region_nodes.size();
+                std::vector<sgNodeID_t> new_nodes;
+                for (auto n:region_nodes) {
+                    if (n != end_node) {
+                        for (auto l:ws.sg.get_fw_links(n)) new_nodes.push_back(l.dest);
+                    } else end_found = true;
+                    if (n != start_node) {
+                        for (auto l:ws.sg.get_bw_links(n)) new_nodes.push_back(-l.dest);;
+                    }
+                }
+                for (auto n:new_nodes) region_nodes.insert(n);
+            }
+            if (region_nodes.size() >= max_nodes) {
+                std::cout << "Aborting after growing the region to " << region_nodes.size() << " nodes" << std::endl;
+                exit(0);
+            }
+            std::cout << "Found a region with " << region_nodes.size() << " nodes" << std::endl;
+
+            ws.sg.write_to_gfa(output_prefix + "_flowregion.gfa", {}, {}, region_nodes);
+        } else {
+            ws.kci.reindex_graph();
+            ws.kci.compute_compression_stats();
+            Untangler untangler(ws);
+            auto HSPNPs = untangler.get_all_HSPNPs();
+            for (auto h:HSPNPs) {
+                region_nodes.insert(h.first);
+                region_nodes.insert(h.second);
+            }
+            std::cout << "Using the whole graph with " << region_nodes.size() << " nodes from HSPNPs" << std::endl;
         }
-        std::cout << "Using the whole graph with " << region_nodes.size() << " nodes from HSPNPs" << std::endl;
     }
 
     FlowFollower ff(ws,region_nodes);
     std::cout<<"Creating flows..."<<std::endl;
-    ff.create_flows();
+    if (not all_flows_fast) ff.create_flows();
+    else ff.create_flows_all_fast();
     auto skatepaths=ff.skate_from_all(3,20000);
     std::ofstream pf(output_prefix+"_skatepaths.lst"),sf(output_prefix+"_skatepaths.fasta");
     for (auto &sp:skatepaths) {

@@ -19,6 +19,7 @@ class FlowFollower {
 public:
     FlowFollower(WorkSpace & _ws,std::unordered_set<sgNodeID_t> _nodes={}):ws(_ws),nodes(_nodes){};
     void create_flows();
+    void create_flows_all_fast();
     std::vector<std::unordered_set<uint64_t>> get_distinctive_kmers(std::vector<sgNodeID_t>);
     std::vector<std::unordered_set<uint64_t>> get_distinctive_kmers_truncated(std::vector<sgNodeID_t>);
     Flow flow_from_node(sgNodeID_t n,float min_winner,float max_looser);
