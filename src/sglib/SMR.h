@@ -578,6 +578,9 @@ private:
 
     std::vector<RecordType> readFinalkc(std::string finalFile) {
         std::ifstream outf(finalFile, std::ios_base::binary);
+        if (!outf) {
+            throw ("Couldn't open " + finalFile);
+        }
         uint64_t numElements;
         outf.read(reinterpret_cast<char *>(&numElements), sizeof(numElements));
         // reserve capacity
