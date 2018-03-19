@@ -170,8 +170,9 @@ public:
             end = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsed_seconds = end - start;
             sglib::OutputLog(sglib::DEBUG) << "Done reduction in " << elapsed_seconds.count() << "s" << std::endl;
+            auto result(getRecords());
             sglib::remove_directory(tmpInstance);
-            return getRecords();
+            return result;
         }
     };
 
