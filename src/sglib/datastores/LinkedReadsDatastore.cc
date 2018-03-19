@@ -219,6 +219,23 @@ bsg10xTag LinkedReadsDatastore::get_read_tag(size_t readID) {
     return read_tag[(readID-1)/2];
 }
 
+void LinkedReadsDatastore::dump_tag_occupancy_histogram(std::string filename) {
+    std::ofstream tohf(filename);
+    uint64_t oh[10001];
+    for (auto &o:oh) o=0;
+    auto curr_tag=read_tag[0];
+    uint64_t curr_count=0;
+    for (auto &t:read_tag){
+        if (t!=curr_tag){
+            if (curr_tag!=0) ++oh[(curr_count>10000 ? 10000:curr_count)];
+            curr_count=0;
+            curr_tag=t;
+        }
+        ++curr_count;
+    }
+    for (auto i=0;i<10001;++i)
+        if (oh[i]) tohf<<i<<","<<oh[i]<<std::endl;
+}
 
 std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min_tag_cov, std::unordered_set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg) {
     class StreamKmerFactory : public  KMerFactory {

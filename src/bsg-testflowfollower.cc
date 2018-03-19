@@ -61,6 +61,7 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog()<<"Loading Workspace..."<<std::endl;
     ws.load_from_disk(workspace_file);
     //ws.sg.write_to_gfa("initial_graph.gfa",{},{},{});
+    ws.linked_read_datastores[0].dump_tag_occupancy_histogram("tag_occupancy.csv");
     ws.add_log_entry("bsg-untangler run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     //ws.kci.compute_compression_stats();
