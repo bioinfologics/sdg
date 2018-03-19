@@ -14,7 +14,7 @@
 class SkipMerIndex {
     using Map = std::unordered_map<uint64_t, graphStrandPos>;
     using const_iterator = std::unordered_map<uint64_t, graphStrandPos>::const_iterator;
-    using pair = std::unordered_map<uint64_t, graphStrandPos>::__nc_value_type;
+    using pair = std::pair<uint64_t, graphStrandPos>;
 
     Map kmer_to_graphposition;
     uint8_t k=0;

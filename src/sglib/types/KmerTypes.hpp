@@ -68,9 +68,10 @@ namespace std {
 
 
 struct graphStrandPos{
-    sgNodeID_t node;
-    int32_t pos;
+    sgNodeID_t node = 0;
+    int32_t pos = 0;
 
+    graphStrandPos() {}
     graphStrandPos(sgNodeID_t node, int32_t pos) : node(node), pos(pos) {}
 
     bool operator==(const graphStrandPos &o) const {

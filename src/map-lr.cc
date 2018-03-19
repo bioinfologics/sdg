@@ -75,6 +75,13 @@ void map_using_sketches(uint8_t k, SequenceGraph &sg, std::string &output_prefix
 
 }
 int main(int argc, char * argv[]) {
+    sglib::OutputLog(false) << "Welcome to gfa-indexer"<<std::endl<<std::endl;
+    sglib::OutputLog(false) << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
+    sglib::OutputLog(false) << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
+    sglib::OutputLog() << "Executed command:"<<std::endl;
+    for (auto i=0;i<argc;i++) sglib::OutputLog(false) <<argv[i]<<" ";
+    sglib::OutputLog(false) <<std::endl<<std::endl;
+
     std::string gfa_filename, bubble_contigs_filename, output_prefix, long_reads;
     std::string dump_mapped, load_mapped;
     unsigned int log_level(4);
@@ -119,7 +126,6 @@ int main(int argc, char * argv[]) {
         exit(1);
     }
 
-    sglib::OutputLog() << "Welcome to map-lr" << std::endl << std::endl;
     if (gfa_filename.size() <= 4 or gfa_filename.substr(gfa_filename.size() - 4, 4) != ".gfa") {
 
         throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '" +

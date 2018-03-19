@@ -7,9 +7,9 @@
 
 
 int main(int argc, char * argv[]) {
-    sglib::OutputLog() << "Welcome to gfa-indexer"<<std::endl<<std::endl;
-    sglib::OutputLog() << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
-    sglib::OutputLog() << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
+    sglib::OutputLog(false) << "Welcome to gfa-indexer"<<std::endl<<std::endl;
+    sglib::OutputLog(false) << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
+    sglib::OutputLog(false) << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
     sglib::OutputLog() << "Executed command:"<<std::endl;
     for (auto i=0;i<argc;i++) sglib::OutputLog(false) <<argv[i]<<" ";
     sglib::OutputLog(false) <<std::endl<<std::endl;

@@ -18,16 +18,18 @@
 #include <sglib/types/KmerTypes.hpp>
 
 class uniqueKmerIndex {
-    SequenceGraph & sg;
     std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;
-    uint64_t memlimit;
     uint k;
-    uint max_coverage;
 public:
+    uniqueKmerIndex(uint k, uint memlimit = 4) : k(k) {}
 
-    uniqueKmerIndex(SequenceGraph &sg, uint k, uint max_coverage) :
-            sg(sg), k(k), max_coverage(max_coverage)
+    uniqueKmerIndex(const SequenceGraph &sg, uint k, uint64_t memlimit = 4) :
+            k(k)
     {
+        generate_index(sg, k, memlimit);
+    }
+
+    void generate_index(const SequenceGraph &sg, uint k, uint64_t memlimit) {
         const std::string output_prefix("./");
 
         SMR<KmerIDX,
@@ -35,14 +37,14 @@ public:
         GraphNodeReader<FastaRecord>,
         FastaRecord,
         GraphNodeReaderParams,
-        KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k}, {memlimit, 0, max_coverage, output_prefix});
+        KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k}, {memlimit*GB, 0, 1, output_prefix});
 
         // Get the unique_kmers from the graph into a map
         std::cout << "Indexing graph... " << std::endl;
         kmer_to_graphposition.clear();
         std::unordered_set<int32_t> seen_contigs;
         for (auto &kidx :kmerIDX_SMR.process_from_memory()) {
-            kmer_to_graphposition[kidx.kmer]={kidx.contigID,kidx.pos};
+            kmer_to_graphposition[kidx.kmer]={kidx.contigID, kidx.pos};
             seen_contigs.insert((kidx.contigID>0?kidx.contigID:-kidx.contigID));
         }
     }

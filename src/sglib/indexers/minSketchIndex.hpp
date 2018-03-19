@@ -14,16 +14,19 @@
 class minSketchIndex {
     using Map = std::unordered_map<uint64_t, std::vector<graphStrandPos>>;
     using const_iterator = Map::const_iterator;
-    using pair = Map::value_type;
+    using nc_pair = std::pair<uint64_t , std::vector<graphStrandPos>>;
 
     Map kmer_to_graphposition;
     uint8_t w = 0;
     uint8_t k = 0;
 public:
+    minSketchIndex(const SequenceGraph &sg, uint8_t k, uint8_t w) : k(k), w(w) {
+        generate_index(sg);
+    }
     minSketchIndex(uint8_t k, uint8_t w) : k(k), w(w) {
     }
 
-    void generate_index(SequenceGraph &sg) {
+    void generate_index(const SequenceGraph &sg) {
         StrandedMinimiserSketchFactory kf(k, w);
         std::set<MinPosIDX> sketch;
         GraphNodeReader<FastaRecord> gnr({0,sg});
@@ -70,7 +73,7 @@ public:
     void load_from_file(std::string &filename) {
         sglib::OutputLog() << "Loading index" << std::endl;
         std::ifstream outf(filename, std::ios_base::binary);
-        pair skm;
+        nc_pair skm;
         auto mapSize(kmer_to_graphposition.size());
         outf.read(reinterpret_cast<char *>(&k), sizeof(k));
         outf.read(reinterpret_cast<char *>(&w), sizeof(w));
