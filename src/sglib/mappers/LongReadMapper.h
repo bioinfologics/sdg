@@ -229,26 +229,93 @@ class LongReadMapper {
 
         auto read_sketch_num(kf.getMinSketch(seq, sketch));
 
-        for (auto sk = sketch.begin(); sk != sketch.end(); ++sk){
-            std::unordered_map<uint64_t, std::vector<graphStrandPos>>::const_iterator foundKey(index.find(sk->hash));
+        for (auto sk : sketch) {
+            auto foundKey(index.find(sk.hash));
             if (foundKey == index.end()) {
                 sketch_not_in_index++;
                 continue;
             }
             sketch_in_index++;
-            for (auto match = foundKey->second.begin(); match != foundKey->second.end(); ++match) {
-                matches.emplace_back(match->node*(std::signbit(sk->pos)?-1:1), std::abs(sk->pos), std::abs(match->pos));
+            for (auto match : foundKey->second) {
+                matches.emplace_back(match.node*(std::signbit(sk.pos)?-1:1), std::abs(sk.pos), std::abs(match.pos));
             }
         }
 
         std::sort(matches.begin(), matches.end(), typename MatchOffset::byOffset());
-        sglib::OutputLog(sglib::DEBUG,false) << "Matched " << sketch_in_index
+        sglib::OutputLog(sglib::DEBUG, false) << "Matched " << sketch_in_index
                                              << " / " << read_sketch_num << " read sketches" << std::endl;
         return matches;
     }
 
 public:
     LongReadMapper(uint8_t k, uint8_t w, SequenceGraph &sg) : sg(sg), k(k), w(w), index(sg, k, w) {}
+
+    void map_read(FastqRecord read) {
+        auto matches = getMatchOffsets(read.seq);
+        std::sort(matches.begin(),matches.end(), MatchOffset::byReadPos());
+
+        for (const auto &m:matches) {
+            sglib::OutputLog(sglib::DEBUG, false) << "@MATCH " << read.name << ","
+                                                 << sg.nodes[std::abs(m.dirContig)].sequence.length() << "," << m
+                                                 << std::endl;
+        }
+
+        uint window_size(1000); // 1k window
+        uint stepping_size(200);    // 200bp stepping
+        auto match_window_multiplier(2.5f);    // MAX ranking node needs to have X times matches in window over second to be winner.
+        auto min_window_matches(3u);     // Min times seen a contig in a window to call match
+        auto min_windows(5u);    // Min number of windows matching a contig in the same direction
+        auto prev = matches.cbegin();
+        auto curr = prev;
+        std::vector<WindowBlock> blocks;
+        for (uint currPos = 0; currPos < read.seq.length(); currPos += stepping_size) {
+            std::map<int32_t, uint32_t> nodes;
+            for (curr = prev; curr->readPos < currPos+window_size; ++curr) {
+                nodes[curr->dirContig]++;
+            }
+            for (; prev->readPos < currPos+stepping_size; ++prev);
+
+            int32_t winner(0);
+            if (!nodes.empty()) {
+                std::pair<int32_t, uint32_t> max = *nodes.cbegin();
+                for (const auto &nc:nodes) {
+                    if (max.second < nc.second) max = nc;
+                    sglib::OutputLog(sglib::DEBUG, false) << "@WINDOW," << currPos << "," << currPos + window_size
+                                                          << "," << read.name << "," << nc.first << "," << nc.second
+                                                          << std::endl;
+                }
+                std::multimap<uint32_t, int32_t> reverseTest = flip_map(nodes);
+                for (std::multimap<uint32_t, int32_t>::const_reverse_iterator it = reverseTest.rbegin();
+                     it != reverseTest.rend(); ++it) {
+                    sglib::OutputLog(sglib::DEBUG, false) << "\t\t@RANK," << currPos << "," << currPos + window_size
+                                                          << "," << read.name << ","
+                                                          << it->first << "," << it->second << std::endl;
+                }
+
+                winner = getWinner(reverseTest, min_window_matches, match_window_multiplier);
+            }
+            if (!blocks.empty()) blocks.back().count_btw++;
+            if (0 == winner) continue;
+            if (blocks.empty()) {
+                blocks.emplace_back(currPos, currPos+stepping_size, winner, 1);
+            }
+            else {
+                if (blocks.back().contig == winner) {
+                    blocks.back().end = currPos;
+                    blocks.back().count++;
+                } else {
+                    blocks.emplace_back(currPos, currPos+stepping_size, winner, 1);
+                }
+            }
+        }
+        for (const auto &b: blocks) {
+            if (b.count > min_windows) {
+                sglib::OutputLog(false) << "@BLOCK," << read.name << "," << read.seq.length() << ","
+                                                     << b.start << "," << b.end << "," << b.contig << "," << b.count
+                                                     << "," << b.count_btw << std::endl;
+            }
+        }
+    }
 
     uint64_t map_reads2(std::string &filename, uint32_t error) {
         FastqReader<FastqRecord> fastqReader({0},filename);
@@ -416,65 +483,14 @@ public:
         StrandedMinimiserSketchFactory kf(k, w);
         std::set<MinPosIDX> sketch;
         FastqRecord read;
+
+        std::cout << "@MATCH,READ,NODE_LENGTH,NODE,READ_POS,OFFSET" << std::endl;
+        std::cout << "@BLOCK,READ,READ_LENGTH,START,END,NODE,COUNT,COUNT_BTW" << std::endl;
         while (fastqReader.next_record(read)) {
-            auto matches = getMatchOffsets(read.seq);
-            std::sort(matches.begin(),matches.end(), MatchOffset::byReadPos());
-
-            std::cout << "@MATCH READ,NODE_LENGTH,NODE,READ_POS,OFFSET" << std::endl;
-            for (const auto &m:matches) {
-                sglib::OutputLog(sglib::INFO, false) << "@MATCH " << read.name << "," << sg.nodes[std::abs(m.dirContig)].sequence.length() << "," << m << std::endl;
-            }
-
-            uint window_size(1000); // 1k window
-            uint stepping_size(200);    // 200bp stepping
-            auto match_window_multiplier(2.5f);    // MAX ranking node needs to have X times matches in window over second to be winner.
-            auto min_window_matches(3u);     // Min times seen a contig in a window to call match
-            auto min_windows(5u);    // Min number of windows matching a contig in the same direction
-            auto prev = matches.cbegin();
-            auto curr = prev;
-            std::vector<WindowBlock> blocks;
-            for (uint currPos = 0; currPos < read.seq.length(); currPos += stepping_size) {
-                std::map<int32_t, uint32_t> nodes;
-                for (curr = prev; curr->readPos < currPos+window_size; ++curr) {
-                    nodes[curr->dirContig]++;
-                }
-                for (; prev->readPos < currPos+stepping_size; ++prev);
-
-                std::pair<int32_t , uint32_t > max = *nodes.cbegin();
-                for( const auto &nc:nodes) {
-                    if (max.second < nc.second) max = nc;
-                    sglib::OutputLog(sglib::DEBUG, false) << "@WINDOW," << currPos << "," << currPos+window_size << "," << read.name << "," << nc.first << "," << nc.second << std::endl;
-                }
-                std::multimap<uint32_t , int32_t> reverseTest = flip_map(nodes);
-                for(std::multimap<uint32_t , int32_t>::const_reverse_iterator it = reverseTest.rbegin(); it != reverseTest.rend(); ++it) {
-                    sglib::OutputLog(sglib::DEBUG, false) << "\t\t@RANK," << currPos << "," << currPos + window_size << "," << read.name << ","
-                              << it->first << "," << it->second << std::endl;
-                }
-
-                auto winner = getWinner(reverseTest, min_window_matches, match_window_multiplier);
-                if (!blocks.empty()) blocks.back().count_btw++;
-                if (0 == winner) continue;
-                if (blocks.empty()) {
-                    blocks.emplace_back(currPos, currPos+stepping_size, winner, 1);
-                }
-                else {
-                    if (blocks.back().contig == winner) {
-                        blocks.back().end = currPos;
-                        blocks.back().count++;
-                    } else {
-                        blocks.emplace_back(currPos, currPos+stepping_size, winner, 1);
-                    }
-                }
-            }
-            for (const auto &b: blocks) {
-                if (b.count > min_windows)
-                    sglib::OutputLog(sglib::INFO, false) << "@BLOCK," << read.name << "," << read.seq.length() << "," << b.start << "," << b.end << "," << b.contig << "," << b.count << "," << b.count_btw << std::endl;
-            }
-
+            map_read(read);
         }
         return 0;
     }
-
 };
 
 
