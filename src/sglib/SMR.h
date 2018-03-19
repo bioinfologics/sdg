@@ -36,22 +36,23 @@ struct SMRParams {
         std::transform(smr_maxmem_env_raw.begin(),smr_maxmem_env_raw.end(), smr_maxmem_env_raw.begin(), toupper);
         auto gb_pos(smr_maxmem_env_raw.find("GB"));
         auto g_pos(smr_maxmem_env_raw.find('G'));
+        auto smr_maxmem_env(std::string(smr_maxmem_env_raw.begin(), smr_maxmem_env_raw.begin()+gb_pos));
         if ( gb_pos != std::string::npos) {
-            parsed_mem = GB*std::atoi(std::string(smr_maxmem_env_raw.begin(), smr_maxmem_env_raw.begin()+gb_pos).c_str());
+            parsed_mem = static_cast<uint64_t>(GB * std::stof(smr_maxmem_env, nullptr));
         }
         else if (g_pos != std::string::npos) {
-            parsed_mem = GB*std::atoi(std::string(smr_maxmem_env_raw.begin(), smr_maxmem_env_raw.begin()+g_pos).c_str());
+            parsed_mem = static_cast<uint64_t>(GB * std::stof(smr_maxmem_env, nullptr));
         }
         else {
             if ( std::all_of(smr_maxmem_env_raw.begin(),smr_maxmem_env_raw.end(), ::isdigit) )
-                parsed_mem = GB*std::atoi(smr_maxmem_env_raw.c_str());
+                parsed_mem = static_cast<uint64_t>(GB * std::stof(smr_maxmem_env, nullptr));
             else
                 parsed_mem = 4 * GB;
         }
         return parsed_mem;
     }
 
-    SMRParams(uint64_t maxMemory = 0, unsigned int min = 0, unsigned int max = std::numeric_limits<unsigned int>::max(),
+    explicit SMRParams(uint64_t maxMemory = 0, unsigned int min = 0, unsigned int max = std::numeric_limits<unsigned int>::max(),
                        const std::string &outdir = "./", const std::string &Otmp = "", unsigned int mergeCount = 4) :
             mergeCount(mergeCount), Otmp(Otmp), maxMem(maxMemory), outdir(outdir), min(min), max(max)
     {
@@ -150,6 +151,7 @@ public:
         sglib::check_or_create_directory(finalFilePath);
         outdir = finalFilePath;
         tmpInstance = sglib::create_temp_directory(tmpBase);
+        tmpInstance+="/";
         std::ifstream final_file(finalFilePath+"final.kc");
         if (final_file.is_open() and !do_work){
             sglib::OutputLog(sglib::DEBUG) << "Using precomputed sum file at " << outdir << "final.kc" << std::endl;
@@ -163,6 +165,7 @@ public:
             sglib::OutputLog(sglib::DEBUG) << "Reading file: " << read_file << std::endl;
             FileReader myFileReader(reader_parameters, read_file);
             sglib::OutputLog(sglib::DEBUG) << "Begin reduction using " << numElementsPerBatch << " elements per batch (" << ceil(uint64_t((numElementsPerBatch*sizeof(RecordType)*maxThreads)) / (1.0f*1024*1024*1024)) << "GB)" << std::endl;
+            sglib::OutputLog(sglib::DEBUG) << "Using tmp: " << tmpInstance << std::endl;
             mapElementsToBatches(myFileReader, numFileRecords);
 
             readerStatistics = myFileReader.getSummaryStatistics();
