@@ -53,11 +53,11 @@ public:
         }
     }
 
-    std::unordered_map<uint64_t, graphPosition>::const_iterator find(uint64_t hash) {
+    const_iterator find(const uint64_t hash) {
         return kmer_to_graphposition.find(hash);
     };
 
-    std::unordered_map<uint64_t, graphPosition>::const_iterator end() {
+    const_iterator end() {
         return kmer_to_graphposition.cend();
     };
 
