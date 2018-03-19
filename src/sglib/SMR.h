@@ -52,7 +52,7 @@ struct SMRParams {
         return parsed_mem;
     }
 
-    explicit SMRParams(uint64_t maxMemory = 0, unsigned int min = 0, unsigned int max = std::numeric_limits<unsigned int>::max(),
+    SMRParams(uint64_t maxMemory = 0, unsigned int min = 0, unsigned int max = std::numeric_limits<unsigned int>::max(),
                        const std::string &outdir = "./", const std::string &Otmp = "", unsigned int mergeCount = 4) :
             mergeCount(mergeCount), Otmp(Otmp), maxMem(maxMemory), outdir(outdir), min(min), max(max)
     {
