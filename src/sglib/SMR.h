@@ -526,7 +526,7 @@ private:
         std::string outBatchName(std::string(tmpInstance + "thread_0" + "_batch_" + std::to_string(currentBatch) + ".tmc"));
         // Simply dump the file
         std::ofstream outBatch(outBatchName.data(), std::ios_base::binary | std::ios_base::out | std::ios_base::trunc);
-        auto size = _elements.size();
+        auto size(_elements.size());
         outBatch.write((char *)&size, sizeof(size));
         outBatch.write((char *)_elements.data(), size*sizeof(RecordType));
         outBatch.close();
@@ -584,7 +584,7 @@ private:
         if (!outf) {
             throw ("Couldn't open " + finalFile);
         }
-        uint64_t numElements;
+        uint64_t numElements = 0;
         outf.read(reinterpret_cast<char *>(&numElements), sizeof(numElements));
         // reserve capacity
         std::vector<RecordType> vec;

@@ -270,10 +270,11 @@ public:
         std::vector<WindowBlock> blocks;
         for (uint currPos = 0; currPos < read.seq.length(); currPos += stepping_size) {
             std::map<int32_t, uint32_t> nodes;
+            if (prev == matches.cend()) break;
             for (curr = prev; curr->readPos < currPos+window_size; ++curr) {
                 nodes[curr->dirContig]++;
             }
-            for (; prev->readPos < currPos+stepping_size; ++prev);
+            for (; prev != matches.end() and prev->readPos < currPos+stepping_size; ++prev);
 
             int32_t winner(0);
             if (!nodes.empty()) {
