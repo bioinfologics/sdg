@@ -10,8 +10,8 @@
 #include <omp.h>
 #include <parallel/algorithm>
 #else
-int omp_get_max_threads(){return 1;}
-int omp_get_thread_num(){return 0;}
+int omp_get_max_threads(){return 1u;}
+int omp_get_thread_num(){return 0u;}
 #endif
 #include "LinkedReadMapper.hpp"
 #include "sglib/SMR.h"
@@ -96,6 +96,9 @@ void LinkedReadMapper::update_graph_index() {
 
 
 
+
+
+
 void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 31;
     std::cout<<"mapping reads!!!"<<std::endl;
@@ -105,8 +108,8 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
     /*
      * Read mapping in parallel,
      */
-    uint64_t thread_mapped_count[omp_get_max_threads()],thread_total_count[omp_get_max_threads()],thread_multimap_count[omp_get_max_threads()];
-    std::vector<ReadMapping> thread_mapping_results(omp_get_max_threads());
+    std::vector<uint64_t> thread_mapped_count(omp_get_max_threads()),thread_total_count(omp_get_max_threads()),thread_multimap_count(omp_get_max_threads());
+    std::vector<std::vector<ReadMapping>> thread_mapping_results(omp_get_max_threads());
     sglib::OutputLog(sglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
 #pragma omp parallel
     {
