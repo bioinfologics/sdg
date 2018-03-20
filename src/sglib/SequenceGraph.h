@@ -150,8 +150,8 @@ public:
     bool extend_if_coherent(SequenceGraphPath s);
     void reverse();
     bool is_canonical();
-    const bool operator< (const SequenceGraphPath & other);
-    const bool operator== (const SequenceGraphPath & other);
+    const bool operator< (const SequenceGraphPath & other) const;
+    const bool operator== (const SequenceGraphPath & other) const;
 
 private:
     SequenceGraph& sg;

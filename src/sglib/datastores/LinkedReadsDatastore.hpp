@@ -94,7 +94,7 @@ private:
     struct tag_kmers_t {
         bsg10xTag tag;
         std::unordered_set<uint64_t> kmers;
-        const operator==(const bsg10xTag & other_tag){return tag==other_tag;};
+        const bool operator==(const bsg10xTag & other_tag){return tag==other_tag;};
     };
 
     class StreamKmerFactory : public  KMerFactory {
@@ -109,7 +109,7 @@ private:
             while (*s!='\0' and *s!='\n') {
                 //fkmer: grows from the right (LSB)
                 //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                fillKBuf(*s, fkmer, rkmer, last_unknown);
                 if (last_unknown >= K) {
                     if (fkmer <= rkmer) {
                         // Is fwd

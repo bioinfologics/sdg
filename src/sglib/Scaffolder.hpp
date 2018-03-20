@@ -6,8 +6,8 @@
 #define SG_SCAFFOLDER_HPP
 
 #include <sglib/mappers/LinkedReadMapper.hpp>
-#include "SequenceGraph.hpp"
-#include "PairedReadMapper.hpp"
+#include "SequenceGraph.h"
+#include "PairedReadMapper.h"
 #include "KmerCompressionIndex.hpp"
 
 class Scaffolder {

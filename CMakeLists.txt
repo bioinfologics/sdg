@@ -139,8 +139,6 @@ add_library(sequence_graph SHARED
             src/sglib/PairedReadMapper.cc
             src/sglib/HaplotypeScorer.cpp
             src/sglib/SequenceGraphJournal.cc
-            src/sglib/SequenceGraph.cc
-            src/sglib/PairedReadMapper.cc
             src/sglib/Scaffolder.cc
             src/sglib/filesystem/check_or_create_directory.cc
             src/sglib/PhaseScaffolder.cpp
@@ -149,19 +147,12 @@ add_library(sequence_graph SHARED
             src/sglib/logger/OutputLog.cc
             src/sglib/datastores/LinkedReadsDatastore.cc
             src/sglib/mappers/LinkedReadMapper.cc
-            src/sglib/SequenceGraph.cc
-            src/sglib/PairedReadMapper.cc
-            src/sglib/HaplotypeScorer.cpp
-            src/sglib/SequenceGraphJournal.cc
-            src/sglib/SequenceGraph.cc
-            src/sglib/PairedReadMapper.cc
-            src/sglib/Scaffolder.cc
-            src/sglib/filesystem/check_or_create_directory.cc
-            src/sglib/PhaseScaffolder.cpp
-            src/sglib/KmerCompressionIndex.cc
-            src/sglib/GraphPartitioner.cc
-            src/sglib/logger/OutputLog.cc
-        src/sglib/indexers/minSketchIndex.hpp)
+            src/sglib/processors/Untangler.cc
+            src/sglib/processors/TagWalker.cc
+            src/sglib/processors/FlowFollower.cc
+            src/sglib/WorkSpace.cc
+            src/sglib/datastores/PathsDatastore.cc
+        )
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 
@@ -199,43 +190,23 @@ install(FILES
 
 add_executable(bsg-datastore
         src/bsg-datastore.cc
-        src/sglib/datastores/LinkedReadsDatastore.hpp
-        src/sglib/datastores/LinkedReadsDatastore.cc
-        src/sglib/logger/OutputLog.h
-        src/sglib/logger/OutputLog.cc)
+        )
 
 add_executable(bsg-kmerspectra
         src/bsg-kmerspectra.cc
-        src/sglib/SequenceGraph.hpp
-        src/sglib/SequenceGraph.cc
-        src/sglib/filesystem/check_or_create_directory.h
-        src/sglib/filesystem/check_or_create_directory.cc
-        src/sglib/KmerCompressionIndex.hpp
-        src/sglib/KmerCompressionIndex.cc
-        src/sglib/logger/OutputLog.h
-        src/sglib/logger/OutputLog.cc
         )
-target_link_libraries(bsg-kmerspectra ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
 add_executable(bsg-workspace
         src/bsg-workspace.cc
         )
-target_link_libraries(bsg-kmerspectra ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
 add_executable(bsg-untangler
         src/bsg-untangler.cc
-        src/sglib/processors/Untangler.hpp
-        src/sglib/processors/Untangler.cc src/sglib/processors/TagWalker.cc src/sglib/processors/TagWalker.hpp src/sglib/processors/FlowFollower.cc src/sglib/processors/FlowFollower.hpp)
+        )
 
 add_executable(bsg-testflowfollower
         src/bsg-testflowfollower.cc
-        src/sglib/processors/Untangler.hpp
-        src/sglib/processors/Untangler.cc
-        src/sglib/processors/TagWalker.cc
-        src/sglib/processors/TagWalker.hpp
-        src/sglib/processors/FlowFollower.cc
-        src/sglib/processors/FlowFollower.hpp)
-
+        )
 
 ## add executables and respective sources
 add_executable(gfa-qc
@@ -278,7 +249,7 @@ add_executable(gfa-indexer
 
 target_link_libraries(bsg-workspace sequence_graph)
 target_link_libraries(bsg-datastore sequence_graph)
-
+target_link_libraries(bsg-kmerspectra sequence_graph)
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
