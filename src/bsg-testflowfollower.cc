@@ -19,7 +19,9 @@ int main(int argc, char * argv[]) {
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
     sgNodeID_t start_node=0,end_node=0;
     uint64_t max_nodes=10000;
-    uint16_t all_flows_fast_tags_min=0,all_flows_fast_tags_max=0;
+    uint16_t select_min_tags=0,select_max_tags=0;
+    float select_min_ci=.75,select_max_ci=1.5;
+    uint32_t select_min_size=399,select_max_size=5000;
     try
     {
         cxxopts::Options options("bsg-testflowfollower", "a test following flows in a parallel region of the graph");
@@ -28,11 +30,15 @@ int main(int argc, char * argv[]) {
                 ("help", "Print help")
                 ("w,workspace", "input workspace", cxxopts::value<std::string>(workspace_file))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
-                ("s,start", "starting node (with direction flowing towards end)", cxxopts::value<sgNodeID_t>(start_node))
-                ("e,end", "ending node (with direction flowing from start)", cxxopts::value<sgNodeID_t>(end_node))
-                ("all_flows_fast_tags_min", "run fast analysis on all nodes with this ammoun of tags or more", cxxopts::value<uint16_t>(all_flows_fast_tags_min))
-                ("all_flows_fast_tags_max", "run fast analysis on all nodes with this ammoun of tags or less", cxxopts::value<uint16_t>(all_flows_fast_tags_max))
-                ("n,max_nodes", "maximum number of nodes to explore (default: 10000)", cxxopts::value<uint64_t >(max_nodes));
+                //("s,start", "starting node (with direction flowing towards end)", cxxopts::value<sgNodeID_t>(start_node))
+                //("e,end", "ending node (with direction flowing from start)", cxxopts::value<sgNodeID_t>(end_node))
+                ("s,min_size", "node selection, min size", cxxopts::value<uint32_t>(select_min_size))
+                ("S,max_size", "node selection, max size", cxxopts::value<uint32_t>(select_max_size))
+                ("c,min_ci", "node selection, min compression index", cxxopts::value<float>(select_min_ci))
+                ("C,max_ci", "node selection, max compression index", cxxopts::value<float>(select_max_ci))
+                ("t,min_tags", "node selection, min tags", cxxopts::value<uint16_t>(select_min_tags))
+                ("T,max_tags", "node selection, max tags", cxxopts::value<uint16_t>(select_max_tags));
+                //("n,max_nodes", "maximum number of nodes to explore (default: 10000)", cxxopts::value<uint64_t >(max_nodes));
 
 
 
@@ -63,72 +69,71 @@ int main(int argc, char * argv[]) {
     ws.load_from_disk(workspace_file);
     //ws.sg.write_to_gfa("initial_graph.gfa",{},{},{});
     ws.linked_read_datastores[0].dump_tag_occupancy_histogram("tag_occupancy.csv");
-    ws.add_log_entry("bsg-untangler run started");
+    ws.add_log_entry("bsg-testflowfollower run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     //ws.kci.reindex_graph();
     ws.kci.compute_compression_stats();
     //for (auto &m:ws.linked_read_mappers) m.memlimit=max_mem_gb*1024*1024*1024;
+//TODO: move region selection into SG
+//    std::unordered_set<sgNodeID_t> region_nodes;
+//    if (select_min_tags==0) {
+//        if (start_node != 0 and end_node != 0) {
+//            //find the path
+//            region_nodes.insert(start_node);
+//            uint64_t last_size = 0;
+//            bool end_found = false;
+//            while (region_nodes.size() < max_nodes and last_size < region_nodes.size()) {
+//                last_size = region_nodes.size();
+//                std::vector<sgNodeID_t> new_nodes;
+//                for (auto n:region_nodes) {
+//                    if (n != end_node) {
+//                        for (auto l:ws.sg.get_fw_links(n)) new_nodes.push_back(l.dest);
+//                    } else end_found = true;
+//                    if (n != start_node) {
+//                        for (auto l:ws.sg.get_bw_links(n)) new_nodes.push_back(-l.dest);;
+//                    }
+//                }
+//                for (auto n:new_nodes) region_nodes.insert(n);
+//            }
+//            if (region_nodes.size() >= max_nodes) {
+//                std::cout << "Aborting after growing the region to " << region_nodes.size() << " nodes" << std::endl;
+//                exit(0);
+//            }
+//            std::cout << "Found a region with " << region_nodes.size() << " nodes" << std::endl;
+//
+//            ws.sg.write_to_gfa(output_prefix + "_flowregion.gfa", {}, {}, region_nodes);
+//        } else {
+//            ws.kci.reindex_graph();
+//            ws.kci.compute_compression_stats();
+//            Untangler untangler(ws);
+//            auto HSPNPs = untangler.get_all_HSPNPs();
+//            for (auto h:HSPNPs) {
+//                region_nodes.insert(h.first);
+//                region_nodes.insert(h.second);
+//            }
+//            std::cout << "Using the whole graph with " << region_nodes.size() << " nodes from HSPNPs" << std::endl;
+//        }
+//    }
 
-    std::unordered_set<sgNodeID_t> region_nodes;
-    if (all_flows_fast_tags_min==0) {
-        if (start_node != 0 and end_node != 0) {
-            //find the path
-            region_nodes.insert(start_node);
-            uint64_t last_size = 0;
-            bool end_found = false;
-            while (region_nodes.size() < max_nodes and last_size < region_nodes.size()) {
-                last_size = region_nodes.size();
-                std::vector<sgNodeID_t> new_nodes;
-                for (auto n:region_nodes) {
-                    if (n != end_node) {
-                        for (auto l:ws.sg.get_fw_links(n)) new_nodes.push_back(l.dest);
-                    } else end_found = true;
-                    if (n != start_node) {
-                        for (auto l:ws.sg.get_bw_links(n)) new_nodes.push_back(-l.dest);;
-                    }
-                }
-                for (auto n:new_nodes) region_nodes.insert(n);
-            }
-            if (region_nodes.size() >= max_nodes) {
-                std::cout << "Aborting after growing the region to " << region_nodes.size() << " nodes" << std::endl;
-                exit(0);
-            }
-            std::cout << "Found a region with " << region_nodes.size() << " nodes" << std::endl;
-
-            ws.sg.write_to_gfa(output_prefix + "_flowregion.gfa", {}, {}, region_nodes);
-        } else {
-            ws.kci.reindex_graph();
-            ws.kci.compute_compression_stats();
-            Untangler untangler(ws);
-            auto HSPNPs = untangler.get_all_HSPNPs();
-            for (auto h:HSPNPs) {
-                region_nodes.insert(h.first);
-                region_nodes.insert(h.second);
-            }
-            std::cout << "Using the whole graph with " << region_nodes.size() << " nodes from HSPNPs" << std::endl;
-        }
-    }
-
-    FlowFollower ff(ws,region_nodes);
-    std::cout<<"Creating flows..."<<std::endl;
-    if (all_flows_fast_tags_min==0) {
-        ff.create_flows();
-        auto skatepaths=ff.skate_from_all(3,20000);
-        std::ofstream pf(output_prefix+"_skatepaths.lst"),sf(output_prefix+"_skatepaths.fasta");
-        for (auto &sp:skatepaths) {
-            auto s = sp.get_sequence();
-            pf << s.size() << ", ";
-            for (auto n:sp.nodes) pf << "seq" << llabs(n) << (n != sp.nodes.back() ? ", " : "\n");
-            sf << ">p" << sp.nodes.front() << "_" << sp.nodes.back() << "_" << s.size() << "bp" << std::endl << s
-               << std::endl;
-        }
-    }
-    else {
-        ff.select_from_all_nodes(399,1000,all_flows_fast_tags_min, all_flows_fast_tags_max,.8,1.2);
+    FlowFollower ff(ws,{});
+    //TODO: add option to include HSPNPs
+//    ws.kci.reindex_graph();
+//            ws.kci.compute_compression_stats();
+//            Untangler untangler(ws);
+//            auto HSPNPs = untangler.get_all_HSPNPs();
+//            for (auto h:HSPNPs) {
+//                region_nodes.insert(h.first);
+//                region_nodes.insert(h.second);
+        ws.add_log_entry("Creating paths from linked reads, starting nodes: "+
+                         std::to_string(select_min_size)+ "-" + std::to_string(select_max_size) + " bp "+
+                         std::to_string(select_min_tags)+"-"+std::to_string(select_min_tags)+ " tags " +
+                         std::to_string(select_min_ci)+ "-" + std::to_string(select_max_ci) + " CI");
+        ff.select_from_all_nodes(select_min_size,select_max_size,select_min_tags, select_max_tags,
+                                 select_min_ci,select_max_ci);
         //ff.create_flows();
         ff.create_flows_fast();
 
-    }
+//    }
     sglib::OutputLog()<<"Dumping final Workspace..."<<std::endl;
     ws.dump_to_disk(output_prefix+"_final.bsgws");
 //    sglib::OutputLog()<<"Dumping scaffolded GFA..."<<std::endl;
