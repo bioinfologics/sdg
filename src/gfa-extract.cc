@@ -5,7 +5,7 @@
 #include <string>
 #include <sglib/SequenceGraph.h>
 #include <cxxopts.hpp>
-#include <sglib/filesystem/check_or_create_directory.h>
+#include <sglib/filesystem/helpers.h>
 #include <sglib/logger/OutputLog.h>
 #include <sglib/factories/KMerIDXFactory.h>
 #include <sglib/factories/ContigBlockFactory.h>

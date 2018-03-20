@@ -22,8 +22,9 @@
 #include <unordered_set>
 #include <cmath>
 #include "sglib/logger/OutputLog.h"
-#include <sglib/filesystem/check_or_create_directory.h>
+#include <sglib/filesystem/helpers.h>
 #include <sglib/readers/Common.h>
+#include <cassert>
 
 
 static const std::uint64_t GB(1024*1024*1024);
@@ -603,6 +604,7 @@ private:
      */
     std::vector<RecordType> getRecords() {
 
+        std::string finalFilename(std::string(outdir+"final.kc"));
         std::vector<std::string> threadFiles(maxThreads);
 
         for (auto threadID = 0; threadID < maxThreads; threadID++) {
@@ -611,11 +613,13 @@ private:
             threadFiles[threadID] = name;
         }
         if (threadFiles.size() == 1) {
-            rename(threadFiles[0].c_str(), std::string(outdir+"final.kc").c_str());
+            bool check_ok = sglib::copy_file(threadFiles[0], finalFilename, false);
+            assert(check_ok);
+            remove(threadFiles[0].c_str());
         } else {
-            totalFilteredRecords = merge(outdir + "final.kc", threadFiles);
+            totalFilteredRecords = merge(finalFilename, threadFiles);
         }
-        return readFinalkc(outdir+"final.kc");
+        return readFinalkc(finalFilename);
     }
 
     unsigned int minCount;                          /// Minimum times a record has to be seen to be accepted

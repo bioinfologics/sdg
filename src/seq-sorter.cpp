@@ -5,7 +5,7 @@
 #define unlikely(x)     __builtin_expect((x),0)
 
 #include "cxxopts.hpp"
-#include "sglib/filesystem/check_or_create_directory.h"
+#include "sglib/filesystem/helpers.h"
 #include "sglib/readers/FileReader.h"
 #include "sglib/factories/KMerIDXFactory.h"
 #include <sglib/types/KmerTypes.hpp>

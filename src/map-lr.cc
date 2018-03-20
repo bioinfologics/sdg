@@ -5,7 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <sglib/factories/ContigBlockFactory.h>
-#include <sglib/filesystem/check_or_create_directory.h>
+#include <sglib/filesystem/helpers.h>
 #include <sglib/readers/FileReader.h>
 #include <sglib/readers/SequenceGraphReader.h>
 #include <sglib/SMR.h>

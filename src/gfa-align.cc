@@ -5,7 +5,7 @@
 #include <iostream>
 #include <fstream>
 
-#include <sglib/filesystem/check_or_create_directory.h>
+#include <sglib/filesystem/helpers.h>
 #include <sglib/factories/KMerIDXFactory.h>
 #include <sglib/readers/FileReader.h>
 #include <sglib/SMR.h>
