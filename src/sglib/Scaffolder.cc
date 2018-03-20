@@ -4,9 +4,8 @@
 
 #include "Scaffolder.hpp"
 
-void Scaffolder::pop_unsupported_shortbubbles() {
+void Scaffolder::pop_unsupported_shortbubbles(uint64_t max_length) {
     std::cout<<"popping unsupported bubbles!"<<std::endl;
-    uint64_t max_length=1000;
     //find short nodes with parallel nodes short like them
     for (sgNodeID_t n=1; n<sg.nodes.size(); ++n) {
         if (sg.nodes[n].sequence.size()>max_length) continue;
@@ -254,10 +253,9 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Scaffolder::get_all_haplotype_pair
      */
     std::pair<sgNodeID_t,sgNodeID_t> hap={0,0};
     for (auto n=1;n<sg.nodes.size();++n){
-        if (used[n] or sg.nodes[n].status==sgNodeDeleted) continue;
+        if (sg.nodes[n].status==sgNodeDeleted) continue;
         auto frontkci=kci.compute_compression_for_node(n);
         if (frontkci>max_c2 or frontkci<min_c2) continue;
-        used[n]=true;
         auto m=n;
         //two passes: 0->fw, 1->bw,
         for (auto pass=0; pass<2; ++pass,m=-m) {
@@ -279,11 +277,15 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Scaffolder::get_all_haplotype_pair
             if (h1kc > max_c1 or h1kc < min_c1) continue;
             auto ekc = kci.compute_compression_for_node(hap0f[0].dest);
             if (ekc > max_c2 or ekc < min_c2) continue;
+            if (used[(hap.first>0?hap.first:-hap.first)] or used[(hap.second>0?hap.second:-hap.second)]){
+                if (not used[(hap.second>0?hap.second:-hap.second)] or not used[(hap.second>0?hap.second:-hap.second)])
+                    std::cout<<"WARNING: unusual use pattern on HSPNP"<<std::endl;
+                continue;
+            }
             hps.push_back(hap);
             if (hps.size()%100==0) std::cout<<hps.size()<<" haplotype pairs found"<<std::endl;
             used[(hap.first>0?hap.first:-hap.first)]=true;
             used[(hap.second>0?hap.second:-hap.second)]=true;
-            used[(hap0f[0].dest>0?hap0f[0].dest:-hap0f[0].dest)]=true;
         }
     }
     return hps;

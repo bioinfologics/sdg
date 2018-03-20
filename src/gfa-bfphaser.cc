@@ -18,12 +18,13 @@ int main(int argc, char * argv[]) {
     for (auto i=0;i<argc;i++) std::cout<<argv[i]<<" ";
     std::cout<<std::endl<<std::endl;
 
-    std::string gfa_filename,output_prefix, load_cidx, dump_cidx;
-    std::vector<std::string> reads1,reads2,reads_type,cidxreads1,cidxreads2, dump_mapped, load_mapped;
+    std::string gfa_filename,output_prefix, load_cidx;
+    std::vector<std::string> dump_mapped, linked_reads;
     bool stats_only=0,reindex_kci=0;
     uint64_t max_mem_gb=4;
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
-    bool repeats_first=1;
+    bool repeats_first=1,pop_bubles=0;
+    std::string verbose_log="";
     try
     {
         cxxopts::Options options("gfa-bfphaser", "GFA Bubbles First Phaser");
@@ -33,22 +34,17 @@ int main(int argc, char * argv[]) {
                 ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
         options.add_options("Compression index options")
-                ("cidxread1", "compression index input reads, left", cxxopts::value<std::vector<std::string>>(cidxreads1))
-                ("cidxread2", "compression index input reads, right", cxxopts::value<std::vector<std::string>>(cidxreads2))
-                ("load_cidx", "load compression index filename", cxxopts::value<std::string>(load_cidx))
-                ("dump_cidx", "dump compression index filename", cxxopts::value<std::string>(dump_cidx))
-                ("reindex_ci", "re-index compression index after loading", cxxopts::value<bool>(reindex_kci))
+                ("k,kmer_spectra", "kmer spectra file (for KCI)", cxxopts::value<std::string>(load_cidx))
+                ("reindex_kci", "re-index compression index after loading", cxxopts::value<bool>(reindex_kci))
                 ;
         options.add_options("Paired reads options")
-                ("1,read1", "input reads, left", cxxopts::value<std::vector<std::string>>(reads1))
-                ("2,read2", "input reads, right", cxxopts::value<std::vector<std::string>>(reads2))
-                ("read_type", "One of: pe,10x", cxxopts::value<std::vector<std::string>>(reads_type))
-                ("d,dump_to", "dump mapped reads to file", cxxopts::value<std::vector<std::string>>(dump_mapped))
-                ("l,load_from", "load mapped reads from file", cxxopts::value<std::vector<std::string>>(load_mapped))
+                ("l,linked_reads", "load linked reads datastore from file", cxxopts::value<std::vector<std::string>>(linked_reads))
                 ("max_mem", "maximum_memory when mapping (GB, default: 4)", cxxopts::value<uint64_t>(max_mem_gb));
 
         options.add_options("Phasing and scaffolding options")
+                ("pop_short", "pop unsupported short bubbles first", cxxopts::value<bool>(pop_bubles))
                 ("repeats_first", "solve_repeats before bubble phasing", cxxopts::value<bool>(repeats_first))
+                ("heuristics_verbose_log", "dump heuristics verbose log to file", cxxopts::value<std::string>(verbose_log))
                 ;
 
 
@@ -96,104 +92,100 @@ int main(int argc, char * argv[]) {
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
 
-    std::cout<<std::endl<<"=== Mapping reads ==="<<std::endl;
-    //read mapping/loading
-    std::vector<PairedReadMapper> prmappers;
-    std::vector<LinkedReadMapper> lrmappers;
-    std::vector<LinkedReadsDatastore> datastores;
-
-
-    for(int lib=0;lib<reads1.size();lib++) {
-        if (load_mapped.size()<=lib) {
-            if (reads_type[lib] == "10x" or reads_type[lib] == "10xseq") {
-                datastores.emplace_back(reads1[lib],reads2[lib],
-                        (reads_type[lib] == "10xseq" ? LinkedReadsFormat::seq : LinkedReadsFormat::UCDavis));
-                lrmappers.emplace_back(sg,datastores.back());
-                lrmappers.back().memlimit=max_mem_gb * 1024L * 1024L * 1024L;
-                lrmappers.back().update_graph_index();
-                lrmappers.back().map_reads();
-                //mappers.back().map_reads(reads1[lib], reads2[lib], prm10x, max_mem_gb * 1024L * 1024L * 1024L);
-            } else {
-                std::cout<<"Sorry, but only 10x read mapping is supported at this time"<<std::endl;
-            }
-            lrmappers.back().print_stats();
-        } else {
-            std::cout<<"Sorry, loading datastores and mappers is NOT supported at this time"<<std::endl;
-            /*std::cout<<"Library #"<<lib<<": load from disk at "<<load_mapped[lib]<<std::endl;
-            mappers.emplace_back(sg);
-            mappers.back().load_from_disk(load_mapped[lib]);
-            mappers[lib].read1filename=reads1[lib];
-            mappers[lib].read2filename=reads2[lib];
-            mappers[lib].readType=(reads_type[lib] == "10x" ? prm10x : prmPE);
-            mappers[lib].memlimit=max_mem_gb * 1024L * 1024L * 1024L;
-            mappers.back().print_stats();*/
-        }
-        if (dump_mapped.size() > lib) {
-            std::cout<<"Sorry, dumping datastores and mappers is NOT supported at this time"<<std::endl;
-            /*std::cout<<"dumping map to "<<dump_mapped[lib]<<std::endl;
-            mappers.back().save_to_disk(dump_mapped[lib]);*/
-        }
-    }
-
     std::cout<<std::endl<<"=== Loading reads compression index ==="<<std::endl;
     //compression index
     KmerCompressionIndex kci(sg,max_mem_gb*1024L*1024L*1024L);
-    if (load_cidx!=""){
-        kci.load_from_disk(load_cidx);
-        if (reindex_kci) kci.reindex_graph();
-    } else {
-        kci.index_graph();
-        for(int lib=0;lib<cidxreads1.size();lib++) {
-            kci.start_new_count();
-            kci.add_counts_from_file(cidxreads1[lib]);
-            kci.add_counts_from_file(cidxreads2[lib]);
-        }
-    }
-    if (dump_cidx!=""){
-        kci.save_to_disk(dump_cidx);
-    }
+    kci.load_from_disk(load_cidx);
+    if (reindex_kci) kci.reindex_graph();
 
     if (kci.read_counts.size()>0) {
         kci.compute_compression_stats();
         kci.dump_histogram("kci_histogram.csv");
     }
 
+    std::cout<<std::endl<<"=== Mapping reads ==="<<std::endl;
+    //read mapping/loading
+    std::vector<PairedReadMapper> prmappers;
+    std::vector<LinkedReadMapper> lrmappers;
+    std::vector<LinkedReadsDatastore> datastores;
+
+    for (auto lrf:linked_reads){
+        datastores.emplace_back(lrf);
+        lrmappers.emplace_back(sg,datastores.back());
+        lrmappers.back().memlimit=max_mem_gb*1024L*1024L*1024L;
+        lrmappers.back().update_graph_index();
+        lrmappers.back().map_reads();
+    }
+
+
+
 
     std::cout<<std::endl<<"=== Scaffolding ==="<<std::endl;
 
 
     Scaffolder scaff(sg,prmappers,lrmappers,kci);
-
+    std::ofstream verbose_log_file;
+    if (verbose_log!=""){
+        verbose_log_file.open(verbose_log);
+    }
+    if (pop_bubles) {
+        scaff.pop_unsupported_shortbubbles();
+        //for (auto & rm: scaff.rmappers) {
+        //    rm.remove_obsolete_mappings();
+        //    rm.update_graph_index();
+        //    rm.map_reads();
+        //}
+        for (auto & lrm: scaff.lrmappers) {
+            lrm.remove_obsolete_mappings();
+            lrm.update_graph_index();
+            lrm.map_reads();
+        }
+    }
+    std::unordered_set<sgNodeID_t> unsolved_repeats;
     if (repeats_first) {
         std::cout << std::endl << "Step 1 - Solving trivial repeats" << std::endl;
         bool mod = true;
         int srpass = 0;
         while (mod) {
-            uint64_t aa_count=0,ab_count=0,unsolved_count=0;
+            unsolved_repeats.clear();
+            uint64_t aa_count=0,ab_count=0,unsolved_count=0,non_evaluated=0;
             mod = false;
             ++srpass;
             std::cout << " Finding trivial repeats to analyse with tags" << std::endl;
             std::vector<bool> used(sg.nodes.size());
             std::vector<SequenceGraphPath> paths_solved;
+            if (verbose_log!="") verbose_log_file<<"==== Round of repetition analysis started ===="<<std::endl;
             for (auto n = 1; n < sg.nodes.size(); ++n) {
-                if (used[n]) continue;
+                if (used[n]) {
+                    if (verbose_log!="") verbose_log_file<<n<<" is used"<<std::endl;
+                    continue;
+                }
                 auto fwl = sg.get_fw_links(n);
                 auto bwl = sg.get_bw_links(n);
-                if (fwl.size() != 2 or bwl.size() != 2) continue;
+                if (fwl.size() != 2 or bwl.size() != 2) {
+                    if (verbose_log!="") verbose_log_file<<n<<" has "<<bwl.size()<<" ins and "<<fwl.size()<<" outs"<<std::endl;
+                    continue;
+                }
                 auto f0 = fwl[0].dest;
                 auto f1 = fwl[1].dest;
                 auto b0 = bwl[0].dest;
                 auto b1 = bwl[1].dest;
                 if (used[(b0 > 0 ? b0 : -b0)] or used[(b1 > 0 ? b1 : -b1)] or used[(f0 > 0 ? f0 : -f0)] or
-                    used[(f1 > 0 ? f1 : -f1)])
+                    used[(f1 > 0 ? f1 : -f1)]) {
+                    non_evaluated++;
+                    if (verbose_log!="") verbose_log_file<<n<<" neighbors are used"<<std::endl;
                     continue;
+                }
                 sgNodeID_t all[4] = {f0, f1, b0, b1};
                 bool ok = true;
-                for (auto x:all) if (x == n or x == -n or sg.nodes[(x > 0 ? x : -x)].sequence.size() < 399) ok = false;
+                for (auto x:all) if (x == n or x == -n or sg.nodes[(x > 0 ? x : -x)].sequence.size() < 199) ok = false;
                 for (auto j = 0; j < 3; ++j)
                     for (auto i = j + 1; i < 4; ++i)
                         if (all[i] == all[j] or all[i] == -all[j])ok = false; //looping node
-                if (!ok) continue;
+                if (!ok) {
+                    if (verbose_log!="") verbose_log_file<<n<<" and neighbors are short"<<std::endl;
+                    continue;
+                }
 
 //                std::cout<<"Repeat: [ "<<-b0<<" | "<<-b1<<" ] <-> "<<n<<" <-> [ "<<f0<<" | "<<f1<<" ]"<<std::endl;
                 std::set<prm10xTag_t> b0tags, b1tags, f0tags, f1tags;
@@ -259,7 +251,11 @@ int main(int argc, char * argv[]) {
                     paths_solved.push_back(SequenceGraphPath(sg, {-b1, n, f0}));
                     ++ab_count;
                 }
-                else ++unsolved_count;
+                else {
+                    unsolved_repeats.insert(n);
+                    ++unsolved_count;
+                    if (verbose_log!="") verbose_log_file<<n<<" unsolved aa: "<<aa.size()<<"  bb: "<<bb.size()<<"  ab: "<<ab.size()<<"  ba: "<<ba.size()<<std::endl;
+                }
             }
 
             std::cout << paths_solved.size() << " paths to join" << std::endl;
@@ -275,10 +271,11 @@ int main(int argc, char * argv[]) {
                 }
 
             }
-            std::cout<<"Path analysis summary AA:"<<aa_count<<" AB:"<<ab_count<<" Unsolved:"<<unsolved_count<<std::endl;
+            std::cout<<"Path analysis summary AA:"<<aa_count<<" AB:"<<ab_count
+                     <<" Unsolved:"<<unsolved_count<<" Non evaluated:"<<non_evaluated<<std::endl;
             if (mod) {
                 scaff.kci.reindex_graph();
-                sg.write_to_gfa(output_prefix + "_solved_repeats_" + std::to_string(srpass) + ".gfa");
+                sg.write_to_gfa(output_prefix + "_solved_repeats_" + std::to_string(srpass) + ".gfa",unsolved_repeats);
                 std::cout << reads_to_remap.size() << " pairs of read to remap" << std::endl;
                 scaff.lrmappers[0].update_graph_index();
                 scaff.lrmappers[0].map_reads(reads_to_remap);

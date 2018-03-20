@@ -2,12 +2,12 @@
 // Created by Bernardo Clavijo (EI) on 18/10/2017.
 //
 
-#include "Scaffolder.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <set>
-#include "SequenceGraph.h"
+#include <math.h>
+#include "SequenceGraph.hpp"
 #include <sglib/mappers/LinkedReadMapper.hpp>
 #include <list>
 #include <queue>
@@ -320,6 +320,53 @@ std::vector<std::vector<sgNodeID_t>> SequenceGraph::connected_components(int max
     return components;
 }
 
+void SequenceGraph::write(std::ofstream & output_file) {
+    uint64_t count;
+    count=nodes.size();
+    output_file.write((char *) &count,sizeof(count));
+    for (auto &n:nodes){
+        output_file.write((char *) &n.status,sizeof(n.status));
+        count=n.sequence.size();
+        output_file.write((char *) &count,sizeof(count));
+        output_file.write((char *) n.sequence.c_str(),count);
+    }
+    count=links.size();
+    output_file.write((char *) &count,sizeof(count));
+    for (auto nl:links) {
+        uint64_t lcount=nl.size();
+        output_file.write((char *) &lcount,sizeof(lcount));
+        output_file.write((char *) nl.data(), sizeof(Link) * lcount);
+    }
+}
+
+void SequenceGraph::read(std::ifstream & input_file) {
+    uint64_t count;
+    input_file.read((char *) &count,sizeof(count));
+    nodes.clear();
+    nodes.reserve(count);
+    uint64_t active=0;
+    for (auto i=0;i<count;++i){
+        uint64_t seqsize;
+        std::string seq;
+        sgNodeStatus_t status;
+        input_file.read((char *) &status,sizeof(status));
+        input_file.read((char *) &seqsize,sizeof(seqsize));
+        seq.resize(seqsize);
+        input_file.read((char *) seq.c_str(),seqsize);
+        nodes.emplace_back(seq);
+        nodes.back().status=status;
+        if (nodes.back().status==sgNodeStatus_t::sgNodeActive) ++active;
+    }
+    input_file.read((char *) &count,sizeof(count));
+    links.resize(count);
+    for (auto &nl:links) {
+        uint64_t lcount;
+        input_file.read((char *) &lcount,sizeof(lcount));
+        nl.resize(lcount,{0,0,0});
+        input_file.read((char *) nl.data(), sizeof(Link) * lcount);
+    }
+}
+
 void SequenceGraph::load_from_gfa(std::string filename) {
     std::string line;
     this->filename=filename;
@@ -349,7 +396,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     oldnames.push_back("");
     nodes.clear();
     links.clear();
-    add_node(Node("")); //an empty node on 0, just to skip the space
+    add_node(Node("",sgNodeStatus_t::sgNodeDeleted)); //an empty deleted node on 0, just to skip the space
     sgNodeID_t nextid=1;
     uint64_t rcnodes=0;
     while(!fastaf.eof()){
@@ -426,7 +473,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     std::cout<<nodes.size()-1<<" nodes after connecting with "<<lcount<<" links"<<std::endl;
 }
 
-void SequenceGraph::write_to_gfa(std::string filename) {
+void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<sgNodeID_t> & mark_red, const std::vector<double> & depths, const std::unordered_set<sgNodeID_t> & selected_nodes={}){
     std::string fasta_filename;
     //check the filename ends in .gfa
     if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
@@ -447,13 +494,17 @@ void SequenceGraph::write_to_gfa(std::string filename) {
 
     for (sgNodeID_t i=1;i<nodes.size();++i){
         if (nodes[i].status==sgNodeDeleted) continue;
+        if (!selected_nodes.empty() and selected_nodes.count(i)==0 and selected_nodes.count(-i)==0) continue;
         fastaf<<">seq"<<i<<std::endl<<nodes[i].sequence<<std::endl;
-        gfaf<<"S\tseq"<<i<<"\t*\tLN:i:"<<nodes[i].sequence.size()<<"\tUR:Z:"<<fasta_filename<<std::endl;
+        gfaf<<"S\tseq"<<i<<"\t*\tLN:i:"<<nodes[i].sequence.size()<<"\tUR:Z:"<<fasta_filename
+                <<(mark_red.count(i)?"\tCL:Z:red":"")<<(depths.empty() or isnan(depths[i])?"":"\tDP:f:"+std::to_string(depths[i]))<<std::endl;
     }
 
     for (auto &ls:links){
         for (auto &l:ls)
-            if (l.source<=l.dest) {
+            if (l.source<=l.dest and (selected_nodes.empty() or
+                    selected_nodes.count(l.source)>0 or selected_nodes.count(-l.source)>0 or
+                            selected_nodes.count(l.dest)>0 or selected_nodes.count(-l.dest)>0)) {
                 gfaf<<"L\t";
                 if (l.source>0) gfaf<<"seq"<<l.source<<"\t-\t";
                 else gfaf<<"seq"<<-l.source<<"\t+\t";
@@ -498,11 +549,8 @@ std::string SequenceGraphPath::get_fasta_header() {
 }
 
 std::string SequenceGraphPath::get_sequence() {
-    std::cout << "get_sequence for a SequenceGraphPath with nodes = [" ;
-    for (auto &n:nodes) std::cout<<" "<<n;
-    std::cout<<" ]"<<std::endl;
-    std::string s = "";
-    sgNodeID_t pnode = 0;
+    std::string s="";
+    sgNodeID_t pnode=0;
     // just iterate over every node in path - contig names are converted to ids at construction
     for (auto &n:nodes) {
         std::string nseq;
@@ -537,9 +585,6 @@ std::string SequenceGraphPath::get_sequence() {
         s+=nseq;
         pnode=-n;
     }
-    std::cout<<"get sequence finished successfully for SequenceGraphPath with nodes = [" ;
-    for (auto &n:nodes) std::cout<<" "<<n;
-    std::cout<<" ]"<<std::endl;
     return s;
 }
 
@@ -577,7 +622,7 @@ void SequenceGraph::join_all_unitigs() {
     }
 }
 
-void SequenceGraph::join_path(SequenceGraphPath p, bool consume) {
+void SequenceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
     std::set<sgNodeID_t> pnodes;
     for (auto n:p.nodes) {
         pnodes.insert( n );
@@ -591,20 +636,15 @@ void SequenceGraph::join_path(SequenceGraphPath p, bool consume) {
     for (auto l:get_fw_links(p.nodes.back())) add_link(-new_node,l.dest,l.dist);
 
     //TODO: update read mappings
-    if (consume) {
-        consume_nodes(p, pnodes);
-    }
-
-}
-
-void SequenceGraph::consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes) {
-    for (auto n:p.nodes) {
-        //check if the node has neighbours not included in the path.
-        bool ext_neigh=false;
-        if (n!=p.nodes.back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
-        if (n!=p.nodes.front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
-        if (ext_neigh) continue;
-        remove_node(n);
+    if (consume_nodes) {
+        for (auto n:p.nodes) {
+            //check if the node has neighbours not included in the path.
+            bool ext_neigh=false;
+            if (n!=p.nodes.back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest)==0) ext_neigh=true;
+            if (n!=p.nodes.front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest)==0) ext_neigh=true;
+            if (ext_neigh) continue;
+            remove_node(n);
+        }
     }
 }
 
@@ -619,6 +659,69 @@ bool SequenceGraphPath::is_canonical() {
     auto rp=*this;
     rp.reverse();
     return this->get_sequence()<rp.get_sequence();
+}
+
+const bool SequenceGraphPath::operator<(const SequenceGraphPath &other) {
+    for (auto i=0;i<nodes.size();++i){
+        if (other.nodes.size()<i) return true;
+        if (nodes[i]<other.nodes[i]) return true;
+        if (nodes[i]>other.nodes[i]) return false;
+    }
+    return false;
+}
+
+const bool SequenceGraphPath::operator==(const SequenceGraphPath &other) {
+    if (other.nodes.size()!=nodes.size()) return false;
+    for (auto i=0;i<nodes.size();++i){
+        if (nodes[i]!=other.nodes[i]) return false;
+    }
+    return true;
+}
+
+bool SequenceGraphPath::extend_if_coherent(SequenceGraphPath s) {
+//    int offset=-1;
+//    for (auto i=0;i<nodes.size();++i) {
+//        if (nodes[i] == s.nodes[0]) {
+//            offset = i;
+//            break;
+//        }
+//    }
+//    if (offset<=0) {
+//    if (offset<0) {
+//        offset=1;
+//        for (auto i=0;i<nodes.size();++i) {
+//            if (nodes[i] == s.nodes[0]) {
+//                offset = -i;
+//                break;
+//            }
+//        }
+//    }
+}
+
+std::vector<SequenceSubGraph> SequenceGraph::get_all_tribbles() {
+
+
+    for (sgNodeID_t n=1;n<nodes.size();++n) {
+        //Heuristic to find "tribbles"
+        // A --- B -- C -- H
+        //  \     \      /
+        //   \     E    /
+        //    \     \  /
+        //      F -- G
+        // A->[B-F]
+        // B->[C-E]
+        // C->H
+        // E->G
+        // F->G
+        // F->H
+        auto a_fw=get_fw_links(n);
+        if (a_fw.size()!=2) continue;
+        auto b_fw=get_fw_links(a_fw[0].dist);
+
+        sgNodeID_t A, B, C, D, E, F, G, H;
+    }
+
+
 }
 
 std::vector<sgNodeID_t > SequenceGraph::find_canonical_repeats() {

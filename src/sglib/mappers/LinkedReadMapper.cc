@@ -8,6 +8,7 @@
 
 #ifndef __APPLE__
 #include <omp.h>
+#include <parallel/algorithm>
 #else
 int omp_get_max_threads(){return 1;}
 int omp_get_thread_num(){return 0;}
@@ -17,48 +18,125 @@ int omp_get_thread_num(){return 0;}
 #include "sglib/factories/KMerIDXFactory.h"
 #include "sglib/readers/SequenceGraphReader.h"
 
+void LinkedReadMapper::write(std::ofstream &output_file) {
+    //read-to-node
+    uint64_t count=read_to_node.size();
+    output_file.write((const char *) &count,sizeof(count));
+    output_file.write((const char *) read_to_node.data(),sizeof(sgNodeID_t)*count);
+    //mappings
+    count=reads_in_node.size();
+    output_file.write((const char *) &count,sizeof(count));
+    for (auto i=0;i<count;++i) {
+        uint64_t mcount=reads_in_node[i].size();
+        output_file.write((const char *) &mcount,sizeof(mcount));
+        output_file.write((const char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
+    }
+}
+
+void LinkedReadMapper::read(std::ifstream &input_file) {
+    uint64_t count;
+    input_file.read(( char *) &count,sizeof(count));
+    read_to_node.resize(count);
+    input_file.read(( char *) read_to_node.data(),sizeof(sgNodeID_t)*count);
+    input_file.read(( char *) &count,sizeof(count));
+    reads_in_node.resize(count);
+    for (auto i=0;i<count;++i) {
+        uint64_t mcount;
+        input_file.read(( char *) &mcount,sizeof(mcount));
+        reads_in_node[i].resize(mcount);
+        input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
+    }
+}
 
 void LinkedReadMapper::update_graph_index() {
+    sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
     const int k = 31;
-    const int max_coverage = 1;
-    const std::string output_prefix("./");
+    uint64_t total_k=0;
+    std::vector<KmerIDX> kidxv;
+    for (auto &n:sg.nodes) if (n.sequence.size()>=k) total_k+=n.sequence.size()+1-k;
+    kidxv.reserve(total_k);
+    FastaRecord r;
+    kmerIDXFactory <FastaRecord> kcf({k});
+    for (sgNodeID_t n=1;n<sg.nodes.size();++n){
+        if (sg.nodes[n].sequence.size()>=k){
+            r.id=n;
+            r.seq=sg.nodes[n].sequence;
+            kcf.setFileRecord(r);
+            kcf.next_element(kidxv);
+        }
+    }
+    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
+    sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
+    std::sort(kidxv.begin(),kidxv.end());
+    sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
+    auto wi=kidxv.begin();
+    auto ri=kidxv.begin();
+    auto nri=kidxv.begin();
+    while (ri<kidxv.end()){
+        while (nri!=kidxv.end() and nri->kmer==ri->kmer) ++nri;
+        if (nri-ri==1) {
+            *wi=*ri;
+            ++wi;
+        }
+        ri=nri;
 
-    SMR<KmerIDX,
-            kmerIDXFactory<FastaRecord>,
-            GraphNodeReader<FastaRecord>,
-            FastaRecord,
-            GraphNodeReaderParams,
-            KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k}, {memlimit, 0, max_coverage, output_prefix});
+    }
 
-   // Get the unique_kmers from the graph into a map
-    std::cout << "Indexing graph... " << std::endl;
-    kmer_to_graphposition.clear();
-    reads_in_node.resize(sg.nodes.size());
+    kidxv.resize(wi-kidxv.begin());
+    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
     std::unordered_set<int32_t> seen_contigs;
-    for (auto &kidx :kmerIDX_SMR.process_from_memory()) {
+    seen_contigs.reserve(sg.nodes.size());
+    for (auto &kidx :kidxv) {
         kmer_to_graphposition[kidx.kmer]={kidx.contigID,kidx.pos};
         seen_contigs.insert((kidx.contigID>0?kidx.contigID:-kidx.contigID));
     }
-    std::cout<<seen_contigs.size()<<" with indexed kmers"<<std::endl;
-
-    std::vector<uint64_t> uniqKmer_statistics(kmerIDX_SMR.summaryStatistics());
-    std::cout << "Number of sequences in graph: " << uniqKmer_statistics[2] << std::endl;
-    std::cout << "Number of " << int(k) << "-kmers in graph " << uniqKmer_statistics[0] << std::endl;
-    std::cout << "Number of " << int(k) << "-kmers in graph index " << uniqKmer_statistics[1] << std::endl;
+    sglib::OutputLog(sglib::INFO)<<seen_contigs.size()<<" nodes with indexed kmers"<<std::endl;
+    reads_in_node.resize(sg.nodes.size());
 }
 
-void LinkedReadMapper::map_reads(std::unordered_set<uint64_t> const &reads_to_remap) {
+
+
+class StreamKmerFactory : public  KMerFactory {
+public:
+    explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
+    inline void produce_all_kmers(const int64_t seqID, const char * seq, std::vector<KmerIDX> &mers){
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        last_unknown=0;
+        fkmer=0;
+        rkmer=0;
+        auto s=seq;
+        while (*s!='\0' and *s!='\n') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(fkmer);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(rkmer);
+                }
+            }
+            ++s;
+        }
+    }
+};
+
+
+void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 31;
     std::cout<<"mapping reads!!!"<<std::endl;
-    std::cout<<reads_to_remap.size()<<" selected reads"<<std::endl;
     read_to_node.resize(datastore.size()+1);
+    std::cout<<reads_to_remap.size()<<" selected reads / "<<read_to_node.size()-1<<" total"<<std::endl;
+
     /*
      * Read mapping in parallel,
      */
     uint64_t thread_mapped_count[omp_get_max_threads()],thread_total_count[omp_get_max_threads()],thread_multimap_count[omp_get_max_threads()];
     std::vector<ReadMapping> thread_mapping_results[omp_get_max_threads()];
     sglib::OutputLog(sglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
-#pragma omp parallel// this lione has out of bounds error on my weird read file AND  ‘LinkedReadMapper::reads_in_node’ is not a variable in clause ‘shared’ when compiling on
+#pragma omp parallel
     {
         const int min_matches=1;
         std::vector<KmerIDX> readkmers;
@@ -73,6 +151,7 @@ void LinkedReadMapper::map_reads(std::unordered_set<uint64_t> const &reads_to_re
         total_count=0;
         multimap_count=0;
         bool c ;
+        //std::cout<<omp_get_thread_num()<<std::endl;
 #pragma omp for
         for (uint64_t readID=1;readID<read_to_node.size();++readID) {
             mapping.read_id = readID;
@@ -117,7 +196,7 @@ void LinkedReadMapper::map_reads(std::unordered_set<uint64_t> const &reads_to_re
                     }
                 }
                 if (mapping.node != 0 and mapping.unique_matches >= min_matches) {
-                    //TODO: optimisation: just save the mapping in a thread private collection for now, have a single thread putting from that into de structure at the end
+                    //optimisation: just save the mapping in a thread private collection for now, have a single thread putting from that into de structure at the end
                     private_results.push_back(mapping);
                     ++mapped_count;
                 }
@@ -190,170 +269,10 @@ void LinkedReadMapper::remove_obsolete_mappings(){
     std::cout << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
 }
 
-//void LinkedReadMapper::remap_reads(std::unordered_set<uint64_t> const & reads_to_remap){
-//    std::cout << "Mapping " << prmReadTypeDesc[readType] << " reads from " << read1filename << " and " << read2filename << std::endl;
-//
-//    std::cout << "Using memory up to " << memlimit << std::endl;
-//    if (reads_in_node.size()<sg.nodes.size()) reads_in_node.resize(sg.nodes.size());
-//    /*
-//     * Reads a fasta file and generates the set of kmers and which entry number on the fasta they belong to
-//     * along with their orientation in the form of a int32_t with + for fwd and - for rev, the output is filtered
-//     * by min < coverage <= max
-//     */
-//
-//    const int k = 31;
-//    const int max_coverage = 1;
-//    const int min_matches = 1;
-//    const std::string output_prefix("./");
-//    SMR<KmerIDX,
-//            kmerIDXFactory<FastaRecord>,
-//            GraphNodeReader<FastaRecord>,
-//            FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k}, memlimit, 0, max_coverage,
-//                                                                                  output_prefix);
-//
-//   // Get the unique_kmers from the graph into a map
-//    std::cout << "Indexing graph... " << std::endl;
-//    std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;
-//    for (auto &kidx :kmerIDX_SMR.process_from_memory()) kmer_to_graphposition[kidx.kmer]={kidx.contigID,kidx.pos};
-//
-//    std::vector<uint64_t> uniqKmer_statistics(kmerIDX_SMR.summaryStatistics());
-//    std::cout << "Number of sequences in graph: " << uniqKmer_statistics[2] << std::endl;
-//    std::cout << "Number of " << int(k) << "-kmers in graph " << uniqKmer_statistics[0] << std::endl;
-//    std::cout << "Number of " << int(k) << "-kmers in graph index " << uniqKmer_statistics[1] << std::endl;
-//
-//    if (readType == prmPE) {
-//        auto r1c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read1filename, 1, false, reads_to_remap);
-//        auto r2c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read2filename, 2, false, reads_to_remap);
-//        //now populate the read_to_node array
-//        assert(r1c == r2c);
-//        read_to_node.resize(r1c * 2 + 1, 0);
-//        for (auto &rin:reads_in_node)
-//            for (auto &mr:rin)
-//                read_to_node[mr.read_id] = mr.node;
-//        read_to_tag.clear();
-//
-//    } else if (readType == prm10x) {
-//        auto r1c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read1filename, 1, true, reads_to_remap);
-//        auto r2c = process_reads_from_file(k, min_matches, kmer_to_graphposition, read2filename, 2, true, reads_to_remap);
-//        //now populate the read_to_node array
-//        assert(r1c == r2c);
-//        read_to_node.resize(r1c * 2 + 1, 0);
-//        for (auto &rin:reads_in_node)
-//            for (auto &mr:rin) {
-//                read_to_node[mr.read_id] = mr.node;
-//
-//            }
-//    }
-//}
-//
-//void LinkedReadMapper::print_stats() {
-//    enum pair_status {pair_status_same,pair_status_different,pair_status_onlyr1,pair_status_onlyr2,pair_status_unmapped};
-//    uint64_t status_counts[]={0,0,0,0,0};
-//    //Now some starts about read mapping
-//    for (uint64_t rid=1; rid<read_to_node.size(); rid+=2){
-//        if (0==read_to_node[rid]) {
-//            if (0==read_to_node[rid+1]) ++status_counts[pair_status_unmapped];
-//            else ++status_counts[pair_status_onlyr2];
-//        }
-//        else {
-//            if (0==read_to_node[rid+1]) ++status_counts[pair_status_onlyr1];
-//            else {
-//                if (read_to_node[rid+1]==read_to_node[rid]) ++status_counts[pair_status_same];
-//                else ++status_counts[pair_status_different];
-//            }
-//
-//        }
-//    }
-//    std::cout<<"---Pair mapping Stats ---"<<std::endl;
-//    std::cout<<"Both unmapped:   "<<status_counts[pair_status_unmapped]<<std::endl;
-//    std::cout<<"R1 only:         "<<status_counts[pair_status_onlyr1]<<std::endl;
-//    std::cout<<"R2 only:         "<<status_counts[pair_status_onlyr2]<<std::endl;
-//    std::cout<<"Both different:  "<<status_counts[pair_status_different]<<std::endl;
-//    std::cout<<"Both same :      "<<status_counts[pair_status_same]<<std::endl;
-//    std::cout<<"TOTAL     :      "<<read_to_node.size()/2<<std::endl<<std::endl;
-//
-//    if (read_to_tag.size()>0){
-//        std::unordered_map<uint32_t,uint32_t> reads_in_tagmap;
-//        for (uint64_t i=1;i<read_to_tag.size();++i) {
-//            if (read_to_tag[i] and read_to_node[i]){
-//                ++reads_in_tagmap[read_to_tag[i]];
-//            }
-//        }
-//        std::cout<<"---Tag mapping Stats ---"<<std::endl;
-//        std::cout<<"Tag count:     "<<reads_in_tagmap.size()<<std::endl;
-//        uint32_t tagreadhist[1001];
-//        uint64_t trc10=0,trc50=0,trc100=0,trc500=0;
-//        for (auto i=0;i<1001;++i) tagreadhist[i]=0;
-//        for (auto &tr:reads_in_tagmap) {
-//            auto trc=(tr.second>1000 ? 1000: tr.second);
-//            ++tagreadhist[trc];
-//            if (trc>10) ++trc10;
-//            if (trc>50) ++trc50;
-//            if (trc>100) ++trc100;
-//            if (trc>500) ++trc500;
-//        }
-//        std::cout<<"Tags with 10+ mapped reads:     "<<trc10<<std::endl;
-//        std::cout<<"Tags with 50+ mapped reads:     "<<trc50<<std::endl;
-//        std::cout<<"Tags with 100+ mapped reads:     "<<trc100<<std::endl;
-//        std::cout<<"Tags with 500+ mapped reads:     "<<trc500<<std::endl;
-//        std::ofstream tmhf("tag_map_histogram.csv");
-//        for (auto i=0;i<1001;++i) tmhf<<i<<","<<tagreadhist[i]<<std::endl;
-//
-//    }
-//    /*std::cout<<"---Node occupancy histogram ---"<<std::endl;
-//    uint64_t readcount[12];
-//    for (auto &rc:readcount)rc=0;
-//    for (sgNodeID_t n=1; n<reads_in_node.size();++n){
-//        auto c=reads_in_node[n].size();
-//        if (c>0) c=c/100+1;
-//        if (c>11) c=11;
-//        ++readcount[c];
-//    }
-//    std::cout<<"0: "<<readcount[0]<<std::endl;
-//    for (int i=1;i<11;++i) if (readcount[i]) std::cout<<(i>1? (i-1)*100: 1)<<"-"<<i*100-1<<": "<<readcount[i]<<std::endl;
-//    std::cout<<"1000+: "<<readcount[11]<<std::endl;*/
-//}
-//
-//void LinkedReadMapper::save_to_disk(std::string filename) {
-//    std::ofstream of(filename);
-//    //read-to-tag
-//    uint64_t count=read_to_tag.size();
-//    of.write((const char *) &count,sizeof(count));
-//    of.write((const char *) read_to_tag.data(),sizeof(prm10xTag_t)*count);
-//    //read-to-node
-//    count=read_to_node.size();
-//    of.write((const char *) &count,sizeof(count));
-//    of.write((const char *) read_to_node.data(),sizeof(sgNodeID_t)*count);
-//    //reads-in-node
-//    count=reads_in_node.size();
-//    of.write((const char *) &count, sizeof(count));
-//    for (auto rtn:reads_in_node) {
-//        count=rtn.size();
-//        of.write((const char *) &count, sizeof(count));
-//        of.write((const char *) rtn.data(),sizeof(ReadMapping)*count);
-//    }
-//}
-//
-//void LinkedReadMapper::load_from_disk(std::string filename) {
-//
-//    std::ifstream inf(filename);
-//    uint64_t count;
-//
-//    //read-to-tag
-//    inf.read((char *) &count,sizeof(count));
-//    read_to_tag.resize(count);
-//    inf.read((char *) read_to_tag.data(),sizeof(prm10xTag_t)*count);
-//    //read-to-node
-//    inf.read((char *) &count,sizeof(count));
-//    read_to_node.resize(count);
-//    inf.read((char *) read_to_node.data(),sizeof(sgNodeID_t)*count);
-//    //reads-in-node
-//    inf.read((char *) &count,sizeof(count));
-//    reads_in_node.resize(count);
-//    for (auto &rtn:reads_in_node) {
-//        inf.read((char *) &count, sizeof(count));
-//        rtn.resize(count);
-//        inf.read((char *) rtn.data(),sizeof(ReadMapping)*count);
-//    }
-//}
-
+std::unordered_set<bsg10xTag> LinkedReadMapper::get_node_tags(sgNodeID_t n) {
+    std::unordered_set<bsg10xTag> tags;
+    for (auto &rm:reads_in_node[(n>0?n:-n)])
+        tags.insert(datastore.get_read_tag(rm.read_id));
+    if (tags.count(0)>0) tags.erase(0);
+    return tags;
+}
