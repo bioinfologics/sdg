@@ -106,7 +106,7 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
      * Read mapping in parallel,
      */
     uint64_t thread_mapped_count[omp_get_max_threads()],thread_total_count[omp_get_max_threads()],thread_multimap_count[omp_get_max_threads()];
-    std::vector<ReadMapping> thread_mapping_results[omp_get_max_threads()];
+    std::vector<ReadMapping> thread_mapping_results(omp_get_max_threads());
     sglib::OutputLog(sglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
 #pragma omp parallel
     {
