@@ -123,6 +123,7 @@ private:
     SequenceGraph& sg;
 };
 
+
 class SequenceSubGraph {
 public:
     std::vector<sgNodeID_t> nodes;

@@ -8,8 +8,10 @@
 
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
 #include <sglib/mappers/LinkedReadMapper.hpp>
+#include <sglib/datastores/PathsDatastore.hpp>
 #include "SequenceGraph.hpp"
 #include "KmerCompressionIndex.hpp"
+
 class LogEntry{
 public:
     LogEntry(std::time_t t, std::string v, std::string tx):timestamp(t),bsg_version(v),log_text(tx){};
@@ -36,6 +38,7 @@ public:
     SequenceGraph sg;
     std::vector<LinkedReadsDatastore> linked_read_datastores;
     std::vector<LinkedReadMapper> linked_read_mappers;
+    std::vector<PathsDatastore> path_datastores;
     KmerCompressionIndex kci;
     std::string verbose_log="";
 };

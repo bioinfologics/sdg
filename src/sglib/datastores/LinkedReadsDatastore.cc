@@ -205,7 +205,7 @@ std::string LinkedReadsDatastore::get_read_sequence(size_t readID) {
     return std::string(buffer);
 }
 
-std::vector<uint64_t> LinkedReadsDatastore::get_tag_reads(bsg10xTag tag) {
+std::vector<uint64_t> LinkedReadsDatastore::get_tag_reads(bsg10xTag tag) const {
     std::vector<uint64_t> rids;
     rids.reserve(10000);
     for (auto n=std::lower_bound(read_tag.begin(),read_tag.end(),tag)-read_tag.begin();read_tag[n]==tag;++n) {
@@ -298,3 +298,65 @@ const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {
         }
         return buffer+(read_offset_in_file-buffer_offset);
 }
+
+//std::unordered_set<uint64_t>& BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {
+//
+//    auto bki=std::find(tag_kmers_buffer.begin(),tag_kmers_buffer.end(),tag);
+//    if (bki!=tag_kmers_buffer.end()){
+//        tag_kmers_buffer.splice( tag_kmers_buffer.end(), tag_kmers_buffer, bki );
+//    }
+//    else {
+//        tag_kmers_buffer.emplace_back();
+//        bki=tag_kmers_buffer.end();--bki;
+//        bki->tag=tag;
+//        auto read_ids=datastore.get_tag_reads(tag);
+//        bki->kmers.reserve(read_ids.size()*(datastore.readsize-K+1));
+//        for (auto rid:read_ids){
+//            skf.produce_all_kmers(blrsg.get_read_sequence(rid),bki->kmers);
+//        }
+//        if (tag_kmers_buffer.size()>tagbufsize) tag_kmers_buffer.pop_front();
+//    }
+//    return bki->kmers;
+//}
+
+void BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {
+    auto read_ids=datastore.get_tag_reads(tag);
+    counts.reserve(counts.size()+read_ids.size()*(datastore.readsize-K+1));
+    for (auto rid:read_ids){
+        skf.produce_all_kmers(blrsg.get_read_sequence(rid),counts);
+    }
+}
+
+std::unordered_set<uint64_t> BufferedTagKmerizer::get_tags_kmers(int min_tag_cov, std::unordered_set<bsg10xTag> tags) {
+    counts.clear();
+    for (auto t:tags) get_tag_kmers(t);
+    std::sort(counts.begin(),counts.end());
+    uint64_t curr_k=UINT64_MAX;
+    int curr_count=0;
+    auto wi=counts.begin();
+    for (auto &k:counts) {
+        if (curr_k!=k){
+            if (curr_count>=min_tag_cov) {
+                *wi=curr_k;
+                ++wi;
+            }
+            curr_count=1;
+            curr_k=k;
+        }
+        else {
+            ++curr_count;
+        }
+    }
+    if (curr_count>=min_tag_cov) {
+        *wi=counts.back();
+        ++wi;
+    }
+    counts.resize(wi-counts.begin());
+    std::unordered_set<uint64_t> r(counts.begin(),counts.end());
+    return r;
+
+}
+
+
+
+

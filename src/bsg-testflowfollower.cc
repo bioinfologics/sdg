@@ -19,7 +19,7 @@ int main(int argc, char * argv[]) {
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
     sgNodeID_t start_node=0,end_node=0;
     uint64_t max_nodes=10000;
-    bool all_flows_fast=false;
+    uint16_t all_flows_fast_tags_min=0,all_flows_fast_tags_max=0;
     try
     {
         cxxopts::Options options("bsg-testflowfollower", "a test following flows in a parallel region of the graph");
@@ -30,7 +30,8 @@ int main(int argc, char * argv[]) {
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
                 ("s,start", "starting node (with direction flowing towards end)", cxxopts::value<sgNodeID_t>(start_node))
                 ("e,end", "ending node (with direction flowing from start)", cxxopts::value<sgNodeID_t>(end_node))
-                ("all_flows_fast", "use the all-nodes fast analysis", cxxopts::value<bool>(all_flows_fast))
+                ("all_flows_fast_tags_min", "run fast analysis on all nodes with this ammoun of tags or more", cxxopts::value<uint16_t>(all_flows_fast_tags_min))
+                ("all_flows_fast_tags_max", "run fast analysis on all nodes with this ammoun of tags or less", cxxopts::value<uint16_t>(all_flows_fast_tags_max))
                 ("n,max_nodes", "maximum number of nodes to explore (default: 10000)", cxxopts::value<uint64_t >(max_nodes));
 
 
@@ -64,11 +65,12 @@ int main(int argc, char * argv[]) {
     ws.linked_read_datastores[0].dump_tag_occupancy_histogram("tag_occupancy.csv");
     ws.add_log_entry("bsg-untangler run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
-    //ws.kci.compute_compression_stats();
+    //ws.kci.reindex_graph();
+    ws.kci.compute_compression_stats();
     //for (auto &m:ws.linked_read_mappers) m.memlimit=max_mem_gb*1024*1024*1024;
 
     std::unordered_set<sgNodeID_t> region_nodes;
-    if (not all_flows_fast) {
+    if (all_flows_fast_tags_min==0) {
         if (start_node != 0 and end_node != 0) {
             //find the path
             region_nodes.insert(start_node);
@@ -109,18 +111,26 @@ int main(int argc, char * argv[]) {
 
     FlowFollower ff(ws,region_nodes);
     std::cout<<"Creating flows..."<<std::endl;
-    if (not all_flows_fast) ff.create_flows();
-    else ff.create_flows_all_fast();
-    auto skatepaths=ff.skate_from_all(3,20000);
-    std::ofstream pf(output_prefix+"_skatepaths.lst"),sf(output_prefix+"_skatepaths.fasta");
-    for (auto &sp:skatepaths) {
-        auto s=sp.get_sequence();
-        pf<<s.size()<<", ";
-        for (auto n:sp.nodes) pf<<"seq"<<llabs(n)<<(n!=sp.nodes.back() ? ", ":"\n");
-        sf<<">p"<<sp.nodes.front()<<"_"<<sp.nodes.back()<<"_"<<s.size()<<"bp"<<std::endl<<s<<std::endl;
+    if (all_flows_fast_tags_min==0) {
+        ff.create_flows();
+        auto skatepaths=ff.skate_from_all(3,20000);
+        std::ofstream pf(output_prefix+"_skatepaths.lst"),sf(output_prefix+"_skatepaths.fasta");
+        for (auto &sp:skatepaths) {
+            auto s = sp.get_sequence();
+            pf << s.size() << ", ";
+            for (auto n:sp.nodes) pf << "seq" << llabs(n) << (n != sp.nodes.back() ? ", " : "\n");
+            sf << ">p" << sp.nodes.front() << "_" << sp.nodes.back() << "_" << s.size() << "bp" << std::endl << s
+               << std::endl;
+        }
     }
-//    sglib::OutputLog()<<"Dumping final Workspace..."<<std::endl;
-//    ws.dump_to_disk(output_prefix+"_final.bsgws");
+    else {
+        ff.select_from_all_nodes(399,1000,all_flows_fast_tags_min, all_flows_fast_tags_max,.8,1.2);
+        //ff.create_flows();
+        ff.create_flows_fast();
+
+    }
+    sglib::OutputLog()<<"Dumping final Workspace..."<<std::endl;
+    ws.dump_to_disk(output_prefix+"_final.bsgws");
 //    sglib::OutputLog()<<"Dumping scaffolded GFA..."<<std::endl;
 //    ws.sg.write_to_gfa(output_prefix+"_scaffolded.gfa");
 //    sglib::OutputLog()<<"All DONE!!!"<<std::endl;

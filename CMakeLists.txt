@@ -174,7 +174,7 @@ add_library(sequence_graph SHARED
         src/sglib/mappers/LinkedReadMapper.cc
         src/sglib/mappers/LinkedReadMapper.hpp
         src/sglib/WorkSpace.cc
-        src/sglib/WorkSpace.hpp)
+        src/sglib/WorkSpace.hpp src/sglib/datastores/PathsDatastore.cc src/sglib/datastores/PathsDatastore.hpp)
 
 target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 

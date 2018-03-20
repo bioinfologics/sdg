@@ -5,12 +5,10 @@
 #include "FlowFollower.hpp"
 
 Flow FlowFollower::flow_from_node(sgNodeID_t n,float min_winner,float max_looser) {
-    //std::cout << "Starting walk on " << n << "... " << std::flush;
     auto tags = ws.linked_read_mappers[0].get_node_tags(llabs(n));
-    //std::cout << tags.size() << " tags... " << std::flush;
     BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0],1000000,1000);
     auto kmers = ws.linked_read_datastores[0].get_tags_kmers(31, 6, tags,blrsg);
-    //std::cout << kmers.size() << " kmers." << std::endl;
+    //std::cout<<"Flowing from "<<n<<" with "<<kmers.size()<<" kmers"<<std::endl;
     SequenceGraphPath p(ws.sg, {n});
 //    for (auto i = 0; i < 2; ++i) {
         while (true) {
@@ -63,6 +61,67 @@ Flow FlowFollower::flow_from_node(sgNodeID_t n,float min_winner,float max_looser
             }
             p.nodes.push_back(best);
         }
+//        p.reverse();
+//    }
+    Flow f;
+    f.nodes=p.nodes;
+    return f;
+}
+
+Flow FlowFollower::flow_from_node_kmers(sgNodeID_t n,const std::unordered_set<uint64_t> &kmers) {
+    //std::cout<<"Flowing from "<<n<<" with "<<kmers.size()<<" kmers"<<std::endl;
+    SequenceGraphPath p(ws.sg, {n});
+//    for (auto i = 0; i < 2; ++i) {
+    while (true) {
+        auto fwl = ws.sg.get_fw_links(p.nodes.back());
+        if (fwl.empty()) break;
+        std::vector<sgNodeID_t> fw_nodes;
+        bool no_distinctive=false;
+        for (auto l:fwl) fw_nodes.push_back(l.dest);
+        auto distinctivekmers = get_distinctive_kmers(fw_nodes);
+        for (auto &dk:distinctivekmers) {
+            if (dk.size()==0){
+                //std::cout<<"WARNING: no distinctive kmers for at least one node: ";
+                //for (auto i=0;i<fw_nodes.size();++i) std::cout<<fw_nodes[i]<<"("<<distinctivekmers[i].size()<<") ";
+                //std::cout<<std::endl;
+                no_distinctive=true;
+            }
+        }
+        if (no_distinctive) break;
+        sgNodeID_t best = 0, second = 0;
+        uint64_t best_score = 100000, second_score = 1000000;
+
+        for (auto i = 0; i < fw_nodes.size(); ++i) {
+            std::unordered_set<uint64_t> inters;
+            auto &lkmers = distinctivekmers[i];
+            uint64_t hits=0,misses = 0;
+            for (auto x:lkmers) {
+                if (kmers.count(x)) ++hits;
+                else ++misses;
+            }
+            if (misses<best_score) {
+                second = best;
+                best = fw_nodes[i];
+                second_score = best_score;
+                best_score = misses;
+            } else if (misses < second_score) {
+                second = fw_nodes[i];
+                second_score = misses;
+            }
+
+        }
+        if (best_score != 0 or second_score==0) {
+            //std::cout << "stopping because of score uncertainty " << best_score << " - " << second_score << std::endl;
+            break;
+        }
+        bool b = false;
+        for (auto x:p.nodes) if (llabs(x) == llabs(best)) b = true;
+        if (b) {
+            //std::cout << "stopping on circular path" << std::endl;
+            break;
+        }
+        p.nodes.push_back(best);
+    }
 //        p.reverse();
 //    }
     Flow f;
@@ -171,18 +230,26 @@ std::vector<std::unordered_set<uint64_t>> FlowFollower::get_distinctive_kmers_tr
 }
 
 void FlowFollower::create_flows() {
-    std::vector<sgNodeID_t> nv(nodes.size());
+    sglib::OutputLog()<<"Create flows starting for "<<nodes.size()<<" nodes."<<std::endl;
+    std::vector<sgNodeID_t> nv;
+    nv.reserve(nodes.size());
     for (auto &n:nodes)nv.push_back(n);
 #pragma omp parallel for schedule(static,1)
     for (auto i=0;i<nv.size();++i){
         auto ff=flow_from_node(nv[i],1,0);
         auto rf=flow_from_node(-nv[i],1,0);
+//        if (ff.nodes.size()>2 or rf.nodes.size()>2) {
+//            auto ci=ws.kci.compute_compression_for_node(nv[i],1);
+//            std::cout<<"Node "<<nv[i]<<" with lenght "<<ws.sg.nodes[nv[i]].sequence.size()<<", "<<
+//                     ws.linked_read_mappers[0].get_node_tags(nv[i]).size() << " tags and ci="<<ci
+//                     << " produced flows of lenghts "<<ff.nodes.size()<<" and "<<rf.nodes.size()<<std::endl;
+//        }
 #pragma omp critical
         {
             flows[nv[i]] =ff;
             flows[-nv[i]] =rf;
         }
-        std::cout<<"."<<std::flush;
+        //std::cout<<"."<<std::flush;
         /**std::cout<<"flows["<<n<<"]= ";
         for (auto m:flows[n].nodes) std::cout<<m<<", ";
         std::cout<<std::endl;
@@ -196,143 +263,80 @@ void FlowFollower::create_flows() {
         for (auto m:flows[-n].nodes) std::cout<<"seq"<<llabs(m)<<", ";
         std::cout<<std::endl;**/
     }
-    std::cout<<std::endl;
+    sglib::OutputLog()<<"DONE!"<<std::endl;
+}
+
+
+void FlowFollower::select_from_all_nodes(uint32_t min_size, uint32_t max_size, uint16_t min_tags, uint16_t max_tags,
+                                         float min_ci, float max_ci) {
+    uint64_t tnodes=0,ttags=0;
+    nodes.clear();
+    for (auto n=1;n<ws.sg.nodes.size();++n){
+        if (ws.sg.nodes[n].sequence.size()<min_size) continue;
+        if (ws.sg.nodes[n].sequence.size()>max_size) continue;
+        if (ws.sg.get_fw_links(n).size()!=1 or ws.sg.get_bw_links(n).size()!=1 ) continue;
+        auto ntags=ws.linked_read_mappers[0].get_node_tags(n);
+        if (ntags.size()<min_tags or ntags.size()>max_tags) continue;
+        auto ci=ws.kci.compute_compression_for_node(n,1);
+        if (ci<min_ci or ci>max_ci) continue;
+        ++tnodes;
+        nodes.emplace(n);
+        ttags += ntags.size();
+
+
+    }
+    std::cout << "Selected "<<tnodes<<" / "<<ws.sg.nodes.size()<<" with a total "<<ttags<<" tags"<< std::endl;
 }
 
 /**
  * @brief sorts nodes so consecutive nodes share tags, then uses a tag kmer cache to speed up flows.
  *
  */
-void FlowFollower::create_flows_all_fast() {
-    struct node_tag_t{
-        sgNodeID_t node;
-        //uint16_t unused_rounds=0;
-        std::set<bsg10xTag> tags;
-        float shared_perc(const struct node_tag_t & other){
-            uint64_t shared=0;
-            auto i1=tags.begin();
-            auto i2=other.tags.begin();
-            while (i1!=tags.end() and i2!=other.tags.end()){
-                if (*i1==*i2) {
-                    ++shared;
-                    ++i1;
-                    ++i2;
-                }
-                else if (*i1<*i2) ++i1;
-                else ++i2;
-            }
-            return ((float) shared) / tags.size();
-        };
-        uint64_t shared(const std::set<bsg10xTag> &td ){
-            uint64_t shared=0;
-            for (auto t1=tags.begin(),t2=td.begin();t1!=tags.end() and t2!=td.end();){
-                if (*t1==*t2) {
-                    ++shared;
-                    ++t1;
-                    ++t2;
-                }
-                else if (*t1<*t2) ++t1;
-                else ++t2;
-            }
-            return shared;
-        };
-        uint64_t shared_est(const std::set<bsg10xTag> &td ){
-            uint64_t shared=0;
-            auto t1lim=tags.size()/10;
-            size_t t1c=0;
-            for (auto t1=tags.begin(),t2=td.begin();t1c<t1lim and t2!=td.end();){
-                if (*t1==*t2) {
-                    ++shared;
-                    ++t1;
-                    ++t1c;
-                    ++t2;
-                }
-                else if (*t1<*t2) {
-                    ++t1;
-                    ++t1c;
-                }
-                else ++t2;
-            }
-            return 10*shared;
-        };
-    };
-    uint64_t tnodes=0,ttags=0;
-    std::vector<struct node_tag_t> node_tags;
-    node_tags.reserve(ws.sg.nodes.size());
-    for (auto n=1;n<ws.sg.nodes.size();++n){
-        auto ntags=ws.linked_read_mappers[0].get_node_tags(n);
-        if (ntags.size()>=50) {
-            ++tnodes;
-            node_tags.emplace_back();
-            node_tags.back().node=n;
-            for (auto &t:ntags) node_tags.back().tags.insert(t);
-            ttags+=node_tags.back().tags.size();
+void FlowFollower::create_flows_fast() {
+    sglib::OutputLog()<<"Create flows fast starting for "<<nodes.size()<<" nodes into paths collection"<<std::endl;
+    //reate an independent buffered tags-kmer-creator per node in a parallel for that creates nodes, saving the
+    //flows simply in a vector
+    std::vector<Flow> fflows(ws.sg.nodes.size());
+    std::vector<Flow> rflows(ws.sg.nodes.size());
+    std::atomic_uint64_t nodesp(0),validflows(0);
+    std::vector<sgNodeID_t> nv;
+    nv.reserve(nodes.size());
+    for (auto &n:nodes)nv.push_back(n);
+#pragma omp parallel
+    {
+        BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,5000,200000,1000);
+#pragma omp for schedule(static,100)
+        for (auto i=0;i<nv.size();++i){
+            auto n=nv[i];
+            auto nkmers=btk.get_tags_kmers(6,ws.linked_read_mappers[0].get_node_tags(n));//XXX: hardcoded 2 tags
+            fflows[n]=flow_from_node_kmers(n,nkmers);
+            rflows[n]=flow_from_node_kmers(-n,nkmers);
+//            if (fflows[n].nodes.size()>2 or rflows[n].nodes.size()>2) {
+//                auto ci=ws.kci.compute_compression_for_node(n,1);
+//                std::cout<<"Node "<<n<<" with lenght "<<ws.sg.nodes[n].sequence.size()<<", "<<
+//                         ws.linked_read_mappers[0].get_node_tags(n).size() << " tags and ci="<<ci
+//                         << " produced flows of lenghts "<<fflows[n].nodes.size()<<" and "<<rflows[n].nodes.size()<<std::endl;
+//            }
+            if (fflows[n].nodes.size()>2)++validflows;
+            if (rflows[n].nodes.size()>2)++validflows;
+            uint64_t np=++nodesp;
+            if (np%100==0) sglib::OutputLog()<<np<<" nodes processed, "<<validflows<<" informative flows"<<std::endl;
         }
     }
-    std::cout << "There are "<<tnodes<<" / "<<ws.sg.nodes.size()<<" nodes with 50+ tags, totalling "<<ttags<<" tags"<< std::endl;
-
-
-    for (auto perc:{.25}) {
-        std::vector<bsg10xTag> cached_tags;
-        std::set<bsg10xTag > cached_tags_set;
-        for (auto &t:node_tags[0].tags) {
-            cached_tags.push_back(t);
-            cached_tags_set.insert(t);
-        }
-        uint64_t cache_size=2000;
-        uint64_t total_uses=node_tags[0].tags.size(),total_reads=node_tags[0].tags.size(),total_swaps=0;
-        uint64_t last_offset=1;
-        for (uint64_t i = 1; i < node_tags.size(); ++i) {
-            //std::cout<<"Finding good candidates for position "<<i<<std::endl;
-            uint64_t j;
-            for (auto jb = 0; jb < node_tags.size()-i; ++jb) {
-                j = last_offset+jb;
-                //std::cout<<"jb="<<jb<<" j="<<j<<" node_tags.size()="<<node_tags.size()<<std::endl;
-                if (j>=node_tags.size()) {
-                    //std::cout<<"j = i + j - node_tags.size() = "<<i<<" + "<<j<<" - "<<node_tags.size()<<" = ";
-                    j=i+j-node_tags.size();
-                    //std::cout<<j<<std::endl;
-                }
-                if (j<i) {
-                    std::cout<<"j<i, how the ??"<<std::endl;
-                    std::cout<<"i="<<i<<" last_offset="<<last_offset<<" jb="<<jb<<" node_tags.size()="<<node_tags.size()<<" j="<<j<<std::endl;
-                }
-                auto shared_count = node_tags[j].shared_est(cached_tags_set);
-                if (shared_count >= perc * node_tags[j].tags.size()) {
-                    //std::cout<<"Found close node at "<<j<<" ("<<shared_count<<"/"<<node_tags[j].tags.size()<<")"<<std::endl;
-                    if (j != i) {
-                        ++total_swaps;
-                        std::swap(node_tags[i].node, node_tags[j].node);
-                        std::swap(node_tags[i].tags, node_tags[j].tags);
-                    }
-                    break;
-                }
-
-            }
-            last_offset = (j>i? j: i+1);
-            std::vector<bsg10xTag> new_cache;
-            new_cache.reserve(cache_size);
-            new_cache.insert(new_cache.end(), node_tags[i].tags.begin(), node_tags[i].tags.end());
-            for (auto &t:cached_tags) {
-                if (new_cache.size() >= cache_size) break;
-                if (std::find(node_tags[i].tags.begin(), node_tags[i].tags.end(), t) == node_tags[i].tags.end()) {
-                    new_cache.push_back(t);
-                }
-            }
-            auto shared_count = node_tags[i].shared(cached_tags_set);
-            std::swap(cached_tags, new_cache);
-            cached_tags_set.clear();
-            for (auto &t:cached_tags) cached_tags_set.insert(t);
-
-            total_uses += node_tags[i].tags.size();
-            total_reads += node_tags[i].tags.size() - shared_count;
-
-            if (0 == i % 1000) std::cout << "Position " << i << " : " << total_reads << " / " << total_uses << std::endl;
-        }
-        std::cout << "After " << total_swaps << " swaps, there will be " << total_reads << " reads for a total of "
-                  << total_uses << " uses" << std::endl;
+    sglib::OutputLog()<<" DONE!"<<std::endl;
+    //Next create a PathsCollection in the graph
+    std::cout<<"Creating paths collection"<<std::endl;
+    ws.path_datastores.emplace_back(ws.sg);
+    for (auto ff:fflows){
+        if (ff.nodes.size()<3) continue;
+        ws.path_datastores.back().origin.emplace_back(ff.nodes[0]);
+        ws.path_datastores.back().paths.emplace_back(ws.sg,ff.nodes);
     }
-
+    for (auto rf:rflows){
+        if (rf.nodes.size()<3) continue;
+        ws.path_datastores.back().origin.emplace_back(rf.nodes[0]);
+        ws.path_datastores.back().paths.emplace_back(ws.sg,rf.nodes);
+    }
 }
 
 /**
@@ -390,7 +394,8 @@ SequenceGraphPath FlowFollower::skate_from_node(sgNodeID_t n) {
 
 std::vector<SequenceGraphPath> FlowFollower::skate_from_all(int min_node_flow, uint64_t min_path_length) {
     std::vector<SequenceGraphPath> r;
-    std::vector<sgNodeID_t> nv(nodes.size());
+    std::vector<sgNodeID_t> nv;
+    nv.reserve(nodes.size());
     for (auto &n:nodes)nv.push_back(n);
 //#pragma omp parallel for schedule(static,1)
     for (auto i=0;i<nv.size();++i){
