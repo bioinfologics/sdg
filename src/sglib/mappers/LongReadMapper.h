@@ -271,7 +271,7 @@ public:
         for (uint currPos = 0; currPos < read.seq.length(); currPos += stepping_size) {
             std::map<int32_t, uint32_t> nodes;
             if (prev == matches.cend()) break;
-            for (curr = prev; curr->readPos < currPos+window_size; ++curr) {
+            for (curr = prev; curr != matches.cend() and curr->readPos < currPos+window_size; ++curr) {
                 nodes[curr->dirContig]++;
             }
             for (; prev != matches.end() and prev->readPos < currPos+stepping_size; ++prev);
@@ -309,6 +309,7 @@ public:
                 }
             }
         }
+
         for (const auto &b: blocks) {
             if (b.count > min_windows) {
                 sglib::OutputLog(false) << "@BLOCK," << read.name << "," << read.seq.length() << ","
@@ -471,7 +472,9 @@ public:
         if (ranking.size() == 1 && ranking.rbegin()->first > min_window_matches) {
             return ranking.rbegin()->second;
         } else if (ranking.size() > 1) {
-            if (ranking.rbegin()->first > min_match_spread*(++ranking.rbegin())->first ) {
+            auto second=ranking.rbegin();
+            ++second;
+            if (ranking.rbegin()->first > min_match_spread*second->first ) {
                 return ranking.rbegin()->second;
             }
         }
