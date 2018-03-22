@@ -153,6 +153,7 @@ add_library(sequence_graph SHARED
             src/sglib/SequenceThreader.cpp
             src/sglib/UniqueKmerIndex.cpp
             src/sglib/WorkSpace.cc
+            src/sglib/processors/PathExplorer.cpp
             )
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
@@ -167,6 +168,7 @@ target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 
 install(TARGETS sequence_graph DESTINATION lib)
 install(FILES
+            src/utilities/matrix.h
             src/sglib/datastores/LinkedReadsDatastore.hpp
             src/sglib/factories/ContigBlockFactory.h
             src/sglib/factories/ContigLink.h
@@ -193,6 +195,9 @@ install(FILES
             src/sglib/SMR.h
             src/sglib/UniqueKmerIndex.h
             src/sglib/WorkSpace.hpp
+            src/sglib/aligners/algorithms/SmithWaterman.h
+            src/sglib/aligners/submat/SubstitutionMatrix.h
+            src/sglib/processors/PathExplorer.h
         DESTINATION include
         )
 

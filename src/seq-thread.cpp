@@ -2,10 +2,13 @@
 // Created by Ben Ward (EI) on 26/01/2018.
 //
 
+#include <tuple>
 #include "cxxopts.hpp"
-#include "sglib/SequenceThreader.h"
-#include "sglib/filesystem/check_or_create_directory.h"
+#include <sglib/SequenceThreader.h>
+#include <sglib/filesystem/check_or_create_directory.h>
 #include <sglib/logger/OutputLog.h>
+#include <sglib/aligners/submat/SubstitutionMatrix.h>
+#include <sglib/aligners/algorithms/SmithWaterman.h>
 
 int main(int argc, char **argv) {
 
@@ -81,7 +84,7 @@ int main(int argc, char **argv) {
     tdr.thread_mappings();
 
 // TEST THE CONNECT_THREADS METHOD SO FAR...
-    tdr.connect_threads();
+    tdr.bridge_threads();
 
 // DUMP OUTPUT...
 
@@ -118,4 +121,7 @@ int main(int argc, char **argv) {
     std::ofstream query_paths_out(output_prefix + "/mapped_paths_query.fasta");
     tdr.query_threads_to_fasta(query_paths_out);
     query_paths_out.close();
+
+    std::ofstream bridged_graph_paths_out(output_prefix + "/bridged_mapped_paths_graph.fasta");
+    tdr.bridged_graph_threads_to_fasta(bridged_graph_paths_out);
 }

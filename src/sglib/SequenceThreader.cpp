@@ -9,6 +9,8 @@
 #include <sglib/SequenceThreader.h>
 #include <sglib/readers/FileReader.h>
 #include <sglib/logger/OutputLog.h>
+#include <sglib/aligners/algorithms/SmithWaterman.h>
+#include <sglib/processors/PathExplorer.h>
 
 SequenceMapping::SequenceMapping(){
     // Just clean the structure, OSX doesn't give you clean memory
@@ -53,7 +55,7 @@ bool SequenceMapping::ismatched(){
     return node != 0;
 }
 
-void SequenceMapping::start_new_mapping(const graphPosition& gpos, int32_t seqpos, const UniqueKmerIndex& index) {
+void SequenceMapping::start_new_mapping(const graphPosition& gpos, uint32_t seqpos, const UniqueKmerIndex& index) {
     first_seq_pos = seqpos;
     last_seq_pos = seqpos;
     node = gpos.node;
@@ -64,7 +66,7 @@ void SequenceMapping::start_new_mapping(const graphPosition& gpos, int32_t seqpo
     n_kmers_in_node = index.total_kmers_in_node(gpos.node);
 }
 
-void SequenceMapping::extend(int32_t nodepos, int32_t seqpos) {
+void SequenceMapping::extend(int32_t nodepos, uint32_t seqpos) {
     matched_unique_kmers++;
     last_node_pos = nodepos;
     last_seq_pos = seqpos;
@@ -109,6 +111,14 @@ bool SequenceMapping::mapping_continues(const graphPosition& gpos) const {
     auto direction_continues = direction_will_continue(gpos.pos);
     return same_node and direction_continues;
 }
+
+
+
+
+
+
+
+
 
 void SequenceThreader::map_sequences_from_file(const std::string &filename) {
 
@@ -251,7 +261,6 @@ std::vector<SequenceGraphPath> SequenceThreader::collect_paths(const sgNodeID_t 
         {
             visited.emplace(activeNode.node);
 
-            //
             if (current_path.size() > activeNode.path_length) {
                 current_path[activeNode.path_length] = activeNode.node;
                 current_path.resize(activeNode.path_length + 1);
@@ -261,7 +270,7 @@ std::vector<SequenceGraphPath> SequenceThreader::collect_paths(const sgNodeID_t 
 
             for (const auto &l : sg.get_fw_links(activeNode.node)) {
                 // For each child of the current node, create a child visitor object, and enter it into the parent map.
-                visitor child { l.dest, activeNode.dist + uint(sg.nodes[l.dest > 0 ? l.dest : -l.dest].sequence.length()), activeNode.path_length + 1 };
+                visitor child { l.dest, activeNode.dist + uint(sg.nodes[std::abs(l.dest)].sequence.length()), activeNode.path_length + 1 };
 
                 // If I've found the target along this dfs path, I need to collect it and put it into a SequenceGraphPath object.
                 if (child.node == target) {
@@ -276,44 +285,109 @@ std::vector<SequenceGraphPath> SequenceThreader::collect_paths(const sgNodeID_t 
     return collected_paths;
 }
 
-void SequenceThreader::connect_threads() {
+void SequenceThreader::bridge_threads() {
+
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Connecting fragmented mapping threads into longer paths." << std::endl;
+
     FastaReader<FastaRecord> fastareader({0}, query_seq_file);
     FastaRecord refsequence;
     std::vector<KmerIDX> ref_seq_kmers;
     kmerIDXFactory<FastaRecord> kmerfactory({k});
     bool c;
     c = fastareader.next_record(refsequence);
+
     while (c) {
+
         std::vector<SequenceMappingThread> threads = mapping_threads_of_sequence[refsequence.id];
-        for (auto second_thread = std::next(threads.begin()); second_thread != threads.end(); second_thread++) {
-            auto first_thread = std::prev(second_thread);
+        std::vector<BridgedMappingThreads> bridged_threads;
 
-            auto from_mapping = first_thread->last_mapping();
-            auto to_mapping = second_thread->first_mapping();
+        BridgedMappingThreads growing_thread { sg, threads[0] };
 
+        int iteration { 0 };
+
+        auto mapping_thread { threads.begin() };
+        ++mapping_thread;
+        for (; mapping_thread != threads.end(); ++mapping_thread) {
+            iteration++;
+            //std::cout << iteration << " / " << threads.size() << std::endl;
+            auto from_mapping { growing_thread.last_mapping() };
+            auto to_mapping { mapping_thread -> first_mapping() };
+
+            // Work out the region of the sub sequence to extract from the reference sequence...
             auto first_idx = from_mapping.query_start();
             auto final_idx = to_mapping.query_end();
             if (first_idx > final_idx) {
                 std::swap(first_idx, final_idx);
             }
-            size_t len = size_t(final_idx) - size_t(first_idx) + 1;
-            std::string refsubstr = refsequence.seq.substr((size_t) first_idx, len);
 
+            // Extract the subsequence from the reference sequence...
+            size_t len { size_t(final_idx) - size_t(first_idx) + 1 };
+            std::string refsubstr { refsequence.seq.substr((size_t) first_idx, len) };
+
+
+            PathExplorer pe {sg};
+            SequenceGraphPath bestpath {sg};
+            int findstatus = pe.find_best_path(bestpath, from_mapping.dirnode(), to_mapping.dirnode(), refsubstr);
+
+            // If findstatus != 0, then there was a failiure to find a path between the two nodes.
+            // If bridgestatus != 0, then there is a failiure to connect paths up - likely a bug.
+
+            int bridgestatus = 1;
+
+            if(findstatus == 0) {
+                bridgestatus = growing_thread.bridge_to_thread(bestpath, *mapping_thread);
+            }
+
+            if (bridgestatus > 0) {
+                bridged_threads.emplace_back(growing_thread);
+                growing_thread = { sg, *mapping_thread };
+            }
+/*
             // Try to collect some paths....
-            auto graphpaths = collect_paths(from_mapping.dirnode(), to_mapping.dirnode(), 0, 10);
-            if (graphpaths.size() > 0) {
-                std::cout << "Found paths between two threads..." << std::endl;
+            auto graphpaths { collect_paths(from_mapping.dirnode(), to_mapping.dirnode(), 0, 10) };
 
+            int status;
+
+            if (!graphpaths.empty()) {
+                std::cout << "Found paths between two threads!" << std::endl;
                 for(const auto& path : graphpaths) {
                     std::cout << path.get_fasta_header(true) << std::endl;
                 }
-
+                if (graphpaths.size() == 1) {
+                    status = growing_thread.bridge_to_thread(graphpaths[0], *mapping_thread);
+                    //std::cout << "Bridged path with status: " << status << std::endl;
+                } else {
+                    // Determine the best path of several, using the Smith Waterman alignment.
+                    sglib::alignment::algorithms::SmithWaterman<int> sw { graphpaths.front().get_sequence().size(), refsubstr.size() };
+                    int maxscore { 0 };
+                    std::vector<SequenceGraphPath>::const_iterator bestpath;
+                    for (auto path {graphpaths.cbegin()}; path != graphpaths.cend(); ++path) {
+                        const auto alignres { sw.run(path -> get_sequence(), refsubstr, -10, -1) };
+                        if (std::get<0>(alignres) > maxscore) {
+                            maxscore = std::get<0>(alignres);
+                            bestpath = path;
+                        }
+                    }
+                    status = growing_thread.bridge_to_thread(*bestpath, *mapping_thread);
+                    //std::cout << "Bridged path with status: " << status << std::endl;
+                }
             } else {
-                std::cout << "Did not find paths between two threads..." << std::endl;
+                //std::cout << "Did not find any paths between two threads..." << std::endl;
+                status = 1;
             }
+
+            if (status > 0) {
+                bridged_threads.emplace_back(growing_thread);
+                growing_thread = { sg, *mapping_thread };
+            }
+        */
         }
+
+        bridged_mapping_threads_of_sequence[refsequence.id] = bridged_threads;
+
         c = fastareader.next_record(refsequence);
     }
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Finished connecting fragmented mapping threads." << std::endl;
 }
 
 
@@ -328,6 +402,22 @@ void SequenceThreader::graph_threads_to_fasta(std::ofstream& output_file, bool u
             mapping_thread.print_path_header(output_file, use_oldnames);
             output_file << std::endl;
             mapping_thread.print_sequence(output_file);
+            output_file << std::endl;
+        }
+    }
+}
+
+void SequenceThreader::bridged_graph_threads_to_fasta(std::ofstream& output_file, bool use_oldnames) const {
+    for (const auto& bsp : bridged_mapping_threads_of_sequence) {
+        for (const auto& bridged_mapping_thread : bsp.second) {
+            output_file << ">Sequence_" << bsp.first << '[';
+            output_file << bridged_mapping_thread.query_start() << ", ";
+            output_file << bridged_mapping_thread.query_end() << "] ";
+            const auto path { bridged_mapping_thread.get_complete_path() };
+            auto hdr { path.get_fasta_header(use_oldnames) };
+            hdr.erase(hdr.begin());
+            output_file << std::endl;
+            output_file << path.get_sequence();
             output_file << std::endl;
         }
     }
@@ -423,4 +513,129 @@ void SequenceThreader::print_unmapped_nodes(std::ofstream& output_file) const {
         output_file << std::to_string(sg.get_bw_links(node).size()) << '\t';
         output_file << std::endl;
     }
+}
+
+
+// SequenceMappingThread...
+
+bool SequenceMappingThread::append_mapping(SequenceMapping mapping) {
+    auto dn = mapping.dirnode();
+    sglib::OutputLog(sglib::LogLevels::DEBUG) << "Trying to add to path as: " << dn << std::endl;
+    auto path_success = node_path.append_to_path(dn);
+    if (path_success) {
+        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Was able to append " << dn << " to the path." << std::endl;
+        ordered_mappings.emplace_back(mapping);
+    } else {
+        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Was not able to append " << dn << " to the path." << std::endl;
+    }
+    return path_success;
+}
+
+void SequenceMappingThread::clear() {
+    ordered_mappings.clear();
+    node_path.clear();
+}
+
+size_t SequenceMappingThread::size() const {
+    return ordered_mappings.size();
+}
+
+uint32_t SequenceMappingThread::query_start() const {
+    return ordered_mappings.front().query_start();
+}
+
+uint32_t SequenceMappingThread::query_end() const {
+    return ordered_mappings.back().query_end();
+}
+
+void SequenceMappingThread::print_path_header(std::ostream& output_file, bool use_oldnames) const {
+    auto fasta_header = node_path.get_fasta_header(use_oldnames);
+    fasta_header.erase(fasta_header.begin());
+    output_file << fasta_header;
+}
+
+void SequenceMappingThread::print_sequence(std::ofstream& output_file) const {
+    auto s = node_path.get_sequence();
+    output_file << s;
+}
+
+SequenceMapping SequenceMappingThread::first_mapping() const {
+    return ordered_mappings.front();
+}
+
+SequenceMapping SequenceMappingThread::last_mapping() const {
+    return ordered_mappings.back();
+}
+
+
+// Bridged Mapping Threads...
+
+BridgedMappingThreads& BridgedMappingThreads::operator=(const BridgedMappingThreads other) {
+    if (&other == this) {
+        return *this;
+    }
+    mapping_threads = other.mapping_threads;
+    bridging_paths = other.bridging_paths;
+    sg = other.sg;
+    return *this;
+}
+
+SequenceMapping BridgedMappingThreads::last_mapping()
+{
+    return mapping_threads.back().last_mapping();
+}
+
+uint32_t BridgedMappingThreads::query_start() const {
+    return mapping_threads.front().query_start();
+}
+
+uint32_t BridgedMappingThreads::query_end() const {
+    return mapping_threads.back().query_end();
+}
+
+int BridgedMappingThreads::bridge_to_thread(const SequenceGraphPath& sgp, const SequenceMappingThread& smt)
+{
+    std::cout << "Checking mapping bridge:" << std::endl;
+    std::cout << sgp.get_fasta_header(true) << std::endl;
+
+    if (mapping_threads.empty()) {
+        std::cout << "ERR: No mapping thread to bridge from...";
+        return 2;
+    }
+
+    const auto last_mthread_node = last_mapping().dirnode();
+    if (last_mthread_node != sgp.nodes.front()) {
+        std::cout << "ERR: First node of bridge mismatches last node of last mapping thread..." << std::endl;
+        std::cout << last_mthread_node << " != " << sgp.nodes.front() << std::endl;
+        return 3;
+    }
+
+    std::cout << "Checking new sequence mapping thread:" << std::endl;
+
+    if (sgp.nodes.back() != smt.first_mapping().dirnode()) {
+        std::cout << "ERR: First node of new mapping thread mismatches last node of bridge..." << std::endl;
+        std::cout << sgp.nodes.back() << " != " << smt.first_mapping().dirnode() << std::endl;
+        return 4;
+    }
+
+    bridging_paths.emplace_back(sgp);
+    mapping_threads.emplace_back(smt);
+    return 0;
+}
+
+SequenceGraphPath BridgedMappingThreads::get_complete_path() const {
+    SequenceGraphPath finalpath { sg };
+
+    auto current_thread { mapping_threads.cbegin() };
+    auto current_thread_path { current_thread -> get_graph_path() };
+
+    finalpath.nodes.insert(finalpath.nodes.end(), current_thread_path.nodes.cbegin(), current_thread_path.nodes.cend());
+
+    for (const auto& bridge : bridging_paths) {
+        finalpath.nodes.insert(finalpath.nodes.end(), std::next(bridge.nodes.cbegin()), std::prev(bridge.nodes.cend()));
+        std::advance(current_thread, 1);
+        current_thread_path = current_thread -> get_graph_path();
+        finalpath.nodes.insert(finalpath.nodes.end(), current_thread_path.nodes.cbegin(), current_thread_path.nodes.cend());
+    }
+    return finalpath;
 }

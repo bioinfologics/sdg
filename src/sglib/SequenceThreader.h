@@ -16,25 +16,16 @@
 
 typedef uint64_t seqID_t;
 
-class SequenceMapping;
-class SequenceMappingThread;
-
 enum MappingDirection {Nowhere, Forward, Backwards};
 
-class MappingSummary {
-public:
-    bool operator<(MappingSummary rhs) {
-        return id < rhs.id;
-    }
-private:
-    unsigned long mapped_kmers, unmapped_kmers;
-    seqID_t id;
-    std::string name;
-};
+class SequenceMapping;
+class SequenceMappingThread;
+class BridgedMappingThreads;
 
 class SequenceThreader {
-    typedef std::unordered_map<seqID_t, std::vector<SequenceMapping>> SequenceMappingStore;
-    typedef std::unordered_map<seqID_t, std::vector<SequenceMappingThread>> SequenceMappingPathsStore;
+    using SequenceMappingStore = std::unordered_map<seqID_t, std::vector<SequenceMapping>>;
+    using SequenceMappingPathsStore = std::unordered_map<seqID_t, std::vector<SequenceMappingThread>>;
+    using BridgedMappingPathsStore = std::unordered_map<seqID_t, std::vector<BridgedMappingThreads>>;
 
 public:
     explicit SequenceThreader(SequenceGraph &_sg, uint8_t _k = 31) : sg(_sg), k(_k), graph_kmer_index(sg, _k) {}
@@ -49,12 +40,13 @@ public:
 
     // Connecting kmer mappings into threads through graph.
     void thread_mappings();
-    void connect_threads();
+    void bridge_threads();
     void print_paths(std::ostream& out, bool use_oldnames = false) const;
 
     // File output and data dumping.
     void graph_threads_to_fasta(std::ofstream& output_file, bool use_oldnames = true) const;
     void query_threads_to_fasta(std::ofstream& output_file, bool use_oldnames = true) const;
+    void bridged_graph_threads_to_fasta(std::ofstream& output_file, bool use_oldnames = true) const;
     void print_dark_nodes(std::ofstream& output_file) const;
     void print_full_node_diagnostics(std::ofstream& output_file) const;
     void print_unmapped_nodes(std::ofstream& output_file) const;
@@ -72,11 +64,13 @@ private:
     // Results storage
     SequenceMappingStore mappings_of_sequence;
     SequenceMappingPathsStore mapping_threads_of_sequence;
+    BridgedMappingPathsStore  bridged_mapping_threads_of_sequence;
     std::vector<KmerIDX> unmapped_kmers;
 
     void map_sequences_from_file(const std::string &filename);
     std::vector<SequenceGraphPath> collect_paths(const sgNodeID_t seed, const sgNodeID_t target, unsigned int size_limit, unsigned int edge_limit);
 };
+
 
 class SequenceMapping {
     friend void SequenceThreader::print_mappings(std::ostream &out, bool use_oldnames) const;
@@ -88,8 +82,8 @@ public:
     friend std::ostream& operator<<(std::ostream& stream, const SequenceMapping& sm);
     void initiate_mapping(uint64_t sequence_id);
     bool ismatched();
-    void start_new_mapping(const graphPosition& gpos, int32_t seqpos, const UniqueKmerIndex& counts);
-    void extend(int32_t nodepos, int32_t seqpos);
+    void start_new_mapping(const graphPosition& gpos, uint32_t seqpos, const UniqueKmerIndex& counts);
+    void extend(int32_t nodepos, uint32_t seqpos);
     sgNodeID_t absnode() const;
     sgNodeID_t dirnode() const;
     int32_t n_unique_matches() const;
@@ -114,64 +108,55 @@ private:
 
 class SequenceMappingThread {
 public:
+
     explicit SequenceMappingThread(SequenceGraph& _sg) : ordered_mappings({}), node_path(_sg) {};
     SequenceMappingThread(const SequenceMappingThread& smt) = default;
 
-    bool append_mapping(SequenceMapping mapping) {
-        auto dn = mapping.dirnode();
-        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Trying to add to path as: " << dn << std::endl;
-        auto path_success = node_path.append_to_path(dn);
-        if (path_success) {
-            sglib::OutputLog(sglib::LogLevels::DEBUG) << "Was able to append " << dn << " to the path." << std::endl;
-            ordered_mappings.emplace_back(mapping);
-        } else {
-            sglib::OutputLog(sglib::LogLevels::DEBUG) << "Was not able to append " << dn << " to the path." << std::endl;
-        }
-        return path_success;
-    }
+    bool append_mapping(SequenceMapping mapping);
+    void clear();
 
-    void clear() {
-        ordered_mappings.clear();
-        node_path.clear();
-    }
+    size_t size() const;
+    uint32_t query_start() const;
+    uint32_t query_end() const;
+    SequenceMapping first_mapping() const;
+    SequenceMapping last_mapping() const;
+    SequenceGraphPath get_graph_path() const { return node_path; }
 
-    size_t size() const {
-        return ordered_mappings.size();
-    }
-
-    uint32_t query_start() const {
-        return ordered_mappings.front().query_start();
-    }
-
-    uint32_t query_end() const {
-        return ordered_mappings.back().query_end();
-    }
-
-    void print_path_header(std::ofstream& output_file, bool use_oldnames = true) const {
-        auto fasta_header = node_path.get_fasta_header(use_oldnames);
-        fasta_header.erase(fasta_header.begin());
-        output_file << fasta_header;
-    }
-
-    void print_sequence(std::ofstream& output_file) const {
-        auto s = node_path.get_sequence();
-        output_file << s;
-    }
-
-    SequenceMapping first_mapping() const {
-        return ordered_mappings.front();
-    }
-
-    SequenceMapping last_mapping() const {
-        return ordered_mappings.back();
-    }
+    void print_path_header(std::ostream& output_file, bool use_oldnames = true) const;
+    void print_sequence(std::ofstream& output_file) const;
 
 private:
     std::vector<SequenceMapping> ordered_mappings;
     SequenceGraphPath node_path;
 };
 
+class BridgedMappingThreads {
+public:
+    BridgedMappingThreads(SequenceGraph& s, const SequenceMappingThread& smt)
+            : sg(s), mapping_threads({}), bridging_paths({})
+    {
+        mapping_threads.emplace_back(smt);
+    }
 
+    BridgedMappingThreads& operator=(BridgedMappingThreads other);
 
+    SequenceMapping last_mapping();
+
+    uint32_t query_start() const;
+    uint32_t query_end() const;
+
+    void add_mapping_thread(const SequenceMappingThread& smt);
+
+    int bridge_to_thread(const SequenceGraphPath& sgp, const SequenceMappingThread& smt);
+
+    std::string get_complete_sequence() const;
+
+    SequenceGraphPath get_complete_path() const;
+
+private:
+    SequenceGraph& sg;
+    std::vector<SequenceMappingThread> mapping_threads;
+    std::vector<SequenceGraphPath> bridging_paths;
+};
 
 #endif //BSG_SEQUENCEMAPPER_H
