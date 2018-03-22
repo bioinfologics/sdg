@@ -50,6 +50,8 @@ public:
 
     std::vector<sgNodeID_t> breath_first_search(std::vector<sgNodeID_t> &nodes, unsigned int size_limit);
 
+    SequenceGraphPath find_path_between(const sgNodeID_t seed, const sgNodeID_t target, unsigned int size_limit = 0, unsigned int edge_limit = 0);
+
     // remove_node
     void remove_node(sgNodeID_t);
     // remove_link

@@ -4,42 +4,54 @@
 
 #include <sglib/mappers/LongReadMapper.h>
 
-#ifndef __APPLE__
-#include <omp.h>
-#include <parallel/algorithm>
-#else
-int omp_get_max_threads(){return 1u;}
-int omp_get_thread_num(){return 0u;}
-#endif
-
 std::vector<SequenceGraphPath> LongReadMapper::map_reads(std::string &filename, uint32_t error)  {
     std::cout << "@MATCH,READ,NODE_LENGTH,NODE,READ_POS,OFFSET" << std::endl;
     std::cout << "@BLOCK,READ,READ_LENGTH,START,END,NODE,COUNT,COUNT_BTW" << std::endl;
     FastqReader<FastqRecord> fastqReader({0}, filename);
+#ifdef __APPLE__
+    std::vector<std::vector<SequenceGraphPath>> read_paths(1);
+#else
     std::vector<std::vector<SequenceGraphPath>> read_paths(omp_get_max_threads());
+#endif
 
-#pragma omp parallel{
+#pragma omp parallel
+    {
         FastqRecord read;
         bool c;
+#ifdef __APPLE__
+        std::vector<SequenceGraphPath> &paths(read_paths[0]);
+#else
+        std::vector<SequenceGraphPath> &paths(read_paths[omp_get_thread_num()]);
+#endif
+
 #pragma omp critical(readrec)
     {
         c = fastqReader.next_record(read);
     }
         while (c) {
-            const auto sgp(map_read(read));
-
+            const auto currentReadPaths(map_read(read));
+            paths.insert(paths.end(),currentReadPaths.begin(),currentReadPaths.end());
 #pragma omp critical(readrec)
             {
-            c = fastqReader.next_record(read);
+                c = fastqReader.next_record(read);
             }
         }
-    };
-
-    return 0;
+    }
+    std::vector<SequenceGraphPath> result;
+    for (const auto &rp:read_paths){
+        result.insert(result.end(), rp.begin(),rp.end());
+    }
+    return result;
 }
 
-int32_t
-LongReadMapper::getWinner(std::multimap<uint32_t, int32_t> ranking, uint min_window_matches, float min_match_spread) {
+/**
+ * Selects the winning node from a window
+ * @param ranking Lookup table of nodes ordered by highest to lowest match count nodes
+ * @param min_window_matches Minimum number of matches for winner to be valid
+ * @param min_match_spread Minimum spread (match count multiplier) between first and second
+ * @return returns the winner's node id, 0 otherwise
+ */
+int32_t LongReadMapper::getWinner(std::multimap<uint32_t, int32_t> ranking, uint min_window_matches, float min_match_spread) {
     if (ranking.empty()) return 0;
     if (ranking.size() == 1 && ranking.rbegin()->first > min_window_matches) {
         return ranking.rbegin()->second;
@@ -201,7 +213,16 @@ uint64_t LongReadMapper::map_reads2(std::string &filename, uint32_t error) {
     }
 }
 
-SequenceGraphPath LongReadMapper::map_read(FastqRecord read) {
+/**
+ * Maps a single long read using MinSketches and windowed scoring
+ * @param read A single long read in fastq format
+ * @return
+ * Returns the paths between the nodes in the read, is empty if there are no valid paths across the nodes,
+ * if there's no direct link between two nodes, it looks forward until the next node is found. If the next node isn't
+ * found after N edges, the path is stored and a new path is started with the next node.
+ */
+std::vector<SequenceGraphPath> LongReadMapper::map_read(FastqRecord read) {
+    std::vector<SequenceGraphPath> paths;
     auto matches = getMatchOffsets(read.seq);
     std::sort(matches.begin(),matches.end(), MatchOffset::byReadPos());
 
@@ -266,10 +287,22 @@ SequenceGraphPath LongReadMapper::map_read(FastqRecord read) {
             sglib::OutputLog(false) << "@BLOCK," << read.name << "," << read.seq.length() << ","
                                     << b.start << "," << b.end << "," << b.contig << "," << b.count
                                     << "," << b.count_btw << std::endl;
+            // Find path between blocks, start new SequenceGraphPath if no paths are found.
+            if (!paths.empty()) {
+                SequenceGraphPath path_between(sg.find_path_between(paths.back().nodes.back(),b.contig, 0, 20));
+                if (!path_between.nodes.empty()) {
+                    for (const auto &node_in_path:path_between.nodes) {
+                        paths.back().append_to_path(node_in_path);
+                    }
+                } else {
+                    paths.push_back(SequenceGraphPath(sg,{b.contig}));
+                }
+            } else {
+                paths.push_back(SequenceGraphPath(sg,{b.contig}));
+            }
         }
-
-        // Agregar a paths encontrando los links del medio entre bloques
     }
+    return paths;
 }
 
 std::vector<LongReadMapper::Match> LongReadMapper::getMatches(std::string &seq) {
