@@ -155,7 +155,7 @@ add_library(sequence_graph SHARED
             src/sglib/processors/PathExplorer.cpp
             src/sglib/SequenceThreader.cpp
             src/sglib/UniqueKmerIndex.cpp
-        )
+        src/sglib/graph/SequenceSubGraph.cpp src/sglib/graph/SequenceSubGraph.hpp src/sglib/graph/SequenceGraphPath.cpp src/sglib/graph/SequenceGraphPath.hpp)
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 

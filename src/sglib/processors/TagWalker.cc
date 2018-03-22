@@ -2,6 +2,7 @@
 // Created by Bernardo Clavijo (EI) on 01/03/2018.
 //
 
+#include <sglib/graph/SequenceGraphPath.hpp>
 #include "TagWalker.hpp"
 
 float TagWalker::remove_crosstalk() {

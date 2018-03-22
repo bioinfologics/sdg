@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <iterator>
+#include <vector>
 #include <map>
 #include <sglib/logger/OutputLog.h>
 #include <sglib/readers/Common.h>

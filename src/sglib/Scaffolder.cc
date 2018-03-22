@@ -3,6 +3,8 @@
 //
 
 #include "Scaffolder.hpp"
+#include <sglib/graph/SequenceGraphPath.hpp>
+#include <sglib/graph/SequenceSubGraph.hpp>
 
 void Scaffolder::pop_unsupported_shortbubbles(uint64_t max_length) {
     std::cout<<"popping unsupported bubbles!"<<std::endl;

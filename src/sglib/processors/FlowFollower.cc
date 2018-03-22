@@ -2,6 +2,8 @@
 // Created by Bernardo Clavijo (EI) on 08/03/2018.
 //
 
+
+#include <sglib/graph/SequenceGraphPath.hpp>
 #include "FlowFollower.hpp"
 
 Flow FlowFollower::flow_from_node(sgNodeID_t n,float min_winner,float max_looser) {

@@ -6,7 +6,8 @@
 #define SG_SCAFFOLDER_HPP
 
 #include <sglib/mappers/LinkedReadMapper.hpp>
-#include "sglib/graph/SequenceGraph.h"
+#include <sglib/graph/SequenceGraph.h>
+#include <sglib/graph/SequenceGraphPath.hpp>
 #include "PairedReadMapper.h"
 #include "KmerCompressionIndex.hpp"
 

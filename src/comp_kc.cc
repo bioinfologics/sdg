@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sglib/types/KmerTypes.hpp>
+#include <iostream>
 
 int main(int argc, char **argv){
 

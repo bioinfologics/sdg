@@ -2,6 +2,7 @@
 // Created by Bernardo Clavijo (EI) on 19/03/2018.
 //
 
+#include <sglib/graph/SequenceGraphPath.hpp>
 #include "PathsDatastore.hpp"
 
 void PathsDatastore::write(std::ofstream &output_file) {

@@ -14,53 +14,11 @@
 #include <iostream>
 #include <array>
 #include <unordered_set>
-#include "sglib/readers/FileReader.h"
-
-typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
-
-enum sgNodeStatus_t {sgNodeActive,sgNodeDeleted};
-
-class Node{
-public:
-    Node(std::string _seq, sgNodeStatus_t _status) : sequence(_seq), status(_status){};
-    Node(std::string _seq) : sequence(_seq),status(sgNodeActive){};
-    std::string sequence;
-    sgNodeStatus_t status;
-    bool is_canonical();
-    void make_rc();
-};
-
-class Link{
-public:
-    Link( sgNodeID_t _src, sgNodeID_t _dst, int32_t _dist) : source(_src), dest(_dst), dist(_dist) {};
-    sgNodeID_t source,dest;
-    int32_t dist;
-
-    bool operator==( const  Link);
-    bool operator<(const Link)const;
-
-    friend std::ostream &operator<<(std::ostream &os, const Link &link) {
-        os << link.source << " -> " << link.dest;
-        return os;
-    }
-
-};
-
-struct nodeVisitor {
-    sgNodeID_t node = 0;
-    unsigned int dist = 0;
-    unsigned int path_length = 0;
-    nodeVisitor(sgNodeID_t n, unsigned int d, unsigned int p) : node(n), dist(d), path_length(p) {}
-    bool operator<(const nodeVisitor &o) const {return std::tie(node) < std::tie(o.node);}
-    bool operator==(const nodeVisitor &o) const {return node == o.node;}
-    nodeVisitor reverseDirection() const {
-        return {-node, dist, path_length};
-    }
-    friend std::ostream &operator<<(std::ostream &os, const nodeVisitor &visitor) {
-        os << visitor.node << ":" << visitor.path_length;
-        return os;
-    }
-};
+#include <sglib/types/KmerTypes.hpp>
+#include <sglib/types/GenericTypes.hpp>
+#include <sglib/readers/FileReader.h>
+#include <sglib/graph/SequenceSubGraph.hpp>
+#include <sglib/graph/SequenceGraphPath.hpp>
 
 class SequenceGraphPath;
 class SequenceSubGraph;
@@ -150,53 +108,6 @@ public:
         return oldnames[id];
     }
 
-};
-
-
-class SequenceGraphPath {
-public:
-    std::vector<sgNodeID_t> nodes;
-    explicit SequenceGraphPath(SequenceGraph & _sg, const std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
-
-    SequenceGraphPath(const SequenceGraphPath& sgp) : nodes(sgp.nodes), sg(sgp.sg) {};
-
-    SequenceGraphPath& operator=(const SequenceGraphPath other) {
-        if (&other == this) {
-            return *this;
-        }
-        nodes = other.nodes;
-        sg = other.sg;
-        return *this;
-    }
-
-    std::string get_fasta_header(bool use_oldnames = false) const;
-    std::string get_sequence() const;
-    std::vector<Link> get_next_links() { return sg.get_fw_links(nodes.back());}
-    void reverse();
-    bool is_canonical();
-    std::set<sgNodeID_t> make_set_of_nodes() const;
-    bool operator==(const SequenceGraphPath& rhs) const;
-    bool operator<(const SequenceGraphPath& rhs) const;
-    bool append_to_path(sgNodeID_t newnode);
-    bool extend_if_coherent(SequenceGraphPath s);
-    void clear() {
-        nodes.clear();
-    };
-
-private:
-    SequenceGraph& sg;
-};
-
-
-class SequenceSubGraph {
-public:
-    std::vector<sgNodeID_t> nodes;
-    explicit SequenceSubGraph(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
-    SequenceGraphPath make_path(); // Returns empty path if not linear.
-
-    void write_to_gfa(std::string filename);
-private:
-    SequenceGraph& sg;
 };
 
 #endif //SG_SEQUENCEGRAPH_HPP

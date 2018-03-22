@@ -2,9 +2,9 @@
 // Created by Bernardo Clavijo (EI) on 26/02/2018.
 //
 
+#include <sglib/graph/SequenceGraphPath.hpp>
 #include "Untangler.hpp"
 #include "TagWalker.hpp"
-
 
 uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t> &reads_to_remap) {
     std::unordered_set<sgNodeID_t> unsolved_repeats;
