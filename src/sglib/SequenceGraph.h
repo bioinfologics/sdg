@@ -172,7 +172,6 @@ public:
     std::string get_fasta_header(bool use_oldnames = false) const;
     std::string get_sequence() const;
     std::vector<Link> get_next_links() { return sg.get_fw_links(nodes.back());}
-    bool extend_if_coherent(SequenceGraphPath s);
     void reverse();
     bool is_canonical();
     std::set<sgNodeID_t> make_set_of_nodes() const;
