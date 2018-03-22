@@ -26,6 +26,7 @@ int main(int argc, char * argv[]) {
 
 
 
+
         auto result(options.parse(argc, argv));
 
         if (result.count("help"))
@@ -51,11 +52,6 @@ int main(int argc, char * argv[]) {
     WorkSpace ws;
     sglib::OutputLog()<<"Loading Workspace..."<<std::endl;
     ws.load_from_disk(workspace_file);
-//    std::swap(ws.path_datastores[0].paths,ws.path_datastores[1].paths);
-//    std::swap(ws.path_datastores[0].origin,ws.path_datastores[1].origin);
-//    ws.path_datastores.pop_back();
-//    ws.dump_to_disk(workspace_file+"_corrected");
-//    return 0;
     ws.add_log_entry("bsg-untangler run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     if (ws.path_datastores.size()==0) {

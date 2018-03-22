@@ -298,7 +298,7 @@ void FlowFollower::create_flows_fast() {
     //flows simply in a vector
     std::vector<Flow> fflows(ws.sg.nodes.size());
     std::vector<Flow> rflows(ws.sg.nodes.size());
-    std::atomic_uint64_t nodesp(0),validflows(0);
+    std::atomic<uint64_t> nodesp(0),validflows(0);
     std::vector<sgNodeID_t> nv;
     nv.reserve(nodes.size());
     for (auto &n:nodes)nv.push_back(n);

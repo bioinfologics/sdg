@@ -7,7 +7,7 @@
 #include "cxxopts.hpp"
 
 int main(int argc, char * argv[]) {
-    std::cout << "Welcome to bsg-testflowfollower"<<std::endl<<std::endl;
+    std::cout << "Welcome to bsg-flowmaker"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
     std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
     std::cout << "Executed command:"<<std::endl;
@@ -24,7 +24,7 @@ int main(int argc, char * argv[]) {
     uint32_t select_min_size=399,select_max_size=5000;
     try
     {
-        cxxopts::Options options("bsg-testflowfollower", "a test following flows in a parallel region of the graph");
+        cxxopts::Options options("bsg-flowmaker", "generates flows on a selection of nodes");
 
         options.add_options()
                 ("help", "Print help")
@@ -69,10 +69,10 @@ int main(int argc, char * argv[]) {
     ws.load_from_disk(workspace_file);
     //ws.sg.write_to_gfa("initial_graph.gfa",{},{},{});
     ws.linked_read_datastores[0].dump_tag_occupancy_histogram("tag_occupancy.csv");
-    ws.add_log_entry("bsg-testflowfollower run started");
+    ws.add_log_entry("bsg-flowmaker run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     //ws.kci.reindex_graph();
-    ws.kci.compute_compression_stats();
+    //ws.kci.compute_compression_stats();
     //for (auto &m:ws.linked_read_mappers) m.memlimit=max_mem_gb*1024*1024*1024;
 //TODO: move region selection into SG
 //    std::unordered_set<sgNodeID_t> region_nodes;
@@ -132,7 +132,7 @@ int main(int argc, char * argv[]) {
                                  select_min_ci,select_max_ci);
         //ff.create_flows();
         ff.create_flows_fast();
-
+        ws.add_log_entry(std::to_string(ws.path_datastores.back().paths.size())+"flows stored in new paths datastore #"+std::to_string(ws.path_datastores.size()-1));
 //    }
     sglib::OutputLog()<<"Dumping final Workspace..."<<std::endl;
     ws.dump_to_disk(output_prefix+"_final.bsgws");
