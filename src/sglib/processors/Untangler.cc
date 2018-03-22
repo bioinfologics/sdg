@@ -414,3 +414,137 @@ std::vector<SequenceGraphPath> Untangler::combine(std::vector<SequenceGraphPath>
 //        //check overlap ==
 
 }
+
+
+void Untangler::analise_paths_through_nodes() {
+//    std::vector<uint8_t> used(ws.sg.nodes.size(),0);
+//    for (auto &p:ws.path_datastores[0].paths){
+//        for (auto i=1;i<p.nodes.size()-1;++i) if (used[llabs(p.nodes[i])]<20) ++used[llabs(p.nodes[i])];
+//    }
+//    uint64_t hall[21];
+//    for (auto &x:hall) x=0;
+//    uint64_t h399[21];
+//    for (auto &x:h399) x=0;
+//    uint64_t h402[21];
+//    for (auto &x:h402) x=0;
+//    uint64_t h1000[21];
+//    for (auto &x:h1000) x=0;
+//    uint64_t h10000[21];
+//    for (auto &x:h10000) x=0;
+//    for (auto n=0;n<ws.sg.nodes.size();++n) {
+//        ++hall[used[n]];
+//        if (ws.sg.nodes[n].sequence.size()>=399) {
+//            if (ws.sg.nodes[n].sequence.size()<402) ++h399[used[n]];
+//            else if (ws.sg.nodes[n].sequence.size()<1000) ++h402[used[n]];
+//            else if (ws.sg.nodes[n].sequence.size()<10000) ++h1000[used[n]];
+//            else ++h10000[used[n]];
+//        }
+//
+//    }
+//    std::cout<<std::endl<<"=== Paths through -> nodes ==="<<std::endl;
+//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<hall[i]<<std::endl;
+//    std::cout<<std::endl<<"=== Paths through -> nodes 399bp - 401bp ==="<<std::endl;
+//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<h399[i]<<std::endl;
+//    std::cout<<std::endl<<"=== Paths through -> nodes 402bp - 999bp ==="<<std::endl;
+//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<h402[i]<<std::endl;
+//    std::cout<<std::endl<<"=== Paths through -> nodes 1000bp - 9999bp ==="<<std::endl;
+//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<h1000[i]<<std::endl;
+//    std::cout<<std::endl<<"=== Paths through -> nodes 10000bp+ ==="<<std::endl;
+//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<h10000[i]<<std::endl;
+//TODO: this is the path-through part
+//    struct path_through{
+//        sgNodeID_t from,to;
+//        uint16_t count;
+//        path_through(sgNodeID_t _f,sgNodeID_t _t, uint16_t _c):from(_f),to(_t),count(_c){};
+//        const bool operator==(std::pair<sgNodeID_t,sgNodeID_t> a){
+//            return (from == a.first and to == a.second) or (from == a.second and to == a.first);
+//        }
+//    };
+//    sglib::OutputLog()<<"Creating path_through structures for each node"<<std::endl;
+//    std::vector<std::vector<struct path_through>> paths_through_nodes(ws.sg.nodes.size());
+//    std::pair<sgNodeID_t,sgNodeID_t> pfromto;
+//    //TODO: add the first and last with origin/end in themselves
+//    for (auto &p:ws.path_datastores[0].paths){
+//        for (auto i=1;i<p.nodes.size()-1;++i) {
+//            auto n=llabs(p.nodes[i]);
+//            if (p.nodes[i]>0) { pfromto.first=p.nodes[i-1];pfromto.second=-p.nodes[i+1]; }
+//            else { pfromto.first=-p.nodes[i+1]; pfromto.second=p.nodes[i-1];}
+//
+//            auto pti=std::find(paths_through_nodes[n].begin(),paths_through_nodes[n].end(),pfromto);
+//            if (pti==paths_through_nodes[n].end()) paths_through_nodes[n].emplace_back(pfromto.first,pfromto.second,1);
+//            else ++(pti->count);
+//        }
+//    }
+
+    //Canonical repeats.
+//    for (sgNodeID_t n=0;n<ws.sg.nodes.size();++n){
+//        auto fwl=ws.sg.get_fw_links(n);
+//        auto bwl=ws.sg.get_bw_links(n);
+//        if (fwl.size()>1 and fwl.size()==bwl.size() ){
+//            if (paths_through_nodes[n].size()!=fwl.size()) continue;
+//            std::set<sgNodeID_t> in_sol;
+//            for (auto &ptn:paths_through_nodes[n]) {
+//                in_sol.insert(llabs(ptn.from));
+//                in_sol.insert(llabs(ptn.to));
+//            }
+//            if (in_sol.size()<2*fwl.size()) continue;
+//            std::cout<<std::endl<<"Canonical repeat x"<<fwl.size()<<" on node "<<n<<" ("<<ws.sg.nodes[n].sequence.size()<<"bp) solved?"<<std::endl;
+//            for (auto &ptn:paths_through_nodes[n]) std::cout<<" "<<ptn.from<<" -> "<<ptn.to<<": "<<ptn.count<<std::endl;
+//        }
+//
+//    }
+    std::cout<<"computing KCI for all nodes"<<std::endl;
+    ws.kci.compute_all_nodes_kci(1);
+    std::ofstream kciof("kci_dump.csv");
+    for (auto i=1;i<ws.sg.nodes.size();++i) kciof<<"seq"<<i<<", "<<ws.kci.nodes_depth[i]<<std::endl;
+    std::cout<<"DONE!"<<std::endl;
+    //CRAP regions
+    std::vector<bool> used(ws.sg.nodes.size(),false),aborted(ws.sg.nodes.size(),false);
+    std::vector<SequenceSubGraph> craps;
+    for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) {
+        if (used[n]) continue;
+        if (ws.kci.nodes_depth[n]<1.5 and ws.sg.nodes[n].sequence.size()>500) continue;
+        SequenceSubGraph crap(ws.sg);
+        std::vector<sgNodeID_t> to_explore={n};
+        std::cout<<"Exploring node "<<n<<std::endl;
+        while (!to_explore.empty()){
+            std::vector<sgNodeID_t> new_to_explore;
+            //std::cout<<" Exploring "<<to_explore.size()<< " neighbors"<<std::endl;
+            for (auto ne:to_explore){
+                //std::cout<<"  Exploring node #"<<ne<<std::endl;
+                for (auto neigh:ws.sg.links[ne]){
+                    auto x=llabs(neigh.dest);
+                    //std::cout<<"  Exploring neighbour #"<<x<<std::endl;
+                    if (std::find(crap.nodes.begin(),crap.nodes.end(),x)==crap.nodes.end()) {
+                        //std::cout<<"  ADDING to crap!"<<x<<std::endl;
+                        crap.nodes.emplace_back(x);
+                        if (not (ws.kci.nodes_depth[x]<1.5 and ws.sg.nodes[x].sequence.size()>500)) {
+                            //std::cout<<"  ADDING to explore list (size="<<ws.sg.nodes[x].sequence.size()<<")"<<std::endl;
+                            new_to_explore.emplace_back(x);
+                        }
+                    }
+                }
+            }
+            //std::cout<<new_to_explore.size()<< " new neighbors to explore on the next round"<<std::endl;
+            to_explore=new_to_explore;
+            if (crap.nodes.size()>5000) break;
+        }
+        if (crap.nodes.size()>10) {
+            for (auto &x:crap.nodes) used[x]=true;
+            if (crap.nodes.size()<=5000) {
+                craps.emplace_back(crap);
+                std::cout << std::endl << "==== NEW CRAP ====" << std::endl;
+                for (auto x:crap.nodes) std::cout << "seq" << x << ", ";
+                std::cout << std::endl;
+            }
+            if (crap.nodes.size()>5000) {
+                for (auto x:crap.nodes) aborted[x]=true;
+            }
+        }
+    }
+    uint64_t abt=0;
+    for (auto a:aborted) if (a) ++abt;
+    std::cout<<"There were "<<abt<<" nodes in aborted crap components"<<std::endl;
+
+
+}

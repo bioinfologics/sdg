@@ -86,6 +86,7 @@ void KmerCompressionIndex::read(std::ifstream &input_file) {
         read_counts.back().resize(kcount);
         input_file.read(( char *) read_counts.back().data(), sizeof(uint16_t) * kcount);
     }
+    compute_compression_stats();
 }
 
 void KmerCompressionIndex::load_from_disk(std::string filename) {
@@ -278,6 +279,7 @@ double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint
 
 void KmerCompressionIndex::compute_all_nodes_kci(uint16_t max_graph_freq) {
     nodes_depth.resize(sg.nodes.size());
+#pragma omp parallel shared(nodes_depth)
     for (auto n=1;n<sg.nodes.size();++n) {
         nodes_depth[n]=compute_compression_for_node(n, max_graph_freq);
     }

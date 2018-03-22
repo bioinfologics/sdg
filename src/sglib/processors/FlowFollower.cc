@@ -302,7 +302,7 @@ void FlowFollower::create_flows_fast() {
     std::vector<sgNodeID_t> nv;
     nv.reserve(nodes.size());
     for (auto &n:nodes)nv.push_back(n);
-#pragma omp parallel
+#pragma omp parallel shared(fflows,rflows)
     {
         BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,5000,200000,1000);
 #pragma omp for schedule(static,100)
@@ -323,9 +323,9 @@ void FlowFollower::create_flows_fast() {
             if (np%100==0) sglib::OutputLog()<<np<<" nodes processed, "<<validflows<<" informative flows"<<std::endl;
         }
     }
-    sglib::OutputLog()<<" DONE!"<<std::endl;
+    sglib::OutputLog()<<" DONE!"<<nodesp<<" nodes processed, "<<validflows<<" informative flows"<<std::endl;
     //Next create a PathsCollection in the graph
-    std::cout<<"Creating paths collection"<<std::endl;
+    sglib::OutputLog()<<"Creating paths collection"<<std::endl;
     ws.path_datastores.emplace_back(ws.sg);
     for (auto ff:fflows){
         if (ff.nodes.size()<3) continue;

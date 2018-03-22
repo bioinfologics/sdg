@@ -117,9 +117,9 @@ public:
 
 void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 31;
-    std::cout<<"mapping reads!!!"<<std::endl;
     read_to_node.resize(datastore.size()+1);
-    std::cout<<reads_to_remap.size()<<" selected reads / "<<read_to_node.size()-1<<" total"<<std::endl;
+    if (not reads_to_remap.empty())
+        sglib::OutputLog()<<reads_to_remap.size()<<" selected reads / "<<read_to_node.size()-1<<" total"<<std::endl;
 
     /*
      * Read mapping in parallel,
@@ -193,11 +193,11 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                 }
             }
             auto tc = ++total_count;
-            if (tc % 10000000 == 0) std::cout << mapped_count << " / " << tc <<" ("<<multimap_count<<" multi-mapped)"<< std::endl;
+            if (tc % 10000000 == 0) sglib::OutputLog()<< mapped_count << " / " << tc <<" ("<<multimap_count<<" multi-mapped)"<< std::endl;
         }
     }
     for (auto & tres:thread_mapping_results){
-        sglib::OutputLog(sglib::LogLevels::DEBUG)<<"mixing in "<<tres.size()<<" thread specific results"<<std::endl;
+        //sglib::OutputLog(sglib::LogLevels::DEBUG)<<"mixing in "<<tres.size()<<" thread specific results"<<std::endl;
         for (auto &rm:tres){
             read_to_node[rm.read_id] = rm.node;
             reads_in_node[rm.node].emplace_back(rm);
@@ -216,8 +216,6 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
     for (sgNodeID_t n=1;n<reads_in_node.size();++n){
         std::sort(reads_in_node[n].begin(),reads_in_node[n].end());
     }
-
-
 }
 
 ///**

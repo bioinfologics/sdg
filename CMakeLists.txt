@@ -203,10 +203,22 @@ add_executable(bsg-workspace
         )
 target_link_libraries(bsg-kmerspectra ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
+add_executable(bsg-mapper
+        src/bsg-mapper.cc
+        )
+
 add_executable(bsg-untangler
         src/bsg-untangler.cc
         src/sglib/processors/Untangler.hpp
         src/sglib/processors/Untangler.cc src/sglib/processors/TagWalker.cc src/sglib/processors/TagWalker.hpp src/sglib/processors/FlowFollower.cc src/sglib/processors/FlowFollower.hpp)
+
+add_executable(bsg-untangler2
+        src/bsg-untangler2.cc
+        src/sglib/processors/Untangler.hpp
+        src/sglib/processors/Untangler.cc
+        src/sglib/processors/TagWalker.cc src/sglib/processors/TagWalker.hpp
+        src/sglib/processors/FlowFollower.cc src/sglib/processors/FlowFollower.hpp)
+
 
 add_executable(bsg-testflowfollower
         src/bsg-testflowfollower.cc
@@ -247,12 +259,14 @@ add_executable(seq-sorter EXCLUDE_FROM_ALL
 
 target_link_libraries(bsg-workspace sequence_graph)
 target_link_libraries(bsg-datastore sequence_graph)
+target_link_libraries(bsg-mapper sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-untangler2 sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-testflowfollower sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-bfphaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-testflowfollower sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries (phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
