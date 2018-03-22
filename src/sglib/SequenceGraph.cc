@@ -2,18 +2,24 @@
 // Created by Bernardo Clavijo (EI) on 18/10/2017.
 //
 
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <set>
-#include <math.h>
-#include "SequenceGraph.h"
-#include <sglib/mappers/LinkedReadMapper.hpp>
+#include <cmath>
 #include <list>
 #include <queue>
 #include <stack>
 #include <tuple>
-#include "sglib/readers/FileReader.h"
+#include <list>
+#include <tuple>
+#include <functional>
+#include <sglib/Scaffolder.hpp>
+#include <sglib/SequenceGraph.h>
+#include <sglib/mappers/LinkedReadMapper.hpp>
+#include <sglib/readers/FileReader.h>
+
 
 bool Node::is_canonical() {
     for (size_t i=0,j=sequence.size()-1;i<j;++i,--j){
@@ -35,7 +41,7 @@ bool Node::is_canonical() {
             case 'N':
                 break;
             default:
-            std::cout<<"unexpected character in fasta file: '"<<r<<"'"<<std::endl;
+                sglib::OutputLog(sglib::LogLevels::WARN) << "Unexpected character in fasta file: '" << r << "'" << std::endl;
         }
         if (f<r) return true;
         if (r<f) return false;
@@ -96,7 +102,7 @@ void SequenceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
 
 }
 
-std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n){
+std::vector<Link> SequenceGraph::get_fw_links(sgNodeID_t n) const {
     std::vector<Link> r;
     for (auto &l:links[(n>0 ? n : -n)]) if (l.source==-n) r.emplace_back(l);
     return r;
@@ -105,7 +111,6 @@ std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n){
 std::vector<Link> SequenceGraph::get_bw_links(sgNodeID_t n) {
     return get_fw_links (-n);
 }
-
 
 bool Link::operator==(const Link a){
     if (a.source == this->source && a.dest == this->dest){
@@ -374,7 +379,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
         this->fasta_filename=filename.substr(0,filename.size()-4)+".fasta";
     }
-    else throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '"+filename.substr(filename.size()-4,4)+"'");
+    else throw std::invalid_argument("Filename of the gfa input does not end in gfa, it ends in '"+filename.substr(filename.size()-4,4)+"'");
 
     std::ifstream gfaf(filename);
     if (!gfaf) throw std::invalid_argument("Can't read gfa file");
@@ -382,15 +387,13 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     if (line!="H\tVN:Z:1.0") std::cout<<"WARNING, first line of gfa doesn't correspond to GFA1"<<std::endl;
 
     std::ifstream fastaf(fasta_filename);
-    std::cout << "fasta filesname: " << fasta_filename << std::endl;
-    if (!fastaf) throw std::invalid_argument("Can't read fasta file");
-
-
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Graph fasta filesname: " << fasta_filename << std::endl;
+    if (!fastaf) throw std::invalid_argument("Can't read graph fasta file");
 
     //load all sequences from fasta file if they're not canonical, flip and remember they're flipped
-    std::cout<<"Loading sequences from "<<fasta_filename<<std::endl;
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Loading sequences from " << fasta_filename << std::endl;
 
-    std::string name,seq="";
+    std::string name, seq = "";
     seq.reserve(10000000); //stupid hack but probably useful to reserve
     oldnames_to_ids.clear();
     oldnames.push_back("");
@@ -401,7 +404,8 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     uint64_t rcnodes=0;
     while(!fastaf.eof()){
         std::getline(fastaf,line);
-        if (fastaf.eof() or line[0]=='>'){
+        if (fastaf.eof() or line[0] == '>'){
+
             if (!name.empty()) {
                 //rough ansi C and C++ mix but it works
                 if (oldnames_to_ids.find(name) != oldnames_to_ids.end())
@@ -415,16 +419,19 @@ void SequenceGraph::load_from_gfa(std::string filename) {
                     ++rcnodes;
                 }
             }
+
+            // Clear the name and set name to the new name, this is a new sequence!
             name.clear();
             for (auto i = 1; i < line.size() and line[i] != ' '; ++i) name += line[i];
             seq = "";
         } else {
-            seq+=line;
+            seq += line;
+
         }
     }
-    std::cout<<nodes.size()-1<<" nodes loaded! "<<rcnodes<<" canonised"<<std::endl;
+    sglib::OutputLog(sglib::LogLevels::INFO) << nodes.size()-1 << " nodes loaded (" << rcnodes << " canonised)." << std::endl;
 
-    //load store all conections.
+    //load store all connections.
 
     std::string gfa_rtype,gfa_source,gfa_sourcedir,gfa_dest,gfa_destdir,gfa_cigar;
     sgNodeID_t src_id,dest_id;
@@ -441,11 +448,11 @@ void SequenceGraph::load_from_gfa(std::string filename) {
             iss >> gfa_destdir;
             iss >> gfa_cigar;
             //std::cout<<"'"<<source<<"' '"<<gfa_sourcedir<<"' '"<<dest<<"' '"<<destdir<<"'"<<std::endl;
-            if (oldnames_to_ids.find(gfa_source)==oldnames_to_ids.end()){
+            if (oldnames_to_ids.find(gfa_source) == oldnames_to_ids.end()){
                 oldnames_to_ids[gfa_source] = add_node(Node(""));
                 //std::cout<<"added source!" <<source<<std::endl;
             }
-            if (oldnames_to_ids.find(gfa_dest)==oldnames_to_ids.end()){
+            if (oldnames_to_ids.find(gfa_dest) == oldnames_to_ids.end()){
                 oldnames_to_ids[gfa_dest] = add_node(Node(""));
                 //std::cout<<"added dest! "<<dest<<std::endl;
             }
@@ -453,8 +460,8 @@ void SequenceGraph::load_from_gfa(std::string filename) {
             dest_id=oldnames_to_ids[gfa_dest];
 
             //Go from GFA's "Links as paths" to a normal "nodes have sinks (-/start/left) and sources (+/end/right)
-            if (gfa_sourcedir=="+") src_id=-src_id;
-            if (gfa_destdir=="-") dest_id=-dest_id;
+            if (gfa_sourcedir == "+") src_id=-src_id;
+            if (gfa_destdir == "-") dest_id=-dest_id;
             dist=0;
             if (gfa_cigar.size()>1 and gfa_cigar[gfa_cigar.size()-1]=='M') {
                 //TODO: better checks for M
@@ -468,9 +475,9 @@ void SequenceGraph::load_from_gfa(std::string filename) {
         }
     }
     if (dist_egt0 > lcount*0.5f) {
-        std::cout << "Warning: The loaded graph contains " << dist_egt0 << " non-overlapping links out of " << lcount << std::endl;
+        sglib::OutputLog(sglib::LogLevels::WARN) << "Warning: The loaded graph contains " << dist_egt0 << " non-overlapping links out of " << lcount << std::endl;
     }
-    std::cout<<nodes.size()-1<<" nodes after connecting with "<<lcount<<" links"<<std::endl;
+    sglib::OutputLog(sglib::LogLevels::INFO) << nodes.size() - 1 << " nodes after connecting with " << lcount << " links." << std::endl;
 }
 
 void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<sgNodeID_t> & mark_red, const std::vector<double> & depths, const std::unordered_set<sgNodeID_t> & selected_nodes){
@@ -539,27 +546,40 @@ std::vector<sgNodeID_t> SequenceGraph::oldnames_to_nodes(std::string _oldnames) 
     return nv;
 }
 
-std::string SequenceGraphPath::get_fasta_header() {
-    std::string h=">sgPath_";
-    for (auto &n:nodes) {
-        h += std::to_string(n)+",";
+std::string SequenceGraphPath::get_fasta_header(bool use_oldnames) const {
+    std::string h = ">sgPath_[";
+    if (use_oldnames) {
+        for (auto &n:nodes) {
+            h += n > 0 ? '+' : '-';
+            h += sg.nodeID_to_name(std::abs(n)) + ", ";
+        }
+    } else {
+        for (auto &n:nodes) {
+            h += std::to_string(n)+", ";
+        }
     }
     h.resize(h.size()-1);
+    h += ']';
     return h;
 }
 
-std::string SequenceGraphPath::get_sequence() {
-    std::string s="";
-    sgNodeID_t pnode=0;
+std::string SequenceGraphPath::get_sequence() const {
+    sglib::OutputLog(sglib::LogLevels::DEBUG) << "get_sequence for a SequenceGraphPath with nodes = [" ;
+    if(sglib::OutputLogLevel == sglib::LogLevels::DEBUG) {
+        for(auto &n:nodes) std::cout << " " << n;
+        std::cout << " ]" << std::endl;
+    }
+    std::string s = "";
+    sgNodeID_t pnode = 0;
     // just iterate over every node in path - contig names are converted to ids at construction
     for (auto &n:nodes) {
         std::string nseq;
         if (n>0){
-            nseq=sg.nodes[n].sequence;
+            nseq = sg.nodes[n].sequence;
         } else {
-            auto rcn=sg.nodes[-n];
+            auto rcn = sg.nodes[-n];
             rcn.make_rc();
-            nseq=rcn.sequence;
+            nseq = rcn.sequence;
         }
         if (pnode !=0){
             //find link between pnode' output (+pnode) and n's sink (-n)
@@ -570,22 +590,45 @@ std::string SequenceGraphPath::get_sequence() {
                 std::cout<<"can't find a link between "<<pnode<<" and "<<n<<std::endl;
                 throw std::runtime_error("path has no link");
             } else {
-                if (l->dist>0){
-                    for (auto c=l->dist;c>0;--c) s+="N";
+                if (l->dist > 0){
+                    for (auto c = l->dist; c > 0; --c) s += "N";
                 }
                 else {
-                    auto ovl=-l->dist;
-                    for (auto s1=s.c_str()+s.size()-ovl,s2=nseq.c_str();*s1!=NULL;++s1,++s2)
-                        if (*s1!=*s2)
+                    auto ovl =- l->dist;
+                    for (auto s1 = s.c_str() + s.size() - ovl, s2 = nseq.c_str(); *s1 != NULL; ++s1, ++s2)
+                        if (*s1 != *s2)
                             throw std::runtime_error("path overlap is invalid!");
-                    nseq.erase(0,ovl);
+                    nseq.erase(0, ovl);
                 }
             }
         }
         s+=nseq;
         pnode=-n;
     }
+    sglib::OutputLog(sglib::LogLevels::DEBUG) << "get_sequence finished successfully for SequenceGraphPath with nodes = [" ;
+    if(sglib::OutputLogLevel == sglib::LogLevels::DEBUG) {
+        for(auto &n:nodes) std::cout<<" "<<n;
+        std::cout<<" ]"<<std::endl;
+    }
     return s;
+}
+
+bool SequenceGraphPath::append_to_path(sgNodeID_t newnode) {
+    if (nodes.empty()) {
+        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Path is new and empty." << std::endl;
+        nodes.emplace_back(newnode);
+        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Size of path is now: " << nodes.size() << std::endl;
+        return true;
+    }
+    sgNodeID_t from = -(nodes.back());
+    sglib::OutputLog(sglib::LogLevels::DEBUG) << "Path is not new and empty: trying to append." << std::endl;
+    bool append_possible = sg.link_exists(from, newnode);
+    if (append_possible) {
+        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Append is possible, adding node to the back." << std::endl;
+        nodes.emplace_back(newnode);
+        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Size of path is now: " << nodes.size() << std::endl;
+    }
+    return append_possible;
 }
 
 std::vector<SequenceGraphPath> SequenceGraph::get_all_unitigs(uint16_t min_nodes) {
@@ -622,7 +665,7 @@ void SequenceGraph::join_all_unitigs() {
     }
 }
 
-void SequenceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
+void SequenceGraph::join_path(SequenceGraphPath p, bool consume) {
     std::set<sgNodeID_t> pnodes;
     for (auto n:p.nodes) {
         pnodes.insert( n );
@@ -636,22 +679,26 @@ void SequenceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
     for (auto l:get_fw_links(p.nodes.back())) add_link(-new_node,l.dest,l.dist);
 
     //TODO: update read mappings
-    if (consume_nodes) {
-        for (auto n:p.nodes) {
-            //check if the node has neighbours not included in the path.
-            bool ext_neigh=false;
-            if (n!=p.nodes.back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest)==0) ext_neigh=true;
-            if (n!=p.nodes.front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest)==0) ext_neigh=true;
-            if (ext_neigh) continue;
-            remove_node(n);
-        }
+    if (consume) {
+        consume_nodes(p, pnodes);
+    }
+
+}
+
+void SequenceGraph::consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes) {
+    for (auto n:p.nodes) {
+        //check if the node has neighbours not included in the path.
+        bool ext_neigh=false;
+        if (n!=p.nodes.back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
+        if (n!=p.nodes.front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
+        if (ext_neigh) continue;
+        remove_node(n);
     }
 }
 
 void SequenceGraphPath::reverse(){
     std::vector<sgNodeID_t> newn;
     for (auto n=nodes.rbegin();n<nodes.rend();++n) newn.emplace_back(-*n);
-    //std::swap(nodes,newn);
     nodes=newn;
 }
 
@@ -661,67 +708,21 @@ bool SequenceGraphPath::is_canonical() {
     return this->get_sequence()<rp.get_sequence();
 }
 
-const bool SequenceGraphPath::operator<(const SequenceGraphPath &other) const {
-    for (auto i=0;i<nodes.size();++i){
-        if (other.nodes.size()<i) return true;
-        if (nodes[i]<other.nodes[i]) return true;
-        if (nodes[i]>other.nodes[i]) return false;
-    }
-    return false;
+std::set<sgNodeID_t> SequenceGraphPath::make_set_of_nodes() const {
+    std::set<sgNodeID_t> s;
+    std::transform(nodes.begin(),
+                   nodes.end(),
+                   std::inserter(s, s.end()),
+                   [](const sgNodeID_t& n) -> sgNodeID_t { return std::abs(n); });
+    return s;
 }
 
-const bool SequenceGraphPath::operator==(const SequenceGraphPath &other) const {
-    if (other.nodes.size()!=nodes.size()) return false;
-    for (auto i=0;i<nodes.size();++i){
-        if (nodes[i]!=other.nodes[i]) return false;
-    }
-    return true;
+bool SequenceGraphPath::operator==(const SequenceGraphPath& rhs) const {
+    return make_set_of_nodes() == rhs.make_set_of_nodes();
 }
 
-bool SequenceGraphPath::extend_if_coherent(SequenceGraphPath s) {
-//    int offset=-1;
-//    for (auto i=0;i<nodes.size();++i) {
-//        if (nodes[i] == s.nodes[0]) {
-//            offset = i;
-//            break;
-//        }
-//    }
-//    if (offset<=0) {
-//    if (offset<0) {
-//        offset=1;
-//        for (auto i=0;i<nodes.size();++i) {
-//            if (nodes[i] == s.nodes[0]) {
-//                offset = -i;
-//                break;
-//            }
-//        }
-//    }
-}
-
-std::vector<SequenceSubGraph> SequenceGraph::get_all_tribbles() {
-
-
-    for (sgNodeID_t n=1;n<nodes.size();++n) {
-        //Heuristic to find "tribbles"
-        // A --- B -- C -- H
-        //  \     \      /
-        //   \     E    /
-        //    \     \  /
-        //      F -- G
-        // A->[B-F]
-        // B->[C-E]
-        // C->H
-        // E->G
-        // F->G
-        // F->H
-        auto a_fw=get_fw_links(n);
-        if (a_fw.size()!=2) continue;
-        auto b_fw=get_fw_links(a_fw[0].dist);
-
-        sgNodeID_t A, B, C, D, E, F, G, H;
-    }
-
-
+bool SequenceGraphPath::operator<(const SequenceGraphPath& rhs) const {
+    return make_set_of_nodes() < rhs.make_set_of_nodes();
 }
 
 std::vector<sgNodeID_t > SequenceGraph::find_canonical_repeats() {

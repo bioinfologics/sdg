@@ -140,7 +140,7 @@ add_library(sequence_graph SHARED
             src/sglib/HaplotypeScorer.cpp
             src/sglib/SequenceGraphJournal.cc
             src/sglib/Scaffolder.cc
-        src/sglib/filesystem/helpers.cc
+            src/sglib/filesystem/helpers.cc
             src/sglib/PhaseScaffolder.cpp
             src/sglib/KmerCompressionIndex.cc
             src/sglib/GraphPartitioner.cc
@@ -152,6 +152,9 @@ add_library(sequence_graph SHARED
             src/sglib/processors/FlowFollower.cc
             src/sglib/WorkSpace.cc
             src/sglib/datastores/PathsDatastore.cc
+            src/sglib/processors/PathExplorer.cpp
+            src/sglib/SequenceThreader.cpp
+            src/sglib/UniqueKmerIndex.cpp
         )
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
@@ -166,10 +169,8 @@ target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 
 install(TARGETS sequence_graph DESTINATION lib)
 install(FILES
-            src/sglib/SMR.h
-            src/sglib/readers/Common.h
-            src/sglib/readers/FileReader.h
-            src/sglib/readers/SequenceGraphReader.h
+            src/utilities/matrix.h
+            src/sglib/datastores/LinkedReadsDatastore.hpp
             src/sglib/factories/ContigBlockFactory.h
             src/sglib/factories/ContigLink.h
             src/sglib/factories/KMerFactory.h
@@ -178,15 +179,37 @@ install(FILES
             src/sglib/PairedReadMapper.hpp
             src/sglib/HaplotypeScorer.hpp
             src/sglib/SequenceGraphJournal.hpp
-        src/sglib/filesystem/helpers.h
+            src/sglib/filesystem/check_or_create_directory.h
             src/sglib/PhaseScaffolder.h
             src/sglib/KmerCompressionIndex.hpp
             src/sglib/GraphPartitioner.hpp
             src/sglib/logger/OutputLog.h
             src/sglib/datastores/LinkedReadsDatastore.hpp
             src/sglib/mappers/LinkedReadMapper.hpp
+            src/sglib/processors/TagWalker.hpp
+            src/sglib/processors/Untangler.hpp
+            src/sglib/readers/Common.h
+            src/sglib/readers/FileReader.h
+            src/sglib/readers/SequenceGraphReader.h
+            src/sglib/GraphPartitioner.hpp
+            src/sglib/HaplotypeScorer.hpp
+            src/sglib/KmerCompressionIndex.hpp
+            src/sglib/PairedReadMapper.hpp
+            src/sglib/PhaseScaffolder.h
+            src/sglib/Scaffolder.hpp
+            src/sglib/SequenceGraph.hpp
+            src/sglib/SequenceGraphJournal.hpp
+            src/sglib/SequenceThreader.h
+            src/sglib/SMR.h
+            src/sglib/UniqueKmerIndex.h
+            src/sglib/WorkSpace.hpp
+            src/sglib/aligners/algorithms/SmithWaterman.h
+            src/sglib/aligners/submat/SubstitutionMatrix.h
+            src/sglib/processors/PathExplorer.h
         DESTINATION include
         )
+
+
 
 add_executable(bsg-datastore
         src/bsg-datastore.cc
@@ -235,6 +258,9 @@ add_executable(kc_comp
 add_executable(seq-sorter
                src/seq-sorter.cpp)
 
+add_executable(seq-thread
+        src/seq-thread.cpp)
+
 add_executable(map-lr
         src/map-lr.cc)
 
@@ -259,6 +285,7 @@ target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-testflowfollower sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(seq-thread sequence_graph)
 target_link_libraries(map-lr sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract sequence_graph)
 target_link_libraries(gfa-set sequence_graph)
@@ -283,6 +310,7 @@ install(TARGETS
         gfa-align
         phaser
         map-lr
+        seq-thread
         runBasicTests
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib

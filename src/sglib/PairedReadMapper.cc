@@ -288,7 +288,7 @@ uint64_t PairedReadMapper::process_reads_from_file(uint8_t k, uint16_t min_match
 
                 for (auto &rk:readkmers) {
                     auto nk = kmer_to_graphposition.find(rk.kmer);
-                    if (kmer_to_graphposition.end()!=nk) {
+                    if (kmer_to_graphposition.end() != nk) {
                         //get the node just as node
                         sgNodeID_t nknode = (nk->second.node > 0 ? nk->second.node : -nk->second.node);
                         //TODO: sort out the sign/orientation representation
@@ -403,6 +403,7 @@ void PairedReadMapper::remap_reads(std::unordered_set<uint64_t> const & reads_to
     const int max_coverage = 1;
     uint16_t min_matches = 1;
     const std::string output_prefix("./");
+
     SMR<KmerIDX,
             kmerIDXFactory<FastaRecord>,
             GraphNodeReader<FastaRecord>,

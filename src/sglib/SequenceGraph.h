@@ -22,7 +22,7 @@ enum sgNodeStatus_t {sgNodeActive,sgNodeDeleted};
 
 class Node{
 public:
-    Node(std::string _seq, sgNodeStatus_t _st) : sequence(_seq),status(_st){};
+    Node(std::string _seq, sgNodeStatus_t _status) : sequence(_seq), status(_status){};
     Node(std::string _seq) : sequence(_seq),status(sgNodeActive){};
     std::string sequence;
     sgNodeStatus_t status;
@@ -77,7 +77,7 @@ public:
     sgNodeID_t add_node(Node n);
     void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
 
-    std::vector<Link> get_fw_links( sgNodeID_t n);
+    std::vector<Link> get_fw_links( sgNodeID_t n) const ;
     std::vector<Link> get_bw_links( sgNodeID_t n);
 
     /*
@@ -102,8 +102,8 @@ public:
     // expand_path --> creates an edge with the consensus of a path, eliminates old nodes if only in path and unused edges
     void join_all_unitigs();
     std::vector<SequenceGraphPath> get_all_unitigs(uint16_t min_nodes);
-    // simplify --> executes expand_path on every multi-sequence unitig
     std::vector<SequenceSubGraph> get_all_tribbles();
+    // simplify --> executes expand_path on every multi-sequence unitig
 
 
     // tip_clip -> eliminates tips.
@@ -135,23 +135,54 @@ public:
                 if (nodes[i] == nodes[j] or nodes[i] == -nodes[j]) return true; //looping node
         return false;
     }
+
+    bool link_exists(sgNodeID_t from, sgNodeID_t to) {
+        // Look for link between starting node and the new node.
+        auto l = links[std::abs(from)].begin();
+        // TODO: Can this just be a std::find?
+        for (; l != links[std::abs(from)].end(); ++l){
+            if (l->source == from and l->dest == to) break;
+        }
+        return l != links[std::abs(from)].end();
+    }
+
+    std::string& nodeID_to_name(sgNodeID_t id) {
+        return oldnames[id];
+    }
+
 };
 
 
 class SequenceGraphPath {
 public:
     std::vector<sgNodeID_t> nodes;
-    SequenceGraphPath (const SequenceGraphPath& other): sg(other.sg),nodes(other.nodes){};
-    SequenceGraphPath& operator=(const SequenceGraphPath& other){nodes=other.nodes;return *this;};
     explicit SequenceGraphPath(SequenceGraph & _sg, const std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
-    std::string get_fasta_header();
-    std::string get_sequence();
+
+    SequenceGraphPath(const SequenceGraphPath& sgp) : nodes(sgp.nodes), sg(sgp.sg) {};
+
+    SequenceGraphPath& operator=(const SequenceGraphPath other) {
+        if (&other == this) {
+            return *this;
+        }
+        nodes = other.nodes;
+        sg = other.sg;
+        return *this;
+    }
+
+    std::string get_fasta_header(bool use_oldnames = false) const;
+    std::string get_sequence() const;
     std::vector<Link> get_next_links() { return sg.get_fw_links(nodes.back());}
     bool extend_if_coherent(SequenceGraphPath s);
     void reverse();
     bool is_canonical();
-    const bool operator< (const SequenceGraphPath & other) const;
-    const bool operator== (const SequenceGraphPath & other) const;
+    std::set<sgNodeID_t> make_set_of_nodes() const;
+    bool operator==(const SequenceGraphPath& rhs) const;
+    bool operator<(const SequenceGraphPath& rhs) const;
+    bool append_to_path(sgNodeID_t newnode);
+    bool extend_if_coherent(SequenceGraphPath s);
+    void clear() {
+        nodes.clear();
+    };
 
 private:
     SequenceGraph& sg;
@@ -162,7 +193,7 @@ class SequenceSubGraph {
 public:
     std::vector<sgNodeID_t> nodes;
     explicit SequenceSubGraph(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
-    SequenceGraphPath make_path(); //returns empty path if not linear
+    SequenceGraphPath make_path(); // Returns empty path if not linear.
 
     void write_to_gfa(std::string filename);
 private:
