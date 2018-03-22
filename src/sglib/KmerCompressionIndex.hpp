@@ -8,7 +8,7 @@
 #include <sglib/factories/KMerCountFactory.h>
 #include <sglib/readers/SequenceGraphReader.h>
 #include "SMR.h"
-#include "SequenceGraph.h"
+#include "sglib/graph/SequenceGraph.h"
 
 class KmerCompressionIndex {
 public:

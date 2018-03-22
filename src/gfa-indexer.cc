@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/SequenceGraph.h>
+#include <sglib/graph/SequenceGraph.h>
 #include <cxxopts.hpp>
 #include <sglib/logger/OutputLog.h>
 #include <sglib/indexers/skipMerIndex.hpp>

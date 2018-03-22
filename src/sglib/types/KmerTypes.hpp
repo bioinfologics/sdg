@@ -5,7 +5,7 @@
 #ifndef BSG_KMERTYPES_HPP
 #define BSG_KMERTYPES_HPP
 
-#include <sglib/SequenceGraph.h>
+#include <sglib/graph/SequenceGraph.h>
 
 struct KmerIDX {
 

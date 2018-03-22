@@ -16,7 +16,7 @@
 #include <tuple>
 #include <functional>
 #include <sglib/Scaffolder.hpp>
-#include <sglib/SequenceGraph.h>
+#include <sglib/graph/SequenceGraph.h>
 #include <sglib/mappers/LinkedReadMapper.hpp>
 #include <sglib/readers/FileReader.h>
 

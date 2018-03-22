@@ -9,7 +9,7 @@
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
 #include <sglib/mappers/LinkedReadMapper.hpp>
 #include <sglib/datastores/PathsDatastore.hpp>
-#include "SequenceGraph.h"
+#include "sglib/graph/SequenceGraph.h"
 #include "KmerCompressionIndex.hpp"
 
 class LogEntry{

@@ -135,7 +135,7 @@ include_directories("deps/kseqcpp/")
 
 ## Libraries
 add_library(sequence_graph SHARED
-            src/sglib/SequenceGraph.cc
+        src/sglib/graph/SequenceGraph.cc
             src/sglib/PairedReadMapper.cc
             src/sglib/HaplotypeScorer.cpp
             src/sglib/SequenceGraphJournal.cc
@@ -175,7 +175,7 @@ install(FILES
             src/sglib/factories/ContigLink.h
             src/sglib/factories/KMerFactory.h
             src/sglib/factories/KMerIDXFactory.h
-            src/sglib/SequenceGraph.h
+        src/sglib/graph/SequenceGraph.h
             src/sglib/PairedReadMapper.hpp
             src/sglib/HaplotypeScorer.hpp
             src/sglib/SequenceGraphJournal.hpp

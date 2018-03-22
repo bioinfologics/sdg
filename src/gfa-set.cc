@@ -3,7 +3,7 @@
 //
 
 #include <string>
-#include <sglib/SequenceGraph.h>
+#include <sglib/graph/SequenceGraph.h>
 #include <cxxopts.hpp>
 #include <sglib/filesystem/helpers.h>
 #include <sglib/logger/OutputLog.h>

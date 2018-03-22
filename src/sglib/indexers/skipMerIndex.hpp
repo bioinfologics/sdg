@@ -6,7 +6,7 @@
 #define BSG_SKIPMERINDEX_HPP
 
 
-#include <sglib/SequenceGraph.h>
+#include <sglib/graph/SequenceGraph.h>
 #include <sglib/PairedReadMapper.h>
 #include <sglib/types/KmerTypes.hpp>
 #include <sglib/factories/SkipMerIndexFactory.hpp>

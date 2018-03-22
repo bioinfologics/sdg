@@ -5,7 +5,7 @@
 #include <sglib/KmerCompressionIndex.hpp>
 #include <sglib/GraphPartitioner.hpp>
 #include <sglib/mappers/LinkedReadMapper.hpp>
-#include "sglib/SequenceGraph.h"
+#include "sglib/graph/SequenceGraph.h"
 #include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"
 
