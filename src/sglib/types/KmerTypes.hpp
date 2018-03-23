@@ -6,8 +6,6 @@
 #define BSG_KMERTYPES_HPP
 
 #include <sglib/types/GenericTypes.hpp>
-#include <tuple>
-#include <numeric>
 
 struct KmerIDX {
 
