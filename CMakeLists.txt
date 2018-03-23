@@ -243,14 +243,6 @@ add_executable(bsg-flowmaker
         )
 
 ## add executables and respective sources
-add_executable(gfa-qc
-        src/gfa-qc.cc)
-
-## add executables and respective sources
-add_executable(gfa-dumppath
-        src/gfa-dumppath.cc)
-
-## add executables and respective sources
 add_executable(gfa-pairscaff
         src/gfa-pairscaff.cc)
 
@@ -262,9 +254,6 @@ add_executable(phaser
 
 add_executable(gfa-align
                src/gfa-align.cc)
-
-add_executable(kc_comp
-               src/comp_kc.cc)
 
 add_executable(seq-sorter
                src/seq-sorter.cpp)
@@ -291,8 +280,6 @@ target_link_libraries(bsg-flowmaker sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-untangler2 sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-kmerspectra sequence_graph)
-target_link_libraries(gfa-dumppath sequence_graph)
-target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-bfphaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
@@ -316,8 +303,6 @@ IF(BUILD_TESTING)
 ENDIF()
 
 install(TARGETS
-        gfa-dumppath
-        gfa-qc
         seq-sorter
         gfa-pairscaff
         gfa-align
