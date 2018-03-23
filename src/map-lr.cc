@@ -145,7 +145,7 @@ int main(int argc, char * argv[]) {
         auto result(map_using_sketches(K, sg, output_prefix, long_reads));
         for (const auto &path:result) {
             long_read_ds.origin.emplace_back(path.nodes[0]);
-            long_read_ds.paths.emplace_back(path.nodes);
+            long_read_ds.paths.emplace_back(sg, path.nodes);
         }
     }
 
