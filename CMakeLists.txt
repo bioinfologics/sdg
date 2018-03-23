@@ -243,45 +243,45 @@ add_executable(bsg-flowmaker
         )
 
 ## add executables and respective sources
-add_executable(gfa-qc EXCLUDE_FROM_ALL
+add_executable(gfa-qc
         src/gfa-qc.cc)
 
 ## add executables and respective sources
-add_executable(gfa-dumppath EXCLUDE_FROM_ALL
+add_executable(gfa-dumppath
         src/gfa-dumppath.cc)
 
 ## add executables and respective sources
-add_executable(gfa-pairscaff EXCLUDE_FROM_ALL
+add_executable(gfa-pairscaff
         src/gfa-pairscaff.cc)
 
-add_executable(gfa-bfphaser EXCLUDE_FROM_ALL
+add_executable(gfa-bfphaser
         src/gfa-bfphaser.cc)
 
-add_executable(phaser EXCLUDE_FROM_ALL
+add_executable(phaser
                src/phaser.cpp)
 
-add_executable(gfa-align EXCLUDE_FROM_ALL
+add_executable(gfa-align
                src/gfa-align.cc)
 
-add_executable(kc_comp EXCLUDE_FROM_ALL
+add_executable(kc_comp
                src/comp_kc.cc)
 
-add_executable(seq-sorter EXCLUDE_FROM_ALL
+add_executable(seq-sorter
                src/seq-sorter.cpp)
 
-add_executable(seq-thread EXCLUDE_FROM_ALL
+add_executable(seq-thread
         src/seq-thread.cpp)
 
-add_executable(map-lr EXCLUDE_FROM_ALL
+add_executable(map-lr
         src/map-lr.cc)
 
-add_executable(gfa-extract EXCLUDE_FROM_ALL
+add_executable(gfa-extract
         src/gfa-extract.cc)
 
-add_executable(gfa-set EXCLUDE_FROM_ALL
+add_executable(gfa-set
         src/gfa-set.cc)
 
-add_executable(gfa-indexer EXCLUDE_FROM_ALL
+add_executable(gfa-indexer
         src/gfa-indexer.cc)
 
 target_link_libraries(bsg-workspace sequence_graph)

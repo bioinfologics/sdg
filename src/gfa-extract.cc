@@ -3,6 +3,7 @@
 //
 
 #include <string>
+#include <vector>
 #include <sglib/graph/SequenceGraph.h>
 #include <cxxopts.hpp>
 #include <sglib/filesystem/helpers.h>
@@ -17,7 +18,7 @@ int main(int argc, char * argv[]) {
     unsigned int size_limit(1000), edge_limit(10);
     unsigned int log_level;
     std::string query_file;
-    std::vector<std::string> nodes;
+    std::string nodes_input;
     std::string subgraph;
     uint64_t max_mem_gb(4);
     bool stats_only(false);
@@ -30,7 +31,7 @@ int main(int argc, char * argv[]) {
             ("log_level", "output log level", cxxopts::value<unsigned int>(log_level)->default_value("4"), "uint")
             ("s,size_limit", "size limit in base pairs for region to explore", cxxopts::value<unsigned int>(size_limit)->default_value("1000"), "uint")
             ("e,edge_limit", "limit number of edges to explore", cxxopts::value<unsigned int>(edge_limit)->default_value("10"), "uint")
-            ("n,nodes", "use the following node as a seed (this option can be specified multiple times)", cxxopts::value<std::vector<std::string>>(nodes), "string")
+            ("n,nodes", "use the following node as a seed (this option can be specified multiple times)", cxxopts::value<std::string>(nodes_input), "string")
             ("subgraph", "use the following subgraph as a seed", cxxopts::value<std::string>(subgraph), "file path");
 //@formatter:on
     try {
@@ -72,6 +73,15 @@ int main(int argc, char * argv[]) {
     sglib::OutputLogLevel = static_cast<sglib::LogLevels>(log_level);
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
+    std::vector<std::string> nodes;
+
+    if (!nodes_input.empty()) {
+        std::stringstream nodes_stream(nodes_input);
+        std::string node;
+        while (std::getline(nodes_stream, node, ',')) {
+            nodes.push_back(node);
+        }
+    }
 
     if (!subgraph.empty()) {
         SequenceGraph ssg;
@@ -81,6 +91,9 @@ int main(int argc, char * argv[]) {
         }
     }
 
+    for (const auto &n: nodes) {
+        std::cout << n << ", ";
+    }
     std::cout << std::endl;
     std::cout << std::endl;
     std::cout << std::endl;
