@@ -205,7 +205,7 @@ uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
     auto const hps=get_all_HSPNPs();
     //std::cout<<"limiting HSPNs to 1000!!! (for test purposes)"<<std::endl;
     //hps.resize(100);
-    std::atomic_uint64_t processing(0);
+    std::atomic<uint64_t> processing(0);
     std::vector<std::vector<SequenceGraphPath>> new_ppaths;
 #pragma omp parallel for
     for (auto i=0;i<hps.size();++i) {

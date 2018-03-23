@@ -178,7 +178,7 @@ install(FILES
             src/sglib/factories/ContigLink.h
             src/sglib/factories/KMerFactory.h
             src/sglib/factories/KMerIDXFactory.h
-        src/sglib/graph/SequenceGraph.h
+            src/sglib/graph/SequenceGraph.h
             src/sglib/PairedReadMapper.hpp
             src/sglib/HaplotypeScorer.hpp
             src/sglib/SequenceGraphJournal.hpp
@@ -234,9 +234,6 @@ add_executable(bsg-untangler
         src/bsg-untangler.cc
         )
 
-add_executable(bsg-testflowfollower
-        src/bsg-testflowfollower.cc
-        )
 add_executable(bsg-untangler2
         src/bsg-untangler2.cc
         )

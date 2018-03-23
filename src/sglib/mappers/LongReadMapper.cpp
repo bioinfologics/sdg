@@ -3,7 +3,7 @@
 //
 
 #include <sglib/mappers/LongReadMapper.h>
-
+#include <sglib/utilities/omp_safe.hpp>
 /**
  * Receives a filename containing long reads in FASTQ format, for each read generates a _valid_ (the first path found)
  * path between matched nodes if no path can be found starts a new path, each read can generate multiple paths of
@@ -15,21 +15,13 @@ std::vector<SequenceGraphPath> LongReadMapper::map_reads(std::string &filename) 
     std::cout << "@MATCH,READ,NODE_LENGTH,NODE,READ_POS,OFFSET" << std::endl;
     std::cout << "@BLOCK,READ,READ_LENGTH,START,END,NODE,COUNT,COUNT_BTW" << std::endl;
     FastqReader<FastqRecord> fastqReader({0}, filename);
-#ifdef __APPLE__
-    std::vector<std::vector<SequenceGraphPath>> read_paths(1);
-#else
     std::vector<std::vector<SequenceGraphPath>> read_paths(omp_get_max_threads());
-#endif
 
 #pragma omp parallel
     {
         FastqRecord read;
         bool c;
-#ifdef __APPLE__
-        std::vector<SequenceGraphPath> &paths(read_paths[0]);
-#else
         std::vector<SequenceGraphPath> &paths(read_paths[omp_get_thread_num()]);
-#endif
 
 #pragma omp critical(readrec)
     {

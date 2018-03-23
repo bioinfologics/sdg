@@ -7,6 +7,7 @@
 
 #include <map>
 #include <sglib/types/KmerTypes.hpp>
+#include <sglib/types/MappingTypes.hpp>
 
 #include "sglib/graph/SequenceGraph.h"
 #include "sglib/factories/KMerIDXFactory.h"
@@ -14,34 +15,6 @@
 #include "sglib/readers/SequenceGraphReader.h"
 #include "SMR.h"
 
-typedef uint32_t prm10xTag_t;
-
-class ReadMapping {
-public:
-    ReadMapping(){
-        //just clean the structure, OSX doesn't give you clean memory
-        bzero(this, sizeof(ReadMapping));
-    }
-    bool operator==(const ReadMapping &other){
-        return this==&other;
-    };
-    bool operator<(const ReadMapping &other) const {
-        return std::tie(node, read_id) < std::tie(other.node, other.read_id);
-    };
-    void merge(const ReadMapping &other){};
-    friend std::ostream& operator<<(std::ostream& os, const ReadMapping& rm) {
-        os << rm.node << "\t" << rm.unique_matches;
-        return os;
-    }
-
-    sgNodeID_t node = 0;
-    uint64_t read_id = 0;
-    int32_t first_pos = 0;
-    int32_t last_pos = 0;
-    int32_t unique_matches = 0;
-    bool rev=false;
-
-};
 
 /**
  * @brief A mapper for different kinds of paired short reads (Illumina).

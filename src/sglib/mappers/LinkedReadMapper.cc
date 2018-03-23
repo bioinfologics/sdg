@@ -6,18 +6,12 @@
 #include <cassert>
 #include <atomic>
 
+
 #include "LinkedReadMapper.hpp"
 #include "sglib/SMR.h"
 #include "sglib/factories/KMerIDXFactory.h"
 #include "sglib/readers/SequenceGraphReader.h"
-#ifndef __APPLE__
-#include <omp.h>
-#include <parallel/algorithm>
-#else
-int omp_get_max_threads(){return 1u;}
-int omp_get_thread_num(){return 0u;}
-#endif
-
+#include <sglib/utilities/omp_safe.hpp>
 
 void LinkedReadMapper::write(std::ofstream &output_file) {
     //read-to-node
