@@ -4,7 +4,14 @@
 
 #include <sglib/mappers/LongReadMapper.h>
 
-std::vector<SequenceGraphPath> LongReadMapper::map_reads(std::string &filename, uint32_t error)  {
+/**
+ * Receives a filename containing long reads in FASTQ format, for each read generates a _valid_ (the first path found)
+ * path between matched nodes if no path can be found starts a new path, each read can generate multiple paths of
+ * *one* or more nodes.
+ * @param filename FASTQ file containing long reads
+ * @return A vector of SequenceGraphPath containing paths between connected nodes
+ */
+std::vector<SequenceGraphPath> LongReadMapper::map_reads(std::string &filename) {
     std::cout << "@MATCH,READ,NODE_LENGTH,NODE,READ_POS,OFFSET" << std::endl;
     std::cout << "@BLOCK,READ,READ_LENGTH,START,END,NODE,COUNT,COUNT_BTW" << std::endl;
     FastqReader<FastqRecord> fastqReader({0}, filename);
@@ -45,7 +52,8 @@ std::vector<SequenceGraphPath> LongReadMapper::map_reads(std::string &filename, 
 }
 
 /**
- * Selects the winning node from a window
+ * Selects the winning node from a window, the winner is decided by the number of matched kmers within the window.
+ * A winner is chosen iff the difference between the number of matches for first > second * min_match_spread
  * @param ranking Lookup table of nodes ordered by highest to lowest match count nodes
  * @param min_window_matches Minimum number of matches for winner to be valid
  * @param min_match_spread Minimum spread (match count multiplier) between first and second
@@ -327,7 +335,13 @@ std::vector<LongReadMapper::Match> LongReadMapper::getMatches(std::string &seq) 
     return matches;
 }
 
-std::vector<LongReadMapper::MatchOffset> LongReadMapper::getMatchOffsets(std::string &seq) {
+/**
+ * Searches the minSketch database of the reference for each minSketch generated from the query
+ * Each match is augmented with the directed node, position on the read and position on the reference
+ * @param query The DNA part of the read
+ * @return The matching ±node, query position and reference position
+ */
+std::vector<LongReadMapper::MatchOffset> LongReadMapper::getMatchOffsets(std::string &query) {
     std::vector<MatchOffset> matches;
     uint32_t sketch_not_in_index(0);
     uint32_t sketch_in_index(0);
@@ -336,7 +350,7 @@ std::vector<LongReadMapper::MatchOffset> LongReadMapper::getMatchOffsets(std::st
     StrandedMinimiserSketchFactory kf(k, w);
     std::set<MinPosIDX> sketch;
 
-    auto read_sketch_num(kf.getMinSketch(seq, sketch));
+    auto read_sketch_num(kf.getMinSketch(query, sketch));
 
     for (auto sk : sketch) {
         auto foundKey(index.find(sk.hash));

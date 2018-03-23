@@ -182,7 +182,7 @@ install(FILES
             src/sglib/PairedReadMapper.hpp
             src/sglib/HaplotypeScorer.hpp
             src/sglib/SequenceGraphJournal.hpp
-            src/sglib/filesystem/check_or_create_directory.h
+            src/sglib/filesystem/helpers.h
             src/sglib/PhaseScaffolder.h
             src/sglib/KmerCompressionIndex.hpp
             src/sglib/GraphPartitioner.hpp

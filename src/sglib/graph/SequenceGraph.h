@@ -46,11 +46,42 @@ public:
     // find bubbles in component of graph
     std::vector<std::vector<sgNodeID_t >> find_bubbles(std::vector<sgNodeID_t>);
 
+    /**
+     * Finds all reachable nodes within size_limit and edge_limit from the specified node, returns a vector with edge and base distance
+     * foreach reachable node.
+     * @param node Node to start exploring
+     * @param size_limit Range of bases within search, i.e if distance between node
+     * @param edge_limit Number of nodes in a single path to consider
+     * @param tabu List of nodes not to visit
+     * @return Returns a vector of nodeVisitors storing the path distance and bases distance between origin of search and each node
+     */
     std::vector<nodeVisitor> depth_first_search(nodeVisitor node, unsigned int size_limit, unsigned int edge_limit, std::set<nodeVisitor> tabu={});
 
     std::vector<sgNodeID_t> breath_first_search(std::vector<sgNodeID_t> &nodes, unsigned int size_limit);
 
+    /**
+     * Finds a path between two nodes within size_limit and edge_limit.
+     * If any of the limits is violated before finding a path, an empty path is returned
+     * @param seed
+     * @param target
+     * @param size_limit
+     * @param edge_limit
+     * @return
+     */
     SequenceGraphPath find_path_between(const sgNodeID_t seed, const sgNodeID_t target, unsigned int size_limit = 0, unsigned int edge_limit = 0);
+
+    /**
+     * Explores around "nodes" in both directions until either the size_limit or the edge_limit is reached,
+     * considers all nodes multiple times always taking the shortest path as the limit (I.E. if there's a repeat,
+     * the shortest path to the repeated node is taken).
+     * @param nodes Nodes to start exploring from
+     * @param size_limit Limit in number of bases to explore
+     * @param edge_limit Limit in number of edges to go through (length of the path until a node)
+     * @return Returns a vector of all nodes in the solution
+     *
+     * NOTE: Consider returning the vector of nodeVisitor as this contains more information regarding the explored nodes
+     */
+    std::vector<sgNodeID_t> explore_nodes(std::vector<std::string> &nodes, uint size_limit, uint edge_limit);
 
     // remove_node
     void remove_node(sgNodeID_t);

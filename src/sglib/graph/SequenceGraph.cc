@@ -682,12 +682,12 @@ SequenceGraph::depth_first_search(const nodeVisitor seed, unsigned int size_limi
         to_visit.pop();
         auto looker = nodeVisitor(activeNode.node,0,0);
         auto visitedNode(visited_set.find( looker ) );
-        if (visitedNode == visited_set.end() and
+        if (visitedNode == visited_set.end() and    // Active node has not been visited
                 (activeNode.path_length < edge_limit or edge_limit==0) and  // Is within path limits
                 (activeNode.dist < size_limit or size_limit==0) ) // Is within sequence limits
         {
-            visited_set.insert(nodeVisitor(activeNode.node, activeNode.dist, activeNode.path_length));
-            for (const auto &l: get_fw_links(activeNode.node)) {
+            visited_set.insert(nodeVisitor(activeNode.node, activeNode.dist, activeNode.path_length));  // Mark as visited
+            for (const auto &l: get_fw_links(activeNode.node)) {    // Visit all its neighbours
                 to_visit.push(nodeVisitor(l.dest,
                                  static_cast<uint>(activeNode.dist + nodes[l.dest > 0 ? l.dest : -l.dest].sequence.length()),
                                  activeNode.path_length+1));
@@ -754,6 +754,52 @@ SequenceGraph::find_path_between(const sgNodeID_t seed, const sgNodeID_t target,
         }
     }
     return SequenceGraphPath{*this};
+}
+
+std::vector<sgNodeID_t>
+SequenceGraph::explore_nodes(std::vector<std::string> &nodes, uint size_limit, uint edge_limit) {
+    std::set<nodeVisitor> resultNodes;
+    // For each node in the list
+    for (const auto &n:nodes) {
+        auto id = oldnames_to_ids[n];
+        std::set<nodeVisitor> results;
+        results.emplace(id, 0, 0);
+        results.emplace(-id, 0, 0);
+        do {
+            auto toVisit = *results.begin();
+            results.erase(toVisit);
+            // Explore node forward
+            auto visitedNodes = depth_first_search(toVisit, size_limit, edge_limit, resultNodes);
+
+            // For each visited node
+            for (const auto &node:visitedNodes) {
+                // If is the same as the node I am visiting, do nothing
+                if (node == toVisit) continue;
+
+                auto visitedNode(resultNodes.find(node));
+
+                // If was in previous results
+                if (visitedNode != resultNodes.end()) {
+                    // If now has a shorter path or closer distance
+                    if (node.path_length > visitedNode->path_length or node.dist > visitedNode->dist) {
+                        resultNodes.erase(visitedNode);
+                    } else {
+                        continue;
+                    }
+                }
+                results.insert(node);
+                nodeVisitor rev = nodeVisitor(-1*node.node, node.dist, node.path_length);
+                results.insert(rev);
+                resultNodes.emplace(node);
+            }
+            // While exploration results > 0 explore resulting nodes
+        } while (!results.empty());
+    }
+    std::vector<sgNodeID_t > subnodes;
+    for (const auto &n:resultNodes) {
+        subnodes.emplace_back(n.node);
+    }
+    return subnodes;
 }
 
 

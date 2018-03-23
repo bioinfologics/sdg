@@ -73,7 +73,7 @@ int main(int argc, char * argv[]) {
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
 
-    if (nodes.empty() and !subgraph.empty()) {
+    if (!subgraph.empty()) {
         SequenceGraph ssg;
         ssg.load_from_gfa(subgraph);
         for (auto n = 1ul; n < ssg.nodes.size(); ++n) {
@@ -84,84 +84,18 @@ int main(int argc, char * argv[]) {
     std::cout << std::endl;
     std::cout << std::endl;
     std::cout << std::endl;
-    sglib::OutputLog() << "Starting DFS" << std::endl;
+
+
     if (!nodes.empty()) {
-        std::set<nodeVisitor> resultNodes;
-        // For each node in the list
-        for (const auto &n:nodes) {
-            auto id = sg.oldnames_to_ids[n];
-            std::set<nodeVisitor> results;
-            results.emplace(id, 0, 0);
-            results.emplace(-id, 0, 0);
-            do {
-                if (sglib::OutputLogLevel >= sglib::DEBUG) {
-                    sglib::OutputLog(sglib::DEBUG) << "To visit nodes ";
-                    for (const auto &n:results) {
-                        sglib::OutputLog(sglib::DEBUG, false) << n.node << ":" << n.path_length << ", ";
-                    }
-                    sglib::OutputLog(sglib::DEBUG, false) << std::endl;
-                }
-                auto toVisit = *results.begin();
-                results.erase(toVisit);
-                // Explore node forward
-                sglib::OutputLog(sglib::DEBUG) << "Visiting " << toVisit.node << ":" << toVisit.path_length << std::endl;
-                auto visitedNodes = sg.depth_first_search(toVisit, size_limit, edge_limit, resultNodes);
+        std::vector<sgNodeID_t > resultNodes = sg.explore_nodes(nodes, size_limit, edge_limit);
 
-                if (sglib::OutputLogLevel >= sglib::DEBUG) {
-                    sglib::OutputLog(sglib::DEBUG) << "Visited nodes ";
-                    for (const auto &n:visitedNodes) {
-                        sglib::OutputLog(sglib::DEBUG, false) << n.node << ":" << n.path_length << ", ";
-                    }
-                    sglib::OutputLog(sglib::DEBUG, false) << std::endl;
-                }
-
-                // For each visited node
-                for (const auto &node:visitedNodes) {
-                    // If is the same as the node I am visiting, do nothing
-                    if (node == toVisit) continue;
-
-                    auto visitedNode(resultNodes.find(node));
-
-                    // If was in previous results
-                    if (visitedNode != resultNodes.end()) {
-                        // If now has a shorter path or closer distance
-                        if (node.path_length > visitedNode->path_length or node.dist > visitedNode->dist) {
-                            resultNodes.erase(visitedNode);
-                        } else {
-                            continue;
-                        }
-                    }
-                    sglib::OutputLog(sglib::DEBUG) << "Inserting node to visit: " << node << std::endl;
-                    results.insert(node);
-                    nodeVisitor rev = nodeVisitor(-1*node.node, node.dist, node.path_length);
-                    sglib::OutputLog(sglib::DEBUG) << "Inserting node to visit: " << rev << std::endl;
-                    results.insert(rev);
-                    resultNodes.emplace(node);
-                    if (sglib::OutputLogLevel >= sglib::DEBUG) {
-                        sglib::OutputLog(sglib::DEBUG) << "Result nodes ";
-                        for (const auto &n:resultNodes) {
-                            sglib::OutputLog(sglib::DEBUG, false) << n.node << ":" << n.path_length << ", ";
-                        }
-                        sglib::OutputLog(sglib::DEBUG, false) << std::endl;
-                    }
-
-                }
-                // While exploration results > 0 explore resulting nodes
-            } while (!results.empty());
-
-        }
-
-        sglib::OutputLog() << "Nodes in solution" << std::endl;
+        sglib::OutputLog() << resultNodes.size() << " nodes in solution\n";
         for (const auto &n: resultNodes) {
-            sglib::OutputLog(sglib::INFO, false) << sg.oldnames[std::abs(n.node)] << " ";
+            sglib::OutputLog(sglib::INFO, false) << sg.oldnames[std::abs(n)] << " ";
         }
         sglib::OutputLog(sglib::INFO,false) << std::endl;
-        sglib::OutputLog() << resultNodes.size() << " nodes in solution\n";
-        std::vector<sgNodeID_t > subnodes;
-        for (const auto &n:resultNodes) {
-            subnodes.emplace_back(n.node);
-        }
-        SequenceSubGraph ssg(sg, subnodes);
+
+        SequenceSubGraph ssg(sg, resultNodes);
         ssg.write_to_gfa(output_prefix+"subgraph.gfa");
     }
 

@@ -71,9 +71,10 @@ void map_using_sketches(uint8_t k, SequenceGraph &sg, std::string &output_prefix
     uint8_t w = 1;
 
     LongReadMapper rm(k, w, sg);
-    rm.map_reads(long_reads, 500);
+    rm.map_reads(long_reads);
 
 }
+
 int main(int argc, char * argv[]) {
     sglib::OutputLog(false) << "Welcome to gfa-indexer"<<std::endl<<std::endl;
     sglib::OutputLog(false) << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;

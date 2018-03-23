@@ -197,14 +197,14 @@ class LongReadMapper {
     };
 
     std::vector<Match> getMatches(std::string &seq);
-    std::vector<MatchOffset> getMatchOffsets(std::string &seq);
+    std::vector<MatchOffset> getMatchOffsets(std::string &query);
 
 public:
     LongReadMapper(uint8_t k, uint8_t w, SequenceGraph &sg) : sg(sg), k(k), w(w), index(sg, k, w) {}
     std::vector<SequenceGraphPath> map_read(FastqRecord read);
     uint64_t map_reads2(std::string &filename, uint32_t error);
     int32_t getWinner(std::multimap<uint32_t , int32_t> ranking, uint min_window_matches, float min_match_spread);
-    std::vector<SequenceGraphPath> map_reads(std::string &filename, uint32_t error);
+    std::vector<SequenceGraphPath> map_reads(std::string &filename);
 };
 
 
