@@ -226,6 +226,10 @@ add_executable(bsg-workspace
         src/bsg-workspace.cc
         )
 
+add_executable(bsg-mapper
+        src/bsg-mapper.cc
+        )
+
 add_executable(bsg-untangler
         src/bsg-untangler.cc
         )
@@ -233,59 +237,68 @@ add_executable(bsg-untangler
 add_executable(bsg-testflowfollower
         src/bsg-testflowfollower.cc
         )
+add_executable(bsg-untangler2
+        src/bsg-untangler2.cc
+        )
+
+add_executable(bsg-flowmaker
+        src/bsg-flowmaker.cc
+        )
 
 ## add executables and respective sources
-add_executable(gfa-qc
+add_executable(gfa-qc EXCLUDE_FROM_ALL
         src/gfa-qc.cc)
 
 ## add executables and respective sources
-add_executable(gfa-dumppath
+add_executable(gfa-dumppath EXCLUDE_FROM_ALL
         src/gfa-dumppath.cc)
 
 ## add executables and respective sources
-add_executable(gfa-pairscaff
+add_executable(gfa-pairscaff EXCLUDE_FROM_ALL
         src/gfa-pairscaff.cc)
 
-add_executable(gfa-bfphaser
+add_executable(gfa-bfphaser EXCLUDE_FROM_ALL
         src/gfa-bfphaser.cc)
 
-add_executable(phaser
+add_executable(phaser EXCLUDE_FROM_ALL
                src/phaser.cpp)
 
-add_executable(gfa-align
+add_executable(gfa-align EXCLUDE_FROM_ALL
                src/gfa-align.cc)
 
-add_executable(kc_comp
+add_executable(kc_comp EXCLUDE_FROM_ALL
                src/comp_kc.cc)
 
-add_executable(seq-sorter
+add_executable(seq-sorter EXCLUDE_FROM_ALL
                src/seq-sorter.cpp)
 
-add_executable(seq-thread
+add_executable(seq-thread EXCLUDE_FROM_ALL
         src/seq-thread.cpp)
 
-add_executable(map-lr
+add_executable(map-lr EXCLUDE_FROM_ALL
         src/map-lr.cc)
 
-add_executable(gfa-extract
+add_executable(gfa-extract EXCLUDE_FROM_ALL
         src/gfa-extract.cc)
 
-add_executable(gfa-set
+add_executable(gfa-set EXCLUDE_FROM_ALL
         src/gfa-set.cc)
 
-add_executable(gfa-indexer
+add_executable(gfa-indexer EXCLUDE_FROM_ALL
         src/gfa-indexer.cc)
 
 target_link_libraries(bsg-workspace sequence_graph)
 target_link_libraries(bsg-datastore sequence_graph)
+target_link_libraries(bsg-mapper sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-flowmaker sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-untangler2 sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-kmerspectra sequence_graph)
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-bfphaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-testflowfollower sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(seq-thread sequence_graph)

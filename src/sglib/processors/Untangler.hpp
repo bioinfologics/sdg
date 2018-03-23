@@ -15,6 +15,9 @@ public:
     std::vector<std::pair<sgNodeID_t, sgNodeID_t>> get_all_HSPNPs();
     uint64_t extend_HSPNPs_by_tagwalking();
 
+    void analise_paths_through_nodes();
+
+
     WorkSpace &ws;
 
 
