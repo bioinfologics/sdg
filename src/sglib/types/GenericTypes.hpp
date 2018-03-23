@@ -8,7 +8,7 @@
 #include <iostream>
 #include <string>
 #include <tuple>
-#include <numeric>
+#include <limits>
 
 
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC

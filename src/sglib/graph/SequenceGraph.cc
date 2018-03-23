@@ -505,7 +505,7 @@ void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<
         if (!selected_nodes.empty() and selected_nodes.count(i)==0 and selected_nodes.count(-i)==0) continue;
         fastaf<<">seq"<<i<<std::endl<<nodes[i].sequence<<std::endl;
         gfaf<<"S\tseq"<<i<<"\t*\tLN:i:"<<nodes[i].sequence.size()<<"\tUR:Z:"<<fasta_filename
-                <<(mark_red.count(i)?"\tCL:Z:red":"")<<(depths.empty() or isnan(depths[i])?"":"\tDP:f:"+std::to_string(depths[i]))<<std::endl;
+                <<(mark_red.count(i)?"\tCL:Z:red":"")<<(depths.empty() or std::isnan(depths[i])?"":"\tDP:f:"+std::to_string(depths[i]))<<std::endl;
     }
 
     for (auto &ls:links){
