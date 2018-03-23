@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sglib/WorkSpace.hpp>
 #include <sglib/processors/Untangler.hpp>
+#include <sglib/processors/FlowFollower.hpp>
 #include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"
 
@@ -58,17 +59,27 @@ int main(int argc, char * argv[]) {
         sglib::OutputLog()<<"Finishing early because there's no path_datastores[0]"<<std::endl;
         return 1;
     }
-    sglib::OutputLog()<<"path_datastores[0] has "<<ws.path_datastores[0].paths.size()<<" paths"<<std::endl;
+
     Untangler u(ws);
 
     u.analise_paths_through_nodes();
+    FlowFollower ff(ws);
+
+    ff.load_flows_from_ws();
+    std::ofstream skf("skated_paths.fasta");
+    for (auto sp:ff.skate_from_all(4,10000)) {
+        skf<<">"<<sp.nodes[0]<<"_"<<sp.nodes.back()<<std::endl<<sp.get_sequence()<<std::endl;
+    }
 
     std::cout<<"TODO: pop error-bp bubbles by kci and paths"<<std::endl;
-    std::cout<<"TODO: Solve bubbly paths by kci (both local and bubly-path-total) and paths through collapses (expand without joins)"<<std::endl;
+    u.pop_errors_by_ci_and_paths();
+    std::cout<<"TODO: Solve bubbly paths by kci (both local and bubly-path-total) and paths through collapses (expand without joins, update paths!)"<<std::endl;
     std::cout<<"TODO: Join unitigs and remap all reads"<<std::endl;
     std::cout<<"TODO: skate through crap, generate a copy of the solution and re-connect"<<std::endl;
     std::cout<<"TODO: Join unitigs and remap all reads"<<std::endl;
     sglib::OutputLog()<<"All DONE!!!"<<std::endl;
+
+    //u.analise_paths_through_nodes();
     return 0;
 }
 

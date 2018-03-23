@@ -362,10 +362,10 @@ SequenceGraphPath FlowFollower::skate_from_node(sgNodeID_t n) {
         while (true) {
             auto fwls = path.get_next_links();
             if (fwls.empty()) break;
-            std::cout<<"Adding node "<<path.nodes.back()<<std::endl;
+            //std::cout<<"Adding node "<<path.nodes.back()<<std::endl;
             if (flows.count(path.nodes.back())>0 and flows[path.nodes.back()].nodes.size()>3) {
                 used_flows.push_back({flows[path.nodes.back()], true, 0});
-                std::cout<<"Node has a flow with "<<flows[path.nodes.back()].nodes.size()<<" nodes, added as #"<<used_flows.size()-1<<std::endl;
+                //std::cout<<"Node has a flow with "<<flows[path.nodes.back()].nodes.size()<<" nodes, added as #"<<used_flows.size()-1<<std::endl;
             }
             sgNodeID_t next = 0;
             for (auto i=0;i<used_flows.size();++i) {
@@ -374,7 +374,7 @@ SequenceGraphPath FlowFollower::skate_from_node(sgNodeID_t n) {
                 if (!f.active) continue;
                 if (f.pos == f.flow.nodes.size() - 1) {
                     f.active = false;
-                    std::cout<<"Flow #"<<i<<" closed"<<std::endl;
+                    //std::cout<<"Flow #"<<i<<" closed"<<std::endl;
                     continue;
                 }
 
@@ -406,6 +406,9 @@ std::vector<SequenceGraphPath> FlowFollower::skate_from_all(int min_node_flow, u
     std::vector<sgNodeID_t> nv;
     nv.reserve(nodes.size());
     for (auto &n:nodes)nv.push_back(n);
+    if (nv.empty()){
+        for (auto i=1;i<ws.sg.nodes.size();++i) nv.emplace_back(i);
+    }
 //#pragma omp parallel for schedule(static,1)
     for (auto i=0;i<nv.size();++i){
         auto n=nv[i];
@@ -429,4 +432,14 @@ std::vector<SequenceGraphPath> FlowFollower::skate_from_all(int min_node_flow, u
     r.erase(std::unique(r.begin(),r.end()),r.end());
     std::cout<<"Skate from all finished."<<std::endl;
     return r;
+}
+
+void FlowFollower::load_flows_from_ws() {
+    for (auto &path:ws.path_datastores[0].paths){
+        if (path.nodes.size()>3) {
+            Flow f;
+            f.nodes=path.nodes;
+            flows[path.nodes[0]] = f;
+        }
+    }
 }

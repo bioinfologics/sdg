@@ -548,3 +548,48 @@ void Untangler::analise_paths_through_nodes() {
 
 
 }
+
+std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::find_bubbles(uint32_t min_size,uint32_t max_size) {
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> r;
+    std::vector<bool> used(ws.sg.nodes.size(),false);
+    sgNodeID_t n1,n2;
+    size_t s1,s2;
+    for (n1=1;n1<ws.sg.nodes.size();++n1){
+        if (used[n1]) continue;
+        //get "topologically correct" bubble: prev -> [n1 | n2] -> next
+        s1=ws.sg.nodes[n1].sequence.size();
+        if (s1<min_size or s1>max_size) continue;
+        auto fwl=ws.sg.get_fw_links(n1);
+        if (fwl.size()!=1) continue;
+        auto next=fwl[0].dest;
+        auto bwl=ws.sg.get_bw_links(n1);
+        if (bwl.size()!=1) continue;
+        auto prev=bwl[0].dest;
+        auto parln=ws.sg.get_bw_links(next);
+        if (parln.size()!=2) continue;
+        auto parlp=ws.sg.get_fw_links(-prev);
+        if (parlp.size()!=2) continue;
+        if (parlp[0].dest!=n1) n2=parlp[0].dest;
+        else n2=parlp[1].dest;
+        if (n2!=-parln[0].dest and n2!=-parln[1].dest) continue;
+        s2=ws.sg.nodes[n2].sequence.size();
+        if (s2<min_size or s2>max_size) continue;
+        used[n1]=true;
+        used[n2]=true;
+        r.emplace_back(n1,n2);
+    }
+    return r;
+}
+
+void Untangler::pop_errors_by_ci_and_paths() {
+    sglib::OutputLog()<<"Popping errors..."<<std::endl;
+    auto bubbles=find_bubbles(200, 450);
+    sglib::OutputLog()<<"Analysing "<<bubbles.size()<<" small bubbles for coverage"<<std::endl;
+    for (auto bp:bubbles){
+        auto ci1=ws.kci.compute_compression_for_node(bp.first);
+        auto ci2=ws.kci.compute_compression_for_node(bp.second);
+        if (ci1>.7 and ci2<.1) std::cout<<"node "<<bp.second<<" has only "<<ci2<<" coverage and "<<bp.first<<" has "<<ci1<<std::endl;
+        if (ci2>.7 and ci1<.1) std::cout<<"node "<<bp.first<<" has only "<<ci1<<" coverage and "<<bp.second<<" has "<<ci2<<std::endl;
+
+    }
+}

@@ -16,6 +16,8 @@ public:
     uint64_t extend_HSPNPs_by_tagwalking();
 
     void analise_paths_through_nodes();
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> find_bubbles(uint32_t min_size,uint32_t max_size);
+    void pop_errors_by_ci_and_paths();
 
 
     WorkSpace &ws;
