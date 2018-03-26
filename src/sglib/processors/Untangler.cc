@@ -5,6 +5,20 @@
 #include "Untangler.hpp"
 #include "TagWalker.hpp"
 
+struct Counter
+{
+    struct value_type { template<typename T> value_type(const T&) { } };
+    void push_back(const value_type&) { ++count; }
+    size_t count = 0;
+};
+
+template<typename T1, typename T2>
+size_t intersection_size(const T1& s1, const T2& s2)
+{
+    Counter c;
+    set_intersection(s1.begin(), s1.end(), s2.begin(), s2.end(), std::back_inserter(c));
+    return c.count;
+}
 
 uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t> &reads_to_remap) {
     std::unordered_set<sgNodeID_t> unsolved_repeats;
@@ -134,6 +148,93 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
     std::cout<<"Path analysis summary AA:"<<aa_count<<" AB:"<<ab_count
              <<" Unsolved:"<<unsolved_count<<" Non evaluated:"<<non_evaluated<<std::endl;
     return paths_solved.size();
+}
+
+uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci) {
+    uint64_t aa_count=0,ab_count=0,unsolved_count=0;
+
+    std::cout << " Finding trivial repeats to analyse with tags" << std::endl;
+    //if (ws.verbose_log!="") verbose_log_file<<"==== Round of repetition analysis started ===="<<std::endl;
+    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
+        auto fwl = ws.sg.get_fw_links(n);
+        auto bwl = ws.sg.get_bw_links(n);
+        if (fwl.size() != 2 or bwl.size() != 2) continue;
+        auto f0 = fwl[0].dest;
+        auto f1 = fwl[1].dest;
+        auto b0 = bwl[0].dest;
+        auto b1 = bwl[1].dest;
+        if (ws.sg.get_bw_links(f0).size()!=1
+            or ws.sg.get_bw_links(f1).size()!=1
+               or ws.sg.get_fw_links(b0).size()!=1
+                  or ws.sg.get_fw_links(b1).size()!=1)
+            continue;
+        sgNodeID_t all[4] = {f0, f1, b0, b1};
+        bool ok = true;
+        for (auto x:all) if (x == n or x == -n or ws.sg.nodes[(x > 0 ? x : -x)].sequence.size() < 199) ok = false;
+        for (auto j = 0; j < 3; ++j)
+            for (auto i = j + 1; i < 4; ++i)
+                if (all[i] == all[j] or all[i] == -all[j])ok = false; //looping node
+        if (!ok) continue;
+
+        auto cif0=ws.kci.compute_compression_for_node(f0);
+        if (cif0<min_ci or cif0>max_ci) continue;
+        auto cif1=ws.kci.compute_compression_for_node(f1);
+        if (cif1<min_ci or cif1>max_ci) continue;
+        auto cib0=ws.kci.compute_compression_for_node(b0);
+        if (cib0<min_ci or cib0>max_ci) continue;
+        auto cib1=ws.kci.compute_compression_for_node(b1);
+        if (cib1<min_ci or cib1>max_ci) continue;
+
+
+        auto f0t=ws.linked_read_mappers[0].get_node_tags(f0); if (f0t.size()<3) continue;
+        auto f1t=ws.linked_read_mappers[0].get_node_tags(f1); if (f1t.size()<3) continue;
+        auto b0t=ws.linked_read_mappers[0].get_node_tags(b0); if (b0t.size()<3) continue;
+        auto b1t=ws.linked_read_mappers[0].get_node_tags(b1); if (b1t.size()<3) continue;
+
+        uint64_t aa=intersection_size(b0t,f0t);
+        uint64_t bb=intersection_size(b1t,f1t);
+        uint64_t ab=intersection_size(b0t,f1t);
+        uint64_t ba=intersection_size(b1t,f0t);
+        if (llabs(n)==10 or llabs(n)==946741 or llabs(n)==213167 or llabs(n)==930557  or llabs(n)==928542 ) {
+            std::cout << "Repeat: [ " << -b0 << " | " << -b1 << " ] <-> " << n << " <-> [ " << f0 << " | " << f1 << " ]"
+                      << std::endl;
+            std::cout << "Tags in   f0: " << f0t.size() << "  f1: " << f1t.size() << "  b0: " << b0t.size() << "  b1: "
+                      << b1t.size() << std::endl;
+            std::cout << "Tags support   aa: " << aa << "  bb: " << bb << "  ab: " << ab << "  ba: " << ba << std::endl;
+            std::cout <<"Links for node 10 before:"<<std::endl;
+            for (auto l:ws.sg.links[10]) std::cout<<l.source<<" "<<l.dest<<std::endl;
+            std::cout <<"Links for node 930557 before:"<<std::endl;
+            for (auto l:ws.sg.links[930557]) std::cout<<l.source<<" "<<l.dest<<std::endl;
+
+        }
+
+        if (aa > 3 and bb > 3 and std::min(aa, bb) > 10 * std::max(ab, ba)) {
+            //std::cout << " Solved as AA BB !!!" << std::endl;
+            ++aa_count;
+            ws.sg.expand_node(n,{{b0},{b1}},{{f0},{f1}});
+            //std::cout<<"A"<<std::flush;
+        } else if (ba > 3 and ab > 3 and
+                   std::min(ba, ab) > 10 * std::max(aa, bb)) {
+            //std::cout << " Solved as AB BA !!!" << std::endl;
+            ++ab_count;
+            ws.sg.expand_node(n,{{b0},{b1}},{{f1},{f0}});
+            //std::cout<<"B"<<std::flush;
+        }
+        else {
+            ++unsolved_count;
+            //if (verbose_log!="") verbose_log_file<<n<<" unsolved aa: "<<aa.size()<<"  bb: "<<bb.size()<<"  ab: "<<ab.size()<<"  ba: "<<ba.size()<<std::endl;
+            //std::cout<<"-"<<std::flush;
+        }
+        if (llabs(n)==10 or llabs(n)==946741 or llabs(n)==213167 or llabs(n)==930557  or llabs(n)==928542 ) {
+            std::cout <<"Links for node 10 before:"<<std::endl;
+            for (auto l:ws.sg.links[10]) std::cout<<l.source<<" "<<l.dest<<std::endl;
+            std::cout <<"Links for node 930557 after:"<<std::endl;
+            for (auto l:ws.sg.links[930557]) std::cout<<l.source<<" "<<l.dest<<std::endl;
+        }
+    }
+    std::cout<<"Repeat expansion summary AA:"<<aa_count<<" AB:"<<ab_count
+             <<" Unsolved:"<<unsolved_count<<std::endl;
+    return aa_count+ab_count;
 }
 
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
@@ -603,4 +704,54 @@ void Untangler::pop_errors_by_ci_and_paths() {
  */
 std::vector<std::vector<sgNodeID_t>> Untangler::make_scaffolding_backbones(uint32_t min_size, float min_ci, float max_ci) {
 
+
+    sglib::OutputLog()<<"Selecting nodes..."<<std::endl;
+    std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> neighbours;
+    std::vector<std::set<bsg10xTag>> node_tags;
+    neighbours.resize(ws.sg.nodes.size());
+    node_tags.resize(ws.sg.nodes.size());
+    uint64_t total_bp=0;
+    auto nodes=ws.select_from_all_nodes(1000,1000000,20,200000, 0.5, 1.5);
+    sglib::OutputLog()<<"Populating node tags..."<<std::endl;
+    for (auto n:nodes) {
+        total_bp+=ws.sg.nodes[n].sequence.size();
+        for (auto t:ws.linked_read_mappers[0].get_node_tags(n)) node_tags[n].insert(t);
+    }
+    sglib::OutputLog()<<nodes.size()<<" selected totalling "<<total_bp<<"bp "<<std::endl;
+    sglib::OutputLog()<<"Computing shared tags"<<std::endl;
+#pragma omp parallel for shared(neighbours) schedule(static,50)
+    for (auto i1=0; i1<nodes.size(); ++i1){
+        auto n1=nodes[i1];
+        for (auto i2=i1+1;i2<nodes.size();i2++){
+            auto n2=nodes[i2];
+            uint32_t shared=intersection_size(node_tags[n1],node_tags[n2]);
+            if (shared>=4) {
+#pragma omp critical
+                {
+                    neighbours[n1].emplace_back(n2,shared);
+                    neighbours[n2].emplace_back(n1,shared);
+                }
+            }
+        }
+    }
+    sglib::OutputLog()<<"Sorting shared tags"<<std::endl;
+    for (auto &nn:neighbours){
+        std::sort(nn.begin(),nn.end(),[]( const std::pair<sgNodeID_t,uint32_t> &a,
+                                          const std::pair<sgNodeID_t,uint32_t> &b) { return a.second>b.second; });
+    }
+    sglib::OutputLog()<<"Dumping shared tags"<<std::endl;
+    std::ofstream sto("shared_tags.txt");
+    uint64_t linked=0;
+    for (auto n:nodes){
+        sto<<n<<" ("<<node_tags[n].size()<<")";
+        if (neighbours[n].size()>0) ++linked;
+        for (auto nn:neighbours[n]) sto<<", ["<<nn.first<<", "<<nn.second<<"]";
+        sto<<std::endl;
+        sto<<n<<">>>> seq"<<n;
+        for (auto nn:neighbours[n]) sto<<", seq"<<nn.first;
+        sto<<std::endl;
+
+
+    }
+    sglib::OutputLog()<<linked<<" nodes with neighbours"<<std::endl;
 }

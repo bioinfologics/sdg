@@ -712,3 +712,63 @@ std::vector<SequenceSubGraph> SequenceGraph::get_all_tribbles() {
 
 
 }
+
+
+void SequenceGraph::expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNodeID_t>> bw,
+                                std::vector<std::vector<sgNodeID_t>> fw) {
+    if (nodeID<0) {
+        std::cout<<"WARNING: ERROR: expand_node only accepts positive nodes!"<<std::endl;
+        return;
+    }
+    //TODO: check all inputs are included in bw and all outputs are included in fw, only once
+    auto orig_links=links[nodeID];
+    std::vector<std::vector<Link>> new_links;
+    new_links.resize(bw.size());
+    for (auto l:orig_links){
+        for (auto in=0;in<bw.size();++in){
+            if (l.source==nodeID and std::find(bw[in].begin(),bw[in].end(),l.dest)!=bw[in].end()) {
+                new_links[in].push_back(l);
+                break;
+            }
+        }
+        for (auto in=0;in<fw.size();++in){
+            if (l.source==-nodeID and std::find(fw[in].begin(),fw[in].end(),l.dest)!=fw[in].end()) {
+                new_links[in].push_back(l);
+                break;
+            }
+        }
+    }
+
+    //Create all extra copies of the node.
+
+    std::vector<sgNodeID_t> node_copies;
+    node_copies.push_back(nodeID);
+    while (node_copies.size()<bw.size()) node_copies.push_back(add_node(Node(nodes[llabs(nodeID)].sequence)));
+
+    //Update the links;
+    for (auto in=0;in<node_copies.size();++in){
+        auto n=node_copies[in];
+        if (nodeID==930557){
+            std::cout<<"crating new links for node"<<n<<std::endl;
+            for (auto &nl:new_links[in]) std::cout<<nl.source<<" "<<nl.dest<<std::endl;
+        }
+        links[n].clear();
+        for (auto l:new_links[in]) {
+            auto new_end=(l.source>0 ? n:-n);
+            //XXX: bug here
+            for (auto &ol:links[llabs(l.dest)]){
+                if (ol.source==l.dest and ol.dest==l.source) ol.dest=new_end;
+            }
+            l.source=new_end;
+            links[n].push_back(l);
+        }
+    }
+
+    if (nodeID==930557){
+
+        for (auto node:node_copies) {
+            std::cout<<"Final expanded links for "<<node<<std::endl;
+            for (auto l:links[node]) std::cout<<l.source<<" "<<l.dest<<std::endl;
+        }
+    }
+}

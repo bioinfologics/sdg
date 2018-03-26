@@ -12,6 +12,7 @@ class Untangler {
 public:
     explicit Untangler(WorkSpace & _ws): ws(_ws) {};
     uint64_t solve_canonical_repeats_by_tags(std::unordered_set<uint64_t> & reads_to_remap);
+    uint64_t expand_canonical_repeats_by_tags(float min_ci, float max_ci);
     std::vector<std::pair<sgNodeID_t, sgNodeID_t>> get_all_HSPNPs();
     uint64_t extend_HSPNPs_by_tagwalking();
 

@@ -24,9 +24,9 @@ private:
     WorkSpace &ws;
     sgNodeID_t nodeA;
     sgNodeID_t nodeB;
-    std::unordered_set<bsg10xTag> tagsA;
-    std::unordered_set<bsg10xTag> tagsB;
-    std::unordered_set<bsg10xTag> tags_shared;
+    std::set<bsg10xTag> tagsA;
+    std::set<bsg10xTag> tagsB;
+    std::set<bsg10xTag> tags_shared;
     SequenceGraphPath pathA,pathB;
 };
 

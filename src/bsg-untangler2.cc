@@ -6,20 +6,6 @@
 #include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"
 
-struct Counter
-{
-    struct value_type { template<typename T> value_type(const T&) { } };
-    void push_back(const value_type&) { ++count; }
-    size_t count = 0;
-};
-
-template<typename T1, typename T2>
-size_t intersection_size(const T1& s1, const T2& s2)
-{
-    Counter c;
-    set_intersection(s1.begin(), s1.end(), s2.begin(), s2.end(), std::back_inserter(c));
-    return c.count;
-}
 
 int main(int argc, char * argv[]) {
     std::cout << "Welcome to bsg-untangler"<<std::endl<<std::endl;
@@ -105,55 +91,20 @@ int main(int argc, char * argv[]) {
     }
     else {
         //==================== Development code (i.e. random tests!) ==============
-        sglib::OutputLog()<<"Selecting nodes..."<<std::endl;
-        std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> neighbours;
-        std::vector<std::set<bsg10xTag>> node_tags;
-        neighbours.resize(ws.sg.nodes.size());
-        node_tags.resize(ws.sg.nodes.size());
-        uint64_t total_bp=0;
-        auto nodes=ws.select_from_all_nodes(1000,1000000,20,200000, 0.5, 1.5);
-        sglib::OutputLog()<<"Populating node tags..."<<std::endl;
-        for (auto n:nodes) {
-            total_bp+=ws.sg.nodes[n].sequence.size();
-            for (auto t:ws.linked_read_mappers[0].get_node_tags(n)) node_tags[n].insert(t);
+        Untangler u(ws);
+        /*ws.kci.reindex_graph();
+        for (auto &m:ws.linked_read_mappers) {
+            m.remap_all_reads();
         }
-        sglib::OutputLog()<<nodes.size()<<" selected totalling "<<total_bp<<"bp "<<std::endl;
-        sglib::OutputLog()<<"Computing shared tags"<<std::endl;
-#pragma omp parallel for shared(neighbours) schedule(static,50)
-        for (auto i1=0; i1<nodes.size(); ++i1){
-            auto n1=nodes[i1];
-            for (auto i2=i1+1;i2<nodes.size();i2++){
-                auto n2=nodes[i2];
-                uint32_t shared=intersection_size(node_tags[n1],node_tags[n2]);
-                if (shared>=4) {
-#pragma omp critical
-                    {
-                    neighbours[n1].emplace_back(n2,shared);
-                    neighbours[n2].emplace_back(n1,shared);
-                    }
-                }
-            }
+        ws.dump_to_disk(output_prefix+"_remapped.bsgws");*/
+        u.expand_canonical_repeats_by_tags(.5,1.5);
+        ws.sg.join_all_unitigs();
+        ws.kci.reindex_graph();
+        for (auto &m:ws.linked_read_mappers) {
+            m.remap_all_reads();
         }
-        sglib::OutputLog()<<"Sorting shared tags"<<std::endl;
-        for (auto &nn:neighbours){
-            std::sort(nn.begin(),nn.end(),[]( const std::pair<sgNodeID_t,uint32_t> &a,
-                                              const std::pair<sgNodeID_t,uint32_t> &b) { return a.second>b.second; });
-        }
-        sglib::OutputLog()<<"Dumping shared tags"<<std::endl;
-        std::ofstream sto("shared_tags.txt");
-        uint64_t linked=0;
-        for (auto n:nodes){
-            sto<<n<<" ("<<node_tags[n].size()<<")";
-            if (neighbours[n].size()>0) ++linked;
-            for (auto nn:neighbours[n]) sto<<", ["<<nn.first<<", "<<nn.second<<"]";
-            sto<<std::endl;
-            sto<<n<<">>>> seq"<<n;
-            for (auto nn:neighbours[n]) sto<<", seq"<<nn.first;
-            sto<<std::endl;
+        ws.dump_to_disk(output_prefix+"_repeats_expanded.bsgws");
 
-
-        }
-        sglib::OutputLog()<<linked<<" nodes with neighbours"<<std::endl;
 
     }
     return 0;

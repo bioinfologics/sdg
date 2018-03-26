@@ -73,6 +73,18 @@ public:
     void remove_link(sgNodeID_t source, sgNodeID_t dest);
     //These two need to mark expanded edges, and transfer read maps and unique kmers for non-expanded, but just read map for expanded.
 
+    /**
+     * @brief expands a node creating as many copies as needed, then, distributes input and output links as per bw and fw
+     * @param nodeID
+     * @param bw
+     * @param fw
+     */
+    void expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNodeID_t>> bw, std::vector<std::vector<sgNodeID_t>> fw);
+    /**
+     * @brief copies every middle node in the path, connects them, and moves connections from first and last
+     * @param p
+     */
+    void expand_path(SequenceGraphPath p);
     void join_path(SequenceGraphPath p, bool consume_nodes=true);
     // expand_path --> creates an edge with the consensus of a path, eliminates old nodes if only in path and unused edges
     void join_all_unitigs();

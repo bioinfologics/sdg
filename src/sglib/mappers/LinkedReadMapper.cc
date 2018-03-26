@@ -114,6 +114,12 @@ public:
     }
 };
 
+void LinkedReadMapper::remap_all_reads() {
+    update_graph_index();
+    for (auto &rtn:read_to_node) rtn=0;
+    for (auto &rin:reads_in_node) rin.clear();
+    map_reads();
+}
 
 void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 31;
@@ -258,8 +264,8 @@ void LinkedReadMapper::remove_obsolete_mappings(){
     std::cout << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
 }
 
-std::unordered_set<bsg10xTag> LinkedReadMapper::get_node_tags(sgNodeID_t n) {
-    std::unordered_set<bsg10xTag> tags;
+std::set<bsg10xTag> LinkedReadMapper::get_node_tags(sgNodeID_t n) {
+    std::set<bsg10xTag> tags;
     for (auto &rm:reads_in_node[(n>0?n:-n)])
         tags.insert(datastore.get_read_tag(rm.read_id));
     if (tags.count(0)>0) tags.erase(0);
