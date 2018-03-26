@@ -604,9 +604,6 @@ std::vector<SequenceGraphPath> SequenceGraph::get_all_unitigs(uint16_t min_nodes
 
 void SequenceGraph::join_all_unitigs() {
     for (auto p:get_all_unitigs(2)){
-        std::cout << "Unitig found: ";
-        for (auto n:p.nodes) std::cout<< n<< " ";
-        std::cout<<std::endl;
         join_path(p);
     }
 }
