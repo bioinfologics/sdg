@@ -124,4 +124,5 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
 
     }
     sglib::OutputLog()<< "Selected "<<tnodes<<" / "<<sg.nodes.size()<<" with a total "<<ttags<<" tags"<< std::endl;
+    return nodes;
 }
