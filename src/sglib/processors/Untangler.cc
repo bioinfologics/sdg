@@ -154,7 +154,6 @@ uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci)
     uint64_t aa_count=0,ab_count=0,unsolved_count=0;
 
     std::cout << " Finding trivial repeats to analyse with tags" << std::endl;
-    //if (ws.verbose_log!="") verbose_log_file<<"==== Round of repetition analysis started ===="<<std::endl;
     for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
         auto fwl = ws.sg.get_fw_links(n);
         auto bwl = ws.sg.get_bw_links(n);
@@ -195,41 +194,17 @@ uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci)
         uint64_t bb=intersection_size(b1t,f1t);
         uint64_t ab=intersection_size(b0t,f1t);
         uint64_t ba=intersection_size(b1t,f0t);
-        if (llabs(n)==10 or llabs(n)==946741 or llabs(n)==213167 or llabs(n)==930557  or llabs(n)==928542 ) {
-            std::cout << "Repeat: [ " << -b0 << " | " << -b1 << " ] <-> " << n << " <-> [ " << f0 << " | " << f1 << " ]"
-                      << std::endl;
-            std::cout << "Tags in   f0: " << f0t.size() << "  f1: " << f1t.size() << "  b0: " << b0t.size() << "  b1: "
-                      << b1t.size() << std::endl;
-            std::cout << "Tags support   aa: " << aa << "  bb: " << bb << "  ab: " << ab << "  ba: " << ba << std::endl;
-            std::cout <<"Links for node 10 before:"<<std::endl;
-            for (auto l:ws.sg.links[10]) std::cout<<l.source<<" "<<l.dest<<std::endl;
-            std::cout <<"Links for node 930557 before:"<<std::endl;
-            for (auto l:ws.sg.links[930557]) std::cout<<l.source<<" "<<l.dest<<std::endl;
-
-        }
 
         if (aa > 3 and bb > 3 and std::min(aa, bb) > 10 * std::max(ab, ba)) {
-            //std::cout << " Solved as AA BB !!!" << std::endl;
             ++aa_count;
             ws.sg.expand_node(n,{{b0},{b1}},{{f0},{f1}});
-            //std::cout<<"A"<<std::flush;
         } else if (ba > 3 and ab > 3 and
                    std::min(ba, ab) > 10 * std::max(aa, bb)) {
-            //std::cout << " Solved as AB BA !!!" << std::endl;
             ++ab_count;
             ws.sg.expand_node(n,{{b0},{b1}},{{f1},{f0}});
-            //std::cout<<"B"<<std::flush;
         }
         else {
             ++unsolved_count;
-            //if (verbose_log!="") verbose_log_file<<n<<" unsolved aa: "<<aa.size()<<"  bb: "<<bb.size()<<"  ab: "<<ab.size()<<"  ba: "<<ba.size()<<std::endl;
-            //std::cout<<"-"<<std::flush;
-        }
-        if (llabs(n)==10 or llabs(n)==946741 or llabs(n)==213167 or llabs(n)==930557  or llabs(n)==928542 ) {
-            std::cout <<"Links for node 10 before:"<<std::endl;
-            for (auto l:ws.sg.links[10]) std::cout<<l.source<<" "<<l.dest<<std::endl;
-            std::cout <<"Links for node 930557 after:"<<std::endl;
-            for (auto l:ws.sg.links[930557]) std::cout<<l.source<<" "<<l.dest<<std::endl;
         }
     }
     std::cout<<"Repeat expansion summary AA:"<<aa_count<<" AB:"<<ab_count

@@ -748,10 +748,6 @@ void SequenceGraph::expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNod
     //Update the links;
     for (auto in=0;in<node_copies.size();++in){
         auto n=node_copies[in];
-        if (nodeID==930557){
-            std::cout<<"crating new links for node"<<n<<std::endl;
-            for (auto &nl:new_links[in]) std::cout<<nl.source<<" "<<nl.dest<<std::endl;
-        }
         links[n].clear();
         for (auto l:new_links[in]) {
             auto new_end=(l.source>0 ? n:-n);
@@ -764,11 +760,4 @@ void SequenceGraph::expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNod
         }
     }
 
-    if (nodeID==930557){
-
-        for (auto node:node_copies) {
-            std::cout<<"Final expanded links for "<<node<<std::endl;
-            for (auto l:links[node]) std::cout<<l.source<<" "<<l.dest<<std::endl;
-        }
-    }
 }
