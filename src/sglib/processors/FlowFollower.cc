@@ -267,35 +267,7 @@ void FlowFollower::create_flows() {
 }
 
 
-void FlowFollower::select_from_all_nodes(uint32_t min_size, uint32_t max_size, uint16_t min_tags, uint16_t max_tags,
-                                         float min_ci, float max_ci) {
-    sglib::OutputLog()<<"Selecting nodes: " << min_size << "-" << max_size << " bp " <<
-                      min_tags << "-" << max_tags << " tags " << min_ci << "-" << max_ci << " CI"<<std::endl;
-    uint64_t tnodes=0,ttags=0;
-    nodes.clear();
-#pragma omp parallel
-    {
-        std::vector<sgNodeID_t> thread_nodes;
-#pragma omp for schedule(static, 100)
-        for (auto n=1;n<ws.sg.nodes.size();++n) {
-            if (ws.sg.nodes[n].sequence.size() < min_size) continue;
-            if (ws.sg.nodes[n].sequence.size() > max_size) continue;
-            if (ws.sg.get_fw_links(n).size() != 1 or ws.sg.get_bw_links(n).size() != 1) continue;
-            auto ntags = ws.linked_read_mappers[0].get_node_tags(n);
-            if (ntags.size() < min_tags or ntags.size() > max_tags) continue;
-            auto ci = ws.kci.compute_compression_for_node(n, 1);
-            if (ci < min_ci or ci > max_ci) continue;
-            ++tnodes;
-            thread_nodes.emplace_back(n);
-            ttags += ntags.size();
-        }
 
-#pragma omp critical(collect_selected_nodes)
-        nodes.insert(thread_nodes.begin(),thread_nodes.end());
-
-    }
-    sglib::OutputLog()<< "Selected "<<tnodes<<" / "<<ws.sg.nodes.size()<<" with a total "<<ttags<<" tags"<< std::endl;
-}
 
 /**
  * @brief sorts nodes so consecutive nodes share tags, then uses a tag kmer cache to speed up flows.
@@ -442,4 +414,9 @@ void FlowFollower::load_flows_from_ws() {
             flows[path.nodes[0]] = f;
         }
     }
+}
+
+void FlowFollower::set_nodes(std::vector<sgNodeID_t> new_nodes) {
+    nodes.clear();
+    nodes.insert(new_nodes.begin(),new_nodes.end());
 }

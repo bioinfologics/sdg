@@ -32,6 +32,11 @@ public:
 
     void load_from_disk(std::string filename,bool log_only=false);
 
+    //Projected operations with info from the graph
+
+    std::vector<sgNodeID_t>
+    select_from_all_nodes(uint32_t min_size, uint32_t max_size, uint16_t min_tags, uint16_t max_tags, float min_ci, float max_ci);
+
     std::vector<LogEntry> log;
 
     //All status classes are public, treat them with care anyway ;)
