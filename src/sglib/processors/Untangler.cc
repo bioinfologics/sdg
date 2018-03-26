@@ -593,3 +593,14 @@ void Untangler::pop_errors_by_ci_and_paths() {
 
     }
 }
+
+/**
+ * @brief grabs all "long" haplotype-specific nodes, uses neighbour tags to create scaffolding backbones. Skating should do the rest.
+ * @param min_size
+ * @param min_ci
+ * @param max_ci
+ * @return
+ */
+std::vector<std::vector<sgNodeID_t>> Untangler::make_scaffolding_backbones(uint32_t min_size, float min_ci, float max_ci) {
+
+}

@@ -35,7 +35,7 @@ public:
     //Projected operations with info from the graph
 
     std::vector<sgNodeID_t>
-    select_from_all_nodes(uint32_t min_size, uint32_t max_size, uint16_t min_tags, uint16_t max_tags, float min_ci, float max_ci);
+    select_from_all_nodes(uint32_t min_size, uint32_t max_size, uint32_t min_tags, uint32_t max_tags, float min_ci, float max_ci);
 
     std::vector<LogEntry> log;
 

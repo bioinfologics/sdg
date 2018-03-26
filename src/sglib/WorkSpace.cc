@@ -95,7 +95,7 @@ void WorkSpace::print_log() {
     }
 }
 
-std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint32_t max_size, uint16_t min_tags, uint16_t max_tags,
+std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint32_t max_size, uint32_t min_tags, uint32_t max_tags,
                                          float min_ci, float max_ci) {
     std::vector<sgNodeID_t> nodes;
     sglib::OutputLog()<<"Selecting nodes: " << min_size << "-" << max_size << " bp " <<
