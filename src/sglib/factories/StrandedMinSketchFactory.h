@@ -33,6 +33,15 @@ class StrandedMinimiserSketchFactory : public  KMerFactory {
 
 public:
     explicit StrandedMinimiserSketchFactory(uint8_t k, uint8_t w) : KMerFactory(k), w(w) {}
+
+    /**
+     * Generate a set of hash(kmer) -> ±position, where the sign represents whether the kmer is forward(+) or reverse(-)
+     *
+     * @param seq DNA sequence
+     * @param sketch Return pre-allocated storage (should be cleared outside this method)
+     * @return
+     * Returns the number of elements in the "sketch" set.
+     */
     inline std::set<MinPosIDX>::size_type getMinSketch(const std::string &seq, std::set<MinPosIDX> &sketch){
         // TODO: Adjust for when K is larger than what fits in uint64_t!
         last_unknown=0;

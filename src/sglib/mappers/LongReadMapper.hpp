@@ -15,28 +15,28 @@
 #include <sglib/factories/StrandedMinSketchFactory.h>
 #include <sglib/indexers/minSketchIndex.hpp>
 
-template <typename A, typename B>
-std::multimap<B, A> flip_map(std::map<A,B> & src) {
 
-    std::multimap<B,A> dst;
-
-    for(typename std::map<A, B>::const_iterator it = src.begin(); it != src.end(); ++it)
-        dst.insert(std::pair<B, A>(it -> second, it -> first));
-
-    return dst;
-}
 
 class LongReadMapper {
+    template <typename A, typename B>
+    std::multimap<B, A> flip_map(std::map<A,B> & src) {
+
+        std::multimap<B,A> dst;
+
+        for(typename std::map<A, B>::const_iterator it = src.begin(); it != src.end(); ++it)
+            dst.insert(std::pair<B, A>(it -> second, it -> first));
+
+        return dst;
+    }
 
     SequenceGraph & sg;
     minSketchIndex index;
     uint8_t k=15;
     uint8_t w=5;
-    std::unordered_map<uint64_t, std::vector<graphStrandPos>> kmer_to_graphposition;
 
     struct MatchOffset{
         MatchOffset(){};
-        MatchOffset(int32_t dirContig, uint32_t readPos, uint32_t offset) :
+        MatchOffset(sgNodeID_t dirContig, uint32_t readPos, uint32_t offset) :
                 dirContig(dirContig), readPos(readPos), offset(offset) {};
 
         friend std::ostream &operator<<(std::ostream &os, const MatchOffset &match) {
@@ -46,8 +46,8 @@ class LongReadMapper {
                << "";
             return os;
         }
-        int32_t dirContig;  // Sign indicates direction
-        int32_t readPos;   // Pos on the read
+        sgNodeID_t dirContig;  // Sign indicates direction
+        uint32_t readPos;   // Pos on the read
         int32_t offset;    // Ref offset (read_start vs ref_start)
 
         friend class byOffset;
@@ -201,10 +201,10 @@ class LongReadMapper {
 
 public:
     LongReadMapper(uint8_t k, uint8_t w, SequenceGraph &sg) : sg(sg), k(k), w(w), index(sg, k, w) {}
-    std::vector<SequenceGraphPath> map_read(FastqRecord read);
+    std::vector<LongReadMapping> map_read(FastqRecord read, std::ofstream &matchOutput, std::ofstream &blockOutput);
     uint64_t map_reads2(std::string &filename, uint32_t error);
     int32_t getWinner(std::multimap<uint32_t , int32_t> ranking, uint min_window_matches, float min_match_spread);
-    std::vector<SequenceGraphPath> map_reads(std::string &filename);
+    std::vector<LongReadMapping> map_reads(std::string &filename);
 };
 
 

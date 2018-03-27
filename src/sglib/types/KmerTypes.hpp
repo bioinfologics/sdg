@@ -7,6 +7,10 @@
 
 #include <sglib/types/GenericTypes.hpp>
 
+/**
+ * An SMR compatible kmer type provides: count(field), merge(func) and max(constructor)
+ * Stores: kmer, node, position and count
+ */
 struct KmerIDX {
 
     KmerIDX() : kmer(std::numeric_limits<unsigned long long int>::max()), contigID(0), count(0){}
@@ -67,18 +71,26 @@ namespace std {
 }
 
 
+/**
+ * Stores a ±node,position pair, where the node encodes the direction
+ * The sign on the Node translates to: as seen in node sequence (+) and reverse complement of node sequence(-)
+ */
 struct graphStrandPos{
     sgNodeID_t node = 0;
-    int32_t pos = 0;
+    uint32_t pos = 0;
 
     graphStrandPos() {}
-    graphStrandPos(sgNodeID_t node, int32_t pos) : node(node), pos(pos) {}
+    graphStrandPos(sgNodeID_t node, uint32_t pos) : node(node), pos(pos) {}
 
     bool operator==(const graphStrandPos &o) const {
         return (std::tie(node, pos) == std::tie(o.node,o.pos));
     }
 };
 
+/**
+ * Stores a hash(kmer),±position pair where the position encodes for fwd or rc of the kmer
+ * The sign on the position translates to: as seen on the input sequence (+) and reverse complement of the input seq (-)
+ */
 class MinPosIDX {
 public:
     uint64_t hash = 0;

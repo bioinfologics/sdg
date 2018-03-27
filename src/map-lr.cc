@@ -9,7 +9,7 @@
 #include <sglib/readers/FileReader.h>
 #include <sglib/readers/SequenceGraphReader.h>
 #include <sglib/SMR.h>
-#include <sglib/mappers/LongReadMapper.h>
+#include <sglib/mappers/LongReadMapper.hpp>
 #include <sglib/datastores/PathsDatastore.hpp>
 #include "cxxopts.hpp"
 
@@ -68,7 +68,7 @@ void map_using_unique_kmers(uint8_t k, SequenceGraph &sg, std::string &output_pr
 
 }
 
-std::vector<SequenceGraphPath> map_using_sketches(uint8_t k, SequenceGraph &sg, std::string &output_prefix, std::string &long_reads) {
+std::vector<LongReadMapping> map_using_sketches(uint8_t k, SequenceGraph &sg, std::string &output_prefix, std::string &long_reads) {
     uint8_t w = 1;
 
     LongReadMapper rm(k, w, sg);
@@ -137,20 +137,12 @@ int main(int argc, char * argv[]) {
     max_mem_gb *= GB;
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
-    PathsDatastore long_read_ds(sg);
     if (0) {
         map_using_unique_kmers(K, sg, output_prefix, long_reads);
     }
     if (1) {
         auto result(map_using_sketches(K, sg, output_prefix, long_reads));
-        for (const auto &path:result) {
-            long_read_ds.origin.emplace_back(path.nodes[0]);
-            long_read_ds.paths.emplace_back(sg, path.nodes);
-        }
     }
-
-    std::ofstream lr_paths_file("long_read_paths.ds");
-    long_read_ds.write(lr_paths_file);
 
     return 0;
 }

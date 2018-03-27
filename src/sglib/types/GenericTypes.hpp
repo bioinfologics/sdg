@@ -9,6 +9,8 @@
 #include <string>
 #include <tuple>
 #include <limits>
+#include "hashing_helper.hpp"
+
 
 
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC

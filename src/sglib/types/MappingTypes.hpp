@@ -10,6 +10,7 @@
 #include <ostream>
 #include <tuple>
 #include "GenericTypes.hpp"
+#include "hashing_helper.hpp"
 
 typedef uint32_t prm10xTag_t;
 
@@ -38,5 +39,52 @@ public:
     int32_t unique_matches = 0; /// Number of unique kmer matches
     bool rev=false;
 };
+
+
+/**
+ * TODO: Generate indices for LongReadMapping
+ * READS FROM NODE -> IN: NODE ID OUT: READ set
+ * NODES FROM READ -> IN: READ ID OUT: NODE set
+ *
+ * Stores the node, read, respective start and eds
+ */
+struct LongReadMapping {
+    LongReadMapping() {}
+
+    bool operator==(const LongReadMapping &other) const {
+        return std::tie(node,read_id,nStart,nEnd,qStart,qEnd)
+               == std::tie(other.node,other.read_id,other.nStart,other.nEnd,other.qStart,other.qEnd);
+    }
+
+    bool operator<(const LongReadMapping &other) const {
+        return std::tie(node,read_id,nStart,nEnd,qStart,qEnd)
+               < std::tie(other.node,other.read_id,other.nStart,other.nEnd,other.qStart,other.qEnd);
+    }
+
+    void merge(const LongReadMapping &other) {
+        matches += other.matches;
+    }
+
+    sgNodeID_t node = 0;        /// Node ID, sign represents direction
+    uint32_t read_id = 0;       /// ID of the read from the Datastore   (this is never negative!)
+    int32_t nStart = 0;         /// Position of the starting node kmer of this mapping
+    int32_t nEnd = 0;           /// Position of the ending node kmer of this mapping
+    int32_t qStart = 0;         /// Query start position
+    int32_t qEnd = 0;           /// Query end position
+    uint32_t matches = 0;       /// Number of matches in this "run" of matches
+
+};
+
+namespace std {
+    template <>
+    struct hash<LongReadMapping> {
+        size_t operator()(const LongReadMapping& lr) const {
+            std::tuple<sgNodeID_t , uint64_t , int32_t > tp (lr.node,lr.read_id,lr.nStart);
+            sglib::hash<std::tuple<sgNodeID_t , uint64_t , int32_t>> h;
+            return h (tp);
+        }
+    };
+}
+
 
 #endif //BSG_MAPPINGTYPES_HPP

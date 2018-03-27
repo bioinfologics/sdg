@@ -5,7 +5,12 @@
 #ifndef BSG_OMP_SAFE_HPP
 #define BSG_OMP_SAFE_HPP
 
-#ifndef __APPLE__
+
+/**
+ * Defines some commonly used OMP header dependent functions in order to have
+ * compatibility with compilers that do not support OpenMP
+ */
+#ifdef _OPENMP
 #include <omp.h>
 #include <parallel/algorithm>
 #else
@@ -13,7 +18,7 @@ static inline int omp_get_max_threads();
 static inline int omp_get_thread_num();
 #endif
 
-#ifdef __APPLE__
+#ifndef _OPENMP
 int omp_get_max_threads() {return 1u;}
 int omp_get_thread_num() {return 0u;}
 #endif

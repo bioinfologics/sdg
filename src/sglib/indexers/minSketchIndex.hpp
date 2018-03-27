@@ -11,6 +11,13 @@
 #include <cmath>
 #include <sglib/types/KmerTypes.hpp>
 
+
+/**
+ * Stores a look-up table of minSketch -> ±Node,position
+ * Provides a couple of helper functions such as:
+ * read, write -> stores the current index to disk and loads it from disk
+ * find, end -> useful for lookup
+ */
 class minSketchIndex {
     using Map = std::unordered_map<uint64_t, std::vector<graphStrandPos>>;
     using const_iterator = Map::const_iterator;

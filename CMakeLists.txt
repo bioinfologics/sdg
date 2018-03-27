@@ -158,7 +158,7 @@ add_library(sequence_graph SHARED
             src/sglib/graph/SequenceSubGraph.cpp
             src/sglib/graph/SequenceGraphPath.cpp
             src/sglib/mappers/LongReadMapper.cpp
-        )
+            src/sglib/datastores/LongReadsDatastore.cpp)
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 
@@ -209,6 +209,7 @@ install(FILES
             src/sglib/aligners/algorithms/SmithWaterman.h
             src/sglib/aligners/submat/SubstitutionMatrix.h
             src/sglib/processors/PathExplorer.h
+            src/sglib/datastores/LongReadsDatastore.hpp
         DESTINATION include
         )
 
@@ -272,6 +273,9 @@ add_executable(gfa-set
 
 add_executable(gfa-indexer
         src/gfa-indexer.cc)
+
+add_executable(lr-datastore
+        src/lr-datastore.cc)
 
 target_link_libraries(bsg-workspace sequence_graph)
 target_link_libraries(bsg-datastore sequence_graph)

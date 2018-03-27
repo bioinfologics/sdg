@@ -2,7 +2,7 @@
 // Created by Luis Yanes (EI) on 22/03/2018.
 //
 
-#include <sglib/mappers/LongReadMapper.h>
+#include <sglib/mappers/LongReadMapper.hpp>
 #include <sglib/utilities/omp_safe.hpp>
 /**
  * Receives a filename containing long reads in FASTQ format, for each read generates a _valid_ (the first path found)
@@ -11,35 +11,40 @@
  * @param filename FASTQ file containing long reads
  * @return A vector of SequenceGraphPath containing paths between connected nodes
  */
-std::vector<SequenceGraphPath> LongReadMapper::map_reads(std::string &filename) {
-    std::cout << "@MATCH,READ,NODE_LENGTH,NODE,READ_POS,OFFSET" << std::endl;
-    std::cout << "@BLOCK,READ,READ_LENGTH,START,END,NODE,COUNT,COUNT_BTW" << std::endl;
+std::vector<LongReadMapping> LongReadMapper::map_reads(std::string &filename) {
     FastqReader<FastqRecord> fastqReader({0}, filename);
-    std::vector<std::vector<SequenceGraphPath>> read_paths(omp_get_max_threads());
+    std::vector<std::vector<LongReadMapping>> read_mappings(omp_get_max_threads());
 
 #pragma omp parallel
     {
         FastqRecord read;
         bool c;
-        std::vector<SequenceGraphPath> &paths(read_paths[omp_get_thread_num()]);
-
+        std::vector<LongReadMapping> &mappings(read_mappings[omp_get_thread_num()]);
+        std::ofstream matchOutput(std::string("thread_")+std::to_string(omp_get_thread_num())+std::string(".match"));
+        std::ofstream blockOutput(std::string("thread_")+std::to_string(omp_get_thread_num())+std::string(".block"));
+        matchOutput << "READ,NODE_LENGTH,NODE,READ_POS,OFFSET" << std::endl;
+        blockOutput << "READ,READ_LENGTH,START,END,NODE,COUNT,COUNT_BTW" << std::endl;
 #pragma omp critical(readrec)
     {
         c = fastqReader.next_record(read);
     }
         while (c) {
-            const auto currentReadPaths(map_read(read));
-            paths.insert(paths.end(),currentReadPaths.begin(),currentReadPaths.end());
+            const auto currentReadMappings(map_read(read, matchOutput, blockOutput));
+            mappings.insert(mappings.end(),currentReadMappings.begin(),currentReadMappings.end());
 #pragma omp critical(readrec)
             {
                 c = fastqReader.next_record(read);
             }
         }
     }
-    std::vector<SequenceGraphPath> result;
-    for (const auto &rp:read_paths){
+
+    std::vector<LongReadMapping> result;
+    // Store the offset according to each threads offset position
+    for (const auto &rp:read_mappings){
         result.insert(result.end(), rp.begin(),rp.end());
     }
+
+    // Should generate a node -> reads index here before returning
     return result;
 }
 
@@ -221,13 +226,15 @@ uint64_t LongReadMapper::map_reads2(std::string &filename, uint32_t error) {
  * if there's no direct link between two nodes, it looks forward until the next node is found. If the next node isn't
  * found after N edges, the path is stored and a new path is started with the next node.
  */
-std::vector<SequenceGraphPath> LongReadMapper::map_read(FastqRecord read) {
-    std::vector<SequenceGraphPath> paths;
+std::vector<LongReadMapping>
+LongReadMapper::map_read(FastqRecord read, std::ofstream &matchOutput, std::ofstream &blockOutput) {
+    std::vector<LongReadMapping> paths;
     auto matches = getMatchOffsets(read.seq);
     std::sort(matches.begin(),matches.end(), MatchOffset::byReadPos());
 
+
     for (const auto &m:matches) {
-        sglib::OutputLog(sglib::DEBUG, false) << "@MATCH " << read.name << ","
+        matchOutput << "@MATCH " << read.name << ","
                                               << sg.nodes[std::abs(m.dirContig)].sequence.length() << "," << m
                                               << std::endl;
     }
@@ -284,22 +291,23 @@ std::vector<SequenceGraphPath> LongReadMapper::map_read(FastqRecord read) {
 
     for (const auto &b: blocks) {
         if (b.count > min_windows) {
-            sglib::OutputLog(false) << "@BLOCK," << read.name << "," << read.seq.length() << ","
+            blockOutput << "@BLOCK," << read.name << "," << read.seq.length() << ","
                                     << b.start << "," << b.end << "," << b.contig << "," << b.count
                                     << "," << b.count_btw << std::endl;
+
             // Find path between blocks, start new SequenceGraphPath if no paths are found.
-            if (!paths.empty()) {
-                SequenceGraphPath path_between(sg.find_path_between(paths.back().nodes.back(),b.contig, 0, 20));
-                if (!path_between.nodes.empty()) {
-                    for (const auto &node_in_path:path_between.nodes) {
-                        paths.back().append_to_path(node_in_path);
-                    }
-                } else {
-                    paths.push_back(SequenceGraphPath(sg,{b.contig}));
-                }
-            } else {
-                paths.push_back(SequenceGraphPath(sg,{b.contig}));
-            }
+//            if (!paths.empty()) {
+//                LongReadMapping path_between(sg.find_path_between(paths.back().nodes.back(),b.contig, 0, 20));
+//                if (!path_between.nodes.empty()) {
+//                    for (const auto &node_in_path:path_between.nodes) {
+//                        paths.back().append_to_path(node_in_path);
+//                    }
+//                } else {
+//                    paths.push_back(SequenceGraphPath(sg,{b.contig}));
+//                }
+//            } else {
+//                paths.push_back(SequenceGraphPath(sg,{b.contig}));
+//            }
         }
     }
     return paths;
@@ -307,18 +315,16 @@ std::vector<SequenceGraphPath> LongReadMapper::map_read(FastqRecord read) {
 
 std::vector<LongReadMapper::Match> LongReadMapper::getMatches(std::string &seq) {
     std::vector<Match> matches;
-    int64_t offset(0);
-    uint64_t p(0);
     StrandedMinimiserSketchFactory kf(k, w);
     std::set<MinPosIDX> sketch;
 
     kf.getMinSketch(seq, sketch);
 
     for (const auto &sk:sketch){
-        std::unordered_map<uint64_t, std::vector<graphStrandPos>>::const_iterator foundKey(kmer_to_graphposition.find(sk.hash));
-        if (foundKey == kmer_to_graphposition.end()) continue;
+        std::unordered_map<uint64_t, std::vector<graphStrandPos>>::const_iterator foundKey(index.find(sk.hash));
+        if (foundKey == index.end()) continue;
         for (const auto &match : foundKey->second) {
-            matches.emplace_back(match.node * std::signbit(sk.pos)?1:-1, std::abs(sk.pos), std::abs(match.pos));
+            matches.emplace_back(match.node * std::signbit(sk.pos)?1:-1, std::abs(sk.pos), match.pos);
         }
     }
 
@@ -337,8 +343,6 @@ std::vector<LongReadMapper::MatchOffset> LongReadMapper::getMatchOffsets(std::st
     std::vector<MatchOffset> matches;
     uint32_t sketch_not_in_index(0);
     uint32_t sketch_in_index(0);
-    int64_t offset(0);
-    uint64_t p(0);
     StrandedMinimiserSketchFactory kf(k, w);
     std::set<MinPosIDX> sketch;
 
@@ -351,8 +355,10 @@ std::vector<LongReadMapper::MatchOffset> LongReadMapper::getMatchOffsets(std::st
             continue;
         }
         sketch_in_index++;
-        for (auto match : foundKey->second) {
-            matches.emplace_back(match.node*(std::signbit(sk.pos)?-1:1), std::abs(sk.pos), std::abs(match.pos));
+        if (foundKey->second.size() < 10) {
+            for (auto match : foundKey->second) {
+                matches.emplace_back(match.node * (std::signbit(sk.pos) ? -1 : 1), std::abs(sk.pos), match.pos);
+            }
         }
     }
 
