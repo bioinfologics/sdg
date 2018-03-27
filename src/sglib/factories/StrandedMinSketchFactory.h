@@ -42,7 +42,7 @@ public:
      * @return
      * Returns the number of elements in the "sketch" set.
      */
-    inline std::set<MinPosIDX>::size_type getMinSketch(const std::string &seq, std::set<MinPosIDX> &sketch){
+    inline std::unordered_set<MinPosIDX>::size_type getMinSketch(const std::string &seq, std::unordered_set<MinPosIDX> &sketch){
         // TODO: Adjust for when K is larger than what fits in uint64_t!
         last_unknown=0;
         fkmer=0;

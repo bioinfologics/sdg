@@ -14,7 +14,7 @@
 #include <sglib/PairedReadMapper.h>
 #include <sglib/factories/StrandedMinSketchFactory.h>
 #include <sglib/indexers/minSketchIndex.hpp>
-
+#include <sglib/datastores/LongReadsDatastore.hpp>
 
 
 class LongReadMapper {
@@ -31,8 +31,13 @@ class LongReadMapper {
 
     SequenceGraph & sg;
     minSketchIndex index;
+    LongReadsDatastore datastore;
     uint8_t k=15;
     uint8_t w=5;
+
+    std::vector<LongReadMapping> mappings;
+    std::vector< std::vector < std::vector<LongReadMapping>::size_type > > mappings_in_node;        /// Mappings matching node
+    std::vector< std::vector < std::vector<LongReadMapping>::size_type > > read_to_mappings;    /// Nodes in the read, 0 or empty = unmapped
 
     struct MatchOffset{
         MatchOffset(){};
@@ -200,11 +205,15 @@ class LongReadMapper {
     std::vector<MatchOffset> getMatchOffsets(std::string &query);
 
 public:
-    LongReadMapper(uint8_t k, uint8_t w, SequenceGraph &sg) : sg(sg), k(k), w(w), index(sg, k, w) {}
+    LongReadMapper(uint8_t k, uint8_t w, SequenceGraph &sg, LongReadsDatastore &ds) : sg(sg), k(k), w(w), index(sg, k, w), datastore(ds) {
+        mappings_in_node.resize(sg.nodes.size());
+        read_to_mappings.resize(datastore.size());
+    }
     std::vector<LongReadMapping> map_read(FastqRecord read, std::ofstream &matchOutput, std::ofstream &blockOutput);
+    std::vector<LongReadMapping> map_read(uint32_t readID, std::string sequence, std::ofstream &matchOutput, std::ofstream &blockOutput);
     uint64_t map_reads2(std::string &filename, uint32_t error);
     int32_t getWinner(std::multimap<uint32_t , int32_t> ranking, uint min_window_matches, float min_match_spread);
-    std::vector<LongReadMapping> map_reads(std::string &filename);
+    void map_reads(std::unordered_set<uint32_t> readIDs = {});
 };
 
 

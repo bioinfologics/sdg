@@ -11,41 +11,43 @@
  * @param filename FASTQ file containing long reads
  * @return A vector of SequenceGraphPath containing paths between connected nodes
  */
-std::vector<LongReadMapping> LongReadMapper::map_reads(std::string &filename) {
-    FastqReader<FastqRecord> fastqReader({0}, filename);
-    std::vector<std::vector<LongReadMapping>> read_mappings(omp_get_max_threads());
+void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
+
+    std::vector< std::vector<LongReadMapping> > read_mappings(datastore.size());
+    if (not readIDs.empty())
+        sglib::OutputLog()<<readIDs.size()<<" selected reads / "<<datastore.size()-1<<" total"<<std::endl;
 
 #pragma omp parallel
     {
-        FastqRecord read;
-        bool c;
-        std::vector<LongReadMapping> &mappings(read_mappings[omp_get_thread_num()]);
         std::ofstream matchOutput(std::string("thread_")+std::to_string(omp_get_thread_num())+std::string(".match"));
         std::ofstream blockOutput(std::string("thread_")+std::to_string(omp_get_thread_num())+std::string(".block"));
-        matchOutput << "READ,NODE_LENGTH,NODE,READ_POS,OFFSET" << std::endl;
-        blockOutput << "READ,READ_LENGTH,START,END,NODE,COUNT,COUNT_BTW" << std::endl;
-#pragma omp critical(readrec)
-    {
-        c = fastqReader.next_record(read);
-    }
-        while (c) {
-            const auto currentReadMappings(map_read(read, matchOutput, blockOutput));
-            mappings.insert(mappings.end(),currentReadMappings.begin(),currentReadMappings.end());
-#pragma omp critical(readrec)
-            {
-                c = fastqReader.next_record(read);
+#pragma omp for
+        for (uint32_t readID=1;readID<datastore.size();++readID) {
+            if ( (!readIDs.empty() and readIDs.count(readID)) or (readIDs.empty() and read_to_mappings[readID].empty()) ) {
+                const auto currentReadMappings(map_read
+                                                       (readID,
+                                                        datastore.get_read_sequence(readID),
+                                                        matchOutput,
+                                                        blockOutput)
+                );
+                read_mappings[readID] = currentReadMappings;
             }
         }
     }
-
-    std::vector<LongReadMapping> result;
-    // Store the offset according to each threads offset position
-    for (const auto &rp:read_mappings){
-        result.insert(result.end(), rp.begin(),rp.end());
+    // Initialise reads_in_node, read_to_nodes from results
+    std::vector<LongReadMapping>::size_type totalMappings(0);
+    for (const auto &rm : read_mappings) {
+        totalMappings += rm.size();
+    }
+    mappings.reserve(totalMappings);
+    for (const auto &rm : read_mappings) {
+        mappings.insert(mappings.end(), rm.cbegin(), rm.cend());
     }
 
-    // Should generate a node -> reads index here before returning
-    return result;
+    for (std::vector<LongReadMapping>::size_type i=1; i < mappings.size(); ++i) {
+        mappings_in_node[std::abs(mappings[i].node)].push_back(i);
+        read_to_mappings[mappings[i].read_id].push_back(i);
+    }
 }
 
 /**
@@ -313,10 +315,83 @@ LongReadMapper::map_read(FastqRecord read, std::ofstream &matchOutput, std::ofst
     return paths;
 }
 
+std::vector<LongReadMapping>
+LongReadMapper::map_read(uint32_t readID, std::string sequence, std::ofstream &matchOutput, std::ofstream &blockOutput) {
+    std::vector<LongReadMapping> paths;
+    auto matches = getMatchOffsets(sequence);
+    std::sort(matches.begin(),matches.end(), MatchOffset::byReadPos());
+
+
+//    for (const auto &m:matches) {
+//        matchOutput << "@MATCH " << readID << ","
+//                    << sg.nodes[std::abs(m.dirContig)].sequence.length() << "," << m
+//                    << std::endl;
+//    }
+
+    uint window_size(1000); // 1k window
+    uint stepping_size(200);    // 200bp stepping
+    auto match_window_multiplier(2.5f);    // MAX ranking node needs to have X times matches in window over second to be winner.
+    auto min_window_matches(3u);     // Min times seen a contig in a window to call match
+    auto min_windows(5u);    // Min number of windows matching a contig in the same direction
+    auto prev = matches.cbegin();
+    auto curr = prev;
+    std::vector<WindowBlock> blocks;
+    for (uint currPos = 0; currPos < sequence.length(); currPos += stepping_size) {
+        std::map<int32_t, uint32_t> nodes;
+        if (prev == matches.cend()) break;
+        for (curr = prev; curr != matches.cend() and curr->readPos < currPos+window_size; ++curr) {
+            nodes[curr->dirContig]++;
+        }
+        for (; prev != matches.end() and prev->readPos < currPos+stepping_size; ++prev);
+
+        int32_t winner(0);
+        if (!nodes.empty()) {
+            std::pair<int32_t, uint32_t> max = *nodes.cbegin();
+            for (const auto &nc:nodes) {
+                if (max.second < nc.second) max = nc;
+                sglib::OutputLog(sglib::DEBUG, false) << "@WINDOW," << currPos << "," << currPos + window_size
+                                                      << "," << readID << "," << nc.first << "," << nc.second
+                                                      << std::endl;
+            }
+            std::multimap<uint32_t, int32_t> reverseTest = flip_map(nodes);
+            for (std::multimap<uint32_t, int32_t>::const_reverse_iterator it = reverseTest.rbegin();
+                 it != reverseTest.rend(); ++it) {
+                sglib::OutputLog(sglib::DEBUG, false) << "\t\t@RANK," << currPos << "," << currPos + window_size
+                                                      << "," << readID << ","
+                                                      << it->first << "," << it->second << std::endl;
+            }
+
+            winner = getWinner(reverseTest, min_window_matches, match_window_multiplier);
+        }
+        if (!blocks.empty()) blocks.back().count_btw++;
+        if (0 == winner) continue;
+        if (blocks.empty()) {
+            blocks.emplace_back(currPos, currPos+stepping_size, winner, 1);
+        }
+        else {
+            if (blocks.back().contig == winner) {
+                blocks.back().end = currPos;
+                blocks.back().count++;
+            } else {
+                blocks.emplace_back(currPos, currPos+stepping_size, winner, 1);
+            }
+        }
+    }
+
+    for (const auto &b: blocks) {
+        if (b.count > min_windows) {
+            blockOutput << "@BLOCK," << readID << "," << sequence.length() << ","
+                        << b.start << "," << b.end << "," << b.contig << "," << b.count
+                        << "," << b.count_btw << std::endl;
+        }
+    }
+    return paths;
+}
+
 std::vector<LongReadMapper::Match> LongReadMapper::getMatches(std::string &seq) {
     std::vector<Match> matches;
     StrandedMinimiserSketchFactory kf(k, w);
-    std::set<MinPosIDX> sketch;
+    std::unordered_set<MinPosIDX> sketch;
 
     kf.getMinSketch(seq, sketch);
 
@@ -344,7 +419,7 @@ std::vector<LongReadMapper::MatchOffset> LongReadMapper::getMatchOffsets(std::st
     uint32_t sketch_not_in_index(0);
     uint32_t sketch_in_index(0);
     StrandedMinimiserSketchFactory kf(k, w);
-    std::set<MinPosIDX> sketch;
+    std::unordered_set<MinPosIDX> sketch;
 
     auto read_sketch_num(kf.getMinSketch(query, sketch));
 

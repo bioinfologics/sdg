@@ -68,12 +68,11 @@ void map_using_unique_kmers(uint8_t k, SequenceGraph &sg, std::string &output_pr
 
 }
 
-std::vector<LongReadMapping> map_using_sketches(uint8_t k, SequenceGraph &sg, std::string &output_prefix, std::string &long_reads) {
+void map_using_sketches(uint8_t k, SequenceGraph &sg, std::string &output_prefix, std::string &long_reads) {
     uint8_t w = 1;
-
-    LongReadMapper rm(k, w, sg);
-    return rm.map_reads(long_reads);
-
+    LongReadsDatastore datastore(long_reads, "reads_index.idx");
+    LongReadMapper rm(k, w, sg, datastore);
+    rm.map_reads();
 }
 
 int main(int argc, char * argv[]) {
@@ -86,7 +85,7 @@ int main(int argc, char * argv[]) {
 
     std::string gfa_filename, bubble_contigs_filename, output_prefix, long_reads;
     std::string dump_mapped, load_mapped;
-    unsigned int log_level(4);
+    unsigned int log_level(0);
     uint64_t max_mem_gb(4);
     bool stats_only(false);
     uint8_t K(31);
@@ -97,7 +96,7 @@ int main(int argc, char * argv[]) {
             ("k,mer_size", "K-mer size for indexing/mapping", cxxopts::value<uint8_t>(K)->default_value("31"), "0-31")
             ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename), "filepath")
             ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix), "path")
-            ("log_level", "output log level", cxxopts::value<unsigned int>(log_level), "uint");
+            ("log_level", "output log level", cxxopts::value<unsigned int>(log_level)->default_value("0"), "uint");
     options.add_options("Long Read Options")
             ("r,long_reads", "input long reads", cxxopts::value<std::string>(long_reads), "filepath")
             ("d,dump_to","dump mapped reads to file",cxxopts::value<std::string>(dump_mapped), "filepath")
@@ -141,8 +140,9 @@ int main(int argc, char * argv[]) {
         map_using_unique_kmers(K, sg, output_prefix, long_reads);
     }
     if (1) {
-        auto result(map_using_sketches(K, sg, output_prefix, long_reads));
+        map_using_sketches(K, sg, output_prefix, long_reads);
     }
 
+    sglib::OutputLog() << "Done!" << std::endl;
     return 0;
 }

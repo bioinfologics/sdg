@@ -103,12 +103,25 @@ public:
         return hash < o.hash;
     }
 
+    const bool operator==(const MinPosIDX &o) const {
+        return std::tie(hash,pos) == std::tie(o.hash,o.pos);
+    }
+
     friend std::ostream& operator<<(std::ostream& os, const MinPosIDX& m) {
         os << m.hash;
         return os;
     }
+
 };
 
+namespace std {
+    template <>
+    struct hash<MinPosIDX> {
+        size_t operator()(const MinPosIDX& k) const {
+            return k.hash;
+        }
+    };
+}
 
 struct graphPosition{
     sgNodeID_t node;

@@ -35,7 +35,7 @@ public:
 
     void generate_index(const SequenceGraph &sg) {
         StrandedMinimiserSketchFactory kf(k, w);
-        std::set<MinPosIDX> sketch;
+        std::unordered_set<MinPosIDX> sketch;
         GraphNodeReader<FastaRecord> gnr({0,sg});
         FastaRecord node;
         while (gnr.next_record(node)) {
