@@ -20,7 +20,7 @@ public:
     FlowFollower(WorkSpace & _ws,std::unordered_set<sgNodeID_t> _nodes={}):ws(_ws),nodes(_nodes){};
     void create_flows();
     void create_flows_fast();
-    void load_flows_from_ws();
+    void load_flows_from_paths(const PathsDatastore & pd);
     std::vector<std::unordered_set<uint64_t>> get_distinctive_kmers(std::vector<sgNodeID_t>);
     std::vector<std::unordered_set<uint64_t>> get_distinctive_kmers_truncated(std::vector<sgNodeID_t>);
     void set_nodes(std::vector<sgNodeID_t>);

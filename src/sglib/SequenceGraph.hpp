@@ -45,6 +45,8 @@ class SequenceSubGraph;
 class SequenceGraph {
 public:
     SequenceGraph(){};
+
+    bool is_sane();
     //=== I/O functions ===
     void load_from_gfa(std::string filename);
     void write_to_gfa(std::string filename,const std::unordered_set<sgNodeID_t> & marked_red={}, const std::vector<double> & depths={}, const std::unordered_set<sgNodeID_t> & selected_nodes={});

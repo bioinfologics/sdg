@@ -307,6 +307,7 @@ void FlowFollower::create_flows_fast() {
     sglib::OutputLog()<<" DONE!"<<nodesp<<" nodes processed, "<<validflows<<" informative flows"<<std::endl;
     //Next create a PathsCollection in the graph
     sglib::OutputLog()<<"Creating paths collection"<<std::endl;
+    ws.path_datastores.clear();
     ws.path_datastores.emplace_back(ws.sg);
     for (auto ff:fflows){
         if (ff.nodes.size()<3) continue;
@@ -406,8 +407,8 @@ std::vector<SequenceGraphPath> FlowFollower::skate_from_all(int min_node_flow, u
     return r;
 }
 
-void FlowFollower::load_flows_from_ws() {
-    for (auto &path:ws.path_datastores[0].paths){
+void FlowFollower::load_flows_from_paths(const PathsDatastore & pd) {
+    for (auto &path:pd.paths){
         if (path.nodes.size()>3) {
             Flow f;
             f.nodes=path.nodes;

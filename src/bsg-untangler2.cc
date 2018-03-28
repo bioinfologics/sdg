@@ -71,7 +71,7 @@ int main(int argc, char * argv[]) {
         u.analise_paths_through_nodes();
         FlowFollower ff(ws);
 
-        ff.load_flows_from_ws();
+        ff.load_flows_from_paths(ws.path_datastores.back());
         std::ofstream skf("skated_paths.fasta");
         for (auto sp:ff.skate_from_all(4, 10000)) {
             skf << ">" << sp.nodes[0] << "_" << sp.nodes.back() << std::endl << sp.get_sequence() << std::endl;
@@ -98,6 +98,10 @@ int main(int argc, char * argv[]) {
         }
         ws.dump_to_disk(output_prefix+"_remapped.bsgws");*/
         u.expand_canonical_repeats_by_tags(.5,1.5);
+        if (!ws.sg.is_sane()) {
+            sglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
+            return 1;
+        }
         ws.sg.join_all_unitigs();
         ws.kci.reindex_graph();
         for (auto &m:ws.linked_read_mappers) {

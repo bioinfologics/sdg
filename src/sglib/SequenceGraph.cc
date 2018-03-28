@@ -59,6 +59,21 @@ void Node::make_rc() {
     std::swap(sequence,rseq);
 };
 
+bool SequenceGraph::is_sane() {
+    for (auto n=0;n<nodes.size();++n){
+        for (auto l:links[n]){
+            bool found=false;
+            for (auto &dl:links[llabs(l.dest)]) {
+                if (dl.dest == l.source and dl.source == l.dest){
+                    found=true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+    }
+}
+
 sgNodeID_t SequenceGraph::add_node(Node n) {
     nodes.emplace_back(n);
     links.emplace_back();
@@ -738,23 +753,14 @@ void SequenceGraph::expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNod
 
     //Create all extra copies of the node.
 
-    std::vector<sgNodeID_t> node_copies;
-    node_copies.push_back(nodeID);
-    while (node_copies.size()<bw.size()) node_copies.push_back(add_node(Node(nodes[llabs(nodeID)].sequence)));
 
-    //Update the links;
-    for (auto in=0;in<node_copies.size();++in){
-        auto n=node_copies[in];
-        links[n].clear();
+    //node_copies.push_back(nodeID);
+    for (auto in=0;in<new_links.size();++in){
+        auto new_node=add_node(Node(nodes[llabs(nodeID)].sequence));
         for (auto l:new_links[in]) {
-            auto new_end=(l.source>0 ? n:-n);
-            //XXX: bug here
-            for (auto &ol:links[llabs(l.dest)]){
-                if (ol.source==l.dest and ol.dest==l.source) ol.dest=new_end;
-            }
-            l.source=new_end;
-            links[n].push_back(l);
+            add_link((l.source>0 ? new_node:-new_node),l.dest,l.dist);
         }
     }
+    remove_node(nodeID);
 
 }
