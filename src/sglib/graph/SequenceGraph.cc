@@ -756,12 +756,12 @@ SequenceGraph::find_path_between(const sgNodeID_t seed, const sgNodeID_t target,
     return SequenceGraphPath{*this};
 }
 
-std::vector<sgNodeID_t>
+std::vector<nodeVisitor>
 SequenceGraph::explore_nodes(std::vector<std::string> &nodes, uint size_limit, uint edge_limit) {
     std::set<nodeVisitor> resultNodes;
     // For each node in the list
     for (const auto &n:nodes) {
-        auto id = oldnames_to_ids[n];
+        auto id = oldnames_to_ids.at(n);
         std::set<nodeVisitor> results;
         results.emplace(id, 0, 0);
         results.emplace(-id, 0, 0);
@@ -795,11 +795,7 @@ SequenceGraph::explore_nodes(std::vector<std::string> &nodes, uint size_limit, u
             // While exploration results > 0 explore resulting nodes
         } while (!results.empty());
     }
-    std::vector<sgNodeID_t > subnodes;
-    for (const auto &n:resultNodes) {
-        subnodes.emplace_back(n.node);
-    }
-    return subnodes;
+    return std::vector<nodeVisitor>(resultNodes.begin(), resultNodes.end());
 }
 
 

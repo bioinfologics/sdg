@@ -16,7 +16,7 @@ public:
 
     SequenceGraphPath(const SequenceGraphPath& sgp) : nodes(sgp.nodes), sg(sgp.sg) {};
 
-    SequenceGraphPath& operator=(const SequenceGraphPath other);
+    SequenceGraphPath& operator=(const SequenceGraphPath &other);
 
     std::string get_fasta_header(bool use_oldnames = false) const;
     std::string get_sequence() const;
@@ -33,7 +33,7 @@ public:
     };
 
 private:
-    SequenceGraph& sg;
+    const SequenceGraph& sg;
 };
 
 

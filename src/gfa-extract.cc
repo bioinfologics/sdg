@@ -100,11 +100,11 @@ int main(int argc, char * argv[]) {
 
 
     if (!nodes.empty()) {
-        std::vector<sgNodeID_t > resultNodes = sg.explore_nodes(nodes, size_limit, edge_limit);
+        auto resultNodes = sg.explore_nodes(nodes, size_limit, edge_limit);
 
         sglib::OutputLog() << resultNodes.size() << " nodes in solution\n";
         for (const auto &n: resultNodes) {
-            sglib::OutputLog(sglib::INFO, false) << sg.oldnames[std::abs(n)] << " ";
+            sglib::OutputLog(sglib::INFO, false) << sg.oldnames[std::abs(n.node)] << " ";
         }
         sglib::OutputLog(sglib::INFO,false) << std::endl;
 

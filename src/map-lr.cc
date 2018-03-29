@@ -10,7 +10,6 @@
 #include <sglib/readers/SequenceGraphReader.h>
 #include <sglib/SMR.h>
 #include <sglib/mappers/LongReadMapper.hpp>
-#include <sglib/datastores/PathsDatastore.hpp>
 #include "cxxopts.hpp"
 
 void map_using_unique_kmers(uint8_t k, SequenceGraph &sg, std::string &output_prefix, std::string &long_reads){
@@ -96,11 +95,8 @@ int main(int argc, char * argv[]) {
             ("k,mer_size", "K-mer size for indexing/mapping", cxxopts::value<uint8_t>(K)->default_value("31"), "0-31")
             ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename), "filepath")
             ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix), "path")
-            ("log_level", "output log level", cxxopts::value<unsigned int>(log_level)->default_value("0"), "uint");
-    options.add_options("Long Read Options")
+            ("log_level", "output log level", cxxopts::value<unsigned int>(log_level)->default_value("0"), "uint")
             ("r,long_reads", "input long reads", cxxopts::value<std::string>(long_reads), "filepath")
-            ("d,dump_to","dump mapped reads to file",cxxopts::value<std::string>(dump_mapped), "filepath")
-            ("l,load_from", "load mapped reads from file", cxxopts::value<std::string>(load_mapped), "filepath")
             ("max_mem", "maximum_memory when mapping (GB, default: 4)", cxxopts::value<uint64_t>(max_mem_gb)->default_value("4"), "GB");
 //@formatter:on
     try {

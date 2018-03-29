@@ -79,9 +79,8 @@ public:
      * @param edge_limit Limit in number of edges to go through (length of the path until a node)
      * @return Returns a vector of all nodes in the solution
      *
-     * NOTE: Consider returning the vector of nodeVisitor as this contains more information regarding the explored nodes
      */
-    std::vector<sgNodeID_t> explore_nodes(std::vector<std::string> &nodes, uint size_limit, uint edge_limit);
+    std::vector<nodeVisitor> explore_nodes(std::vector<std::string> &nodes, uint size_limit, uint edge_limit);
 
     // remove_node
     void remove_node(sgNodeID_t);
@@ -127,7 +126,7 @@ public:
         return false;
     }
 
-    bool link_exists(sgNodeID_t from, sgNodeID_t to) {
+    bool link_exists(sgNodeID_t from, sgNodeID_t to) const {
         // Look for link between starting node and the new node.
         auto l = links[std::abs(from)].begin();
         // TODO: Can this just be a std::find?
@@ -137,7 +136,7 @@ public:
         return l != links[std::abs(from)].end();
     }
 
-    std::string& nodeID_to_name(sgNodeID_t id) {
+    const std::string& nodeID_to_name(sgNodeID_t id) const {
         return oldnames[id];
     }
 

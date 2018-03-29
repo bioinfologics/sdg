@@ -119,12 +119,12 @@ bool SequenceGraphPath::operator<(const SequenceGraphPath& rhs) const {
     return make_set_of_nodes() < rhs.make_set_of_nodes();
 }
 
-SequenceGraphPath &SequenceGraphPath::operator=(const SequenceGraphPath other) {
+SequenceGraphPath &SequenceGraphPath::operator=(const SequenceGraphPath &other) {
+    if (&sg != &other.sg) { throw ("Can only copy paths from the same SequenceGraph"); }
     if (&other == this) {
         return *this;
     }
     nodes = other.nodes;
-    sg = other.sg;
     return *this;
 }
 

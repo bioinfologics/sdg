@@ -71,7 +71,7 @@ endif()
 ## Compiler flags
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -w -Wno-deprecated -std=c++11")
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -fno-omit-frame-pointer -fsanitize=address -Wall")
 
 
 find_package (Threads)
@@ -167,8 +167,6 @@ if (BUILD_COV)
                       COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
                       LINK_FLAGS    "--coverage")
 endif()
-
-target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 
 install(TARGETS sequence_graph DESTINATION lib)
 install(FILES
