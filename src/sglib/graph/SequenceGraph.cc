@@ -766,6 +766,12 @@ SequenceGraph::explore_nodes(std::vector<std::string> &nodes, uint size_limit, u
         results.emplace(id, 0, 0);
         results.emplace(-id, 0, 0);
         do {
+            sglib::OutputLog(sglib::DEBUG,false) << "Nodes to visit:" << std::endl;
+            std::copy(results.begin(), results.end(), std::ostream_iterator<nodeVisitor>(sglib::OutputLog(sglib::DEBUG, false), ","));
+            sglib::OutputLog(sglib::DEBUG,false) << std::endl;
+            sglib::OutputLog(sglib::DEBUG,false) << "Nodes visited:" << std::endl;
+            std::copy(resultNodes.begin(), resultNodes.end(), std::ostream_iterator<nodeVisitor>(sglib::OutputLog(sglib::DEBUG, false), ","));
+            sglib::OutputLog(sglib::DEBUG,false) << std::endl;
             auto toVisit = *results.begin();
             results.erase(toVisit);
             // Explore node forward

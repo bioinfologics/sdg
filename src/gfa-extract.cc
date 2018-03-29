@@ -91,14 +91,6 @@ int main(int argc, char * argv[]) {
         }
     }
 
-    for (const auto &n: nodes) {
-        std::cout << n << ", ";
-    }
-    std::cout << std::endl;
-    std::cout << std::endl;
-    std::cout << std::endl;
-
-
     if (!nodes.empty()) {
         auto resultNodes = sg.explore_nodes(nodes, size_limit, edge_limit);
 
