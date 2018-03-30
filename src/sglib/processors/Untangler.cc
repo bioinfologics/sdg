@@ -657,6 +657,17 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::find_bubbles(uint32_t m
     return r;
 }
 
+std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths(uint32_t min_size, uint32_t max_size) {
+    //find bubbly paths
+
+    //get tag distances between nodes
+
+    //solve
+
+    //done!
+
+}
+
 void Untangler::pop_errors_by_ci_and_paths() {
     sglib::OutputLog()<<"Popping errors..."<<std::endl;
     auto bubbles=find_bubbles(200, 450);
@@ -671,13 +682,13 @@ void Untangler::pop_errors_by_ci_and_paths() {
 }
 
 /**
- * @brief grabs all "long" haplotype-specific nodes, uses neighbour tags to create scaffolding backbones. Skating should do the rest.
+ * @brief grabs all "long" haplotype-specific nodes, uses tags to find neighbours.
  * @param min_size
  * @param min_ci
  * @param max_ci
  * @return
  */
-std::vector<std::vector<sgNodeID_t>> Untangler::make_scaffolding_backbones(uint32_t min_size, float min_ci, float max_ci) {
+std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_neighbours(uint32_t min_size, float min_ci, float max_ci) {
 
 
     sglib::OutputLog()<<"Selecting nodes..."<<std::endl;
@@ -686,7 +697,7 @@ std::vector<std::vector<sgNodeID_t>> Untangler::make_scaffolding_backbones(uint3
     neighbours.resize(ws.sg.nodes.size());
     node_tags.resize(ws.sg.nodes.size());
     uint64_t total_bp=0;
-    auto nodes=ws.select_from_all_nodes(1000,1000000,20,200000, 0.5, 1.5);
+    auto nodes=ws.select_from_all_nodes(min_size,1000000,20,200000, min_ci, max_ci);
     sglib::OutputLog()<<"Populating node tags..."<<std::endl;
     for (auto n:nodes) {
         total_bp+=ws.sg.nodes[n].sequence.size();
@@ -710,23 +721,50 @@ std::vector<std::vector<sgNodeID_t>> Untangler::make_scaffolding_backbones(uint3
         }
     }
     sglib::OutputLog()<<"Sorting shared tags"<<std::endl;
+    uint64_t with_neighbours=0;
     for (auto &nn:neighbours){
+        if (not nn.empty()) ++with_neighbours;
         std::sort(nn.begin(),nn.end(),[]( const std::pair<sgNodeID_t,uint32_t> &a,
                                           const std::pair<sgNodeID_t,uint32_t> &b) { return a.second>b.second; });
     }
-    sglib::OutputLog()<<"Dumping shared tags"<<std::endl;
-    std::ofstream sto("shared_tags.txt");
-    uint64_t linked=0;
-    for (auto n:nodes){
-        sto<<n<<" ("<<node_tags[n].size()<<")";
-        if (neighbours[n].size()>0) ++linked;
-        for (auto nn:neighbours[n]) sto<<", ["<<nn.first<<", "<<nn.second<<"]";
-        sto<<std::endl;
-        sto<<n<<">>>> seq"<<n;
-        for (auto nn:neighbours[n]) sto<<", seq"<<nn.first;
-        sto<<std::endl;
+    sglib::OutputLog()<<with_neighbours<<" nodes with neighbours"<<std::endl;
+    return neighbours;
+}
 
+void Untangler::connect_neighbours() {
+    //first find all nodes' neighbours
+    auto tagneighbours=find_tag_neighbours(5000,.75,1.25);
+    TagWalker tw(ws,{});
+    for (auto n=1;n<ws.sg.nodes.size();++n) {
+        //explore from a node til hitting a neighbour, check if another selected node is on the way
+        std::set<sgNodeID_t> ntn;
+        for (auto nd:tagneighbours[n]) ntn.emplace(nd.first);
+        if (ntn.empty()) continue;
+        //try to skate from a neighbour to another
+        std::cout<<std::endl<<"Finding forward neighbours for "<<n<<std::endl;
+        auto ndfs=ws.sg.get_distances_to(n,ntn,100000);
+        for (auto nd:ndfs){
+            std::cout<<"distance to "<<nd.first<<": "<<nd.second<<std::endl;
+        }
+        std::cout<<std::endl<<"Finding backward neighbours for "<<n<<std::endl;
+        auto ndbs=ws.sg.get_distances_to(-n,ntn,100000);
+        for (auto nd:ndbs){
+            std::cout<<"distance to "<<nd.first<<": "<<nd.second<<std::endl;
+        }
+        /*//if successfull, create a copy of the skated path and disconnect/connect appropriately
+        //TODO: check if a node with different neighbours is here
+        auto walkf=tw.walk_between(n,nd[0].first);
+        if (not walkf.nodes.empty()) {
+            sg.create_path_through(walkf);
+        }
+        auto nd=ws.sg.get_distances_to(-n,ntn,100000);
+        //if successfull, create a copy of the skated path and disconnect/connect appropriately
+        //TODO: check if a node with different neighbours is here
+        auto walkb=tw.walk_between(n,nd[0].first);
+        if (not walkb.nodes.empty()) {
+            sg.create_path_through(walkb);
+        }*/
 
     }
-    sglib::OutputLog()<<linked<<" nodes with neighbours"<<std::endl;
+
 }

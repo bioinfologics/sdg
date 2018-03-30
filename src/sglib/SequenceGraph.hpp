@@ -11,6 +11,7 @@
 #include <map>
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 #include "sglib/readers/FileReader.h"
 
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
@@ -67,7 +68,7 @@ public:
     // find bubbles in component of graph
     std::vector<std::vector<sgNodeID_t >> find_bubbles(std::vector<sgNodeID_t>);
 
-
+    std::vector<std::pair<sgNodeID_t,int64_t>> get_distances_to(sgNodeID_t n, std::set<sgNodeID_t> destinations, int64_t max_dist);
 
     // remove_node
     void remove_node(sgNodeID_t);

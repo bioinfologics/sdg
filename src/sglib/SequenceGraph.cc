@@ -764,3 +764,35 @@ void SequenceGraph::expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNod
     remove_node(nodeID);
 
 }
+
+std::vector<std::pair<sgNodeID_t,int64_t>> SequenceGraph::get_distances_to(sgNodeID_t n,
+                                                                            std::set<sgNodeID_t> destinations,
+                                                                            int64_t max_dist) {
+    std::vector<std::pair<sgNodeID_t,int64_t>> current_nodes,next_nodes,final_nodes;
+    current_nodes.push_back({n,-nodes[llabs(n)].sequence.size()});
+    int rounds=20;
+    while (not current_nodes.empty() and --rounds>0){
+        //std::cout<<"starting round of context expansion, current nodes:  ";
+        //for (auto cn:current_nodes) std::cout<<cn.first<<"("<<cn.second<<")  ";
+        //std::cout<<std::endl;
+        next_nodes.clear();
+        for (auto nd:current_nodes){
+            //if node is a destination add it to final nodes
+            if (destinations.count(nd.first)>0 or destinations.count(-nd.first)>0){
+                final_nodes.push_back(nd);
+            }
+            //else get fw links, compute distances for each, and if not >max_dist add to nodes
+            else {
+                for (auto l:get_fw_links(nd.first)){
+                    int64_t dist=nd.second;
+                    dist+=nodes[llabs(nd.first)].sequence.size();
+                    dist+=l.dist;
+                    //std::cout<<"candidate next node "<<l.dest<<" at distance "<<dist<<std::endl;
+                    if (dist<=max_dist) next_nodes.push_back({l.dest,dist});
+                }
+            }
+        }
+        current_nodes=next_nodes;
+    }
+    return final_nodes;
+}

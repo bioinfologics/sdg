@@ -17,7 +17,7 @@ int main(int argc, char * argv[]) {
 
     std::string workspace_file,output_prefix;
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
-    bool devel_code=false;
+    bool repeat_expansion=false, neighbour_connection=false;
     try
     {
         cxxopts::Options options("bsg-untangler", "graph-based repeat resolution and haplotype separation");
@@ -26,7 +26,8 @@ int main(int argc, char * argv[]) {
                 ("help", "Print help")
                 ("w,workspace", "input workspace", cxxopts::value<std::string>(workspace_file))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
-                ("d,devel", "execute development code (different main!)", cxxopts::value<bool>(devel_code))
+                ("r,repeat_expansion","run tag-based repeat expansion", cxxopts::value<bool>(repeat_expansion))
+                ("n,neighbour_connection","run tag-based repeat neighbour_connection", cxxopts::value<bool>(neighbour_connection))
                 ;
 
 
@@ -64,7 +65,7 @@ int main(int argc, char * argv[]) {
         return 1;
     }
 
-    if (!devel_code) {
+    /*if (!devel_code) {
 
         Untangler u(ws);
 
@@ -88,15 +89,10 @@ int main(int argc, char * argv[]) {
         sglib::OutputLog() << "All DONE!!!" << std::endl;
 
         //u.analise_paths_through_nodes();
-    }
-    else {
+    }*/
+    if (repeat_expansion) {
         //==================== Development code (i.e. random tests!) ==============
         Untangler u(ws);
-        /*ws.kci.reindex_graph();
-        for (auto &m:ws.linked_read_mappers) {
-            m.remap_all_reads();
-        }
-        ws.dump_to_disk(output_prefix+"_remapped.bsgws");*/
         u.expand_canonical_repeats_by_tags(.5,1.5);
         if (!ws.sg.is_sane()) {
             sglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
@@ -110,6 +106,10 @@ int main(int argc, char * argv[]) {
         ws.dump_to_disk(output_prefix+"_repeats_expanded.bsgws");
 
 
+    }
+    if (neighbour_connection){
+        Untangler u(ws);
+        u.connect_neighbours();
     }
     return 0;
 }
