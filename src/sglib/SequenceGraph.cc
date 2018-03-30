@@ -796,3 +796,52 @@ std::vector<std::pair<sgNodeID_t,int64_t>> SequenceGraph::get_distances_to(sgNod
     }
     return final_nodes;
 }
+
+std::vector<SequenceSubGraph> SequenceGraph::get_all_bubbly_subgraphs(uint32_t maxsubgraphs) {
+    std::vector<SequenceSubGraph> subgraphs;
+    std::vector<bool> used(nodes.size(),false);
+    /*
+     * the loop always keep the first and the last elements as c=2 collapsed nodes.
+     * it starts with a c=2 node, and goes thorugh all bubbles fw, then reverts the subgraph and repeats
+     */
+    SequenceSubGraph subgraph(*this);
+    for (auto n=1;n<nodes.size();++n){
+        if (used[n] or nodes[n].status==sgNodeDeleted) continue;
+        used[n]=true;
+        subgraph.nodes.clear();
+
+        subgraph.nodes.push_back(n);
+
+        //two passes: 0->fw, 1->bw, path is inverted twice, so still n is +
+        for (auto pass=0; pass<2; ++pass) {
+            //while there's a possible bubble fw.
+            for (auto fn = get_fw_links(subgraph.nodes.back()); fn.size() == 2; fn = get_fw_links(subgraph.nodes.back())) {
+                //if it is not a real bubble, get out.
+                if (get_bw_links(fn[0].dest).size()!=1 or get_bw_links(fn[0].dest).size()!=1) break;
+                auto fl1=get_fw_links(fn[0].dest);
+                if (fl1.size()!=1) break;
+                auto fl2=get_fw_links(fn[1].dest);
+                if (fl2.size()!=1) break;
+                if (fl2[0].dest!=fl1[0].dest) break;
+                auto next_end=fl2[0].dest;
+                //all conditions met, update subgraph
+                subgraph.nodes.push_back(fn[0].dest);
+                subgraph.nodes.push_back(fn[1].dest);
+                subgraph.nodes.push_back(next_end);
+                used[(next_end>0?next_end:-next_end)]=true;
+
+            }
+            SequenceSubGraph new_subgraph(*this);
+            for (auto it=subgraph.nodes.rbegin();it<subgraph.nodes.rend();++it) new_subgraph.nodes.push_back(-*it);
+            std::swap(new_subgraph.nodes,subgraph.nodes);
+        }
+        if (subgraph.nodes.size()>6) {
+            subgraphs.push_back(subgraph);
+            if (subgraphs.size()==maxsubgraphs) break;
+            //std::cout<<"Bubbly path found: ";
+            //for (auto &n:subgraph) std::cout<<"  "<<n<<" ("<<sg.nodes[(n>0?n:-n)].sequence.size()<<"bp)";
+            //std::cout<<std::endl;
+        }
+    }
+    return subgraphs;
+}
