@@ -657,15 +657,132 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::find_bubbles(uint32_t m
     return r;
 }
 
-std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths(uint32_t min_size, uint32_t max_size) {
+std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
     //find bubbly paths
+    auto bps=ws.sg.get_all_bubbly_subgraphs();
+    std::vector<SequenceSubGraph> kobps,sbps;
+    uint64_t allnodes=0,bnodes=0,allnodes_size=0,bnodes_size=0;
+    for (auto &bp:bps){
+        /*if (bp.nodes.size()>40) {
+            std::cout<<"LARGE bubbly path: ";
+            for (auto n:bp.nodes) std::cout<<"seq"<<labs(n)<<",";
+            std::cout<<std::endl;
 
-    //get tag distances between nodes
+        }*/
+        //check every third node for kci
+        allnodes+=bp.nodes.size();
+        allnodes_size+=bp.total_size();
+        int kci_ok=0,kci_fail=0;
+        for (auto i=0;i<bp.nodes.size();i+=3) {
+            auto dup_kci=ws.kci.compute_compression_for_node(bp.nodes[i],1);
+            if (dup_kci<1.5 or dup_kci>2.5) ++kci_fail;
+            else ++kci_ok;
+        }
+        if (kci_fail*3<kci_ok) {
+            kobps.push_back(bp);
+            bnodes+=bp.nodes.size();
+            bnodes_size+=bp.total_size();
+        }
+    }
+    std::cout<<kobps.size()<<" / "<< bps.size() << " bubly subgraphs ( "<<bnodes<<" / "<<allnodes<<" nodes) ( "<<bnodes_size<<" / "<<allnodes_size<<" bp) pass kci condition on duplicated nodes"<<std::endl;
+    uint64_t solved=0, solved_nodes=0, solved_size=0, untagged=0,untagged_nodes=0, untagged_size=0 ,ambiguous=0,ambiguous_nodes=0, ambiguous_size=0;
+    std::vector<std::pair<std::vector<sgNodeID_t>,std::vector<sgNodeID_t>>> solved_haps;
+    int min_tags=10;
+    for (auto &bp:kobps){
+        //init the haplotypes anchoring all nodes to previous tags
+        //std::cout<<"A";
+        std::vector<sgNodeID_t> hap1, hap2;
+        std::set<bsg10xTag> tags1,tags2;
+        hap1.push_back(bp.nodes[1]);
+        tags1=ws.linked_read_mappers[0].get_node_tags(bp.nodes[1]);
+        hap2.push_back(bp.nodes[2]);
+        tags2=ws.linked_read_mappers[0].get_node_tags(bp.nodes[2]);
+        if (tags1.size()<min_tags or tags2.size()<min_tags) {++untagged; untagged_nodes+=bp.nodes.size(); untagged_size+=bp.total_size(); continue;};
+        bool utb=false;
+        for (auto i=3;i<bp.nodes.size()-1;i+=3){
+            std::set<bsg10xTag> both;
+            std::set_intersection(tags1.begin(),tags1.end(),tags2.begin(),tags2.end(),std::inserter(both,both.end()));
+            for (auto b:both){
+                tags1.erase(b);
+                tags2.erase(b);
+            }
+            auto A=bp.nodes[i+1];
+            auto B=bp.nodes[i+2];
+            auto tagsA=ws.linked_read_mappers[0].get_node_tags(A);
+            auto tagsB=ws.linked_read_mappers[0].get_node_tags(B);
+            if (tagsA.size()<min_tags or tagsB.size()<min_tags) {++untagged;untagged_nodes+=bp.nodes.size(); untagged_size+=bp.total_size(); utb=true; break;};
+            auto a1=intersection_size(tagsA,tags1);
+            auto a2=intersection_size(tagsA,tags2);
+            auto b1=intersection_size(tagsB,tags1);
+            auto b2=intersection_size(tagsB,tags2);
+            if (a1>=min_tags and b1<a1*2/min_tags and b2>=min_tags and a2<b2*2/min_tags){
+                //std::cout<<"A";
+                hap1.push_back(A);
+                tags1.insert(tagsA.begin(),tagsA.end());
+                hap2.push_back(B);
+                tags2.insert(tagsB.begin(),tagsB.end());
+            }
+            else if (b1>=min_tags and a1<b1*2/min_tags and a2>=min_tags and b2<a2*2/min_tags){
+                //std::cout<<"B";
+                hap2.push_back(A);
+                tags2.insert(tagsA.begin(),tagsA.end());
+                hap1.push_back(B);
+                tags1.insert(tagsB.begin(),tagsB.end());
+            } else {
+                //std::cout<<" ["<<a1<<","<<a2<<","<<b1<<","<<b2<<"] FAIL!";
+                break;
+            }
+        }
+        //std::cout<<std::endl;
+        if (utb) continue;
+        if (hap1.size()==bp.nodes.size()/3) {
+            ++solved;
+            sbps.push_back(bp);
+            solved_haps.push_back({hap1,hap2});
+            solved_nodes+=bp.nodes.size();
+            solved_size+=bp.total_size();
+        }
+        else{
+            ++ambiguous;
+            ambiguous_nodes+=bp.nodes.size();
+            ambiguous_size+=bp.total_size();
+        }
 
-    //solve
+        //
+        //for (auto)
 
+    }
+    std::cout<<untagged << " / " << kobps.size()<<" bubly subgraphs had <"<<min_tags<<" tags in a unique node (total "<<untagged_nodes<<" nodes / "<<untagged_size<<" bp)"<<std::endl;
+    std::cout<<ambiguous << " / " << kobps.size()<<" bubly subgraphs ambiguous (total "<<ambiguous_nodes<<" nodes) / "<<ambiguous_size<<" bp)"<<std::endl;
+    std::cout<<solved << " / " << kobps.size()<<" bubly subgraphs solved (total "<<solved_nodes<<" nodes) / "<<solved_size<<" bp)"<<std::endl;
+
+    solved=0;
+    //expand each repeat
+    for (auto i=0;i<sbps.size();++i){
+        //std::cout<<"Solving region: ";
+        //for (auto n:sbps[i].nodes) std::cout<<n<<" ";
+        //std::cout<<std::endl;
+        //std::cout<<"Hap1: ";
+        //for (auto n:solved_haps[i].first) std::cout<<n<<" ";
+        //std::cout<<std::endl;
+        //std::cout<<"Hap2: ";
+        //for (auto n:solved_haps[i].second) std::cout<<n<<" ";
+        //std::cout<<std::endl;
+        for (auto l=0;l<solved_haps[i].first.size()-1;++l){
+            auto r=sbps[i].nodes[3*(l+1)];
+            auto a1=solved_haps[i].first[l];
+            auto a2=solved_haps[i].first[l+1];
+            auto b1=solved_haps[i].second[l];
+            auto b2=solved_haps[i].second[l+1];
+            //std::cout<<"Expanding "<<a1<<" -> "<<r<<" -> "<<a2<<"   |    "<<b1<<" -> "<<r<<" -> "<<b2<<std::endl;
+            ws.sg.expand_node(r,{{a1},{b1}},{{a2},{b2}});
+            ++solved;
+        }
+
+    }
+    std::cout<<solved << " duplications expanded"<<std::endl;
     //done!
-
+    return {};
 }
 
 void Untangler::pop_errors_by_ci_and_paths() {

@@ -729,8 +729,12 @@ std::vector<SequenceSubGraph> SequenceGraph::get_all_tribbles() {
 void SequenceGraph::expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNodeID_t>> bw,
                                 std::vector<std::vector<sgNodeID_t>> fw) {
     if (nodeID<0) {
-        std::cout<<"WARNING: ERROR: expand_node only accepts positive nodes!"<<std::endl;
-        return;
+        //std::cout<<"WARNING: ERROR: expand_node only accepts positive nodes!"<<std::endl;
+        //return;
+        nodeID=-nodeID;
+        std::swap(bw,fw);
+        for (auto &x:bw) for (auto &xx:x) xx=-xx;
+        for (auto &x:fw) for (auto &xx:x) xx=-xx;
     }
     //TODO: check all inputs are included in bw and all outputs are included in fw, only once
     auto orig_links=links[nodeID];
@@ -807,11 +811,10 @@ std::vector<SequenceSubGraph> SequenceGraph::get_all_bubbly_subgraphs(uint32_t m
     SequenceSubGraph subgraph(*this);
     for (auto n=1;n<nodes.size();++n){
         if (used[n] or nodes[n].status==sgNodeDeleted) continue;
-        used[n]=true;
         subgraph.nodes.clear();
 
         subgraph.nodes.push_back(n);
-
+        bool circular=false;
         //two passes: 0->fw, 1->bw, path is inverted twice, so still n is +
         for (auto pass=0; pass<2; ++pass) {
             //while there's a possible bubble fw.
@@ -825,17 +828,23 @@ std::vector<SequenceSubGraph> SequenceGraph::get_all_bubbly_subgraphs(uint32_t m
                 if (fl2[0].dest!=fl1[0].dest) break;
                 auto next_end=fl2[0].dest;
                 //all conditions met, update subgraph
+                if (used[llabs(fn[0].dest)] or used[llabs(fn[1].dest)] or used[llabs(next_end)]) {
+                    circular=true;
+                    break;
+                }
                 subgraph.nodes.push_back(fn[0].dest);
                 subgraph.nodes.push_back(fn[1].dest);
                 subgraph.nodes.push_back(next_end);
-                used[(next_end>0?next_end:-next_end)]=true;
-
+                used[llabs(fn[0].dest)]=true;
+                used[llabs(fn[1].dest)]=true;
+                used[llabs(next_end)]=true;
+                used[n]=true;
             }
             SequenceSubGraph new_subgraph(*this);
             for (auto it=subgraph.nodes.rbegin();it<subgraph.nodes.rend();++it) new_subgraph.nodes.push_back(-*it);
             std::swap(new_subgraph.nodes,subgraph.nodes);
         }
-        if (subgraph.nodes.size()>6) {
+        if (subgraph.nodes.size()>6 and not circular) {
             subgraphs.push_back(subgraph);
             if (subgraphs.size()==maxsubgraphs) break;
             //std::cout<<"Bubbly path found: ";
@@ -844,4 +853,10 @@ std::vector<SequenceSubGraph> SequenceGraph::get_all_bubbly_subgraphs(uint32_t m
         }
     }
     return subgraphs;
+}
+
+uint64_t SequenceSubGraph::total_size() {
+    uint64_t t=0;
+    for (auto &n:nodes) t+=sg.nodes[llabs(n)].sequence.size();
+    return t;
 }

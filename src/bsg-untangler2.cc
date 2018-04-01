@@ -17,7 +17,7 @@ int main(int argc, char * argv[]) {
 
     std::string workspace_file,output_prefix;
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
-    bool repeat_expansion=false, neighbour_connection=false;
+    bool repeat_expansion=false, neighbour_connection=false, bubbly_paths;
     try
     {
         cxxopts::Options options("bsg-untangler", "graph-based repeat resolution and haplotype separation");
@@ -27,6 +27,7 @@ int main(int argc, char * argv[]) {
                 ("w,workspace", "input workspace", cxxopts::value<std::string>(workspace_file))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
                 ("r,repeat_expansion","run tag-based repeat expansion", cxxopts::value<bool>(repeat_expansion))
+                ("b,bubbly_paths","run bubbly paths phasing", cxxopts::value<bool>(bubbly_paths))
                 ("n,neighbour_connection","run tag-based repeat neighbour_connection", cxxopts::value<bool>(neighbour_connection))
                 ;
 
@@ -60,10 +61,6 @@ int main(int argc, char * argv[]) {
     ws.load_from_disk(workspace_file);
     ws.add_log_entry("bsg-untangler run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
-    if (ws.path_datastores.size()==0) {
-        sglib::OutputLog()<<"Finishing early because there's no path_datastores[0]"<<std::endl;
-        return 1;
-    }
 
     /*if (!devel_code) {
 
@@ -104,13 +101,23 @@ int main(int argc, char * argv[]) {
             m.remap_all_reads();
         }
         ws.dump_to_disk(output_prefix+"_repeats_expanded.bsgws");
-
-
+    }
+    if (bubbly_paths){
+        Untangler u(ws);
+        u.solve_bubbly_paths();
+        ws.sg.join_all_unitigs();
+        //ws.sg.write_to_gfa(output_prefix+"_bubbly_solved.gfa");
+        ws.kci.reindex_graph();
+        for (auto &m:ws.linked_read_mappers) {
+            m.remap_all_reads();
+        }
+        ws.dump_to_disk(output_prefix+"_bubbly_solved.bsgws");
     }
     if (neighbour_connection){
         Untangler u(ws);
         u.connect_neighbours();
     }
+    //TODO: dump final workspace?
     return 0;
 }
 

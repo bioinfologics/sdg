@@ -18,7 +18,7 @@ public:
 
     void analise_paths_through_nodes();
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> find_bubbles(uint32_t min_size,uint32_t max_size);
-    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> solve_bubbly_paths(uint32_t min_size,uint32_t max_size);
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> solve_bubbly_paths();
     void pop_errors_by_ci_and_paths();
 
     std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> find_tag_neighbours(uint32_t min_size, float min_ci, float max_ci);
