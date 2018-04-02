@@ -90,7 +90,7 @@ int main(int argc, char * argv[]) {
     if (repeat_expansion) {
         //==================== Development code (i.e. random tests!) ==============
         Untangler u(ws);
-        u.expand_canonical_repeats_by_tags(.5,1.5);
+        u.expand_canonical_repeats_by_tags(.75,1.25,10);
         if (!ws.sg.is_sane()) {
             sglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
             return 1;
@@ -100,7 +100,6 @@ int main(int argc, char * argv[]) {
         for (auto &m:ws.linked_read_mappers) {
             m.remap_all_reads();
         }
-        ws.dump_to_disk(output_prefix+"_repeats_expanded.bsgws");
     }
     if (bubbly_paths){
         Untangler u(ws);
@@ -111,13 +110,13 @@ int main(int argc, char * argv[]) {
         for (auto &m:ws.linked_read_mappers) {
             m.remap_all_reads();
         }
-        ws.dump_to_disk(output_prefix+"_bubbly_solved.bsgws");
+
     }
     if (neighbour_connection){
         Untangler u(ws);
-        u.connect_neighbours();
+        u.connect_neighbours(1000,.75,1.25,50000);
     }
-    //TODO: dump final workspace?
+    ws.dump_to_disk(output_prefix+"_untangled.bsgws");
     return 0;
 }
 

@@ -150,7 +150,7 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
     return paths_solved.size();
 }
 
-uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci) {
+uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags) {
     uint64_t aa_count=0,ab_count=0,unsolved_count=0;
 
     std::cout << " Finding trivial repeats to analyse with tags" << std::endl;
@@ -175,6 +175,11 @@ uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci)
                 if (all[i] == all[j] or all[i] == -all[j])ok = false; //looping node
         if (!ok) continue;
 
+        auto f0t=ws.linked_read_mappers[0].get_node_tags(f0); if (f0t.size()<min_tags) continue;
+        auto f1t=ws.linked_read_mappers[0].get_node_tags(f1); if (f1t.size()<min_tags) continue;
+        auto b0t=ws.linked_read_mappers[0].get_node_tags(b0); if (b0t.size()<min_tags) continue;
+        auto b1t=ws.linked_read_mappers[0].get_node_tags(b1); if (b1t.size()<min_tags) continue;
+
         auto cif0=ws.kci.compute_compression_for_node(f0);
         if (cif0<min_ci or cif0>max_ci) continue;
         auto cif1=ws.kci.compute_compression_for_node(f1);
@@ -184,22 +189,15 @@ uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci)
         auto cib1=ws.kci.compute_compression_for_node(b1);
         if (cib1<min_ci or cib1>max_ci) continue;
 
-
-        auto f0t=ws.linked_read_mappers[0].get_node_tags(f0); if (f0t.size()<3) continue;
-        auto f1t=ws.linked_read_mappers[0].get_node_tags(f1); if (f1t.size()<3) continue;
-        auto b0t=ws.linked_read_mappers[0].get_node_tags(b0); if (b0t.size()<3) continue;
-        auto b1t=ws.linked_read_mappers[0].get_node_tags(b1); if (b1t.size()<3) continue;
-
         uint64_t aa=intersection_size(b0t,f0t);
         uint64_t bb=intersection_size(b1t,f1t);
         uint64_t ab=intersection_size(b0t,f1t);
         uint64_t ba=intersection_size(b1t,f0t);
 
-        if (aa > 3 and bb > 3 and std::min(aa, bb) > 10 * std::max(ab, ba)) {
+        if (aa > min_tags and bb > min_tags and std::min(aa, bb) > 10 * std::max(ab, ba)) {
             ++aa_count;
             ws.sg.expand_node(n,{{b0},{b1}},{{f0},{f1}});
-        } else if (ba > 3 and ab > 3 and
-                   std::min(ba, ab) > 10 * std::max(aa, bb)) {
+        } else if (ba > min_tags and ab > min_tags and std::min(ba, ab) > 10 * std::max(aa, bb)) {
             ++ab_count;
             ws.sg.expand_node(n,{{b0},{b1}},{{f1},{f0}});
         }
@@ -207,8 +205,7 @@ uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci)
             ++unsolved_count;
         }
     }
-    std::cout<<"Repeat expansion summary AA:"<<aa_count<<" AB:"<<ab_count
-             <<" Unsolved:"<<unsolved_count<<std::endl;
+    std::cout<<"Repeat expansion summary AA:"<<aa_count<<" AB:"<<ab_count <<" Unsolved:"<<unsolved_count<<std::endl;
     return aa_count+ab_count;
 }
 
@@ -848,26 +845,43 @@ std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_nei
     return neighbours;
 }
 
-void Untangler::connect_neighbours() {
+void Untangler::connect_neighbours(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance) {
     //first find all nodes' neighbours
-    auto tagneighbours=find_tag_neighbours(5000,.75,1.25);
+    auto tagneighbours=find_tag_neighbours(min_size,min_ci,max_ci);
+    std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> fndist(ws.sg.nodes.size()),bndist(ws.sg.nodes.size());
     TagWalker tw(ws,{});
     for (auto n=1;n<ws.sg.nodes.size();++n) {
         //explore from a node til hitting a neighbour, check if another selected node is on the way
         std::set<sgNodeID_t> ntn;
         for (auto nd:tagneighbours[n]) ntn.emplace(nd.first);
         if (ntn.empty()) continue;
-        //try to skate from a neighbour to another
-        std::cout<<std::endl<<"Finding forward neighbours for "<<n<<std::endl;
-        auto ndfs=ws.sg.get_distances_to(n,ntn,100000);
-        for (auto nd:ndfs){
-            std::cout<<"distance to "<<nd.first<<": "<<nd.second<<std::endl;
+        fndist[n] = ws.sg.get_distances_to(n, ntn, max_distance);
+        bndist[n] = ws.sg.get_distances_to(-n, ntn, max_distance);
+    }
+
+    //Find good trivial connections: only fw or bw neighbour, corresponding, good tag intersection
+    std::cout<<"Finding disconnected tips"<<std::endl;
+    for (auto n=1;n<ws.sg.nodes.size();++n){
+        if (tagneighbours[n].empty()) continue;
+        if (ws.sg.get_fw_links(n).size()==0 or ws.sg.get_bw_links(n).size()==0) {
+            for (auto tn:tagneighbours[n]){
+                if (ws.sg.get_fw_links(tn.first).size()==0 or ws.sg.get_bw_links(tn.first).size()==0) {
+                    std::cout<<"Nodes "<<n<<" and "<<tn.first<<" have disconnected ends and have "<<tn.second<<" shared tags"<<std::endl;
+                }
+            }
         }
-        std::cout<<std::endl<<"Finding backward neighbours for "<<n<<std::endl;
-        auto ndbs=ws.sg.get_distances_to(-n,ntn,100000);
-        for (auto nd:ndbs){
-            std::cout<<"distance to "<<nd.first<<": "<<nd.second<<std::endl;
+    }
+    std::cout<<"Finding trivial connections"<<std::endl;
+    for (auto n=1;n<ws.sg.nodes.size();++n) {
+        //todo: check that the other node actually has THIS node as neighbour, validate TAG distances too
+        if (fndist[n].size()==1 and (fndist[n][0].first<0 ? fndist:bndist)[llabs(fndist[n][0].first)].size()==1){
+            std::cout<<"Nodes "<<n<<" and "<<fndist[n][0].first<<" are trivial neighbours"<<std::endl;
         }
+        if (bndist[n].size()==1 and (bndist[n][0].first<0 ? fndist:bndist)[llabs(bndist[n][0].first)].size()==1){
+            std::cout<<"Nodes "<<-n<<" and "<<bndist[n][0].first<<" are trivial neighbours"<<std::endl;
+        }
+    }
+
         /*//if successfull, create a copy of the skated path and disconnect/connect appropriately
         //TODO: check if a node with different neighbours is here
         auto walkf=tw.walk_between(n,nd[0].first);
@@ -882,6 +896,6 @@ void Untangler::connect_neighbours() {
             sg.create_path_through(walkb);
         }*/
 
-    }
+
 
 }
