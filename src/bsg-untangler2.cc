@@ -17,7 +17,7 @@ int main(int argc, char * argv[]) {
 
     std::string workspace_file,output_prefix;
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
-    bool repeat_expansion=false, neighbour_connection=false, bubbly_paths;
+    bool repeat_expansion=false, neighbour_connection=false, bubbly_paths=false, pop_errors=false;
     try
     {
         cxxopts::Options options("bsg-untangler", "graph-based repeat resolution and haplotype separation");
@@ -26,6 +26,7 @@ int main(int argc, char * argv[]) {
                 ("help", "Print help")
                 ("w,workspace", "input workspace", cxxopts::value<std::string>(workspace_file))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
+                ("e,pop_errors", "pop unsupported short-bubbles (as errors)",cxxopts::value<bool>(pop_errors))
                 ("r,repeat_expansion","run tag-based repeat expansion", cxxopts::value<bool>(repeat_expansion))
                 ("b,bubbly_paths","run bubbly paths phasing", cxxopts::value<bool>(bubbly_paths))
                 ("n,neighbour_connection","run tag-based repeat neighbour_connection", cxxopts::value<bool>(neighbour_connection))
@@ -87,6 +88,15 @@ int main(int argc, char * argv[]) {
 
         //u.analise_paths_through_nodes();
     }*/
+    if (pop_errors){
+        Untangler u(ws);
+        u.pop_errors_by_ci_and_paths();
+        ws.sg.join_all_unitigs();
+        ws.kci.reindex_graph();
+        for (auto &m:ws.linked_read_mappers) {
+            m.remap_all_reads();
+        }
+    }
     if (repeat_expansion) {
         //==================== Development code (i.e. random tests!) ==============
         Untangler u(ws);
@@ -114,7 +124,12 @@ int main(int argc, char * argv[]) {
     }
     if (neighbour_connection){
         Untangler u(ws);
-        u.connect_neighbours(1000,.75,1.25,50000);
+        u.connect_neighbours(1000,.5,1.5,50000);
+        ws.sg.join_all_unitigs();
+        /*ws.kci.reindex_graph();
+        for (auto &m:ws.linked_read_mappers) {
+            m.remap_all_reads();
+        }*/
     }
     ws.dump_to_disk(output_prefix+"_untangled.bsgws");
     return 0;

@@ -136,14 +136,14 @@ int main(int argc, char * argv[]) {
         w.load_from_disk(filename);
         if (!w.sg.is_sane()) {
             sglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
-            return 1;
+            //return 1;
         }
         if (not gfafilename.empty()){
             w.sg.write_to_gfa(gfafilename+".gfa");
         }
         if (not nodeinfofilename.empty()){
            std::ofstream nif(nodeinfofilename+".csv");
-           std::cout<<"ID, lenght, kci"<<std::endl;
+           nif<<"ID, lenght, kci"<<std::endl;
            for (auto n=1;n<w.sg.nodes.size();++n){
                if (w.sg.nodes[n].status==sgNodeStatus_t::sgNodeDeleted) continue;
                nif<<n<<", "<<w.sg.nodes[n].sequence.size()<<", "<<w.kci.compute_compression_for_node(n,1)<<std::endl;

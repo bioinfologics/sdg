@@ -860,3 +860,33 @@ uint64_t SequenceSubGraph::total_size() {
     for (auto &n:nodes) t+=sg.nodes[llabs(n)].sequence.size();
     return t;
 }
+
+std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size) {
+    std::vector<SequenceGraphPath> current_paths,next_paths,final_paths;
+    for(auto &fl:get_fw_links(from)) current_paths.emplace_back(SequenceGraphPath(*this,{fl.dest}));
+    int rounds=20;
+    while (not current_paths.empty() and --rounds>0){
+        //std::cout<<"starting round of context expansion, current nodes:  ";
+        //for (auto cn:current_nodes) std::cout<<cn.first<<"("<<cn.second<<")  ";
+        //std::cout<<std::endl;
+        next_paths.clear();
+        for (auto &p:current_paths){
+            //if node is a destination add it to final nodes
+            if (p.nodes.back()==to) {
+                final_paths.push_back(p);
+                final_paths.back().nodes.pop_back();
+            }
+                //else get fw links, compute distances for each, and if not >max_dist add to nodes
+            else {
+                for (auto l:get_fw_links(p.nodes.back())){
+                    if (std::find(p.nodes.begin(),p.nodes.end(),l.dest)!=p.nodes.end()) continue;
+                    next_paths.push_back(p);
+                    next_paths.back().nodes.push_back(l.dest);
+                    if (next_paths.back().get_sequence().size()>max_size) next_paths.pop_back();
+                }
+            }
+        }
+        current_paths=next_paths;
+    }
+    return final_paths;
+}

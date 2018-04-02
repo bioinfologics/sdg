@@ -786,13 +786,32 @@ void Untangler::pop_errors_by_ci_and_paths() {
     sglib::OutputLog()<<"Popping errors..."<<std::endl;
     auto bubbles=find_bubbles(200, 450);
     sglib::OutputLog()<<"Analysing "<<bubbles.size()<<" small bubbles for coverage"<<std::endl;
+    std::vector<sgNodeID_t> to_delete;
+    std::ofstream bubblesf("bubbles_detail.csv");
+    bubblesf<<"prev,b1,b2,next,ci_prev,ci1,ci2,ci_next"<<std::endl;
     for (auto bp:bubbles){
-        auto ci1=ws.kci.compute_compression_for_node(bp.first);
-        auto ci2=ws.kci.compute_compression_for_node(bp.second);
-        if (ci1>.7 and ci2<.1) std::cout<<"node "<<bp.second<<" has only "<<ci2<<" coverage and "<<bp.first<<" has "<<ci1<<std::endl;
-        if (ci2>.7 and ci1<.1) std::cout<<"node "<<bp.first<<" has only "<<ci1<<" coverage and "<<bp.second<<" has "<<ci2<<std::endl;
-
+        auto ci1=ws.kci.compute_compression_for_node(bp.first,1);
+        auto ci2=ws.kci.compute_compression_for_node(bp.second,1);
+        auto prev=ws.sg.get_bw_links(bp.first)[0].dest;
+        auto next=ws.sg.get_fw_links(bp.first)[0].dest;
+        auto cip=ws.kci.compute_compression_for_node(prev);
+        auto cin=ws.kci.compute_compression_for_node(next);
+        bubblesf<<prev<<", "<<bp.first<<", "<<bp.second<<", "<<next<<", "<<cip<<", "<<ci1<<", "<<ci2<<", "<<cin<<std::endl;
+        if (cip<1.5 and cin<1.5) {
+            if (ci1 > .7 and ci2 < .1) {
+                std::cout << "node " << bp.second << " has only " << ci2 << " coverage and " << bp.first << " has "
+                          << ci1 << std::endl;
+                to_delete.push_back(llabs(bp.second));
+            }
+            if (ci2 > .7 and ci1 < .1) {
+                std::cout << "node " << bp.first << " has only " << ci1 << " coverage and " << bp.second << " has "
+                          << ci2 << std::endl;
+                to_delete.push_back(llabs(bp.first));
+            }
+        }
     }
+    std::cout<<"Deleting "<<to_delete.size()<<" nodes as errors"<<std::endl;
+    for (auto &pb:to_delete) ws.sg.remove_node(pb);
 }
 
 /**
@@ -805,25 +824,36 @@ void Untangler::pop_errors_by_ci_and_paths() {
 std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_neighbours(uint32_t min_size, float min_ci, float max_ci) {
 
 
-    sglib::OutputLog()<<"Selecting nodes..."<<std::endl;
+    sglib::OutputLog()<<"Selecting selected_nodes..."<<std::endl;
     std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> neighbours;
     std::vector<std::set<bsg10xTag>> node_tags;
     neighbours.resize(ws.sg.nodes.size());
     node_tags.resize(ws.sg.nodes.size());
     uint64_t total_bp=0;
-    auto nodes=ws.select_from_all_nodes(min_size,1000000,20,200000, min_ci, max_ci);
+    auto selected_nodes=ws.select_from_all_nodes(min_size,1000000,20,200000, min_ci, max_ci);
     sglib::OutputLog()<<"Populating node tags..."<<std::endl;
-    for (auto n:nodes) {
+    uint64_t tag_empty=0, tag_10=0, tag_50=0, tag_100=0, tag_1000=0;
+    for (auto n:selected_nodes) {
         total_bp+=ws.sg.nodes[n].sequence.size();
         for (auto t:ws.linked_read_mappers[0].get_node_tags(n)) node_tags[n].insert(t);
+        if (node_tags[n].empty()) ++tag_empty;
+        if (node_tags[n].size()>=10) ++tag_10;
+        if (node_tags[n].size()>=50) ++tag_50;
+        if (node_tags[n].size()>=100) ++tag_100;
+        if (node_tags[n].size()>=1000) ++tag_1000;
     }
-    sglib::OutputLog()<<nodes.size()<<" selected totalling "<<total_bp<<"bp "<<std::endl;
+    sglib::OutputLog()<<selected_nodes.size()<<" selected totalling "<<total_bp<<"bp "<<std::endl;
+    sglib::OutputLog()<<tag_10<<" selected_nodes have 10+ tags"<<std::endl;
+    sglib::OutputLog()<<tag_50<<" selected_nodes have 50+ tags"<<std::endl;
+    sglib::OutputLog()<<tag_100<<" selected_nodes have 100+ tags"<<std::endl;
+    sglib::OutputLog()<<tag_1000<<" selected_nodes have 1000+ tags"<<std::endl;
+
     sglib::OutputLog()<<"Computing shared tags"<<std::endl;
 #pragma omp parallel for shared(neighbours) schedule(static,50)
-    for (auto i1=0; i1<nodes.size(); ++i1){
-        auto n1=nodes[i1];
-        for (auto i2=i1+1;i2<nodes.size();i2++){
-            auto n2=nodes[i2];
+    for (auto i1=0; i1<selected_nodes.size(); ++i1){
+        auto n1=selected_nodes[i1];
+        for (auto i2=i1+1;i2<selected_nodes.size();i2++){
+            auto n2=selected_nodes[i2];
             uint32_t shared=intersection_size(node_tags[n1],node_tags[n2]);
             if (shared>=4) {
 #pragma omp critical
@@ -841,7 +871,7 @@ std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_nei
         std::sort(nn.begin(),nn.end(),[]( const std::pair<sgNodeID_t,uint32_t> &a,
                                           const std::pair<sgNodeID_t,uint32_t> &b) { return a.second>b.second; });
     }
-    sglib::OutputLog()<<with_neighbours<<" nodes with neighbours"<<std::endl;
+    sglib::OutputLog()<<with_neighbours<<" selected_nodes with neighbours"<<std::endl;
     return neighbours;
 }
 
@@ -872,16 +902,47 @@ void Untangler::connect_neighbours(uint64_t min_size, float min_ci, float max_ci
         }
     }
     std::cout<<"Finding trivial connections"<<std::endl;
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> from_to;
     for (auto n=1;n<ws.sg.nodes.size();++n) {
         //todo: check that the other node actually has THIS node as neighbour, validate TAG distances too
         if (fndist[n].size()==1 and (fndist[n][0].first<0 ? fndist:bndist)[llabs(fndist[n][0].first)].size()==1){
-            std::cout<<"Nodes "<<n<<" and "<<fndist[n][0].first<<" are trivial neighbours"<<std::endl;
+            //std::cout<<"Nodes "<<n<<" and "<<fndist[n][0].first<<" may be trivial neighbours"<<std::endl;
+            if (llabs(fndist[n][0].first)>n) from_to.push_back({n,fndist[n][0].first});
         }
         if (bndist[n].size()==1 and (bndist[n][0].first<0 ? fndist:bndist)[llabs(bndist[n][0].first)].size()==1){
-            std::cout<<"Nodes "<<-n<<" and "<<bndist[n][0].first<<" are trivial neighbours"<<std::endl;
+            //std::cout<<"Nodes "<<-n<<" and "<<bndist[n][0].first<<" may be trivial neighbours"<<std::endl;
+            if (llabs(bndist[n][0].first)>n) from_to.push_back({-n,bndist[n][0].first});
         }
-    }
+        //should we check also that there is only one single connection out and in the nodes?
 
+    }
+    std::cout<<from_to.size()<<"Trivial connections to attempt"<<std::endl;
+    for (auto ft:from_to) {
+        //Create all possible paths between from_to (sg function):
+        auto allpaths=ws.sg.find_all_paths_between(ft.first,ft.second,50000);
+        //  is there only one? does it contain no selected node? other conditions? Optional: check the path is covered by kmers from tags on both ends of it.
+        if (allpaths.size()!=1) continue;
+        for (auto &n: allpaths[0].nodes) if (not tagneighbours[llabs(n)].empty()) continue;
+        if (allpaths[0].nodes.empty()) continue; //XXX:these should actually be connected directly?
+        //  create a single node with the sequence of the path, migrate connections from the nodes (sg function)
+        auto new_node=ws.sg.add_node(Node(allpaths[0].get_sequence()));
+        auto old_fw=ws.sg.get_fw_links(ft.first);
+        for (auto &l:old_fw) {
+            if (l.dest==allpaths[0].nodes.front())  ws.sg.add_link(-ft.first,new_node,l.dist);
+            ws.sg.remove_link(l.source,l.dest);
+        }
+        auto old_bw=ws.sg.get_bw_links(ft.second);
+        for (auto &l:old_bw) {
+            if (l.dest==-allpaths[0].nodes.back())  ws.sg.add_link(ft.second,-new_node,l.dist);
+            ws.sg.remove_link(l.source,l.dest);
+        }
+        std::cout<<"Replaced connection between "<<ft.first<<" and "<<ft.second<<" through nodes ";
+        for (auto &n:allpaths[0].nodes) std::cout<<n<<" ";
+        std::cout<<" by a single node "<<new_node<<std::endl;
+
+
+
+    }
         /*//if successfull, create a copy of the skated path and disconnect/connect appropriately
         //TODO: check if a node with different neighbours is here
         auto walkf=tw.walk_between(n,nd[0].first);
