@@ -180,13 +180,13 @@ uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci,
         auto b0t=ws.linked_read_mappers[0].get_node_tags(b0); if (b0t.size()<min_tags) continue;
         auto b1t=ws.linked_read_mappers[0].get_node_tags(b1); if (b1t.size()<min_tags) continue;
 
-        auto cif0=ws.kci.compute_compression_for_node(f0);
+        auto cif0=ws.kci.compute_compression_for_node(f0,1);
         if (cif0<min_ci or cif0>max_ci) continue;
-        auto cif1=ws.kci.compute_compression_for_node(f1);
+        auto cif1=ws.kci.compute_compression_for_node(f1,1);
         if (cif1<min_ci or cif1>max_ci) continue;
-        auto cib0=ws.kci.compute_compression_for_node(b0);
+        auto cib0=ws.kci.compute_compression_for_node(b0,1);
         if (cib0<min_ci or cib0>max_ci) continue;
-        auto cib1=ws.kci.compute_compression_for_node(b1);
+        auto cib1=ws.kci.compute_compression_for_node(b1,1);
         if (cib1<min_ci or cib1>max_ci) continue;
 
         uint64_t aa=intersection_size(b0t,f0t);
