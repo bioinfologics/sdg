@@ -103,7 +103,7 @@ int main(int argc, char * argv[]) {
         w.print_log();
     }
     else if (0==strcmp(argv[1],"dump")) {
-        std::string filename,gfafilename;
+        std::string filename,gfafilename,nodeinfofilename;
         try {
 
             cxxopts::Options options("bsg-workspace log", "BSG workspace log");
@@ -111,7 +111,8 @@ int main(int argc, char * argv[]) {
             options.add_options()
                     ("help", "Print help")
                     ("w,workspace", "workspace filename", cxxopts::value<std::string>(filename))
-                    ("g,gfa", "gfa output prefix", cxxopts::value<std::string>(gfafilename));
+                    ("g,gfa", "gfa output prefix", cxxopts::value<std::string>(gfafilename))
+                    ("n,node_info", "node info prefix",cxxopts::value<std::string>(nodeinfofilename));
 
             auto newargc=argc-1;
             auto newargv=&argv[1];
@@ -139,6 +140,14 @@ int main(int argc, char * argv[]) {
         }
         if (not gfafilename.empty()){
             w.sg.write_to_gfa(gfafilename+".gfa");
+        }
+        if (not nodeinfofilename.empty()){
+           std::ofstream nif(nodeinfofilename+".csv");
+           std::cout<<"ID, lenght, kci"<<std::endl;
+           for (auto n=1;n<w.sg.nodes.size();++n){
+               if (w.sg.nodes[n].status==sgNodeStatus_t::sgNodeDeleted) continue;
+               nif<<n<<", "<<w.sg.nodes[n].sequence.size()<<", "<<w.kci.compute_compression_for_node(n,1)<<std::endl;
+           }
         }
 
 
