@@ -5,7 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include "cxxopts.hpp"
-#include "sglib/graph/SequenceGraph.h"
+#include "sglib/graph/SequenceGraph.hpp"
 #include "sglib/HaplotypeScorer.hpp"
 #include "sglib/PhaseScaffolder.h"
 

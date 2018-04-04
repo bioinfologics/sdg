@@ -9,7 +9,7 @@
 #include <sglib/types/KmerTypes.hpp>
 #include <sglib/types/MappingTypes.hpp>
 
-#include "sglib/graph/SequenceGraph.h"
+#include "sglib/graph/SequenceGraph.hpp"
 #include "sglib/factories/KMerIDXFactory.h"
 #include "sglib/readers/FileReader.h"
 #include "sglib/readers/SequenceGraphReader.h"

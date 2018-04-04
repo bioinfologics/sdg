@@ -6,7 +6,7 @@
 #define BSG_SEQUENCEGRAPHPATH_HPP
 
 
-#include <sglib/graph/SequenceGraph.h>
+#include <sglib/graph/SequenceGraph.hpp>
 
 class SequenceGraph;
 class SequenceGraphPath {

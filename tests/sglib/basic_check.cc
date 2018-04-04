@@ -7,7 +7,7 @@
 #include <sglib/readers/FileReader.h>
 #include <sglib/readers/SequenceGraphReader.h>
 #include <sglib/factories/KMerIDXFactory.h>
-#include <sglib/graph/SequenceGraph.h>
+#include <sglib/graph/SequenceGraph.hpp>
 
 TEST(basic_check, test_smr_from_fasta){
     sglib::OutputLogLevel = sglib::DEBUG;

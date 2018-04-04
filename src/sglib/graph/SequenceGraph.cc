@@ -16,7 +16,7 @@
 #include <tuple>
 #include <functional>
 #include <sglib/Scaffolder.hpp>
-#include <sglib/graph/SequenceGraph.h>
+#include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/mappers/LinkedReadMapper.hpp>
 #include <sglib/readers/FileReader.h>
 #include "SequenceGraphPath.hpp"
@@ -72,7 +72,7 @@ void Node::make_rc() {
     std::swap(sequence,rseq);
 };
 
-bool SequenceGraph::is_sane() {
+bool SequenceGraph::is_sane() const {
     for (auto n=0;n<nodes.size();++n){
         for (auto l:links[n]){
             bool found=false;
@@ -124,7 +124,7 @@ std::vector<Link> SequenceGraph::get_fw_links(sgNodeID_t n) const {
     return r;
 }
 
-std::vector<Link> SequenceGraph::get_bw_links(sgNodeID_t n) {
+std::vector<Link> SequenceGraph::get_bw_links(sgNodeID_t n) const {
     return get_fw_links (-n);
 }
 
@@ -562,55 +562,6 @@ std::vector<sgNodeID_t> SequenceGraph::oldnames_to_nodes(std::string _oldnames) 
     return nv;
 }
 
-std::string SequenceGraphPath::get_fasta_header() {
-    std::string h=">sgPath_";
-    for (auto &n:nodes) {
-        h += std::to_string(n)+",";
-    }
-    h.resize(h.size()-1);
-    return h;
-}
-
-std::string SequenceGraphPath::get_sequence() {
-    std::string s="";
-    sgNodeID_t pnode=0;
-    // just iterate over every node in path - contig names are converted to ids at construction
-    for (auto &n:nodes) {
-        std::string nseq;
-        if (n>0){
-            nseq=sg.nodes[n].sequence;
-        } else {
-            auto rcn=sg.nodes[-n];
-            rcn.make_rc();
-            nseq=rcn.sequence;
-        }
-        if (pnode !=0){
-            //find link between pnode' output (+pnode) and n's sink (-n)
-            auto l=sg.links[(pnode>0 ? pnode:-pnode)].begin();
-            for (;l!=sg.links[(pnode>0 ? pnode:-pnode)].end();++l)
-                if (l->source==pnode and l->dest==n) break;
-            if (l==sg.links[(pnode>0 ? pnode:-pnode)].end()) {
-                std::cout<<"can't find a link between "<<pnode<<" and "<<n<<std::endl;
-                throw std::runtime_error("path has no link");
-            } else {
-                if (l->dist>0){
-                    for (auto c=l->dist;c>0;--c) s+="N";
-                }
-                else {
-                    auto ovl=-l->dist;
-                    for (auto s1=s.c_str()+s.size()-ovl,s2=nseq.c_str();*s1!=NULL;++s1,++s2)
-                        if (*s1!=*s2)
-                            throw std::runtime_error("path overlap is invalid!");
-                    nseq.erase(0,ovl);
-                }
-            }
-        }
-        s+=nseq;
-        pnode=-n;
-    }
-    return s;
-}
-
 std::vector<SequenceGraphPath> SequenceGraph::get_all_unitigs(uint16_t min_nodes) {
     std::vector<SequenceGraphPath> unitigs;
     std::vector<bool> used(nodes.size(),false);
@@ -672,13 +623,6 @@ void SequenceGraph::consume_nodes(const SequenceGraphPath &p, const std::set<sgN
         if (ext_neigh) continue;
         remove_node(n);
     }
-}
-
-void SequenceGraphPath::reverse(){
-    std::vector<sgNodeID_t> newn;
-    for (auto n=nodes.rbegin();n<nodes.rend();++n) newn.emplace_back(-*n);
-    //std::swap(nodes,newn);
-    nodes=newn;
 }
 
 std::vector<sgNodeID_t > SequenceGraph::find_canonical_repeats() {
@@ -1006,12 +950,6 @@ std::vector<SequenceSubGraph> SequenceGraph::get_all_bubbly_subgraphs(uint32_t m
     return subgraphs;
 }
 
-uint64_t SequenceSubGraph::total_size() {
-    uint64_t t=0;
-    for (auto &n:nodes) t+=sg.nodes[llabs(n)].sequence.size();
-    return t;
-}
-
 std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size) {
     std::vector<SequenceGraphPath> current_paths,next_paths,final_paths;
     for(auto &fl:get_fw_links(from)) current_paths.emplace_back(SequenceGraphPath(*this,{fl.dest}));
@@ -1044,4 +982,11 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
         current_paths=next_paths;
     }
     return final_paths;
+}
+
+bool SequenceGraph::is_loop(std::array<sgNodeID_t, 4> nodes) {
+    for (auto j = 0; j < 3; ++j)
+        for (auto i = j + 1; i < 4; ++i)
+            if (nodes[i] == nodes[j] or nodes[i] == -nodes[j]) return true; //looping node
+    return false;
 }

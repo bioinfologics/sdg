@@ -6,7 +6,7 @@
 #define SG_SCAFFOLDER_HPP
 
 #include <sglib/mappers/LinkedReadMapper.hpp>
-#include <sglib/graph/SequenceGraph.h>
+#include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/graph/SequenceGraphPath.hpp>
 #include "PairedReadMapper.h"
 #include "KmerCompressionIndex.hpp"
@@ -29,7 +29,7 @@ public:
 
     void pop_unsupported_shortbubbles(uint64_t max_length=450);
     void expand_bubbly_subgraphs();
-    std::vector<SequenceSubGraph> get_all_bubbly_subgraphs(uint32_t maxsubgraphs=0);
+
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> get_all_haplotype_pairs(uint32_t maxpairs=0);
 
     void find_canonical_repeats();

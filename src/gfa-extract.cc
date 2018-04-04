@@ -4,7 +4,7 @@
 
 #include <string>
 #include <vector>
-#include <sglib/graph/SequenceGraph.h>
+#include <sglib/graph/SequenceGraph.hpp>
 #include <cxxopts.hpp>
 #include <sglib/filesystem/helpers.h>
 #include <sglib/logger/OutputLog.h>

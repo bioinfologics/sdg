@@ -5,9 +5,9 @@
 #ifndef SG_SEQUENCEGRAPHREADER_H
 #define SG_SEQUENCEGRAPHREADER_H
 
-#include <sglib/graph/SequenceGraph.h>
+#include <sglib/graph/SequenceGraph.hpp>
 #include "Common.h"
-#include "sglib/graph/SequenceGraph.h"
+#include "sglib/graph/SequenceGraph.hpp"
 
 /*
  * Pseudo-reader that gets its sequences from the nodes of the graph.

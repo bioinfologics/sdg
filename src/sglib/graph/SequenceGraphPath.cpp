@@ -2,7 +2,7 @@
 // Created by Luis Yanes (EI) on 22/03/2018.
 //
 
-#include <sglib/graph/SequenceGraph.h>
+#include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/graph/SequenceSubGraph.hpp>
 
 std::string SequenceGraphPath::get_fasta_header(bool use_oldnames) const {

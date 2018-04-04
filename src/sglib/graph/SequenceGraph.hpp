@@ -36,7 +36,8 @@ public:
     void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
 
     std::vector<Link> get_fw_links( sgNodeID_t n) const ;
-    std::vector<Link> get_bw_links( sgNodeID_t n);
+    std::vector<Link> get_bw_links( sgNodeID_t n) const ;
+    bool is_sane() const;
 
     /*
      * Connected components, (TODO) optionally breaking up in repeats, nodes that class as repeats will be returned on their own
@@ -93,6 +94,13 @@ public:
     void join_all_unitigs();
     std::vector<SequenceGraphPath> get_all_unitigs(uint16_t min_nodes);
     std::vector<SequenceSubGraph> get_all_tribbles();
+
+
+    void expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNodeID_t>> bw,
+                                    std::vector<std::vector<sgNodeID_t>> fw);
+    std::vector<std::pair<sgNodeID_t,int64_t>> get_distances_to(sgNodeID_t n, std::set<sgNodeID_t> destinations, int64_t max_dist);
+    std::vector<SequenceSubGraph> get_all_bubbly_subgraphs(uint32_t maxsubgraphs = 0);
+    std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size);
     // simplify --> executes expand_path on every multi-sequence unitig
 
 
@@ -119,12 +127,8 @@ public:
     void consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes);
 
     std::vector<sgNodeID_t > find_canonical_repeats();
-    bool is_loop(std::array<sgNodeID_t, 4> nodes) {
-        for (auto j = 0; j < 3; ++j)
-            for (auto i = j + 1; i < 4; ++i)
-                if (nodes[i] == nodes[j] or nodes[i] == -nodes[j]) return true; //looping node
-        return false;
-    }
+
+    bool is_loop(std::array<sgNodeID_t, 4> nodes);
 
     bool link_exists(sgNodeID_t from, sgNodeID_t to) const {
         // Look for link between starting node and the new node.

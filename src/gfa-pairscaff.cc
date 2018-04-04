@@ -4,7 +4,7 @@
 #include <sglib/Scaffolder.hpp>
 #include <sglib/KmerCompressionIndex.hpp>
 #include <sglib/GraphPartitioner.hpp>
-#include "sglib/graph/SequenceGraph.h"
+#include "sglib/graph/SequenceGraph.hpp"
 #include "cxxopts.hpp"
 
 
@@ -143,7 +143,7 @@ int main(int argc, char * argv[]) {
 
     std::cout<<std::endl<<"Testing GraphPartitioner"<<std::endl;
 
-    auto bubblies=scaff.get_all_bubbly_subgraphs();
+    auto bubblies=sg.get_all_bubbly_subgraphs();
     std::cout<<"Starting with "<<bubblies.size()<<" possible bubbles"<<std::endl;
     uint64_t solved_count=0;
     for (auto bubbly:bubblies) {

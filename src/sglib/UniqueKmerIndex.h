@@ -6,7 +6,7 @@
 #define BSG_UNIQUEKMERINDEX_H
 
 #include <sglib/types/KmerTypes.hpp>
-#include "sglib/graph/SequenceGraph.h"
+#include "sglib/graph/SequenceGraph.hpp"
 
 class UniqueKmerIndex {
 private:

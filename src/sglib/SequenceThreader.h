@@ -9,7 +9,7 @@
 #include <fstream>
 #include <vector>
 #include <set>
-#include <sglib/graph/SequenceGraph.h>
+#include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/UniqueKmerIndex.h>
 #include <sglib/factories/KMerIDXFactory.h>
 #include <sglib/logger/OutputLog.h>

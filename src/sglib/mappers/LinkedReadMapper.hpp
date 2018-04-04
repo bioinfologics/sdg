@@ -7,7 +7,7 @@
 
 #include <map>
 
-#include "sglib/graph/SequenceGraph.h"
+#include "sglib/graph/SequenceGraph.hpp"
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
 
 
