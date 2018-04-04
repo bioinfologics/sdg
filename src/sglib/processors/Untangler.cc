@@ -889,60 +889,27 @@ void Untangler::connect_neighbours(uint64_t min_size, float min_ci, float max_ci
         bndist[n] = ws.sg.get_distances_to(-n, ntn, max_distance);
     }
 
-    //Find good trivial connections: only fw or bw neighbour, corresponding, good tag intersection
-    std::cout<<"Finding disconnected tips"<<std::endl;
-    for (auto n=1;n<ws.sg.nodes.size();++n){
-        if (tagneighbours[n].empty()) continue;
-        if (ws.sg.get_fw_links(n).size()==0 or ws.sg.get_bw_links(n).size()==0) {
-            for (auto tn:tagneighbours[n]){
-                if (ws.sg.get_fw_links(tn.first).size()==0 or ws.sg.get_bw_links(tn.first).size()==0) {
-                    std::cout<<"Nodes "<<n<<" and "<<tn.first<<" have disconnected ends and have "<<tn.second<<" shared tags"<<std::endl;
-                }
-            }
-        }
-    }
-    std::cout<<"Finding trivial connections"<<std::endl;
-    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> from_to;
-    for (auto n=1;n<ws.sg.nodes.size();++n) {
-        //todo: check that the other node actually has THIS node as neighbour, validate TAG distances too
-        if (fndist[n].size()==1 and (fndist[n][0].first<0 ? fndist:bndist)[llabs(fndist[n][0].first)].size()==1){
-            //std::cout<<"Nodes "<<n<<" and "<<fndist[n][0].first<<" may be trivial neighbours"<<std::endl;
-            if (llabs(fndist[n][0].first)>n) from_to.push_back({n,fndist[n][0].first});
-        }
-        if (bndist[n].size()==1 and (bndist[n][0].first<0 ? fndist:bndist)[llabs(bndist[n][0].first)].size()==1){
-            //std::cout<<"Nodes "<<-n<<" and "<<bndist[n][0].first<<" may be trivial neighbours"<<std::endl;
-            if (llabs(bndist[n][0].first)>n) from_to.push_back({-n,bndist[n][0].first});
-        }
-        //should we check also that there is only one single connection out and in the nodes?
-
-    }
-    std::cout<<from_to.size()<<"Trivial connections to attempt"<<std::endl;
-    for (auto ft:from_to) {
-        //Create all possible paths between from_to (sg function):
-        auto allpaths=ws.sg.find_all_paths_between(ft.first,ft.second,50000);
-        //  is there only one? does it contain no selected node? other conditions? Optional: check the path is covered by kmers from tags on both ends of it.
-        if (allpaths.size()!=1) continue;
-        for (auto &n: allpaths[0].nodes) if (not tagneighbours[llabs(n)].empty()) continue;
-        if (allpaths[0].nodes.empty()) continue; //XXX:these should actually be connected directly?
-        //  create a single node with the sequence of the path, migrate connections from the nodes (sg function)
-        auto new_node=ws.sg.add_node(Node(allpaths[0].get_sequence()));
-        auto old_fw=ws.sg.get_fw_links(ft.first);
-        for (auto &l:old_fw) {
-            if (l.dest==allpaths[0].nodes.front())  ws.sg.add_link(-ft.first,new_node,l.dist);
-            ws.sg.remove_link(l.source,l.dest);
-        }
-        auto old_bw=ws.sg.get_bw_links(ft.second);
-        for (auto &l:old_bw) {
-            if (l.dest==-allpaths[0].nodes.back())  ws.sg.add_link(ft.second,-new_node,l.dist);
-            ws.sg.remove_link(l.source,l.dest);
-        }
-        std::cout<<"Replaced connection between "<<ft.first<<" and "<<ft.second<<" through nodes ";
-        for (auto &n:allpaths[0].nodes) std::cout<<n<<" ";
-        std::cout<<" by a single node "<<new_node<<std::endl;
+    //TODO: only fw or bw neighbour, corresponding, good tag intersection
+//    std::cout<<"Finding disconnected tips"<<std::endl;
+//    for (auto n=1;n<ws.sg.nodes.size();++n){
+//        if (tagneighbours[n].empty()) continue;
+//        if (ws.sg.get_fw_links(n).size()==0 or ws.sg.get_bw_links(n).size()==0) {
+//            for (auto tn:tagneighbours[n]){
+//                if (ws.sg.get_fw_links(tn.first).size()==0 or ws.sg.get_bw_links(tn.first).size()==0) {
+//                    std::cout<<"Nodes "<<n<<" and "<<tn.first<<" have disconnected ends and have "<<tn.second<<" shared tags"<<std::endl;
+//                }
+//            }
+//        }
+//    }
+    connect_neighbours_trivial(min_size,min_ci,max_ci,max_distance,tagneighbours,bndist,fndist);
+    bndist.resize(ws.sg.nodes.size());
+    fndist.resize(ws.sg.nodes.size());
+    tagneighbours.resize(ws.sg.nodes.size());
+    connect_neighbours_paths_to_same(min_size,min_ci,max_ci,max_distance,tagneighbours,bndist,fndist);
+    //std::cout<<"Analysing non-trivial connections"<<std::endl;
+    //std::cout
 
 
-
-    }
         /*//if successfull, create a copy of the skated path and disconnect/connect appropriately
         //TODO: check if a node with different neighbours is here
         auto walkf=tw.walk_between(n,nd[0].first);
@@ -959,4 +926,125 @@ void Untangler::connect_neighbours(uint64_t min_size, float min_ci, float max_ci
 
 
 
+}
+
+void Untangler::connect_neighbours_trivial(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,
+                                           const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,
+                                           const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,
+                                           const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & fndist) {
+    std::cout << "Finding trivial connections" << std::endl;
+    std::vector<std::pair<sgNodeID_t, sgNodeID_t>> from_to;
+    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
+//todo: check that the other node actually has THIS node as neighbour, validate TAG distances too
+        if (fndist[n].size() == 1 and
+            (fndist[n][0].first < 0 ? fndist : bndist)[llabs(fndist[n][0].first)].size() == 1) {
+//std::cout<<"Nodes "<<n<<" and "<<fndist[n][0].first<<" may be trivial neighbours"<<std::endl;
+            if (llabs(fndist[n][0].first) > n) from_to.push_back({n, fndist[n][0].first});
+        }
+        if (bndist[n].size() == 1 and
+            (bndist[n][0].first < 0 ? fndist : bndist)[llabs(bndist[n][0].first)].size() == 1) {
+//std::cout<<"Nodes "<<-n<<" and "<<bndist[n][0].first<<" may be trivial neighbours"<<std::endl;
+            if (llabs(bndist[n][0].first) > n) from_to.push_back({-n, bndist[n][0].first});
+        }
+//should we check also that there is only one single connection out and in the nodes?
+
+    }
+    std::cout << from_to.size() << " trivial connections to inflate" << std::endl;
+    uint64_t done = 0;
+    for (auto ft:from_to) {
+//Create all possible paths between from_to (sg function):
+        auto allpaths = ws.sg.find_all_paths_between(ft.first, ft.second, 50000);
+//  is there only one? does it contain no selected node? other conditions? Optional: check the path is covered by kmers from tags on both ends of it.
+        if (allpaths.size() != 1) continue;
+        for (auto &n: allpaths[0].nodes) if (not tagneighbours[llabs(n)].empty()) continue;
+        if (allpaths[0].nodes.empty()) continue; //XXX:these should actually be connected directly?
+//  create a single node with the sequence of the path, migrate connections from the nodes (sg function)
+        auto new_node = ws.sg.add_node(Node(allpaths[0].get_sequence()));
+        auto old_fw = ws.sg.get_fw_links(ft.first);
+        for (auto &l:old_fw) {
+            if (l.dest == allpaths[0].nodes.front()) ws.sg.add_link(-ft.first, new_node, l.dist);
+            ws.sg.remove_link(l.source, l.dest);
+        }
+        auto old_bw = ws.sg.get_bw_links(ft.second);
+        for (auto &l:old_bw) {
+            if (l.dest == -allpaths[0].nodes.back()) ws.sg.add_link(ft.second, -new_node, l.dist);
+            ws.sg.remove_link(l.source, l.dest);
+        }
+//std::cout<<"Replaced connection between "<<ft.first<<" and "<<ft.second<<" through nodes ";
+//for (auto &n:allpaths[0].nodes) std::cout<<n<<" ";
+//std::cout<<" by a single node "<<new_node<<std::endl;
+        ++done;
+
+
+    }
+    std::cout << done << " connections inflated" << std::endl;
+}
+
+void Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,
+                                           const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,
+                                           const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,
+                                           const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & fndist) {
+    std::cout << "Finding multi-path connections to same neighbour" << std::endl;
+    std::vector<std::pair<sgNodeID_t, sgNodeID_t>> from_to;
+    std::vector<sgNodeID_t> single_fw(ws.sg.nodes.size(),0),single_bw(ws.sg.nodes.size(),0);
+    //first mark outputs going into a single neighbour
+    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
+        if (fndist[n].size()>1) {
+            auto fdest = fndist[n][0].first;
+            bool fok = true;
+            for (auto fd:fndist[n]) if (fdest != fd.first) fok = false;
+            if (fok) single_fw[n] = fdest;
+        }
+        if (bndist[n].size()>1) {
+            auto bdest = bndist[n][0].first;
+            bool bok = true;
+            for (auto bd:bndist[n]) if (bdest != bd.first) bok = false;
+            if (bok) single_bw[n] = bdest;
+        }
+    }
+    //now look for happy matches where both have a single connection and it is the same one!
+    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
+        if (single_fw[n]>0 and single_fw[n]<n and single_bw[single_fw[n]]==-n) from_to.push_back({n,single_fw[n]});
+        if (single_fw[n]<0 and -single_fw[n]<n and single_fw[-single_fw[n]]==-n) from_to.push_back({n,single_fw[n]});
+        if (single_bw[n]>0 and single_bw[n]<n and single_bw[single_bw[n]]==n) from_to.push_back({-n,single_bw[n]});
+        //std::cout<<"."<<std::flush;
+        if (single_bw[n]<0 and -single_bw[n]<n and single_fw[-single_bw[n]]==n) from_to.push_back({-n,single_bw[n]});
+        //std::cout<<"."<<std::endl;
+    }
+    std::cout << from_to.size() << " multi-path connections to same neighbour to inflate" << std::endl;
+
+    uint64_t done = 0;
+    for (auto ft:from_to) {
+//Create all possible paths between from_to (sg function):
+        auto allpaths = ws.sg.find_all_paths_between(ft.first, ft.second, max_distance);
+        std::cout<<"Evaluating between "<<allpaths.size()<<" different paths to join "<<ft.first<<" and "<<ft.second<<std::endl;
+        for (auto p:allpaths){
+            for (auto &n: p.nodes) if (not tagneighbours[llabs(n)].empty()) std::cout<<"A path node has other neighbours!"<<std::endl;
+            if (p.nodes.empty()) std::cout<<"Path is empty!"<<std::endl;
+        }
+/*//  is there only one? does it contain no selected node? other conditions? Optional: check the path is covered by kmers from tags on both ends of it.
+        if (allpaths.size() != 1) continue;
+        for (auto &n: allpaths[0].nodes) if (not tagneighbours[llabs(n)].empty()) continue;
+        if (allpaths[0].nodes.empty()) continue; //XXX:these should actually be connected directly?
+*/
+/* //  create a single node with the sequence of the path, migrate connections from the nodes (sg function)
+        auto new_node = ws.sg.add_node(Node(allpaths[0].get_sequence()));
+        auto old_fw = ws.sg.get_fw_links(ft.first);
+        for (auto &l:old_fw) {
+            if (l.dest == allpaths[0].nodes.front()) ws.sg.add_link(-ft.first, new_node, l.dist);
+            ws.sg.remove_link(l.source, l.dest);
+        }
+        auto old_bw = ws.sg.get_bw_links(ft.second);
+        for (auto &l:old_bw) {
+            if (l.dest == -allpaths[0].nodes.back()) ws.sg.add_link(ft.second, -new_node, l.dist);
+            ws.sg.remove_link(l.source, l.dest);
+        }*/
+//std::cout<<"Replaced connection between "<<ft.first<<" and "<<ft.second<<" through nodes ";
+//for (auto &n:allpaths[0].nodes) std::cout<<n<<" ";
+//std::cout<<" by a single node "<<new_node<<std::endl;
+        //++done;
+
+
+    }
+    //std::cout << done << " connections inflated" << std::endl;
 }

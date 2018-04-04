@@ -879,7 +879,11 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
                 //else get fw links, compute distances for each, and if not >max_dist add to nodes
             else {
                 for (auto l:get_fw_links(p.nodes.back())){
-                    if (std::find(p.nodes.begin(),p.nodes.end(),l.dest)!=p.nodes.end()) continue;
+                    if (std::find(p.nodes.begin(),p.nodes.end(),l.dest)!=p.nodes.end()) {
+                        std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
+                        return {};
+                        //continue;
+                    }
                     next_paths.push_back(p);
                     next_paths.back().nodes.push_back(l.dest);
                     if (next_paths.back().get_sequence().size()>max_size) next_paths.pop_back();

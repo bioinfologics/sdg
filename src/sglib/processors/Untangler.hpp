@@ -35,6 +35,15 @@ public:
     std::vector<SequenceGraphPath> combine( std::vector<SequenceGraphPath> parallel_paths1, std::vector<SequenceGraphPath> parallel_paths2 );
 
     void connect_neighbours(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance);
+    void connect_neighbours_trivial(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,
+                                     const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,
+                                     const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,
+                                     const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & fndist);
+
+    void connect_neighbours_paths_to_same(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,
+                                          const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,
+                                          const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,
+                                          const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & fndist);
 };
 
 
