@@ -168,51 +168,6 @@ if (BUILD_COV)
                       LINK_FLAGS    "--coverage")
 endif()
 
-install(TARGETS sequence_graph DESTINATION lib)
-install(FILES
-            src/utilities/matrix.h
-            src/sglib/datastores/LinkedReadsDatastore.hpp
-            src/sglib/factories/ContigBlockFactory.h
-            src/sglib/factories/ContigLink.h
-            src/sglib/factories/KMerFactory.h
-            src/sglib/factories/KMerIDXFactory.h
-            src/sglib/graph/SequenceGraph.h
-            src/sglib/PairedReadMapper.hpp
-            src/sglib/HaplotypeScorer.hpp
-            src/sglib/SequenceGraphJournal.hpp
-            src/sglib/filesystem/helpers.h
-            src/sglib/PhaseScaffolder.h
-            src/sglib/KmerCompressionIndex.hpp
-            src/sglib/GraphPartitioner.hpp
-            src/sglib/logger/OutputLog.h
-            src/sglib/datastores/LinkedReadsDatastore.hpp
-            src/sglib/mappers/LinkedReadMapper.hpp
-            src/sglib/processors/TagWalker.hpp
-            src/sglib/processors/Untangler.hpp
-            src/sglib/readers/Common.h
-            src/sglib/readers/FileReader.h
-            src/sglib/readers/SequenceGraphReader.h
-            src/sglib/GraphPartitioner.hpp
-            src/sglib/HaplotypeScorer.hpp
-            src/sglib/KmerCompressionIndex.hpp
-            src/sglib/PairedReadMapper.hpp
-            src/sglib/PhaseScaffolder.h
-            src/sglib/Scaffolder.hpp
-            src/sglib/SequenceGraph.hpp
-            src/sglib/SequenceGraphJournal.hpp
-            src/sglib/SequenceThreader.h
-            src/sglib/SMR.h
-            src/sglib/UniqueKmerIndex.h
-            src/sglib/WorkSpace.hpp
-            src/sglib/aligners/algorithms/SmithWaterman.h
-            src/sglib/aligners/submat/SubstitutionMatrix.h
-            src/sglib/processors/PathExplorer.h
-            src/sglib/datastores/LongReadsDatastore.hpp
-        DESTINATION include
-        )
-
-
-
 add_executable(bsg-datastore
         src/bsg-datastore.cc
         )
@@ -316,5 +271,8 @@ install(TARGETS
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib/static)
+
+install(TARGETS sequence_graph DESTINATION lib)
+
 install(DIRECTORY src/sglib
         DESTINATION include)
