@@ -72,6 +72,21 @@ void Node::make_rc() {
     std::swap(sequence,rseq);
 };
 
+bool SequenceGraph::is_sane() {
+    for (auto n=0;n<nodes.size();++n){
+        for (auto l:links[n]){
+            bool found=false;
+            for (auto &dl:links[llabs(l.dest)]) {
+                if (dl.dest == l.source and dl.source == l.dest){
+                    found=true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+    }
+}
+
 sgNodeID_t SequenceGraph::add_node(Node n) {
     nodes.emplace_back(n);
     links.emplace_back();
@@ -547,6 +562,55 @@ std::vector<sgNodeID_t> SequenceGraph::oldnames_to_nodes(std::string _oldnames) 
     return nv;
 }
 
+std::string SequenceGraphPath::get_fasta_header() {
+    std::string h=">sgPath_";
+    for (auto &n:nodes) {
+        h += std::to_string(n)+",";
+    }
+    h.resize(h.size()-1);
+    return h;
+}
+
+std::string SequenceGraphPath::get_sequence() {
+    std::string s="";
+    sgNodeID_t pnode=0;
+    // just iterate over every node in path - contig names are converted to ids at construction
+    for (auto &n:nodes) {
+        std::string nseq;
+        if (n>0){
+            nseq=sg.nodes[n].sequence;
+        } else {
+            auto rcn=sg.nodes[-n];
+            rcn.make_rc();
+            nseq=rcn.sequence;
+        }
+        if (pnode !=0){
+            //find link between pnode' output (+pnode) and n's sink (-n)
+            auto l=sg.links[(pnode>0 ? pnode:-pnode)].begin();
+            for (;l!=sg.links[(pnode>0 ? pnode:-pnode)].end();++l)
+                if (l->source==pnode and l->dest==n) break;
+            if (l==sg.links[(pnode>0 ? pnode:-pnode)].end()) {
+                std::cout<<"can't find a link between "<<pnode<<" and "<<n<<std::endl;
+                throw std::runtime_error("path has no link");
+            } else {
+                if (l->dist>0){
+                    for (auto c=l->dist;c>0;--c) s+="N";
+                }
+                else {
+                    auto ovl=-l->dist;
+                    for (auto s1=s.c_str()+s.size()-ovl,s2=nseq.c_str();*s1!=NULL;++s1,++s2)
+                        if (*s1!=*s2)
+                            throw std::runtime_error("path overlap is invalid!");
+                    nseq.erase(0,ovl);
+                }
+            }
+        }
+        s+=nseq;
+        pnode=-n;
+    }
+    return s;
+}
+
 std::vector<SequenceGraphPath> SequenceGraph::get_all_unitigs(uint16_t min_nodes) {
     std::vector<SequenceGraphPath> unitigs;
     std::vector<bool> used(nodes.size(),false);
@@ -574,9 +638,6 @@ std::vector<SequenceGraphPath> SequenceGraph::get_all_unitigs(uint16_t min_nodes
 
 void SequenceGraph::join_all_unitigs() {
     for (auto p:get_all_unitigs(2)){
-        std::cout << "Unitig found: ";
-        for (auto n:p.nodes) std::cout<< n<< " ";
-        std::cout<<std::endl;
         join_path(p);
     }
 }
@@ -592,6 +653,7 @@ void SequenceGraph::join_path(SequenceGraphPath p, bool consume) {
     sgNodeID_t new_node=add_node(Node(p.get_sequence()));
     //TODO:check, this may have a problem with a circle
     for (auto l:get_bw_links(p.nodes.front())) add_link(new_node,l.dest,l.dist);
+
     for (auto l:get_fw_links(p.nodes.back())) add_link(-new_node,l.dest,l.dist);
 
     //TODO: update read mappings
@@ -610,6 +672,13 @@ void SequenceGraph::consume_nodes(const SequenceGraphPath &p, const std::set<sgN
         if (ext_neigh) continue;
         remove_node(n);
     }
+}
+
+void SequenceGraphPath::reverse(){
+    std::vector<sgNodeID_t> newn;
+    for (auto n=nodes.rbegin();n<nodes.rend();++n) newn.emplace_back(-*n);
+    //std::swap(nodes,newn);
+    nodes=newn;
 }
 
 std::vector<sgNodeID_t > SequenceGraph::find_canonical_repeats() {
@@ -805,3 +874,174 @@ SequenceGraph::explore_nodes(std::vector<std::string> &nodes, uint size_limit, u
 }
 
 
+
+
+
+void SequenceGraph::expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNodeID_t>> bw,
+                                std::vector<std::vector<sgNodeID_t>> fw) {
+    if (nodeID<0) {
+        //std::cout<<"WARNING: ERROR: expand_node only accepts positive nodes!"<<std::endl;
+        //return;
+        nodeID=-nodeID;
+        std::swap(bw,fw);
+        for (auto &x:bw) for (auto &xx:x) xx=-xx;
+        for (auto &x:fw) for (auto &xx:x) xx=-xx;
+    }
+    //TODO: check all inputs are included in bw and all outputs are included in fw, only once
+    auto orig_links=links[nodeID];
+    std::vector<std::vector<Link>> new_links;
+    new_links.resize(bw.size());
+    for (auto l:orig_links){
+        for (auto in=0;in<bw.size();++in){
+            if (l.source==nodeID and std::find(bw[in].begin(),bw[in].end(),l.dest)!=bw[in].end()) {
+                new_links[in].push_back(l);
+                break;
+            }
+        }
+        for (auto in=0;in<fw.size();++in){
+            if (l.source==-nodeID and std::find(fw[in].begin(),fw[in].end(),l.dest)!=fw[in].end()) {
+                new_links[in].push_back(l);
+                break;
+            }
+        }
+    }
+
+    //Create all extra copies of the node.
+
+
+    //node_copies.push_back(nodeID);
+    for (auto in=0;in<new_links.size();++in){
+        auto new_node=add_node(Node(nodes[llabs(nodeID)].sequence));
+        for (auto l:new_links[in]) {
+            add_link((l.source>0 ? new_node:-new_node),l.dest,l.dist);
+        }
+    }
+    remove_node(nodeID);
+
+}
+
+std::vector<std::pair<sgNodeID_t,int64_t>> SequenceGraph::get_distances_to(sgNodeID_t n,
+                                                                            std::set<sgNodeID_t> destinations,
+                                                                            int64_t max_dist) {
+    std::vector<std::pair<sgNodeID_t,int64_t>> current_nodes,next_nodes,final_nodes;
+    current_nodes.push_back({n,-nodes[llabs(n)].sequence.size()});
+    int rounds=20;
+    while (not current_nodes.empty() and --rounds>0){
+        //std::cout<<"starting round of context expansion, current nodes:  ";
+        //for (auto cn:current_nodes) std::cout<<cn.first<<"("<<cn.second<<")  ";
+        //std::cout<<std::endl;
+        next_nodes.clear();
+        for (auto nd:current_nodes){
+            //if node is a destination add it to final nodes
+            if (destinations.count(nd.first)>0 or destinations.count(-nd.first)>0){
+                final_nodes.push_back(nd);
+            }
+            //else get fw links, compute distances for each, and if not >max_dist add to nodes
+            else {
+                for (auto l:get_fw_links(nd.first)){
+                    int64_t dist=nd.second;
+                    dist+=nodes[llabs(nd.first)].sequence.size();
+                    dist+=l.dist;
+                    //std::cout<<"candidate next node "<<l.dest<<" at distance "<<dist<<std::endl;
+                    if (dist<=max_dist) next_nodes.push_back({l.dest,dist});
+                }
+            }
+        }
+        current_nodes=next_nodes;
+    }
+    return final_nodes;
+}
+
+std::vector<SequenceSubGraph> SequenceGraph::get_all_bubbly_subgraphs(uint32_t maxsubgraphs) {
+    std::vector<SequenceSubGraph> subgraphs;
+    std::vector<bool> used(nodes.size(),false);
+    /*
+     * the loop always keep the first and the last elements as c=2 collapsed nodes.
+     * it starts with a c=2 node, and goes thorugh all bubbles fw, then reverts the subgraph and repeats
+     */
+    SequenceSubGraph subgraph(*this);
+    for (auto n=1;n<nodes.size();++n){
+        if (used[n] or nodes[n].status==sgNodeDeleted) continue;
+        subgraph.nodes.clear();
+
+        subgraph.nodes.push_back(n);
+        bool circular=false;
+        //two passes: 0->fw, 1->bw, path is inverted twice, so still n is +
+        for (auto pass=0; pass<2; ++pass) {
+            //while there's a possible bubble fw.
+            for (auto fn = get_fw_links(subgraph.nodes.back()); fn.size() == 2; fn = get_fw_links(subgraph.nodes.back())) {
+                //if it is not a real bubble, get out.
+                if (get_bw_links(fn[0].dest).size()!=1 or get_bw_links(fn[0].dest).size()!=1) break;
+                auto fl1=get_fw_links(fn[0].dest);
+                if (fl1.size()!=1) break;
+                auto fl2=get_fw_links(fn[1].dest);
+                if (fl2.size()!=1) break;
+                if (fl2[0].dest!=fl1[0].dest) break;
+                auto next_end=fl2[0].dest;
+                //all conditions met, update subgraph
+                if (used[llabs(fn[0].dest)] or used[llabs(fn[1].dest)] or used[llabs(next_end)]) {
+                    circular=true;
+                    break;
+                }
+                subgraph.nodes.push_back(fn[0].dest);
+                subgraph.nodes.push_back(fn[1].dest);
+                subgraph.nodes.push_back(next_end);
+                used[llabs(fn[0].dest)]=true;
+                used[llabs(fn[1].dest)]=true;
+                used[llabs(next_end)]=true;
+                used[n]=true;
+            }
+            SequenceSubGraph new_subgraph(*this);
+            for (auto it=subgraph.nodes.rbegin();it<subgraph.nodes.rend();++it) new_subgraph.nodes.push_back(-*it);
+            std::swap(new_subgraph.nodes,subgraph.nodes);
+        }
+        if (subgraph.nodes.size()>6 and not circular) {
+            subgraphs.push_back(subgraph);
+            if (subgraphs.size()==maxsubgraphs) break;
+            //std::cout<<"Bubbly path found: ";
+            //for (auto &n:subgraph) std::cout<<"  "<<n<<" ("<<sg.nodes[(n>0?n:-n)].sequence.size()<<"bp)";
+            //std::cout<<std::endl;
+        }
+    }
+    return subgraphs;
+}
+
+uint64_t SequenceSubGraph::total_size() {
+    uint64_t t=0;
+    for (auto &n:nodes) t+=sg.nodes[llabs(n)].sequence.size();
+    return t;
+}
+
+std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size) {
+    std::vector<SequenceGraphPath> current_paths,next_paths,final_paths;
+    for(auto &fl:get_fw_links(from)) current_paths.emplace_back(SequenceGraphPath(*this,{fl.dest}));
+    int rounds=20;
+    while (not current_paths.empty() and --rounds>0){
+        //std::cout<<"starting round of context expansion, current nodes:  ";
+        //for (auto cn:current_nodes) std::cout<<cn.first<<"("<<cn.second<<")  ";
+        //std::cout<<std::endl;
+        next_paths.clear();
+        for (auto &p:current_paths){
+            //if node is a destination add it to final nodes
+            if (p.nodes.back()==to) {
+                final_paths.push_back(p);
+                final_paths.back().nodes.pop_back();
+            }
+                //else get fw links, compute distances for each, and if not >max_dist add to nodes
+            else {
+                for (auto l:get_fw_links(p.nodes.back())){
+                    if (std::find(p.nodes.begin(),p.nodes.end(),l.dest)!=p.nodes.end()) {
+                        std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
+                        return {};
+                        //continue;
+                    }
+                    next_paths.push_back(p);
+                    next_paths.back().nodes.push_back(l.dest);
+                    if (next_paths.back().get_sequence().size()>max_size) next_paths.pop_back();
+                }
+            }
+        }
+        current_paths=next_paths;
+    }
+    return final_paths;
+}

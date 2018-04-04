@@ -94,3 +94,35 @@ void WorkSpace::print_log() {
         std::cout<<buf<<" ["<<l.bsg_version<<"]: "<<l.log_text<<std::endl;
     }
 }
+
+std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint32_t max_size, uint32_t min_tags, uint32_t max_tags,
+                                         float min_ci, float max_ci) {
+    std::vector<sgNodeID_t> nodes;
+    sglib::OutputLog()<<"Selecting nodes: " << min_size << "-" << max_size << " bp " <<
+                      min_tags << "-" << max_tags << " tags " << min_ci << "-" << max_ci << " CI"<<std::endl;
+    uint64_t tnodes=0,ttags=0;
+    nodes.reserve(sg.nodes.size());
+#pragma omp parallel
+    {
+        std::vector<sgNodeID_t> thread_nodes;
+#pragma omp for schedule(static, 100)
+        for (auto n=1;n<sg.nodes.size();++n) {
+            if (sg.nodes[n].sequence.size() < min_size) continue;
+            if (sg.nodes[n].sequence.size() > max_size) continue;
+            if (sg.get_fw_links(n).size() != 1 or sg.get_bw_links(n).size() != 1) continue;
+            auto ntags = linked_read_mappers[0].get_node_tags(n);
+            if (ntags.size() < min_tags or ntags.size() > max_tags) continue;
+            auto ci = kci.compute_compression_for_node(n, 1);
+            if (ci < min_ci or ci > max_ci) continue;
+            ++tnodes;
+            thread_nodes.emplace_back(n);
+            ttags += ntags.size();
+        }
+
+#pragma omp critical(collect_selected_nodes)
+        nodes.insert(nodes.end(),thread_nodes.begin(),thread_nodes.end());
+
+    }
+    sglib::OutputLog()<< "Selected "<<tnodes<<" / "<<sg.nodes.size()<<" with a total "<<ttags<<" tags"<< std::endl;
+    return nodes;
+}

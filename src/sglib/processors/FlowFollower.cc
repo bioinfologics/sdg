@@ -269,26 +269,7 @@ void FlowFollower::create_flows() {
 }
 
 
-void FlowFollower::select_from_all_nodes(uint32_t min_size, uint32_t max_size, uint16_t min_tags, uint16_t max_tags,
-                                         float min_ci, float max_ci) {
-    uint64_t tnodes=0,ttags=0;
-    nodes.clear();
-    for (auto n=1;n<ws.sg.nodes.size();++n){
-        if (ws.sg.nodes[n].sequence.size()<min_size) continue;
-        if (ws.sg.nodes[n].sequence.size()>max_size) continue;
-        if (ws.sg.get_fw_links(n).size()!=1 or ws.sg.get_bw_links(n).size()!=1 ) continue;
-        auto ntags=ws.linked_read_mappers[0].get_node_tags(n);
-        if (ntags.size()<min_tags or ntags.size()>max_tags) continue;
-        auto ci=ws.kci.compute_compression_for_node(n,1);
-        if (ci<min_ci or ci>max_ci) continue;
-        ++tnodes;
-        nodes.emplace(n);
-        ttags += ntags.size();
 
-
-    }
-    std::cout << "Selected "<<tnodes<<" / "<<ws.sg.nodes.size()<<" with a total "<<ttags<<" tags"<< std::endl;
-}
 
 /**
  * @brief sorts nodes so consecutive nodes share tags, then uses a tag kmer cache to speed up flows.
@@ -328,6 +309,7 @@ void FlowFollower::create_flows_fast() {
     sglib::OutputLog()<<" DONE!"<<nodesp<<" nodes processed, "<<validflows<<" informative flows"<<std::endl;
     //Next create a PathsCollection in the graph
     sglib::OutputLog()<<"Creating paths collection"<<std::endl;
+    ws.path_datastores.clear();
     ws.path_datastores.emplace_back(ws.sg);
     for (auto ff:fflows){
         if (ff.nodes.size()<3) continue;
@@ -355,10 +337,10 @@ SequenceGraphPath FlowFollower::skate_from_node(sgNodeID_t n) {
         while (true) {
             auto fwls = path.get_next_links();
             if (fwls.empty()) break;
-            std::cout<<"Adding node "<<path.nodes.back()<<std::endl;
+            //std::cout<<"Adding node "<<path.nodes.back()<<std::endl;
             if (flows.count(path.nodes.back())>0 and flows[path.nodes.back()].nodes.size()>3) {
                 used_flows.push_back({flows[path.nodes.back()], true, 0});
-                std::cout<<"Node has a flow with "<<flows[path.nodes.back()].nodes.size()<<" nodes, added as #"<<used_flows.size()-1<<std::endl;
+                //std::cout<<"Node has a flow with "<<flows[path.nodes.back()].nodes.size()<<" nodes, added as #"<<used_flows.size()-1<<std::endl;
             }
             sgNodeID_t next = 0;
             for (auto i=0;i<used_flows.size();++i) {
@@ -367,7 +349,7 @@ SequenceGraphPath FlowFollower::skate_from_node(sgNodeID_t n) {
                 if (!f.active) continue;
                 if (f.pos == f.flow.nodes.size() - 1) {
                     f.active = false;
-                    std::cout<<"Flow #"<<i<<" closed"<<std::endl;
+                    //std::cout<<"Flow #"<<i<<" closed"<<std::endl;
                     continue;
                 }
 
@@ -399,6 +381,9 @@ std::vector<SequenceGraphPath> FlowFollower::skate_from_all(int min_node_flow, u
     std::vector<sgNodeID_t> nv;
     nv.reserve(nodes.size());
     for (auto &n:nodes)nv.push_back(n);
+    if (nv.empty()){
+        for (auto i=1;i<ws.sg.nodes.size();++i) nv.emplace_back(i);
+    }
 //#pragma omp parallel for schedule(static,1)
     for (auto i=0;i<nv.size();++i){
         auto n=nv[i];
@@ -422,4 +407,19 @@ std::vector<SequenceGraphPath> FlowFollower::skate_from_all(int min_node_flow, u
     r.erase(std::unique(r.begin(),r.end()),r.end());
     std::cout<<"Skate from all finished."<<std::endl;
     return r;
+}
+
+void FlowFollower::load_flows_from_paths(const PathsDatastore & pd) {
+    for (auto &path:pd.paths){
+        if (path.nodes.size()>3) {
+            Flow f;
+            f.nodes=path.nodes;
+            flows[path.nodes[0]] = f;
+        }
+    }
+}
+
+void FlowFollower::set_nodes(std::vector<sgNodeID_t> new_nodes) {
+    nodes.clear();
+    nodes.insert(new_nodes.begin(),new_nodes.end());
 }

@@ -126,10 +126,10 @@ int main(int argc, char * argv[]) {
 //                region_nodes.insert(h.second);
         ws.add_log_entry("Creating paths from linked reads, starting nodes: "+
                          std::to_string(select_min_size)+ "-" + std::to_string(select_max_size) + " bp "+
-                         std::to_string(select_min_tags)+"-"+std::to_string(select_min_tags)+ " tags " +
+                         std::to_string(select_min_tags)+"-"+std::to_string(select_max_tags)+ " tags " +
                          std::to_string(select_min_ci)+ "-" + std::to_string(select_max_ci) + " CI");
-        ff.select_from_all_nodes(select_min_size,select_max_size,select_min_tags, select_max_tags,
-                                 select_min_ci,select_max_ci);
+        ff.set_nodes(ws.select_from_all_nodes(select_min_size,select_max_size,select_min_tags, select_max_tags,
+                                 select_min_ci,select_max_ci));
         //ff.create_flows();
         ff.create_flows_fast();
         ws.add_log_entry(std::to_string(ws.path_datastores.back().paths.size())+"flows stored in new paths datastore #"+std::to_string(ws.path_datastores.size()-1));

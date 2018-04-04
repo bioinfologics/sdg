@@ -237,7 +237,7 @@ void LinkedReadsDatastore::dump_tag_occupancy_histogram(std::string filename) {
         if (oh[i]) tohf<<i<<","<<oh[i]<<std::endl;
 }
 
-std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min_tag_cov, std::unordered_set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg) {
+std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg) {
     class StreamKmerFactory : public  KMerFactory {
     public:
         explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
@@ -327,7 +327,7 @@ void BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {
     }
 }
 
-std::unordered_set<uint64_t> BufferedTagKmerizer::get_tags_kmers(int min_tag_cov, std::unordered_set<bsg10xTag> tags) {
+std::unordered_set<uint64_t> BufferedTagKmerizer::get_tags_kmers(int min_tag_cov, std::set<bsg10xTag> tags) {
     counts.clear();
     for (auto t:tags) get_tag_kmers(t);
     std::sort(counts.begin(),counts.end());
