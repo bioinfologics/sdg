@@ -12,13 +12,33 @@
 #include <sglib/mappers/LongReadMapper.hpp>
 #include "cxxopts.hpp"
 
+#include <sglib/utilities/omp_safe.hpp>
 #include <vector>
 #include <sglib/mappers/minimap2/minimap.h>
 
 void map_reads(mm_mapopt_t *opt, mm_idx_t *mi, LongReadsDatastore &datastore, std::unordered_set<uint32_t> readIDs) {
+    {
+        std::ofstream matchHeader("header.paf");
+        matchHeader << "read_id\t"
+                    << "read_name\t"
+                    << "read_len\t"
+                    << "read_nmap\t"
+                    << "node_id\t"
+                    << "node_name\t"
+                    << "node_len\t"
+                    << "node_start\t"
+                    << "node_end\t"
+                    << "read_start\t"
+                    << "read_end\t"
+                    << "strand\t"
+                    << "nmatches\t"
+                    << "blocklen\t"
+                    << "mapq\n";
+    }
 #pragma omp parallel
 {
     mm_tbuf_t *buf = mm_tbuf_init();
+    std::ofstream matchOutput(std::string("thread_")+std::to_string(omp_get_thread_num())+std::string(".paf"));
 #pragma omp for
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
             std::string read_seq(datastore.get_read_sequence(readID));
@@ -27,21 +47,22 @@ void map_reads(mm_mapopt_t *opt, mm_idx_t *mi, LongReadsDatastore &datastore, st
             int n_regs0;
             mm_reg1_t *regs0 = mm_map(mi, read_len, read_seq.data(), &n_regs0, buf, opt, read_name.data());
             for (int j = 0; j < n_regs0; ++j) {
-                std::cout << "MAPPING\t"
-                          << "\t" << read_name
-                          << "\t" << read_len
-                          << "\t" << j + 1
-                          << "\t" << mi->seq[regs0[j].rid].name
-                          << "\t" << mi->seq[regs0[j].rid].len
-                          << "\t" << regs0[j].rs
-                          << "\t" << regs0[j].re
-                          << "\t" << regs0[j].qs
-                          << "\t" << regs0[j].qe
-                          << "\t" << "+-"[regs0[j].rev]
-                          << "\t" << regs0[j].mlen
-                          << "\t" << regs0[j].blen
-                          << "\t" << regs0[j].mapq
-                          << "\n";
+                matchOutput << readID
+                        << "\t" << read_name
+                        << "\t" << read_len
+                        << "\t" << j + 1
+                        << "\t" << regs0[j].rid
+                        << "\t" << mi->seq[regs0[j].rid].name
+                        << "\t" << mi->seq[regs0[j].rid].len
+                        << "\t" << regs0[j].rs
+                        << "\t" << regs0[j].re
+                        << "\t" << regs0[j].qs
+                        << "\t" << regs0[j].qe
+                        << "\t" << "+-"[regs0[j].rev]
+                        << "\t" << regs0[j].mlen
+                        << "\t" << regs0[j].blen
+                        << "\t" << regs0[j].mapq
+                        << "\n";
             }
             for (int i = 0; i<n_regs0;i++) free(regs0[i].p);
             free(regs0);
