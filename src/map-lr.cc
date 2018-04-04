@@ -12,6 +12,55 @@
 #include <sglib/mappers/LongReadMapper.hpp>
 #include "cxxopts.hpp"
 
+#include <vector>
+#include <sglib/mappers/minimap2/minimap.h>
+
+void map_reads(mm_mapopt_t *opt, mm_idx_t *mi, LongReadsDatastore &datastore, std::unordered_set<uint32_t> readIDs) {
+#pragma omp parallel
+{
+    mm_tbuf_t *buf = mm_tbuf_init();
+#pragma omp for
+        for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
+            std::string read_seq(datastore.get_read_sequence(readID));
+            std::string read_name(std::to_string(readID));
+            int read_len(static_cast<int>(read_seq.length()));
+            int n_regs0;
+            mm_reg1_t *regs0 = mm_map(mi, read_len, read_seq.data(), &n_regs0, buf, opt, read_name.data());
+            for (int j = 0; j < n_regs0; ++j)
+                    std::cerr << "MAPPING\t" << read_name << "\t" << j
+                            << "\t" << mi->seq[regs0[j].rid].name
+                            << "\t" << regs0[j].rs
+                            << "\t" << regs0[j].re
+                            << "\t" << regs0[j].qs
+                            << "\t" << regs0[j].qe
+                            << "\t" << regs0[j].mlen
+                            << "\n";
+
+            for (int i = 0; i<n_regs0;i++) free(regs0[i].p);
+            free(regs0);
+        }
+    mm_tbuf_destroy(buf);
+}
+}
+
+void map_using_minimap(uint8_t k, SequenceGraph &sg, std::string &long_reads) {
+    std::vector<const char *> names(sg.nodes.size());
+    std::vector<const char *> seqs(sg.nodes.size());
+    for (std::vector<std::string>::size_type i = 1; i < seqs.size(); i++) {
+        names[i] = sg.oldnames[i].data();
+        seqs[i] = sg.nodes[i].sequence.data();
+    }
+
+    mm_mapopt_t opt;
+    mm_mapopt_init(&opt);
+    mm_idx_t *graph_index = mm_idx_str(15, k, 0, 14, static_cast<int>(seqs.size()-1), &seqs[1], &names[1]);
+
+    mm_mapopt_update(&opt, graph_index);
+
+    LongReadsDatastore datastore(long_reads, "reads_index.idx");
+    map_reads(&opt, graph_index, datastore, {});
+}
+
 void map_using_unique_kmers(uint8_t k, SequenceGraph &sg, std::string &output_prefix, std::string &long_reads){
     uint16_t min_matches = 10;
 
@@ -112,7 +161,6 @@ int main(int argc, char * argv[]) {
         }
         if (long_reads.empty()) {
             throw cxxopts::OptionException(" please specify a long reads file");
-
         }
     } catch (const cxxopts::OptionException &e) {
         std::cout << "Error parsing options: " << e.what() << std::endl;
@@ -132,10 +180,10 @@ int main(int argc, char * argv[]) {
     max_mem_gb *= GB;
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
-    if (0) {
-        map_using_unique_kmers(K, sg, output_prefix, long_reads);
-    }
     if (1) {
+        map_using_minimap(K, sg, long_reads);
+    }
+    if (0) {
         map_using_sketches(K, sg, output_prefix, long_reads);
     }
 
