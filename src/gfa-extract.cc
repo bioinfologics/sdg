@@ -28,7 +28,7 @@ int main(int argc, char * argv[]) {
             ("h,help", "Print help", cxxopts::value<std::string>()->implicit_value(""), "")
             ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename), "file path")
             ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix), "path")
-            ("log_level", "output log level", cxxopts::value<unsigned int>(log_level)->default_value("4"), "uint")
+            ("log_level", "output log level", cxxopts::value<unsigned int>(log_level)->default_value("0"), "uint")
             ("s,size_limit", "size limit in base pairs for region to explore", cxxopts::value<unsigned int>(size_limit)->default_value("1000"), "uint")
             ("e,edge_limit", "limit number of edges to explore", cxxopts::value<unsigned int>(edge_limit)->default_value("10"), "uint")
             ("n,nodes", "use the following node as a seed (this option can be specified multiple times)", cxxopts::value<std::string>(nodes_input), "string")
@@ -61,7 +61,7 @@ int main(int argc, char * argv[]) {
         exit(1);
     }
 
-    sglib::OutputLogLevel = sglib::LogLevels::DEBUG;
+    sglib::OutputLogLevel = static_cast<sglib::LogLevels>(log_level);
 
     sglib::OutputLog() << "Welcome to gfa-extract" << std::endl << std::endl;
 
