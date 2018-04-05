@@ -209,6 +209,10 @@ int main(int argc, char * argv[]) {
     max_mem_gb *= GB;
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
+
+    auto loopy_nodes = sg.get_loopy_nodes();
+    for (const auto &node:loopy_nodes) std::cout << node << "\t" << sg.oldnames[node] << "\n";
+    return 0;
     if (1) {
         map_using_minimap(K, sg, long_reads);
     }

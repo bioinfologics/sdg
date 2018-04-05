@@ -48,6 +48,13 @@ public:
     std::vector<std::vector<sgNodeID_t >> find_bubbles(std::vector<sgNodeID_t>);
 
     /**
+    * This function returns all nodes that can be reached again if following the links of the next
+    * _complexity_ nodes
+    * @param complexity Maximum number of nodes in the loop complexity
+    * @return IDs of all the nodes involved in loops
+    */
+    std::vector<sgNodeID_t > get_loopy_nodes(uint complexity=3);
+    /**
      * Finds all reachable nodes within size_limit and edge_limit from the specified node, returns a vector with edge and base distance
      * foreach reachable node.
      * @param node Node to start exploring

@@ -715,7 +715,7 @@ SequenceGraph::depth_first_search(const nodeVisitor seed, unsigned int size_limi
 
     std::vector<nodeVisitor > result;
     for (const auto &v:visited_set) {
-        if (v.node == seed.node) continue;
+        if (v.path_length == 0) continue; // If node is seed, do not add it
         result.push_back(v);
     }
     return result;
@@ -989,4 +989,27 @@ bool SequenceGraph::is_loop(std::array<sgNodeID_t, 4> nodes) {
         for (auto i = j + 1; i < 4; ++i)
             if (nodes[i] == nodes[j] or nodes[i] == -nodes[j]) return true; //looping node
     return false;
+}
+
+std::vector<sgNodeID_t> SequenceGraph::get_loopy_nodes(uint complexity) {
+    std::vector<sgNodeID_t> result;
+
+#pragma omp parallel for
+    for (sgNodeID_t n=1; n < nodes.size(); ++n) {
+        auto fw_neigh_nodes = depth_first_search({n,0,0},0,complexity);
+        auto bw_neigh_nodes = depth_first_search({-n,0,0},0,complexity);
+
+        std::set<sgNodeID_t > fwd;
+        std::set<sgNodeID_t > bwd;
+        for (const auto &vn:fw_neigh_nodes) fwd.insert(std::abs(vn.node));
+        for (const auto &vn:bw_neigh_nodes) bwd.insert(std::abs(vn.node));
+        std::set<sgNodeID_t > tIntersect;
+        std::set_intersection(fwd.begin(),fwd.end(),bwd.begin(),bwd.end(),std::inserter(tIntersect,tIntersect.begin()));
+        if (!tIntersect.empty()) {
+#pragma omp critical (loopy_nodes)
+            result.push_back(n);
+        }
+    }
+
+    return result;
 }
