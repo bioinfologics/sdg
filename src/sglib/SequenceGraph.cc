@@ -880,7 +880,7 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
             else {
                 for (auto l:get_fw_links(p.nodes.back())){
                     if (std::find(p.nodes.begin(),p.nodes.end(),l.dest)!=p.nodes.end()) {
-                        std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
+                        //std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
                         return {};
                         //continue;
                     }

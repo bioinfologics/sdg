@@ -823,7 +823,8 @@ void Untangler::pop_errors_by_ci_and_paths() {
  */
 std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_neighbours(uint32_t min_size, float min_ci, float max_ci) {
 
-
+    SequenceGraph tsg;
+    std::map<sgNodeID_t,sgNodeID_t> general_to_tag;
     sglib::OutputLog()<<"Selecting selected_nodes..."<<std::endl;
     std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> neighbours;
     std::vector<std::set<bsg10xTag>> node_tags;
@@ -834,6 +835,7 @@ std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_nei
     sglib::OutputLog()<<"Populating node tags..."<<std::endl;
     uint64_t tag_empty=0, tag_10=0, tag_50=0, tag_100=0, tag_1000=0;
     for (auto n:selected_nodes) {
+        general_to_tag[n]=tsg.add_node(ws.sg.nodes[n].sequence);
         total_bp+=ws.sg.nodes[n].sequence.size();
         for (auto t:ws.linked_read_mappers[0].get_node_tags(n)) node_tags[n].insert(t);
         if (node_tags[n].empty()) ++tag_empty;
@@ -855,15 +857,17 @@ std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_nei
         for (auto i2=i1+1;i2<selected_nodes.size();i2++){
             auto n2=selected_nodes[i2];
             uint32_t shared=intersection_size(node_tags[n1],node_tags[n2]);
-            if (shared>=4) {
+            if (shared>=10) {
 #pragma omp critical
                 {
+                    if (shared>40) tsg.add_link(general_to_tag[n1],general_to_tag[n2],0);
                     neighbours[n1].emplace_back(n2,shared);
                     neighbours[n2].emplace_back(n1,shared);
                 }
             }
         }
     }
+    tsg.write_to_gfa("tag_neighbours_nodir.gfa");
     sglib::OutputLog()<<"Sorting shared tags"<<std::endl;
     uint64_t with_neighbours=0;
     for (auto &nn:neighbours){
@@ -901,10 +905,10 @@ void Untangler::connect_neighbours(uint64_t min_size, float min_ci, float max_ci
 //            }
 //        }
 //    }
-    connect_neighbours_trivial(min_size,min_ci,max_ci,max_distance,tagneighbours,bndist,fndist);
-    bndist.resize(ws.sg.nodes.size());
-    fndist.resize(ws.sg.nodes.size());
-    tagneighbours.resize(ws.sg.nodes.size());
+    //connect_neighbours_trivial(min_size,min_ci,max_ci,max_distance,tagneighbours,bndist,fndist);
+    //bndist.resize(ws.sg.nodes.size());
+    //fndist.resize(ws.sg.nodes.size());
+    //tagneighbours.resize(ws.sg.nodes.size());
     connect_neighbours_paths_to_same(min_size,min_ci,max_ci,max_distance,tagneighbours,bndist,fndist);
     //std::cout<<"Analysing non-trivial connections"<<std::endl;
     //std::cout
@@ -989,13 +993,13 @@ void Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float min_ci
     std::vector<sgNodeID_t> single_fw(ws.sg.nodes.size(),0),single_bw(ws.sg.nodes.size(),0);
     //first mark outputs going into a single neighbour
     for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
-        if (fndist[n].size()>1) {
+        if (fndist[n].size()>=1) {
             auto fdest = fndist[n][0].first;
             bool fok = true;
             for (auto fd:fndist[n]) if (fdest != fd.first) fok = false;
             if (fok) single_fw[n] = fdest;
         }
-        if (bndist[n].size()>1) {
+        if (bndist[n].size()>=1) {
             auto bdest = bndist[n][0].first;
             bool bok = true;
             for (auto bd:bndist[n]) if (bdest != bd.first) bok = false;
@@ -1012,15 +1016,48 @@ void Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float min_ci
         //std::cout<<"."<<std::endl;
     }
     std::cout << from_to.size() << " multi-path connections to same neighbour to inflate" << std::endl;
-
+    BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,5000,200000,1000);
     uint64_t done = 0;
     for (auto ft:from_to) {
 //Create all possible paths between from_to (sg function):
         auto allpaths = ws.sg.find_all_paths_between(ft.first, ft.second, max_distance);
-        std::cout<<"Evaluating between "<<allpaths.size()<<" different paths to join "<<ft.first<<" and "<<ft.second<<std::endl;
+
+        bool complex=false;
         for (auto p:allpaths){
-            for (auto &n: p.nodes) if (not tagneighbours[llabs(n)].empty()) std::cout<<"A path node has other neighbours!"<<std::endl;
-            if (p.nodes.empty()) std::cout<<"Path is empty!"<<std::endl;
+            for (auto &n: p.nodes) {
+                if (not tagneighbours[llabs(n)].empty()) {
+                    complex=true;
+                    //std::cout<<"A path node has other neighbours!"<<std::endl;
+                }
+            }
+            if (p.nodes.empty()) {
+                complex=true;
+                //std::cout<<"Path is empty!"<<std::endl;
+            }
+        }
+        if (complex or allpaths.empty()) continue;
+        std::cout<<"Evaluating between "<<allpaths.size()<<" different paths to join "<<ft.first<<" and "<<ft.second<<std::endl;
+        auto ntags=ws.linked_read_mappers[0].get_node_tags(ft.first);
+        for (auto t:ws.linked_read_mappers[0].get_node_tags(ft.second)) ntags.insert(t);
+        auto neightagkmers=btk.get_tags_kmers(6,ntags);
+        std::vector<SequenceGraphPath> sol;
+        for (auto p:allpaths){
+            auto pseq=p.get_sequence();
+            //TODO: this can be doen not with a factory but with a class that already counts how many are in the set
+            StringKMerFactory skf(pseq,31);
+            std::vector<uint64_t> seqkmers;
+            skf.create_kmers(seqkmers);
+            uint64_t covered=0,uncovered=0;
+            for (auto x:seqkmers) {
+                if (neightagkmers.count(x)>0) ++covered;
+                else ++uncovered;
+            }
+            std::cout<<"  path evaluation: "<<covered<<" covered, "<<uncovered<<" uncovered"<<std::endl;
+            if (uncovered==0) sol.push_back(p);
+        }
+        if (sol.size()==1) {
+            ++done;
+            std::cout<<"JOIN SOLVED!"<<std::endl;
         }
 /*//  is there only one? does it contain no selected node? other conditions? Optional: check the path is covered by kmers from tags on both ends of it.
         if (allpaths.size() != 1) continue;
@@ -1046,5 +1083,5 @@ void Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float min_ci
 
 
     }
-    //std::cout << done << " connections inflated" << std::endl;
+    std::cout << done << " joins solved (connections to inflate)" << std::endl;
 }

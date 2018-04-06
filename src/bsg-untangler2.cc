@@ -124,7 +124,7 @@ int main(int argc, char * argv[]) {
     }
     if (neighbour_connection){
         Untangler u(ws);
-        u.connect_neighbours(1000,.5,1.5,50000);
+        u.connect_neighbours(5000,.5,1.25,50000);
         ws.sg.join_all_unitigs();
         /*ws.kci.reindex_graph();
         for (auto &m:ws.linked_read_mappers) {
