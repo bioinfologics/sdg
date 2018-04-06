@@ -420,6 +420,7 @@ std::vector<LongReadMapper::MatchOffset> LongReadMapper::getMatchOffsets(std::st
     uint32_t sketch_in_index(0);
     StrandedMinimiserSketchFactory kf(k, w);
     std::unordered_set<MinPosIDX> sketch;
+    sketch.reserve(query.size());
 
     auto read_sketch_num(kf.getMinSketch(query, sketch));
 

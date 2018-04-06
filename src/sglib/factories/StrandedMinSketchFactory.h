@@ -54,7 +54,7 @@ public:
         }
 
         int32_t pos = K;
-        for (; pos < seq.length()-K-w+1; ++pos) {
+        for (; pos < seq.length()-w+1; ++pos) {
             uint64_t min(std::numeric_limits<uint64_t>::max());
             uint64_t pFkmer(fkmer);
             uint64_t pRkmer(rkmer);

@@ -153,7 +153,7 @@ void map_using_sketches(uint8_t k, SequenceGraph &sg, std::string &output_prefix
 }
 
 int main(int argc, char * argv[]) {
-    sglib::OutputLog(false) << "Welcome to gfa-indexer"<<std::endl<<std::endl;
+    sglib::OutputLog(false) << "Welcome to LongRead Mapper"<<std::endl<<std::endl;
     sglib::OutputLog(false) << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
     sglib::OutputLog(false) << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
     sglib::OutputLog() << "Executed command:"<<std::endl;
@@ -173,7 +173,7 @@ int main(int argc, char * argv[]) {
             ("k,mer_size", "K-mer size for indexing/mapping", cxxopts::value<uint8_t>(K)->default_value("31"), "0-31")
             ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename), "filepath")
             ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix), "path")
-            ("log_level", "output log level", cxxopts::value<unsigned int>(log_level)->default_value("0"), "uint")
+            ("l,log_level", "output log level", cxxopts::value<unsigned int>(log_level)->default_value("0"), "uint")
             ("r,long_reads", "input long reads", cxxopts::value<std::string>(long_reads), "filepath")
             ("max_mem", "maximum_memory when mapping (GB, default: 4)", cxxopts::value<uint64_t>(max_mem_gb)->default_value("4"), "GB");
 //@formatter:on
@@ -210,13 +210,10 @@ int main(int argc, char * argv[]) {
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
 
-    auto loopy_nodes = sg.get_loopy_nodes();
-    for (const auto &node:loopy_nodes) std::cout << node << "\t" << sg.oldnames[node] << "\n";
-    return 0;
-    if (1) {
+    if (0) {
         map_using_minimap(K, sg, long_reads);
     }
-    if (0) {
+    if (1) {
         map_using_sketches(K, sg, output_prefix, long_reads);
     }
 
