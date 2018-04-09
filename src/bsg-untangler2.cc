@@ -124,8 +124,22 @@ int main(int argc, char * argv[]) {
     }
     if (neighbour_connection){
         Untangler u(ws);
-        u.connect_neighbours(5000,.5,1.25,50000);
-        ws.sg.join_all_unitigs();
+        int i=0;
+        for (auto minsize:{500,1000,1500,2500,5000,7500,10000}) {
+            uint64_t last=1;
+            while (last) {
+                last = u.connect_neighbours(minsize, .5, 1.25, 50000);
+                if (last) {
+                    ws.sg.join_all_unitigs();
+                    ws.kci.reindex_graph();
+                    ws.sg.write_to_gfa(output_prefix + "_partial" + std::to_string(++i) + ".gfa");
+                    for (auto &m:ws.linked_read_mappers) {
+                        m.remap_all_reads();
+                    }
+                    //ws.dump_to_disk(output_prefix+"_partial"+std::to_string(++i)+".bsgws");
+                }
+            }
+        }
         /*ws.kci.reindex_graph();
         for (auto &m:ws.linked_read_mappers) {
             m.remap_all_reads();

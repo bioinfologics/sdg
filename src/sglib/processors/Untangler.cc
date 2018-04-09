@@ -879,7 +879,7 @@ std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_nei
     return neighbours;
 }
 
-void Untangler::connect_neighbours(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance) {
+uint64_t Untangler::connect_neighbours(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance) {
     //first find all nodes' neighbours
     auto tagneighbours=find_tag_neighbours(min_size,min_ci,max_ci);
     std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> fndist(ws.sg.nodes.size()),bndist(ws.sg.nodes.size());
@@ -909,7 +909,7 @@ void Untangler::connect_neighbours(uint64_t min_size, float min_ci, float max_ci
     //bndist.resize(ws.sg.nodes.size());
     //fndist.resize(ws.sg.nodes.size());
     //tagneighbours.resize(ws.sg.nodes.size());
-    connect_neighbours_paths_to_same(min_size,min_ci,max_ci,max_distance,tagneighbours,bndist,fndist);
+    return connect_neighbours_paths_to_same(min_size,min_ci,max_ci,max_distance,tagneighbours,bndist,fndist);
     //std::cout<<"Analysing non-trivial connections"<<std::endl;
     //std::cout
 
@@ -984,7 +984,7 @@ void Untangler::connect_neighbours_trivial(uint64_t min_size, float min_ci, floa
     std::cout << done << " connections inflated" << std::endl;
 }
 
-void Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,
+uint64_t Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,
                                            const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,
                                            const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,
                                            const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & fndist) {
@@ -1016,72 +1016,79 @@ void Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float min_ci
         //std::cout<<"."<<std::endl;
     }
     std::cout << from_to.size() << " multi-path connections to same neighbour to inflate" << std::endl;
-    BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,5000,200000,1000);
-    uint64_t done = 0;
-    for (auto ft:from_to) {
-//Create all possible paths between from_to (sg function):
-        auto allpaths = ws.sg.find_all_paths_between(ft.first, ft.second, max_distance);
 
-        bool complex=false;
-        for (auto p:allpaths){
-            for (auto &n: p.nodes) {
-                if (not tagneighbours[llabs(n)].empty()) {
-                    complex=true;
-                    //std::cout<<"A path node has other neighbours!"<<std::endl;
+    uint64_t done = 0;
+    std::vector<std::pair<std::pair<sgNodeID_t,sgNodeID_t>,SequenceGraphPath>> final_sols;
+#pragma omp parallel
+    {
+        BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,5000,200000,1000);
+#pragma omp for schedule(dynamic,10)
+        for (auto idx = 0; idx < from_to.size(); ++idx) {
+            auto &ft = from_to[idx];
+//Create all possible paths between from_to (sg function):
+            auto allpaths = ws.sg.find_all_paths_between(ft.first, ft.second, max_distance);
+
+            bool complex = false;
+            for (auto p:allpaths) {
+                for (auto &n: p.nodes) {
+                    if (not tagneighbours[llabs(n)].empty()) {
+                        complex = true;
+                        //std::cout<<"A path node has other neighbours!"<<std::endl;
+                    }
+                }
+                if (p.nodes.empty()) {
+                    complex = true;
+                    //std::cout<<"Path is empty!"<<std::endl;
                 }
             }
-            if (p.nodes.empty()) {
-                complex=true;
-                //std::cout<<"Path is empty!"<<std::endl;
+            if (complex or allpaths.empty()) continue;
+            std::cout << "Evaluating between " << allpaths.size() << " different paths to join " << ft.first << " and "
+                      << ft.second << std::endl;
+            auto ntags = ws.linked_read_mappers[0].get_node_tags(ft.first);
+            for (auto t:ws.linked_read_mappers[0].get_node_tags(ft.second)) ntags.insert(t);
+            auto neightagkmers = btk.get_tags_kmers(6, ntags);
+            std::vector<SequenceGraphPath> sol;
+            for (auto p:allpaths) {
+                auto pseq = p.get_sequence();
+                //TODO: this can be doen not with a factory but with a class that already counts how many are in the set
+                StringKMerFactory skf(pseq, 31);
+                std::vector<uint64_t> seqkmers;
+                skf.create_kmers(seqkmers);
+                uint64_t covered = 0, uncovered = 0;
+                for (auto x:seqkmers) {
+                    if (neightagkmers.count(x) > 0) ++covered;
+                    else ++uncovered;
+                }
+                std::cout << "  path evaluation: " << covered << " covered, " << uncovered << " uncovered" << std::endl;
+                if (uncovered == 0) sol.push_back(p);
             }
-        }
-        if (complex or allpaths.empty()) continue;
-        std::cout<<"Evaluating between "<<allpaths.size()<<" different paths to join "<<ft.first<<" and "<<ft.second<<std::endl;
-        auto ntags=ws.linked_read_mappers[0].get_node_tags(ft.first);
-        for (auto t:ws.linked_read_mappers[0].get_node_tags(ft.second)) ntags.insert(t);
-        auto neightagkmers=btk.get_tags_kmers(6,ntags);
-        std::vector<SequenceGraphPath> sol;
-        for (auto p:allpaths){
-            auto pseq=p.get_sequence();
-            //TODO: this can be doen not with a factory but with a class that already counts how many are in the set
-            StringKMerFactory skf(pseq,31);
-            std::vector<uint64_t> seqkmers;
-            skf.create_kmers(seqkmers);
-            uint64_t covered=0,uncovered=0;
-            for (auto x:seqkmers) {
-                if (neightagkmers.count(x)>0) ++covered;
-                else ++uncovered;
+            if (sol.size() == 1) {
+                ++done;
+                std::cout << "JOIN SOLVED!" << std::endl;
+#pragma omp critical
+                final_sols.emplace_back(ft, sol[0]);
             }
-            std::cout<<"  path evaluation: "<<covered<<" covered, "<<uncovered<<" uncovered"<<std::endl;
-            if (uncovered==0) sol.push_back(p);
-        }
-        if (sol.size()==1) {
-            ++done;
-            std::cout<<"JOIN SOLVED!"<<std::endl;
-        }
-/*//  is there only one? does it contain no selected node? other conditions? Optional: check the path is covered by kmers from tags on both ends of it.
-        if (allpaths.size() != 1) continue;
-        for (auto &n: allpaths[0].nodes) if (not tagneighbours[llabs(n)].empty()) continue;
-        if (allpaths[0].nodes.empty()) continue; //XXX:these should actually be connected directly?
-*/
-/* //  create a single node with the sequence of the path, migrate connections from the nodes (sg function)
-        auto new_node = ws.sg.add_node(Node(allpaths[0].get_sequence()));
-        auto old_fw = ws.sg.get_fw_links(ft.first);
-        for (auto &l:old_fw) {
-            if (l.dest == allpaths[0].nodes.front()) ws.sg.add_link(-ft.first, new_node, l.dist);
-            ws.sg.remove_link(l.source, l.dest);
-        }
-        auto old_bw = ws.sg.get_bw_links(ft.second);
-        for (auto &l:old_bw) {
-            if (l.dest == -allpaths[0].nodes.back()) ws.sg.add_link(ft.second, -new_node, l.dist);
-            ws.sg.remove_link(l.source, l.dest);
-        }*/
-//std::cout<<"Replaced connection between "<<ft.first<<" and "<<ft.second<<" through nodes ";
-//for (auto &n:allpaths[0].nodes) std::cout<<n<<" ";
-//std::cout<<" by a single node "<<new_node<<std::endl;
-        //++done;
 
 
+        }
     }
     std::cout << done << " joins solved (connections to inflate)" << std::endl;
+    for (auto &sol:final_sols){
+        dettach_path_as_new_node(sol.first.first,sol.first.second,sol.second);
+    }
+    return final_sols.size();
+}
+
+void Untangler::dettach_path_as_new_node(sgNodeID_t from, sgNodeID_t to, SequenceGraphPath path) {
+    auto new_node = ws.sg.add_node(Node(path.get_sequence()));
+    auto old_fw = ws.sg.get_fw_links(from);
+    for (auto &l:old_fw) {
+        if (l.dest == path.nodes.front()) ws.sg.add_link(-from, new_node, l.dist);
+        ws.sg.remove_link(l.source, l.dest);
+    }
+    auto old_bw = ws.sg.get_bw_links(to);
+    for (auto &l:old_bw) {
+        if (l.dest == -path.nodes.back()) ws.sg.add_link(to, -new_node, l.dist);
+        ws.sg.remove_link(l.source, l.dest);
+    }
 }
