@@ -18,6 +18,7 @@ int main(int argc, char **argv) {
     std::string output_prefix;
     int log_level;
     bool dump_unmapped, dump_mappings, dump_paths;
+    double unique_kmer_threshold;
 
 
     // DEFAULT PARAMETERS... FIXED FOR NOW.
@@ -32,14 +33,15 @@ int main(int argc, char **argv) {
 
     options.add_options()
             ("help", "Print help")
-            ("k", "Kmer size", cxxopts::value<uint8_t>(k)->default_value("31"), "1-31")
+            ("k", "Kmer size", cxxopts::value<uint8_t>(k) -> default_value("31"), "1-31")
             ("r,reference", "Reference FASTA of sequences to locate in graph", cxxopts::value<std::string>(reference_filename), "FASTA - Sequence file")
             ("g,graph", "Genome graph in GFA format", cxxopts::value<std::string>(graph_filename), "GFA file")
             ("o,output", "Output file prefix", cxxopts::value<std::string>(output_prefix) -> default_value(outdefault), "prefix_dir")
             ("u", "Dump non-mapped graph nodes", cxxopts::value<bool>(dump_unmapped))
             ("m", "Dump graph node mappings", cxxopts::value<bool>(dump_mappings))
             ("p", "Dump connected paths", cxxopts::value<bool>(dump_paths))
-            ("l,logging", "Logging level (0: INFO, 1: WARN, 2: DEBUG)", cxxopts::value<int>(log_level) -> default_value("0"), "log_level");
+            ("l,logging", "Logging level (0: INFO, 1: WARN, 2: DEBUG)", cxxopts::value<int>(log_level) -> default_value("0"), "log_level")
+            ("t,threshold", "% of unique Kmers required to keep mappings", cxxopts::value<double>(unique_kmer_threshold) -> default_value("90"), "unique_kmer_threshold");
 // @formatter:on
 
     auto result (options.parse(argc, argv));
@@ -77,21 +79,25 @@ int main(int argc, char **argv) {
 
 // CONSTRUCT SEQUENCE_MAPPER...
     SequenceThreader tdr(sg, k);
-    // Thread FASTA sequences into graph.
+
+// MAP UNIQUE KMERS FROM FASTA SEQUENCES INTO GRAPH.
     tdr.map_sequences(reference_filename, output_prefix);
 
-// CONNECT MAPPINGS...
-    tdr.thread_mappings();
-
-// TEST THE CONNECT_THREADS METHOD SO FAR...
-    tdr.bridge_threads();
-
-// DUMP OUTPUT...
-
-    // Mappings dump.
+    // Pre-filter mappings dump.
     if (dump_mappings) {
-        sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping all mappings." << std::endl;
-        std::ofstream mapping_dump(output_prefix + "/mappings.txt");
+        sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping mappings." << std::endl;
+        std::ofstream mapping_dump(output_prefix + "/mappings_unfiltered.txt");
+        tdr.print_mappings(mapping_dump, true);
+        mapping_dump.close();
+    }
+
+    // Filter the mappings for quality.
+    tdr.filter_mappings();
+
+    // Post-filter mappings dump.
+    if (dump_mappings) {
+        sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping mappings." << std::endl;
+        std::ofstream mapping_dump(output_prefix + "/mappings_filtered.txt");
         tdr.print_mappings(mapping_dump, true);
         mapping_dump.close();
     }
@@ -104,6 +110,18 @@ int main(int argc, char **argv) {
         unmapped.close();
     }
 
+// CONNECT MAPPINGS...
+    tdr.thread_mappings();
+
+// TEST THE CONNECT_THREADS METHOD SO FAR...
+    tdr.bridge_threads();
+
+// DUMP OUTPUT...
+
+
+
+
+/*
     // Paths dump.
     if (dump_paths) {
         sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping paths." << std::endl;
@@ -111,7 +129,7 @@ int main(int argc, char **argv) {
         tdr.print_paths(pathdumpout, true);
         pathdumpout.close();
     }
-
+*/
     // Print out mapped FASTA sequences.
 
     std::ofstream graph_paths_out(output_prefix + "/mapped_paths_graph.fasta");

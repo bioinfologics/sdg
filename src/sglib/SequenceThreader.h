@@ -39,6 +39,7 @@ public:
     void print_mappings(std::ostream& out, bool use_oldnames = false) const;
 
     // Connecting kmer mappings into threads through graph.
+    void filter_mappings(double score = 90);
     void thread_mappings();
     void bridge_threads();
     void print_paths(std::ostream& out, bool use_oldnames = false) const;
@@ -63,6 +64,7 @@ private:
 
     // Results storage
     SequenceMappingStore mappings_of_sequence;
+    SequenceMappingStore filtered_mappings_of_sequence;
     SequenceMappingPathsStore mapping_threads_of_sequence;
     BridgedMappingPathsStore  bridged_mapping_threads_of_sequence;
     std::vector<KmerIDX> unmapped_kmers;
@@ -90,8 +92,9 @@ public:
     MappingDirection node_direction() const;
     MappingDirection seq_direction() const;
     bool mapping_continues(const graphPosition& gpos) const;
-    uint32_t query_start() const {return first_seq_pos;};
-    uint32_t query_end() const {return last_seq_pos;};
+    uint32_t query_start() const { return first_seq_pos; };
+    uint32_t query_end() const { return last_seq_pos; };
+    double match_score() const { return (matched_unique_kmers / possible_unique_matches) * 100; };
 
 private:
     seqID_t seq_id;

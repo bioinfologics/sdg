@@ -34,7 +34,7 @@ std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t& see
     while (!to_visit.empty()) {
         const auto activeNode(to_visit.top());
         to_visit.pop();
-        if (visited.find(activeNode.node) == visited.end() and (activeNode.path_length < edge_limit or edge_limit==0) and (activeNode.dist < size_limit or size_limit==0) )
+        if (visited.find(activeNode.node) == visited.end() and (activeNode.path_length < edge_limit or edge_limit == 0) and (activeNode.dist < size_limit or size_limit == 0) )
         {
             visited.emplace(activeNode.node);
 
@@ -47,7 +47,7 @@ std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t& see
 
             for (const auto &l : sg.get_fw_links(activeNode.node)) {
                 // For each child of the current node, create a child visitor object, and enter it into the parent map.
-                visitor child { l.dest, activeNode.dist + uint(sg.nodes[std::abs(l.dest)].sequence.length()), activeNode.path_length + 1 };
+                visitor child { l.dest, activeNode.dist + uint(sg.nodes[std::abs(l.dest)].sequence.length() + l.dist), activeNode.path_length + 1 };
 
                 // If I've found the target along this dfs path, I need to collect it and put it into a SequenceGraphPath object.
                 if (child.node == target) {

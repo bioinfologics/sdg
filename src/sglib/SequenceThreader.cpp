@@ -6,6 +6,7 @@
 #include <atomic>
 #include <algorithm>
 #include <stack>
+#include <vector>
 #include <sglib/SequenceThreader.h>
 #include <sglib/readers/FileReader.h>
 #include <sglib/logger/OutputLog.h>
@@ -112,14 +113,6 @@ bool SequenceMapping::mapping_continues(const graphPosition& gpos) const {
     return same_node and direction_continues;
 }
 
-
-
-
-
-
-
-
-
 void SequenceThreader::map_sequences_from_file(const std::string &filename) {
 
     sglib::OutputLog(sglib::LogLevels::INFO) << "Mapping sequence kmers to graph." << std::endl;
@@ -204,6 +197,25 @@ void SequenceThreader::map_sequences_from_file(const std::string &filename) {
     sglib::OutputLog(sglib::LogLevels::INFO) << "Mapped " << mapped_kmers_count << " Kmers from " << sequence_count << " sequences." << std::endl;
     sglib::OutputLog(sglib::LogLevels::INFO) << "Failed to map " << unmapped_kmers.size() << " unique kmers from the reference." << std::endl;
  }
+
+void SequenceThreader::filter_mappings(double score) {
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Filtering mappings using a threshold of " << score << "%." << std::endl;
+    for (auto& sequence_mappings : mappings_of_sequence) {
+        auto start { sequence_mappings.second.begin() };
+        auto end { sequence_mappings.second.end() };
+        auto newend {std::remove_if(start, end, [score](SequenceMapping sm) -> bool { return sm.match_score() < score; })};
+        sequence_mappings.second.erase(newend, sequence_mappings.second.end());
+    }
+}
+
+
+
+
+
+
+
+
+
 
 void SequenceThreader::thread_mappings() {
     sglib::OutputLog(sglib::LogLevels::INFO) << "Assembling mappings into contiguous threads." << std::endl;
@@ -309,7 +321,6 @@ void SequenceThreader::bridge_threads() {
         ++mapping_thread;
         for (; mapping_thread != threads.end(); ++mapping_thread) {
             iteration++;
-            //std::cout << iteration << " / " << threads.size() << std::endl;
             auto from_mapping { growing_thread.last_mapping() };
             auto to_mapping { mapping_thread -> first_mapping() };
 
@@ -342,45 +353,6 @@ void SequenceThreader::bridge_threads() {
                 bridged_threads.emplace_back(growing_thread);
                 growing_thread = { sg, *mapping_thread };
             }
-/*
-            // Try to collect some paths....
-            auto graphpaths { collect_paths(from_mapping.dirnode(), to_mapping.dirnode(), 0, 10) };
-
-            int status;
-
-            if (!graphpaths.empty()) {
-                std::cout << "Found paths between two threads!" << std::endl;
-                for(const auto& path : graphpaths) {
-                    std::cout << path.get_fasta_header(true) << std::endl;
-                }
-                if (graphpaths.size() == 1) {
-                    status = growing_thread.bridge_to_thread(graphpaths[0], *mapping_thread);
-                    //std::cout << "Bridged path with status: " << status << std::endl;
-                } else {
-                    // Determine the best path of several, using the Smith Waterman alignment.
-                    sglib::alignment::algorithms::SmithWaterman<int> sw { graphpaths.front().get_sequence().size(), refsubstr.size() };
-                    int maxscore { 0 };
-                    std::vector<SequenceGraphPath>::const_iterator bestpath;
-                    for (auto path {graphpaths.cbegin()}; path != graphpaths.cend(); ++path) {
-                        const auto alignres { sw.run(path -> get_sequence(), refsubstr, -10, -1) };
-                        if (std::get<0>(alignres) > maxscore) {
-                            maxscore = std::get<0>(alignres);
-                            bestpath = path;
-                        }
-                    }
-                    status = growing_thread.bridge_to_thread(*bestpath, *mapping_thread);
-                    //std::cout << "Bridged path with status: " << status << std::endl;
-                }
-            } else {
-                //std::cout << "Did not find any paths between two threads..." << std::endl;
-                status = 1;
-            }
-
-            if (status > 0) {
-                bridged_threads.emplace_back(growing_thread);
-                growing_thread = { sg, *mapping_thread };
-            }
-        */
         }
 
         bridged_mapping_threads_of_sequence[refsequence.id] = bridged_threads;
@@ -416,6 +388,7 @@ void SequenceThreader::bridged_graph_threads_to_fasta(std::ofstream& output_file
             const auto path { bridged_mapping_thread.get_complete_path() };
             auto hdr { path.get_fasta_header(use_oldnames) };
             hdr.erase(hdr.begin());
+            output_file << hdr;
             output_file << std::endl;
             output_file << path.get_sequence();
             output_file << std::endl;
