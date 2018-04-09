@@ -26,6 +26,7 @@ class minSketchIndex {
     Map kmer_to_graphposition;
     uint8_t w = 0;
     uint8_t k = 0;
+    float avg_nodes_per_kmer = 0.0f;
 public:
     minSketchIndex(const SequenceGraph &sg, uint8_t k, uint8_t w) : k(k), w(w) {
         generate_index(sg);
@@ -33,7 +34,8 @@ public:
 
     minSketchIndex(uint8_t k, uint8_t w) : k(k), w(w) {}
 
-    void generate_index(const SequenceGraph &sg) {
+    float get_avg_nodes_per_kmer() { return avg_nodes_per_kmer; }
+    float generate_index(const SequenceGraph &sg) {
         StrandedMinimiserSketchFactory kf(k, w);
         std::unordered_set<MinPosIDX> sketch;
         GraphNodeReader<FastaRecord> gnr({0,sg});
@@ -46,6 +48,12 @@ public:
             }
             sketch.clear();
         }
+        for (const auto &kmer_nodes:kmer_to_graphposition) {
+            for (const auto &node:kmer_nodes.second) {
+                avg_nodes_per_kmer += kmer_nodes.second.size();
+            }
+        }
+        avg_nodes_per_kmer/=kmer_to_graphposition.size();
 
         if (sglib::OutputLogLevel >= sglib::DEBUG) {
             sglib::OutputLog(false) << "Index stats: " << std::endl;
@@ -53,7 +61,6 @@ public:
             sglib::OutputLog(false) << "W: " << int(w) << std::endl;
             std::vector<unsigned int> kmer_per_node(sg.nodes.size(), 0);
             float max_nodes_per_kmer(0);
-            float avg_nodes_per_kmer(0);
             for (const auto &kmer_nodes:kmer_to_graphposition) {
                 sglib::OutputLog(false) << "#[" << kmer_nodes.first << "] " << kmer_nodes.second.size();
                 sglib::OutputLog(false) << " ";
@@ -81,7 +88,7 @@ public:
             sglib::OutputLog(false) << "Avg nodes x kmer " << avg_nodes_per_kmer << std::endl;
             sglib::OutputLog(false) << "Max nodes x kmer " << max_nodes_per_kmer << std::endl;
         }
-        exit(0);
+        return avg_nodes_per_kmer;
     }
 
     const Map& getMap() {

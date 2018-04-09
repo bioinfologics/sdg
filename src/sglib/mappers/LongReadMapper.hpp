@@ -65,7 +65,18 @@ class LongReadMapper {
         friend class byContigRead;
         struct byContigRead {
             bool operator()(const MatchOffset &a, const MatchOffset &b) {
-                return std::tie(a.dirContig, a.readPos) < std::tie(b.dirContig, b.readPos);
+                auto A = std::abs(a.dirContig);
+                auto B = std::abs(b.dirContig);
+                return std::tie(A, a.readPos) < std::tie(B, b.readPos);
+            }
+        };
+
+        friend class byReadContig;
+        struct byReadContig {
+            bool operator()(const MatchOffset &a, const MatchOffset &b) {
+                auto A = std::abs(a.dirContig);
+                auto B = std::abs(b.dirContig);
+                return std::tie(a.readPos,A) < std::tie(b.readPos, B);
             }
         };
 

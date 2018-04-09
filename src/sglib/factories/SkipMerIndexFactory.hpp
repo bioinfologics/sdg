@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <sglib/types/KmerTypes.hpp>
-#include "SipMerFactory.h"
+#include "SkipMerFactory.h"
 
 template<typename FileRecord>
 class SkipMerIDXFactory : protected SkipMerFactory {

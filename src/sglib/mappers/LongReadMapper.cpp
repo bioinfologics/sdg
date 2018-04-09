@@ -232,8 +232,10 @@ std::vector<LongReadMapping>
 LongReadMapper::map_read(FastqRecord read, std::ofstream &matchOutput, std::ofstream &blockOutput) {
     std::vector<LongReadMapping> paths;
     auto matches = getMatchOffsets(read.seq);
-    std::sort(matches.begin(),matches.end(), MatchOffset::byReadPos());
+    auto sortedByContigRead = matches;
 
+    std::sort(matches.begin(),matches.end(), MatchOffset::byReadPos());
+    std::sort(sortedByContigRead.begin(), sortedByContigRead.end(), MatchOffset::byContigRead());
 
     for (const auto &m:matches) {
         matchOutput << "@MATCH " << read.name << ","
@@ -318,15 +320,23 @@ LongReadMapper::map_read(FastqRecord read, std::ofstream &matchOutput, std::ofst
 std::vector<LongReadMapping>
 LongReadMapper::map_read(uint32_t readID, std::string sequence, std::ofstream &matchOutput, std::ofstream &blockOutput) {
     std::vector<LongReadMapping> paths;
+
+    std::vector<unsigned int> nodeMatchCount(sg.nodes.size());
+
     auto matches = getMatchOffsets(sequence);
+    auto sortedByContigRead = matches;
+
+    std::for_each(matches.begin(),matches.end(),
+                  [&nodeMatchCount](const MatchOffset &m) { nodeMatchCount[std::abs(m.dirContig)]+=1; } );
+
     std::sort(matches.begin(),matches.end(), MatchOffset::byReadPos());
+    std::sort(sortedByContigRead.begin(), sortedByContigRead.end(), MatchOffset::byReadContig());
 
-
-//    for (const auto &m:matches) {
-//        matchOutput << "@MATCH " << readID << ","
-//                    << sg.nodes[std::abs(m.dirContig)].sequence.length() << "," << m
-//                    << std::endl;
-//    }
+    for (const auto &m:matches) {
+        matchOutput << "@MATCH " << readID << ","
+                    << sg.nodes[std::abs(m.dirContig)].sequence.length() << "," << m
+                    << std::endl;
+    }
 
     uint window_size(1000); // 1k window
     uint stepping_size(200);    // 200bp stepping
@@ -431,7 +441,7 @@ std::vector<LongReadMapper::MatchOffset> LongReadMapper::getMatchOffsets(std::st
             continue;
         }
         sketch_in_index++;
-        if (foundKey->second.size() < 10) {
+        if (foundKey->second.size() < index.get_avg_nodes_per_kmer()) {
             for (auto match : foundKey->second) {
                 matches.emplace_back(match.node * (std::signbit(sk.pos) ? -1 : 1), std::abs(sk.pos), match.pos);
             }
