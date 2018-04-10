@@ -879,6 +879,125 @@ std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_nei
     return neighbours;
 }
 
+/**
+ * @brief grabs all "long" haplotype-specific nodes, uses tags to find neighbours, uses imbalance to impute direction.
+ * @param min_size
+ * @param min_ci
+ * @param max_ci
+ * @return
+ */
+std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_size, float min_ci, float max_ci, float end_perc) {
+
+    SequenceGraph tsg;
+    std::map<sgNodeID_t,sgNodeID_t> general_to_tag;
+    sglib::OutputLog()<<"Selecting selected_nodes..."<<std::endl;
+    std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> neighbours;
+    std::vector<std::set<bsg10xTag>> node_tags;
+    neighbours.resize(ws.sg.nodes.size());
+    node_tags.resize(ws.sg.nodes.size());
+    uint64_t total_bp=0;
+    auto selected_nodes=ws.select_from_all_nodes(min_size,1000000,20,200000, min_ci, max_ci);
+    for (auto n:selected_nodes) {
+        general_to_tag[n]=tsg.add_node(ws.sg.nodes[n].sequence);
+        total_bp+=ws.sg.nodes[n].sequence.size();
+        for (auto t:ws.linked_read_mappers[0].get_node_tags(n)) node_tags[n].insert(t);
+    }
+    sglib::OutputLog()<<selected_nodes.size()<<" selected totalling "<<total_bp<<"bp "<<std::endl;
+
+    sglib::OutputLog()<<"Computing shared tags"<<std::endl;
+#pragma omp parallel for shared(tsg) schedule(static,50)
+    for (auto i1=0; i1<selected_nodes.size(); ++i1){
+        auto n1=selected_nodes[i1];
+        for (auto i2=i1+1;i2<selected_nodes.size();i2++){
+            auto n2=selected_nodes[i2];
+            uint32_t shared=intersection_size(node_tags[n1],node_tags[n2]);
+            if (shared>=40) {
+//                std::cout<<"Strong connection between "<<n1<<" and "<<n2<<" for tag imbalance"<<std::endl;
+                //first create the set of real intersecting tags
+                std::set<bsg10xTag> shared_tags;
+                std::set_intersection(node_tags[n1].begin(),node_tags[n1].end(),node_tags[n2].begin(),node_tags[n2].end(),std::inserter(shared_tags,shared_tags.end()));
+//                std::cout<<"intersection set has "<<shared_tags.size()<<" elements"<<std::endl;
+                uint64_t n1_front_in=0,n1_front_total=0,n1_back_in=0,n1_back_total=0;
+                uint64_t n2_front_in=0,n2_front_total=0,n2_back_in=0,n2_back_total=0;
+                uint64_t n1first30point=ws.sg.nodes[n1].sequence.size()*end_perc;
+                uint64_t n1last30point=ws.sg.nodes[n1].sequence.size()*(1-end_perc);
+                for (auto rm:ws.linked_read_mappers[0].reads_in_node[n1]){
+                    if (rm.first_pos<n1first30point){
+                        ++n1_front_total;
+                        if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n1_front_in;
+                    }
+                    if (rm.last_pos>n1last30point){
+                        ++n1_back_total;
+                        if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n1_back_in;
+                    }
+                }
+                auto n1f=(100.0*n1_front_in/n1_front_total);
+                auto n1b=(100.0*n1_back_in/n1_back_total);
+//                std::cout<<" Node "<<n1<<" "<<ws.sg.nodes[n1].sequence.size()<<"bp:  front -> "<<n1f<<" ("<<n1_front_in<<"/"<<n1_front_total<<")"
+//                         <<" back -> "<<n1b<<" ("<<n1_back_in<<"/"<<n1_back_total<<")"<<std::endl;
+                uint64_t n2first30point=ws.sg.nodes[n2].sequence.size()*end_perc;
+                uint64_t n2last30point=ws.sg.nodes[n2].sequence.size()*(1-end_perc);
+                for (auto rm:ws.linked_read_mappers[0].reads_in_node[n2]){
+                    if (rm.first_pos<n2first30point){
+                        ++n2_front_total;
+                        if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n2_front_in;
+                    }
+                    if (rm.last_pos>n2last30point){
+                        ++n2_back_total;
+                        if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n2_back_in;
+                    }
+                }
+                auto n2f=(100.0*n2_front_in/n2_front_total);
+                auto n2b=(100.0*n2_back_in/n2_back_total);
+//                std::cout<<" Node "<<n2<<" "<<ws.sg.nodes[n2].sequence.size()<<"bp:  front -> "<<n2f<<" ("<<n2_front_in<<"/"<<n2_front_total<<")"
+//                         <<" back -> "<<n2b<<" ("<<n2_back_in<<"/"<<n2_back_total<<")"<<std::endl;
+
+                if (fabs(2*(n1f-n1b)/(n1f+n1b))>.1 and fabs(2*(n2f-n2b)/(n2f+n2b))>.1) {
+//                    std::cout<<"Imbalance solved"<<std::endl;
+#pragma omp critical
+                    tsg.add_link((n1f > n1b ? general_to_tag[n1] : -general_to_tag[n1]),
+                                 (n2f > n2b ? general_to_tag[n2] : -general_to_tag[n2]), 0);
+                }
+                else {
+//                    std::cout<<"Imbalance unsolved"<<std::endl;
+                }
+//#pragma omp critical
+/*                {
+                    //if (shared>40) tsg.add_link(general_to_tag[n1],general_to_tag[n2],0);
+                    neighbours[n1].emplace_back(n2,shared);
+                    neighbours[n2].emplace_back(n1,shared);
+                }*/
+            }
+        }
+    }
+    tsg.write_to_gfa("tag_neighbours_imbdir.gfa");
+    uint64_t perf_ts=0;
+    for (auto n=1;n<tsg.nodes.size();++n){
+        auto b=n;
+        auto bfw=tsg.get_fw_links(b);
+        auto bbw=tsg.get_bw_links(b);
+        if (bbw.size()!=1 or bfw.size()!=1) continue;
+        auto a=-bbw[0].dest;
+        auto c=bfw[0].dest;
+        auto afw=tsg.get_fw_links(a);
+        auto cbw=tsg.get_bw_links(c);
+        if (afw.size()!=2 or cbw.size()!=2) continue;
+        if (afw[0].dest==c or afw[1].dest==c) std::cout<<"Found perfect transtition "<<a<<" "<<b<<" "<<c<<std::endl;
+        ++perf_ts;
+
+    }
+    std::cout<<perf_ts<<" perfect transitions found"<<std::endl;
+    /*sglib::OutputLog()<<"Sorting shared tags"<<std::endl;
+    uint64_t with_neighbours=0;
+    for (auto &nn:neighbours){
+        if (not nn.empty()) ++with_neighbours;
+        std::sort(nn.begin(),nn.end(),[]( const std::pair<sgNodeID_t,uint32_t> &a,
+                                          const std::pair<sgNodeID_t,uint32_t> &b) { return a.second>b.second; });
+    }
+    sglib::OutputLog()<<with_neighbours<<" selected_nodes with neighbours"<<std::endl;*/
+    return {};
+}
+
 uint64_t Untangler::connect_neighbours(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance) {
     //first find all nodes' neighbours
     auto tagneighbours=find_tag_neighbours(min_size,min_ci,max_ci);
@@ -1091,4 +1210,9 @@ void Untangler::dettach_path_as_new_node(sgNodeID_t from, sgNodeID_t to, Sequenc
         if (l.dest == -path.nodes.back()) ws.sg.add_link(to, -new_node, l.dist);
         ws.sg.remove_link(l.source, l.dest);
     }
+}
+
+std::vector<SequenceGraphPath> Untangler::get_all_tag_covered_paths(sgNodeID_t from, sgNodeID_t to,
+                                                                    std::set<bsg10xTag> tags) {
+    
 }

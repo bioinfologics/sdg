@@ -22,6 +22,7 @@ public:
     void pop_errors_by_ci_and_paths();
 
     std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> find_tag_neighbours(uint32_t min_size, float min_ci, float max_ci);
+    std::vector<Link> find_tag_neighbours_with_imbalance(uint32_t min_size, float min_ci, float max_ci, float end_perc=.1);
 
     WorkSpace &ws;
 
@@ -33,6 +34,9 @@ public:
     std::vector<sgNodeID_t> shared_nodes(std::vector<std::vector<SequenceGraphPath>> parallel_paths);
 
     std::vector<SequenceGraphPath> combine( std::vector<SequenceGraphPath> parallel_paths1, std::vector<SequenceGraphPath> parallel_paths2 );
+
+    std::vector<SequenceGraphPath> get_all_tag_covered_paths(sgNodeID_t from, sgNodeID_t to, std::set<bsg10xTag> tags);
+
     void dettach_path_as_new_node(sgNodeID_t from, sgNodeID_t to, SequenceGraphPath path);
     uint64_t connect_neighbours(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance);
     void connect_neighbours_trivial(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,

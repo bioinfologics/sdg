@@ -17,7 +17,7 @@ int main(int argc, char * argv[]) {
 
     std::string workspace_file,output_prefix;
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
-    bool repeat_expansion=false, neighbour_connection=false, bubbly_paths=false, pop_errors=false;
+    bool repeat_expansion=false, neighbour_connection=false,neighbour_connection_graph=false, bubbly_paths=false, pop_errors=false;
     try
     {
         cxxopts::Options options("bsg-untangler", "graph-based repeat resolution and haplotype separation");
@@ -30,6 +30,7 @@ int main(int argc, char * argv[]) {
                 ("r,repeat_expansion","run tag-based repeat expansion", cxxopts::value<bool>(repeat_expansion))
                 ("b,bubbly_paths","run bubbly paths phasing", cxxopts::value<bool>(bubbly_paths))
                 ("n,neighbour_connection","run tag-based repeat neighbour_connection", cxxopts::value<bool>(neighbour_connection))
+                ("c,neighbour_connection_graph","create a tag-imbalance-based neighbour gfa", cxxopts::value<bool>(neighbour_connection_graph))
                 ;
 
 
@@ -100,7 +101,7 @@ int main(int argc, char * argv[]) {
     if (repeat_expansion) {
         //==================== Development code (i.e. random tests!) ==============
         Untangler u(ws);
-        u.expand_canonical_repeats_by_tags(.75,1.25,10);
+        u.expand_canonical_repeats_by_tags(.5,1.25,20);
         if (!ws.sg.is_sane()) {
             sglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
             return 1;
@@ -140,6 +141,16 @@ int main(int argc, char * argv[]) {
                 }
             }
         }
+        /*ws.kci.reindex_graph();
+        for (auto &m:ws.linked_read_mappers) {
+            m.remap_all_reads();
+        }*/
+    }
+    if (neighbour_connection_graph){
+        Untangler u(ws);
+        auto tni=u.find_tag_neighbours_with_imbalance(10000, .5, 1.25,.25);
+        //create a gfa with all nodes in nti, and connect them, dump the gfa.
+
         /*ws.kci.reindex_graph();
         for (auto &m:ws.linked_read_mappers) {
             m.remap_all_reads();
