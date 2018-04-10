@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
     }
 
     // Filter the mappings for quality.
-    tdr.filter_mappings();
+    tdr.filter_mappings(unique_kmer_threshold);
 
     // Post-filter mappings dump.
     if (dump_mappings) {
@@ -118,18 +118,6 @@ int main(int argc, char **argv) {
 
 // DUMP OUTPUT...
 
-
-
-
-/*
-    // Paths dump.
-    if (dump_paths) {
-        sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping paths." << std::endl;
-        std::ofstream pathdumpout(output_prefix + "/paths_list.txt");
-        tdr.print_paths(pathdumpout, true);
-        pathdumpout.close();
-    }
-*/
     // Print out mapped FASTA sequences.
 
     std::ofstream graph_paths_out(output_prefix + "/mapped_paths_graph.fasta");

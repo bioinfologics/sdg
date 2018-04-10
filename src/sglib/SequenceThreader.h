@@ -94,7 +94,7 @@ public:
     bool mapping_continues(const graphPosition& gpos) const;
     uint32_t query_start() const { return first_seq_pos; };
     uint32_t query_end() const { return last_seq_pos; };
-    double match_score() const { return (matched_unique_kmers / possible_unique_matches) * 100; };
+    double match_score() const { return (double(matched_unique_kmers) / possible_unique_matches) * 100; };
 
 private:
     seqID_t seq_id;

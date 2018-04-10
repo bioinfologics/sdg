@@ -423,7 +423,7 @@ void SequenceThreader::query_threads_to_fasta(std::ofstream& output_file, bool u
 }
 
 void SequenceThreader::print_mappings(std::ostream& out, bool use_oldnames) const {
-    for( auto it = mappings_of_sequence.begin(); it != mappings_of_sequence.end(); ++it) {
+    for(auto it = mappings_of_sequence.begin(); it != mappings_of_sequence.end(); ++it) {
         for (const auto &sm:it->second) {
             auto sd = sm.seq_direction();
             auto nd = sm.node_direction();
@@ -568,24 +568,27 @@ uint32_t BridgedMappingThreads::query_end() const {
 
 int BridgedMappingThreads::bridge_to_thread(const SequenceGraphPath& sgp, const SequenceMappingThread& smt)
 {
-    std::cout << "Checking mapping bridge:" << std::endl;
-    std::cout << sgp.get_fasta_header(true) << std::endl;
-
     if (mapping_threads.empty()) {
+        std::cout << "Checking mapping bridge:" << std::endl;
+        std::cout << sgp.get_fasta_header(true) << std::endl;
         std::cout << "ERR: No mapping thread to bridge from...";
         return 2;
     }
 
     const auto last_mthread_node = last_mapping().dirnode();
     if (last_mthread_node != sgp.nodes.front()) {
+        std::cout << "Checking mapping bridge:" << std::endl;
+        std::cout << sgp.get_fasta_header(true) << std::endl;
         std::cout << "ERR: First node of bridge mismatches last node of last mapping thread..." << std::endl;
         std::cout << last_mthread_node << " != " << sgp.nodes.front() << std::endl;
         return 3;
     }
 
-    std::cout << "Checking new sequence mapping thread:" << std::endl;
+    //std::cout << "Checking new sequence mapping thread:" << std::endl;
 
     if (sgp.nodes.back() != smt.first_mapping().dirnode()) {
+        std::cout << "Checking mapping bridge:" << std::endl;
+        std::cout << sgp.get_fasta_header(true) << std::endl;
         std::cout << "ERR: First node of new mapping thread mismatches last node of bridge..." << std::endl;
         std::cout << sgp.nodes.back() << " != " << smt.first_mapping().dirnode() << std::endl;
         return 4;
