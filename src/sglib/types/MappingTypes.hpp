@@ -40,6 +40,16 @@ public:
     bool rev=false;
 };
 
+namespace std {
+    template <>
+    struct hash<ReadMapping> {
+        size_t operator()(const ReadMapping& lr) const {
+            std::tuple<sgNodeID_t , uint64_t , int32_t > tp (lr.node,lr.read_id,lr.first_pos);
+            sglib::hash<std::tuple<sgNodeID_t , uint64_t , int32_t>> h;
+            return h (tp);
+        }
+    };
+}
 
 /**
  * TODO: Generate indices for LongReadMapping
@@ -72,7 +82,6 @@ struct LongReadMapping {
     int32_t qStart = 0;         /// Query start position
     int32_t qEnd = 0;           /// Query end position
     uint32_t matches = 0;       /// Number of matches in this "run" of matches
-
 };
 
 namespace std {

@@ -158,7 +158,7 @@ add_library(sequence_graph SHARED
             src/sglib/graph/SequenceSubGraph.cpp
             src/sglib/graph/SequenceGraphPath.cpp
             src/sglib/mappers/LongReadMapper.cpp
-            src/sglib/datastores/LongReadsDatastore.cpp)
+            src/sglib/datastores/LongReadsDatastore.cpp src/sglib/mappers/SingleReadMapper.cpp src/sglib/mappers/SingleReadMapper.hpp)
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 
