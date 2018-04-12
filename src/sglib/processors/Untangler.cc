@@ -422,150 +422,10 @@ std::vector<sgNodeID_t> Untangler::shared_nodes(std::vector<std::vector<Sequence
     return r;
 }
 
-std::vector<SequenceGraphPath> Untangler::combine(std::vector<SequenceGraphPath> parallel_paths1, std::vector<SequenceGraphPath> parallel_paths2){
-//    bool fw=false,rev=false;
-//    int shared[parallel_paths1.size()][parallel_paths2.size()];
-//    int i1=0,i2=0;
-//    for (auto & pp1:parallel_paths1) {
-//        i2=0;
-//        for  (auto & pp2:parallel_paths2){
-//            shared[i1][i2]=0;
-//            for (auto n1:pp1..nodes) {
-//                for (auto n2:pp2.nodes) {
-//                    if (n1==n2) {
-//                        fw=true;
-//                        ++shared[i1][i2];
-//                    }
-//                    if (n1==-n2) {
-//                        rev=true;
-//                        ++shared[i1][i2];
-//                    }
-//                }
-//            }
-//            ++i2;
-//        }
-//        ++i1;
-//    }
-//    if (fw and rev) return {};
-//    if (!fw and !rev) return {};
-//    if (rev) for (auto &pp:parallel_paths2) pp.reverse(); //now we're forward;
-//
-//    if (parallel_paths1.size()!=2 or parallel_paths2.size()!=2){
-//        std::cout<<"Warning: parallel paths not merging because size>2"<<std::endl;
-//        return {};
-//    }
-//    auto & a1=parallel_paths1[0];
-//    auto & b1=parallel_paths1[1];
-//    auto & a2=parallel_paths2[0];
-//    auto & b2=parallel_paths2[1];
-//    if (shared[0][1]>shared[0][0] and shared[1][0]>shared[1][1]){
-//        std::swap(a2.nodes,b2.nodes);
-//    }
-//    //
-//    int aoff=-1;
-//    for (auto i=0;i<a1.nodes.size();++i) {
-//        if (a1.nodes[i] == a2.nodes[0]) {
-//            aoff = i;
-//            break;
-//        }
-//    }
-//    if (aoff<0) std::swap(a2.nodes,a1.nodes);
-//    for (auto i=0;i<a1.nodes.size();++i) {
-//        if (a1.nodes[i] == a2.nodes[0]) {
-//            aoff = i;
-//            break;
-//        }
-//    }
-//    if (aoff<0) return {};
-//
-//    //pp1.uniqueA intersection pp2.uniqueA? pp2.uniqueB? -pp2.uniqueA? -pp2.uniqueB?
-//
-//    //set A1 A2, B1, B2 to be the paths that must be combined.
-//
-//    //for each side
-//        //find start of overlap
-//        //check overlap ==
 
-}
 
 
 void Untangler::analise_paths_through_nodes() {
-//    std::vector<uint8_t> used(ws.sg.nodes.size(),0);
-//    for (auto &p:ws.path_datastores[0].paths){
-//        for (auto i=1;i<p.nodes.size()-1;++i) if (used[llabs(p.nodes[i])]<20) ++used[llabs(p.nodes[i])];
-//    }
-//    uint64_t hall[21];
-//    for (auto &x:hall) x=0;
-//    uint64_t h399[21];
-//    for (auto &x:h399) x=0;
-//    uint64_t h402[21];
-//    for (auto &x:h402) x=0;
-//    uint64_t h1000[21];
-//    for (auto &x:h1000) x=0;
-//    uint64_t h10000[21];
-//    for (auto &x:h10000) x=0;
-//    for (auto n=0;n<ws.sg.nodes.size();++n) {
-//        ++hall[used[n]];
-//        if (ws.sg.nodes[n].sequence.size()>=399) {
-//            if (ws.sg.nodes[n].sequence.size()<402) ++h399[used[n]];
-//            else if (ws.sg.nodes[n].sequence.size()<1000) ++h402[used[n]];
-//            else if (ws.sg.nodes[n].sequence.size()<10000) ++h1000[used[n]];
-//            else ++h10000[used[n]];
-//        }
-//
-//    }
-//    std::cout<<std::endl<<"=== Paths through -> nodes ==="<<std::endl;
-//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<hall[i]<<std::endl;
-//    std::cout<<std::endl<<"=== Paths through -> nodes 399bp - 401bp ==="<<std::endl;
-//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<h399[i]<<std::endl;
-//    std::cout<<std::endl<<"=== Paths through -> nodes 402bp - 999bp ==="<<std::endl;
-//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<h402[i]<<std::endl;
-//    std::cout<<std::endl<<"=== Paths through -> nodes 1000bp - 9999bp ==="<<std::endl;
-//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<h1000[i]<<std::endl;
-//    std::cout<<std::endl<<"=== Paths through -> nodes 10000bp+ ==="<<std::endl;
-//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<h10000[i]<<std::endl;
-//TODO: this is the path-through part
-//    struct path_through{
-//        sgNodeID_t from,to;
-//        uint16_t count;
-//        path_through(sgNodeID_t _f,sgNodeID_t _t, uint16_t _c):from(_f),to(_t),count(_c){};
-//        const bool operator==(std::pair<sgNodeID_t,sgNodeID_t> a){
-//            return (from == a.first and to == a.second) or (from == a.second and to == a.first);
-//        }
-//    };
-//    sglib::OutputLog()<<"Creating path_through structures for each node"<<std::endl;
-//    std::vector<std::vector<struct path_through>> paths_through_nodes(ws.sg.nodes.size());
-//    std::pair<sgNodeID_t,sgNodeID_t> pfromto;
-//    //TODO: add the first and last with origin/end in themselves
-//    for (auto &p:ws.path_datastores[0].paths){
-//        for (auto i=1;i<p.nodes.size()-1;++i) {
-//            auto n=llabs(p.nodes[i]);
-//            if (p.nodes[i]>0) { pfromto.first=p.nodes[i-1];pfromto.second=-p.nodes[i+1]; }
-//            else { pfromto.first=-p.nodes[i+1]; pfromto.second=p.nodes[i-1];}
-//
-//            auto pti=std::find(paths_through_nodes[n].begin(),paths_through_nodes[n].end(),pfromto);
-//            if (pti==paths_through_nodes[n].end()) paths_through_nodes[n].emplace_back(pfromto.first,pfromto.second,1);
-//            else ++(pti->count);
-//        }
-//    }
-
-    //Canonical repeats.
-//    for (sgNodeID_t n=0;n<ws.sg.nodes.size();++n){
-//        auto fwl=ws.sg.get_fw_links(n);
-//        auto bwl=ws.sg.get_bw_links(n);
-//        if (fwl.size()>1 and fwl.size()==bwl.size() ){
-//            if (paths_through_nodes[n].size()!=fwl.size()) continue;
-//            std::set<sgNodeID_t> in_sol;
-//            for (auto &ptn:paths_through_nodes[n]) {
-//                in_sol.insert(llabs(ptn.from));
-//                in_sol.insert(llabs(ptn.to));
-//            }
-//            if (in_sol.size()<2*fwl.size()) continue;
-//            std::cout<<std::endl<<"Canonical repeat x"<<fwl.size()<<" on node "<<n<<" ("<<ws.sg.nodes[n].sequence.size()<<"bp) solved?"<<std::endl;
-//            for (auto &ptn:paths_through_nodes[n]) std::cout<<" "<<ptn.from<<" -> "<<ptn.to<<": "<<ptn.count<<std::endl;
-//        }
-//
-//    }
     std::cout<<"computing KCI for all nodes"<<std::endl;
     ws.kci.compute_all_nodes_kci(1);
     std::ofstream kciof("kci_dump.csv");
@@ -879,6 +739,8 @@ std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_nei
     return neighbours;
 }
 
+
+
 /**
  * @brief grabs all "long" haplotype-specific nodes, uses tags to find neighbours, uses imbalance to impute direction.
  * @param min_size
@@ -887,9 +749,9 @@ std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_nei
  * @return
  */
 std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_size, float min_ci, float max_ci, float end_perc) {
-
+    //TODO: divide this and make iterative: start by big fish, then add small in-betweens, simplify transitives into subgraphs
     SequenceGraph tsg;
-    std::map<sgNodeID_t,sgNodeID_t> general_to_tag;
+    std::map<sgNodeID_t,sgNodeID_t> general_to_tag,tag_to_general;
     sglib::OutputLog()<<"Selecting selected_nodes..."<<std::endl;
     std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> neighbours;
     std::vector<std::set<bsg10xTag>> node_tags;
@@ -899,6 +761,8 @@ std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_si
     auto selected_nodes=ws.select_from_all_nodes(min_size,1000000,20,200000, min_ci, max_ci);
     for (auto n:selected_nodes) {
         general_to_tag[n]=tsg.add_node(ws.sg.nodes[n].sequence);
+        tag_to_general[general_to_tag[n]]=n;
+        tag_to_general[-general_to_tag[n]]=-n;
         total_bp+=ws.sg.nodes[n].sequence.size();
         for (auto t:ws.linked_read_mappers[0].get_node_tags(n)) node_tags[n].insert(t);
     }
@@ -971,6 +835,7 @@ std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_si
         }
     }
     tsg.write_to_gfa("tag_neighbours_imbdir.gfa");
+    BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,5000,200000,1000);
     uint64_t perf_ts=0;
     for (auto n=1;n<tsg.nodes.size();++n){
         auto b=n;
@@ -982,8 +847,22 @@ std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_si
         auto afw=tsg.get_fw_links(a);
         auto cbw=tsg.get_bw_links(c);
         if (afw.size()!=2 or cbw.size()!=2) continue;
-        if (afw[0].dest==c or afw[1].dest==c) std::cout<<"Found perfect transtition "<<a<<" "<<b<<" "<<c<<std::endl;
-        ++perf_ts;
+        if (afw[0].dest==c or afw[1].dest==c) {
+            std::cout << "Found perfect transtition " << a << " " << b << " " << c << std::endl;
+            auto A = tag_to_general[a];
+            auto B = tag_to_general[b];
+            auto C = tag_to_general[c];
+            std::cout << "On original ids: " << A << " " << B << " " << C << std::endl;
+            std::set<bsg10xTag> tags;
+            for (auto t:ws.linked_read_mappers[0].get_node_tags(A)) tags.insert(t);
+            for (auto t:ws.linked_read_mappers[0].get_node_tags(B)) tags.insert(t);
+            for (auto t:ws.linked_read_mappers[0].get_node_tags(C)) tags.insert(t);
+            auto ab = get_all_tag_covered_paths(A, B, tags, btk);
+            auto bc = get_all_tag_covered_paths(B, C, tags, btk);
+            if (ab.size() == 1) std::cout << "A->B Solved!" << std::endl;
+            if (bc.size() == 1) std::cout << "B->C Solved!" << std::endl;
+            ++perf_ts;
+        }
 
     }
     std::cout<<perf_ts<<" perfect transitions found"<<std::endl;
@@ -1213,6 +1092,46 @@ void Untangler::dettach_path_as_new_node(sgNodeID_t from, sgNodeID_t to, Sequenc
 }
 
 std::vector<SequenceGraphPath> Untangler::get_all_tag_covered_paths(sgNodeID_t from, sgNodeID_t to,
-                                                                    std::set<bsg10xTag> tags) {
-    
+                                                                    std::set<bsg10xTag> &tags,
+                                                                    BufferedTagKmerizer &btk) {
+    int64_t max_distance=50000;
+    auto allpaths = ws.sg.find_all_paths_between(from, to, max_distance);
+
+
+    if (allpaths.empty()) return {};
+    std::cout << "Evaluating between " << allpaths.size() << " different paths to join " << from << " and "
+              << to << std::endl;
+    auto neightagkmers = btk.get_tags_kmers(6, tags);
+    std::vector<SequenceGraphPath> sol;
+    for (auto p:allpaths) {
+        auto pseq = p.get_sequence();
+        //TODO: this can be doen not with a factory but with a class that already counts how many are in the set
+        StringKMerFactory skf(pseq, 31);
+        std::vector<uint64_t> seqkmers;
+        skf.create_kmers(seqkmers);
+        uint64_t covered = 0, uncovered = 0;
+        for (auto x:seqkmers) {
+            if (neightagkmers.count(x) > 0) ++covered;
+            else ++uncovered;
+        }
+        std::cout << "  path evaluation: " << covered << " covered, " << uncovered << " uncovered" << std::endl;
+        if (uncovered == 0) sol.push_back(p);
+    }
+    return sol;
+}
+
+
+
+/**
+ * @brief, creates backbones by joining tag-neighbours with tag imbalance. starts by larger nodes
+ * @param min_ci
+ * @param max_ci
+ * @param end_perc
+ * @return
+ */
+std::vector<Backbone> Untangler::create_backbones(float min_ci, float max_ci, float end_perc) {
+    auto nodes10K=ws.select_from_all_nodes(10000,1000000,20,200000, min_ci, max_ci);
+
+
+
 }

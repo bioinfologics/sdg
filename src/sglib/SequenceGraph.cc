@@ -872,6 +872,7 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
         next_paths.clear();
         for (auto &p:current_paths){
             //if node is a destination add it to final nodes
+            if (p.nodes.back()==-to) std::cout<<"WARNING: found path to -TO node"<<std::endl;
             if (p.nodes.back()==to) {
                 final_paths.push_back(p);
                 final_paths.back().nodes.pop_back();
@@ -880,7 +881,7 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
             else {
                 for (auto l:get_fw_links(p.nodes.back())){
                     if (std::find(p.nodes.begin(),p.nodes.end(),l.dest)!=p.nodes.end()) {
-                        //std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
+                        std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
                         return {};
                         //continue;
                     }
