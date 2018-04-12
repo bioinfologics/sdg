@@ -29,49 +29,36 @@ class Untangler {
 public:
     explicit Untangler(WorkSpace & _ws): ws(_ws) {};
 
-    //Functions evaluating 10x tags linkage
+    //Functions evaluating 10x tags linkage / coverage
+    std::pair<float,float> tag_read_percentage_at_ends(sgNodeID_t node, std::set<bsg10xTag> tags, float end_perc=.1, uint32_t end_size=0);
+    std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> find_tag_neighbours(uint32_t min_size, float min_ci, float max_ci);
+    std::vector<Link> find_tag_neighbours_with_imbalance(uint32_t min_size, float min_ci, float max_ci, float end_perc=.1);
+    std::vector<SequenceGraphPath> get_all_tag_covered_paths(sgNodeID_t from, sgNodeID_t to, std::set<bsg10xTag> &tags, BufferedTagKmerizer &btk);
 
 
     //Backbone creation
-
-
-    //graph simplification (direct operations, no backbones)
-    uint64_t solve_canonical_repeats_by_tags(std::unordered_set<uint64_t> & reads_to_remap);
-
-    uint64_t expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags=10);
-    uint64_t extend_HSPNPs_by_tagwalking(); //TODO: deprecate
-
-    //graph manipulation
-    std::vector<std::pair<sgNodeID_t, sgNodeID_t>> get_all_HSPNPs();
-
-
-
     std::vector<Backbone> create_backbones(float min_ci, float max_ci, float end_perc=.1);
 
+    //graph simplification (direct operations, no backbones)
 
-
-
-    void analise_paths_through_nodes();
-    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> find_bubbles(uint32_t min_size,uint32_t max_size);
-    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> solve_bubbly_paths();
     void pop_errors_by_ci_and_paths();
+    uint64_t expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags=10);
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> solve_bubbly_paths();
 
-    std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> find_tag_neighbours(uint32_t min_size, float min_ci, float max_ci);
-    std::vector<Link> find_tag_neighbours_with_imbalance(uint32_t min_size, float min_ci, float max_ci, float end_perc=.1);
+    uint64_t solve_canonical_repeats_by_tags(std::unordered_set<uint64_t> & reads_to_remap); //TODO: deprecate
+    uint64_t extend_HSPNPs_by_tagwalking(); //TODO: deprecate
+    void analise_paths_through_nodes(); //TODO: deprecate
 
-
-
+    //graph manipulation TODO: move to SequenceGraph
+    std::vector<std::pair<sgNodeID_t, sgNodeID_t>> get_all_HSPNPs();
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> find_bubbles(uint32_t min_size,uint32_t max_size);
+    void dettach_path_as_new_node(sgNodeID_t from, sgNodeID_t to, SequenceGraphPath path);
     std::vector<SequenceGraphPath> make_parallel_paths(std::vector<SequenceGraphPath>);
-
     bool all_nodes_consumed(std::vector<SequenceGraphPath>);
-
     std::vector<sgNodeID_t> shared_nodes(std::vector<std::vector<SequenceGraphPath>> parallel_paths);
 
-    std::vector<SequenceGraphPath> combine( std::vector<SequenceGraphPath> parallel_paths1, std::vector<SequenceGraphPath> parallel_paths2 );
+    //TODO: just deprecate these ASAP
 
-    std::vector<SequenceGraphPath> get_all_tag_covered_paths(sgNodeID_t from, sgNodeID_t to, std::set<bsg10xTag> &tags, BufferedTagKmerizer &btk);
-
-    void dettach_path_as_new_node(sgNodeID_t from, sgNodeID_t to, SequenceGraphPath path);
     uint64_t connect_neighbours(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance);
     void connect_neighbours_trivial(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,
                                      const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,

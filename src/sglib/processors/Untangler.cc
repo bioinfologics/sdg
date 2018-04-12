@@ -1120,7 +1120,36 @@ std::vector<SequenceGraphPath> Untangler::get_all_tag_covered_paths(sgNodeID_t f
     return sol;
 }
 
-
+/**
+ * @brief returns the percentage of reads in both ends of node covered by tags in tags
+ * @param node
+ * @param tags
+ * @param end_perc
+ * @param end_size
+ * @return
+ */
+std::pair<float,float> Untangler::tag_read_percentage_at_ends(sgNodeID_t node, std::set<bsg10xTag> tags, float end_perc,
+                                                              uint32_t end_size) {
+    auto n1=llabs(node);
+    if (end_size==0) end_size=ws.sg.nodes[n1].sequence.size()*end_perc;
+    auto first_chunk=end_size;
+    auto last_chunk=ws.sg.nodes[n1].sequence.size()-end_size;
+    uint64_t n1_front_in=0,n1_front_total=0,n1_back_in=0,n1_back_total=0;
+    uint64_t n2_front_in=0,n2_front_total=0,n2_back_in=0,n2_back_total=0;
+    for (auto rm:ws.linked_read_mappers[0].reads_in_node[n1]){
+        if (rm.first_pos<first_chunk){
+            ++n1_front_total;
+            if (tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n1_front_in;
+        }
+        if (rm.last_pos>last_chunk){
+            ++n1_back_total;
+            if (tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n1_back_in;
+        }
+    }
+    auto n1f=(100.0*n1_front_in/n1_front_total);
+    auto n1b=(100.0*n1_back_in/n1_back_total);
+    return {n1f,n1b};
+}
 
 /**
  * @brief, creates backbones by joining tag-neighbours with tag imbalance. starts by larger nodes
@@ -1131,7 +1160,31 @@ std::vector<SequenceGraphPath> Untangler::get_all_tag_covered_paths(sgNodeID_t f
  */
 std::vector<Backbone> Untangler::create_backbones(float min_ci, float max_ci, float end_perc) {
     auto nodes10K=ws.select_from_all_nodes(10000,1000000,20,200000, min_ci, max_ci);
+    std::vector<std::pair<sgNodeID_t , sgNodeID_t>> linked_nodes;
+    std::vector<std::set<bsg10xTag >> nodes10Ktags;
+    for (auto n:nodes10K) nodes10Ktags.push_back(ws.linked_read_mappers[0].get_node_tags(n));
+    for (auto i1=0;i1<nodes10K.size();++i1){
+        auto n1=nodes10K[i1];
+        for (auto i2=i1+1;i2<nodes10K.size();++i2){
+            auto n2=nodes10K[i2];
+            std::set<bsg10xTag> shared_tags;
+            std::set_intersection(nodes10Ktags[i1].begin(),nodes10Ktags[i1].end(),
+                                  nodes10Ktags[i2].begin(),nodes10Ktags[i2].end(),
+                                  std::inserter(shared_tags,shared_tags.end()));
+            if (shared_tags.size()>20) {
+                auto n1fb=tag_read_percentage_at_ends(n1,shared_tags, end_perc);
+                auto n1f=n1fb.first; auto n1b=n1fb.second;
+                auto n2fb=tag_read_percentage_at_ends(n2,shared_tags, end_perc);
+                auto n2f=n2fb.first; auto n2b=n2fb.second;
 
+                if (fabs(2 * (n1f - n1b) / (n1f + n1b)) > .1 and fabs(2 * (n2f - n2b) / (n2f + n2b)) > .1) {
 
+                    std::cout<<"Imbalance solved with "<<shared_tags.size()<<" tags "<<n1<< "( "<<n1f<<", "<<n1b<<" ) "<<n2<< "( "<<n2f<<", "<<n2b<<" )"<<std::endl;
+                }
+            }
+
+        }
+    }
+    return {};
 
 }
