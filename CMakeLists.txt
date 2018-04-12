@@ -83,7 +83,7 @@ if(OPENMP_FOUND)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-add_definitions(${CMAKE_CXX_FLAGS})
+#add_definitions(${CMAKE_CXX_FLAGS})
 
 find_package(ZLIB REQUIRED)
 if (ZLIB_FOUND)
@@ -154,6 +154,7 @@ add_library(sequence_graph SHARED
             src/sglib/UniqueKmerIndex.cpp
             src/sglib/WorkSpace.cc
             src/sglib/processors/PathExplorer.cpp
+            src/sglib/aligners/algorithms/ksw2_extz2_sse.c
             )
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
@@ -198,6 +199,7 @@ install(FILES
             src/sglib/aligners/algorithms/SmithWaterman.h
             src/sglib/aligners/submat/SubstitutionMatrix.h
             src/sglib/processors/PathExplorer.h
+            src/sglib/aligners/algorithms/ksw2.h
         DESTINATION include
         )
 
