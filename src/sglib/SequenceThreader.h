@@ -51,6 +51,7 @@ public:
     void print_dark_nodes(std::ofstream& output_file) const;
     void print_full_node_diagnostics(std::ofstream& output_file) const;
     void print_unmapped_nodes(std::ofstream& output_file) const;
+    void calculate_reference_inclusion();
 
 private:
     SequenceGraph& sg;
@@ -62,15 +63,17 @@ private:
     std::string output_prefix;
     uint64_t memory_limit;
 
+    // Query sequence info storage
+    std::unordered_map<seqID_t, size_t> query_seq_sizes;
+    std::unordered_map<seqID_t, std::string> query_seq_names;
+
     // Results storage
     SequenceMappingStore mappings_of_sequence;
-    SequenceMappingStore filtered_mappings_of_sequence;
     SequenceMappingPathsStore mapping_threads_of_sequence;
     BridgedMappingPathsStore  bridged_mapping_threads_of_sequence;
     std::vector<KmerIDX> unmapped_kmers;
 
     void map_sequences_from_file(const std::string &filename);
-    std::vector<SequenceGraphPath> collect_paths(const sgNodeID_t seed, const sgNodeID_t target, unsigned int size_limit, unsigned int edge_limit);
 };
 
 
@@ -147,12 +150,14 @@ public:
 
     uint32_t query_start() const;
     uint32_t query_end() const;
-
-    void add_mapping_thread(const SequenceMappingThread& smt);
+    uint32_t query_size() const {
+        const auto first = query_start();
+        const auto second = query_end();
+        const auto sub = second > first ? second - first : first - second;
+        return sub + 1;
+    }
 
     int bridge_to_thread(const SequenceGraphPath& sgp, const SequenceMappingThread& smt);
-
-    std::string get_complete_sequence() const;
 
     SequenceGraphPath get_complete_path() const;
 

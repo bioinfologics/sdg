@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
     // Input options - user specifies the graph file, the reference FASTA and the output prefix.
     std::string graph_filename;
     std::string reference_filename;
-    std::string output_prefix;
+    std::string output_dir;
     int log_level;
     bool dump_unmapped, dump_mappings, dump_paths;
     double unique_kmer_threshold;
@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
             ("k", "Kmer size", cxxopts::value<uint8_t>(k) -> default_value("31"), "1-31")
             ("r,reference", "Reference FASTA of sequences to locate in graph", cxxopts::value<std::string>(reference_filename), "FASTA - Sequence file")
             ("g,graph", "Genome graph in GFA format", cxxopts::value<std::string>(graph_filename), "GFA file")
-            ("o,output", "Output file prefix", cxxopts::value<std::string>(output_prefix) -> default_value(outdefault), "prefix_dir")
+            ("o,output", "Output directory name", cxxopts::value<std::string>(output_dir) -> default_value(outdefault))
             ("u", "Dump non-mapped graph nodes", cxxopts::value<bool>(dump_unmapped))
             ("m", "Dump graph node mappings", cxxopts::value<bool>(dump_mappings))
             ("p", "Dump connected paths", cxxopts::value<bool>(dump_paths))
@@ -64,8 +64,8 @@ int main(int argc, char **argv) {
         fail = true;
     }
 
-    if (!sglib::check_or_create_directory(output_prefix)) {
-        std::cout << "Could not find or create output directory: " << output_prefix << '.' << std::endl;
+    if (!sglib::check_or_create_directory(output_dir)) {
+        std::cout << "Could not find or create output directory: " << output_dir << '.' << std::endl;
         fail = true;
     }
 
@@ -81,12 +81,12 @@ int main(int argc, char **argv) {
     SequenceThreader tdr(sg, k);
 
 // MAP UNIQUE KMERS FROM FASTA SEQUENCES INTO GRAPH.
-    tdr.map_sequences(reference_filename, output_prefix);
+    tdr.map_sequences(reference_filename, output_dir);
 
     // Pre-filter mappings dump.
     if (dump_mappings) {
         sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping mappings." << std::endl;
-        std::ofstream mapping_dump(output_prefix + "/mappings_unfiltered.txt");
+        std::ofstream mapping_dump(output_dir + "/mappings_unfiltered.txt");
         tdr.print_mappings(mapping_dump, true);
         mapping_dump.close();
     }
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
     // Post-filter mappings dump.
     if (dump_mappings) {
         sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping mappings." << std::endl;
-        std::ofstream mapping_dump(output_prefix + "/mappings_filtered.txt");
+        std::ofstream mapping_dump(output_dir + "/mappings_filtered.txt");
         tdr.print_mappings(mapping_dump, true);
         mapping_dump.close();
     }
@@ -105,29 +105,29 @@ int main(int argc, char **argv) {
     // Unmapped node diagnostics dump.
     if (dump_unmapped) {
         sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping unmapped nodes." << std::endl;
-        std::ofstream unmapped(output_prefix + "/unmapped_nodes.txt");
+        std::ofstream unmapped(output_dir + "/unmapped_nodes.txt");
         tdr.print_unmapped_nodes(unmapped);
         unmapped.close();
     }
 
-// CONNECT MAPPINGS...
+// CONNECT MAPPINGS INTO "MAPPING THREADS"...
     tdr.thread_mappings();
 
-// TEST THE CONNECT_THREADS METHOD SO FAR...
-    tdr.bridge_threads();
-
-// DUMP OUTPUT...
-
-    // Print out mapped FASTA sequences.
-
-    std::ofstream graph_paths_out(output_prefix + "/mapped_paths_graph.fasta");
-    tdr.graph_threads_to_fasta(graph_paths_out, true);
+    std::ofstream graph_paths_out(output_dir + "/mapped_paths_graph.fasta");
+    tdr.graph_threads_to_fasta(graph_paths_out);
     graph_paths_out.close();
 
-    std::ofstream query_paths_out(output_prefix + "/mapped_paths_query.fasta");
+    std::ofstream query_paths_out(output_dir + "/mapped_paths_query.fasta");
     tdr.query_threads_to_fasta(query_paths_out);
     query_paths_out.close();
 
-    std::ofstream bridged_graph_paths_out(output_prefix + "/bridged_mapped_paths_graph.fasta");
+// TRY TO BRIDGE DISCONNECTED MAPPING THREADS...
+    tdr.bridge_threads();
+
+    std::ofstream bridged_graph_paths_out(output_dir + "/bridged_mapped_paths_graph.fasta");
     tdr.bridged_graph_threads_to_fasta(bridged_graph_paths_out);
+
+// Calculate reference inclusion by query...
+    sglib::OutputLog(sglib::INFO) << "Finished threading " << reference_filename << " through graph " << graph_filename << '.' << std::endl;
+    tdr.calculate_reference_inclusion();
 }
