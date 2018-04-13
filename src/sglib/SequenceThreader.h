@@ -10,7 +10,7 @@
 #include <vector>
 #include <set>
 #include <sglib/SequenceGraph.h>
-#include <sglib/UniqueKmerIndex.h>
+#include <sglib/processors/UniqueKmerIndex.h>
 #include <sglib/factories/KMerIDXFactory.h>
 #include <sglib/logger/OutputLog.h>
 

@@ -151,7 +151,7 @@ add_library(sequence_graph SHARED
             src/sglib/SequenceGraph.cc
             src/sglib/SequenceGraphJournal.cc
             src/sglib/SequenceThreader.cpp
-            src/sglib/UniqueKmerIndex.cpp
+            src/sglib/processors/UniqueKmerIndex.cpp
             src/sglib/WorkSpace.cc
             src/sglib/processors/PathExplorer.cpp
             src/sglib/aligners/algorithms/ksw2_extz2_sse.c
@@ -194,7 +194,7 @@ install(FILES
             src/sglib/SequenceGraphJournal.hpp
             src/sglib/SequenceThreader.h
             src/sglib/SMR.h
-            src/sglib/UniqueKmerIndex.h
+            src/sglib/processors/UniqueKmerIndex.h
             src/sglib/WorkSpace.hpp
             src/sglib/aligners/algorithms/SmithWaterman.h
             src/sglib/aligners/submat/SubstitutionMatrix.h

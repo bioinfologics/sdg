@@ -4,7 +4,7 @@
 
 #include <tuple>
 #include <stack>
-#include <sglib/UniqueKmerIndex.h>
+#include <sglib/processors/UniqueKmerIndex.h>
 #include <sglib/SMR.h>
 #include <sglib/factories/KMerIDXFactory.h>
 #include <sglib/readers/FileReader.h>
