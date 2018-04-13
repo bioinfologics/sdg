@@ -52,7 +52,7 @@ public:
                     ++fi;
                     if (fi == N) fi = 0;
                 }
-                if (last_unknown[fi] - S < 0) continue;
+                if (unlikely(last_unknown[fi] + S > p)) continue;
 
                 if (fkmer[fi] <= rkmer[fi]) {
                     mers.emplace_back(fkmer[fi],p);
@@ -92,7 +92,7 @@ public:
                     ++fi;
                     if (fi == N) fi = 0;
                 }
-                if (last_unknown[fi] - S < 0) continue;
+                if (unlikely(last_unknown[fi] + S > p)) continue;
 
                 if (fkmer[fi] <= rkmer[fi]) {
                     mers.emplace_back(fkmer[fi],p);
@@ -133,7 +133,7 @@ public:
                     ++fi;
                     if (fi == N) fi = 0;
                 }
-                if (last_unknown[fi] - S < 0) continue;
+                if (unlikely(last_unknown[fi] + S > p)) continue;
 
                 if (fkmer[fi] <= rkmer[fi]) {
                     mers.emplace_back(fkmer[fi],p);
