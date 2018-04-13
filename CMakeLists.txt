@@ -252,9 +252,6 @@ add_executable(seq-sorter
 add_executable(seq-thread
         src/seq-thread.cpp)
 
-add_executable(map-lr
-               src/map-lr.cc)
-
 add_executable(gfa-extract
         src/gfa-extract.cc)
 
@@ -270,7 +267,6 @@ target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(seq-thread sequence_graph)
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(map-lr sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract sequence_graph)
 
 IF(BUILD_TESTING)
