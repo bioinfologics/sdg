@@ -100,7 +100,7 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
     std::vector<sgNodeID_t> nodes;
     sglib::OutputLog()<<"Selecting nodes: " << min_size << "-" << max_size << " bp " <<
                       min_tags << "-" << max_tags << " tags " << min_ci << "-" << max_ci << " CI"<<std::endl;
-    uint64_t tnodes=0,ttags=0;
+    uint64_t tnodes=0,tbp=0;
     nodes.reserve(sg.nodes.size());
 #pragma omp parallel
     {
@@ -116,13 +116,13 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
             if (ci < min_ci or ci > max_ci) continue;
             ++tnodes;
             thread_nodes.emplace_back(n);
-            ttags += ntags.size();
+            tbp += sg.nodes[n].sequence.size();
         }
 
 #pragma omp critical(collect_selected_nodes)
         nodes.insert(nodes.end(),thread_nodes.begin(),thread_nodes.end());
 
     }
-    sglib::OutputLog()<< "Selected "<<tnodes<<" / "<<sg.nodes.size()<<" with a total "<<ttags<<" tags"<< std::endl;
+    sglib::OutputLog()<< "Selected "<<tnodes<<" / "<<sg.nodes.size()<<" with a total "<<tbp<<"bp"<< std::endl;
     return nodes;
 }

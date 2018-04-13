@@ -161,9 +161,7 @@ add_library(sequence_graph SHARED
             src/sglib/Scaffolder.cc
             src/sglib/filesystem/check_or_create_directory.cc
             src/sglib/filesystem/check_or_create_directory.h
-            src/sglib/PhaseScaffolder.cpp
-            src/sglib/PhaseScaffolder.h
-            src/sglib/KmerCompressionIndex.cc
+        src/sglib/KmerCompressionIndex.cc
             src/sglib/KmerCompressionIndex.hpp
             src/sglib/GraphPartitioner.cc
             src/sglib/GraphPartitioner.hpp
@@ -237,12 +235,6 @@ add_executable(gfa-dumppath EXCLUDE_FROM_ALL
 add_executable(gfa-pairscaff EXCLUDE_FROM_ALL
         src/gfa-pairscaff.cc)
 
-add_executable(gfa-bfphaser EXCLUDE_FROM_ALL
-        src/gfa-bfphaser.cc)
-
-add_executable(phaser EXCLUDE_FROM_ALL
-               src/phaser.cpp)
-
 add_executable(gfa-align EXCLUDE_FROM_ALL
                src/gfa-align.cc)
 
@@ -261,6 +253,4 @@ target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(gfa-bfphaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries (phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})

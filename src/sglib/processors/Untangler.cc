@@ -532,7 +532,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
         int kci_ok=0,kci_fail=0;
         for (auto i=0;i<bp.nodes.size();i+=3) {
             auto dup_kci=ws.kci.compute_compression_for_node(bp.nodes[i],1);
-            if (dup_kci<1.5 or dup_kci>2.5) ++kci_fail;
+            if (dup_kci<1.25 or dup_kci>2.5) ++kci_fail;
             else ++kci_ok;
         }
         if (kci_fail*3<kci_ok) {
@@ -541,10 +541,10 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
             bnodes_size+=bp.total_size();
         }
     }
-    std::cout<<kobps.size()<<" / "<< bps.size() << " bubly subgraphs ( "<<bnodes<<" / "<<allnodes<<" nodes) ( "<<bnodes_size<<" / "<<allnodes_size<<" bp) pass kci condition on duplicated nodes"<<std::endl;
+    std::cout<<kobps.size()<<" / "<< bps.size() << " bubbly subgraphs ( "<<bnodes<<" / "<<allnodes<<" nodes) ( "<<bnodes_size<<" / "<<allnodes_size<<" bp) pass kci condition on duplicated nodes"<<std::endl;
     uint64_t solved=0, solved_nodes=0, solved_size=0, untagged=0,untagged_nodes=0, untagged_size=0 ,ambiguous=0,ambiguous_nodes=0, ambiguous_size=0;
     std::vector<std::pair<std::vector<sgNodeID_t>,std::vector<sgNodeID_t>>> solved_haps;
-    int min_tags=10;
+    int min_tags=20;
     for (auto &bp:kobps){
         //init the haplotypes anchoring all nodes to previous tags
         //std::cout<<"A";
@@ -609,9 +609,9 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
         //for (auto)
 
     }
-    std::cout<<untagged << " / " << kobps.size()<<" bubly subgraphs had <"<<min_tags<<" tags in a unique node (total "<<untagged_nodes<<" nodes / "<<untagged_size<<" bp)"<<std::endl;
-    std::cout<<ambiguous << " / " << kobps.size()<<" bubly subgraphs ambiguous (total "<<ambiguous_nodes<<" nodes) / "<<ambiguous_size<<" bp)"<<std::endl;
-    std::cout<<solved << " / " << kobps.size()<<" bubly subgraphs solved (total "<<solved_nodes<<" nodes) / "<<solved_size<<" bp)"<<std::endl;
+    std::cout<<untagged << " / " << kobps.size()<<" bubbly subgraphs had <"<<min_tags<<" tags in a unique node (total "<<untagged_nodes<<" nodes / "<<untagged_size<<" bp)"<<std::endl;
+    std::cout<<ambiguous << " / " << kobps.size()<<" bubbly subgraphs ambiguous (total "<<ambiguous_nodes<<" nodes) / "<<ambiguous_size<<" bp)"<<std::endl;
+    std::cout<<solved << " / " << kobps.size()<<" bubbly subgraphs solved (total "<<solved_nodes<<" nodes) / "<<solved_size<<" bp)"<<std::endl;
 
     solved=0;
     //expand each repeat
@@ -1135,7 +1135,6 @@ std::pair<float,float> Untangler::tag_read_percentage_at_ends(sgNodeID_t node, s
     auto first_chunk=end_size;
     auto last_chunk=ws.sg.nodes[n1].sequence.size()-end_size;
     uint64_t n1_front_in=0,n1_front_total=0,n1_back_in=0,n1_back_total=0;
-    uint64_t n2_front_in=0,n2_front_total=0,n2_back_in=0,n2_back_total=0;
     for (auto rm:ws.linked_read_mappers[0].reads_in_node[n1]){
         if (rm.first_pos<first_chunk){
             ++n1_front_total;
@@ -1153,16 +1152,23 @@ std::pair<float,float> Untangler::tag_read_percentage_at_ends(sgNodeID_t node, s
 
 /**
  * @brief, creates backbones by joining tag-neighbours with tag imbalance. starts by larger nodes
+ * - Every selected node must appear in only one backbone.
+ * - Nodes can be removed from selection.
+ * - When incorporating smaller nodes, the selection for large nodes remains unchanged.
  * @param min_ci
  * @param max_ci
  * @param end_perc
  * @return
  */
 std::vector<Backbone> Untangler::create_backbones(float min_ci, float max_ci, float end_perc) {
+    std::vector<Backbone> backbones;
     auto nodes10K=ws.select_from_all_nodes(10000,1000000,20,200000, min_ci, max_ci);
     std::vector<std::pair<sgNodeID_t , sgNodeID_t>> linked_nodes;
     std::vector<std::set<bsg10xTag >> nodes10Ktags;
+    std::vector<std::vector<sgNodeID_t>> node_neighbours(nodes10K.size());
+    std::cout<<"Computing directional connections among "<<nodes10K.size()<<" nodes"<<std::endl;
     for (auto n:nodes10K) nodes10Ktags.push_back(ws.linked_read_mappers[0].get_node_tags(n));
+#pragma omp parallel for schedule (static,50)
     for (auto i1=0;i1<nodes10K.size();++i1){
         auto n1=nodes10K[i1];
         for (auto i2=i1+1;i2<nodes10K.size();++i2){
@@ -1178,13 +1184,47 @@ std::vector<Backbone> Untangler::create_backbones(float min_ci, float max_ci, fl
                 auto n2f=n2fb.first; auto n2b=n2fb.second;
 
                 if (fabs(2 * (n1f - n1b) / (n1f + n1b)) > .1 and fabs(2 * (n2f - n2b) / (n2f + n2b)) > .1) {
+                    //std::cout<<"Imbalance solved with "<<shared_tags.size()<<" tags "<<n1<< "( "<<n1f<<", "<<n1b<<" ) "<<n2<< "( "<<n2f<<", "<<n2b<<" )"<<std::endl;
+#pragma omp critical
+                    {
+                        linked_nodes.emplace_back((n1f > n1b ? n1 : -n1), (n2f > n2b ? n2 : -n2));
+                        node_neighbours[i1].push_back(i2);
+                        node_neighbours[i2].push_back(i1);
+                    }
 
-                    std::cout<<"Imbalance solved with "<<shared_tags.size()<<" tags "<<n1<< "( "<<n1f<<", "<<n1b<<" ) "<<n2<< "( "<<n2f<<", "<<n2b<<" )"<<std::endl;
                 }
             }
 
         }
     }
-    return {};
+    std::cout<<"Total connections detected: "<<linked_nodes.size()<<std::endl;
+    std::vector<bool> used(nodes10K.size(),false);
+
+    for (auto i1=0;i1<nodes10K.size();++i1) {
+        if (used[i1]) continue;
+        auto n1 = nodes10K[i1];
+        backbones.emplace_back(ws,*this);
+        used[n1]=true;
+        std::vector<sgNodeID_t> last_added={i1};
+        backbones.back().nodes.push_back(n1);
+        while (not last_added.empty()){
+            std::vector<sgNodeID_t> new_last_added;
+            for (auto x:last_added){
+                for (auto y:node_neighbours[x]){
+                    if (not used[y]){
+                        used[y]=true;
+                        backbones.back().nodes.push_back(nodes10K[y]);
+                        new_last_added.push_back(y);
+                    }
+                }
+            }
+            last_added=new_last_added;
+        }
+        std::cout<<"new backbone: ";
+        for (auto n:backbones.back().nodes) std::cout<<"seq"<<n<<", ";
+        std::cout<<std::endl;
+    }
+
+    return backbones;
 
 }

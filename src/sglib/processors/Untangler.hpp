@@ -7,12 +7,13 @@
 
 
 #include <sglib/WorkSpace.hpp>
-
+class Untangler;
 /**
  * @brief a set of ordered nodes. Can be contiguous or not. node ids refer to nodes in ws.
  */
 class Backbone {
-    explicit Backbone(WorkSpace & _ws): ws(_ws) {};
+public:
+    explicit Backbone(WorkSpace & _ws, Untangler & _u): ws(_ws),u(_u) {};
 
 
     void sort_and_remove_transitive_links();
@@ -21,6 +22,7 @@ class Backbone {
 
 
     WorkSpace &ws;
+    Untangler &u;
     std::vector<sgNodeID_t> nodes;
     std::vector<Link> links;
 };
