@@ -12,6 +12,7 @@
 #include <sglib/logger/OutputLog.h>
 #include <sglib/aligners/algorithms/SmithWaterman.h>
 #include <sglib/processors/PathExplorer.h>
+#include <sglib/utilities/nstats.h>
 
 SequenceMapping::SequenceMapping(){
     // Just clean the structure, OSX doesn't give you clean memory
@@ -119,7 +120,7 @@ void SequenceThreader::map_sequences_from_file(const std::string &filename) {
     FastaReader<FastaRecord> fastaReader({0}, filename);
     std::atomic<uint64_t> mapped_kmers_count(0), sequence_count(0);
 
-#pragma omp parallel shared(fastaReader, mappings_of_sequence, unmapped_kmers)
+#pragma omp parallel shared(fastaReader, mappings_of_sequence, unmapped_kmers, query_seq_sizes, query_seq_names)
     {
         FastaRecord sequence;
         std::vector<KmerIDX> seqkmers;
@@ -138,7 +139,6 @@ void SequenceThreader::map_sequences_from_file(const std::string &filename) {
 
             // get all Kmers from sequence.
             seqkmers.clear();
-
             kf.setFileRecord(sequence);
             kf.next_element(seqkmers);
 
@@ -186,6 +186,8 @@ void SequenceThreader::map_sequences_from_file(const std::string &filename) {
 #pragma omp critical (store_seqmapping)
             {
                 mappings_of_sequence[sequence.id] = sequence_mappings;
+                query_seq_sizes[sequence.id] = sequence.seq.size();
+                query_seq_names[sequence.id] = sequence.name;
             }
 
 #pragma omp critical (readrec)
@@ -249,54 +251,6 @@ void SequenceThreader::thread_mappings() {
     }
 }
 
-
-std::vector<SequenceGraphPath> SequenceThreader::collect_paths(const sgNodeID_t seed, const sgNodeID_t target, unsigned int size_limit, unsigned int edge_limit) {
-
-    struct visitor {
-        sgNodeID_t node;
-        uint dist;
-        uint path_length;
-        visitor(sgNodeID_t n, uint d, uint p) : node(n), dist(d), path_length(p) {}
-    };
-
-    std::vector<SequenceGraphPath> collected_paths;
-    std::vector<sgNodeID_t> current_path;
-
-    std::stack<visitor> to_visit;
-    to_visit.emplace(seed, 0, 0);
-    std::set<sgNodeID_t> visited;
-
-    while (!to_visit.empty()) {
-        const auto activeNode(to_visit.top());
-        to_visit.pop();
-        if (visited.find(activeNode.node) == visited.end() and (activeNode.path_length < edge_limit or edge_limit==0) and (activeNode.dist < size_limit or size_limit==0) )
-        {
-            visited.emplace(activeNode.node);
-
-            if (current_path.size() > activeNode.path_length) {
-                current_path[activeNode.path_length] = activeNode.node;
-                current_path.resize(activeNode.path_length + 1);
-            } else {
-                current_path.emplace_back(activeNode.node);
-            }
-
-            for (const auto &l : sg.get_fw_links(activeNode.node)) {
-                // For each child of the current node, create a child visitor object, and enter it into the parent map.
-                visitor child { l.dest, activeNode.dist + uint(sg.nodes[std::abs(l.dest)].sequence.length()), activeNode.path_length + 1 };
-
-                // If I've found the target along this dfs path, I need to collect it and put it into a SequenceGraphPath object.
-                if (child.node == target) {
-                    current_path.emplace_back(target);
-                    collected_paths.emplace_back(sg, current_path);
-                } else {
-                    to_visit.emplace(child);
-                }
-            }
-        }
-    }
-    return collected_paths;
-}
-
 void SequenceThreader::bridge_threads() {
 
     sglib::OutputLog(sglib::LogLevels::INFO) << "Connecting fragmented mapping threads into longer paths." << std::endl;
@@ -334,7 +288,6 @@ void SequenceThreader::bridge_threads() {
             // Extract the subsequence from the reference sequence...
             size_t len { size_t(final_idx) - size_t(first_idx) + 1 };
             std::string refsubstr { refsequence.seq.substr((size_t) first_idx, len) };
-
 
             PathExplorer pe {sg};
             SequenceGraphPath bestpath {sg};
@@ -488,6 +441,31 @@ void SequenceThreader::print_unmapped_nodes(std::ofstream& output_file) const {
     }
 }
 
+void SequenceThreader::calculate_reference_inclusion() {
+    std::cout << std::endl << "///// Results Per Query Sequence /////" << std::endl;
+    for (const auto& bridged_thread_store : bridged_mapping_threads_of_sequence) {
+
+        std::cout << "// " << query_seq_names[bridged_thread_store.first] << ":" << std::endl;
+
+        std::vector<uint32_t> sizes;
+        unsigned long long total_inclusion = 0;
+        uint32_t current_size;
+
+        for (const auto& bridged_thread : bridged_thread_store.second) {
+            current_size = bridged_thread.query_size();
+            total_inclusion += current_size;
+            sizes.emplace_back(current_size);
+        }
+
+        auto N50 = NX(sizes, 50);
+        auto N90 = NX(sizes, 90);
+
+        std::cout << total_inclusion << "bp / " << query_seq_sizes[bridged_thread_store.first] << "bp";
+        std::cout << " ( " << ((long double) total_inclusion / query_seq_sizes[bridged_thread_store.first]) * 100;
+        std::cout << "% )" << " could be threaded through the graph:" << std::endl;
+        std::cout << "N50: " << N50 << "bp, N90: " << N90 << "bp." << std::endl << std::endl;
+    }
+}
 
 // SequenceMappingThread...
 
@@ -583,8 +561,6 @@ int BridgedMappingThreads::bridge_to_thread(const SequenceGraphPath& sgp, const 
         std::cout << last_mthread_node << " != " << sgp.nodes.front() << std::endl;
         return 3;
     }
-
-    //std::cout << "Checking new sequence mapping thread:" << std::endl;
 
     if (sgp.nodes.back() != smt.first_mapping().dirnode()) {
         std::cout << "Checking mapping bridge:" << std::endl;

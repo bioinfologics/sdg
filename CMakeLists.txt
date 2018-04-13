@@ -200,6 +200,7 @@ install(FILES
             src/sglib/aligners/submat/SubstitutionMatrix.h
             src/sglib/processors/PathExplorer.h
             src/sglib/aligners/algorithms/ksw2.h
+            src/sglib/utilities/nstats.h
         DESTINATION include
         )
 
