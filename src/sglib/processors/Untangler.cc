@@ -514,9 +514,11 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::find_bubbles(uint32_t m
     return r;
 }
 
+
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
     //find bubbly paths
     auto bps=ws.sg.get_all_bubbly_subgraphs();
+    ws.sg.print_bubbly_subgraph_stats(bps);
     std::vector<SequenceSubGraph> kobps,sbps;
     uint64_t allnodes=0,bnodes=0,allnodes_size=0,bnodes_size=0;
     for (auto &bp:bps){
