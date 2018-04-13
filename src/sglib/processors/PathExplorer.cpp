@@ -4,7 +4,8 @@
 
 #include <stack>
 #include <sglib/processors/PathExplorer.h>
-#include <sglib/aligners/algorithms/SmithWaterman.h>
+#include <sglib/readers/FileReader.h>
+#include <sglib/factories/KMerIDXFactory.h>
 
 std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t &seed, const sgNodeID_t &target,
                                                            const std::string& query, const unsigned int flank) const {
@@ -62,34 +63,57 @@ std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t& see
     return collected_paths;
 }
 
+void build_unique_kmers(kmerIDXFactory<FastaRecord>& factory,
+                                        const std::string& sequence,
+                                        std::vector<KmerIDX>& kmers) {
+    kmers.clear();
+    FastaRecord record {0, "", sequence};
+    factory.setFileRecord(record);
+    factory.next_element(kmers);
+    std::sort(kmers.begin(), kmers.end());
+    auto last = std::unique(kmers.begin(), kmers.end());
+    kmers.erase(last, kmers.end());
+}
+
 int PathExplorer::find_best_path(SequenceGraphPath& result,
                                  const sgNodeID_t& seed,
                                  const sgNodeID_t& target,
-                                 const std::string& query,
+                                 const std::string& reference,
                                  const unsigned int flank) const {
 
-    const auto paths { collect_paths(seed, target, query, flank) };
+    // BUILD a kmer set for the reference sequence.
+    std::vector<KmerIDX> refkmers, pathkmers, matchingkmers;
+    kmerIDXFactory<FastaRecord> kf({31});
+    build_unique_kmers(kf, reference, refkmers);
+
+    const std::vector<SequenceGraphPath> paths { collect_paths(seed, target, reference, flank) };
 
     if (!paths.empty()) {
         if (paths.size() == 1) {
             result = paths[0];
             return 0;
         } else {
-            // Determine the best path of several, using the Smith Waterman alignment.
-            sglib::alignment::algorithms::SmithWaterman<int> sw { paths.front().get_sequence().size(), query.size() };
-            int maxscore { 0 };
+            size_t maxscore { 0 };
             std::vector<SequenceGraphPath>::const_iterator bestpath;
             for (auto path {paths.cbegin()}; path != paths.cend(); ++path) {
-                const auto alignres { sw.run(path -> get_sequence(), query, -10, -1) };
-                if (std::get<0>(alignres) > maxscore) {
-                    maxscore = std::get<0>(alignres);
+
+                // Scoring paths by matching kmers.
+                std::string pathseq { path->get_sequence() };
+                build_unique_kmers(kf, pathseq, pathkmers);
+                matchingkmers.clear();
+                std::back_insert_iterator<std::vector<KmerIDX>> it = std::set_intersection(pathkmers.begin(), pathkmers.end(),
+                                                                                           refkmers.begin(), refkmers.end(),
+                                                                                           std::back_inserter(matchingkmers));
+                size_t score = matchingkmers.size();
+                if (score > maxscore) {
+                    maxscore = score;
                     bestpath = path;
                 }
             }
             result = *bestpath;
+            return 0;
         }
     } else {
         return 1;
     }
-
 }
