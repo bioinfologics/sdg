@@ -19,6 +19,8 @@
 #include <map>
 #include "KMerIDXFactory.h"
 
+using uint = unsigned int;
+
 struct FilterSetParams {
     FilterSetParams(std::string output_prefix, uint8_t k, std::unordered_set<KmerIDX> &uniq_kmers,
                     uint32_t min_kmers_to_call_match = 1,
