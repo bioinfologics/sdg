@@ -7,6 +7,7 @@
 #include <sstream>
 #include <set>
 #include <math.h>
+#include <sglib/logger/OutputLog.h>
 #include "SequenceGraph.hpp"
 
 bool Node::is_canonical() {
@@ -857,7 +858,8 @@ std::vector<SequenceSubGraph> SequenceGraph::get_all_bubbly_subgraphs(uint32_t m
 
 void SequenceGraph::print_bubbly_subgraph_stats(const std::vector<SequenceSubGraph> &bubbly_paths) {
     std::vector<uint64_t> solved_sizes,original_sizes;
-    std::cout<<"Analysing "<<bubbly_paths.size()<<" bubbly paths"<<std::endl;
+    sglib::OutputLog()<<bubbly_paths.size()<<" bubbly paths"<<std::endl;
+    auto &log_no_date=sglib::OutputLog(sglib::LogLevels::INFO,false);
     uint64_t total_size=0,total_solved_size=0;
     for (auto &bp:bubbly_paths){
         total_size+=bp.total_size();
@@ -886,27 +888,27 @@ void SequenceGraph::print_bubbly_subgraph_stats(const std::vector<SequenceSubGra
     auto on20s=total_size*.2;
     auto on50s=total_size*.5;
     auto on80s=total_size*.8;
-    std::cout<<"Currently "<<original_sizes.size()<<" sequences with "<<total_size<<"bp, ";
+    sglib::OutputLog() <<"Currently "<<original_sizes.size()<<" sequences with "<<total_size<<"bp, ";
     uint64_t acc=0;
     for (auto s:original_sizes){
-        if (acc<on20s and acc+s>on20s) std::cout<<"N20: "<<s<<"  ";
-        if (acc<on50s and acc+s>on50s) std::cout<<"N50: "<<s<<"  ";
-        if (acc<on80s and acc+s>on80s) std::cout<<"N80: "<<s<<"  ";
+        if (acc<on20s and acc+s>on20s) log_no_date<<"N20: "<<s<<"  ";
+        if (acc<on50s and acc+s>on50s) log_no_date<<"N50: "<<s<<"  ";
+        if (acc<on80s and acc+s>on80s) log_no_date<<"N80: "<<s<<"  ";
         acc+=s;
     }
-    std::cout<<std::endl;
+    log_no_date<<std::endl;
     auto sn20s=total_solved_size*.2;
     auto sn50s=total_solved_size*.5;
     auto sn80s=total_solved_size*.8;
-    std::cout<<"Potentially "<<solved_sizes.size()<<" sequences with "<<total_solved_size<<"bp, ";
+    sglib::OutputLog()<<"Potentially "<<solved_sizes.size()<<" sequences with "<<total_solved_size<<"bp, ";
     acc=0;
     for (auto s:solved_sizes){
-        if (acc<sn20s and acc+s>sn20s) std::cout<<"N20: "<<s<<"  ";
-        if (acc<sn50s and acc+s>sn50s) std::cout<<"N50: "<<s<<"  ";
-        if (acc<sn80s and acc+s>sn80s) std::cout<<"N80: "<<s<<"  ";
+        if (acc<sn20s and acc+s>sn20s) log_no_date<<"N20: "<<s<<"  ";
+        if (acc<sn50s and acc+s>sn50s) log_no_date<<"N50: "<<s<<"  ";
+        if (acc<sn80s and acc+s>sn80s) log_no_date<<"N80: "<<s<<"  ";
         acc+=s;
     }
-    std::cout<<std::endl;
+    log_no_date<<std::endl;
 
 }
 

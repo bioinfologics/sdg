@@ -514,23 +514,87 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::find_bubbles(uint32_t m
     return r;
 }
 
+/**
+ * @brief solves a single bubbly path, returns the paths for the 2 new nodes or empty paths if unsolved
+ * @param bp
+ * @return
+ */
+std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(const SequenceSubGraph &bp, bool &no_tags) {
+    int min_tags=20; no_tags=false;
+    std::vector<std::set<bsg10xTag>> node_tags;
+
+    for (auto i=0;i<bp.nodes.size();++i) {
+        auto n=bp.nodes[i];
+        node_tags.emplace_back(ws.linked_read_mappers[0].get_node_tags(n));
+        if (i%3>0 and node_tags.back().size()<min_tags) {
+            no_tags=true;
+            return {SequenceGraphPath(ws.sg),SequenceGraphPath(ws.sg)};
+        };//check failed: min-tags
+    }
+    //init the haplotypes anchoring all nodes to previous tags
+    //std::cout<<"A";
+    std::vector<sgNodeID_t> hap1, hap2;
+    std::set<bsg10xTag> tags1,tags2;
+    hap1.push_back(bp.nodes[1]);
+    tags1=node_tags[1];
+    hap2.push_back(bp.nodes[2]);
+    tags2=node_tags[2];
+    for (auto i=3;i<bp.nodes.size()-1;i+=3){
+        std::set<bsg10xTag> both;
+        std::set_intersection(tags1.begin(),tags1.end(),tags2.begin(),tags2.end(),std::inserter(both,both.end()));
+        for (auto b:both){
+            tags1.erase(b);
+            tags2.erase(b);
+        }
+        auto A=bp.nodes[i+1];
+        auto B=bp.nodes[i+2];
+        auto tagsA=ws.linked_read_mappers[0].get_node_tags(A);
+        auto tagsB=ws.linked_read_mappers[0].get_node_tags(B);
+        auto a1=intersection_size(tagsA,tags1);
+        auto a2=intersection_size(tagsA,tags2);
+        auto b1=intersection_size(tagsB,tags1);
+        auto b2=intersection_size(tagsB,tags2);
+        if (a1>=min_tags and b1<a1*2/min_tags and b2>=min_tags and a2<b2*2/min_tags){
+            hap1.push_back(A);
+            tags1.insert(tagsA.begin(),tagsA.end());
+            hap2.push_back(B);
+            tags2.insert(tagsB.begin(),tagsB.end());
+        }
+        else if (b1>=min_tags and a1<b1*2/min_tags and a2>=min_tags and b2<a2*2/min_tags){
+            hap2.push_back(A);
+            tags2.insert(tagsA.begin(),tagsA.end());
+            hap1.push_back(B);
+            tags1.insert(tagsB.begin(),tagsB.end());
+        } else {
+            break;
+        }
+    }
+    //std::cout<<std::endl;
+    if (hap1.size()==bp.nodes.size()/3) {
+        SequenceGraphPath p1(ws.sg),p2(ws.sg);
+        for (auto i=0;i<hap1.size();++i){
+            if (i>0) p1.nodes.push_back(bp.nodes[3*i]);
+            p1.nodes.push_back(hap1[i]);
+            if (i>0) p2.nodes.push_back(bp.nodes[3*i]);
+            p2.nodes.push_back(hap2[i]);
+        }
+        return {p1,p2};
+    }
+    return {SequenceGraphPath(ws.sg),SequenceGraphPath(ws.sg)};
+}
 
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
+    //TODO: 3-part structure:
+    // 1) find, report validate kci, report
+    // 2) For each: solve
+    // 3) report
+
     //find bubbly paths
     auto bps=ws.sg.get_all_bubbly_subgraphs();
+    sglib::OutputLog()<<"--- INITIAL bubbly paths ---"<<std::endl;
     ws.sg.print_bubbly_subgraph_stats(bps);
     std::vector<SequenceSubGraph> kobps,sbps;
-    uint64_t allnodes=0,bnodes=0,allnodes_size=0,bnodes_size=0;
     for (auto &bp:bps){
-        /*if (bp.nodes.size()>40) {
-            std::cout<<"LARGE bubbly path: ";
-            for (auto n:bp.nodes) std::cout<<"seq"<<labs(n)<<",";
-            std::cout<<std::endl;
-
-        }*/
-        //check every third node for kci
-        allnodes+=bp.nodes.size();
-        allnodes_size+=bp.total_size();
         int kci_ok=0,kci_fail=0;
         for (auto i=0;i<bp.nodes.size();i+=3) {
             auto dup_kci=ws.kci.compute_compression_for_node(bp.nodes[i],1);
@@ -539,108 +603,35 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
         }
         if (kci_fail*3<kci_ok) {
             kobps.push_back(bp);
-            bnodes+=bp.nodes.size();
-            bnodes_size+=bp.total_size();
         }
     }
-    std::cout<<kobps.size()<<" / "<< bps.size() << " bubbly subgraphs ( "<<bnodes<<" / "<<allnodes<<" nodes) ( "<<bnodes_size<<" / "<<allnodes_size<<" bp) pass kci condition on duplicated nodes"<<std::endl;
-    uint64_t solved=0, solved_nodes=0, solved_size=0, untagged=0,untagged_nodes=0, untagged_size=0 ,ambiguous=0,ambiguous_nodes=0, ambiguous_size=0;
-    std::vector<std::pair<std::vector<sgNodeID_t>,std::vector<sgNodeID_t>>> solved_haps;
-    int min_tags=20;
-    for (auto &bp:kobps){
-        //init the haplotypes anchoring all nodes to previous tags
-        //std::cout<<"A";
-        std::vector<sgNodeID_t> hap1, hap2;
-        std::set<bsg10xTag> tags1,tags2;
-        hap1.push_back(bp.nodes[1]);
-        tags1=ws.linked_read_mappers[0].get_node_tags(bp.nodes[1]);
-        hap2.push_back(bp.nodes[2]);
-        tags2=ws.linked_read_mappers[0].get_node_tags(bp.nodes[2]);
-        if (tags1.size()<min_tags or tags2.size()<min_tags) {++untagged; untagged_nodes+=bp.nodes.size(); untagged_size+=bp.total_size(); continue;};
-        bool utb=false;
-        for (auto i=3;i<bp.nodes.size()-1;i+=3){
-            std::set<bsg10xTag> both;
-            std::set_intersection(tags1.begin(),tags1.end(),tags2.begin(),tags2.end(),std::inserter(both,both.end()));
-            for (auto b:both){
-                tags1.erase(b);
-                tags2.erase(b);
-            }
-            auto A=bp.nodes[i+1];
-            auto B=bp.nodes[i+2];
-            auto tagsA=ws.linked_read_mappers[0].get_node_tags(A);
-            auto tagsB=ws.linked_read_mappers[0].get_node_tags(B);
-            if (tagsA.size()<min_tags or tagsB.size()<min_tags) {++untagged;untagged_nodes+=bp.nodes.size(); untagged_size+=bp.total_size(); utb=true; break;};
-            auto a1=intersection_size(tagsA,tags1);
-            auto a2=intersection_size(tagsA,tags2);
-            auto b1=intersection_size(tagsB,tags1);
-            auto b2=intersection_size(tagsB,tags2);
-            if (a1>=min_tags and b1<a1*2/min_tags and b2>=min_tags and a2<b2*2/min_tags){
-                //std::cout<<"A";
-                hap1.push_back(A);
-                tags1.insert(tagsA.begin(),tagsA.end());
-                hap2.push_back(B);
-                tags2.insert(tagsB.begin(),tagsB.end());
-            }
-            else if (b1>=min_tags and a1<b1*2/min_tags and a2>=min_tags and b2<a2*2/min_tags){
-                //std::cout<<"B";
-                hap2.push_back(A);
-                tags2.insert(tagsA.begin(),tagsA.end());
-                hap1.push_back(B);
-                tags1.insert(tagsB.begin(),tagsB.end());
-            } else {
-                //std::cout<<" ["<<a1<<","<<a2<<","<<b1<<","<<b2<<"] FAIL!";
-                break;
-            }
-        }
-        //std::cout<<std::endl;
-        if (utb) continue;
-        if (hap1.size()==bp.nodes.size()/3) {
-            ++solved;
-            sbps.push_back(bp);
-            solved_haps.push_back({hap1,hap2});
-            solved_nodes+=bp.nodes.size();
-            solved_size+=bp.total_size();
-        }
-        else{
-            ++ambiguous;
-            ambiguous_nodes+=bp.nodes.size();
-            ambiguous_size+=bp.total_size();
-        }
+    sglib::OutputLog()<<"--- KCI OK bubbly paths ---"<<std::endl;
+    ws.sg.print_bubbly_subgraph_stats(kobps);
 
-        //
-        //for (auto)
 
+
+    //uint64_t solved=0, solved_nodes=0, solved_size=0, untagged=0,untagged_nodes=0, untagged_size=0 ,ambiguous=0,ambiguous_nodes=0, ambiguous_size=0;
+    //std::vector<std::pair<std::vector<sgNodeID_t>,std::vector<sgNodeID_t>>> solved_haps;
+    //int min_tags=20;
+    {
+        uint64_t solved = 0, unsolved = 0, untagged = 0;
+        std::vector<SequenceSubGraph> solbubs;
+        for (auto &bp:kobps) {
+            bool no_tags;
+            auto sol = solve_bubbly_path(bp, no_tags);
+            if (no_tags) ++untagged;
+            if (sol.first.nodes.size() == 0) ++unsolved;
+            else {
+                ++solved;
+                solbubs.push_back(bp);
+            }
+
+        }
+        sglib::OutputLog() << "OLD solver: "<< solved << " bubbly paths solved, " << unsolved << " unsolved, with " << untagged << " lacking tags"
+                  << std::endl;
+        ws.sg.print_bubbly_subgraph_stats(solbubs);
+        //done!
     }
-    std::cout<<untagged << " / " << kobps.size()<<" bubbly subgraphs had <"<<min_tags<<" tags in a unique node (total "<<untagged_nodes<<" nodes / "<<untagged_size<<" bp)"<<std::endl;
-    std::cout<<ambiguous << " / " << kobps.size()<<" bubbly subgraphs ambiguous (total "<<ambiguous_nodes<<" nodes) / "<<ambiguous_size<<" bp)"<<std::endl;
-    std::cout<<solved << " / " << kobps.size()<<" bubbly subgraphs solved (total "<<solved_nodes<<" nodes) / "<<solved_size<<" bp)"<<std::endl;
-
-    solved=0;
-    //expand each repeat
-    for (auto i=0;i<sbps.size();++i){
-        //std::cout<<"Solving region: ";
-        //for (auto n:sbps[i].nodes) std::cout<<n<<" ";
-        //std::cout<<std::endl;
-        //std::cout<<"Hap1: ";
-        //for (auto n:solved_haps[i].first) std::cout<<n<<" ";
-        //std::cout<<std::endl;
-        //std::cout<<"Hap2: ";
-        //for (auto n:solved_haps[i].second) std::cout<<n<<" ";
-        //std::cout<<std::endl;
-        for (auto l=0;l<solved_haps[i].first.size()-1;++l){
-            auto r=sbps[i].nodes[3*(l+1)];
-            auto a1=solved_haps[i].first[l];
-            auto a2=solved_haps[i].first[l+1];
-            auto b1=solved_haps[i].second[l];
-            auto b2=solved_haps[i].second[l+1];
-            //std::cout<<"Expanding "<<a1<<" -> "<<r<<" -> "<<a2<<"   |    "<<b1<<" -> "<<r<<" -> "<<b2<<std::endl;
-            ws.sg.expand_node(r,{{a1},{b1}},{{a2},{b2}});
-            ++solved;
-        }
-
-    }
-    std::cout<<solved << " duplications expanded"<<std::endl;
-    //done!
     return {};
 }
 
