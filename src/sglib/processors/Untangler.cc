@@ -583,6 +583,105 @@ std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(cons
     return {SequenceGraphPath(ws.sg),SequenceGraphPath(ws.sg)};
 }
 
+/**
+ * @brief solves a single bubbly path, returns the paths for the 2 new nodes or empty paths if unsolved
+ * @param bp
+ * @return
+ */
+std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path_2(const SequenceSubGraph &bp) {
+
+    std::cout<<std::endl<<"solve_bubbly_path_2 started for "<<bp.nodes.size()<<" nodes ("<<bp.nodes.size()/3<<" bubbles)"
+             <<"between "<<bp.nodes.front()<<" and "<<bp.nodes.back()<<std::endl;
+    bool nt;
+    std::cout<<"Path "<<(solve_bubbly_path(bp, nt).first.nodes.empty() ? "NOT ":"")<<"solved by old method"<<std::endl;
+
+    int min_tags=20;
+
+
+    std::vector<std::set<bsg10xTag>> node_tags;
+    for (auto i=0;i<bp.nodes.size();++i) {
+        auto n=bp.nodes[i];
+        node_tags.emplace_back(ws.linked_read_mappers[0].get_node_tags(n));
+    }
+
+    //First, check tags and shared among each bubble
+
+    for (auto i=0;i<bp.nodes.size()-1;i+=3){
+        auto ta=node_tags[i+1];
+        auto tb=node_tags[i+2];
+        auto shared_count=intersection_size(ta,tb);
+        std::cout<<" bubble tag analysis: A #"<<i+1<<":"<<ta.size()<<" B #"<<i+2<<":"<<tb.size()<<"  shared: "<<shared_count<<std::endl;
+    }
+
+    for (auto i1=0;i1<bp.nodes.size();++i1) {
+        if (i1%3==0) continue;
+        auto n1 = bp.nodes[i1];
+        auto t1 = node_tags[i1];
+        for (auto i2 = i1+1; i2 < bp.nodes.size(); ++i2) {
+            if (i2%3==0) continue;
+            auto n2 = bp.nodes[i2];
+            auto t2 = node_tags[i2];
+            auto shared_count = intersection_size(t1, t2);
+            if (shared_count > 3) {
+                std::cout << "shared between #" << i1 << " and #" << i2 << ": " << shared_count << std::endl;
+            }
+
+        }
+    }
+
+    /*
+    //init the haplotypes anchoring all nodes to previous tags
+    //std::cout<<"A";
+    std::vector<sgNodeID_t> hap1, hap2;
+    std::set<bsg10xTag> tags1,tags2;
+    hap1.push_back(bp.nodes[1]);
+    tags1=node_tags[1];
+    hap2.push_back(bp.nodes[2]);
+    tags2=node_tags[2];
+    for (auto i=3;i<bp.nodes.size()-1;i+=3){
+        std::set<bsg10xTag> both;
+        std::set_intersection(tags1.begin(),tags1.end(),tags2.begin(),tags2.end(),std::inserter(both,both.end()));
+        for (auto b:both){
+            tags1.erase(b);
+            tags2.erase(b);
+        }
+        auto A=bp.nodes[i+1];
+        auto B=bp.nodes[i+2];
+        auto tagsA=ws.linked_read_mappers[0].get_node_tags(A);
+        auto tagsB=ws.linked_read_mappers[0].get_node_tags(B);
+        auto a1=intersection_size(tagsA,tags1);
+        auto a2=intersection_size(tagsA,tags2);
+        auto b1=intersection_size(tagsB,tags1);
+        auto b2=intersection_size(tagsB,tags2);
+        if (a1>=min_tags and b1<a1*2/min_tags and b2>=min_tags and a2<b2*2/min_tags){
+            hap1.push_back(A);
+            tags1.insert(tagsA.begin(),tagsA.end());
+            hap2.push_back(B);
+            tags2.insert(tagsB.begin(),tagsB.end());
+        }
+        else if (b1>=min_tags and a1<b1*2/min_tags and a2>=min_tags and b2<a2*2/min_tags){
+            hap2.push_back(A);
+            tags2.insert(tagsA.begin(),tagsA.end());
+            hap1.push_back(B);
+            tags1.insert(tagsB.begin(),tagsB.end());
+        } else {
+            break;
+        }
+    }
+    //std::cout<<std::endl;
+    if (hap1.size()==bp.nodes.size()/3) {
+        SequenceGraphPath p1(ws.sg),p2(ws.sg);
+        for (auto i=0;i<hap1.size();++i){
+            if (i>0) p1.nodes.push_back(bp.nodes[3*i]);
+            p1.nodes.push_back(hap1[i]);
+            if (i>0) p2.nodes.push_back(bp.nodes[3*i]);
+            p2.nodes.push_back(hap2[i]);
+        }
+        return {p1,p2};
+    }*/
+    return {SequenceGraphPath(ws.sg),SequenceGraphPath(ws.sg)};
+}
+
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
     //TODO: 3-part structure:
     // 1) find, report validate kci, report
@@ -593,7 +692,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
     auto bps=ws.sg.get_all_bubbly_subgraphs();
     sglib::OutputLog()<<"--- INITIAL bubbly paths ---"<<std::endl;
     ws.sg.print_bubbly_subgraph_stats(bps);
-    std::vector<SequenceSubGraph> kobps,sbps;
+    /*std::vector<SequenceSubGraph> kobps;
     for (auto &bp:bps){
         int kci_ok=0,kci_fail=0;
         for (auto i=0;i<bp.nodes.size();i+=3) {
@@ -606,7 +705,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
         }
     }
     sglib::OutputLog()<<"--- KCI OK bubbly paths ---"<<std::endl;
-    ws.sg.print_bubbly_subgraph_stats(kobps);
+    ws.sg.print_bubbly_subgraph_stats(kobps);*/
 
 
 
@@ -616,7 +715,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
     {
         uint64_t solved = 0, unsolved = 0, untagged = 0;
         std::vector<SequenceSubGraph> solbubs;
-        for (auto &bp:kobps) {
+        for (auto &bp:bps) {
             bool no_tags;
             auto sol = solve_bubbly_path(bp, no_tags);
             if (no_tags) ++untagged;
@@ -629,6 +728,23 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
         }
         sglib::OutputLog() << "OLD solver: "<< solved << " bubbly paths solved, " << unsolved << " unsolved, with " << untagged << " lacking tags"
                   << std::endl;
+        ws.sg.print_bubbly_subgraph_stats(solbubs);
+        //done!
+    }
+    {
+        uint64_t solved = 0, unsolved = 0;
+        std::vector<SequenceSubGraph> solbubs;
+        for (auto &bp:bps) {
+            auto sol = solve_bubbly_path_2(bp);
+
+            if (sol.first.nodes.size() == 0) ++unsolved;
+            else {
+                ++solved;
+                solbubs.push_back(bp);
+            }
+
+        }
+        sglib::OutputLog() << "New solver: "<< solved << " bubbly paths solved, " << unsolved << " unsolved" << std::endl;
         ws.sg.print_bubbly_subgraph_stats(solbubs);
         //done!
     }
