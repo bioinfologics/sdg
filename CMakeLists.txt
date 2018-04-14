@@ -1,5 +1,11 @@
 cmake_minimum_required (VERSION 2.8)
 
+if (NOT CMAKE_BUILD_TYPE)
+    message(STATUS "No build type selected, default to Release")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif()
+
+
 IF (MY_COMPILER_OPTION STREQUAL "Intel")
     FIND_PROGRAM(ICPC_PROGRAM icpc ...)
     IF(ICPC_PROGRAM)
