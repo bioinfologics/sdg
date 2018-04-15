@@ -588,98 +588,116 @@ std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(cons
  * @param bp
  * @return
  */
-std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path_2(const SequenceSubGraph &bp) {
+std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bubbly_path_2(const SequenceSubGraph &bp) {
 
     std::cout<<std::endl<<"solve_bubbly_path_2 started for "<<bp.nodes.size()<<" nodes ("<<bp.nodes.size()/3<<" bubbles)"
              <<"between "<<bp.nodes.front()<<" and "<<bp.nodes.back()<<std::endl;
     bool nt;
-    std::cout<<"Path "<<(solve_bubbly_path(bp, nt).first.nodes.empty() ? "NOT ":"")<<"solved by old method"<<std::endl;
+    auto oldsol=solve_bubbly_path(bp, nt);
+    std::cout<<"Path "<<(oldsol.first.nodes.empty() ? "NOT ":"")<<"solved by old method"<<std::endl;
 
-    int min_tags=20;
+    //CONSTANTS
+    int specific_to_shared_tags=100;
+    size_t min_score=10;
+    size_t max_penalty=3;
 
-
-    std::vector<std::set<bsg10xTag>> node_tags;
-    for (auto i=0;i<bp.nodes.size();++i) {
-        auto n=bp.nodes[i];
-        node_tags.emplace_back(ws.linked_read_mappers[0].get_node_tags(n));
-    }
-
-    //First, check tags and shared among each bubble
-
+    std::set<std::pair<sgNodeID_t, sgNodeID_t>> solution;
+    std::map<sgNodeID_t,std::set<bsg10xTag>> node_tags;
+    std::set<std::pair<sgNodeID_t, sgNodeID_t>> pnps; //Parallel Node Pairs
+    //non-positional best beighbours first: create a set of all PNPs, pick the starting one (highest with up to .5%shared tags
+    //TODO:prioritise clean start (shared=0)
+    size_t max_min_tags=0;
+    std::pair<sgNodeID_t, sgNodeID_t> best_start;
     for (auto i=0;i<bp.nodes.size()-1;i+=3){
-        auto ta=node_tags[i+1];
-        auto tb=node_tags[i+2];
-        auto shared_count=intersection_size(ta,tb);
-        std::cout<<" bubble tag analysis: A #"<<i+1<<":"<<ta.size()<<" B #"<<i+2<<":"<<tb.size()<<"  shared: "<<shared_count<<std::endl;
-    }
-
-    for (auto i1=0;i1<bp.nodes.size();++i1) {
-        if (i1%3==0) continue;
-        auto n1 = bp.nodes[i1];
-        auto t1 = node_tags[i1];
-        for (auto i2 = i1+1; i2 < bp.nodes.size(); ++i2) {
-            if (i2%3==0) continue;
-            auto n2 = bp.nodes[i2];
-            auto t2 = node_tags[i2];
-            auto shared_count = intersection_size(t1, t2);
-            if (shared_count > 3) {
-                std::cout << "shared between #" << i1 << " and #" << i2 << ": " << shared_count << std::endl;
-            }
-
-        }
-    }
-
-    /*
-    //init the haplotypes anchoring all nodes to previous tags
-    //std::cout<<"A";
-    std::vector<sgNodeID_t> hap1, hap2;
-    std::set<bsg10xTag> tags1,tags2;
-    hap1.push_back(bp.nodes[1]);
-    tags1=node_tags[1];
-    hap2.push_back(bp.nodes[2]);
-    tags2=node_tags[2];
-    for (auto i=3;i<bp.nodes.size()-1;i+=3){
-        std::set<bsg10xTag> both;
-        std::set_intersection(tags1.begin(),tags1.end(),tags2.begin(),tags2.end(),std::inserter(both,both.end()));
-        for (auto b:both){
-            tags1.erase(b);
-            tags2.erase(b);
-        }
         auto A=bp.nodes[i+1];
         auto B=bp.nodes[i+2];
-        auto tagsA=ws.linked_read_mappers[0].get_node_tags(A);
-        auto tagsB=ws.linked_read_mappers[0].get_node_tags(B);
-        auto a1=intersection_size(tagsA,tags1);
-        auto a2=intersection_size(tagsA,tags2);
-        auto b1=intersection_size(tagsB,tags1);
-        auto b2=intersection_size(tagsB,tags2);
-        if (a1>=min_tags and b1<a1*2/min_tags and b2>=min_tags and a2<b2*2/min_tags){
-            hap1.push_back(A);
-            tags1.insert(tagsA.begin(),tagsA.end());
-            hap2.push_back(B);
-            tags2.insert(tagsB.begin(),tagsB.end());
+        node_tags[A]=ws.linked_read_mappers[0].get_node_tags(A);
+        node_tags[B]=ws.linked_read_mappers[0].get_node_tags(B);
+        pnps.insert({A,B});
+        auto shared_count=intersection_size(node_tags[A],node_tags[B]);
+        if (shared_count*specific_to_shared_tags<node_tags[A].size() and shared_count*specific_to_shared_tags<node_tags[B].size() and max_min_tags<std::min(node_tags[A].size(),node_tags[B].size())){
+            best_start.first=A;best_start.second=B;
+            max_min_tags=std::min(node_tags[A].size(),node_tags[B].size());
         }
-        else if (b1>=min_tags and a1<b1*2/min_tags and a2>=min_tags and b2<a2*2/min_tags){
-            hap2.push_back(A);
-            tags2.insert(tagsA.begin(),tagsA.end());
-            hap1.push_back(B);
-            tags1.insert(tagsB.begin(),tagsB.end());
-        } else {
-            break;
-        }
+        std::cout<<" bubble tag analysis: A="<<A<<": "<<node_tags[A].size()<<" B="<<B<<": "<<node_tags[B].size()<<"  shared: "<<shared_count<<std::endl;
     }
-    //std::cout<<std::endl;
-    if (hap1.size()==bp.nodes.size()/3) {
-        SequenceGraphPath p1(ws.sg),p2(ws.sg);
-        for (auto i=0;i<hap1.size();++i){
-            if (i>0) p1.nodes.push_back(bp.nodes[3*i]);
-            p1.nodes.push_back(hap1[i]);
-            if (i>0) p2.nodes.push_back(bp.nodes[3*i]);
-            p2.nodes.push_back(hap2[i]);
+
+
+    if (max_min_tags==0){
+        std::cout<<"can't even find where to start, so giving up"<<std::endl;
+        return {};
+    }
+
+    std::cout<<"starting from PNP "<<best_start.first<<" "<<best_start.second<<std::endl;
+    auto tags1=node_tags[best_start.first];
+    auto tags2=node_tags[best_start.second];
+    auto total_penalty=intersection_size(tags1,tags2);
+    auto todo_pnps=pnps;
+    todo_pnps.erase(best_start);
+    solution.insert(best_start);
+    // while possible grab the next lowest-conflict/highest score PNP
+    while (not todo_pnps.empty()){
+        size_t min_pen=max_penalty;
+        size_t max_score=0;
+        std::pair<sgNodeID_t, sgNodeID_t> best_next;
+        bool flip=false;
+        for (auto p:todo_pnps){
+            auto a1=intersection_size(node_tags[p.first],tags1);
+            auto a2=intersection_size(node_tags[p.first],tags2);
+            auto b1=intersection_size(node_tags[p.second],tags1);
+            auto b2=intersection_size(node_tags[p.second],tags2);
+            //std::cout<<"evaluating PNP ("<<p.first<<", "<<p.second<<") : a1="<<a1<<" a2="<<a2<<" b1="<<b1<<" b2="<<std::endl;
+            //TODO: discount already-shared tags from penalty;
+            //dir?
+            if (a1>min_score and b2> min_score and (a2+b1<min_pen or ( a2+b1==min_pen and a1+b2>max_score))) {
+                best_next.first=p.first;best_next.second=p.second;flip=false;
+                min_pen=a2+b1;
+                max_score=a1+b2;
+            }
+            //flip?
+            else if (a2>min_score and b1> min_score and (a1+b2<min_pen or( a1+b2==min_pen and a2+b1>max_score))) {
+                best_next.first=p.first;best_next.second=p.second;flip=true;
+                min_pen=a1+b2;
+                max_score=a2+b1;
+            }
         }
-        return {p1,p2};
-    }*/
-    return {SequenceGraphPath(ws.sg),SequenceGraphPath(ws.sg)};
+        if (max_score==0) break;
+        todo_pnps.erase(best_next);
+        if (flip) { auto s=best_next.second;best_next.second=best_next.first;best_next.first=s; }
+        solution.insert(best_next);
+        for (auto t:node_tags[best_next.first]) tags1.insert(t);
+        for (auto t:node_tags[best_next.second]) tags2.insert(t);
+    }
+    // rescue PNPs without tags for a node (contemplate both error AA BB and non-mappable node walk)
+
+    std::cout<<"Hap1: ";
+    for (auto p:solution) std::cout<<"seq"<<llabs(p.first)<<", ";
+    std::cout<<std::endl<<"Hap2: ";
+    for (auto p:solution) std::cout<<"seq"<<llabs(p.second)<<", ";
+    std::cout<<std::endl;
+    std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> paths;
+    if (solution.size()==pnps.size()) {
+        std::cout << "SOLUTION found!" << std::endl;
+        std::cout << "code "<< (oldsol.first.nodes.empty()? 1:11) <<std::endl;
+        std::set<sgNodeID_t> h1nodes;
+        for (auto p:solution) h1nodes.insert(p.first);
+
+        paths.push_back({SequenceGraphPath(ws.sg),SequenceGraphPath(ws.sg)});
+        for (auto i=0;i<bp.nodes.size();++i){
+            if (i%3==0){
+                paths.back().first.nodes.emplace_back(bp.nodes[i]);
+                paths.back().second.nodes.emplace_back(bp.nodes[i]);
+            } else if (h1nodes.count(bp.nodes[i])>0) paths.back().first.nodes.emplace_back(bp.nodes[i]);
+            else paths.back().second.nodes.emplace_back(bp.nodes[i]);
+        }
+    } else {
+        std::cout<<"SOLUTION only contains "<<solution.size()<<"/"<<pnps.size()<<" PNPs"<<std::endl;
+        std::cout << "code "<< (oldsol.first.nodes.empty()? 0:10) <<std::endl;
+        //TODO support partial solutions! (i.e. re-run with broken bubbly path?)
+    }
+
+
+    return paths;
 }
 
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
@@ -692,7 +710,8 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
     auto bps=ws.sg.get_all_bubbly_subgraphs();
     sglib::OutputLog()<<"--- INITIAL bubbly paths ---"<<std::endl;
     ws.sg.print_bubbly_subgraph_stats(bps);
-    /*std::vector<SequenceSubGraph> kobps;
+    //TODO: write a more sophisticated kci check
+    std::vector<SequenceSubGraph> kobps;
     for (auto &bp:bps){
         int kci_ok=0,kci_fail=0;
         for (auto i=0;i<bp.nodes.size();i+=3) {
@@ -705,7 +724,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
         }
     }
     sglib::OutputLog()<<"--- KCI OK bubbly paths ---"<<std::endl;
-    ws.sg.print_bubbly_subgraph_stats(kobps);*/
+    ws.sg.print_bubbly_subgraph_stats(kobps);
 
 
 
@@ -715,7 +734,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
     {
         uint64_t solved = 0, unsolved = 0, untagged = 0;
         std::vector<SequenceSubGraph> solbubs;
-        for (auto &bp:bps) {
+        for (auto &bp:kobps) {
             bool no_tags;
             auto sol = solve_bubbly_path(bp, no_tags);
             if (no_tags) ++untagged;
@@ -726,18 +745,17 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
             }
 
         }
-        sglib::OutputLog() << "OLD solver: "<< solved << " bubbly paths solved, " << unsolved << " unsolved, with " << untagged << " lacking tags"
-                  << std::endl;
+        sglib::OutputLog() << "OLD solver: "<< solved << " bubbly paths solved, " << unsolved << " unsolved, with " << untagged << " lacking tags" << std::endl;
         ws.sg.print_bubbly_subgraph_stats(solbubs);
         //done!
     }
     {
         uint64_t solved = 0, unsolved = 0;
         std::vector<SequenceSubGraph> solbubs;
-        for (auto &bp:bps) {
+        for (auto &bp:kobps) {
             auto sol = solve_bubbly_path_2(bp);
 
-            if (sol.first.nodes.size() == 0) ++unsolved;
+            if (sol.size() == 0) ++unsolved;
             else {
                 ++solved;
                 solbubs.push_back(bp);

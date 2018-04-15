@@ -47,7 +47,7 @@ public:
     uint64_t expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags=10);
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> solve_bubbly_paths();
     std::pair<SequenceGraphPath,SequenceGraphPath> solve_bubbly_path(const SequenceSubGraph & bp, bool & no_tags);
-    std::pair<SequenceGraphPath,SequenceGraphPath> solve_bubbly_path_2(const SequenceSubGraph & bp);
+    std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> solve_bubbly_path_2(const SequenceSubGraph & bp);
 
     uint64_t solve_canonical_repeats_by_tags(std::unordered_set<uint64_t> & reads_to_remap); //TODO: deprecate
     uint64_t extend_HSPNPs_by_tagwalking(); //TODO: deprecate
