@@ -669,26 +669,52 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
         for (auto t:node_tags[best_next.second]) tags2.insert(t);
     }
     // rescue PNPs without tags for a node (contemplate both error AA BB and non-mappable node walk)
-
+    if (not todo_pnps.empty()) {
+        std::cout<<"Solution is incomplete, attempting PNP rescue for untagged nodes and sequencing errors"<<std::endl;
+        std::set<std::pair<sgNodeID_t ,sgNodeID_t >> rescued;
+        for (auto p:todo_pnps) {
+            auto a1=intersection_size(node_tags[p.first],tags1);
+            auto a2=intersection_size(node_tags[p.first],tags2);
+            auto b1=intersection_size(node_tags[p.second],tags1);
+            auto b2=intersection_size(node_tags[p.second],tags2);
+            std::cout<<"Checking PNP ( "<<p.first<<", "<<p.second<<" ): a1="<<a1<<" a2="<<a2<<" b1="<<b1<<" b2="<<b2<<std::endl;
+            if (a1>10 and a2>10 and b1<3 and b2<3) {
+                std::cout<<"Node "<<p.second<<" seems to be an error!"<<std::endl;
+                solution.insert({p.first,p.first});
+                rescued.insert(p);
+            }
+            if (b1>10 and b2>10 and a1<3 and a2<3) {
+                std::cout<<"Node "<<p.first<<" seems to be an error!"<<std::endl;
+                solution.insert({p.second,p.second});
+                rescued.insert(p);
+            }
+        }
+        for (auto p:rescued) todo_pnps.erase(p);
+    }
     std::cout<<"Hap1: ";
     for (auto p:solution) std::cout<<"seq"<<llabs(p.first)<<", ";
     std::cout<<std::endl<<"Hap2: ";
     for (auto p:solution) std::cout<<"seq"<<llabs(p.second)<<", ";
     std::cout<<std::endl;
     std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> paths;
-    if (solution.size()==pnps.size()) {
+    if (todo_pnps.empty()) {
         std::cout << "SOLUTION found!" << std::endl;
         std::cout << "code "<< (oldsol.first.nodes.empty()? 1:11) <<std::endl;
-        std::set<sgNodeID_t> h1nodes;
-        for (auto p:solution) h1nodes.insert(p.first);
+        std::set<sgNodeID_t> h1nodes,h2nodes;
+        for (auto p:solution) {
+            h1nodes.insert(p.first);
+            h2nodes.insert(p.first);
+        }
 
         paths.push_back({SequenceGraphPath(ws.sg),SequenceGraphPath(ws.sg)});
         for (auto i=0;i<bp.nodes.size();++i){
             if (i%3==0){
                 paths.back().first.nodes.emplace_back(bp.nodes[i]);
                 paths.back().second.nodes.emplace_back(bp.nodes[i]);
-            } else if (h1nodes.count(bp.nodes[i])>0) paths.back().first.nodes.emplace_back(bp.nodes[i]);
-            else paths.back().second.nodes.emplace_back(bp.nodes[i]);
+            } else {
+                if (h1nodes.count(bp.nodes[i])>0) paths.back().first.nodes.emplace_back(bp.nodes[i]);
+                if (h2nodes.count(bp.nodes[i])>0) paths.back().second.nodes.emplace_back(bp.nodes[i]);
+            }
         }
     } else {
         std::cout<<"SOLUTION only contains "<<solution.size()<<"/"<<pnps.size()<<" PNPs"<<std::endl;
