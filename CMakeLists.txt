@@ -201,6 +201,11 @@ target_link_libraries(bsg-kmerspectra ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 add_executable(bsg-workspace
         src/bsg-workspace.cc
         )
+
+add_executable(gfa-exploregraph
+        src/gfa-exploregraph.cc
+        )
+
 target_link_libraries(bsg-kmerspectra ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
 add_executable(bsg-mapper
@@ -258,6 +263,7 @@ add_executable(seq-sorter EXCLUDE_FROM_ALL
                src/seq-sorter.cpp)
 
 target_link_libraries(bsg-workspace sequence_graph)
+target_link_libraries(gfa-exploregraph sequence_graph)
 target_link_libraries(bsg-datastore sequence_graph)
 target_link_libraries(bsg-mapper sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-flowmaker sequence_graph ${CMAKE_THREAD_LIBS_INIT})

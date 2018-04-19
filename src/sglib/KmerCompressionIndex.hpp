@@ -30,6 +30,8 @@ public:
     void compute_compression_stats();
     void compute_all_nodes_kci(uint16_t max_graph_freq=10);
 
+    std::vector<std::vector<uint16_t>> compute_node_coverage_profile(std::string node_sequence);
+
     void dump_histogram(std::string filename);
 
     double compute_compression_for_node(sgNodeID_t node, uint16_t max_graph_freq=10);

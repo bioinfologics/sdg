@@ -149,7 +149,87 @@ int main(int argc, char * argv[]) {
                nif<<n<<", "<<w.sg.nodes[n].sequence.size()<<", "<<w.kci.compute_compression_for_node(n,1)<<std::endl;
            }
         }
+    }
+    else if (0==strcmp(argv[1],"node-kci-dump")){
+        std::string filename;
+        sgNodeID_t cnode;
+        std::string prefix;
 
+        try {
+            cxxopts::Options options("bsg-workspace kci-dump", "BSG workspace kci-dump");
+
+            options.add_options()
+                    ("help", "Print help")
+                    ("w,workspace", "workspace filename", cxxopts::value<std::string>(filename))
+                    ("n,node", "node to profile", cxxopts::value<sgNodeID_t>(cnode))
+                    ("p,prefix", "Prefix for the output file", cxxopts::value<std::string>(prefix));
+
+            auto newargc=argc-1;
+            auto newargv=&argv[1];
+            auto result=options.parse(newargc,newargv);
+            if (result.count("help")) {
+                std::cout << options.help({""}) << std::endl;
+                exit(0);
+            }
+
+            if (result.count("workspace")==0) {
+                throw cxxopts::OptionException(" please specify kmer spectra file");
+            }
+
+
+        } catch (const cxxopts::OptionException &e) {
+            std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
+                      << "Use option --help to check command line arguments." << std::endl;
+            exit(1);
+        }
+
+        std::cout << "Here" << filename << std::endl;
+
+        WorkSpace w;
+        w.load_from_disk(filename);
+        
+        std::ofstream reads_ofl("reads_profile"+std::to_string(cnode)+".cvg", std::ios_base::app);
+        std::ofstream unique_ofl("unique_profile"+std::to_string(cnode)+".cvg", std::ios_base::app);
+        std::ofstream assm_ofl("assmcn_profile"+std::to_string(cnode)+".cvg", std::ios_base::app);
+
+        std::cout << "Profile para el nodo:" << cnode << std::endl;
+        std::string sequence = w.sg.nodes[cnode].sequence;
+
+        auto coverages = w.kci.compute_node_coverage_profile(sequence);
+
+        std::cout << ">Reads_"<< prefix << "_" <<cnode << std::endl;
+        reads_ofl << ">Reads_"<< prefix << "_"<< cnode << "|";
+        for (auto c: coverages[0]){
+            std::cout << c << " ";
+            reads_ofl << c << " ";
+        }
+        std::cout << std::endl;
+        reads_ofl << std::endl;
+
+        std::cout << ">Uniqueness_"<< prefix << "_"<<cnode << std::endl;
+        unique_ofl << ">Uniqueness_"<< prefix << "_" << cnode << "|";
+        for (auto c: coverages[1]){
+            std::cout << c << " ";
+            unique_ofl << c << " ";
+        }
+        std::cout << std::endl;
+        unique_ofl << std::endl;
+
+        std::cout << ">Graph_"<< prefix << "_" << cnode << std::endl;
+        assm_ofl << ">Graph_"<< prefix << "_"<<cnode << "|";
+        for (auto c: coverages[2]){
+            std::cout << c << " ";
+            assm_ofl << c << " ";
+        }
+        std::cout << std::endl;
+        assm_ofl << std::endl;
+
+        reads_ofl.close();
+        unique_ofl.close();
+        assm_ofl.close();
+    }
+    else if (0==strcmp(argv[1], "kci-stack")) {
+        // Take multiple kci files and stack them in the reads kmer vector for later use
 
     }
     else {
