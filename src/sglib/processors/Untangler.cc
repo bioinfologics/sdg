@@ -593,9 +593,9 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
 
     std::cout<<std::endl<<"solve_bubbly_path_2 started for "<<bp.nodes.size()<<" nodes ("<<bp.nodes.size()/3<<" bubbles)"
              <<"between "<<bp.nodes.front()<<" and "<<bp.nodes.back()<<std::endl;
-    bool nt;
-    auto oldsol=solve_bubbly_path(bp, nt);
-    std::cout<<"Path "<<(oldsol.first.nodes.empty() ? "NOT ":"")<<"solved by old method"<<std::endl;
+    std::cout<<"Nodes in bubbly path:";
+    for(auto n:bp.nodes) std::cout<<" "<<n;
+    std::cout<<std::endl;
 
     //CONSTANTS
     int specific_to_shared_tags=100;
@@ -672,7 +672,7 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
     // rescue PNPs without tags for a node (contemplate both error AA BB and non-mappable node walk)
     std::unordered_set<uint64_t> tagkmers1,tagkmers2;
 
-    if (not todo_pnps.empty()) {
+    if (false/*not todo_pnps.empty()*/) {
         std::cout<<"Solution is incomplete, attempting PNP rescue for untagged nodes and sequencing errors"<<std::endl;
         std::set<std::pair<sgNodeID_t ,sgNodeID_t >> rescued;
         for (auto p:todo_pnps) {
@@ -740,30 +740,47 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
     std::cout<<std::endl;
     std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> paths;
     if (todo_pnps.empty()) {
-        std::cout << "SOLUTION found!" << std::endl;
-        std::cout << "code "<< (oldsol.first.nodes.empty()? 1:11) <<std::endl;
-        std::set<sgNodeID_t> h1nodes,h2nodes;
-        for (auto p:solution) {
-            h1nodes.insert(p.first);
-            h2nodes.insert(p.first);
-        }
-
-        paths.push_back({SequenceGraphPath(ws.sg),SequenceGraphPath(ws.sg)});
-        for (auto i=0;i<bp.nodes.size();++i){
-            if (i%3==0){
-                paths.back().first.nodes.emplace_back(bp.nodes[i]);
-                paths.back().second.nodes.emplace_back(bp.nodes[i]);
-            } else {
-                if (h1nodes.count(bp.nodes[i])>0) paths.back().first.nodes.emplace_back(bp.nodes[i]);
-                if (h2nodes.count(bp.nodes[i])>0) paths.back().second.nodes.emplace_back(bp.nodes[i]);
-            }
-        }
+        std::cout << "FULL SOLUTION found!" << std::endl;
     } else {
         std::cout<<"SOLUTION only contains "<<solution.size()<<"/"<<pnps.size()<<" PNPs"<<std::endl;
-        std::cout << "code "<< (oldsol.first.nodes.empty()? 0:10) <<std::endl;
         //TODO support partial solutions! (i.e. re-run with broken bubbly path?)
-        std::cout<<"TODO: split solution in partial slutions"<<std::endl;
+        std::cout<<"Generating partial solutions"<<std::endl;
     }
+    std::set<sgNodeID_t> h1nodes,h2nodes;
+    for (auto p:solution) {
+        h1nodes.insert(p.first);
+        h2nodes.insert(p.second);
+    }
+    std::vector<sgNodeID_t> currh1,currh2;
+
+    for (auto i=0;i<bp.nodes.size();++i){
+        if (i%3==0 ){
+            if (not currh1.empty()) {
+                if (i < bp.nodes.size() - 3 and
+                    (h1nodes.count(bp.nodes[i + 1]) > 0 or h2nodes.count(bp.nodes[i + 1]) > 0) and
+                    (h1nodes.count(bp.nodes[i + 2]) > 0 or h2nodes.count(bp.nodes[i + 2]) > 0)) {
+                    currh1.emplace_back(bp.nodes[i]);
+                    currh2.emplace_back(bp.nodes[i]);
+                } else {
+                    if (currh1.size() > 2) {
+                        std::cout << "Solution #" << paths.size() + 1 << ".a:";
+                        for (auto n:currh1) std::cout << " " << n;
+                        std::cout << std::endl << "Solution #" << paths.size() + 1 << ".b:";
+                        for (auto n:currh2) std::cout << " " << n;
+                        std::cout << std::endl;
+                        paths.push_back({SequenceGraphPath(ws.sg, currh1), SequenceGraphPath(ws.sg, currh2)});
+                    }
+                    currh1.clear();
+                    currh2.clear();
+                }
+            }
+        } else {
+            if (h1nodes.count(bp.nodes[i])>0) currh1.emplace_back(bp.nodes[i]);
+            if (h2nodes.count(bp.nodes[i])>0) currh2.emplace_back(bp.nodes[i]);
+        }
+    }
+    //remove last node (heterozygous, we don't want to stupidly extend haplotypes
+
 
 
     return paths;
