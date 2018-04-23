@@ -42,7 +42,7 @@ public:
     std::vector<Backbone> create_backbones(float min_ci, float max_ci, float end_perc=.1);
 
     //graph simplification (direct operations, no backbones)
-
+    void unroll_simple_loops();
     void pop_errors_by_ci_and_paths();
     uint64_t expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags=10);
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> solve_bubbly_paths();

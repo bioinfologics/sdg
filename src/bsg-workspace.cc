@@ -103,7 +103,9 @@ int main(int argc, char * argv[]) {
         w.print_log();
     }
     else if (0==strcmp(argv[1],"dump")) {
-        std::string filename,gfafilename,nodeinfofilename;
+        std::string filename,gfafilename,nodeinfofilename,seqfilename;
+        float minKCI=.5, maxKCI=1.25;
+        size_t min_size=2000,max_size=100000000;
         try {
 
             cxxopts::Options options("bsg-workspace log", "BSG workspace log");
@@ -112,7 +114,12 @@ int main(int argc, char * argv[]) {
                     ("help", "Print help")
                     ("w,workspace", "workspace filename", cxxopts::value<std::string>(filename))
                     ("g,gfa", "gfa output prefix", cxxopts::value<std::string>(gfafilename))
-                    ("n,node_info", "node info prefix",cxxopts::value<std::string>(nodeinfofilename));
+                    ("n,node_info", "node info prefix",cxxopts::value<std::string>(nodeinfofilename))
+                    ("s,node_sequences", "selected sequences prefix", cxxopts::value<std::string>(seqfilename))
+                    ("min_kci", "selected sequences min KCI", cxxopts::value<float>(minKCI))
+                    ("max_kci", "selected sequences max KCI", cxxopts::value<float>(maxKCI))
+                    ("min_size", "selected sequences min size", cxxopts::value<size_t>(min_size))
+                    ("max_size", "selected sequences max size", cxxopts::value<size_t>(max_size));
 
             auto newargc=argc-1;
             auto newargv=&argv[1];
@@ -149,7 +156,12 @@ int main(int argc, char * argv[]) {
                nif<<n<<", "<<w.sg.nodes[n].sequence.size()<<", "<<w.kci.compute_compression_for_node(n,1)<<std::endl;
            }
         }
-
+        if (not seqfilename.empty()) {
+            std::ofstream sof(seqfilename + ".fasta");
+            for (auto n:w.select_from_all_nodes(min_size,max_size,0,UINT32_MAX, minKCI, maxKCI)){
+                sof<<">seq"<<n<<std::endl<<w.sg.nodes[n].sequence<<std::endl;
+            }
+        }
 
     }
     else {

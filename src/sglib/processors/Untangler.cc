@@ -585,6 +585,7 @@ std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(cons
 
 /**
  * @brief solves a single bubbly path, returns the paths for the 2 new nodes or empty paths if unsolved
+ * can return many pairs of paths if solving partial parts.
  * @param bp
  * @return
  */
@@ -669,6 +670,8 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
         for (auto t:node_tags[best_next.second]) tags2.insert(t);
     }
     // rescue PNPs without tags for a node (contemplate both error AA BB and non-mappable node walk)
+    std::unordered_set<uint64_t> tagkmers1,tagkmers2;
+
     if (not todo_pnps.empty()) {
         std::cout<<"Solution is incomplete, attempting PNP rescue for untagged nodes and sequencing errors"<<std::endl;
         std::set<std::pair<sgNodeID_t ,sgNodeID_t >> rescued;
@@ -682,11 +685,50 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
                 std::cout<<"Node "<<p.second<<" seems to be an error!"<<std::endl;
                 solution.insert({p.first,p.first});
                 rescued.insert(p);
+                continue;
             }
             if (b1>10 and b2>10 and a1<3 and a2<3) {
                 std::cout<<"Node "<<p.first<<" seems to be an error!"<<std::endl;
                 solution.insert({p.second,p.second});
                 rescued.insert(p);
+                continue;
+            }
+            //now check for untagged (i.e. kmer coverage)
+            if (tagkmers1.empty()){
+                std::cout<<"Generating tag kmers for current solution as this is the first walk-in situation"<<std::endl;
+                BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,5000,200000,1000);
+                std::set<bsg10xTag> exctags1,exctags2;
+                for (auto t:tags1) if (tags2.count(t)==0) exctags1.insert(t);
+                for (auto t:tags2) if (tags1.count(t)==0) exctags2.insert(t);
+                tagkmers1=btk.get_tags_kmers(6, exctags1);
+                tagkmers2=btk.get_tags_kmers(6, exctags2);
+            }
+            StringKMerFactory kfa(ws.sg.nodes[llabs(p.first)].sequence,31);
+            StringKMerFactory kfb(ws.sg.nodes[llabs(p.second)].sequence,31);
+            std::vector<uint64_t> ka,kb;
+            kfa.create_kmers(ka);
+            kfb.create_kmers(kb);
+            uint64_t uncovered_a1=0,uncovered_a2=0,uncovered_b1=0,uncovered_b2=0;
+            for (auto x:ka) {
+                if (tagkmers1.count(x)==0) ++uncovered_a1;
+                if (tagkmers2.count(x)==0) ++uncovered_a2;
+            }
+            for (auto x:kb) {
+                if (tagkmers1.count(x)==0) ++uncovered_b1;
+                if (tagkmers2.count(x)==0) ++uncovered_b2;
+            }
+            std::cout<<"kmers not covered by haplotype-specific tags: a~1="<<uncovered_a1<<" a~2="<<uncovered_a2<<" b~1="<<uncovered_b1<<" b~2="<<uncovered_b2<<std::endl;
+            if (uncovered_a1==0 and uncovered_b1>0 and uncovered_b2==0 and uncovered_a2>0) {
+                std::cout<<"PNP ( "<<p.first<<", "<<p.second<<" ) walked-through as AB!"<<std::endl;
+                solution.insert({p.first,p.second});
+                rescued.insert(p);
+                continue;
+            }
+            if (uncovered_a2==0 and uncovered_b2>0 and uncovered_b1==0 and uncovered_a1>0) {
+                std::cout<<"PNP ( "<<p.first<<", "<<p.second<<" ) walked-through as BA!"<<std::endl;
+                solution.insert({p.second,p.first});
+                rescued.insert(p);
+                continue;
             }
         }
         for (auto p:rescued) todo_pnps.erase(p);
@@ -720,6 +762,7 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
         std::cout<<"SOLUTION only contains "<<solution.size()<<"/"<<pnps.size()<<" PNPs"<<std::endl;
         std::cout << "code "<< (oldsol.first.nodes.empty()? 0:10) <<std::endl;
         //TODO support partial solutions! (i.e. re-run with broken bubbly path?)
+        std::cout<<"TODO: split solution in partial slutions"<<std::endl;
     }
 
 
@@ -778,6 +821,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
     {
         uint64_t solved = 0, unsolved = 0;
         std::vector<SequenceSubGraph> solbubs;
+        std::vector<SequenceGraphPath> paths;
         for (auto &bp:kobps) {
             auto sol = solve_bubbly_path_2(bp);
 
@@ -785,11 +829,22 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
             else {
                 ++solved;
                 solbubs.push_back(bp);
+                for (auto pp:sol) {
+                    paths.push_back(pp.first);
+                    paths.push_back(pp.second);
+                }
+
             }
 
         }
         sglib::OutputLog() << "New solver: "<< solved << " bubbly paths solved, " << unsolved << " unsolved" << std::endl;
         ws.sg.print_bubbly_subgraph_stats(solbubs);
+        std::set<sgNodeID_t> used_nodes;
+        for (auto p:paths) {
+            ws.sg.join_path(p,false);
+            for (auto n:p.nodes) used_nodes.insert(n);
+        }
+        for (auto n:used_nodes) ws.sg.remove_node(n);
         //done!
     }
     return {};
@@ -1380,4 +1435,28 @@ std::vector<Backbone> Untangler::create_backbones(float min_ci, float max_ci, fl
 
     return backbones;
 
+}
+
+void Untangler::unroll_simple_loops() {
+    std::vector<bool> used(ws.sg.nodes.size(),false);
+    for (auto i=1;i<ws.sg.nodes.size();++i){
+        if (ws.sg.nodes[i].status==sgNodeDeleted) continue;
+        if (used[i]) continue;
+        auto fwl=ws.sg.get_fw_links(i);
+        auto bwl=ws.sg.get_bw_links(i);
+        for (auto f:fwl) {
+            for (auto b:bwl) {
+                if (f.dest == -b.dest) {
+                    used[i]=true;
+                    used[llabs(f.dest)]=true;
+                    //std::cout<< "simple loop detected between "
+                    //         <<i<< " ("<<ws.sg.nodes[i].sequence.size()<<"bp, kci="<<ws.kci.compute_compression_for_node(i,1)<<") and "
+                    //         << f.dest <<" ("<<ws.sg.nodes[llabs(f.dest)].sequence.size()<<"bp, kci="<<ws.kci.compute_compression_for_node(llabs(f.dest),1)<<")"<<std::endl;
+                    std::cout<<"seq"<<i<< ", "<<ws.sg.nodes[i].sequence.size()<<", "<<ws.kci.compute_compression_for_node(i,1)<<", seq"
+                            << llabs(f.dest) <<", "<<ws.sg.nodes[llabs(f.dest)].sequence.size()<<", "<<ws.kci.compute_compression_for_node(llabs(f.dest),1)<<std::endl;
+                }
+            }
+        }
+
+    }
 }

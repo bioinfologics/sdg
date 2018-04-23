@@ -17,7 +17,9 @@ int main(int argc, char * argv[]) {
 
     std::string workspace_file,output_prefix;
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
-    bool repeat_expansion=false, neighbour_connection=false,neighbour_connection_graph=false, bubbly_paths=false, pop_errors=false;
+    bool repeat_expansion=false, neighbour_connection=false,neighbour_connection_graph=false, bubbly_paths=false;
+    bool unroll_loops=false,pop_errors=false;
+    bool explore_homopolymers=false;
     try
     {
         cxxopts::Options options("bsg-untangler", "graph-based repeat resolution and haplotype separation");
@@ -26,11 +28,13 @@ int main(int argc, char * argv[]) {
                 ("help", "Print help")
                 ("w,workspace", "input workspace", cxxopts::value<std::string>(workspace_file))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
+                ("l,unroll_loops", "unroll simple loops",cxxopts::value<bool>(unroll_loops))
                 ("e,pop_errors", "pop unsupported short-bubbles (as errors)",cxxopts::value<bool>(pop_errors))
                 ("r,repeat_expansion","run tag-based repeat expansion", cxxopts::value<bool>(repeat_expansion))
                 ("b,bubbly_paths","run bubbly paths phasing", cxxopts::value<bool>(bubbly_paths))
                 ("n,neighbour_connection","run tag-based repeat neighbour_connection", cxxopts::value<bool>(neighbour_connection))
                 ("c,neighbour_connection_graph","create a tag-imbalance-based neighbour gfa", cxxopts::value<bool>(neighbour_connection_graph))
+                ("explore_homopolymers","explore_homopolymers (experimental)", cxxopts::value<bool>(explore_homopolymers))
                 ;
 
 
@@ -64,31 +68,15 @@ int main(int argc, char * argv[]) {
     ws.add_log_entry("bsg-untangler run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
 
-    /*if (!devel_code) {
-
+    if (unroll_loops){
         Untangler u(ws);
-
-        u.analise_paths_through_nodes();
-        FlowFollower ff(ws);
-
-        ff.load_flows_from_paths(ws.path_datastores.back());
-        std::ofstream skf("skated_paths.fasta");
-        for (auto sp:ff.skate_from_all(4, 10000)) {
-            skf << ">" << sp.nodes[0] << "_" << sp.nodes.back() << std::endl << sp.get_sequence() << std::endl;
-        }
-
-        std::cout << "TODO: pop error-bp bubbles by kci and paths" << std::endl;
-        u.pop_errors_by_ci_and_paths();
-        std::cout
-                << "TODO: Solve bubbly paths by kci (both local and bubly-path-total) and paths through collapses (expand without joins, update paths!)"
-                << std::endl;
-        std::cout << "TODO: Join unitigs and remap all reads" << std::endl;
-        std::cout << "TODO: skate through crap, generate a copy of the solution and re-connect" << std::endl;
-        std::cout << "TODO: Join unitigs and remap all reads" << std::endl;
-        sglib::OutputLog() << "All DONE!!!" << std::endl;
-
-        //u.analise_paths_through_nodes();
-    }*/
+        u.unroll_simple_loops();
+        /*ws.sg.join_all_unitigs();
+        ws.kci.reindex_graph();
+        for (auto &m:ws.linked_read_mappers) {
+            m.remap_all_reads();
+        }*/
+    }
     if (pop_errors){
         Untangler u(ws);
         u.pop_errors_by_ci_and_paths();
@@ -107,6 +95,7 @@ int main(int argc, char * argv[]) {
             return 1;
         }
         ws.sg.join_all_unitigs();
+        ws.sg.write_to_gfa(output_prefix+"_repeat_solved.gfa");
         ws.kci.reindex_graph();
         for (auto &m:ws.linked_read_mappers) {
             m.remap_all_reads();
@@ -116,7 +105,7 @@ int main(int argc, char * argv[]) {
         Untangler u(ws);
         u.solve_bubbly_paths();
         ws.sg.join_all_unitigs();
-        //ws.sg.write_to_gfa(output_prefix+"_bubbly_solved.gfa");
+        ws.sg.write_to_gfa(output_prefix+"_bubbly_solved.gfa");
         ws.kci.reindex_graph();
         for (auto &m:ws.linked_read_mappers) {
             m.remap_all_reads();
@@ -156,6 +145,44 @@ int main(int argc, char * argv[]) {
         for (auto &m:ws.linked_read_mappers) {
             m.remap_all_reads();
         }*/
+    }
+    if (explore_homopolymers){
+        //get all bubbles that are short
+        Untangler u(ws);
+        for (auto b:u.find_bubbles(360,401)){
+            auto tA=ws.linked_read_mappers[0].get_node_tags(b.first);
+            auto tB=ws.linked_read_mappers[0].get_node_tags(b.second);
+            std::set<bsg10xTag> shared;
+            std::set_intersection(tA.begin(),tA.end(),tB.begin(),tB.end(),std::inserter(shared,shared.end()));
+            if (shared.empty()) continue;
+            std::cout<<"Bubble analysed: " << b.first << " and " << b.second << " share "<< shared.size()<< " tags" <<std::endl;
+            for (auto t: shared) std::cout<<"Tag "<<t<<" has "<<ws.linked_read_datastores[0].get_tag_reads(t).size()<<std::endl;
+            std::set<uint64_t> readsA,readsB;
+            std::cout<<"Reads in shared tags in A: ";
+            for (auto rm:ws.linked_read_mappers[0].reads_in_node[llabs(b.first)]) {
+                readsA.insert(rm.read_id);
+                if (shared.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) std::cout<<" "<<rm.read_id;
+            }
+            std::cout<<std::endl;
+            std::cout<<"Reads in shared tags in B: ";
+            for (auto rm:ws.linked_read_mappers[0].reads_in_node[llabs(b.second)]) {
+                readsB.insert(rm.read_id);
+                if (shared.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) std::cout<<" "<<rm.read_id;
+            }
+            std::cout<<std::endl;
+
+            for (auto ra:readsA){
+                auto rb=(ra%2==1 ? ra+1 : ra-1);
+                if (readsB.count(rb)>0) {
+                    std::cout<<"Read "<<ra<<" in A and read"<<rb<<" in B!!!"<<std::endl;
+                    std::cout<<ws.linked_read_datastores[0].get_read_sequence(ra)<<std::endl;
+                    std::cout<<ws.linked_read_datastores[0].get_read_sequence(rb)<<std::endl;
+                }
+            }
+        }
+        //tags shared tags
+
+        //reads from the shared tags
     }
     ws.dump_to_disk(output_prefix+"_untangled.bsgws");
     return 0;
