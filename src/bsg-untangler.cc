@@ -17,9 +17,14 @@ int main(int argc, char * argv[]) {
 
     std::string workspace_file,output_prefix;
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
-    bool repeat_expansion=false, neighbour_connection=false,neighbour_connection_graph=false, bubbly_paths=false;
+    bool repeat_expansion=false, neighbour_connection_graph=false, bubbly_paths=false;
     bool unroll_loops=false,pop_errors=false;
     bool explore_homopolymers=false;
+    uint64_t min_backbone_node_size=2000;
+    float min_backbone_ci=0.5;
+    float max_backbone_ci=1.25;
+    float tag_imbalance_ends=.1;
+    int min_shared_tags=10;
     try
     {
         cxxopts::Options options("bsg-untangler", "graph-based repeat resolution and haplotype separation");
@@ -32,9 +37,14 @@ int main(int argc, char * argv[]) {
                 ("e,pop_errors", "pop unsupported short-bubbles (as errors)",cxxopts::value<bool>(pop_errors))
                 ("r,repeat_expansion","run tag-based repeat expansion", cxxopts::value<bool>(repeat_expansion))
                 ("b,bubbly_paths","run bubbly paths phasing", cxxopts::value<bool>(bubbly_paths))
-                ("n,neighbour_connection","run tag-based repeat neighbour_connection", cxxopts::value<bool>(neighbour_connection))
-                ("c,neighbour_connection_graph","create a tag-imbalance-based neighbour gfa", cxxopts::value<bool>(neighbour_connection_graph))
-                ("explore_homopolymers","explore_homopolymers (experimental)", cxxopts::value<bool>(explore_homopolymers))
+                //("n,neighbour_connections","run tag-based repeat neighbour_connection", cxxopts::value<bool>(neighbour_connection))
+                ("c,neighbour_connection_backbones","create tag-imbalance-based neighbour backbones", cxxopts::value<bool>(neighbour_connection_graph))
+                ("min_backbone_node_size","minimum size of nodes to use in backbones",cxxopts::value<uint64_t>(min_backbone_node_size))
+                ("min_backbone_ci","minimum ci of nodes to use in backbones",cxxopts::value<float>(min_backbone_ci))
+                ("max_backbone_ci","minimum ci of nodes to use in backbones",cxxopts::value<float>(max_backbone_ci))
+                ("tag_imbalance_ends","percentage of node to use as tag-imbalanced end",cxxopts::value<float>(tag_imbalance_ends))
+                ("min_shared_tags","minimum shared tags to evaluate tag-imbalanced connection",cxxopts::value<int>(min_shared_tags))
+                //("explore_homopolymers","explore_homopolymers (experimental)", cxxopts::value<bool>(explore_homopolymers))
                 ;
 
 
@@ -112,32 +122,9 @@ int main(int argc, char * argv[]) {
         }
 
     }
-    if (neighbour_connection){
-        Untangler u(ws);
-        int i=0;
-        for (auto minsize:{500,1000,1500,2500,5000,7500,10000}) {
-            uint64_t last=1;
-            while (last) {
-                last = u.connect_neighbours(minsize, .5, 1.25, 50000);
-                if (last) {
-                    ws.sg.join_all_unitigs();
-                    ws.kci.reindex_graph();
-                    ws.sg.write_to_gfa(output_prefix + "_partial" + std::to_string(++i) + ".gfa");
-                    for (auto &m:ws.linked_read_mappers) {
-                        m.remap_all_reads();
-                    }
-                    //ws.dump_to_disk(output_prefix+"_partial"+std::to_string(++i)+".bsgws");
-                }
-            }
-        }
-        /*ws.kci.reindex_graph();
-        for (auto &m:ws.linked_read_mappers) {
-            m.remap_all_reads();
-        }*/
-    }
     if (neighbour_connection_graph){
         Untangler u(ws);
-        auto backbones=u.create_backbones(.5, 1.25,.25);
+        auto backbones=u.create_backbones(min_backbone_node_size,min_backbone_ci, max_backbone_ci,tag_imbalance_ends,min_shared_tags);
         //auto tni=u.find_tag_neighbours_with_imbalance(5000, .5, 1.25,.25);
         //create a gfa with all nodes in nti, and connect them, dump the gfa.
 

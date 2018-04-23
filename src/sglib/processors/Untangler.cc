@@ -817,7 +817,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
     //uint64_t solved=0, solved_nodes=0, solved_size=0, untagged=0,untagged_nodes=0, untagged_size=0 ,ambiguous=0,ambiguous_nodes=0, ambiguous_size=0;
     //std::vector<std::pair<std::vector<sgNodeID_t>,std::vector<sgNodeID_t>>> solved_haps;
     //int min_tags=20;
-    {
+    /*{
         uint64_t solved = 0, unsolved = 0, untagged = 0;
         std::vector<SequenceSubGraph> solbubs;
         for (auto &bp:kobps) {
@@ -834,7 +834,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
         sglib::OutputLog() << "OLD solver: "<< solved << " bubbly paths solved, " << unsolved << " unsolved, with " << untagged << " lacking tags" << std::endl;
         ws.sg.print_bubbly_subgraph_stats(solbubs);
         //done!
-    }
+    }*/
     {
         uint64_t solved = 0, unsolved = 0;
         std::vector<SequenceSubGraph> solbubs;
@@ -1385,24 +1385,25 @@ std::pair<float,float> Untangler::tag_read_percentage_at_ends(sgNodeID_t node, s
  * @param end_perc
  * @return
  */
-std::vector<Backbone> Untangler::create_backbones(float min_ci, float max_ci, float end_perc) {
+std::vector<Backbone> Untangler::create_backbones(uint64_t min_size, float min_ci, float max_ci, float end_perc, int min_shared_tags) {
     std::vector<Backbone> backbones;
-    auto nodes10K=ws.select_from_all_nodes(10000,1000000,20,200000, min_ci, max_ci);
+    auto selected_nodes=ws.select_from_all_nodes(min_size,1000000,20,200000, min_ci, max_ci);
     std::vector<std::pair<sgNodeID_t , sgNodeID_t>> linked_nodes;
-    std::vector<std::set<bsg10xTag >> nodes10Ktags;
-    std::vector<std::vector<sgNodeID_t>> node_neighbours(nodes10K.size());
-    std::cout<<"Computing directional connections among "<<nodes10K.size()<<" nodes"<<std::endl;
-    for (auto n:nodes10K) nodes10Ktags.push_back(ws.linked_read_mappers[0].get_node_tags(n));
+    linked_nodes.reserve(10*selected_nodes.size());
+    std::vector<std::set<bsg10xTag >> selected_nodes_tags;
+    selected_nodes_tags.reserve(selected_nodes.size());
+    std::cout<<"Computing directional connections among "<<selected_nodes.size()<<" nodes"<<std::endl;
+    for (auto n:selected_nodes) selected_nodes_tags.push_back(ws.linked_read_mappers[0].get_node_tags(n));
 #pragma omp parallel for schedule (static,50)
-    for (auto i1=0;i1<nodes10K.size();++i1){
-        auto n1=nodes10K[i1];
-        for (auto i2=i1+1;i2<nodes10K.size();++i2){
-            auto n2=nodes10K[i2];
+    for (auto i1=0;i1<selected_nodes.size();++i1){
+        auto n1=selected_nodes[i1];
+        for (auto i2=i1+1;i2<selected_nodes.size();++i2){
+            auto n2=selected_nodes[i2];
             std::set<bsg10xTag> shared_tags;
-            std::set_intersection(nodes10Ktags[i1].begin(),nodes10Ktags[i1].end(),
-                                  nodes10Ktags[i2].begin(),nodes10Ktags[i2].end(),
+            std::set_intersection(selected_nodes_tags[i1].begin(),selected_nodes_tags[i1].end(),
+                                  selected_nodes_tags[i2].begin(),selected_nodes_tags[i2].end(),
                                   std::inserter(shared_tags,shared_tags.end()));
-            if (shared_tags.size()>20) {
+            if (shared_tags.size()>min_shared_tags) {
                 auto n1fb=tag_read_percentage_at_ends(n1,shared_tags, end_perc);
                 auto n1f=n1fb.first; auto n1b=n1fb.second;
                 auto n2fb=tag_read_percentage_at_ends(n2,shared_tags, end_perc);
@@ -1412,9 +1413,7 @@ std::vector<Backbone> Untangler::create_backbones(float min_ci, float max_ci, fl
                     //std::cout<<"Imbalance solved with "<<shared_tags.size()<<" tags "<<n1<< "( "<<n1f<<", "<<n1b<<" ) "<<n2<< "( "<<n2f<<", "<<n2b<<" )"<<std::endl;
 #pragma omp critical
                     {
-                        linked_nodes.emplace_back((n1f > n1b ? n1 : -n1), (n2f > n2b ? n2 : -n2));
-                        node_neighbours[i1].push_back(i2);
-                        node_neighbours[i2].push_back(i1);
+                        linked_nodes.emplace_back((n1f > n1b ? -i1 : i1), (n2f > n2b ? -i2 : i2));
                     }
 
                 }
@@ -1423,11 +1422,52 @@ std::vector<Backbone> Untangler::create_backbones(float min_ci, float max_ci, fl
         }
     }
     std::cout<<"Total connections detected: "<<linked_nodes.size()<<std::endl;
-    std::vector<bool> used(nodes10K.size(),false);
 
-    for (auto i1=0;i1<nodes10K.size();++i1) {
-        if (used[i1]) continue;
-        auto n1 = nodes10K[i1];
+    //transform links into fw and bw connections (unelegant!)
+    std::vector<std::vector<sgNodeID_t>> fw_neighbours(selected_nodes.size());
+    std::vector<std::vector<sgNodeID_t>> bw_neighbours(selected_nodes.size());
+    for (auto l:linked_nodes) {
+        if (l.first>0) bw_neighbours[l.first].push_back(l.second);
+        else fw_neighbours[-l.first].push_back(l.second);
+        if (l.second>0) bw_neighbours[l.second].push_back(l.first);
+        else fw_neighbours[-l.second].push_back(l.first);
+    }
+
+    std::ofstream of_node_connections("backbone_node_connections.csv"), of_links("backbone_links.csv");
+    for (auto l:linked_nodes) of_links<<(l.first>0 ? selected_nodes[l.first]:-selected_nodes[-l.first])<<", "
+                                      <<(l.second>0 ? selected_nodes[l.second]:-selected_nodes[-l.second])<<std::endl;
+    // check nodes with only one connection
+    uint64_t none=0, one_side=0, one_in_one_out=0, multiple=0, two=0;
+    for (auto i1=0;i1<selected_nodes.size();++i1) {
+        auto n1 = selected_nodes[i1];
+        if (fw_neighbours[i1].size()==0 and bw_neighbours[i1].size()==0) ++none;
+        else if (fw_neighbours[i1].size()==0 or bw_neighbours[i1].size()==0) ++one_side;
+        else if (fw_neighbours[i1].size()==1 and bw_neighbours[i1].size()==1) ++one_in_one_out;
+        else if (fw_neighbours[i1].size()==2 or bw_neighbours[i1].size()==2) ++two;
+        else ++multiple;
+
+        of_node_connections<<n1;
+        for (auto i2:bw_neighbours[i1]) of_node_connections<<", "<<(i2>0 ? selected_nodes[i2]:-selected_nodes[-i2]);
+        of_node_connections<<std::endl;
+        of_node_connections<<-n1;
+        for (auto i2:fw_neighbours[i1]) of_node_connections<<", "<<(i2>0 ? selected_nodes[i2]:-selected_nodes[-i2]);
+        of_node_connections<<std::endl;
+    }
+    std::cout<<none<<" nodes no in or out connections"<<std::endl;
+    std::cout<<one_side<<" nodes have one-side-only connections"<<std::endl;
+    std::cout<<one_in_one_out<<" nodes have 1 in and 1 out connections"<<std::endl;
+    std::cout<<two<<" nodes have 2 connections on at least one side"<<std::endl;
+    std::cout<<multiple<<" nodes have multiple connections, with at least 1 per side"<<std::endl;
+
+
+    //check and remove simple linear transitive connections
+
+    //check nodes with multiple incoherent transtitions (repeats)
+/*
+    std::vector<bool> used(selected_nodes.size(),false);
+    for (auto i1=0;i1<selected_nodes.size();++i1) {
+        if (selected_nodes[i1]) continue;
+        auto n1 = selected_nodes[i1];
         backbones.emplace_back(ws,*this);
         used[n1]=true;
         std::vector<sgNodeID_t> last_added={i1};
@@ -1438,7 +1478,7 @@ std::vector<Backbone> Untangler::create_backbones(float min_ci, float max_ci, fl
                 for (auto y:node_neighbours[x]){
                     if (not used[y]){
                         used[y]=true;
-                        backbones.back().nodes.push_back(nodes10K[y]);
+                        backbones.back().nodes.push_back(selected_nodes[y]);
                         new_last_added.push_back(y);
                     }
                 }
@@ -1449,7 +1489,7 @@ std::vector<Backbone> Untangler::create_backbones(float min_ci, float max_ci, fl
         for (auto n:backbones.back().nodes) std::cout<<"seq"<<n<<", ";
         std::cout<<std::endl;
     }
-
+*/
     return backbones;
 
 }

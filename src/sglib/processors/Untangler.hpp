@@ -39,7 +39,7 @@ public:
 
 
     //Backbone creation
-    std::vector<Backbone> create_backbones(float min_ci, float max_ci, float end_perc=.1);
+    std::vector<Backbone> create_backbones(uint64_t min_size, float min_ci, float max_ci, float end_perc, int min_shared_tags);
 
     //graph simplification (direct operations, no backbones)
     void unroll_simple_loops();
