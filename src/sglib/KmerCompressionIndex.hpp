@@ -30,7 +30,7 @@ public:
     void compute_compression_stats();
     void compute_all_nodes_kci(uint16_t max_graph_freq=10);
 
-    std::vector<std::vector<uint16_t>> compute_node_coverage_profile(std::string node_sequence);
+    std::vector<std::vector<uint16_t>> compute_node_coverage_profile(std::string node_sequence, int read_set_index);
 
     void dump_histogram(std::string filename);
 
@@ -38,6 +38,7 @@ public:
     SequenceGraph & sg;
     std::vector<KmerCount> graph_kmers;
     std::vector<double> nodes_depth;
+    std::vector<std::string> read_counts_header;
     std::vector<std::vector<uint16_t>> read_counts;
     uint64_t max_mem;
     uint16_t uniq_mode=0;

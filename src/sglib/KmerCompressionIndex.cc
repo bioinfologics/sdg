@@ -89,6 +89,11 @@ void KmerCompressionIndex::read(std::ifstream &input_file) {
         input_file.read(( char *) read_counts.back().data(), sizeof(uint16_t) * kcount);
     }
     compute_compression_stats();
+//    std::string line;
+//    while ( getline (input_file,line) ) {
+//        read_counts_header.push_back(line);
+//        std::cout << "Cargado..." << line << std::endl;
+//    }
 }
 
 void KmerCompressionIndex::load_from_disk(std::string filename) {
@@ -106,6 +111,10 @@ void KmerCompressionIndex::write(std::ofstream &output_file) {
     for (auto i=0;i<ccount;++i) {
         output_file.write((const char *) read_counts[i].data(), sizeof(uint16_t) * kcount);
     }
+//    for (int i=0; i<read_counts_header.size(); ++i){
+//        output_file << read_counts_header[i] << std::endl;
+//    }
+
 }
 void KmerCompressionIndex::save_to_disk(std::string filename) {
     std::ofstream of(filename);
@@ -234,7 +243,8 @@ void KmerCompressionIndex::dump_histogram(std::string filename) {
     for (auto i=0;i<1000;++i) kchf<<i<<","<<covuniq[i]<<std::endl;
 }
 
-std::vector<std::vector<uint16_t>> KmerCompressionIndex::compute_node_coverage_profile(std::string node_sequence){
+std::vector<std::vector<uint16_t>>
+KmerCompressionIndex::compute_node_coverage_profile(std::string node_sequence, int read_set_index) {
     // takes a node and returns the kci vector for the node
     const int k=31;
     std::cout << "Number of kmers in sequence: " << node_sequence.size()-k+1 << std::endl;
@@ -251,7 +261,7 @@ std::vector<std::vector<uint16_t>> KmerCompressionIndex::compute_node_coverage_p
         auto nk = std::lower_bound(graph_kmers.begin(), graph_kmers.end(), KmerCount(kmer,0));
 
         if (nk!=graph_kmers.end() and nk->kmer == kmer) {
-            reads_kmer_profile.push_back(read_counts[0][nk-graph_kmers.begin()]);
+            reads_kmer_profile.push_back(read_counts[read_set_index][nk-graph_kmers.begin()]);
 
         } else {
             reads_kmer_profile.push_back(0);

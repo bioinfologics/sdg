@@ -55,9 +55,27 @@ int main(int argc, char * argv[]) {
         w.add_log_entry("Created with bsg-makeworkspace");
         w.sg.load_from_gfa(gfa_filename);
         w.add_log_entry("GFA imported from "+gfa_filename+" ("+std::to_string(w.sg.nodes.size()-1)+" nodes)");
+
         if (kci_filename!=""){
-            w.kci.load_from_disk(kci_filename);
-            w.add_log_entry("KCI kmer spectra imported from "+kci_filename);
+            std::cout << "Loading kci files..." <<std::endl;
+            // Split the input comma separated files to a vector
+            std::vector<std::string> kci_files;
+            std::istringstream iss(kci_filename);
+
+            std::string filename;
+            while (std::getline(iss, filename, ',')){
+                kci_files.emplace_back(filename);
+            }
+
+            for (std::string &filename: kci_files){
+                std::cout << "Loading " << filename << std::endl;
+                w.kci.read_counts_header.push_back(filename);
+                w.kci.load_from_disk(filename);
+                w.add_log_entry("KCI kmer spectra imported from "+filename);
+            }
+            std::cout << "Files loaded: ";
+            for (auto fn: w.kci.read_counts_header) std::cout << fn << ",";
+            std::cout << std::endl;
         }
         for (auto lrds:lr_datastores){
             //create and load the datastore, and the mapper!
@@ -65,8 +83,7 @@ int main(int argc, char * argv[]) {
             w.linked_read_mappers.emplace_back(w.sg,w.linked_read_datastores.back());
             w.add_log_entry("LinkedReadDatastore imported from "+lrds+" ("+std::to_string(w.linked_read_datastores.back().size())+" reads)");
         }
-
-
+        
         w.dump_to_disk(output);
 
     }
@@ -152,6 +169,7 @@ int main(int argc, char * argv[]) {
     }
     else if (0==strcmp(argv[1],"node-kci-dump")){
         std::string filename;
+        std::string node_list;
         sgNodeID_t cnode;
         std::string prefix;
 
@@ -161,7 +179,7 @@ int main(int argc, char * argv[]) {
             options.add_options()
                     ("help", "Print help")
                     ("w,workspace", "workspace filename", cxxopts::value<std::string>(filename))
-                    ("n,node", "node to profile", cxxopts::value<sgNodeID_t>(cnode))
+                    ("n,nodes", "node to profile", cxxopts::value<std::string>(node_list))
                     ("p,prefix", "Prefix for the output file", cxxopts::value<std::string>(prefix));
 
             auto newargc=argc-1;
@@ -183,54 +201,53 @@ int main(int argc, char * argv[]) {
             exit(1);
         }
 
-        std::cout << "Here" << filename << std::endl;
-
         WorkSpace w;
         w.load_from_disk(filename);
-        
-        std::ofstream reads_ofl("reads_profile"+std::to_string(cnode)+".cvg", std::ios_base::app);
-        std::ofstream unique_ofl("unique_profile"+std::to_string(cnode)+".cvg", std::ios_base::app);
-        std::ofstream assm_ofl("assmcn_profile"+std::to_string(cnode)+".cvg", std::ios_base::app);
 
-        std::cout << "Profile para el nodo:" << cnode << std::endl;
-        std::string sequence = w.sg.nodes[cnode].sequence;
 
-        auto coverages = w.kci.compute_node_coverage_profile(sequence);
+        // load nodes to process split the input comma separated files to a vector
+        std::vector<sgNodeID_t> node_vector;
+        std::istringstream iss(node_list);
+        std::string cnodestr;
+        while (std::getline(iss, cnodestr, ',')){
 
-        std::cout << ">Reads_"<< prefix << "_" <<cnode << std::endl;
-        reads_ofl << ">Reads_"<< prefix << "_"<< cnode << "|";
-        for (auto c: coverages[0]){
-            std::cout << c << " ";
-            reads_ofl << c << " ";
+            cnode = std::stoi(cnodestr);
+            std::ofstream reads_ofl("reads_profile"+std::to_string(cnode)+".cvg", std::ios_base::app);
+            std::ofstream unique_ofl("unique_profile"+std::to_string(cnode)+".cvg", std::ios_base::app);
+            std::ofstream assm_ofl("assmcn_profile"+std::to_string(cnode)+".cvg", std::ios_base::app);
+
+            std::cout << "Profiling node:" << cnode << std::endl;
+            std::string sequence = w.sg.nodes[cnode].sequence;
+
+            std::cout << "Coverage for: " << w.kci.read_counts.size() << "," << w.kci.read_counts_header.size() << std::endl;
+            for (auto ri=0; ri<w.kci.read_counts.size(); ++ri){
+
+                // One extraction per set
+                auto read_coverage = w.kci.compute_node_coverage_profile(sequence, ri);
+                reads_ofl << ">Reads_"<< prefix << "_"<< cnode << "|";
+                for (auto c: read_coverage[0]){
+                    reads_ofl << c << " ";
+                }
+                reads_ofl << std::endl;
+            }
+
+            auto coverages = w.kci.compute_node_coverage_profile(sequence, 0);
+            unique_ofl << ">Uniqueness_"<< prefix << "_" << cnode << "|";
+            for (auto c: coverages[1]){
+                unique_ofl << c << " ";
+            }
+            unique_ofl << std::endl;
+
+            assm_ofl << ">Graph_"<< prefix << "_"<<cnode << "|";
+            for (auto c: coverages[2]){
+                assm_ofl << c << " ";
+            }
+            assm_ofl << std::endl;
+
+            reads_ofl.close();
+            unique_ofl.close();
+            assm_ofl.close();
         }
-        std::cout << std::endl;
-        reads_ofl << std::endl;
-
-        std::cout << ">Uniqueness_"<< prefix << "_"<<cnode << std::endl;
-        unique_ofl << ">Uniqueness_"<< prefix << "_" << cnode << "|";
-        for (auto c: coverages[1]){
-            std::cout << c << " ";
-            unique_ofl << c << " ";
-        }
-        std::cout << std::endl;
-        unique_ofl << std::endl;
-
-        std::cout << ">Graph_"<< prefix << "_" << cnode << std::endl;
-        assm_ofl << ">Graph_"<< prefix << "_"<<cnode << "|";
-        for (auto c: coverages[2]){
-            std::cout << c << " ";
-            assm_ofl << c << " ";
-        }
-        std::cout << std::endl;
-        assm_ofl << std::endl;
-
-        reads_ofl.close();
-        unique_ofl.close();
-        assm_ofl.close();
-    }
-    else if (0==strcmp(argv[1], "kci-stack")) {
-        // Take multiple kci files and stack them in the reads kmer vector for later use
-
     }
     else {
         std::cout<<"Please specify one of: make, log, status, dump"<<std::endl;
