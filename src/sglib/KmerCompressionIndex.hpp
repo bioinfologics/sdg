@@ -38,7 +38,6 @@ public:
     SequenceGraph & sg;
     std::vector<KmerCount> graph_kmers;
     std::vector<double> nodes_depth;
-    std::vector<std::string> read_counts_header;
     std::vector<std::vector<uint16_t>> read_counts;
     uint64_t max_mem;
     uint16_t uniq_mode=0;

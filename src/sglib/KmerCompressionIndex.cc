@@ -89,11 +89,6 @@ void KmerCompressionIndex::read(std::ifstream &input_file) {
         input_file.read(( char *) read_counts.back().data(), sizeof(uint16_t) * kcount);
     }
     compute_compression_stats();
-//    std::string line;
-//    while ( getline (input_file,line) ) {
-//        read_counts_header.push_back(line);
-//        std::cout << "Cargado..." << line << std::endl;
-//    }
 }
 
 void KmerCompressionIndex::load_from_disk(std::string filename) {
@@ -111,11 +106,8 @@ void KmerCompressionIndex::write(std::ofstream &output_file) {
     for (auto i=0;i<ccount;++i) {
         output_file.write((const char *) read_counts[i].data(), sizeof(uint16_t) * kcount);
     }
-//    for (int i=0; i<read_counts_header.size(); ++i){
-//        output_file << read_counts_header[i] << std::endl;
-//    }
-
 }
+
 void KmerCompressionIndex::save_to_disk(std::string filename) {
     std::ofstream of(filename);
     write(of);

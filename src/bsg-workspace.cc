@@ -69,12 +69,12 @@ int main(int argc, char * argv[]) {
 
             for (std::string &filename: kci_files){
                 std::cout << "Loading " << filename << std::endl;
-                w.kci.read_counts_header.push_back(filename);
+                w.read_counts_header.push_back(filename);
                 w.kci.load_from_disk(filename);
                 w.add_log_entry("KCI kmer spectra imported from "+filename);
             }
             std::cout << "Files loaded: ";
-            for (auto fn: w.kci.read_counts_header) std::cout << fn << ",";
+            for (auto fn: w.read_counts_header) std::cout << fn << ",";
             std::cout << std::endl;
         }
         for (auto lrds:lr_datastores){
@@ -219,12 +219,12 @@ int main(int argc, char * argv[]) {
             std::cout << "Profiling node:" << cnode << std::endl;
             std::string sequence = w.sg.nodes[cnode].sequence;
 
-            std::cout << "Coverage for: " << w.kci.read_counts.size() << "," << w.kci.read_counts_header.size() << std::endl;
-            for (auto ri=0; ri<w.kci.read_counts.size(); ++ri){
+            std::cout << "Coverage for: " << w.kci.read_counts.size() << "," << w.read_counts_header.size() << std::endl;
+            for (auto ri=0; ri<w.read_counts_header.size(); ++ri){
 
                 // One extraction per set
                 auto read_coverage = w.kci.compute_node_coverage_profile(sequence, ri);
-                reads_ofl << ">Reads_"<< prefix << "_"<< cnode << "|";
+                reads_ofl << ">Reads_"<< prefix << "_"<< cnode << " archivo "<< w.read_counts_header[ri] << "|";
                 for (auto c: read_coverage[0]){
                     reads_ofl << c << " ";
                 }
