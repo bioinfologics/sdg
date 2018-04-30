@@ -224,7 +224,7 @@ int main(int argc, char * argv[]) {
 
                 // One extraction per set
                 auto read_coverage = w.kci.compute_node_coverage_profile(sequence, ri);
-                reads_ofl << ">Reads_"<< prefix << "_"<< cnode << " archivo "<< w.read_counts_header[ri] << "|";
+                reads_ofl << ">Reads_"<< prefix << "_"<< cnode << "_"<< w.read_counts_header[ri] << "|";
                 for (auto c: read_coverage[0]){
                     reads_ofl << c << " ";
                 }
