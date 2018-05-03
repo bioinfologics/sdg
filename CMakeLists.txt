@@ -99,6 +99,8 @@ if (BZIP2_FOUND)
     set(DEPENDENCY_LIBS ${DEPENDENCY_LIBS} ${BZIP2_LIBRARIES})
 endif()
 
+set(DEPENDENCY_LIBS ${DEPENDENCY_LIBS} ${CMAKE_SOURCE_DIR}/src/sglib/mappers/minimap2/libminimap2.a)
+
 # check if Doxygen is installed
 IF(BUILD_DOC)
     find_package(Doxygen)
@@ -158,7 +160,8 @@ add_library(sequence_graph SHARED
             src/sglib/graph/SequenceSubGraph.cpp
             src/sglib/graph/SequenceGraphPath.cpp
             src/sglib/mappers/LongReadMapper.cpp
-            src/sglib/datastores/LongReadsDatastore.cpp src/sglib/mappers/SingleReadMapper.cpp src/sglib/mappers/SingleReadMapper.hpp)
+            src/sglib/datastores/LongReadsDatastore.cpp
+            src/sglib/mappers/SingleReadMapper.cpp)
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 

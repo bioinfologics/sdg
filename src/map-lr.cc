@@ -16,7 +16,28 @@
 #include <vector>
 #include <sglib/mappers/minimap2/minimap.h>
 
-void map_reads(mm_mapopt_t *opt, mm_idx_t *mi, LongReadsDatastore &datastore, std::unordered_set<uint32_t> readIDs) {
+void
+printMatch(const mm_idx_t *mi, std::ofstream &matchOutput, uint32_t readID, const std::string &read_name,
+           int read_len, const mm_reg1_t *regs0, int j) {
+    matchOutput << readID
+                << "\t" << read_name
+                << "\t" << read_len
+                << "\t" << j + 1
+                << "\t" << regs0[j].rid
+                << "\t" << mi->seq[regs0[j].rid].name
+                << "\t" << mi->seq[regs0[j].rid].len
+                << "\t" << regs0[j].rs
+                << "\t" << regs0[j].re
+                << "\t" << regs0[j].qs
+                << "\t" << regs0[j].qe
+                << "\t" << "+-"[regs0[j].rev]
+                << "\t" << regs0[j].mlen
+                << "\t" << regs0[j].blen
+                << "\t" << regs0[j].mapq
+                << "\n";
+}
+
+void map_reads(SequenceGraph &sg, mm_mapopt_t *opt, mm_idx_t *mi, LongReadsDatastore &datastore, std::unordered_set<uint32_t> readIDs) {
     {
         std::ofstream matchHeader("header.paf");
         matchHeader << "read_id\t"
@@ -46,24 +67,32 @@ void map_reads(mm_mapopt_t *opt, mm_idx_t *mi, LongReadsDatastore &datastore, st
             int read_len(static_cast<int>(read_seq.length()));
             int n_regs0;
             mm_reg1_t *regs0 = mm_map(mi, read_len, read_seq.data(), &n_regs0, buf, opt, read_name.data());
-            for (int j = 0; j < n_regs0; ++j) {
-                matchOutput << readID
-                        << "\t" << read_name
-                        << "\t" << read_len
-                        << "\t" << j + 1
-                        << "\t" << regs0[j].rid
-                        << "\t" << mi->seq[regs0[j].rid].name
-                        << "\t" << mi->seq[regs0[j].rid].len
-                        << "\t" << regs0[j].rs
-                        << "\t" << regs0[j].re
-                        << "\t" << regs0[j].qs
-                        << "\t" << regs0[j].qe
-                        << "\t" << "+-"[regs0[j].rev]
-                        << "\t" << regs0[j].mlen
-                        << "\t" << regs0[j].blen
-                        << "\t" << regs0[j].mapq
-                        << "\n";
+
+            if (n_regs0<=1) {
+                for (int j = 0; j < n_regs0; j++) {
+                    printMatch(mi, matchOutput, readID, read_name, read_len, regs0, j);
+                }
             }
+            if (n_regs0 > 1) {
+                for (int j = 0; j < n_regs0 - 1; ++j) {
+                    auto fromNode = sg.oldnames_to_ids.at(mi->seq[regs0[j].rid].name);
+                    auto toNode = sg.oldnames_to_ids.at(mi->seq[regs0[j+1].rid].name);
+
+                    if (std::abs(fromNode) != std::abs(toNode)) {
+                        if (!sg.link_exists(fromNode, toNode)) {
+                            continue;
+                        }
+                    }
+                    printMatch(mi, matchOutput, readID, read_name, read_len, regs0, j);
+                    printMatch(mi, matchOutput, readID, read_name, read_len, regs0, j+1);
+                }
+            }
+            // Check that the links exists in the graph.
+            // Store the path in a path list
+
+            // Report if a read has broken paths (and store the missing links).
+
+
             for (int i = 0; i<n_regs0;i++) free(regs0[i].p);
             free(regs0);
         }
@@ -72,7 +101,7 @@ void map_reads(mm_mapopt_t *opt, mm_idx_t *mi, LongReadsDatastore &datastore, st
 
 }
 
-void map_using_minimap(uint8_t k, SequenceGraph &sg, std::string &long_reads) {
+void map_using_minimap(uint8_t k, SequenceGraph &sg, std::string &lr_datastore) {
     std::vector<const char *> names(sg.nodes.size());
     std::vector<const char *> seqs(sg.nodes.size());
     for (std::vector<std::string>::size_type i = 1; i < seqs.size(); i++) {
@@ -84,71 +113,21 @@ void map_using_minimap(uint8_t k, SequenceGraph &sg, std::string &long_reads) {
     mm_mapopt_init(&opt);
     mm_idx_t *graph_index = mm_idx_str(15, k, 0, 14, static_cast<int>(seqs.size()-1), &seqs[1], &names[1]);
     mm_mapopt_update(&opt, graph_index);
+    opt.flag |= MM_F_CIGAR;
 
-    LongReadsDatastore datastore(long_reads, "reads_index.idx");
-    map_reads(&opt, graph_index, datastore, {});
+    LongReadsDatastore datastore(lr_datastore);
+    map_reads(sg, &opt, graph_index, datastore, {});
     mm_idx_destroy(graph_index);
 }
 
-void map_using_unique_kmers(uint8_t k, SequenceGraph &sg, std::string &output_prefix, std::string &long_reads){
-    uint16_t min_matches = 10;
-
-    std::cout << "Mapping sequences " << std::endl;
-    unsigned int max_coverage(1);
-    auto maxmem(4 * GB);
-    /*
-     * Reads the reference/contigs file and generates the set of kmers and which entry number on the fasta they belong to
-     * along with their orientation in the form of a int32_t with + for fwd and - for rev, the output is filtered
-     * by min < coverage <= max
-     */
-    SMR<KmerIDX,
-            kmerIDXFactory<FastaRecord>,
-            GraphNodeReader<FastaRecord>,
-            FastaRecord, GraphNodeReaderParams, KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k},
-                                                                                  {maxmem, 0, max_coverage,
-                                                                                   output_prefix});
-
-    std::vector<KmerIDX> unique_kmers;
-
-    // Get the unique_kmers from the file
-    unique_kmers = kmerIDX_SMR.process_from_memory(false);
-
-    std::vector<uint64_t> uniqKmer_statistics(kmerIDX_SMR.summaryStatistics());
-    std::cout << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << std::endl;
-    std::cout << "Number of " << int(k) << "-kmers that appear more than 0 < kmer_coverage <= " << max_coverage
-              << " in assembly " << uniqKmer_statistics[1] << std::endl;
-    std::cout << "Number of contigs from the assembly " << uniqKmer_statistics[2] << std::endl;
-
-    /*
-     * Instantiate a ContigLinkFactory that takes the unique_kmers as a parameter, a fastq file with long/linked reads
-     * and generates a list of links between contigs.
-     */
-
-    uint32_t min_kmers_to_call_match(5);
-    uint32_t min_seen_contig_to_write_output(1);
-    std::unordered_set<KmerIDX> us(unique_kmers.begin(), unique_kmers.end());
-
-    SMR<ContigBlockFactory<FastqRecord>::Block,
-            ContigBlockFactory<FastqRecord>,
-            FastqReader<FastqRecord>,
-            FastqRecord, FastxReaderParams, FilterSetParams> contigBlock(
-            {0},   // ReaderParams
-            {output_prefix, k, us, min_kmers_to_call_match, min_seen_contig_to_write_output},
-            {maxmem, 1, 100000, output_prefix});
-
-    std::vector<ContigBlockFactory<FastqRecord>::Block> blocks = contigBlock.read_from_file(long_reads, true);
-    auto blockReaderStats(contigBlock.summaryStatistics());
-    std::cout << "Total records generated " << blockReaderStats[0] << std::endl;
-    std::cout << "Total filtered records " << blockReaderStats[1] << std::endl;
-    std::cout << "Total read sequences " << blockReaderStats[2] << std::endl;
-    std::cout << "Total reader filtered sequences " << blockReaderStats[3] << std::endl;
-
-}
-
-void map_using_sketches(uint8_t k, SequenceGraph &sg, std::string &output_prefix, std::string &long_reads) {
-    uint8_t w = 1;
-    LongReadsDatastore datastore(long_reads, "reads_index.idx");
+void map_using_lrMapper(uint8_t k, uint8_t w, SequenceGraph &sg, std::string &output_prefix, std::string &long_reads) {
+    if (k > 28) {
+        throw (std::invalid_argument(std::string("Unsupported K=") + std::to_string(k) + std::string(" value, K must be lower then 28")));
+    }
+    (w==0)?(uint8_t)(k*.66f):w;
+    LongReadsDatastore datastore(long_reads);
     LongReadMapper rm(k, w, sg, datastore);
+    rm.update_graph_index();
     rm.map_reads();
 }
 
@@ -160,21 +139,22 @@ int main(int argc, char * argv[]) {
     for (auto i=0;i<argc;i++) sglib::OutputLog(false) <<argv[i]<<" ";
     sglib::OutputLog(false) <<std::endl<<std::endl;
 
-    std::string gfa_filename, bubble_contigs_filename, output_prefix, long_reads;
+    std::string gfa_filename, bubble_contigs_filename, output_prefix, long_reads, lr_datastore;
     std::string dump_mapped, load_mapped;
     unsigned int log_level(0);
     uint64_t max_mem_gb(4);
     bool stats_only(false);
-    uint8_t K(31);
+    uint8_t K(15), W(0);
 //@formatter:off
     cxxopts::Options options("map-lr", "LongRead Mapper");
     options.add_options()
             ("help", "Print help", cxxopts::value<std::string>(),"")
-            ("k,mer_size", "K-mer size for indexing/mapping", cxxopts::value<uint8_t>(K)->default_value("31"), "0-31")
+            ("k,mer_size", "K-mer size for indexing/mapping", cxxopts::value<uint8_t>(K)->default_value("15"), "0-28")
+            ("w,window_size", "Minimiser window size defaults to 2/3 of K value", cxxopts::value<uint8_t>(W), "0-19")
             ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename), "filepath")
             ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix), "path")
             ("l,log_level", "output log level", cxxopts::value<unsigned int>(log_level)->default_value("0"), "uint")
-            ("r,long_reads", "input long reads", cxxopts::value<std::string>(long_reads), "filepath")
+            ("d,datastore", "long read datastore", cxxopts::value<std::string>(lr_datastore), "filepath")
             ("max_mem", "maximum_memory when mapping (GB, default: 4)", cxxopts::value<uint64_t>(max_mem_gb)->default_value("4"), "GB");
 //@formatter:on
     try {
@@ -184,6 +164,10 @@ int main(int argc, char * argv[]) {
             std::cout << options.help({""}) << std::endl;
             exit(0);
         }
+        if (K > 28) {
+            throw cxxopts::OptionException(std::string("Unsupported K=") + std::to_string(K) + std::string(" value, K must be lower then 28"));
+        }
+        (W==0)?(uint8_t)(K*.66f):W;
 
         if (result.count("g") != 1 or result.count("o") != 1 ) {
             throw cxxopts::OptionException(" please specify input files and output prefix");
@@ -209,12 +193,16 @@ int main(int argc, char * argv[]) {
     max_mem_gb *= GB;
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
+    LongReadsDatastore datastore(long_reads);
+    LongReadMapper rm(K, W, sg, datastore);
+
 
     if (0) {
-        map_using_minimap(K, sg, long_reads);
+        map_using_minimap(K, sg, lr_datastore);
     }
     if (1) {
-        map_using_sketches(K, sg, output_prefix, long_reads);
+        rm.update_graph_index();
+        rm.map_reads();
     }
 
     sglib::OutputLog() << "Done!" << std::endl;
