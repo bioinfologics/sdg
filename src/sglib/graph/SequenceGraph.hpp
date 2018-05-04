@@ -63,9 +63,9 @@ public:
      * @param tabu List of nodes not to visit
      * @return Returns a vector of nodeVisitors storing the path distance and bases distance between origin of search and each node
      */
-    std::vector<nodeVisitor> depth_first_search(nodeVisitor node, unsigned int size_limit, unsigned int edge_limit, std::set<nodeVisitor> tabu={});
+    std::vector<nodeVisitor> depth_first_search (nodeVisitor node, unsigned int size_limit, unsigned int edge_limit, std::set<nodeVisitor> tabu={});
 
-    std::vector<sgNodeID_t> breath_first_search(std::vector<sgNodeID_t> &nodes, unsigned int size_limit);
+    std::vector<nodeVisitor> breath_first_search(nodeVisitor seed, unsigned int size_limit, unsigned int edge_limit, std::set<nodeVisitor> tabu={});
 
     /**
      * Finds a path between two nodes within size_limit and edge_limit.

@@ -139,7 +139,7 @@ int main(int argc, char * argv[]) {
     for (auto i=0;i<argc;i++) sglib::OutputLog(false) <<argv[i]<<" ";
     sglib::OutputLog(false) <<std::endl<<std::endl;
 
-    std::string gfa_filename, bubble_contigs_filename, output_prefix, long_reads, lr_datastore;
+    std::string gfa_filename, bubble_contigs_filename, output_prefix, lr_datastore;
     std::string dump_mapped, load_mapped;
     unsigned int log_level(0);
     uint64_t max_mem_gb(4);
@@ -172,9 +172,6 @@ int main(int argc, char * argv[]) {
         if (result.count("g") != 1 or result.count("o") != 1 ) {
             throw cxxopts::OptionException(" please specify input files and output prefix");
         }
-        if (long_reads.empty()) {
-            throw cxxopts::OptionException(" please specify a long reads file");
-        }
     } catch (const cxxopts::OptionException &e) {
         std::cout << "Error parsing options: " << e.what() << std::endl;
         std::cout << options.help({""}) << std::endl;
@@ -193,7 +190,7 @@ int main(int argc, char * argv[]) {
     max_mem_gb *= GB;
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
-    LongReadsDatastore datastore(long_reads);
+    LongReadsDatastore datastore(lr_datastore);
     LongReadMapper rm(K, W, sg, datastore);
 
 
@@ -203,6 +200,19 @@ int main(int argc, char * argv[]) {
     if (1) {
         rm.update_graph_index();
         rm.map_reads();
+    }
+
+    uint complexity=3;
+    // If exploring complexity nodes I return to the same node, then it is a loop.
+    auto loopy_nodes = sg.get_loopy_nodes(complexity);
+    // Find flanking nodes.
+    using flank_type = std::pair<sgNodeID_t, sgNodeID_t>;
+    flank_type flank;
+    std::set<flank_type> flanks;
+    for (const auto &loopy_node:loopy_nodes) {
+//        sg.get_flanking_nodes(loopy_node);
+        auto fwds=sg.get_fw_links(loopy_node);
+        auto bwds=sg.get_bw_links(loopy_node);
     }
 
     sglib::OutputLog() << "Done!" << std::endl;

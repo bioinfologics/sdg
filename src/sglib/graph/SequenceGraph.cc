@@ -660,23 +660,44 @@ std::vector<sgNodeID_t > SequenceGraph::find_canonical_repeats() {
     return repeaty_nodes;
 }
 
-std::vector<sgNodeID_t>
-SequenceGraph::breath_first_search(std::vector<sgNodeID_t> &nodes, unsigned int size_limit) {
-    std::queue<sgNodeID_t> to_visit(std::deque<sgNodeID_t>(nodes.begin(),nodes.end()));
-    std::set<sgNodeID_t> visited;
-    std::unordered_map<sgNodeID_t, sgNodeID_t > meta;
+std::vector<nodeVisitor>
+SequenceGraph::breath_first_search(const nodeVisitor seed, unsigned int size_limit, unsigned int edge_limit, std::set<nodeVisitor> tabu) {
+    std::queue<nodeVisitor> to_visit;
+    to_visit.push(seed);
+    std::set<nodeVisitor> visited_set;
+    for (const auto &n:tabu) {
+        visited_set.insert(n);
+    }
 
-    while (!to_visit.empty() and visited.size() < size_limit) {
+    while (!to_visit.empty()) {
         const auto activeNode(to_visit.front());
         to_visit.pop();
-        for (const auto &neighboor: get_fw_links(activeNode)) {
-            if (visited.find(neighboor.dest) == visited.end()) {
-                to_visit.push(neighboor.dest);
-                visited.insert(neighboor.dest);
+        auto looker = nodeVisitor(activeNode.node,0,0);
+        auto visitedNode(visited_set.find( looker ) );
+        if (visitedNode == visited_set.end() and    // Active node has not been visited
+            (activeNode.path_length < edge_limit or edge_limit==0) and  // Is within path limits
+            (activeNode.dist < size_limit or size_limit==0) ) // Is within sequence limits
+        {
+            visited_set.insert(nodeVisitor(activeNode.node, activeNode.dist, activeNode.path_length));  // Mark as visited
+            for (const auto &l: get_fw_links(activeNode.node)) {    // Visit all its neighbours
+                to_visit.push(nodeVisitor(l.dest,
+                                          static_cast<uint>(activeNode.dist + nodes[l.dest > 0 ? l.dest : -l.dest].sequence.length()),
+                                          activeNode.path_length+1));
             }
+        } else if (visitedNode != visited_set.end() and // If the node has been visited
+                   (visitedNode->path_length > activeNode.path_length or visitedNode->dist > activeNode.dist)) // but is closer than the last time I saw it
+        {
+            visited_set.erase(visitedNode); // Remove it from the visited nodes and
+            to_visit.push(nodeVisitor(activeNode.node, activeNode.dist, activeNode.path_length)); // add it to the list of nodes to visit
         }
     }
-    return std::vector<sgNodeID_t>(visited.begin(), visited.end());
+
+    std::vector<nodeVisitor > result;
+    for (const auto &v:visited_set) {
+        if (v.path_length == 0) continue; // If node is seed, do not add it
+        result.push_back(v);
+    }
+    return result;
 }
 
 std::vector<nodeVisitor>
