@@ -68,6 +68,7 @@ public:
     // find bubbles in component of graph
     std::vector<std::vector<sgNodeID_t >> find_bubbles(std::vector<sgNodeID_t>);
     std::vector<SequenceSubGraph> get_all_bubbly_subgraphs(uint32_t maxsubgraphs=0);
+    void print_bubbly_subgraph_stats(const std::vector<SequenceSubGraph> & bubbly_paths);
     std::vector<std::pair<sgNodeID_t,int64_t>> get_distances_to(sgNodeID_t n, std::set<sgNodeID_t> destinations, int64_t max_dist);
     std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size);
 
@@ -144,7 +145,7 @@ public:
     std::vector<sgNodeID_t> nodes;
     explicit SequenceSubGraph(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
     SequenceGraphPath make_path(); //returns empty path if not linear
-    uint64_t total_size();
+    const uint64_t total_size () const;
 private:
     SequenceGraph& sg;
 };

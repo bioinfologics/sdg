@@ -7,6 +7,7 @@
 #include <sstream>
 #include <set>
 #include <math.h>
+#include <sglib/logger/OutputLog.h>
 #include "SequenceGraph.hpp"
 
 bool Node::is_canonical() {
@@ -855,7 +856,63 @@ std::vector<SequenceSubGraph> SequenceGraph::get_all_bubbly_subgraphs(uint32_t m
     return subgraphs;
 }
 
-uint64_t SequenceSubGraph::total_size() {
+void SequenceGraph::print_bubbly_subgraph_stats(const std::vector<SequenceSubGraph> &bubbly_paths) {
+    std::vector<uint64_t> solved_sizes,original_sizes;
+    sglib::OutputLog()<<bubbly_paths.size()<<" bubbly paths"<<std::endl;
+    auto &log_no_date=sglib::OutputLog(sglib::LogLevels::INFO,false);
+    uint64_t total_size=0,total_solved_size=0;
+    for (auto &bp:bubbly_paths){
+        total_size+=bp.total_size();
+        SequenceGraphPath p1(*this),p2(*this);
+        original_sizes.push_back(nodes[llabs(bp.nodes.front())].sequence.size());
+        original_sizes.push_back(nodes[llabs(bp.nodes.back())].sequence.size());
+        solved_sizes.push_back(nodes[llabs(bp.nodes.front())].sequence.size());
+        total_solved_size+=solved_sizes.back();
+        solved_sizes.push_back(nodes[llabs(bp.nodes.back())].sequence.size());
+        total_solved_size+=solved_sizes.back();
+        for (auto i=1; i<bp.nodes.size()-1; ++i){
+            original_sizes.push_back(nodes[llabs(bp.nodes[i])].sequence.size());
+            if (i%3==0){
+                p1.nodes.push_back(bp.nodes[i]);
+                p2.nodes.push_back(bp.nodes[i]);
+            } else if (i%3==1) p1.nodes.push_back(bp.nodes[i]);
+            else p2.nodes.push_back(bp.nodes[i]);
+        }
+        solved_sizes.push_back(p1.get_sequence().size());
+        total_solved_size+=solved_sizes.back();
+        solved_sizes.push_back(p2.get_sequence().size());
+        total_solved_size+=solved_sizes.back();
+    }
+    std::sort(solved_sizes.rbegin(),solved_sizes.rend());
+    std::sort(original_sizes.rbegin(),original_sizes.rend());
+    auto on20s=total_size*.2;
+    auto on50s=total_size*.5;
+    auto on80s=total_size*.8;
+    sglib::OutputLog() <<"Currently "<<original_sizes.size()<<" sequences with "<<total_size<<"bp, ";
+    uint64_t acc=0;
+    for (auto s:original_sizes){
+        if (acc<on20s and acc+s>on20s) log_no_date<<"N20: "<<s<<"  ";
+        if (acc<on50s and acc+s>on50s) log_no_date<<"N50: "<<s<<"  ";
+        if (acc<on80s and acc+s>on80s) log_no_date<<"N80: "<<s<<"  ";
+        acc+=s;
+    }
+    log_no_date<<std::endl;
+    auto sn20s=total_solved_size*.2;
+    auto sn50s=total_solved_size*.5;
+    auto sn80s=total_solved_size*.8;
+    sglib::OutputLog()<<"Potentially "<<solved_sizes.size()<<" sequences with "<<total_solved_size<<"bp, ";
+    acc=0;
+    for (auto s:solved_sizes){
+        if (acc<sn20s and acc+s>sn20s) log_no_date<<"N20: "<<s<<"  ";
+        if (acc<sn50s and acc+s>sn50s) log_no_date<<"N50: "<<s<<"  ";
+        if (acc<sn80s and acc+s>sn80s) log_no_date<<"N80: "<<s<<"  ";
+        acc+=s;
+    }
+    log_no_date<<std::endl;
+
+}
+
+const uint64_t SequenceSubGraph::total_size() const {
     uint64_t t=0;
     for (auto &n:nodes) t+=sg.nodes[llabs(n)].sequence.size();
     return t;
@@ -872,6 +929,7 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
         next_paths.clear();
         for (auto &p:current_paths){
             //if node is a destination add it to final nodes
+            if (p.nodes.back()==-to) std::cout<<"WARNING: found path to -TO node"<<std::endl;
             if (p.nodes.back()==to) {
                 final_paths.push_back(p);
                 final_paths.back().nodes.pop_back();
@@ -880,7 +938,7 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
             else {
                 for (auto l:get_fw_links(p.nodes.back())){
                     if (std::find(p.nodes.begin(),p.nodes.end(),l.dest)!=p.nodes.end()) {
-                        //std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
+                        std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
                         return {};
                         //continue;
                     }
