@@ -239,7 +239,7 @@ std::vector<std::vector<uint16_t>>
 KmerCompressionIndex::compute_node_coverage_profile(std::string node_sequence, int read_set_index) {
     // takes a node and returns the kci vector for the node
     const int k=31;
-    std::cout << "Number of kmers in sequence: " << node_sequence.size()-k+1 << std::endl;
+//    std::cout << "Number of kmers in sequence: " << node_sequence.size()-k+1 << std::endl;
 
     std::vector<uint64_t> nkmers;
     StringKMerFactory skf(node_sequence,k);
@@ -269,7 +269,7 @@ KmerCompressionIndex::compute_node_coverage_profile(std::string node_sequence, i
             graph_kmer_profile.push_back(0);
         }
     }
-    std::cout << "Tamanio" << reads_kmer_profile.size() <<std::endl;
+//    std::cout << "Tamanio" << reads_kmer_profile.size() <<std::endl;
     return {reads_kmer_profile, unique_kmer_profile, graph_kmer_profile};
 }
 
@@ -323,5 +323,25 @@ void KmerCompressionIndex::compute_all_nodes_kci(uint16_t max_graph_freq) {
 #pragma omp parallel for shared(nodes_depth) schedule(static, 100)
     for (auto n=1;n<sg.nodes.size();++n) {
         nodes_depth[n]=compute_compression_for_node(n, max_graph_freq);
+    }
+}
+
+void KmerCompressionIndex::compute_kci_profiles(std::string filename) {
+    // vector to store vector of zero counts
+    std::ofstream of(filename+"_kci.csv");
+
+    for (sgNodeID_t n=0; n<sg.nodes.size(); ++n){
+        of << "seq" <<n<<" | ";
+        for (auto var=0; var < read_counts.size(); ++var) {
+            auto zero_count = 0;
+            auto read_coverage = compute_node_coverage_profile(sg.nodes[n].sequence, var);
+            for (auto c: read_coverage[0]) {
+                if (c == 0){
+                    zero_count++;
+                }
+            }
+            of << zero_count << ",";
+        }
+        of << std::endl;
     }
 }

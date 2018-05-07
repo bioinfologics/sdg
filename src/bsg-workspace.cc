@@ -4,7 +4,6 @@
 #include <sglib/WorkSpace.hpp>
 #include "cxxopts.hpp"
 
-
 int main(int argc, char * argv[]) {
     std::cout << "bsg-workspace"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
@@ -248,6 +247,41 @@ int main(int argc, char * argv[]) {
             unique_ofl.close();
             assm_ofl.close();
         }
+    } else if (0==strcmp(argv[1],"kci-profile")) {
+        std::string filename;
+        std::string prefix;
+
+        try {
+            cxxopts::Options options("bsg-workspace kci-profile", "BSG workspace kci-profile");
+
+            options.add_options()
+                    ("help", "Print help")
+                    ("w,workspace", "workspace filename", cxxopts::value<std::string>(filename))
+                    ("p,prefix", "Prefix for the output file", cxxopts::value<std::string>(prefix));
+
+            auto newargc=argc-1;
+            auto newargv=&argv[1];
+            auto result=options.parse(newargc,newargv);
+            if (result.count("help")) {
+                std::cout << options.help({""}) << std::endl;
+                exit(0);
+            }
+
+            if (result.count("workspace")==0) {
+                throw cxxopts::OptionException(" please specify kmer spectra file");
+            }
+
+
+        } catch (const cxxopts::OptionException &e) {
+            std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
+                      << "Use option --help to check command line arguments." << std::endl;
+            exit(1);
+        }
+
+        WorkSpace w;
+        w.load_from_disk(filename);
+        std::cout << "Sacando" << std::endl;
+        w.kci.compute_kci_profiles(prefix);
     }
     else {
         std::cout<<"Please specify one of: make, log, status, dump"<<std::endl;
