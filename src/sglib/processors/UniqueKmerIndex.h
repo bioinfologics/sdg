@@ -5,12 +5,8 @@
 #ifndef BSG_UNIQUEKMERINDEX_H
 #define BSG_UNIQUEKMERINDEX_H
 
-#include "sglib/SequenceGraph.h"
-
-struct graphPosition{
-    sgNodeID_t node;
-    uint32_t pos;
-};
+#include <sglib/types/KmerTypes.hpp>
+#include "sglib/graph/SequenceGraph.hpp"
 
 class UniqueKmerIndex {
 private:

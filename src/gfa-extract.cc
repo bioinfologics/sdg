@@ -3,9 +3,10 @@
 //
 
 #include <string>
-#include <sglib/SequenceGraph.h>
+#include <vector>
+#include <sglib/graph/SequenceGraph.hpp>
 #include <cxxopts.hpp>
-#include <sglib/filesystem/check_or_create_directory.h>
+#include <sglib/filesystem/helpers.h>
 #include <sglib/logger/OutputLog.h>
 #include <sglib/factories/KMerIDXFactory.h>
 #include <sglib/factories/ContigBlockFactory.h>
@@ -17,7 +18,8 @@ int main(int argc, char * argv[]) {
     unsigned int size_limit(1000), edge_limit(10);
     unsigned int log_level;
     std::string query_file;
-    std::vector<std::string> nodes;
+    std::string nodes_input;
+    std::string subgraph;
     uint64_t max_mem_gb(4);
     bool stats_only(false);
 //@formatter:off
@@ -26,10 +28,11 @@ int main(int argc, char * argv[]) {
             ("h,help", "Print help", cxxopts::value<std::string>()->implicit_value(""), "")
             ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename), "file path")
             ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix), "path")
-            ("log_level", "output log level", cxxopts::value<unsigned int>(log_level)->default_value("4"), "uint")
-            ("s,size_limit", "size limit for region to depth_first_search", cxxopts::value<unsigned int>(size_limit)->default_value("1000"), "uint")
-            ("e,edge_limit", "limit of edges to depth_first_search", cxxopts::value<unsigned int>(edge_limit)->default_value("10"), "uint")
-            ("n,nodes", "use the following nodes as seeds", cxxopts::value<std::vector<std::string>>(nodes), "list of nodes (n1,n2)");
+            ("log_level", "output log level", cxxopts::value<unsigned int>(log_level)->default_value("0"), "uint")
+            ("s,size_limit", "size limit in base pairs for region to explore", cxxopts::value<unsigned int>(size_limit)->default_value("1000"), "uint")
+            ("e,edge_limit", "limit number of edges to explore", cxxopts::value<unsigned int>(edge_limit)->default_value("10"), "uint")
+            ("n,nodes", "use the following node as a seed (this option can be specified multiple times)", cxxopts::value<std::string>(nodes_input), "string")
+            ("subgraph", "use the following subgraph as a seed", cxxopts::value<std::string>(subgraph), "file path");
 //@formatter:on
     try {
         auto result = options.parse(argc, argv);
@@ -43,8 +46,10 @@ int main(int argc, char * argv[]) {
         if (result.count("o") != 1) {
             throw cxxopts::OptionException(" please specify output prefix using the -o, --output flag");
         }
-        if (result.count("n") == 0) {
-            throw cxxopts::OptionException(" please specify the query nodes using the -n --nodes flag or a FASTA file using -q --query");
+        if (result.count("n") == 0 and subgraph.empty()) {
+            throw cxxopts::OptionException(" please specify the query nodes using the -n --nodes flag, "
+                                                   "a subgraph using the -s --subgraph flag "
+                                                   "or a FASTA file using -q --query");
         }
     } catch (const cxxopts::OptionException &e) {
         std::cout << "Error parsing options: " << e.what() << std::endl;
@@ -56,11 +61,9 @@ int main(int argc, char * argv[]) {
         exit(1);
     }
 
-    sglib::OutputLogLevel = sglib::LogLevels::DEBUG;
+    sglib::OutputLogLevel = static_cast<sglib::LogLevels>(log_level);
 
     sglib::OutputLog() << "Welcome to gfa-extract" << std::endl << std::endl;
-
-    sglib::OutputLog() << "Welcome to map-lr" << std::endl << std::endl;
 
     if (gfa_filename.size() <= 4 or gfa_filename.substr(gfa_filename.size() - 4, 4) != ".gfa") {
 
@@ -70,36 +73,40 @@ int main(int argc, char * argv[]) {
     sglib::OutputLogLevel = static_cast<sglib::LogLevels>(log_level);
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
+    std::vector<std::string> nodes;
 
-    std::cout << std::endl;
-    std::cout << std::endl;
-    std::cout << std::endl;
-    if (!nodes.empty()) {
-        std::cout << "Starting DFS" << std::endl;
-        std::set<sgNodeID_t> forward_subnodes;
-        std::set<sgNodeID_t> backward_subnodes;
-        for (const auto &n:nodes) {
-            auto id = sg.oldnames_to_ids[n];
-            sglib::OutputLog() << "Processing " << sg.oldnames_to_ids[n] << std::endl;
-            // Go forward on n
-            auto v = sg.depth_first_search(id, size_limit, edge_limit, forward_subnodes);
-            forward_subnodes.insert(v.cbegin(), v.cend());
-            // Go backwards on n
-            v = sg.depth_first_search(-id, size_limit, edge_limit, backward_subnodes);
-            backward_subnodes.insert(v.cbegin(), v.cend());
-            sglib::OutputLog() << "Done" << std::endl;
+    if (!nodes_input.empty()) {
+        std::stringstream nodes_stream(nodes_input);
+        std::string node;
+        while (std::getline(nodes_stream, node, ',')) {
+            nodes.push_back(node);
         }
-        for (const auto &n:forward_subnodes) {
-            std::cout << sg.oldnames[std::abs(n)] << " ";
-        }
-        for (const auto &n:backward_subnodes) {
-            std::cout << sg.oldnames[std::abs(n)] << " ";
-        }
-        std::cout << std::endl;
-        std::set<sgNodeID_t> subnodes;
-        subnodes.insert(backward_subnodes.begin(),backward_subnodes.end());
-        subnodes.insert(forward_subnodes.begin(),forward_subnodes.end());
-        std::cout << backward_subnodes.size() << " nodes in solution\n";
-        SequenceSubGraph ssg(sg, std::vector<sgNodeID_t>(subnodes.begin(), subnodes.end()));
     }
+
+    if (!subgraph.empty()) {
+        SequenceGraph ssg;
+        ssg.load_from_gfa(subgraph);
+        for (auto n = 1ul; n < ssg.nodes.size(); ++n) {
+            nodes.push_back(ssg.oldnames[n]);
+        }
+    }
+
+    if (!nodes.empty()) {
+        auto resultNodes = sg.explore_nodes(nodes, size_limit, edge_limit);
+
+        sglib::OutputLog() << resultNodes.size() << " nodes in solution\n";
+        for (const auto &n: resultNodes) {
+            sglib::OutputLog(sglib::INFO, false) << sg.oldnames[std::abs(n.node)] << " ";
+        }
+        sglib::OutputLog(sglib::INFO,false) << std::endl;
+
+        SequenceSubGraph ssg(sg, resultNodes);
+        ssg.write_to_gfa(output_prefix+"subgraph.gfa");
+    }
+
+    if (!query_file.empty()) {
+
+    }
+
+    sglib::OutputLog() << "Done" << std::endl;
 }

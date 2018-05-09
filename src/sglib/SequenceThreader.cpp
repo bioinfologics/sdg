@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <stack>
 #include <vector>
+#include <sglib/graph/SequenceGraphPath.hpp>
 #include <sglib/SequenceThreader.h>
 #include <sglib/readers/FileReader.h>
 #include <sglib/logger/OutputLog.h>

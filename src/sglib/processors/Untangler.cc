@@ -2,9 +2,24 @@
 // Created by Bernardo Clavijo (EI) on 26/02/2018.
 //
 
+#include <sglib/graph/SequenceGraphPath.hpp>
 #include "Untangler.hpp"
 #include "TagWalker.hpp"
 
+struct Counter
+{
+    struct value_type { template<typename T> value_type(const T&) { } };
+    void push_back(const value_type&) { ++count; }
+    size_t count = 0;
+};
+
+template<typename T1, typename T2>
+size_t intersection_size(const T1& s1, const T2& s2)
+{
+    Counter c;
+    set_intersection(s1.begin(), s1.end(), s2.begin(), s2.end(), std::back_inserter(c));
+    return c.count;
+}
 
 uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t> &reads_to_remap) {
     std::unordered_set<sgNodeID_t> unsolved_repeats;
@@ -136,11 +151,70 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
     return paths_solved.size();
 }
 
+uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags) {
+    uint64_t aa_count=0,ab_count=0,unsolved_count=0;
+
+    std::cout << " Finding trivial repeats to analyse with tags" << std::endl;
+    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
+        auto fwl = ws.sg.get_fw_links(n);
+        auto bwl = ws.sg.get_bw_links(n);
+        if (fwl.size() != 2 or bwl.size() != 2) continue;
+        auto f0 = fwl[0].dest;
+        auto f1 = fwl[1].dest;
+        auto b0 = bwl[0].dest;
+        auto b1 = bwl[1].dest;
+        if (ws.sg.get_bw_links(f0).size()!=1
+            or ws.sg.get_bw_links(f1).size()!=1
+               or ws.sg.get_fw_links(b0).size()!=1
+                  or ws.sg.get_fw_links(b1).size()!=1)
+            continue;
+        sgNodeID_t all[4] = {f0, f1, b0, b1};
+        bool ok = true;
+        for (auto x:all) if (x == n or x == -n or ws.sg.nodes[(x > 0 ? x : -x)].sequence.size() < 199) ok = false;
+        for (auto j = 0; j < 3; ++j)
+            for (auto i = j + 1; i < 4; ++i)
+                if (all[i] == all[j] or all[i] == -all[j])ok = false; //looping node
+        if (!ok) continue;
+
+        auto f0t=ws.linked_read_mappers[0].get_node_tags(f0); if (f0t.size()<min_tags) continue;
+        auto f1t=ws.linked_read_mappers[0].get_node_tags(f1); if (f1t.size()<min_tags) continue;
+        auto b0t=ws.linked_read_mappers[0].get_node_tags(b0); if (b0t.size()<min_tags) continue;
+        auto b1t=ws.linked_read_mappers[0].get_node_tags(b1); if (b1t.size()<min_tags) continue;
+
+        auto cif0=ws.kci.compute_compression_for_node(f0,1);
+        if (cif0<min_ci or cif0>max_ci) continue;
+        auto cif1=ws.kci.compute_compression_for_node(f1,1);
+        if (cif1<min_ci or cif1>max_ci) continue;
+        auto cib0=ws.kci.compute_compression_for_node(b0,1);
+        if (cib0<min_ci or cib0>max_ci) continue;
+        auto cib1=ws.kci.compute_compression_for_node(b1,1);
+        if (cib1<min_ci or cib1>max_ci) continue;
+
+        uint64_t aa=intersection_size(b0t,f0t);
+        uint64_t bb=intersection_size(b1t,f1t);
+        uint64_t ab=intersection_size(b0t,f1t);
+        uint64_t ba=intersection_size(b1t,f0t);
+
+        if (aa > min_tags and bb > min_tags and std::min(aa, bb) > 10 * std::max(ab, ba)) {
+            ++aa_count;
+            ws.sg.expand_node(n,{{b0},{b1}},{{f0},{f1}});
+        } else if (ba > min_tags and ab > min_tags and std::min(ba, ab) > 10 * std::max(aa, bb)) {
+            ++ab_count;
+            ws.sg.expand_node(n,{{b0},{b1}},{{f1},{f0}});
+        }
+        else {
+            ++unsolved_count;
+        }
+    }
+    std::cout<<"Repeat expansion summary AA:"<<aa_count<<" AB:"<<ab_count <<" Unsolved:"<<unsolved_count<<std::endl;
+    return aa_count+ab_count;
+}
+
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> hps;
     std::vector<bool> used(ws.sg.nodes.size(),false);
     //TODO: check the coverages are actually correct?
-    const double min_c1=0.7,max_c1=1.30,min_c2=1.8,max_c2=2.8;
+    const double min_c1=0.75,max_c1=1.25,min_c2=1.5,max_c2=2.5;
     /*
      * the loop always keep the first and the last elements as c=2 collapsed nodes.
      * it starts with a c=2 node, and goes thorugh all bubbles fw, then reverts the subgraph and repeats
@@ -413,4 +487,565 @@ std::vector<SequenceGraphPath> Untangler::combine(std::vector<SequenceGraphPath>
 //        //find start of overlap
 //        //check overlap ==
 
+}
+
+
+void Untangler::analise_paths_through_nodes() {
+//    std::vector<uint8_t> used(ws.sg.nodes.size(),0);
+//    for (auto &p:ws.path_datastores[0].paths){
+//        for (auto i=1;i<p.nodes.size()-1;++i) if (used[llabs(p.nodes[i])]<20) ++used[llabs(p.nodes[i])];
+//    }
+//    uint64_t hall[21];
+//    for (auto &x:hall) x=0;
+//    uint64_t h399[21];
+//    for (auto &x:h399) x=0;
+//    uint64_t h402[21];
+//    for (auto &x:h402) x=0;
+//    uint64_t h1000[21];
+//    for (auto &x:h1000) x=0;
+//    uint64_t h10000[21];
+//    for (auto &x:h10000) x=0;
+//    for (auto n=0;n<ws.sg.nodes.size();++n) {
+//        ++hall[used[n]];
+//        if (ws.sg.nodes[n].sequence.size()>=399) {
+//            if (ws.sg.nodes[n].sequence.size()<402) ++h399[used[n]];
+//            else if (ws.sg.nodes[n].sequence.size()<1000) ++h402[used[n]];
+//            else if (ws.sg.nodes[n].sequence.size()<10000) ++h1000[used[n]];
+//            else ++h10000[used[n]];
+//        }
+//
+//    }
+//    std::cout<<std::endl<<"=== Paths through -> nodes ==="<<std::endl;
+//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<hall[i]<<std::endl;
+//    std::cout<<std::endl<<"=== Paths through -> nodes 399bp - 401bp ==="<<std::endl;
+//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<h399[i]<<std::endl;
+//    std::cout<<std::endl<<"=== Paths through -> nodes 402bp - 999bp ==="<<std::endl;
+//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<h402[i]<<std::endl;
+//    std::cout<<std::endl<<"=== Paths through -> nodes 1000bp - 9999bp ==="<<std::endl;
+//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<h1000[i]<<std::endl;
+//    std::cout<<std::endl<<"=== Paths through -> nodes 10000bp+ ==="<<std::endl;
+//    for (auto i=0;i<21;++i) std::cout<<i<<", "<<h10000[i]<<std::endl;
+//TODO: this is the path-through part
+//    struct path_through{
+//        sgNodeID_t from,to;
+//        uint16_t count;
+//        path_through(sgNodeID_t _f,sgNodeID_t _t, uint16_t _c):from(_f),to(_t),count(_c){};
+//        const bool operator==(std::pair<sgNodeID_t,sgNodeID_t> a){
+//            return (from == a.first and to == a.second) or (from == a.second and to == a.first);
+//        }
+//    };
+//    sglib::OutputLog()<<"Creating path_through structures for each node"<<std::endl;
+//    std::vector<std::vector<struct path_through>> paths_through_nodes(ws.sg.nodes.size());
+//    std::pair<sgNodeID_t,sgNodeID_t> pfromto;
+//    //TODO: add the first and last with origin/end in themselves
+//    for (auto &p:ws.path_datastores[0].paths){
+//        for (auto i=1;i<p.nodes.size()-1;++i) {
+//            auto n=llabs(p.nodes[i]);
+//            if (p.nodes[i]>0) { pfromto.first=p.nodes[i-1];pfromto.second=-p.nodes[i+1]; }
+//            else { pfromto.first=-p.nodes[i+1]; pfromto.second=p.nodes[i-1];}
+//
+//            auto pti=std::find(paths_through_nodes[n].begin(),paths_through_nodes[n].end(),pfromto);
+//            if (pti==paths_through_nodes[n].end()) paths_through_nodes[n].emplace_back(pfromto.first,pfromto.second,1);
+//            else ++(pti->count);
+//        }
+//    }
+
+    //Canonical repeats.
+//    for (sgNodeID_t n=0;n<ws.sg.nodes.size();++n){
+//        auto fwl=ws.sg.get_fw_links(n);
+//        auto bwl=ws.sg.get_bw_links(n);
+//        if (fwl.size()>1 and fwl.size()==bwl.size() ){
+//            if (paths_through_nodes[n].size()!=fwl.size()) continue;
+//            std::set<sgNodeID_t> in_sol;
+//            for (auto &ptn:paths_through_nodes[n]) {
+//                in_sol.insert(llabs(ptn.from));
+//                in_sol.insert(llabs(ptn.to));
+//            }
+//            if (in_sol.size()<2*fwl.size()) continue;
+//            std::cout<<std::endl<<"Canonical repeat x"<<fwl.size()<<" on node "<<n<<" ("<<ws.sg.nodes[n].sequence.size()<<"bp) solved?"<<std::endl;
+//            for (auto &ptn:paths_through_nodes[n]) std::cout<<" "<<ptn.from<<" -> "<<ptn.to<<": "<<ptn.count<<std::endl;
+//        }
+//
+//    }
+    std::cout<<"computing KCI for all nodes"<<std::endl;
+    ws.kci.compute_all_nodes_kci(1);
+    std::ofstream kciof("kci_dump.csv");
+    for (auto i=1;i<ws.sg.nodes.size();++i) kciof<<"seq"<<i<<", "<<ws.kci.nodes_depth[i]<<std::endl;
+    std::cout<<"DONE!"<<std::endl;
+    //CRAP regions
+    std::vector<bool> used(ws.sg.nodes.size(),false),aborted(ws.sg.nodes.size(),false);
+    std::vector<SequenceSubGraph> craps;
+    for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) {
+        if (used[n]) continue;
+        if (ws.kci.nodes_depth[n]<1.5 and ws.sg.nodes[n].sequence.size()>500) continue;
+        SequenceSubGraph crap(ws.sg);
+        std::vector<sgNodeID_t> to_explore={n};
+        std::cout<<"Exploring node "<<n<<std::endl;
+        while (!to_explore.empty()){
+            std::vector<sgNodeID_t> new_to_explore;
+            //std::cout<<" Exploring "<<to_explore.size()<< " neighbors"<<std::endl;
+            for (auto ne:to_explore){
+                //std::cout<<"  Exploring node #"<<ne<<std::endl;
+                for (auto neigh:ws.sg.links[ne]){
+                    auto x=llabs(neigh.dest);
+                    //std::cout<<"  Exploring neighbour #"<<x<<std::endl;
+                    if (std::find(crap.nodes.begin(),crap.nodes.end(),x)==crap.nodes.end()) {
+                        //std::cout<<"  ADDING to crap!"<<x<<std::endl;
+                        crap.nodes.emplace_back(x);
+                        if (not (ws.kci.nodes_depth[x]<1.5 and ws.sg.nodes[x].sequence.size()>500)) {
+                            //std::cout<<"  ADDING to explore list (size="<<ws.sg.nodes[x].sequence.size()<<")"<<std::endl;
+                            new_to_explore.emplace_back(x);
+                        }
+                    }
+                }
+            }
+            //std::cout<<new_to_explore.size()<< " new neighbors to explore on the next round"<<std::endl;
+            to_explore=new_to_explore;
+            if (crap.nodes.size()>5000) break;
+        }
+        if (crap.nodes.size()>10) {
+            for (auto &x:crap.nodes) used[x]=true;
+            if (crap.nodes.size()<=5000) {
+                craps.emplace_back(crap);
+                std::cout << std::endl << "==== NEW CRAP ====" << std::endl;
+                for (auto x:crap.nodes) std::cout << "seq" << x << ", ";
+                std::cout << std::endl;
+            }
+            if (crap.nodes.size()>5000) {
+                for (auto x:crap.nodes) aborted[x]=true;
+            }
+        }
+    }
+    uint64_t abt=0;
+    for (auto a:aborted) if (a) ++abt;
+    std::cout<<"There were "<<abt<<" nodes in aborted crap components"<<std::endl;
+
+
+}
+
+std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::find_bubbles(uint32_t min_size,uint32_t max_size) {
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> r;
+    std::vector<bool> used(ws.sg.nodes.size(),false);
+    sgNodeID_t n1,n2;
+    size_t s1,s2;
+    for (n1=1;n1<ws.sg.nodes.size();++n1){
+        if (used[n1]) continue;
+        //get "topologically correct" bubble: prev -> [n1 | n2] -> next
+        s1=ws.sg.nodes[n1].sequence.size();
+        if (s1<min_size or s1>max_size) continue;
+        auto fwl=ws.sg.get_fw_links(n1);
+        if (fwl.size()!=1) continue;
+        auto next=fwl[0].dest;
+        auto bwl=ws.sg.get_bw_links(n1);
+        if (bwl.size()!=1) continue;
+        auto prev=bwl[0].dest;
+        auto parln=ws.sg.get_bw_links(next);
+        if (parln.size()!=2) continue;
+        auto parlp=ws.sg.get_fw_links(-prev);
+        if (parlp.size()!=2) continue;
+        if (parlp[0].dest!=n1) n2=parlp[0].dest;
+        else n2=parlp[1].dest;
+        if (n2!=-parln[0].dest and n2!=-parln[1].dest) continue;
+        s2=ws.sg.nodes[n2].sequence.size();
+        if (s2<min_size or s2>max_size) continue;
+        used[n1]=true;
+        used[n2]=true;
+        r.emplace_back(n1,n2);
+    }
+    return r;
+}
+
+std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
+    //find bubbly paths
+    auto bps=ws.sg.get_all_bubbly_subgraphs();
+    std::vector<SequenceSubGraph> kobps,sbps;
+    uint64_t allnodes=0,bnodes=0,allnodes_size=0,bnodes_size=0;
+    for (auto &bp:bps){
+        /*if (bp.nodes.size()>40) {
+            std::cout<<"LARGE bubbly path: ";
+            for (auto n:bp.nodes) std::cout<<"seq"<<labs(n)<<",";
+            std::cout<<std::endl;
+
+        }*/
+        //check every third node for kci
+        allnodes+=bp.nodes.size();
+        allnodes_size+=bp.total_size();
+        int kci_ok=0,kci_fail=0;
+        for (auto i=0;i<bp.nodes.size();i+=3) {
+            auto dup_kci=ws.kci.compute_compression_for_node(bp.nodes[i],1);
+            if (dup_kci<1.5 or dup_kci>2.5) ++kci_fail;
+            else ++kci_ok;
+        }
+        if (kci_fail*3<kci_ok) {
+            kobps.push_back(bp);
+            bnodes+=bp.nodes.size();
+            bnodes_size+=bp.total_size();
+        }
+    }
+    std::cout<<kobps.size()<<" / "<< bps.size() << " bubly subgraphs ( "<<bnodes<<" / "<<allnodes<<" nodes) ( "<<bnodes_size<<" / "<<allnodes_size<<" bp) pass kci condition on duplicated nodes"<<std::endl;
+    uint64_t solved=0, solved_nodes=0, solved_size=0, untagged=0,untagged_nodes=0, untagged_size=0 ,ambiguous=0,ambiguous_nodes=0, ambiguous_size=0;
+    std::vector<std::pair<std::vector<sgNodeID_t>,std::vector<sgNodeID_t>>> solved_haps;
+    int min_tags=10;
+    for (auto &bp:kobps){
+        //init the haplotypes anchoring all nodes to previous tags
+        //std::cout<<"A";
+        std::vector<sgNodeID_t> hap1, hap2;
+        std::set<bsg10xTag> tags1,tags2;
+        hap1.push_back(bp.nodes[1]);
+        tags1=ws.linked_read_mappers[0].get_node_tags(bp.nodes[1]);
+        hap2.push_back(bp.nodes[2]);
+        tags2=ws.linked_read_mappers[0].get_node_tags(bp.nodes[2]);
+        if (tags1.size()<min_tags or tags2.size()<min_tags) {++untagged; untagged_nodes+=bp.nodes.size(); untagged_size+=bp.total_size(); continue;};
+        bool utb=false;
+        for (auto i=3;i<bp.nodes.size()-1;i+=3){
+            std::set<bsg10xTag> both;
+            std::set_intersection(tags1.begin(),tags1.end(),tags2.begin(),tags2.end(),std::inserter(both,both.end()));
+            for (auto b:both){
+                tags1.erase(b);
+                tags2.erase(b);
+            }
+            auto A=bp.nodes[i+1];
+            auto B=bp.nodes[i+2];
+            auto tagsA=ws.linked_read_mappers[0].get_node_tags(A);
+            auto tagsB=ws.linked_read_mappers[0].get_node_tags(B);
+            if (tagsA.size()<min_tags or tagsB.size()<min_tags) {++untagged;untagged_nodes+=bp.nodes.size(); untagged_size+=bp.total_size(); utb=true; break;};
+            auto a1=intersection_size(tagsA,tags1);
+            auto a2=intersection_size(tagsA,tags2);
+            auto b1=intersection_size(tagsB,tags1);
+            auto b2=intersection_size(tagsB,tags2);
+            if (a1>=min_tags and b1<a1*2/min_tags and b2>=min_tags and a2<b2*2/min_tags){
+                //std::cout<<"A";
+                hap1.push_back(A);
+                tags1.insert(tagsA.begin(),tagsA.end());
+                hap2.push_back(B);
+                tags2.insert(tagsB.begin(),tagsB.end());
+            }
+            else if (b1>=min_tags and a1<b1*2/min_tags and a2>=min_tags and b2<a2*2/min_tags){
+                //std::cout<<"B";
+                hap2.push_back(A);
+                tags2.insert(tagsA.begin(),tagsA.end());
+                hap1.push_back(B);
+                tags1.insert(tagsB.begin(),tagsB.end());
+            } else {
+                //std::cout<<" ["<<a1<<","<<a2<<","<<b1<<","<<b2<<"] FAIL!";
+                break;
+            }
+        }
+        //std::cout<<std::endl;
+        if (utb) continue;
+        if (hap1.size()==bp.nodes.size()/3) {
+            ++solved;
+            sbps.push_back(bp);
+            solved_haps.push_back({hap1,hap2});
+            solved_nodes+=bp.nodes.size();
+            solved_size+=bp.total_size();
+        }
+        else{
+            ++ambiguous;
+            ambiguous_nodes+=bp.nodes.size();
+            ambiguous_size+=bp.total_size();
+        }
+
+        //
+        //for (auto)
+
+    }
+    std::cout<<untagged << " / " << kobps.size()<<" bubly subgraphs had <"<<min_tags<<" tags in a unique node (total "<<untagged_nodes<<" nodes / "<<untagged_size<<" bp)"<<std::endl;
+    std::cout<<ambiguous << " / " << kobps.size()<<" bubly subgraphs ambiguous (total "<<ambiguous_nodes<<" nodes) / "<<ambiguous_size<<" bp)"<<std::endl;
+    std::cout<<solved << " / " << kobps.size()<<" bubly subgraphs solved (total "<<solved_nodes<<" nodes) / "<<solved_size<<" bp)"<<std::endl;
+
+    solved=0;
+    //expand each repeat
+    for (auto i=0;i<sbps.size();++i){
+        //std::cout<<"Solving region: ";
+        //for (auto n:sbps[i].nodes) std::cout<<n<<" ";
+        //std::cout<<std::endl;
+        //std::cout<<"Hap1: ";
+        //for (auto n:solved_haps[i].first) std::cout<<n<<" ";
+        //std::cout<<std::endl;
+        //std::cout<<"Hap2: ";
+        //for (auto n:solved_haps[i].second) std::cout<<n<<" ";
+        //std::cout<<std::endl;
+        for (auto l=0;l<solved_haps[i].first.size()-1;++l){
+            auto r=sbps[i].nodes[3*(l+1)];
+            auto a1=solved_haps[i].first[l];
+            auto a2=solved_haps[i].first[l+1];
+            auto b1=solved_haps[i].second[l];
+            auto b2=solved_haps[i].second[l+1];
+            //std::cout<<"Expanding "<<a1<<" -> "<<r<<" -> "<<a2<<"   |    "<<b1<<" -> "<<r<<" -> "<<b2<<std::endl;
+            ws.sg.expand_node(r,{{a1},{b1}},{{a2},{b2}});
+            ++solved;
+        }
+
+    }
+    std::cout<<solved << " duplications expanded"<<std::endl;
+    //done!
+    return {};
+}
+
+void Untangler::pop_errors_by_ci_and_paths() {
+    sglib::OutputLog()<<"Popping errors..."<<std::endl;
+    auto bubbles=find_bubbles(200, 450);
+    sglib::OutputLog()<<"Analysing "<<bubbles.size()<<" small bubbles for coverage"<<std::endl;
+    std::vector<sgNodeID_t> to_delete;
+    std::ofstream bubblesf("bubbles_detail.csv");
+    bubblesf<<"prev,b1,b2,next,ci_prev,ci1,ci2,ci_next"<<std::endl;
+    for (auto bp:bubbles){
+        auto ci1=ws.kci.compute_compression_for_node(bp.first,1);
+        auto ci2=ws.kci.compute_compression_for_node(bp.second,1);
+        auto prev=ws.sg.get_bw_links(bp.first)[0].dest;
+        auto next=ws.sg.get_fw_links(bp.first)[0].dest;
+        auto cip=ws.kci.compute_compression_for_node(prev);
+        auto cin=ws.kci.compute_compression_for_node(next);
+        bubblesf<<prev<<", "<<bp.first<<", "<<bp.second<<", "<<next<<", "<<cip<<", "<<ci1<<", "<<ci2<<", "<<cin<<std::endl;
+        if (cip<1.5 and cin<1.5) {
+            if (ci1 > .7 and ci2 < .1) {
+                std::cout << "node " << bp.second << " has only " << ci2 << " coverage and " << bp.first << " has "
+                          << ci1 << std::endl;
+                to_delete.push_back(llabs(bp.second));
+            }
+            if (ci2 > .7 and ci1 < .1) {
+                std::cout << "node " << bp.first << " has only " << ci1 << " coverage and " << bp.second << " has "
+                          << ci2 << std::endl;
+                to_delete.push_back(llabs(bp.first));
+            }
+        }
+    }
+    std::cout<<"Deleting "<<to_delete.size()<<" nodes as errors"<<std::endl;
+    for (auto &pb:to_delete) ws.sg.remove_node(pb);
+}
+
+/**
+ * @brief grabs all "long" haplotype-specific nodes, uses tags to find neighbours.
+ * @param min_size
+ * @param min_ci
+ * @param max_ci
+ * @return
+ */
+std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_neighbours(uint32_t min_size, float min_ci, float max_ci) {
+
+
+    sglib::OutputLog()<<"Selecting selected_nodes..."<<std::endl;
+    std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> neighbours;
+    std::vector<std::set<bsg10xTag>> node_tags;
+    neighbours.resize(ws.sg.nodes.size());
+    node_tags.resize(ws.sg.nodes.size());
+    uint64_t total_bp=0;
+    auto selected_nodes=ws.select_from_all_nodes(min_size,1000000,20,200000, min_ci, max_ci);
+    sglib::OutputLog()<<"Populating node tags..."<<std::endl;
+    uint64_t tag_empty=0, tag_10=0, tag_50=0, tag_100=0, tag_1000=0;
+    for (auto n:selected_nodes) {
+        total_bp+=ws.sg.nodes[n].sequence.size();
+        for (auto t:ws.linked_read_mappers[0].get_node_tags(n)) node_tags[n].insert(t);
+        if (node_tags[n].empty()) ++tag_empty;
+        if (node_tags[n].size()>=10) ++tag_10;
+        if (node_tags[n].size()>=50) ++tag_50;
+        if (node_tags[n].size()>=100) ++tag_100;
+        if (node_tags[n].size()>=1000) ++tag_1000;
+    }
+    sglib::OutputLog()<<selected_nodes.size()<<" selected totalling "<<total_bp<<"bp "<<std::endl;
+    sglib::OutputLog()<<tag_10<<" selected_nodes have 10+ tags"<<std::endl;
+    sglib::OutputLog()<<tag_50<<" selected_nodes have 50+ tags"<<std::endl;
+    sglib::OutputLog()<<tag_100<<" selected_nodes have 100+ tags"<<std::endl;
+    sglib::OutputLog()<<tag_1000<<" selected_nodes have 1000+ tags"<<std::endl;
+
+    sglib::OutputLog()<<"Computing shared tags"<<std::endl;
+#pragma omp parallel for shared(neighbours) schedule(static,50)
+    for (auto i1=0; i1<selected_nodes.size(); ++i1){
+        auto n1=selected_nodes[i1];
+        for (auto i2=i1+1;i2<selected_nodes.size();i2++){
+            auto n2=selected_nodes[i2];
+            uint32_t shared=intersection_size(node_tags[n1],node_tags[n2]);
+            if (shared>=4) {
+#pragma omp critical
+                {
+                    neighbours[n1].emplace_back(n2,shared);
+                    neighbours[n2].emplace_back(n1,shared);
+                }
+            }
+        }
+    }
+    sglib::OutputLog()<<"Sorting shared tags"<<std::endl;
+    uint64_t with_neighbours=0;
+    for (auto &nn:neighbours){
+        if (not nn.empty()) ++with_neighbours;
+        std::sort(nn.begin(),nn.end(),[]( const std::pair<sgNodeID_t,uint32_t> &a,
+                                          const std::pair<sgNodeID_t,uint32_t> &b) { return a.second>b.second; });
+    }
+    sglib::OutputLog()<<with_neighbours<<" selected_nodes with neighbours"<<std::endl;
+    return neighbours;
+}
+
+void Untangler::connect_neighbours(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance) {
+    //first find all nodes' neighbours
+    auto tagneighbours=find_tag_neighbours(min_size,min_ci,max_ci);
+    std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> fndist(ws.sg.nodes.size()),bndist(ws.sg.nodes.size());
+    TagWalker tw(ws,{});
+    for (auto n=1;n<ws.sg.nodes.size();++n) {
+        //explore from a node til hitting a neighbour, check if another selected node is on the way
+        std::set<sgNodeID_t> ntn;
+        for (auto nd:tagneighbours[n]) ntn.emplace(nd.first);
+        if (ntn.empty()) continue;
+        fndist[n] = ws.sg.get_distances_to(n, ntn, max_distance);
+        bndist[n] = ws.sg.get_distances_to(-n, ntn, max_distance);
+    }
+
+    //TODO: only fw or bw neighbour, corresponding, good tag intersection
+//    std::cout<<"Finding disconnected tips"<<std::endl;
+//    for (auto n=1;n<ws.sg.nodes.size();++n){
+//        if (tagneighbours[n].empty()) continue;
+//        if (ws.sg.get_fw_links(n).size()==0 or ws.sg.get_bw_links(n).size()==0) {
+//            for (auto tn:tagneighbours[n]){
+//                if (ws.sg.get_fw_links(tn.first).size()==0 or ws.sg.get_bw_links(tn.first).size()==0) {
+//                    std::cout<<"Nodes "<<n<<" and "<<tn.first<<" have disconnected ends and have "<<tn.second<<" shared tags"<<std::endl;
+//                }
+//            }
+//        }
+//    }
+    connect_neighbours_trivial(min_size,min_ci,max_ci,max_distance,tagneighbours,bndist,fndist);
+    bndist.resize(ws.sg.nodes.size());
+    fndist.resize(ws.sg.nodes.size());
+    tagneighbours.resize(ws.sg.nodes.size());
+    connect_neighbours_paths_to_same(min_size,min_ci,max_ci,max_distance,tagneighbours,bndist,fndist);
+    //std::cout<<"Analysing non-trivial connections"<<std::endl;
+    //std::cout
+
+
+        /*//if successfull, create a copy of the skated path and disconnect/connect appropriately
+        //TODO: check if a node with different neighbours is here
+        auto walkf=tw.walk_between(n,nd[0].first);
+        if (not walkf.nodes.empty()) {
+            sg.create_path_through(walkf);
+        }
+        auto nd=ws.sg.get_distances_to(-n,ntn,100000);
+        //if successfull, create a copy of the skated path and disconnect/connect appropriately
+        //TODO: check if a node with different neighbours is here
+        auto walkb=tw.walk_between(n,nd[0].first);
+        if (not walkb.nodes.empty()) {
+            sg.create_path_through(walkb);
+        }*/
+
+
+
+}
+
+void Untangler::connect_neighbours_trivial(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,
+                                           const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,
+                                           const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,
+                                           const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & fndist) {
+    std::cout << "Finding trivial connections" << std::endl;
+    std::vector<std::pair<sgNodeID_t, sgNodeID_t>> from_to;
+    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
+//todo: check that the other node actually has THIS node as neighbour, validate TAG distances too
+        if (fndist[n].size() == 1 and
+            (fndist[n][0].first < 0 ? fndist : bndist)[llabs(fndist[n][0].first)].size() == 1) {
+//std::cout<<"Nodes "<<n<<" and "<<fndist[n][0].first<<" may be trivial neighbours"<<std::endl;
+            if (llabs(fndist[n][0].first) > n) from_to.push_back({n, fndist[n][0].first});
+        }
+        if (bndist[n].size() == 1 and
+            (bndist[n][0].first < 0 ? fndist : bndist)[llabs(bndist[n][0].first)].size() == 1) {
+//std::cout<<"Nodes "<<-n<<" and "<<bndist[n][0].first<<" may be trivial neighbours"<<std::endl;
+            if (llabs(bndist[n][0].first) > n) from_to.push_back({-n, bndist[n][0].first});
+        }
+//should we check also that there is only one single connection out and in the nodes?
+
+    }
+    std::cout << from_to.size() << " trivial connections to inflate" << std::endl;
+    uint64_t done = 0;
+    for (auto ft:from_to) {
+//Create all possible paths between from_to (sg function):
+        auto allpaths = ws.sg.find_all_paths_between(ft.first, ft.second, 50000);
+//  is there only one? does it contain no selected node? other conditions? Optional: check the path is covered by kmers from tags on both ends of it.
+        if (allpaths.size() != 1) continue;
+        for (auto &n: allpaths[0].nodes) if (not tagneighbours[llabs(n)].empty()) continue;
+        if (allpaths[0].nodes.empty()) continue; //XXX:these should actually be connected directly?
+//  create a single node with the sequence of the path, migrate connections from the nodes (sg function)
+        auto new_node = ws.sg.add_node(Node(allpaths[0].get_sequence()));
+        auto old_fw = ws.sg.get_fw_links(ft.first);
+        for (auto &l:old_fw) {
+            if (l.dest == allpaths[0].nodes.front()) ws.sg.add_link(-ft.first, new_node, l.dist);
+            ws.sg.remove_link(l.source, l.dest);
+        }
+        auto old_bw = ws.sg.get_bw_links(ft.second);
+        for (auto &l:old_bw) {
+            if (l.dest == -allpaths[0].nodes.back()) ws.sg.add_link(ft.second, -new_node, l.dist);
+            ws.sg.remove_link(l.source, l.dest);
+        }
+//std::cout<<"Replaced connection between "<<ft.first<<" and "<<ft.second<<" through nodes ";
+//for (auto &n:allpaths[0].nodes) std::cout<<n<<" ";
+//std::cout<<" by a single node "<<new_node<<std::endl;
+        ++done;
+
+
+    }
+    std::cout << done << " connections inflated" << std::endl;
+}
+
+void Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,
+                                           const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,
+                                           const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,
+                                           const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & fndist) {
+    std::cout << "Finding multi-path connections to same neighbour" << std::endl;
+    std::vector<std::pair<sgNodeID_t, sgNodeID_t>> from_to;
+    std::vector<sgNodeID_t> single_fw(ws.sg.nodes.size(),0),single_bw(ws.sg.nodes.size(),0);
+    //first mark outputs going into a single neighbour
+    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
+        if (fndist[n].size()>1) {
+            auto fdest = fndist[n][0].first;
+            bool fok = true;
+            for (auto fd:fndist[n]) if (fdest != fd.first) fok = false;
+            if (fok) single_fw[n] = fdest;
+        }
+        if (bndist[n].size()>1) {
+            auto bdest = bndist[n][0].first;
+            bool bok = true;
+            for (auto bd:bndist[n]) if (bdest != bd.first) bok = false;
+            if (bok) single_bw[n] = bdest;
+        }
+    }
+    //now look for happy matches where both have a single connection and it is the same one!
+    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
+        if (single_fw[n]>0 and single_fw[n]<n and single_bw[single_fw[n]]==-n) from_to.push_back({n,single_fw[n]});
+        if (single_fw[n]<0 and -single_fw[n]<n and single_fw[-single_fw[n]]==-n) from_to.push_back({n,single_fw[n]});
+        if (single_bw[n]>0 and single_bw[n]<n and single_bw[single_bw[n]]==n) from_to.push_back({-n,single_bw[n]});
+        //std::cout<<"."<<std::flush;
+        if (single_bw[n]<0 and -single_bw[n]<n and single_fw[-single_bw[n]]==n) from_to.push_back({-n,single_bw[n]});
+        //std::cout<<"."<<std::endl;
+    }
+    std::cout << from_to.size() << " multi-path connections to same neighbour to inflate" << std::endl;
+
+    uint64_t done = 0;
+    for (auto ft:from_to) {
+//Create all possible paths between from_to (sg function):
+        auto allpaths = ws.sg.find_all_paths_between(ft.first, ft.second, max_distance);
+        std::cout<<"Evaluating between "<<allpaths.size()<<" different paths to join "<<ft.first<<" and "<<ft.second<<std::endl;
+        for (auto p:allpaths){
+            for (auto &n: p.nodes) if (not tagneighbours[llabs(n)].empty()) std::cout<<"A path node has other neighbours!"<<std::endl;
+            if (p.nodes.empty()) std::cout<<"Path is empty!"<<std::endl;
+        }
+/*//  is there only one? does it contain no selected node? other conditions? Optional: check the path is covered by kmers from tags on both ends of it.
+        if (allpaths.size() != 1) continue;
+        for (auto &n: allpaths[0].nodes) if (not tagneighbours[llabs(n)].empty()) continue;
+        if (allpaths[0].nodes.empty()) continue; //XXX:these should actually be connected directly?
+*/
+/* //  create a single node with the sequence of the path, migrate connections from the nodes (sg function)
+        auto new_node = ws.sg.add_node(Node(allpaths[0].get_sequence()));
+        auto old_fw = ws.sg.get_fw_links(ft.first);
+        for (auto &l:old_fw) {
+            if (l.dest == allpaths[0].nodes.front()) ws.sg.add_link(-ft.first, new_node, l.dist);
+            ws.sg.remove_link(l.source, l.dest);
+        }
+        auto old_bw = ws.sg.get_bw_links(ft.second);
+        for (auto &l:old_bw) {
+            if (l.dest == -allpaths[0].nodes.back()) ws.sg.add_link(ft.second, -new_node, l.dist);
+            ws.sg.remove_link(l.source, l.dest);
+        }*/
+//std::cout<<"Replaced connection between "<<ft.first<<" and "<<ft.second<<" through nodes ";
+//for (auto &n:allpaths[0].nodes) std::cout<<n<<" ";
+//std::cout<<" by a single node "<<new_node<<std::endl;
+        //++done;
+
+
+    }
+    //std::cout << done << " connections inflated" << std::endl;
 }

@@ -6,17 +6,12 @@
 #include <cassert>
 #include <atomic>
 
-#ifndef __APPLE__
-#include <omp.h>
-#else
-int omp_get_max_threads(){return 1;}
-int omp_get_thread_num(){return 0;}
-#endif
-#include "LinkedReadMapper.hpp"
 
-#ifndef __APPLE__
-#include <parallel/algorithm>
-#endif
+#include "LinkedReadMapper.hpp"
+#include "sglib/SMR.h"
+#include "sglib/factories/KMerIDXFactory.h"
+#include "sglib/readers/SequenceGraphReader.h"
+#include <sglib/utilities/omp_safe.hpp>
 
 void LinkedReadMapper::write(std::ofstream &output_file) {
     //read-to-node
@@ -94,17 +89,28 @@ void LinkedReadMapper::update_graph_index() {
     reads_in_node.resize(sg.nodes.size());
 }
 
+
+
+
+
+void LinkedReadMapper::remap_all_reads() {
+    update_graph_index();
+    for (auto &rtn:read_to_node) rtn=0;
+    for (auto &rin:reads_in_node) rin.clear();
+    map_reads();
+}
+
 void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 31;
-    std::cout<<"mapping reads!!!"<<std::endl;
     read_to_node.resize(datastore.size()+1);
-    std::cout<<reads_to_remap.size()<<" selected reads / "<<read_to_node.size()-1<<" total"<<std::endl;
+    if (not reads_to_remap.empty())
+        sglib::OutputLog()<<reads_to_remap.size()<<" selected reads / "<<read_to_node.size()-1<<" total"<<std::endl;
 
     /*
      * Read mapping in parallel,
      */
-    uint64_t thread_mapped_count[omp_get_max_threads()],thread_total_count[omp_get_max_threads()],thread_multimap_count[omp_get_max_threads()];
-    std::vector<ReadMapping> thread_mapping_results[omp_get_max_threads()];
+    std::vector<uint64_t> thread_mapped_count(omp_get_max_threads()),thread_total_count(omp_get_max_threads()),thread_multimap_count(omp_get_max_threads());
+    std::vector<std::vector<ReadMapping>> thread_mapping_results(omp_get_max_threads());
     sglib::OutputLog(sglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
 #pragma omp parallel
     {
@@ -172,11 +178,11 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                 }
             }
             auto tc = ++total_count;
-            if (tc % 10000000 == 0) std::cout << mapped_count << " / " << tc <<" ("<<multimap_count<<" multi-mapped)"<< std::endl;
+            if (tc % 10000000 == 0) sglib::OutputLog()<< mapped_count << " / " << tc <<" ("<<multimap_count<<" multi-mapped)"<< std::endl;
         }
     }
     for (auto & tres:thread_mapping_results){
-        sglib::OutputLog(sglib::LogLevels::DEBUG)<<"mixing in "<<tres.size()<<" thread specific results"<<std::endl;
+        //sglib::OutputLog(sglib::LogLevels::DEBUG)<<"mixing in "<<tres.size()<<" thread specific results"<<std::endl;
         for (auto &rm:tres){
             read_to_node[rm.read_id] = rm.node;
             reads_in_node[rm.node].emplace_back(rm);
@@ -195,8 +201,6 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
     for (sgNodeID_t n=1;n<reads_in_node.size();++n){
         std::sort(reads_in_node[n].begin(),reads_in_node[n].end());
     }
-
-
 }
 
 ///**
@@ -239,8 +243,8 @@ void LinkedReadMapper::remove_obsolete_mappings(){
     std::cout << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
 }
 
-std::unordered_set<bsg10xTag> LinkedReadMapper::get_node_tags(sgNodeID_t n) {
-    std::unordered_set<bsg10xTag> tags;
+std::set<bsg10xTag> LinkedReadMapper::get_node_tags(sgNodeID_t n) {
+    std::set<bsg10xTag> tags;
     for (auto &rm:reads_in_node[(n>0?n:-n)])
         tags.insert(datastore.get_read_tag(rm.read_id));
     if (tags.count(0)>0) tags.erase(0);

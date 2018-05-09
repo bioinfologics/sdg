@@ -14,7 +14,7 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<std::endl;
 
     if (argc <2){
-        std::cout<<"Please specify one of: make, log, status, extract"<<std::endl;
+        std::cout<<"Please specify one of: make, log, status, dump"<<std::endl;
         exit(1);
     }
 
@@ -101,11 +101,59 @@ int main(int argc, char * argv[]) {
         WorkSpace w;
         w.load_from_disk(filename,true);
         w.print_log();
+    }
+    else if (0==strcmp(argv[1],"dump")) {
+        std::string filename,gfafilename,nodeinfofilename;
+        try {
+
+            cxxopts::Options options("bsg-workspace log", "BSG workspace log");
+
+            options.add_options()
+                    ("help", "Print help")
+                    ("w,workspace", "workspace filename", cxxopts::value<std::string>(filename))
+                    ("g,gfa", "gfa output prefix", cxxopts::value<std::string>(gfafilename))
+                    ("n,node_info", "node info prefix",cxxopts::value<std::string>(nodeinfofilename));
+
+            auto newargc=argc-1;
+            auto newargv=&argv[1];
+            auto result=options.parse(newargc,newargv);
+            if (result.count("help")) {
+                std::cout << options.help({""}) << std::endl;
+                exit(0);
+            }
+
+            if (result.count("workspace")==0) {
+                throw cxxopts::OptionException(" please specify kmer spectra file");
+            }
+
+
+        } catch (const cxxopts::OptionException &e) {
+            std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
+                      << "Use option --help to check command line arguments." << std::endl;
+            exit(1);
+        }
+        WorkSpace w;
+        w.load_from_disk(filename);
+        if (!w.sg.is_sane()) {
+            sglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
+            //return 1;
+        }
+        if (not gfafilename.empty()){
+            w.sg.write_to_gfa(gfafilename+".gfa");
+        }
+        if (not nodeinfofilename.empty()){
+           std::ofstream nif(nodeinfofilename+".csv");
+           nif<<"ID, lenght, kci"<<std::endl;
+           for (auto n=1;n<w.sg.nodes.size();++n){
+               if (w.sg.nodes[n].status==sgNodeStatus_t::sgNodeDeleted) continue;
+               nif<<n<<", "<<w.sg.nodes[n].sequence.size()<<", "<<w.kci.compute_compression_for_node(n,1)<<std::endl;
+           }
+        }
 
 
     }
     else {
-        std::cout<<"Please specify one of: make, log, status, extract"<<std::endl;
+        std::cout<<"Please specify one of: make, log, status, dump"<<std::endl;
     }
 }
 

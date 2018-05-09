@@ -5,7 +5,7 @@
 #ifndef BSG_PATHEXPLORER_H
 #define BSG_PATHEXPLORER_H
 
-#include <sglib/SequenceGraph.h>
+#include <sglib/graph/SequenceGraph.hpp>
 
 class PathExplorer {
 public:

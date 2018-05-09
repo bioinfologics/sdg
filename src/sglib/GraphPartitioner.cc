@@ -2,7 +2,9 @@
 // Created by Bernardo Clavijo (EI) on 19/01/2018.
 //
 
+#include <sglib/graph/SequenceSubGraph.hpp>
 #include "GraphPartitioner.hpp"
+
 
 std::vector<SequenceSubGraph> GraphPartitioner::partitions_as_subgraphs(
         const SequenceSubGraph subgraph,

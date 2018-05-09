@@ -5,7 +5,7 @@
 #include <tuple>
 #include "cxxopts.hpp"
 #include <sglib/SequenceThreader.h>
-#include <sglib/filesystem/check_or_create_directory.h>
+#include <sglib/filesystem/helpers.h>
 #include <sglib/logger/OutputLog.h>
 #include <sglib/aligners/submat/SubstitutionMatrix.h>
 #include <sglib/aligners/algorithms/SmithWaterman.h>

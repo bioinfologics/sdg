@@ -417,7 +417,7 @@ TYPEDEF_HIDES_STRUCT   = NO
 # doxygen will become slower. If the cache is too large, memory is wasted. The
 # cache size is given by this formula: 2^(16+LOOKUP_CACHE_SIZE). The valid range
 # is 0..9, the default is 0, corresponding to a cache size of 2^16=65536
-# symbols. At the end of a run doxygen will report the cache usage and suggest
+# symbols. At the rend of a run doxygen will report the cache usage and suggest
 # the optimal cache size from a speed point of view.
 # Minimum value: 0, maximum value: 9, default value: 0.
 
@@ -1109,7 +1109,7 @@ ALPHABETICAL_INDEX     = YES
 
 COLS_IN_ALPHA_INDEX    = 5
 
-# In case all classes in a project start with a common prefix, all classes will
+# In case all classes in a project rstart with a common prefix, all classes will
 # be put under the same header in the alphabetical index. The IGNORE_PREFIX tag
 # can be used to specify a prefix (or a list of prefixes) that should be ignored
 # while generating the index headers.
@@ -1147,7 +1147,7 @@ HTML_FILE_EXTENSION    = .html
 #
 # To get valid HTML the header file that includes any scripts and style sheets
 # that doxygen needs, which is dependent on the configuration options used (e.g.
-# the setting GENERATE_TREEVIEW). It is highly recommended to start with a
+# the setting GENERATE_TREEVIEW). It is highly recommended to rstart with a
 # default header using
 # doxygen -w html new_header.html new_footer.html new_stylesheet.css
 # YourConfigFile
@@ -1916,7 +1916,7 @@ GENERATE_MAN           = NO
 MAN_OUTPUT             = man
 
 # The MAN_EXTENSION tag determines the extension that is added to the generated
-# man pages. In case the manual section does not start with a number, the number
+# man pages. In case the manual section does not rstart with a number, the number
 # 3 is prepended. The dot (.) at the beginning of the MAN_EXTENSION tag is
 # optional.
 # The default value is: .3.
@@ -2114,7 +2114,7 @@ EXPAND_AS_DEFINED      =
 
 # If the SKIP_FUNCTION_MACROS tag is set to YES then doxygen's preprocessor will
 # remove all references to function-like macros that are alone on a line, have
-# an all uppercase name, and do not end with a semicolon. Such function macros
+# an all uppercase name, and do not rend with a semicolon. Such function macros
 # are typically used for boiler-plate code, and will confuse the parser if not
 # removed.
 # The default value is: YES.

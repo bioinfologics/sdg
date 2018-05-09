@@ -21,9 +21,10 @@
 #include <set>
 #include <unordered_set>
 #include <cmath>
-#include <sglib/logger/OutputLog.h>
-#include <sglib/filesystem/check_or_create_directory.h>
+#include "sglib/logger/OutputLog.h"
+#include <sglib/filesystem/helpers.h>
 #include <sglib/readers/Common.h>
+#include <cassert>
 
 
 static const std::uint64_t GB(1024*1024*1024);
@@ -36,15 +37,16 @@ struct SMRParams {
         std::transform(smr_maxmem_env_raw.begin(),smr_maxmem_env_raw.end(), smr_maxmem_env_raw.begin(), toupper);
         auto gb_pos(smr_maxmem_env_raw.find("GB"));
         auto g_pos(smr_maxmem_env_raw.find('G'));
+        auto smr_maxmem_env(std::string(smr_maxmem_env_raw.begin(), smr_maxmem_env_raw.begin()+gb_pos));
         if ( gb_pos != std::string::npos) {
-            parsed_mem = GB*std::atoi(std::string(smr_maxmem_env_raw.begin(), smr_maxmem_env_raw.begin()+gb_pos).c_str());
+            parsed_mem = static_cast<uint64_t>(GB * std::stof(smr_maxmem_env, nullptr));
         }
         else if (g_pos != std::string::npos) {
-            parsed_mem = GB*std::atoi(std::string(smr_maxmem_env_raw.begin(), smr_maxmem_env_raw.begin()+g_pos).c_str());
+            parsed_mem = static_cast<uint64_t>(GB * std::stof(smr_maxmem_env, nullptr));
         }
         else {
             if ( std::all_of(smr_maxmem_env_raw.begin(),smr_maxmem_env_raw.end(), ::isdigit) )
-                parsed_mem = GB*std::atoi(smr_maxmem_env_raw.c_str());
+                parsed_mem = static_cast<uint64_t>(GB * std::stof(smr_maxmem_env, nullptr));
             else
                 parsed_mem = 4 * GB;
         }
@@ -150,6 +152,7 @@ public:
         sglib::check_or_create_directory(finalFilePath);
         outdir = finalFilePath;
         tmpInstance = sglib::create_temp_directory(tmpBase);
+        tmpInstance+="/";
         std::ifstream final_file(finalFilePath+"final.kc");
         if (final_file.is_open() and !do_work){
             sglib::OutputLog(sglib::DEBUG) << "Using precomputed sum file at " << outdir << "final.kc" << std::endl;
@@ -163,6 +166,7 @@ public:
             sglib::OutputLog(sglib::DEBUG) << "Reading file: " << read_file << std::endl;
             FileReader myFileReader(reader_parameters, read_file);
             sglib::OutputLog(sglib::DEBUG) << "Begin reduction using " << numElementsPerBatch << " elements per batch (" << ceil(uint64_t((numElementsPerBatch*sizeof(RecordType)*maxThreads)) / (1.0f*1024*1024*1024)) << "GB)" << std::endl;
+            sglib::OutputLog(sglib::DEBUG) << "Using tmp: " << tmpInstance << std::endl;
             mapElementsToBatches(myFileReader, numFileRecords);
 
             readerStatistics = myFileReader.getSummaryStatistics();
@@ -170,8 +174,9 @@ public:
             end = std::chrono::system_clock::now();
             std::chrono::duration<double> elapsed_seconds = end - start;
             sglib::OutputLog(sglib::DEBUG) << "Done reduction in " << elapsed_seconds.count() << "s" << std::endl;
+            auto result(getRecords());
             sglib::remove_directory(tmpInstance);
-            return getRecords();
+            return result;
         }
     };
 
@@ -522,7 +527,7 @@ private:
         std::string outBatchName(std::string(tmpInstance + "thread_0" + "_batch_" + std::to_string(currentBatch) + ".tmc"));
         // Simply dump the file
         std::ofstream outBatch(outBatchName.data(), std::ios_base::binary | std::ios_base::out | std::ios_base::trunc);
-        auto size = _elements.size();
+        auto size(_elements.size());
         outBatch.write((char *)&size, sizeof(size));
         outBatch.write((char *)_elements.data(), size*sizeof(RecordType));
         outBatch.close();
@@ -577,7 +582,10 @@ private:
 
     std::vector<RecordType> readFinalkc(std::string finalFile) {
         std::ifstream outf(finalFile, std::ios_base::binary);
-        uint64_t numElements;
+        if (!outf) {
+            throw ("Couldn't open " + finalFile);
+        }
+        uint64_t numElements = 0;
         outf.read(reinterpret_cast<char *>(&numElements), sizeof(numElements));
         // reserve capacity
         std::vector<RecordType> vec;
@@ -596,6 +604,7 @@ private:
      */
     std::vector<RecordType> getRecords() {
 
+        std::string finalFilename(std::string(outdir+"final.kc"));
         std::vector<std::string> threadFiles(maxThreads);
 
         for (auto threadID = 0; threadID < maxThreads; threadID++) {
@@ -603,10 +612,14 @@ private:
 
             threadFiles[threadID] = name;
         }
-
-        totalFilteredRecords = merge(outdir + "final.kc", threadFiles);
-
-        return readFinalkc(outdir+"final.kc");
+        if (threadFiles.size() == 1) {
+            bool check_ok = sglib::copy_file(threadFiles[0], finalFilename, false);
+            assert(check_ok);
+            remove(threadFiles[0].c_str());
+        } else {
+            totalFilteredRecords = merge(finalFilename, threadFiles);
+        }
+        return readFinalkc(finalFilename);
     }
 
     unsigned int minCount;                          /// Minimum times a record has to be seen to be accepted

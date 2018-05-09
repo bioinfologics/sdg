@@ -8,8 +8,10 @@
 
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
 #include <sglib/mappers/LinkedReadMapper.hpp>
-#include "SequenceGraph.hpp"
+#include <sglib/datastores/PathsDatastore.hpp>
+#include "sglib/graph/SequenceGraph.hpp"
 #include "KmerCompressionIndex.hpp"
+
 class LogEntry{
 public:
     LogEntry(std::time_t t, std::string v, std::string tx):timestamp(t),bsg_version(v),log_text(tx){};
@@ -30,12 +32,18 @@ public:
 
     void load_from_disk(std::string filename,bool log_only=false);
 
+    //Projected operations with info from the graph
+
+    std::vector<sgNodeID_t>
+    select_from_all_nodes(uint32_t min_size, uint32_t max_size, uint32_t min_tags, uint32_t max_tags, float min_ci, float max_ci);
+
     std::vector<LogEntry> log;
 
     //All status classes are public, treat them with care anyway ;)
     SequenceGraph sg;
     std::vector<LinkedReadsDatastore> linked_read_datastores;
     std::vector<LinkedReadMapper> linked_read_mappers;
+    std::vector<PathsDatastore> path_datastores;
     KmerCompressionIndex kci;
     std::string verbose_log="";
 };

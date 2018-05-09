@@ -43,4 +43,14 @@ namespace sglib {
         return ons;
     }
 
+    std::ostream &OutputLog(const bool include_date) {
+        if (include_date) {
+            std::time_t t = std::time(NULL);
+            char date_str[20];
+            std::strftime(date_str, 20, "%Y-%m-%d %H:%M:%S", std::localtime(&t));
+            std::cout << date_str << ": ";
+        }
+        return std::cout;
+    }
+
 };

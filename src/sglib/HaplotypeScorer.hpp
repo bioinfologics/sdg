@@ -12,7 +12,8 @@
 #include <string>
 #include <numeric>
 
-#include "sglib/SequenceGraph.h"
+#include <sglib/types/GenericTypes.hpp>
+#include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/PairedReadMapper.h>
 
 class HaplotypeScorer{

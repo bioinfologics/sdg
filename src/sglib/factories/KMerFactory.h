@@ -11,7 +11,6 @@
 
 #define unlikely(x)     __builtin_expect((x),0)
 
-class KmerIDX;
 class KMerFactory {
 public:
     const uint8_t K;

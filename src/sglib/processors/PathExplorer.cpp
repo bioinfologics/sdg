@@ -3,6 +3,7 @@
 //
 
 #include <stack>
+#include <sglib/graph/SequenceGraphPath.hpp>
 #include <sglib/processors/PathExplorer.h>
 #include <sglib/readers/FileReader.h>
 #include <sglib/factories/KMerIDXFactory.h>

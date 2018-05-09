@@ -5,13 +5,13 @@
 #include <iostream>
 #include <fstream>
 
-#include <sglib/filesystem/check_or_create_directory.h>
+#include <sglib/filesystem/helpers.h>
 #include <sglib/factories/KMerIDXFactory.h>
 #include <sglib/readers/FileReader.h>
 #include <sglib/SMR.h>
 #include "cxxopts.hpp"
 #include "sglib/factories/ContigBlockFactory.h"
-#include "sglib/SequenceGraph.h"
+#include "sglib/graph/SequenceGraph.hpp"
 
 int main(int argc, char * argv[]) {
     std::string gfa_filename,ref_gfa_filename,output_prefix;
