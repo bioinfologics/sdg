@@ -22,7 +22,7 @@ UniqueKmerIndex::UniqueKmerIndex(const SequenceGraph& sg, const uint8_t k) : sg(
     total_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
 
     for (auto &kidx :kmerIDX_SMR.process_from_memory()) {
-        kmer_to_node_map[kidx.kmer] = { kidx.contigID, kidx.pos };
+        kmer_to_node_map[kidx.kmer] = graphPosition{kidx.contigID, kidx.pos};
         unique_kmers_per_node[std::abs(kidx.contigID)] += 1;
     }
 
