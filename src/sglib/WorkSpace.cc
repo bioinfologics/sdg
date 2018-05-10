@@ -43,6 +43,15 @@ void WorkSpace::dump_to_disk(std::string filename) {
         path_datastores[i].write(of);
     }
     //dump element type then use that element's own dump to dump it to this file
+
+    //[GONZA]
+    int v = (int) read_counts_header.size();
+    of.write((const char *) &v, sizeof(v));
+    for (int i=0; i<read_counts_header.size(); ++i){
+        int hs = (int) read_counts_header[i].size();
+        of.write((const char *) &hs, sizeof(hs));
+        of.write((const char *) read_counts_header[i].data(), hs*sizeof(char));
+    }
 }
 
 void WorkSpace::load_from_disk(std::string filename, bool log_only) {
@@ -84,7 +93,16 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
             path_datastores.back().read(wsfile);
         }
     }
-
+    //[GONZA]
+    int v;
+    wsfile.read((char *) &v, sizeof(v));
+    read_counts_header.resize(v);
+    for (int i=0; i<read_counts_header.size(); ++i){
+        int hs;
+        wsfile.read((char *) &hs, sizeof(hs));
+        read_counts_header[i].resize(hs);
+        wsfile.read((char *) read_counts_header[i].data(), hs*sizeof(char));
+    }
 }
 
 void WorkSpace::print_log() {
@@ -100,7 +118,7 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
     std::vector<sgNodeID_t> nodes;
     sglib::OutputLog()<<"Selecting nodes: " << min_size << "-" << max_size << " bp " <<
                       min_tags << "-" << max_tags << " tags " << min_ci << "-" << max_ci << " CI"<<std::endl;
-    uint64_t tnodes=0,ttags=0;
+    uint64_t tnodes=0,tbp=0;
     nodes.reserve(sg.nodes.size());
 #pragma omp parallel
     {
@@ -116,13 +134,13 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
             if (ci < min_ci or ci > max_ci) continue;
             ++tnodes;
             thread_nodes.emplace_back(n);
-            ttags += ntags.size();
+            tbp += sg.nodes[n].sequence.size();
         }
 
 #pragma omp critical(collect_selected_nodes)
         nodes.insert(nodes.end(),thread_nodes.begin(),thread_nodes.end());
 
     }
-    sglib::OutputLog()<< "Selected "<<tnodes<<" / "<<sg.nodes.size()<<" with a total "<<ttags<<" tags"<< std::endl;
+    sglib::OutputLog()<< "Selected "<<tnodes<<" / "<<sg.nodes.size()<<" with a total "<<tbp<<"bp"<< std::endl;
     return nodes;
 }

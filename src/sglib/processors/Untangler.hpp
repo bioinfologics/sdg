@@ -7,43 +7,74 @@
 
 
 #include <sglib/WorkSpace.hpp>
+class Untangler;
+/**
+ * @brief a set of ordered nodes. Can be contiguous or not. node ids refer to nodes in ws.
+ */
+class Backbone {
+public:
+    explicit Backbone(WorkSpace & _ws, Untangler & _u): ws(_ws),u(_u) {};
+
+
+    void sort_and_remove_transitive_links();
+    bool is_linear();
+    std::string get_sequence();
+
+
+    WorkSpace &ws;
+    Untangler &u;
+    std::vector<sgNodeID_t> nodes;
+    std::vector<Link> links;
+};
 
 class Untangler {
 public:
     explicit Untangler(WorkSpace & _ws): ws(_ws) {};
-    uint64_t solve_canonical_repeats_by_tags(std::unordered_set<uint64_t> & reads_to_remap);
-    uint64_t expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags=10);
-    std::vector<std::pair<sgNodeID_t, sgNodeID_t>> get_all_HSPNPs();
-    uint64_t extend_HSPNPs_by_tagwalking();
 
-    void analise_paths_through_nodes();
-    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> find_bubbles(uint32_t min_size,uint32_t max_size);
-    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> solve_bubbly_paths();
-    void pop_errors_by_ci_and_paths();
-
+    //Functions evaluating 10x tags linkage / coverage
+    std::pair<float,float> tag_read_percentage_at_ends(sgNodeID_t node, std::set<bsg10xTag> tags, float end_perc=.1, uint32_t end_size=0);
     std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> find_tag_neighbours(uint32_t min_size, float min_ci, float max_ci);
+    std::vector<Link> find_tag_neighbours_with_imbalance(uint32_t min_size, float min_ci, float max_ci, float end_perc=.1);
+    std::vector<SequenceGraphPath> get_all_tag_covered_paths(sgNodeID_t from, sgNodeID_t to, std::set<bsg10xTag> &tags, BufferedTagKmerizer &btk);
 
-    WorkSpace &ws;
 
+    //Backbone creation
+    std::vector<Backbone> create_backbones(uint64_t min_size, float min_ci, float max_ci, float end_perc, int min_shared_tags);
 
+    //graph simplification (direct operations, no backbones)
+    void unroll_simple_loops();
+    void pop_errors_by_ci_and_paths();
+    uint64_t expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags=10);
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> solve_bubbly_paths();
+    std::pair<SequenceGraphPath,SequenceGraphPath> solve_bubbly_path(const SequenceSubGraph & bp, bool & no_tags);
+    std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> solve_bubbly_path_2(const SequenceSubGraph & bp);
+
+    uint64_t solve_canonical_repeats_by_tags(std::unordered_set<uint64_t> & reads_to_remap); //TODO: deprecate
+    uint64_t extend_HSPNPs_by_tagwalking(); //TODO: deprecate
+    void analise_paths_through_nodes(); //TODO: deprecate
+
+    //graph manipulation TODO: move to SequenceGraph
+    std::vector<std::pair<sgNodeID_t, sgNodeID_t>> get_all_HSPNPs();
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> find_bubbles(uint32_t min_size,uint32_t max_size);
+    void dettach_path_as_new_node(sgNodeID_t from, sgNodeID_t to, SequenceGraphPath path);
     std::vector<SequenceGraphPath> make_parallel_paths(std::vector<SequenceGraphPath>);
-
     bool all_nodes_consumed(std::vector<SequenceGraphPath>);
-
     std::vector<sgNodeID_t> shared_nodes(std::vector<std::vector<SequenceGraphPath>> parallel_paths);
 
-    std::vector<SequenceGraphPath> combine( std::vector<SequenceGraphPath> parallel_paths1, std::vector<SequenceGraphPath> parallel_paths2 );
+    //TODO: just deprecate these ASAP
 
-    void connect_neighbours(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance);
+    uint64_t connect_neighbours(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance);
     void connect_neighbours_trivial(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,
                                      const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,
                                      const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,
                                      const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & fndist);
 
-    void connect_neighbours_paths_to_same(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,
+    uint64_t connect_neighbours_paths_to_same(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,
                                           const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,
                                           const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,
                                           const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & fndist);
+
+    WorkSpace &ws;
 };
 
 

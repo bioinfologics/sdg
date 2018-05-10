@@ -1,5 +1,10 @@
 cmake_minimum_required (VERSION 3.0)
 
+if (NOT CMAKE_BUILD_TYPE)
+    message(STATUS "No build type selected, default to Release")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif()
+
 if (POLICY CMP0048)
     cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
@@ -183,6 +188,10 @@ add_executable(bsg-workspace
         src/bsg-workspace.cc
         )
 
+add_executable(gfa-exploregraph
+        src/gfa-exploregraph.cc
+        )
+
 add_executable(bsg-mapper
         src/bsg-mapper.cc
         )
@@ -203,8 +212,8 @@ add_executable(bsg-flowmaker
 add_executable(gfa-pairscaff
         src/gfa-pairscaff.cc)
 
-add_executable(gfa-bfphaser
-        src/gfa-bfphaser.cc)
+add_executable(gfa-align EXCLUDE_FROM_ALL
+        src/gfa-align.cc)
 
 add_executable(phaser
                src/phaser.cpp)
@@ -237,15 +246,17 @@ add_executable(resolve-loops
         src/resolve-loops.cc)
 
 target_link_libraries(bsg-workspace sequence_graph)
+target_link_libraries(gfa-exploregraph sequence_graph)
 target_link_libraries(bsg-datastore sequence_graph)
 target_link_libraries(bsg-mapper sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-flowmaker sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(gfa-dumppath sequence_graph)
+target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(bsg-untangler2 sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-kmerspectra sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(gfa-bfphaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(seq-thread sequence_graph)

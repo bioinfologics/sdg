@@ -2,8 +2,10 @@
 #include <fstream>
 #include <sglib/WorkSpace.hpp>
 #include <sglib/processors/Untangler.hpp>
+#include <sglib/processors/FlowFollower.hpp>
 #include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"
+
 
 int main(int argc, char * argv[]) {
     std::cout << "Welcome to bsg-untangler"<<std::endl<<std::endl;
@@ -14,11 +16,15 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<std::endl;
 
     std::string workspace_file,output_prefix;
-    bool stats_only=0,reindex_kci=0;
-    uint64_t max_mem_gb=4;
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
-    bool repeats_first=1,pop_bubles=0,skip_remap=0,print_HSPNPs=1,haplotype_walk=0;
-    std::string verbose_log="";
+    bool repeat_expansion=false, neighbour_connection_graph=false, bubbly_paths=false;
+    bool unroll_loops=false,pop_errors=false;
+    bool explore_homopolymers=false;
+    uint64_t min_backbone_node_size=2000;
+    float min_backbone_ci=0.5;
+    float max_backbone_ci=1.25;
+    float tag_imbalance_ends=.1;
+    int min_shared_tags=10;
     try
     {
         cxxopts::Options options("bsg-untangler", "graph-based repeat resolution and haplotype separation");
@@ -27,16 +33,20 @@ int main(int argc, char * argv[]) {
                 ("help", "Print help")
                 ("w,workspace", "input workspace", cxxopts::value<std::string>(workspace_file))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
-                ("max_mem", "maximum_memory when mapping (GB, default: 4)", cxxopts::value<uint64_t>(max_mem_gb));
-
-        options.add_options("Heuristics")
-                ("skip_remap", "skip remapping reads on loading workspace (default false)", cxxopts::value<bool>(skip_remap))
-                ("pop_short", "pop unsupported short bubbles first (default false)", cxxopts::value<bool>(pop_bubles))
-                ("repeats_first", "solve_repeats before bubble phasing (default true)", cxxopts::value<bool>(repeats_first))
-                ("print_hspnps", "print HSPNPs (default true)", cxxopts::value<bool>(print_HSPNPs))
-                ("hwalk", "haplotype walk (default false)", cxxopts::value<bool>(haplotype_walk))
-                ("heuristics_verbose_log", "dump heuristics verbose log to file", cxxopts::value<std::string>(verbose_log))
+                ("l,unroll_loops", "unroll simple loops",cxxopts::value<bool>(unroll_loops))
+                ("e,pop_errors", "pop unsupported short-bubbles (as errors)",cxxopts::value<bool>(pop_errors))
+                ("r,repeat_expansion","run tag-based repeat expansion", cxxopts::value<bool>(repeat_expansion))
+                ("b,bubbly_paths","run bubbly paths phasing", cxxopts::value<bool>(bubbly_paths))
+                //("n,neighbour_connections","run tag-based repeat neighbour_connection", cxxopts::value<bool>(neighbour_connection))
+                ("c,neighbour_connection_backbones","create tag-imbalance-based neighbour backbones", cxxopts::value<bool>(neighbour_connection_graph))
+                ("min_backbone_node_size","minimum size of nodes to use in backbones",cxxopts::value<uint64_t>(min_backbone_node_size))
+                ("min_backbone_ci","minimum ci of nodes to use in backbones",cxxopts::value<float>(min_backbone_ci))
+                ("max_backbone_ci","minimum ci of nodes to use in backbones",cxxopts::value<float>(max_backbone_ci))
+                ("tag_imbalance_ends","percentage of node to use as tag-imbalanced end",cxxopts::value<float>(tag_imbalance_ends))
+                ("min_shared_tags","minimum shared tags to evaluate tag-imbalanced connection",cxxopts::value<int>(min_shared_tags))
+                //("explore_homopolymers","explore_homopolymers (experimental)", cxxopts::value<bool>(explore_homopolymers))
                 ;
+
 
 
 
@@ -67,85 +77,111 @@ int main(int argc, char * argv[]) {
     ws.load_from_disk(workspace_file);
     ws.add_log_entry("bsg-untangler run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
-    ws.kci.compute_compression_stats();
-    for (auto &m:ws.linked_read_mappers) m.memlimit=max_mem_gb*1024*1024*1024;
-    if (skip_remap==false) {
-        sglib::OutputLog()<<"Mapping reads..."<<std::endl;
+
+    if (unroll_loops){
+        Untangler u(ws);
+        u.unroll_simple_loops();
+        /*ws.sg.join_all_unitigs();
+        ws.kci.reindex_graph();
         for (auto &m:ws.linked_read_mappers) {
-            m.update_graph_index();
-            m.map_reads();
+            m.remap_all_reads();
+        }*/
+    }
+    if (pop_errors){
+        Untangler u(ws);
+        u.pop_errors_by_ci_and_paths();
+        ws.sg.join_all_unitigs();
+        ws.kci.reindex_graph();
+        for (auto &m:ws.linked_read_mappers) {
+            m.remap_all_reads();
         }
-        ws.add_log_entry("reads re-mapped to current graph");
-        ws.dump_to_disk(output_prefix+"_mapped.bsgws");
-        sglib::OutputLog()<<"Mapping reads DONE."<<std::endl;
     }
-
-
-
-
-    std::ofstream verbose_log_file;
-    if (verbose_log!=""){
-        verbose_log_file.open(verbose_log);
+    if (repeat_expansion) {
+        //==================== Development code (i.e. random tests!) ==============
+        Untangler u(ws);
+        u.expand_canonical_repeats_by_tags(.5,1.25,20);
+        if (!ws.sg.is_sane()) {
+            sglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
+            return 1;
+        }
+        ws.sg.join_all_unitigs();
+        ws.sg.write_to_gfa(output_prefix+"_repeat_solved.gfa");
+        ws.kci.reindex_graph();
+        for (auto &m:ws.linked_read_mappers) {
+            m.remap_all_reads();
+        }
     }
+    if (bubbly_paths){
+        Untangler u(ws);
+        u.solve_bubbly_paths();
+        ws.sg.join_all_unitigs();
+        ws.sg.write_to_gfa(output_prefix+"_bubbly_solved.gfa");
+        ws.kci.reindex_graph();
+        for (auto &m:ws.linked_read_mappers) {
+            m.remap_all_reads();
+        }
 
-    if (repeats_first) {
-        std::cout << std::endl << "Solving trivial repeats" << std::endl;
-        bool mod = true;
-        int srpass = 0;
-        while (mod) {
-            Untangler u(ws);
-            std::unordered_set<uint64_t> reads_to_remap;
-            mod = false;
-            ++srpass;
-            uint64_t solved_paths=u.solve_canonical_repeats_by_tags(reads_to_remap);
-            if (solved_paths>0) {
-                mod=true;
-                ws.kci.reindex_graph();
-                //ws.sg.write_to_gfa(output_prefix + "_solved_repeats_" + std::to_string(srpass) + ".gfa",unsolved_repeats);
-                std::cout << reads_to_remap.size() << " pairs of read to remap" << std::endl;
-                ws.linked_read_mappers[0].update_graph_index();
-                ws.linked_read_mappers[0].map_reads(reads_to_remap);
-                ws.add_log_entry(std::to_string(solved_paths)+" new paths by solving canonical repeats, "+
-                                         std::to_string(reads_to_remap.size()) +"reads re-mapped");
+    }
+    if (neighbour_connection_graph){
+        Untangler u(ws);
+        auto backbones=u.create_backbones(min_backbone_node_size,min_backbone_ci, max_backbone_ci,tag_imbalance_ends,min_shared_tags);
+
+        int cont=0;
+        for (auto bb: backbones){
+            std::cout << "Backbone "<< cont << std::endl;
+            for (auto node: bb.nodes){
+                std::cout << "seq" << abs(node) << ",";
             }
-
+            std::endl;
+            cont++;
         }
-    }
+        //auto tni=u.find_tag_neighbours_with_imbalance(5000, .5, 1.25,.25);
+        //create a gfa with all nodes in nti, and connect them, dump the gfa.
 
-    Untangler u(ws);
-    if (haplotype_walk){
-        u.extend_HSPNPs_by_tagwalking();
+        /*ws.kci.reindex_graph();
+        for (auto &m:ws.linked_read_mappers) {
+            m.remap_all_reads();
+        }*/
     }
-    if (print_HSPNPs) {
-        std::cout<<std::endl<<"Finding HSPNPs"<<std::endl;
-        auto hps=u.get_all_HSPNPs();
-        std::cout << "Starting with " << hps.size() << " HSPNPs" << std::endl;
-        std::ofstream hpsfile(output_prefix + "_hps.csv");
-        auto hspnp_id = 1;
-        for (auto hp:hps) { //TODO: print node numbers and alternative tags -> then cluster/find neighbours
-            std::vector<prm10xTag_t> h1tags, h2tags;
-            for (auto rm:ws.linked_read_mappers[0].reads_in_node[(hp.first > 0 ? hp.first : -hp.first)])
-                h1tags.push_back(ws.linked_read_mappers[0].datastore.get_read_tag(rm.read_id));
-            for (auto rm:ws.linked_read_mappers[0].reads_in_node[(hp.second > 0 ? hp.second : -hp.second)])
-                h2tags.push_back(ws.linked_read_mappers[0].datastore.get_read_tag(rm.read_id));
-            std::sort(h1tags.begin(), h1tags.end());
-            std::sort(h2tags.begin(), h2tags.end());
-            hpsfile << hspnp_id << ",A," << hp.first;
-            for (auto t:h1tags) if (t) hpsfile << "," << t;
-            hpsfile << std::endl;
-            hpsfile << hspnp_id << ",B," << hp.second;
-            for (auto t:h2tags) if (t) hpsfile << "," << t;
-            hpsfile << std::endl;
-            ++hspnp_id;
+    if (explore_homopolymers){
+        //get all bubbles that are short
+        Untangler u(ws);
+        for (auto b:u.find_bubbles(360,401)){
+            auto tA=ws.linked_read_mappers[0].get_node_tags(b.first);
+            auto tB=ws.linked_read_mappers[0].get_node_tags(b.second);
+            std::set<bsg10xTag> shared;
+            std::set_intersection(tA.begin(),tA.end(),tB.begin(),tB.end(),std::inserter(shared,shared.end()));
+            if (shared.empty()) continue;
+            std::cout<<"Bubble analysed: " << b.first << " and " << b.second << " share "<< shared.size()<< " tags" <<std::endl;
+            for (auto t: shared) std::cout<<"Tag "<<t<<" has "<<ws.linked_read_datastores[0].get_tag_reads(t).size()<<std::endl;
+            std::set<uint64_t> readsA,readsB;
+            std::cout<<"Reads in shared tags in A: ";
+            for (auto rm:ws.linked_read_mappers[0].reads_in_node[llabs(b.first)]) {
+                readsA.insert(rm.read_id);
+                if (shared.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) std::cout<<" "<<rm.read_id;
+            }
+            std::cout<<std::endl;
+            std::cout<<"Reads in shared tags in B: ";
+            for (auto rm:ws.linked_read_mappers[0].reads_in_node[llabs(b.second)]) {
+                readsB.insert(rm.read_id);
+                if (shared.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) std::cout<<" "<<rm.read_id;
+            }
+            std::cout<<std::endl;
+
+            for (auto ra:readsA){
+                auto rb=(ra%2==1 ? ra+1 : ra-1);
+                if (readsB.count(rb)>0) {
+                    std::cout<<"Read "<<ra<<" in A and read"<<rb<<" in B!!!"<<std::endl;
+                    std::cout<<ws.linked_read_datastores[0].get_read_sequence(ra)<<std::endl;
+                    std::cout<<ws.linked_read_datastores[0].get_read_sequence(rb)<<std::endl;
+                }
+            }
         }
+        //tags shared tags
+
+        //reads from the shared tags
     }
-
-
-    sglib::OutputLog()<<"Dumping final Workspace..."<<std::endl;
-    ws.dump_to_disk(output_prefix+"_final.bsgws");
-    sglib::OutputLog()<<"Dumping scaffolded GFA..."<<std::endl;
-    ws.sg.write_to_gfa(output_prefix+"_scaffolded.gfa");
-    sglib::OutputLog()<<"All DONE!!!"<<std::endl;
+    ws.dump_to_disk(output_prefix+"_untangled.bsgws");
     return 0;
 }
 
