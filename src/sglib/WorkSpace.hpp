@@ -20,6 +20,15 @@ public:
     std::string log_text;
 };
 class WorkSpace {
+    //All status classes are public, treat them with care anyway ;)
+    SequenceGraph sg;
+    std::vector<LinkedReadsDatastore> linked_read_datastores;
+    std::vector<LinkedReadMapper> linked_read_mappers;
+    std::vector<PathsDatastore> path_datastores;
+    KmerCompressionIndex kci;
+    std::vector<std::string> read_counts_header;
+    std::string verbose_log="";
+    std::vector<LogEntry> log;
 
 public:
     WorkSpace():kci(sg){};
@@ -37,16 +46,12 @@ public:
     std::vector<sgNodeID_t>
     select_from_all_nodes(uint32_t min_size, uint32_t max_size, uint32_t min_tags, uint32_t max_tags, float min_ci, float max_ci);
 
-    std::vector<LogEntry> log;
+    KmerCompressionIndex& getKCI() {return kci;}
+    SequenceGraph& getGraph() {return sg;}
 
-    //All status classes are public, treat them with care anyway ;)
-    SequenceGraph sg;
-    std::vector<LinkedReadsDatastore> linked_read_datastores;
-    std::vector<LinkedReadMapper> linked_read_mappers;
-    std::vector<PathsDatastore> path_datastores;
-    KmerCompressionIndex kci;
-    std::vector<std::string> read_counts_header;
-    std::string verbose_log="";
+    std::vector<LinkedReadMapper>& getLinkedReadMappers() {return linked_read_mappers;}
+    std::vector<LinkedReadsDatastore>& getLinkedReadDatastores() {return linked_read_datastores;}
+    std::vector<PathsDatastore>& getPathsDatastore() {return path_datastores;}
 };
 
 

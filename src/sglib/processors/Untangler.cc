@@ -27,16 +27,16 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
     uint64_t aa_count=0,ab_count=0,unsolved_count=0,non_evaluated=0;
 
     std::cout << " Finding trivial repeats to analyse with tags" << std::endl;
-    std::vector<bool> used(ws.sg.nodes.size());
+    std::vector<bool> used(ws.getGraph().nodes.size());
     std::vector<SequenceGraphPath> paths_solved;
     //if (ws.verbose_log!="") verbose_log_file<<"==== Round of repetition analysis started ===="<<std::endl;
-    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
+    for (auto n = 1; n < ws.getGraph().nodes.size(); ++n) {
         if (used[n]) {
             //if (verbose_log!="") verbose_log_file<<n<<" is used"<<std::endl;
             continue;
         }
-        auto fwl = ws.sg.get_fw_links(n);
-        auto bwl = ws.sg.get_bw_links(n);
+        auto fwl = ws.getGraph().get_fw_links(n);
+        auto bwl = ws.getGraph().get_bw_links(n);
         if (fwl.size() != 2 or bwl.size() != 2) {
             //if (verbose_log!="") verbose_log_file<<n<<" has "<<bwl.size()<<" ins and "<<fwl.size()<<" outs"<<std::endl;
             continue;
@@ -53,7 +53,7 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
         }
         sgNodeID_t all[4] = {f0, f1, b0, b1};
         bool ok = true;
-        for (auto x:all) if (x == n or x == -n or ws.sg.nodes[(x > 0 ? x : -x)].sequence.size() < 199) ok = false;
+        for (auto x:all) if (x == n or x == -n or ws.getGraph().nodes[(x > 0 ? x : -x)].sequence.size() < 199) ok = false;
         for (auto j = 0; j < 3; ++j)
             for (auto i = j + 1; i < 4; ++i)
                 if (all[i] == all[j] or all[i] == -all[j])ok = false; //looping node
@@ -70,14 +70,14 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
 //                        <<"   b0:"<<scaff.lrmappers[0].reads_in_node[(b0 > 0 ? b0 : -b0)].size()
 //                        <<"   b1:"<<scaff.lrmappers[0].reads_in_node[(b1 > 0 ? b1 : -b1)].size()<<std::endl;
 
-        for (auto rm:ws.linked_read_mappers[0].reads_in_node[(f0 > 0 ? f0 : -f0)])
-            f0tags.insert(ws.linked_read_mappers[0].datastore.get_read_tag(rm.read_id));
-        for (auto rm:ws.linked_read_mappers[0].reads_in_node[(f1 > 0 ? f1 : -f1)])
-            f1tags.insert(ws.linked_read_mappers[0].datastore.get_read_tag(rm.read_id));
-        for (auto rm:ws.linked_read_mappers[0].reads_in_node[(b0 > 0 ? b0 : -b0)])
-            b0tags.insert(ws.linked_read_mappers[0].datastore.get_read_tag(rm.read_id));
-        for (auto rm:ws.linked_read_mappers[0].reads_in_node[(b1 > 0 ? b1 : -b1)])
-            b1tags.insert(ws.linked_read_mappers[0].datastore.get_read_tag(rm.read_id));
+        for (auto rm:ws.getLinkedReadMappers()[0].reads_in_node[(f0 > 0 ? f0 : -f0)])
+            f0tags.insert(ws.getLinkedReadMappers()[0].datastore.get_read_tag(rm.read_id));
+        for (auto rm:ws.getLinkedReadMappers()[0].reads_in_node[(f1 > 0 ? f1 : -f1)])
+            f1tags.insert(ws.getLinkedReadMappers()[0].datastore.get_read_tag(rm.read_id));
+        for (auto rm:ws.getLinkedReadMappers()[0].reads_in_node[(b0 > 0 ? b0 : -b0)])
+            b0tags.insert(ws.getLinkedReadMappers()[0].datastore.get_read_tag(rm.read_id));
+        for (auto rm:ws.getLinkedReadMappers()[0].reads_in_node[(b1 > 0 ? b1 : -b1)])
+            b1tags.insert(ws.getLinkedReadMappers()[0].datastore.get_read_tag(rm.read_id));
 
         f0tags.erase(0);
         f1tags.erase(0);
@@ -110,8 +110,8 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
             used[n] = true;
             used[(f0 > 0 ? f0 : -f0)] = true;
             used[(f1 > 0 ? f1 : -f1)] = true;
-            paths_solved.push_back(SequenceGraphPath(ws.sg, {-b0, n, f0}));
-            paths_solved.push_back(SequenceGraphPath(ws.sg, {-b1, n, f1}));
+            paths_solved.push_back(SequenceGraphPath(ws.getGraph(), {-b0, n, f0}));
+            paths_solved.push_back(SequenceGraphPath(ws.getGraph(), {-b1, n, f1}));
             ++aa_count;
 
         } else if (ba.size() > 3 and ab.size() > 3 and
@@ -122,8 +122,8 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
             used[n] = true;
             used[(f0 > 0 ? f0 : -f0)] = true;
             used[(f1 > 0 ? f1 : -f1)] = true;
-            paths_solved.push_back(SequenceGraphPath(ws.sg, {-b0, n, f1}));
-            paths_solved.push_back(SequenceGraphPath(ws.sg, {-b1, n, f0}));
+            paths_solved.push_back(SequenceGraphPath(ws.getGraph(), {-b0, n, f1}));
+            paths_solved.push_back(SequenceGraphPath(ws.getGraph(), {-b1, n, f0}));
             ++ab_count;
         }
         else {
@@ -137,11 +137,11 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
     //if (paths_solved.size() > 0) mod = true;
     reads_to_remap;
     for (auto &p:paths_solved) {
-        ws.sg.join_path(p);
+        ws.getGraph().join_path(p);
         for (auto n:p.nodes) {
-            for (auto rm:ws.linked_read_mappers[0].reads_in_node[(n > 0 ? n : -n)]) {
+            for (auto rm:ws.getLinkedReadMappers()[0].reads_in_node[(n > 0 ? n : -n)]) {
                 reads_to_remap.insert((rm.read_id % 2 ? rm.read_id : rm.read_id - 1));
-                ws.linked_read_mappers[0].read_to_node[rm.read_id] = 0;
+                ws.getLinkedReadMappers()[0].read_to_node[rm.read_id] = 0;
             }
         }
 
@@ -153,41 +153,43 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
 
 uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags) {
     uint64_t aa_count=0,ab_count=0,unsolved_count=0;
-
+    auto sg = ws.getGraph();
+    auto linked_read_mappers = ws.getLinkedReadMappers();
+    auto kci = ws.getKCI();
     std::cout << " Finding trivial repeats to analyse with tags" << std::endl;
-    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
-        auto fwl = ws.sg.get_fw_links(n);
-        auto bwl = ws.sg.get_bw_links(n);
+    for (auto n = 1; n < sg.nodes.size(); ++n) {
+        auto fwl = sg.get_fw_links(n);
+        auto bwl = sg.get_bw_links(n);
         if (fwl.size() != 2 or bwl.size() != 2) continue;
         auto f0 = fwl[0].dest;
         auto f1 = fwl[1].dest;
         auto b0 = bwl[0].dest;
         auto b1 = bwl[1].dest;
-        if (ws.sg.get_bw_links(f0).size()!=1
-            or ws.sg.get_bw_links(f1).size()!=1
-               or ws.sg.get_fw_links(b0).size()!=1
-                  or ws.sg.get_fw_links(b1).size()!=1)
+        if (sg.get_bw_links(f0).size()!=1
+            or sg.get_bw_links(f1).size()!=1
+               or sg.get_fw_links(b0).size()!=1
+                  or sg.get_fw_links(b1).size()!=1)
             continue;
         sgNodeID_t all[4] = {f0, f1, b0, b1};
         bool ok = true;
-        for (auto x:all) if (x == n or x == -n or ws.sg.nodes[(x > 0 ? x : -x)].sequence.size() < 199) ok = false;
+        for (auto x:all) if (x == n or x == -n or sg.nodes[(x > 0 ? x : -x)].sequence.size() < 199) ok = false;
         for (auto j = 0; j < 3; ++j)
             for (auto i = j + 1; i < 4; ++i)
                 if (all[i] == all[j] or all[i] == -all[j])ok = false; //looping node
         if (!ok) continue;
 
-        auto f0t=ws.linked_read_mappers[0].get_node_tags(f0); if (f0t.size()<min_tags) continue;
-        auto f1t=ws.linked_read_mappers[0].get_node_tags(f1); if (f1t.size()<min_tags) continue;
-        auto b0t=ws.linked_read_mappers[0].get_node_tags(b0); if (b0t.size()<min_tags) continue;
-        auto b1t=ws.linked_read_mappers[0].get_node_tags(b1); if (b1t.size()<min_tags) continue;
+        auto f0t=linked_read_mappers[0].get_node_tags(f0); if (f0t.size()<min_tags) continue;
+        auto f1t=linked_read_mappers[0].get_node_tags(f1); if (f1t.size()<min_tags) continue;
+        auto b0t=linked_read_mappers[0].get_node_tags(b0); if (b0t.size()<min_tags) continue;
+        auto b1t=linked_read_mappers[0].get_node_tags(b1); if (b1t.size()<min_tags) continue;
 
-        auto cif0=ws.kci.compute_compression_for_node(f0,1);
+        auto cif0=kci.compute_compression_for_node(f0,1);
         if (cif0<min_ci or cif0>max_ci) continue;
-        auto cif1=ws.kci.compute_compression_for_node(f1,1);
+        auto cif1=kci.compute_compression_for_node(f1,1);
         if (cif1<min_ci or cif1>max_ci) continue;
-        auto cib0=ws.kci.compute_compression_for_node(b0,1);
+        auto cib0=kci.compute_compression_for_node(b0,1);
         if (cib0<min_ci or cib0>max_ci) continue;
-        auto cib1=ws.kci.compute_compression_for_node(b1,1);
+        auto cib1=kci.compute_compression_for_node(b1,1);
         if (cib1<min_ci or cib1>max_ci) continue;
 
         uint64_t aa=intersection_size(b0t,f0t);
@@ -197,10 +199,10 @@ uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci,
 
         if (aa > min_tags and bb > min_tags and std::min(aa, bb) > 10 * std::max(ab, ba)) {
             ++aa_count;
-            ws.sg.expand_node(n,{{b0},{b1}},{{f0},{f1}});
+            sg.expand_node(n,{{b0},{b1}},{{f0},{f1}});
         } else if (ba > min_tags and ab > min_tags and std::min(ba, ab) > 10 * std::max(aa, bb)) {
             ++ab_count;
-            ws.sg.expand_node(n,{{b0},{b1}},{{f1},{f0}});
+            sg.expand_node(n,{{b0},{b1}},{{f1},{f0}});
         }
         else {
             ++unsolved_count;
@@ -211,8 +213,10 @@ uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci,
 }
 
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
+    auto sg = ws.getGraph();
+    auto kci = ws.getKCI();
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> hps;
-    std::vector<bool> used(ws.sg.nodes.size(),false);
+    std::vector<bool> used(sg.nodes.size(),false);
     //TODO: check the coverages are actually correct?
     const double min_c1=0.75,max_c1=1.25,min_c2=1.5,max_c2=2.5;
     /*
@@ -221,17 +225,17 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
      */
 
 #pragma omp parallel for schedule(static, 10)
-    for (auto n=1;n<ws.sg.nodes.size();++n){
+    for (auto n=1;n<sg.nodes.size();++n){
         std::pair<sgNodeID_t,sgNodeID_t> hap={0,0};
-        if (ws.sg.nodes[n].status==sgNodeDeleted) continue;
-        auto frontkci=ws.kci.compute_compression_for_node(n);
+        if (sg.nodes[n].status==sgNodeDeleted) continue;
+        auto frontkci=kci.compute_compression_for_node(n);
         if (frontkci>max_c2 or frontkci<min_c2) continue;
         auto m=n;
         //two passes: 0->fw, 1->bw,
         for (auto pass=0; pass<2; ++pass,m=-m) {
 
             //check bubble going forward ------------
-            auto fw_l = ws.sg.get_fw_links(m);
+            auto fw_l = sg.get_fw_links(m);
             //fork opening
             if (fw_l.size() != 2) continue;
             hap.first = fw_l[0].dest;
@@ -249,14 +253,14 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
             if (used_hspnp) continue;
             if (hap.first == n or hap.first == -n or hap.second == n or hap.second == -n or hap.first == hap.second) continue;
             //fork.closing
-            auto hap0f = ws.sg.get_fw_links(hap.first);
-            auto hap1f = ws.sg.get_fw_links(hap.second);
+            auto hap0f = sg.get_fw_links(hap.first);
+            auto hap1f = sg.get_fw_links(hap.second);
             if (hap0f.size() != 1 or hap1f.size() != 1 or hap0f[0].dest != hap1f[0].dest) continue;
-            auto h0kc = ws.kci.compute_compression_for_node(hap.first);
+            auto h0kc = kci.compute_compression_for_node(hap.first);
             if (h0kc > max_c1 or h0kc < min_c1) continue;
-            auto h1kc = ws.kci.compute_compression_for_node(hap.second);
+            auto h1kc = kci.compute_compression_for_node(hap.second);
             if (h1kc > max_c1 or h1kc < min_c1) continue;
-            auto ekc = ws.kci.compute_compression_for_node(hap0f[0].dest);
+            auto ekc = kci.compute_compression_for_node(hap0f[0].dest);
             if (ekc > max_c2 or ekc < min_c2) continue;
 
 #pragma omp critical(hps)
@@ -334,7 +338,7 @@ uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
     std::sort(new_ppaths.begin(),new_ppaths.end(),
               [](const std::vector<SequenceGraphPath> &a,const std::vector<SequenceGraphPath> &b)
               {return a[0].nodes.size()>b[0].nodes.size();});
-    std::vector<bool> used(ws.sg.nodes.size());
+    std::vector<bool> used(ws.getGraph().nodes.size());
     for (auto pp:new_ppaths){
         if (pp[0].nodes.size()<4) continue;
         bool skip=false;
@@ -350,14 +354,14 @@ uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
             std::vector<sgNodeID_t> middle_nodes;
             for (auto it=p.nodes.begin()+1;it<p.nodes.end()-1;++it) middle_nodes.push_back(*it);
             for (auto n:middle_nodes) used[llabs(n)]=true;
-            ws.sg.join_path(SequenceGraphPath(ws.sg,middle_nodes),true);
+            ws.getGraph().join_path(SequenceGraphPath(ws.getGraph(),middle_nodes),true);
         }
     }
-    ws.sg.write_to_gfa("graph_after_joining_walks.gfa");
-    ws.linked_read_mappers[0].remove_obsolete_mappings();
-    ws.linked_read_mappers[0].update_graph_index();
-    ws.linked_read_mappers[0].map_reads();
-    ws.kci.reindex_graph();
+    ws.getGraph().write_to_gfa("graph_after_joining_walks.gfa");
+    ws.getLinkedReadMappers()[0].remove_obsolete_mappings();
+    ws.getLinkedReadMappers()[0].update_graph_index();
+    ws.getLinkedReadMappers()[0].map_reads();
+    ws.getKCI().reindex_graph();
 }
 
 /**
@@ -379,7 +383,7 @@ std::vector<SequenceGraphPath> Untangler::make_parallel_paths(std::vector<Sequen
     }
     std::vector<SequenceGraphPath> pp;
     for (auto p:paths){
-        pp.emplace_back(ws.sg);
+        pp.emplace_back(ws.getGraph());
         bool started=false,finished=false;
         for (auto n:p.nodes){
             if (n==source) started=true;
@@ -400,8 +404,8 @@ bool Untangler::all_nodes_consumed(std::vector<SequenceGraphPath> parallel_paths
 
     for (auto &p:parallel_paths){
         for (auto ix=p.nodes.begin()+1;ix<p.nodes.end()-1;++ix) {
-            for (auto fc:ws.sg.get_fw_links(*ix))if (all_nodes.count(fc.dest) == 0) return false;
-            for (auto bc:ws.sg.get_bw_links(*ix))if (all_nodes.count(bc.dest) == 0) return false;
+            for (auto fc:ws.getGraph().get_fw_links(*ix))if (all_nodes.count(fc.dest) == 0) return false;
+            for (auto bc:ws.getGraph().get_bw_links(*ix))if (all_nodes.count(bc.dest) == 0) return false;
         }
 
     }
@@ -427,18 +431,20 @@ std::vector<sgNodeID_t> Untangler::shared_nodes(std::vector<std::vector<Sequence
 
 
 void Untangler::analise_paths_through_nodes() {
+    auto sg(ws.getGraph());
+    auto kci(ws.getKCI());
     std::cout<<"computing KCI for all nodes"<<std::endl;
-    ws.kci.compute_all_nodes_kci(1);
+    ws.getKCI().compute_all_nodes_kci(1);
     std::ofstream kciof("kci_dump.csv");
-    for (auto i=1;i<ws.sg.nodes.size();++i) kciof<<"seq"<<i<<", "<<ws.kci.nodes_depth[i]<<std::endl;
+    for (auto i=1;i<sg.nodes.size();++i) kciof<<"seq"<<i<<", "<<kci.nodes_depth[i]<<std::endl;
     std::cout<<"DONE!"<<std::endl;
     //CRAP regions
-    std::vector<bool> used(ws.sg.nodes.size(),false),aborted(ws.sg.nodes.size(),false);
+    std::vector<bool> used(sg.nodes.size(),false),aborted(sg.nodes.size(),false);
     std::vector<SequenceSubGraph> craps;
-    for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) {
+    for (sgNodeID_t n=1;n<sg.nodes.size();++n) {
         if (used[n]) continue;
-        if (ws.kci.nodes_depth[n]<1.5 and ws.sg.nodes[n].sequence.size()>500) continue;
-        SequenceSubGraph crap(ws.sg);
+        if (kci.nodes_depth[n]<1.5 and sg.nodes[n].sequence.size()>500) continue;
+        SequenceSubGraph crap(sg);
         std::vector<sgNodeID_t> to_explore={n};
         std::cout<<"Exploring node "<<n<<std::endl;
         while (!to_explore.empty()){
@@ -446,13 +452,13 @@ void Untangler::analise_paths_through_nodes() {
             //std::cout<<" Exploring "<<to_explore.size()<< " neighbors"<<std::endl;
             for (auto ne:to_explore){
                 //std::cout<<"  Exploring node #"<<ne<<std::endl;
-                for (auto neigh:ws.sg.links[ne]){
+                for (auto neigh:sg.links[ne]){
                     auto x=llabs(neigh.dest);
                     //std::cout<<"  Exploring neighbour #"<<x<<std::endl;
                     if (std::find(crap.nodes.begin(),crap.nodes.end(),x)==crap.nodes.end()) {
                         //std::cout<<"  ADDING to crap!"<<x<<std::endl;
                         crap.nodes.emplace_back(x);
-                        if (not (ws.kci.nodes_depth[x]<1.5 and ws.sg.nodes[x].sequence.size()>500)) {
+                        if (not (kci.nodes_depth[x]<1.5 and sg.nodes[x].sequence.size()>500)) {
                             //std::cout<<"  ADDING to explore list (size="<<ws.sg.nodes[x].sequence.size()<<")"<<std::endl;
                             new_to_explore.emplace_back(x);
                         }
@@ -484,29 +490,30 @@ void Untangler::analise_paths_through_nodes() {
 }
 
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::find_bubbles(uint32_t min_size,uint32_t max_size) {
+    auto sg(ws.getGraph());
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> r;
-    std::vector<bool> used(ws.sg.nodes.size(),false);
+    std::vector<bool> used(sg.nodes.size(),false);
     sgNodeID_t n1,n2;
     size_t s1,s2;
-    for (n1=1;n1<ws.sg.nodes.size();++n1){
+    for (n1=1;n1<sg.nodes.size();++n1){
         if (used[n1]) continue;
         //get "topologically correct" bubble: prev -> [n1 | n2] -> next
-        s1=ws.sg.nodes[n1].sequence.size();
+        s1=sg.nodes[n1].sequence.size();
         if (s1<min_size or s1>max_size) continue;
-        auto fwl=ws.sg.get_fw_links(n1);
+        auto fwl=sg.get_fw_links(n1);
         if (fwl.size()!=1) continue;
         auto next=fwl[0].dest;
-        auto bwl=ws.sg.get_bw_links(n1);
+        auto bwl=sg.get_bw_links(n1);
         if (bwl.size()!=1) continue;
         auto prev=bwl[0].dest;
-        auto parln=ws.sg.get_bw_links(next);
+        auto parln=sg.get_bw_links(next);
         if (parln.size()!=2) continue;
-        auto parlp=ws.sg.get_fw_links(-prev);
+        auto parlp=sg.get_fw_links(-prev);
         if (parlp.size()!=2) continue;
         if (parlp[0].dest!=n1) n2=parlp[0].dest;
         else n2=parlp[1].dest;
         if (n2!=-parln[0].dest and n2!=-parln[1].dest) continue;
-        s2=ws.sg.nodes[n2].sequence.size();
+        s2=sg.nodes[n2].sequence.size();
         if (s2<min_size or s2>max_size) continue;
         used[n1]=true;
         used[n2]=true;
@@ -521,15 +528,17 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::find_bubbles(uint32_t m
  * @return
  */
 std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(const SequenceSubGraph &bp, bool &no_tags) {
+    auto sg(ws.getGraph());
+    auto linked_read_mappers(ws.getLinkedReadMappers());
     int min_tags=20; no_tags=false;
     std::vector<std::set<bsg10xTag>> node_tags;
 
     for (auto i=0;i<bp.nodes.size();++i) {
         auto n=bp.nodes[i];
-        node_tags.emplace_back(ws.linked_read_mappers[0].get_node_tags(n));
+        node_tags.emplace_back(linked_read_mappers[0].get_node_tags(n));
         if (i%3>0 and node_tags.back().size()<min_tags) {
             no_tags=true;
-            return {SequenceGraphPath(ws.sg),SequenceGraphPath(ws.sg)};
+            return {SequenceGraphPath(sg),SequenceGraphPath(sg)};
         };//check failed: min-tags
     }
     //init the haplotypes anchoring all nodes to previous tags
@@ -549,8 +558,8 @@ std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(cons
         }
         auto A=bp.nodes[i+1];
         auto B=bp.nodes[i+2];
-        auto tagsA=ws.linked_read_mappers[0].get_node_tags(A);
-        auto tagsB=ws.linked_read_mappers[0].get_node_tags(B);
+        auto tagsA=linked_read_mappers[0].get_node_tags(A);
+        auto tagsB=linked_read_mappers[0].get_node_tags(B);
         auto a1=intersection_size(tagsA,tags1);
         auto a2=intersection_size(tagsA,tags2);
         auto b1=intersection_size(tagsB,tags1);
@@ -572,7 +581,7 @@ std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(cons
     }
     //std::cout<<std::endl;
     if (hap1.size()==bp.nodes.size()/3) {
-        SequenceGraphPath p1(ws.sg),p2(ws.sg);
+        SequenceGraphPath p1(sg),p2(sg);
         for (auto i=0;i<hap1.size();++i){
             if (i>0) p1.nodes.push_back(bp.nodes[3*i]);
             p1.nodes.push_back(hap1[i]);
@@ -581,7 +590,7 @@ std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(cons
         }
         return {p1,p2};
     }
-    return {SequenceGraphPath(ws.sg),SequenceGraphPath(ws.sg)};
+    return {SequenceGraphPath(sg),SequenceGraphPath(sg)};
 }
 
 /**
@@ -591,7 +600,8 @@ std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(cons
  * @return
  */
 std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bubbly_path_2(const SequenceSubGraph &bp) {
-
+    auto linked_read_mappers(ws.getLinkedReadMappers());
+    auto sg(ws.getGraph());
     std::cout<<std::endl<<"solve_bubbly_path_2 started for "<<bp.nodes.size()<<" nodes ("<<bp.nodes.size()/3<<" bubbles)"
              <<"between "<<bp.nodes.front()<<" and "<<bp.nodes.back()<<std::endl;
     std::cout<<"Nodes in bubbly path:";
@@ -613,8 +623,8 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
     for (auto i=0;i<bp.nodes.size()-1;i+=3){
         auto A=bp.nodes[i+1];
         auto B=bp.nodes[i+2];
-        node_tags[A]=ws.linked_read_mappers[0].get_node_tags(A);
-        node_tags[B]=ws.linked_read_mappers[0].get_node_tags(B);
+        node_tags[A]=linked_read_mappers[0].get_node_tags(A);
+        node_tags[B]=linked_read_mappers[0].get_node_tags(B);
         pnps.insert({A,B});
         auto shared_count=intersection_size(node_tags[A],node_tags[B]);
         if (shared_count*specific_to_shared_tags<node_tags[A].size() and shared_count*specific_to_shared_tags<node_tags[B].size() and max_min_tags<std::min(node_tags[A].size(),node_tags[B].size())){
@@ -697,15 +707,15 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
             //now check for untagged (i.e. kmer coverage)
             if (tagkmers1.empty()){
                 std::cout<<"Generating tag kmers for current solution as this is the first walk-in situation"<<std::endl;
-                BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,5000,200000,1000);
+                BufferedTagKmerizer btk(ws.getLinkedReadDatastores()[0],31,5000,200000,1000);
                 std::set<bsg10xTag> exctags1,exctags2;
                 for (auto t:tags1) if (tags2.count(t)==0) exctags1.insert(t);
                 for (auto t:tags2) if (tags1.count(t)==0) exctags2.insert(t);
                 tagkmers1=btk.get_tags_kmers(6, exctags1);
                 tagkmers2=btk.get_tags_kmers(6, exctags2);
             }
-            StringKMerFactory kfa(ws.sg.nodes[llabs(p.first)].sequence,31);
-            StringKMerFactory kfb(ws.sg.nodes[llabs(p.second)].sequence,31);
+            StringKMerFactory kfa(sg.nodes[llabs(p.first)].sequence,31);
+            StringKMerFactory kfb(sg.nodes[llabs(p.second)].sequence,31);
             std::vector<uint64_t> ka,kb;
             kfa.create_kmers(ka);
             kfb.create_kmers(kb);
@@ -769,7 +779,7 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
                         std::cout << std::endl << "Solution #" << paths.size() + 1 << ".b:";
                         for (auto n:currh2) std::cout << " " << n;
                         std::cout << std::endl;
-                        paths.push_back({SequenceGraphPath(ws.sg, currh1), SequenceGraphPath(ws.sg, currh2)});
+                        paths.push_back({SequenceGraphPath(sg, currh1), SequenceGraphPath(sg, currh2)});
                     }
                     currh1.clear();
                     currh2.clear();
@@ -788,21 +798,23 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
 }
 
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
+    auto sg(ws.getGraph());
+    auto kci(ws.getKCI());
     //TODO: 3-part structure:
     // 1) find, report validate kci, report
     // 2) For each: solve
     // 3) report
 
     //find bubbly paths
-    auto bps=ws.sg.get_all_bubbly_subgraphs();
+    auto bps=sg.get_all_bubbly_subgraphs();
     sglib::OutputLog()<<"--- INITIAL bubbly paths ---"<<std::endl;
-    ws.sg.print_bubbly_subgraph_stats(bps);
+    sg.print_bubbly_subgraph_stats(bps);
     //TODO: write a more sophisticated kci check
     std::vector<SequenceSubGraph> kobps;
     for (auto &bp:bps){
         int kci_ok=0,kci_fail=0;
         for (auto i=0;i<bp.nodes.size();i+=3) {
-            auto dup_kci=ws.kci.compute_compression_for_node(bp.nodes[i],1);
+            auto dup_kci=kci.compute_compression_for_node(bp.nodes[i],1);
             if (dup_kci<1.25 or dup_kci>2.5) ++kci_fail;
             else ++kci_ok;
         }
@@ -811,7 +823,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
         }
     }
     sglib::OutputLog()<<"--- KCI OK bubbly paths ---"<<std::endl;
-    ws.sg.print_bubbly_subgraph_stats(kobps);
+    sg.print_bubbly_subgraph_stats(kobps);
 
 
 
@@ -856,19 +868,22 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
 
         }
         sglib::OutputLog() << "New solver: "<< solved << " bubbly paths solved, " << unsolved << " unsolved" << std::endl;
-        ws.sg.print_bubbly_subgraph_stats(solbubs);
+        sg.print_bubbly_subgraph_stats(solbubs);
         std::set<sgNodeID_t> used_nodes;
         for (auto p:paths) {
-            ws.sg.join_path(p,false);
+            sg.join_path(p,false);
             for (auto n:p.nodes) used_nodes.insert(n);
         }
-        for (auto n:used_nodes) ws.sg.remove_node(n);
+        for (auto n:used_nodes) sg.remove_node(n);
         //done!
     }
     return {};
 }
 
 void Untangler::pop_errors_by_ci_and_paths() {
+    auto sg(ws.getGraph());
+    auto kci(ws.getKCI());
+
     sglib::OutputLog()<<"Popping errors..."<<std::endl;
     auto bubbles=find_bubbles(200, 450);
     sglib::OutputLog()<<"Analysing "<<bubbles.size()<<" small bubbles for coverage"<<std::endl;
@@ -876,12 +891,12 @@ void Untangler::pop_errors_by_ci_and_paths() {
     std::ofstream bubblesf("bubbles_detail.csv");
     bubblesf<<"prev,b1,b2,next,ci_prev,ci1,ci2,ci_next"<<std::endl;
     for (auto bp:bubbles){
-        auto ci1=ws.kci.compute_compression_for_node(bp.first,1);
-        auto ci2=ws.kci.compute_compression_for_node(bp.second,1);
-        auto prev=ws.sg.get_bw_links(bp.first)[0].dest;
-        auto next=ws.sg.get_fw_links(bp.first)[0].dest;
-        auto cip=ws.kci.compute_compression_for_node(prev);
-        auto cin=ws.kci.compute_compression_for_node(next);
+        auto ci1=kci.compute_compression_for_node(bp.first,1);
+        auto ci2=kci.compute_compression_for_node(bp.second,1);
+        auto prev=sg.get_bw_links(bp.first)[0].dest;
+        auto next=sg.get_fw_links(bp.first)[0].dest;
+        auto cip=kci.compute_compression_for_node(prev);
+        auto cin=kci.compute_compression_for_node(next);
         bubblesf<<prev<<", "<<bp.first<<", "<<bp.second<<", "<<next<<", "<<cip<<", "<<ci1<<", "<<ci2<<", "<<cin<<std::endl;
         if (cip<1.5 and cin<1.5) {
             if (ci1 > .7 and ci2 < .1) {
@@ -897,7 +912,7 @@ void Untangler::pop_errors_by_ci_and_paths() {
         }
     }
     std::cout<<"Deleting "<<to_delete.size()<<" nodes as errors"<<std::endl;
-    for (auto &pb:to_delete) ws.sg.remove_node(pb);
+    for (auto &pb:to_delete) sg.remove_node(pb);
 }
 
 /**
@@ -908,22 +923,24 @@ void Untangler::pop_errors_by_ci_and_paths() {
  * @return
  */
 std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_neighbours(uint32_t min_size, float min_ci, float max_ci) {
+    auto sg(ws.getGraph());
+    auto linked_read_mappers(ws.getLinkedReadMappers());
 
     SequenceGraph tsg;
     std::map<sgNodeID_t,sgNodeID_t> general_to_tag;
     sglib::OutputLog()<<"Selecting selected_nodes..."<<std::endl;
     std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> neighbours;
     std::vector<std::set<bsg10xTag>> node_tags;
-    neighbours.resize(ws.sg.nodes.size());
-    node_tags.resize(ws.sg.nodes.size());
+    neighbours.resize(sg.nodes.size());
+    node_tags.resize(sg.nodes.size());
     uint64_t total_bp=0;
     auto selected_nodes=ws.select_from_all_nodes(min_size,1000000,20,200000, min_ci, max_ci);
     sglib::OutputLog()<<"Populating node tags..."<<std::endl;
     uint64_t tag_empty=0, tag_10=0, tag_50=0, tag_100=0, tag_1000=0;
     for (auto n:selected_nodes) {
-        general_to_tag[n]=tsg.add_node(ws.sg.nodes[n].sequence);
-        total_bp+=ws.sg.nodes[n].sequence.size();
-        for (auto t:ws.linked_read_mappers[0].get_node_tags(n)) node_tags[n].insert(t);
+        general_to_tag[n]=tsg.add_node(sg.nodes[n].sequence);
+        total_bp+=sg.nodes[n].sequence.size();
+        for (auto t:linked_read_mappers[0].get_node_tags(n)) node_tags[n].insert(t);
         if (node_tags[n].empty()) ++tag_empty;
         if (node_tags[n].size()>=10) ++tag_10;
         if (node_tags[n].size()>=50) ++tag_50;
@@ -975,22 +992,25 @@ std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_nei
  * @return
  */
 std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_size, float min_ci, float max_ci, float end_perc) {
+    auto sg(ws.getGraph());
+    auto linked_read_mappers(ws.getLinkedReadMappers());
+    auto linked_read_datastores(ws.getLinkedReadDatastores());
     //TODO: divide this and make iterative: start by big fish, then add small in-betweens, simplify transitives into subgraphs
     SequenceGraph tsg;
     std::map<sgNodeID_t,sgNodeID_t> general_to_tag,tag_to_general;
     sglib::OutputLog()<<"Selecting selected_nodes..."<<std::endl;
     std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> neighbours;
     std::vector<std::set<bsg10xTag>> node_tags;
-    neighbours.resize(ws.sg.nodes.size());
-    node_tags.resize(ws.sg.nodes.size());
+    neighbours.resize(sg.nodes.size());
+    node_tags.resize(sg.nodes.size());
     uint64_t total_bp=0;
     auto selected_nodes=ws.select_from_all_nodes(min_size,1000000,20,200000, min_ci, max_ci);
     for (auto n:selected_nodes) {
-        general_to_tag[n]=tsg.add_node(ws.sg.nodes[n].sequence);
+        general_to_tag[n]=tsg.add_node(sg.nodes[n].sequence);
         tag_to_general[general_to_tag[n]]=n;
         tag_to_general[-general_to_tag[n]]=-n;
-        total_bp+=ws.sg.nodes[n].sequence.size();
-        for (auto t:ws.linked_read_mappers[0].get_node_tags(n)) node_tags[n].insert(t);
+        total_bp+=sg.nodes[n].sequence.size();
+        for (auto t:linked_read_mappers[0].get_node_tags(n)) node_tags[n].insert(t);
     }
     sglib::OutputLog()<<selected_nodes.size()<<" selected totalling "<<total_bp<<"bp "<<std::endl;
 
@@ -1009,32 +1029,32 @@ std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_si
 //                std::cout<<"intersection set has "<<shared_tags.size()<<" elements"<<std::endl;
                 uint64_t n1_front_in=0,n1_front_total=0,n1_back_in=0,n1_back_total=0;
                 uint64_t n2_front_in=0,n2_front_total=0,n2_back_in=0,n2_back_total=0;
-                uint64_t n1first30point=ws.sg.nodes[n1].sequence.size()*end_perc;
-                uint64_t n1last30point=ws.sg.nodes[n1].sequence.size()*(1-end_perc);
-                for (auto rm:ws.linked_read_mappers[0].reads_in_node[n1]){
+                uint64_t n1first30point=sg.nodes[n1].sequence.size()*end_perc;
+                uint64_t n1last30point=sg.nodes[n1].sequence.size()*(1-end_perc);
+                for (auto rm:linked_read_mappers[0].reads_in_node[n1]){
                     if (rm.first_pos<n1first30point){
                         ++n1_front_total;
-                        if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n1_front_in;
+                        if (shared_tags.count(linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n1_front_in;
                     }
                     if (rm.last_pos>n1last30point){
                         ++n1_back_total;
-                        if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n1_back_in;
+                        if (shared_tags.count(linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n1_back_in;
                     }
                 }
                 auto n1f=(100.0*n1_front_in/n1_front_total);
                 auto n1b=(100.0*n1_back_in/n1_back_total);
 //                std::cout<<" Node "<<n1<<" "<<ws.sg.nodes[n1].sequence.size()<<"bp:  front -> "<<n1f<<" ("<<n1_front_in<<"/"<<n1_front_total<<")"
 //                         <<" back -> "<<n1b<<" ("<<n1_back_in<<"/"<<n1_back_total<<")"<<std::endl;
-                uint64_t n2first30point=ws.sg.nodes[n2].sequence.size()*end_perc;
-                uint64_t n2last30point=ws.sg.nodes[n2].sequence.size()*(1-end_perc);
-                for (auto rm:ws.linked_read_mappers[0].reads_in_node[n2]){
+                uint64_t n2first30point=sg.nodes[n2].sequence.size()*end_perc;
+                uint64_t n2last30point=sg.nodes[n2].sequence.size()*(1-end_perc);
+                for (auto rm:linked_read_mappers[0].reads_in_node[n2]){
                     if (rm.first_pos<n2first30point){
                         ++n2_front_total;
-                        if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n2_front_in;
+                        if (shared_tags.count(linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n2_front_in;
                     }
                     if (rm.last_pos>n2last30point){
                         ++n2_back_total;
-                        if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n2_back_in;
+                        if (shared_tags.count(linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n2_back_in;
                     }
                 }
                 auto n2f=(100.0*n2_front_in/n2_front_total);
@@ -1061,7 +1081,7 @@ std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_si
         }
     }
     tsg.write_to_gfa("tag_neighbours_imbdir.gfa");
-    BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,5000,200000,1000);
+    BufferedTagKmerizer btk(linked_read_datastores[0],31,5000,200000,1000);
     uint64_t perf_ts=0;
     for (auto n=1;n<tsg.nodes.size();++n){
         auto b=n;
@@ -1080,9 +1100,9 @@ std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_si
             auto C = tag_to_general[c];
             std::cout << "On original ids: " << A << " " << B << " " << C << std::endl;
             std::set<bsg10xTag> tags;
-            for (auto t:ws.linked_read_mappers[0].get_node_tags(A)) tags.insert(t);
-            for (auto t:ws.linked_read_mappers[0].get_node_tags(B)) tags.insert(t);
-            for (auto t:ws.linked_read_mappers[0].get_node_tags(C)) tags.insert(t);
+            for (auto t:linked_read_mappers[0].get_node_tags(A)) tags.insert(t);
+            for (auto t:linked_read_mappers[0].get_node_tags(B)) tags.insert(t);
+            for (auto t:linked_read_mappers[0].get_node_tags(C)) tags.insert(t);
             auto ab = get_all_tag_covered_paths(A, B, tags, btk);
             auto bc = get_all_tag_covered_paths(B, C, tags, btk);
             if (ab.size() == 1) std::cout << "A->B Solved!" << std::endl;
@@ -1104,17 +1124,18 @@ std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_si
 }
 
 uint64_t Untangler::connect_neighbours(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance) {
+    auto sg(ws.getGraph());
     //first find all nodes' neighbours
     auto tagneighbours=find_tag_neighbours(min_size,min_ci,max_ci);
-    std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> fndist(ws.sg.nodes.size()),bndist(ws.sg.nodes.size());
+    std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> fndist(sg.nodes.size()),bndist(sg.nodes.size());
     TagWalker tw(ws,{});
-    for (auto n=1;n<ws.sg.nodes.size();++n) {
+    for (auto n=1;n<sg.nodes.size();++n) {
         //explore from a node til hitting a neighbour, check if another selected node is on the way
         std::set<sgNodeID_t> ntn;
         for (auto nd:tagneighbours[n]) ntn.emplace(nd.first);
         if (ntn.empty()) continue;
-        fndist[n] = ws.sg.get_distances_to(n, ntn, max_distance);
-        bndist[n] = ws.sg.get_distances_to(-n, ntn, max_distance);
+        fndist[n] = sg.get_distances_to(n, ntn, max_distance);
+        bndist[n] = sg.get_distances_to(-n, ntn, max_distance);
     }
 
     //TODO: only fw or bw neighbour, corresponding, good tag intersection
@@ -1160,9 +1181,10 @@ void Untangler::connect_neighbours_trivial(uint64_t min_size, float min_ci, floa
                                            const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,
                                            const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,
                                            const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & fndist) {
+    auto sg(ws.getGraph());
     std::cout << "Finding trivial connections" << std::endl;
     std::vector<std::pair<sgNodeID_t, sgNodeID_t>> from_to;
-    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
+    for (auto n = 1; n < sg.nodes.size(); ++n) {
 //todo: check that the other node actually has THIS node as neighbour, validate TAG distances too
         if (fndist[n].size() == 1 and
             (fndist[n][0].first < 0 ? fndist : bndist)[llabs(fndist[n][0].first)].size() == 1) {
@@ -1181,22 +1203,22 @@ void Untangler::connect_neighbours_trivial(uint64_t min_size, float min_ci, floa
     uint64_t done = 0;
     for (auto ft:from_to) {
 //Create all possible paths between from_to (sg function):
-        auto allpaths = ws.sg.find_all_paths_between(ft.first, ft.second, 50000);
+        auto allpaths = sg.find_all_paths_between(ft.first, ft.second, 50000);
 //  is there only one? does it contain no selected node? other conditions? Optional: check the path is covered by kmers from tags on both ends of it.
         if (allpaths.size() != 1) continue;
         for (auto &n: allpaths[0].nodes) if (not tagneighbours[llabs(n)].empty()) continue;
         if (allpaths[0].nodes.empty()) continue; //XXX:these should actually be connected directly?
 //  create a single node with the sequence of the path, migrate connections from the nodes (sg function)
-        auto new_node = ws.sg.add_node(Node(allpaths[0].get_sequence()));
-        auto old_fw = ws.sg.get_fw_links(ft.first);
+        auto new_node = sg.add_node(Node(allpaths[0].get_sequence()));
+        auto old_fw = sg.get_fw_links(ft.first);
         for (auto &l:old_fw) {
-            if (l.dest == allpaths[0].nodes.front()) ws.sg.add_link(-ft.first, new_node, l.dist);
-            ws.sg.remove_link(l.source, l.dest);
+            if (l.dest == allpaths[0].nodes.front()) sg.add_link(-ft.first, new_node, l.dist);
+            sg.remove_link(l.source, l.dest);
         }
-        auto old_bw = ws.sg.get_bw_links(ft.second);
+        auto old_bw = sg.get_bw_links(ft.second);
         for (auto &l:old_bw) {
-            if (l.dest == -allpaths[0].nodes.back()) ws.sg.add_link(ft.second, -new_node, l.dist);
-            ws.sg.remove_link(l.source, l.dest);
+            if (l.dest == -allpaths[0].nodes.back()) sg.add_link(ft.second, -new_node, l.dist);
+            sg.remove_link(l.source, l.dest);
         }
 //std::cout<<"Replaced connection between "<<ft.first<<" and "<<ft.second<<" through nodes ";
 //for (auto &n:allpaths[0].nodes) std::cout<<n<<" ";
@@ -1212,11 +1234,14 @@ uint64_t Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float mi
                                            const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,
                                            const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,
                                            const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & fndist) {
+    auto sg(ws.getGraph());
+    auto linked_read_datastores(ws.getLinkedReadDatastores());
+    auto linked_read_mappers(ws.getLinkedReadMappers());
     std::cout << "Finding multi-path connections to same neighbour" << std::endl;
     std::vector<std::pair<sgNodeID_t, sgNodeID_t>> from_to;
-    std::vector<sgNodeID_t> single_fw(ws.sg.nodes.size(),0),single_bw(ws.sg.nodes.size(),0);
+    std::vector<sgNodeID_t> single_fw(sg.nodes.size(),0),single_bw(sg.nodes.size(),0);
     //first mark outputs going into a single neighbour
-    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
+    for (auto n = 1; n < sg.nodes.size(); ++n) {
         if (fndist[n].size()>=1) {
             auto fdest = fndist[n][0].first;
             bool fok = true;
@@ -1231,7 +1256,7 @@ uint64_t Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float mi
         }
     }
     //now look for happy matches where both have a single connection and it is the same one!
-    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
+    for (auto n = 1; n < sg.nodes.size(); ++n) {
         if (single_fw[n]>0 and single_fw[n]<n and single_bw[single_fw[n]]==-n) from_to.push_back({n,single_fw[n]});
         if (single_fw[n]<0 and -single_fw[n]<n and single_fw[-single_fw[n]]==-n) from_to.push_back({n,single_fw[n]});
         if (single_bw[n]>0 and single_bw[n]<n and single_bw[single_bw[n]]==n) from_to.push_back({-n,single_bw[n]});
@@ -1245,12 +1270,12 @@ uint64_t Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float mi
     std::vector<std::pair<std::pair<sgNodeID_t,sgNodeID_t>,SequenceGraphPath>> final_sols;
 #pragma omp parallel
     {
-        BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,5000,200000,1000);
+        BufferedTagKmerizer btk(linked_read_datastores[0],31,5000,200000,1000);
 #pragma omp for schedule(dynamic,10)
         for (auto idx = 0; idx < from_to.size(); ++idx) {
             auto &ft = from_to[idx];
 //Create all possible paths between from_to (sg function):
-            auto allpaths = ws.sg.find_all_paths_between(ft.first, ft.second, max_distance);
+            auto allpaths = sg.find_all_paths_between(ft.first, ft.second, max_distance);
 
             bool complex = false;
             for (auto p:allpaths) {
@@ -1268,8 +1293,8 @@ uint64_t Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float mi
             if (complex or allpaths.empty()) continue;
             std::cout << "Evaluating between " << allpaths.size() << " different paths to join " << ft.first << " and "
                       << ft.second << std::endl;
-            auto ntags = ws.linked_read_mappers[0].get_node_tags(ft.first);
-            for (auto t:ws.linked_read_mappers[0].get_node_tags(ft.second)) ntags.insert(t);
+            auto ntags = linked_read_mappers[0].get_node_tags(ft.first);
+            for (auto t:linked_read_mappers[0].get_node_tags(ft.second)) ntags.insert(t);
             auto neightagkmers = btk.get_tags_kmers(6, ntags);
             std::vector<SequenceGraphPath> sol;
             for (auto p:allpaths) {
@@ -1304,24 +1329,27 @@ uint64_t Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float mi
 }
 
 void Untangler::dettach_path_as_new_node(sgNodeID_t from, sgNodeID_t to, SequenceGraphPath path) {
-    auto new_node = ws.sg.add_node(Node(path.get_sequence()));
-    auto old_fw = ws.sg.get_fw_links(from);
+    auto sg(ws.getGraph());
+    auto new_node = sg.add_node(Node(path.get_sequence()));
+    auto old_fw = sg.get_fw_links(from);
     for (auto &l:old_fw) {
-        if (l.dest == path.nodes.front()) ws.sg.add_link(-from, new_node, l.dist);
-        ws.sg.remove_link(l.source, l.dest);
+        if (l.dest == path.nodes.front()) sg.add_link(-from, new_node, l.dist);
+        sg.remove_link(l.source, l.dest);
     }
-    auto old_bw = ws.sg.get_bw_links(to);
+    auto old_bw = sg.get_bw_links(to);
     for (auto &l:old_bw) {
-        if (l.dest == -path.nodes.back()) ws.sg.add_link(to, -new_node, l.dist);
-        ws.sg.remove_link(l.source, l.dest);
+        if (l.dest == -path.nodes.back()) sg.add_link(to, -new_node, l.dist);
+        sg.remove_link(l.source, l.dest);
     }
 }
 
 std::vector<SequenceGraphPath> Untangler::get_all_tag_covered_paths(sgNodeID_t from, sgNodeID_t to,
                                                                     std::set<bsg10xTag> &tags,
                                                                     BufferedTagKmerizer &btk) {
+    auto sg(ws.getGraph());
+
     int64_t max_distance=50000;
-    auto allpaths = ws.sg.find_all_paths_between(from, to, max_distance);
+    auto allpaths = sg.find_all_paths_between(from, to, max_distance);
 
 
     if (allpaths.empty()) return {};
@@ -1356,19 +1384,22 @@ std::vector<SequenceGraphPath> Untangler::get_all_tag_covered_paths(sgNodeID_t f
  */
 std::pair<float,float> Untangler::tag_read_percentage_at_ends(sgNodeID_t node, std::set<bsg10xTag> tags, float end_perc,
                                                               uint32_t end_size) {
+    auto sg(ws.getGraph());
+    auto linked_read_mappers(ws.getLinkedReadMappers());
+    auto linked_read_datastores(ws.getLinkedReadDatastores());
     auto n1=llabs(node);
-    if (end_size==0) end_size=ws.sg.nodes[n1].sequence.size()*end_perc;
+    if (end_size==0) end_size=sg.nodes[n1].sequence.size()*end_perc;
     auto first_chunk=end_size;
-    auto last_chunk=ws.sg.nodes[n1].sequence.size()-end_size;
+    auto last_chunk=sg.nodes[n1].sequence.size()-end_size;
     uint64_t n1_front_in=0,n1_front_total=0,n1_back_in=0,n1_back_total=0;
-    for (auto rm:ws.linked_read_mappers[0].reads_in_node[n1]){
+    for (auto rm:linked_read_mappers[0].reads_in_node[n1]){
         if (rm.first_pos<first_chunk){
             ++n1_front_total;
-            if (tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n1_front_in;
+            if (tags.count(linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n1_front_in;
         }
         if (rm.last_pos>last_chunk){
             ++n1_back_total;
-            if (tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n1_back_in;
+            if (tags.count(linked_read_datastores[0].get_read_tag(rm.read_id))>0) ++n1_back_in;
         }
     }
     auto n1f=(100.0*n1_front_in/n1_front_total);
@@ -1387,6 +1418,8 @@ std::pair<float,float> Untangler::tag_read_percentage_at_ends(sgNodeID_t node, s
  * @return
  */
 std::vector<Backbone> Untangler::create_backbones(uint64_t min_size, float min_ci, float max_ci, float end_perc, int min_shared_tags) {
+    auto linked_read_mappers(ws.getLinkedReadMappers());
+
     std::vector<Backbone> backbones;
     auto selected_nodes=ws.select_from_all_nodes(min_size,1000000,20,200000, min_ci, max_ci);
     std::vector<std::pair<sgNodeID_t , sgNodeID_t>> linked_nodes;
@@ -1394,7 +1427,7 @@ std::vector<Backbone> Untangler::create_backbones(uint64_t min_size, float min_c
     std::vector<std::set<bsg10xTag >> selected_nodes_tags;
     selected_nodes_tags.reserve(selected_nodes.size());
     std::cout<<"Computing directional connections among "<<selected_nodes.size()<<" nodes"<<std::endl;
-    for (auto n:selected_nodes) selected_nodes_tags.push_back(ws.linked_read_mappers[0].get_node_tags(n));
+    for (auto n:selected_nodes) selected_nodes_tags.push_back(linked_read_mappers[0].get_node_tags(n));
 #pragma omp parallel for schedule (static,50)
     for (auto i1=0;i1<selected_nodes.size();++i1){
         auto n1=selected_nodes[i1];
@@ -1496,12 +1529,15 @@ std::vector<Backbone> Untangler::create_backbones(uint64_t min_size, float min_c
 }
 
 void Untangler::unroll_simple_loops() {
-    std::vector<bool> used(ws.sg.nodes.size(),false);
-    for (auto i=1;i<ws.sg.nodes.size();++i){
-        if (ws.sg.nodes[i].status==sgNodeDeleted) continue;
+    auto sg(ws.getGraph());
+    auto kci(ws.getKCI());
+
+    std::vector<bool> used(sg.nodes.size(),false);
+    for (auto i=1;i<sg.nodes.size();++i){
+        if (sg.nodes[i].status==sgNodeDeleted) continue;
         if (used[i]) continue;
-        auto fwl=ws.sg.get_fw_links(i);
-        auto bwl=ws.sg.get_bw_links(i);
+        auto fwl=sg.get_fw_links(i);
+        auto bwl=sg.get_bw_links(i);
         for (auto f:fwl) {
             for (auto b:bwl) {
                 if (f.dest == -b.dest) {
@@ -1510,8 +1546,8 @@ void Untangler::unroll_simple_loops() {
                     //std::cout<< "simple loop detected between "
                     //         <<i<< " ("<<ws.sg.nodes[i].sequence.size()<<"bp, kci="<<ws.kci.compute_compression_for_node(i,1)<<") and "
                     //         << f.dest <<" ("<<ws.sg.nodes[llabs(f.dest)].sequence.size()<<"bp, kci="<<ws.kci.compute_compression_for_node(llabs(f.dest),1)<<")"<<std::endl;
-                    std::cout<<"seq"<<i<< ", "<<ws.sg.nodes[i].sequence.size()<<", "<<ws.kci.compute_compression_for_node(i,1)<<", seq"
-                            << llabs(f.dest) <<", "<<ws.sg.nodes[llabs(f.dest)].sequence.size()<<", "<<ws.kci.compute_compression_for_node(llabs(f.dest),1)<<std::endl;
+                    std::cout<<"seq"<<i<< ", "<<sg.nodes[i].sequence.size()<<", "<<kci.compute_compression_for_node(i,1)<<", seq"
+                            << llabs(f.dest) <<", "<<sg.nodes[llabs(f.dest)].sequence.size()<<", "<<kci.compute_compression_for_node(llabs(f.dest),1)<<std::endl;
                 }
             }
         }

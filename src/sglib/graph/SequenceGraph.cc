@@ -987,7 +987,7 @@ void SequenceGraph::print_bubbly_subgraph_stats(const std::vector<SequenceSubGra
     sglib::OutputLog()<<bubbly_paths.size()<<" bubbly paths"<<std::endl;
     auto &log_no_date=sglib::OutputLog(sglib::LogLevels::INFO,false);
     uint64_t total_size=0,total_solved_size=0;
-    for (auto &bp:bubbly_paths){
+    for (const auto &bp:bubbly_paths){
         total_size+=bp.total_size();
         SequenceGraphPath p1(*this),p2(*this);
         original_sizes.push_back(nodes[llabs(bp.nodes.front())].sequence.size());
@@ -1036,12 +1036,6 @@ void SequenceGraph::print_bubbly_subgraph_stats(const std::vector<SequenceSubGra
     }
     log_no_date<<std::endl;
 
-}
-
-const uint64_t SequenceSubGraph::total_size() const {
-    uint64_t t=0;
-    for (auto &n:nodes) t+=sg.nodes[llabs(n)].sequence.size();
-    return t;
 }
 
 std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size) {

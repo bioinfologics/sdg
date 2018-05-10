@@ -11,9 +11,9 @@
 class TagWalker {
 public:
     TagWalker(WorkSpace & _ws, std::pair<sgNodeID_t,sgNodeID_t> hspnp) :
-            ws(_ws),nodeA(hspnp.first),nodeB(hspnp.second),pathA(_ws.sg,{}),pathB(_ws.sg,{}){
-        tagsA=ws.linked_read_mappers[0].get_node_tags(nodeA);
-        tagsB=ws.linked_read_mappers[0].get_node_tags(nodeB);
+            ws(_ws),nodeA(hspnp.first),nodeB(hspnp.second),pathA(_ws.getGraph(),{}),pathB(_ws.getGraph(),{}){
+        tagsA=ws.getLinkedReadMappers()[0].get_node_tags(nodeA);
+        tagsB=ws.getLinkedReadMappers()[0].get_node_tags(nodeB);
     };
     float remove_crosstalk();
     void dump_reads(std::string prefix);

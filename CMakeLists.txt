@@ -76,7 +76,7 @@ endif()
 ## Compiler flags
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -w -Wno-deprecated -std=c++11")
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -fno-omit-frame-pointer -fsanitize=address -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -fno-omit-frame-pointer -fsanitize=address -ftemplate-backtrace-limit=0 -Wall")
 
 
 find_package (Threads)
@@ -294,8 +294,5 @@ SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES CPLUSPLUS ON)
 SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES SWIG_FLAGS "")
 SWIG_ADD_LIBRARY(bsg  LANGUAGE python SOURCES
         interfaces/SequenceGraph.i
-        src/sglib/graph/SequenceGraph.cc
-        src/sglib/graph/SequenceGraphPath.cpp
-        src/sglib/logger/OutputLog.cc
-        src/sglib/types/GenericTypes.hpp)
-SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} "")
+        )
+SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} sequence_graph "")

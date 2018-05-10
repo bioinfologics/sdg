@@ -51,7 +51,7 @@ void SequenceSubGraph::write_to_gfa(std::string filename) {
     }
 }
 
-uint64_t SequenceSubGraph::total_size() {
+uint64_t SequenceSubGraph::total_size() const {
     uint64_t t=0;
     for (auto &n:nodes) t+=sg.nodes[llabs(n)].sequence.size();
     return t;

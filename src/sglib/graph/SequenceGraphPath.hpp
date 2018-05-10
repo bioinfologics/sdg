@@ -5,7 +5,7 @@
 #ifndef BSG_SEQUENCEGRAPHPATH_HPP
 #define BSG_SEQUENCEGRAPHPATH_HPP
 
-
+#include <sglib/graph/SequenceSubGraph.hpp>
 #include <sglib/graph/SequenceGraph.hpp>
 
 class SequenceGraph;

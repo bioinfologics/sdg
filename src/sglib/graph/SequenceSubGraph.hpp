@@ -5,8 +5,8 @@
 #ifndef BSG_SEQUENCESUBGRAPH_HPP
 #define BSG_SEQUENCESUBGRAPH_HPP
 
-#include <sglib/graph/SequenceGraph.hpp>
-#include <sglib/graph/SequenceGraphPath.hpp>
+#include "sglib/graph/SequenceGraph.hpp"
+#include "sglib/graph/SequenceGraphPath.hpp"
 class SequenceGraph;
 
 class SequenceSubGraph {
@@ -18,10 +18,10 @@ public:
             this->nodes.emplace_back(nv.node);
         }
     };
-    SequenceGraphPath make_path(){}; // Returns empty path if not linear.
+//    SequenceGraphPath make_path(){}; // Returns empty path if not linear.
 
-    void write_to_gfa(std::string filename){};
-    uint64_t total_size(){};
+    void write_to_gfa(std::string filename);
+    uint64_t total_size() const ;
 
 private:
     const SequenceGraph& sg;
