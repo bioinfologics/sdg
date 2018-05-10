@@ -62,7 +62,7 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
         }
 
 //                std::cout<<"Repeat: [ "<<-b0<<" | "<<-b1<<" ] <-> "<<n<<" <-> [ "<<f0<<" | "<<f1<<" ]"<<std::endl;
-        std::set<prm10xTag_t> b0tags, b1tags, f0tags, f1tags;
+        std::set<bsg10xTag> b0tags, b1tags, f0tags, f1tags;
 
 //                std::cout<<"Reads in nodes -> f0:"<<scaff.lrmappers[0].reads_in_node[(f0 > 0 ? f0 : -f0)].size()
 //                        <<"   f1:"<<scaff.lrmappers[0].reads_in_node[(f1 > 0 ? f1 : -f1)].size()
@@ -83,14 +83,14 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
         b0tags.erase(0);
         b1tags.erase(0);
 
-        std::set<prm10xTag_t> shared1,shared2;
+        std::set<bsg10xTag> shared1,shared2;
 
         for (auto t:f0tags) if (f1tags.count(t)>0) {shared1.insert(t);};
         for (auto t:shared1){f0tags.erase(t);f1tags.erase(t);};
         for (auto t:b0tags) if (b1tags.count(t)>0) {shared2.insert(t);};
         for (auto t:shared2) {b0tags.erase(t);b1tags.erase(t);};
 
-        std::set<prm10xTag_t> aa, bb, ba, ab;
+        std::set<bsg10xTag> aa, bb, ba, ab;
         std::set_intersection(b0tags.begin(), b0tags.end(), f0tags.begin(), f0tags.end(),
                               std::inserter(aa, aa.end()));
         std::set_intersection(b0tags.begin(), b0tags.end(), f1tags.begin(), f1tags.end(),

@@ -20,7 +20,7 @@ void LinkedReadMapper::write(std::ofstream &output_file) {
     for (auto i=0;i<count;++i) {
         uint64_t mcount=reads_in_node[i].size();
         output_file.write((const char *) &mcount,sizeof(mcount));
-        output_file.write((const char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
+        output_file.write((const char *) reads_in_node[i].data(), sizeof(ReadMapper) * mcount);
     }
 }
 
@@ -35,7 +35,7 @@ void LinkedReadMapper::read(std::ifstream &input_file) {
         uint64_t mcount;
         input_file.read(( char *) &mcount,sizeof(mcount));
         reads_in_node[i].resize(mcount);
-        input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
+        input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapper) * mcount);
     }
 }
 
@@ -131,14 +131,14 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
      * Read mapping in parallel,
      */
     uint64_t thread_mapped_count[omp_get_max_threads()],thread_total_count[omp_get_max_threads()],thread_multimap_count[omp_get_max_threads()];
-    std::vector<ReadMapping> thread_mapping_results[omp_get_max_threads()];
+    std::vector<ReadMapper> thread_mapping_results[omp_get_max_threads()];
     sglib::OutputLog(sglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
 #pragma omp parallel
     {
         const int min_matches=1;
         std::vector<KmerIDX> readkmers;
         StreamKmerFactory skf(31);
-        ReadMapping mapping;
+        ReadMapper mapping;
         auto blrs=BufferedLRSequenceGetter(datastore,128*1024,260);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
         auto & mapped_count=thread_mapped_count[omp_get_thread_num()];

@@ -7,12 +7,11 @@
 
 #include <map>
 
-#include "sglib/SequenceGraph.hpp"
+#include "sglib/mappers/ReadMapper.hpp"
 #include "sglib/factories/KMerIDXFactory.h"
 #include "sglib/readers/SequenceGraphReader.h"
 #include "sglib/SMR.h"
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
-
 
 /**
  * @brief A mapper for linked reads from a LinkedReadsDatastore.
@@ -40,9 +39,13 @@ public:
 
     SequenceGraph & sg;
     LinkedReadsDatastore &datastore;
+    struct graphPosition{
+        sgNodeID_t node;
+        uint32_t pos;
+    };
     std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;
     uint64_t memlimit;
-    std::vector<std::vector<ReadMapping>> reads_in_node;
+    std::vector<std::vector<ReadMapper>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
 };
 

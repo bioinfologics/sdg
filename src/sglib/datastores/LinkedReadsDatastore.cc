@@ -2,6 +2,9 @@
 // Created by Bernardo Clavijo (EI) on 10/02/2018.
 //
 
+#include <sglib/logger/OutputLog.h>
+#include <fstream>
+#include <strings.h>
 #include "LinkedReadsDatastore.hpp"
 
 void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int _rs, size_t chunksize) {
@@ -17,11 +20,11 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     uint64_t tagged_reads=0;
     //first, build an index of tags and offsets
     sglib::OutputLog()<<"Building tag sorted chunks of "<<chunksize<<" pairs"<<std::endl;
-    std::vector<readData> readdatav;
+    std::vector<LinkedReadData> readdatav;
     readdatav.reserve(chunksize);
     std::vector<std::ifstream> chunkfiles;
-    std::vector<readData> next_in_chunk;
-    readData currrent_read;
+    std::vector<LinkedReadData> next_in_chunk;
+    LinkedReadData currrent_read;
     //First, create the chunk files
     uint64_t pairs=0;
     while (!feof(fd1) and !feof(fd2)) {

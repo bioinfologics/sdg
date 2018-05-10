@@ -70,6 +70,15 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     std::cout<<"Loaded graph with "<<sg.nodes.size()-1<<" nodes" <<std::endl;
     kci.read(wsfile);
     //todo: read all datastores and mappers!!!
+//    if (format>1) {
+//        wsfile.read((char *) &count,sizeof(count));
+//        for (auto i=0;i<count;++i){
+//            paired_read_datastores.emplace_back();
+//            paired_read_datastores.back().read(wsfile);
+//            paired_read_mappers.emplace_back(sg,linked_read_datastores.back());
+//            paired_read_mappers.back().read(wsfile);
+//        }
+//    }
     wsfile.read((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
         linked_read_datastores.emplace_back();

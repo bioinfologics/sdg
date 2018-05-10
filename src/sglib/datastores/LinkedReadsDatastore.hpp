@@ -5,17 +5,26 @@
 #ifndef BSG_LINKEDREADSDATASTORE_HPP
 #define BSG_LINKEDREADSDATASTORE_HPP
 
-#include <sglib/PairedReadMapper.hpp>
+#include <cstdint>
+#include <iostream>
+#include <string>
+#include <unordered_set>
+#include <set>
+#include <vector>
 #include <cstddef>
 #include <list>
+#include <fcntl.h>
+#include <unistd.h>
+#include <algorithm>
+#include <sglib/factories/KMerFactory.h>
 
 typedef uint32_t bsg10xTag;
 enum LinkedReadsFormat {UCDavis,raw,seq};
-struct readData {
+struct LinkedReadData {
     bsg10xTag tag;
     std::string seq1,seq2;
 
-    inline bool operator<(const struct readData &other) const{
+    inline bool operator<(const struct LinkedReadData &other) const{
         if (tag<other.tag) return true;
         return false;
     }
