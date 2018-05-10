@@ -44,14 +44,14 @@ void WorkSpace::dump_to_disk(std::string filename) {
     }
     //dump element type then use that element's own dump to dump it to this file
 
-    //[GONZA]
-    int v = (int) read_counts_header.size();
-    of.write((const char *) &v, sizeof(v));
-    for (int i=0; i<read_counts_header.size(); ++i){
-        int hs = (int) read_counts_header[i].size();
-        of.write((const char *) &hs, sizeof(hs));
-        of.write((const char *) read_counts_header[i].data(), hs*sizeof(char));
-    }
+//    //[GONZA]
+//    int v = (int) read_counts_header.size();
+//    of.write((const char *) &v, sizeof(v));
+//    for (int i=0; i<read_counts_header.size(); ++i){
+//        int hs = (int) read_counts_header[i].size();
+//        of.write((const char *) &hs, sizeof(hs));
+//        of.write((const char *) read_counts_header[i].data(), hs*sizeof(char));
+//    }
 }
 
 void WorkSpace::load_from_disk(std::string filename, bool log_only) {
@@ -93,16 +93,16 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
             path_datastores.back().read(wsfile);
         }
     }
-    //[GONZA]
-    int v;
-    wsfile.read((char *) &v, sizeof(v));
-    read_counts_header.resize(v);
-    for (int i=0; i<read_counts_header.size(); ++i){
-        int hs;
-        wsfile.read((char *) &hs, sizeof(hs));
-        read_counts_header[i].resize(hs);
-        wsfile.read((char *) read_counts_header[i].data(), hs*sizeof(char));
-    }
+//    //[GONZA]
+//    int v;
+//    wsfile.read((char *) &v, sizeof(v));
+//    read_counts_header.resize(v);
+//    for (int i=0; i<read_counts_header.size(); ++i){
+//        int hs;
+//        wsfile.read((char *) &hs, sizeof(hs));
+//        read_counts_header[i].resize(hs);
+//        wsfile.read((char *) read_counts_header[i].data(), hs*sizeof(char));
+//    }
 }
 
 void WorkSpace::print_log() {

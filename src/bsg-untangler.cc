@@ -128,13 +128,15 @@ int main(int argc, char * argv[]) {
 
         int cont=0;
         for (auto bb: backbones){
-            std::cout << "Backbone "<< cont << std::endl;
+            std::cout << ">Backbone "<< cont << std::endl;
             for (auto node: bb.nodes){
                 std::cout << "seq" << abs(node) << ",";
             }
-            std::endl;
+            std::cout << std::endl;
+//            std::cout << bb.get_sequence() << std::endl;
             cont++;
         }
+
         //auto tni=u.find_tag_neighbours_with_imbalance(5000, .5, 1.25,.25);
         //create a gfa with all nodes in nti, and connect them, dump the gfa.
 

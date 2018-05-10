@@ -326,12 +326,12 @@ void KmerCompressionIndex::compute_all_nodes_kci(uint16_t max_graph_freq) {
     }
 }
 
-void KmerCompressionIndex::compute_kci_profiles(std::string filename) {
+void KmerCompressionIndex::compute_kci_profiles(std::string filename, std::vector<sgNodeID_t> node_whitelist) {
     // vector to store vector of zero counts
     std::ofstream of(filename+"_kci.csv");
 
-    for (sgNodeID_t n=0; n<sg.nodes.size(); ++n){
-        of << "seq" <<n<<" | ";
+    for (sgNodeID_t n: node_whitelist){
+        of << "seq" << n <<" | ";
         for (auto var=0; var < read_counts.size(); ++var) {
             auto zero_count = 0;
             auto read_coverage = compute_node_coverage_profile(sg.nodes[n].sequence, var);

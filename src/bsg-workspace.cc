@@ -156,15 +156,19 @@ int main(int argc, char * argv[]) {
                       << "Use option --help to check command line arguments." << std::endl;
             exit(1);
         }
+        std::cout << "Loading workspace " << std::endl;
         WorkSpace w;
         w.load_from_disk(filename);
         if (!w.sg.is_sane()) {
             sglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
             //return 1;
         }
+        std::cout << "Done ... " << std::endl;
+        std::cout << "Dumping gfa workspace " << std::endl;
         if (not gfafilename.empty()){
             w.sg.write_to_gfa(gfafilename+".gfa");
         }
+        std::cout << "Done... " << std::endl;
         if (not nodeinfofilename.empty()){
            std::ofstream nif(nodeinfofilename+".csv");
            nif<<"ID, lenght, kci"<<std::endl;
@@ -197,16 +201,16 @@ int main(int argc, char * argv[]) {
                 exit(0);
             }
 
-            if (result.count("workspace")==0) {
-                throw cxxopts::OptionException(" please specify kmer spectra file");
-            }
+            //if (result.count("workspace")==0) {
+            //    throw cxxopts::OptionException(" please specify kmer spectra file");
+            //}
 
-        if (not seqfilename.empty()) {
-            std::ofstream sof(seqfilename + ".fasta");
-            for (auto n:w.select_from_all_nodes(min_size,max_size,0,UINT32_MAX, minKCI, maxKCI)){
-                sof<<">seq"<<n<<std::endl<<w.sg.nodes[n].sequence<<std::endl;
-            }
-        }
+        //if (not seqfilename.empty()) {
+        //    std::ofstream sof(seqfilename + ".fasta");
+        //    for (auto n:w.select_from_all_nodes(min_size,max_size,0,UINT32_MAX, minKCI, maxKCI)){
+        //        sof<<">seq"<<n<<std::endl<<w.sg.nodes[n].sequence<<std::endl;
+        //    }
+        //}
 
         } catch (const cxxopts::OptionException &e) {
             std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
@@ -264,14 +268,15 @@ int main(int argc, char * argv[]) {
     } else if (0==strcmp(argv[1],"kci-profile")) {
         std::string filename;
         std::string prefix;
-
+        std::string backbone_whitelist;
         try {
             cxxopts::Options options("bsg-workspace kci-profile", "BSG workspace kci-profile");
 
             options.add_options()
                     ("help", "Print help")
                     ("w,workspace", "workspace filename", cxxopts::value<std::string>(filename))
-                    ("p,prefix", "Prefix for the output file", cxxopts::value<std::string>(prefix));
+                    ("p,prefix", "Prefix for the output file", cxxopts::value<std::string>(prefix))
+                    ("b,whitelist", "Backbone nodeid list", cxxopts::value<std::string>(backbone_whitelist));
 
             auto newargc=argc-1;
             auto newargv=&argv[1];
@@ -294,8 +299,17 @@ int main(int argc, char * argv[]) {
 
         WorkSpace w;
         w.load_from_disk(filename);
-        std::cout << "Sacando" << std::endl;
-        w.kci.compute_kci_profiles(prefix);
+
+        std::vector<sgNodeID_t> whitelist;
+        // Load backbones whitelist
+        std::cout << "Loading the whitelist" << std::endl;
+        std::ifstream infile(backbone_whitelist);
+        sgNodeID_t a;
+        while (infile >> a){
+            whitelist.emplace_back(a);
+        }
+        std::cout << "Done loading the whitelist" << std::endl;
+        w.kci.compute_kci_profiles(prefix, whitelist);
     }
     else {
         std::cout<<"Please specify one of: make, log, status, dump"<<std::endl;
