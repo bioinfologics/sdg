@@ -126,16 +126,16 @@ int main(int argc, char * argv[]) {
         Untangler u(ws);
         auto backbones=u.create_backbones(min_backbone_node_size,min_backbone_ci, max_backbone_ci,tag_imbalance_ends,min_shared_tags);
 
-        int cont=0;
-        for (auto bb: backbones){
-            std::cout << ">Backbone "<< cont << std::endl;
-            for (auto node: bb.nodes){
-                std::cout << "seq" << abs(node) << ",";
-            }
-            std::cout << std::endl;
-//            std::cout << bb.get_sequence() << std::endl;
-            cont++;
-        }
+//        int cont=0;
+//        for (auto bb: backbones){
+//            std::cout << ">Backbone "<< cont << std::endl;
+//            for (auto node: bb.nodes){
+//                std::cout << "seq" << abs(node) << ",";
+//            }
+//            std::cout << std::endl;
+////            std::cout << bb.get_sequence() << std::endl;
+//            cont++;
+//        }
 
         //auto tni=u.find_tag_neighbours_with_imbalance(5000, .5, 1.25,.25);
         //create a gfa with all nodes in nti, and connect them, dump the gfa.

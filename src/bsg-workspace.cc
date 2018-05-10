@@ -308,6 +308,8 @@ int main(int argc, char * argv[]) {
         while (infile >> a){
             whitelist.emplace_back(a);
         }
+        std::cout << "whitelist node spread: " << whitelist[0] << "," << whitelist[whitelist.size()] << std::endl;
+
         std::cout << "Done loading the whitelist" << std::endl;
         w.kci.compute_kci_profiles(prefix, whitelist);
     }

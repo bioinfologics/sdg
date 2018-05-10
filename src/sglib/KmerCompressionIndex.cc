@@ -330,7 +330,8 @@ void KmerCompressionIndex::compute_kci_profiles(std::string filename, std::vecto
     // vector to store vector of zero counts
     std::ofstream of(filename+"_kci.csv");
 
-    for (sgNodeID_t n: node_whitelist){
+//    for (sgNodeID_t n: node_whitelist){
+    for (auto n=1; n<sg.nodes.size(); ++n)
         of << "seq" << n <<" | ";
         for (auto var=0; var < read_counts.size(); ++var) {
             auto zero_count = 0;
