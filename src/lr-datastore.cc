@@ -43,17 +43,6 @@ int main(int argc, char * argv[]) {
 
     LongReadsDatastore lr_ds(reads_filename, output);
 
-    LongReadsDatastore lr_preds("reads_index2.idx");
-
-
-    if (lr_ds.read_to_fileRecord == lr_preds.read_to_fileRecord) {
-        std::cout << "Success!!" << std::endl;
-    } else {
-        std::cout << "Failure!" << std::endl;
-    }
-
-    lr_ds.get_read_sequence(10);
-
     exit(0);
 }
 

@@ -201,20 +201,5 @@ int main(int argc, char * argv[]) {
         rm.update_graph_index();
         rm.map_reads();
     }
-
-    uint complexity=3;
-    // If exploring complexity nodes I return to the same node, then it is a loop.
-    auto loopy_nodes = sg.get_loopy_nodes(complexity);
-    // Find flanking nodes.
-    using flank_type = std::pair<sgNodeID_t, sgNodeID_t>;
-    flank_type flank;
-    std::set<flank_type> flanks;
-    for (const auto &loopy_node:loopy_nodes) {
-//        sg.get_flanking_nodes(loopy_node);
-        auto fwds=sg.get_fw_links(loopy_node);
-        auto bwds=sg.get_bw_links(loopy_node);
-    }
-
-    sglib::OutputLog() << "Done!" << std::endl;
     return 0;
 }
