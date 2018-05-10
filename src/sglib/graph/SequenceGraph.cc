@@ -128,6 +128,16 @@ std::vector<Link> SequenceGraph::get_bw_links(sgNodeID_t n) const {
     return get_fw_links (-n);
 }
 
+std::vector<sgNodeID_t> SequenceGraph::get_fw_nodes(sgNodeID_t n) const {
+    std::vector<sgNodeID_t > r;
+    for (auto&  l:links[(n>0 ? n : -n)]) if (l.source==-n) r.emplace_back(std::abs(l.dest));
+    return r;
+}
+
+std::vector<sgNodeID_t> SequenceGraph::get_bw_nodes(sgNodeID_t n) const {
+    return get_fw_nodes (-n);
+}
+
 bool Link::operator==(const Link a){
     if (a.source == this->source && a.dest == this->dest){
         return true;
@@ -791,7 +801,7 @@ SequenceGraph::find_path_between(const sgNodeID_t seed, const sgNodeID_t target,
 }
 
 std::vector<nodeVisitor>
-SequenceGraph::explore_nodes(std::vector<std::string> &nodes, uint size_limit, uint edge_limit) {
+SequenceGraph::explore_nodes(std::vector<std::string> &nodes, unsigned int size_limit, unsigned int edge_limit) {
     std::set<nodeVisitor> resultNodes;
     // For each node in the list
     for (const auto &n:nodes) {
@@ -1012,7 +1022,7 @@ bool SequenceGraph::is_loop(std::array<sgNodeID_t, 4> nodes) {
     return false;
 }
 
-std::vector<sgNodeID_t> SequenceGraph::get_loopy_nodes(uint complexity) {
+std::vector<sgNodeID_t> SequenceGraph::get_loopy_nodes(int complexity) {
     std::vector<sgNodeID_t> result;
 
 #pragma omp parallel for
@@ -1027,10 +1037,35 @@ std::vector<sgNodeID_t> SequenceGraph::get_loopy_nodes(uint complexity) {
         std::set<sgNodeID_t > tIntersect;
         std::set_intersection(fwd.begin(),fwd.end(),bwd.begin(),bwd.end(),std::inserter(tIntersect,tIntersect.begin()));
         if (!tIntersect.empty()) {
+            auto fwds=get_fw_nodes(n);
+            auto bwds=get_bw_nodes(n);
+            std::unordered_set<sgNodeID_t> s;
+            for (auto i : fwds)
+                s.insert( (i>0?i:-i) );
+            for (auto i : bwds)
+                s.insert( (i>0?i:-i) );
+
+            std::vector<sgNodeID_t > loop_neighbour_nodes( s.begin(), s.end() );
+            std::sort( loop_neighbour_nodes.begin(), loop_neighbour_nodes.end() );
+            if (loop_neighbour_nodes.size()>1) {
 #pragma omp critical (loopy_nodes)
-            result.push_back(n);
+                result.push_back(n);
+            }
         }
     }
 
     return result;
+}
+
+std::vector<sgNodeID_t> SequenceGraph::get_flanking_nodes(sgNodeID_t loopy_node) {
+    auto neighs = get_neighbour_nodes(loopy_node);
+    std::unordered_set<sgNodeID_t> neigh_set;
+    for (const auto &n:neighs){
+        auto neigh_neighs(get_neighbour_nodes(n));
+        auto fwns(get_fw_nodes(n));
+        auto bwns(get_bw_nodes(n));
+        if (fwns == bwns and std::find(fwns.begin(), fwns.end(), loopy_node)!=fwns.end() and std::find(bwns.begin(), bwns.end(), loopy_node)!=bwns.end()) continue;
+        neigh_set.insert(std::abs(n));
+    }
+    return std::vector<sgNodeID_t> (neigh_set.begin(), neigh_set.end());
 }

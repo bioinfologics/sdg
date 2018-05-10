@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.0)
 
 if (POLICY CMP0048)
     cmake_policy(SET CMP0048 NEW)
@@ -233,6 +233,9 @@ add_executable(gfa-indexer
 add_executable(lr-datastore
         src/lr-datastore.cc)
 
+add_executable(resolve-loops
+        src/resolve-loops.cc)
+
 target_link_libraries(bsg-workspace sequence_graph)
 target_link_libraries(bsg-datastore sequence_graph)
 target_link_libraries(bsg-mapper sequence_graph ${CMAKE_THREAD_LIBS_INIT})
@@ -251,6 +254,7 @@ target_link_libraries(lr-datastore sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract sequence_graph)
 target_link_libraries(gfa-set sequence_graph)
 target_link_libraries(gfa-indexer sequence_graph)
+target_link_libraries(resolve-loops sequence_graph)
 
 IF(BUILD_TESTING)
     add_executable(runBasicTests tests/sglib/basic_check.cc)
@@ -279,3 +283,24 @@ install(TARGETS sequence_graph DESTINATION lib)
 
 install(DIRECTORY src/sglib
         DESTINATION include)
+
+FIND_PACKAGE(SWIG)
+INCLUDE(${SWIG_USE_FILE})
+
+FIND_PACKAGE(PythonInterp 3)
+FIND_PACKAGE(PythonLibs 3)
+INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+
+SET(CMAKE_SWIG_FLAGS "")
+
+SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES CPLUSPLUS ON)
+SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES SWIG_FLAGS "")
+SWIG_ADD_LIBRARY(bsg  LANGUAGE python SOURCES
+        interfaces/SequenceGraph.i
+        src/sglib/graph/SequenceGraph.cc
+        src/sglib/graph/SequenceGraphPath.cpp
+        src/sglib/logger/OutputLog.cc
+        src/sglib/types/GenericTypes.hpp)
+SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} "")

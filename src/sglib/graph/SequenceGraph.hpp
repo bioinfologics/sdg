@@ -16,9 +16,9 @@
 #include <unordered_set>
 #include <sglib/types/KmerTypes.hpp>
 #include <sglib/types/GenericTypes.hpp>
-#include <sglib/readers/FileReader.h>
 #include <sglib/graph/SequenceSubGraph.hpp>
 #include <sglib/graph/SequenceGraphPath.hpp>
+#include <sglib/logger/OutputLog.h>
 
 class SequenceGraphPath;
 class SequenceSubGraph;
@@ -37,6 +37,23 @@ public:
 
     std::vector<Link> get_fw_links( sgNodeID_t n) const ;
     std::vector<Link> get_bw_links( sgNodeID_t n) const ;
+
+    std::vector<sgNodeID_t> get_fw_nodes(sgNodeID_t n) const;
+    std::vector<sgNodeID_t> get_bw_nodes(sgNodeID_t n) const;
+
+    std::unordered_set<sgNodeID_t> get_neighbour_nodes(sgNodeID_t n) const {
+        std::unordered_set<sgNodeID_t > result;
+        auto fwns(get_fw_nodes(n));
+        auto bwns(get_bw_nodes(n));
+        for (const auto &fn:fwns) {
+            result.insert(fn);
+        }
+        for (const auto &bn:bwns) {
+            result.insert(bn);
+        }
+        return result;
+    }
+
     bool is_sane() const;
 
     /*
@@ -48,12 +65,29 @@ public:
     std::vector<std::vector<sgNodeID_t >> find_bubbles(std::vector<sgNodeID_t>);
 
     /**
-    * This function returns all nodes that can be reached again if following the links of the next
-    * _complexity_ nodes
-    * @param complexity Maximum number of nodes in the loop complexity
-    * @return IDs of all the nodes involved in loops
+     * This function returns all nodes that can be reached again if following the links of the next
+     * _complexity_ nodes, in particular, this function returns the nodes represented
+     * by ****** in the following image:
+     *
+     *            ^^^^^^^^^^^
+     *           |           |
+     *  ========---*********---========
+     *
+     *  The number of elements in the outer (^^^^^) part of the loop is defined by "complexity"
+     * @param complexity Maximum number of nodes in the loop complexity
+     * @return IDs of all the nodes involved in loops
+     *
     */
-    std::vector<sgNodeID_t > get_loopy_nodes(uint complexity=3);
+    std::vector<sgNodeID_t > get_loopy_nodes(int complexity=3);
+
+    /**
+     *
+     * @param loopy_node
+     * @return IDs of flanking nodes to a repeat
+     * Returns the ========= nodes from get_loopy_nodes when passed the ********** node
+     */
+    std::vector<sgNodeID_t> get_flanking_nodes(sgNodeID_t loopy_node);
+
     /**
      * Finds all reachable nodes within size_limit and edge_limit from the specified node, returns a vector with edge and base distance
      * foreach reachable node.
@@ -88,7 +122,7 @@ public:
      * @return Returns a vector of all nodes in the solution
      *
      */
-    std::vector<nodeVisitor> explore_nodes(std::vector<std::string> &nodes, uint size_limit, uint edge_limit);
+    std::vector<nodeVisitor> explore_nodes(std::vector<std::string> &nodes, unsigned int size_limit, unsigned int edge_limit);
 
     // remove_node
     void remove_node(sgNodeID_t);
@@ -100,7 +134,7 @@ public:
     // expand_path --> creates an edge with the consensus of a path, eliminates old nodes if only in path and unused edges
     void join_all_unitigs();
     std::vector<SequenceGraphPath> get_all_unitigs(uint16_t min_nodes);
-    std::vector<SequenceSubGraph> get_all_tribbles();
+    std::vector<SequenceSubGraph> get_all_tribbles(){};
 
 
     void expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNodeID_t>> bw,
@@ -131,6 +165,7 @@ public:
     std::vector<std::string> oldnames;
     std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids;
 
+    Node& get_node(sgNodeID_t n) { return nodes[(n>0)?n:-n];}
     void consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes);
 
     std::vector<sgNodeID_t > find_canonical_repeats();
