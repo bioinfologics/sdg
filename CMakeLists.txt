@@ -148,7 +148,6 @@ add_library(sequence_graph SHARED
             src/sglib/SequenceGraphJournal.cc
             src/sglib/Scaffolder.cc
             src/sglib/filesystem/helpers.cc
-            src/sglib/PhaseScaffolder.cpp
             src/sglib/KmerCompressionIndex.cc
             src/sglib/GraphPartitioner.cc
             src/sglib/logger/OutputLog.cc
@@ -200,10 +199,6 @@ add_executable(bsg-untangler
         src/bsg-untangler.cc
         )
 
-add_executable(bsg-untangler2
-        src/bsg-untangler2.cc
-        )
-
 add_executable(bsg-flowmaker
         src/bsg-flowmaker.cc
         )
@@ -211,12 +206,6 @@ add_executable(bsg-flowmaker
 ## add executables and respective sources
 add_executable(gfa-pairscaff
         src/gfa-pairscaff.cc)
-
-add_executable(gfa-align EXCLUDE_FROM_ALL
-        src/gfa-align.cc)
-
-add_executable(phaser
-               src/phaser.cpp)
 
 add_executable(gfa-align
                src/gfa-align.cc)
@@ -251,14 +240,10 @@ target_link_libraries(bsg-datastore sequence_graph)
 target_link_libraries(bsg-mapper sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-flowmaker sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(gfa-dumppath sequence_graph)
-target_link_libraries(gfa-qc sequence_graph)
-target_link_libraries(bsg-untangler2 sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-kmerspectra sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(phaser sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(seq-thread sequence_graph)
 target_link_libraries(map-lr sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_SOURCE_DIR}/src/sglib/mappers/minimap2/libminimap2.a)
 target_link_libraries(lr-datastore sequence_graph ${CMAKE_THREAD_LIBS_INIT})
@@ -282,7 +267,6 @@ install(TARGETS
         seq-sorter
         gfa-pairscaff
         gfa-align
-        phaser
         map-lr
         seq-thread
         runBasicTests
