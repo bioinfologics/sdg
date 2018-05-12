@@ -156,14 +156,10 @@ add_library(sequence_graph SHARED
         src/sglib/factories/KMerIDXFactory.h
         src/sglib/SequenceGraph.hpp
         src/sglib/SequenceGraph.cc
-        #src/sglib/SequenceGraphJournal.hpp
-        #src/sglib/SequenceGraphJournal.cc
         src/sglib/filesystem/check_or_create_directory.cc
         src/sglib/filesystem/check_or_create_directory.h
         src/sglib/KmerCompressionIndex.cc
         src/sglib/KmerCompressionIndex.hpp
-        #src/sglib/GraphPartitioner.cc
-        #src/sglib/GraphPartitioner.hpp
         src/sglib/logger/OutputLog.h
         src/sglib/logger/OutputLog.cc
         src/sglib/datastores/LinkedReadsDatastore.cc
@@ -173,8 +169,8 @@ add_library(sequence_graph SHARED
         src/sglib/mappers/ReadMapper.hpp
         src/sglib/mappers/LinkedReadMapper.cc
         src/sglib/mappers/LinkedReadMapper.hpp
-        #src/sglib/mappers/PairedReadMapper.cc
-        #src/sglib/mappers/PairedReadMapper.hpp
+        src/sglib/mappers/PairedReadMapper.cc
+        src/sglib/mappers/PairedReadMapper.hpp
         src/sglib/datastores/PathsDatastore.cc
         src/sglib/datastores/PathsDatastore.hpp
         src/sglib/WorkSpace.cc

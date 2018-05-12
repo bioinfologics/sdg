@@ -63,6 +63,7 @@ int main(int argc, char * argv[]) {
         for (auto prds:pr_datastores){
             //create and load the datastore, and the mapper!
             w.paired_read_datastores.emplace_back(prds);
+            w.paired_read_mappers.emplace_back(w.sg,w.paired_read_datastores.back());
             w.add_log_entry("PairedReadDatastore imported from "+prds+" ("+std::to_string(w.paired_read_datastores.back().size())+" reads)");
         }
         for (auto lrds:lr_datastores){

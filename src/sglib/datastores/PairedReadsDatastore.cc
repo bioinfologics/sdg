@@ -113,4 +113,12 @@ std::string PairedReadsDatastore::get_read_sequence(size_t readID) {
 }
 
 
-
+const char* BufferedPairedSequenceGetter::get_read_sequence(uint64_t readID) {
+    size_t read_offset_in_file=datastore.readpos_offset+(datastore.readsize+1)*(readID-1);
+    if (read_offset_in_file<buffer_offset or read_offset_in_file+chunk_size>buffer_offset+bufsize) {
+        buffer_offset=read_offset_in_file;
+        lseek(fd,read_offset_in_file,SEEK_SET);
+        read(fd,buffer,bufsize);
+    }
+    return buffer+(read_offset_in_file-buffer_offset);
+}

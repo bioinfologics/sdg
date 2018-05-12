@@ -35,7 +35,7 @@ void WorkSpace::dump_to_disk(std::string filename) {
     of.write((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
         paired_read_datastores[i].write(of);
-        //paired_read_mappers[i].write(of);
+        paired_read_mappers[i].write(of);
     }
 
     //linker read datastores
@@ -93,8 +93,8 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     for (auto i=0;i<count;++i){
         paired_read_datastores.emplace_back();
         paired_read_datastores.back().read(wsfile);
-        //paired_read_mappers.emplace_back(sg,linked_read_datastores.back());
-        //paired_read_mappers.back().read(wsfile);
+        paired_read_mappers.emplace_back(sg,paired_read_datastores.back());
+        paired_read_mappers.back().read(wsfile);
     }
     wsfile.read((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
