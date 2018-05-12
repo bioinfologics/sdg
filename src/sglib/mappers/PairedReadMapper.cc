@@ -123,6 +123,7 @@ void PairedReadMapper::remap_all_reads() {
 
 void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 31;
+    std::atomic_int64_t nokmers(0);
     read_to_node.resize(datastore.size()+1);
     if (not reads_to_remap.empty())
         sglib::OutputLog()<<reads_to_remap.size()<<" selected reads / "<<read_to_node.size()-1<<" total"<<std::endl;
@@ -164,7 +165,9 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                 auto seq=blrs.get_read_sequence(readID);
                 readkmers.clear();
                 skf.produce_all_kmers(readID,seq,readkmers);
-
+                if (readkmers.size()==0) {
+                    ++nokmers;
+                }
                 for (auto &rk:readkmers) {
                     auto nk = kmer_to_graphposition.find(rk.kmer);
                     if (kmer_to_graphposition.end()!=nk) {
@@ -217,6 +220,7 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
         total_count+=thread_total_count[i];
         multimap_count+=thread_multimap_count[i];
     }
+    sglib::OutputLog(sglib::LogLevels::INFO)<<"Reads without k-mers: "<<nokmers<<std::endl;
     sglib::OutputLog(sglib::LogLevels::INFO)<<"Reads mapped: "<<mapped_count<<" / "<<total_count<<" ("<<multimap_count<<" multi-mapped)"<<std::endl;
 #pragma omp parallel for
     for (sgNodeID_t n=1;n<reads_in_node.size();++n){
@@ -262,4 +266,20 @@ void PairedReadMapper::remove_obsolete_mappings(){
         }
     }
     std::cout << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
+}
+
+void PairedReadMapper::print_stats(){
+    uint64_t none=0,single=0,both=0,same=0;
+    for (uint64_t r1=1;r1<read_to_node.size();r1+=2){
+        if (read_to_node[r1]==0) {
+            if (read_to_node[r1+1]==0) ++none;
+            else ++single;
+        }
+        else if (read_to_node[r1+1]==0) ++single;
+        else {
+            ++both;
+            if (read_to_node[r1]==read_to_node[r1+1]) ++same;
+        }
+    }
+    sglib::OutputLog()<<"Mapped pairs from "<<datastore.filename<<": None: "<<none<<"  Single: "<<single<<"  Both: "<<both<<" ("<<same<<" same)"<<std::endl;
 }

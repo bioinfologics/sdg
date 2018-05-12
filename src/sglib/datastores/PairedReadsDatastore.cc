@@ -16,8 +16,6 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     auto fd1=fopen(read1_filename.c_str(),"r");
     auto fd2=fopen(read2_filename.c_str(),"r");
     char readbuffer[1000];
-    uint64_t r1offset,r2offset;
-    uint64_t tagged_reads=0;
     //first, build an index of tags and offsets
     sglib::OutputLog()<<"Reading chunks of "<<chunksize<<" pairs"<<std::endl;
     std::vector<PairedReadData> readdatav;
@@ -35,10 +33,16 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     while (!feof(fd1) and !feof(fd2)) {
 
         if (NULL == fgets(readbuffer, 999, fd1)) continue;
+        if (NULL == fgets(readbuffer, 999, fd1)) continue;
         currrent_read.seq1=std::string(readbuffer);
+        if (NULL == fgets(readbuffer, 999, fd1)) continue;
+        if (NULL == fgets(readbuffer, 999, fd1)) continue;
         if (currrent_read.seq1.back()=='\n') currrent_read.seq1.resize(currrent_read.seq1.size()-1);
         if (NULL == fgets(readbuffer, 999, fd2)) continue;
+        if (NULL == fgets(readbuffer, 999, fd2)) continue;
         currrent_read.seq2=std::string(readbuffer);
+        if (NULL == fgets(readbuffer, 999, fd2)) continue;
+        if (NULL == fgets(readbuffer, 999, fd2)) continue;
         if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
         ++pairs;
         readdatav.push_back(currrent_read);

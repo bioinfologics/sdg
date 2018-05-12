@@ -34,7 +34,7 @@ public:
     uint64_t process_reads_from_file(uint8_t, uint16_t, std::unordered_map<uint64_t , graphPosition> &, std::string , uint64_t, bool tags=false, std::unordered_set<uint64_t> const & reads_to_remap={});
     void save_to_disk(std::string filename);
     void load_from_disk(std::string filename);*/
-    void print_stats(){};
+    void print_stats();
 
     SequenceGraph & sg;
     PairedReadsDatastore &datastore;

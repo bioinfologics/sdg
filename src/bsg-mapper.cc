@@ -57,6 +57,7 @@ int main(int argc, char * argv[]) {
     for (auto &m:ws.paired_read_mappers) {
         m.update_graph_index();
         m.map_reads();
+        m.print_stats();
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
     }
     for (auto &m:ws.linked_read_mappers) {
