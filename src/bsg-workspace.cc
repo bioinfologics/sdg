@@ -74,7 +74,7 @@ int main(int argc, char * argv[]) {
         }
 
 
-        w.dump_to_disk(output);
+        w.dump_to_disk(output+".bsgws");
 
     }
     else if (0==strcmp(argv[1],"log")) {
