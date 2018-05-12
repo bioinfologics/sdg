@@ -334,13 +334,13 @@ void KmerCompressionIndex::compute_kci_profiles(std::string filename, std::vecto
 
 
 //    for (sgNodeID_t n: node_whitelist){
-#pragma omp parallel for
+        // if para chequear que el nodo esta en el grafo
+#pragma omp parallel for schedule(static, 20)
     for (auto n=1; n<sg.nodes.size(); ++n){
         if (sg.nodes[n].status == sgNodeDeleted) continue;
         std::stringstream ss;
         ss << "seq" << n <<" | ";
         // TODO: complete this to throw a warning when accessing a deleted node
-        //std::cout << "WARINIG: " <<std::endl;
         for (auto var=0; var < read_counts.size(); ++var) {
             auto zero_count = 0;
             auto read_coverage = compute_node_coverage_profile(sg.nodes[n].sequence, var);
