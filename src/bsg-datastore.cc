@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
+#include <sglib/datastores/PairedReadsDatastore.hpp>
 #include "cxxopts.hpp"
 
 
@@ -52,9 +53,14 @@ int main(int argc, char * argv[]) {
         //===== DATASTORE CREATION =====
         if (read_type == "10x" or read_type == "10xseq") {
             LinkedReadsDatastore ds(read1, read2, output+".lrseq",(read_type == "10xseq" ? LinkedReadsFormat::seq
-                                                                                 : LinkedReadsFormat::UCDavis),readsize);
+                                                                                         : LinkedReadsFormat::UCDavis),readsize);
             //ds.dump_index_to_disk(output+".lrIdx");
-        } else {
+        }
+        else if (read_type == "paired") {
+            PairedReadsDatastore ds(read1, read2, output+".prseq",readsize);
+            //ds.dump_index_to_disk(output+".lrIdx");
+        }
+        else {
             std::cout << "read_type '" << read_type << "' is not supported (yet?)" << std::endl;
         }
 

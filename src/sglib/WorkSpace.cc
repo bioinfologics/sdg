@@ -9,6 +9,7 @@ void WorkSpace::add_log_entry(std::string text) {
 }
 
 void WorkSpace::dump_to_disk(std::string filename) {
+    sglib::OutputLog()<<"Dumping workspace to "<<filename<<std::endl;
     std::ofstream of(filename);
     //dump log
     uint64_t count;
@@ -29,6 +30,14 @@ void WorkSpace::dump_to_disk(std::string filename) {
     //dump KCI
     kci.write(of);
 
+    //paired read datastores
+    count=paired_read_datastores.size();
+    of.write((char *) &count,sizeof(count));
+    for (auto i=0;i<count;++i){
+        paired_read_datastores[i].write(of);
+        //paired_read_mappers[i].write(of);
+    }
+
     //linker read datastores
     count=linked_read_datastores.size();
     of.write((char *) &count,sizeof(count));
@@ -36,6 +45,7 @@ void WorkSpace::dump_to_disk(std::string filename) {
         linked_read_datastores[i].write(of);
         linked_read_mappers[i].write(of);
     }
+
 
     count=path_datastores.size();
     of.write((char *) &count,sizeof(count));
@@ -79,6 +89,13 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
 //            paired_read_mappers.back().read(wsfile);
 //        }
 //    }
+    wsfile.read((char *) &count,sizeof(count));
+    for (auto i=0;i<count;++i){
+        paired_read_datastores.emplace_back();
+        paired_read_datastores.back().read(wsfile);
+        //paired_read_mappers.emplace_back(sg,linked_read_datastores.back());
+        //paired_read_mappers.back().read(wsfile);
+    }
     wsfile.read((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
         linked_read_datastores.emplace_back();

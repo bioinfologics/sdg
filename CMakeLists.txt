@@ -168,8 +168,8 @@ add_library(sequence_graph SHARED
         src/sglib/logger/OutputLog.cc
         src/sglib/datastores/LinkedReadsDatastore.cc
         src/sglib/datastores/LinkedReadsDatastore.hpp
-        #src/sglib/datastores/PairedReadsDatastore.cc
-        #src/sglib/datastores/PairedReadsDatastore.hpp
+        src/sglib/datastores/PairedReadsDatastore.cc
+        src/sglib/datastores/PairedReadsDatastore.hpp
         src/sglib/mappers/ReadMapper.hpp
         src/sglib/mappers/LinkedReadMapper.cc
         src/sglib/mappers/LinkedReadMapper.hpp

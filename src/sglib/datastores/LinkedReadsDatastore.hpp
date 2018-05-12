@@ -94,7 +94,7 @@ class BufferedTagKmerizer{
 
 public:
     BufferedTagKmerizer(const LinkedReadsDatastore &_ds, char K, size_t _tagbufsize, size_t _bufsize, size_t _chunk_size):
-            K(K),blrsg(_ds,_bufsize,_chunk_size),tagbufsize(_tagbufsize),skf(K),datastore(_ds){counts.reserve(1000000);};
+            K(K),bprsg(_ds,_bufsize,_chunk_size),tagbufsize(_tagbufsize),skf(K),datastore(_ds){counts.reserve(1000000);};
     std::unordered_set<uint64_t> get_tags_kmers(int min_tag_cov, std::set<bsg10xTag> tags);
     void get_tag_kmers(bsg10xTag tag);
 
@@ -135,7 +135,7 @@ private:
 
     const LinkedReadsDatastore & datastore;
     uint8_t K;
-    BufferedLRSequenceGetter blrsg;
+    BufferedLRSequenceGetter bprsg;
     size_t tagbufsize;
     std::list<struct tag_kmers_t> tag_kmers_buffer;
     StreamKmerFactory skf;
