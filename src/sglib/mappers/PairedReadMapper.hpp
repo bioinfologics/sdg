@@ -44,9 +44,10 @@ public:
         uint32_t pos;
     };
     std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;
-    uint64_t memlimit;
     std::vector<std::vector<ReadMapper>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
+    std::vector<uint64_t> rfdist;
+    std::vector<uint64_t> frdist;
 };
 
 

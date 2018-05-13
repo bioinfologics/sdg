@@ -288,8 +288,10 @@ void PairedReadMapper::print_stats(){
 }
 
 std::vector<uint64_t> PairedReadMapper::size_distribution() {
-    std::vector<uint64_t> rfdist(20000);
-    std::vector<uint64_t> frdist(20000);
+    frdist.clear();
+    frdist.resize(20000);
+    rfdist.clear();
+    rfdist.resize(20000);
     uint64_t frcount=0,rfcount=0;
     for (uint64_t r1=1;r1<read_to_node.size();r1+=2){
 
@@ -313,9 +315,8 @@ std::vector<uint64_t> PairedReadMapper::size_distribution() {
             }
         }
     }
-    std::cout<<"Read orientations:  FR: "<<frcount<<"  RF: "<<rfcount<<std::endl;
+    //std::cout<<"Read orientations:  FR: "<<frcount<<"  RF: "<<rfcount<<std::endl;
     if (frcount>rfcount){
         return frdist;
     } else return rfdist;
-    //sglib::OutputLog()<<"Mapped pairs from "<<datastore.filename<<": None: "<<none<<"  Single: "<<single<<"  Both: "<<both<<" ("<<same<<" same)"<<std::endl;
 }
