@@ -54,10 +54,16 @@ int main(int argc, char * argv[]) {
     ws.add_log_entry("bsg-mapper run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     sglib::OutputLog()<<"Mapping reads..."<<std::endl;
+    auto pri=0;
     for (auto &m:ws.paired_read_mappers) {
         m.update_graph_index();
         m.map_reads();
         m.print_stats();
+        auto sdist=m.size_distribution();
+        std::ofstream df("prdist_"+std::to_string(pri++)+".csv");
+        for (auto i=0;i<sdist.size();++i){
+            if (sdist[i]>0) df<<i<<", "<<sdist[i]<<std::endl;
+        }
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
     }
     for (auto &m:ws.linked_read_mappers) {

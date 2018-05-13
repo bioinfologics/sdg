@@ -90,7 +90,7 @@ void LinkedReadMapper::update_graph_index() {
 class StreamKmerFactory : public  KMerFactory {
 public:
     explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
-    inline void produce_all_kmers(const int64_t seqID, const char * seq, std::vector<KmerIDX> &mers){
+    inline void produce_all_kmers(const char * seq, std::vector<KmerIDX> &mers){
         // TODO: Adjust for when K is larger than what fits in uint64_t!
         last_unknown=0;
         fkmer=0;
@@ -104,9 +104,11 @@ public:
                 if (fkmer <= rkmer) {
                     // Is fwd
                     mers.emplace_back(fkmer);
+                    mers.back().contigID=1;
                 } else {
                     // Is bwd
                     mers.emplace_back(rkmer);
+                    mers.back().contigID=-1;
                 }
             }
             ++s;
@@ -163,13 +165,13 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                 //get all kmers from read
                 auto seq=blrs.get_read_sequence(readID);
                 readkmers.clear();
-                skf.produce_all_kmers(readID,seq,readkmers);
+                skf.produce_all_kmers(seq,readkmers);
 
                 for (auto &rk:readkmers) {
                     auto nk = kmer_to_graphposition.find(rk.kmer);
                     if (kmer_to_graphposition.end()!=nk) {
                         //get the node just as node
-                        sgNodeID_t nknode = (nk->second.node > 0 ? nk->second.node : -nk->second.node);
+                        sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation
                         if (mapping.node == 0) {
                             mapping.node = nknode;

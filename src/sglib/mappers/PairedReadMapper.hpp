@@ -30,6 +30,7 @@ public:
     void remap_all_reads();
     void map_read(uint64_t readID);
     void remove_obsolete_mappings();
+    std::vector<uint64_t> size_distribution();
     /*void remap_reads();
     uint64_t process_reads_from_file(uint8_t, uint16_t, std::unordered_map<uint64_t , graphPosition> &, std::string , uint64_t, bool tags=false, std::unordered_set<uint64_t> const & reads_to_remap={});
     void save_to_disk(std::string filename);

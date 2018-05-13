@@ -90,7 +90,7 @@ void PairedReadMapper::update_graph_index() {
 class StreamKmerFactory : public  KMerFactory {
 public:
     explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
-    inline void produce_all_kmers(const int64_t seqID, const char * seq, std::vector<KmerIDX> &mers){
+    inline void produce_all_kmers(const char * seq, std::vector<KmerIDX> &mers){
         // TODO: Adjust for when K is larger than what fits in uint64_t!
         last_unknown=0;
         fkmer=0;
@@ -104,9 +104,11 @@ public:
                 if (fkmer <= rkmer) {
                     // Is fwd
                     mers.emplace_back(fkmer);
+                    mers.back().contigID=1;
                 } else {
                     // Is bwd
                     mers.emplace_back(rkmer);
+                    mers.back().contigID=-1;
                 }
             }
             ++s;
@@ -164,7 +166,7 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                 //get all kmers from read
                 auto seq=blrs.get_read_sequence(readID);
                 readkmers.clear();
-                skf.produce_all_kmers(readID,seq,readkmers);
+                skf.produce_all_kmers(seq,readkmers);
                 if (readkmers.size()==0) {
                     ++nokmers;
                 }
@@ -172,7 +174,7 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                     auto nk = kmer_to_graphposition.find(rk.kmer);
                     if (kmer_to_graphposition.end()!=nk) {
                         //get the node just as node
-                        sgNodeID_t nknode = (nk->second.node > 0 ? nk->second.node : -nk->second.node);
+                        sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation
                         if (mapping.node == 0) {
                             mapping.node = nknode;
@@ -184,6 +186,7 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                             mapping.last_pos = nk->second.pos;
                             ++mapping.unique_matches;
                         } else {
+                            //TODO:break mapping by change of direction and such
                             if (mapping.node != nknode) {
                                 mapping.node = 0;
                                 ++multimap_count;
@@ -282,4 +285,37 @@ void PairedReadMapper::print_stats(){
         }
     }
     sglib::OutputLog()<<"Mapped pairs from "<<datastore.filename<<": None: "<<none<<"  Single: "<<single<<"  Both: "<<both<<" ("<<same<<" same)"<<std::endl;
+}
+
+std::vector<uint64_t> PairedReadMapper::size_distribution() {
+    std::vector<uint64_t> rfdist(20000);
+    std::vector<uint64_t> frdist(20000);
+    uint64_t frcount=0,rfcount=0;
+    for (uint64_t r1=1;r1<read_to_node.size();r1+=2){
+
+        if (read_to_node[r1]!=0 and read_to_node[r1]==read_to_node[r1+1]) {
+            auto node=read_to_node[r1];
+            ReadMapper rm1,rm2;
+            for (auto rm:reads_in_node[node]){
+                if (rm.read_id==r1) rm1=rm;
+                if (rm.read_id==r1+1) rm2=rm;
+            }
+            if (rm1.first_pos>rm2.first_pos) std::swap(rm1,rm2);
+            auto d=rm2.last_pos-rm1.first_pos;
+            if (d>=rfdist.size()) continue;
+            if (rm1.rev and !rm2.rev) {
+                ++rfdist[d];
+                ++rfcount;
+            }
+            if (!rm1.rev and rm2.rev) {
+                ++frdist[d];
+                ++frcount;
+            }
+        }
+    }
+    std::cout<<"Read orientations:  FR: "<<frcount<<"  RF: "<<rfcount<<std::endl;
+    if (frcount>rfcount){
+        return frdist;
+    } else return rfdist;
+    //sglib::OutputLog()<<"Mapped pairs from "<<datastore.filename<<": None: "<<none<<"  Single: "<<single<<"  Both: "<<both<<" ("<<same<<" same)"<<std::endl;
 }
