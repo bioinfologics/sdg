@@ -49,18 +49,18 @@ int main(int argc, char * argv[]) {
         w.load_from_disk(filename);
         //auto min_size = 700;
         int LENGTH = 1000;
-
-        for (auto n=1; n<w.sg.nodes.size(); ++n){
+        auto sg(w.getGraph());
+        for (auto n=1; n<sg.nodes.size(); ++n){
             // All components has to be long
-            if (w.sg.get_bw_links(n).size()==2 and
-              w.sg.get_fw_links(n).size()==2 and 
-              w.sg.nodes[llabs(w.sg.get_bw_links(n)[0].dest)].sequence.size()>=LENGTH and 
-              w.sg.nodes[llabs(w.sg.get_bw_links(n)[1].dest)].sequence.size()>=LENGTH and 
-              w.sg.nodes[llabs(w.sg.get_fw_links(n)[0].dest)].sequence.size()>=LENGTH and 
-              w.sg.nodes[llabs(w.sg.get_fw_links(n)[1].dest)].sequence.size()>=LENGTH){
+            if (sg.get_bw_links(n).size()==2 and
+              sg.get_fw_links(n).size()==2 and
+              sg.nodes[llabs(sg.get_bw_links(n)[0].dest)].sequence.size()>=LENGTH and
+              sg.nodes[llabs(sg.get_bw_links(n)[1].dest)].sequence.size()>=LENGTH and
+              sg.nodes[llabs(sg.get_fw_links(n)[0].dest)].sequence.size()>=LENGTH and
+              sg.nodes[llabs(sg.get_fw_links(n)[1].dest)].sequence.size()>=LENGTH){
                
-                std::cout << "seq"<< llabs(w.sg.get_fw_links(n)[0].dest) << ",seq" << llabs(w.sg.get_fw_links(n)[1].dest) << ",seq" << n << ",seq" << llabs(w.sg.get_bw_links(n)[0].dest) << ",seq" << llabs(w.sg.get_bw_links(n)[1].dest) <<"," << std::endl;
-                std::cout << w.sg.nodes[llabs(w.sg.get_fw_links(n)[0].dest)].sequence.size() << "," << w.sg.nodes[llabs(w.sg.get_fw_links(n)[1].dest)].sequence.size() << "," << n << "," << w.sg.nodes[llabs(w.sg.get_bw_links(n)[0].dest)].sequence.size() << "," << w.sg.nodes[llabs(w.sg.get_bw_links(n)[1].dest)].sequence.size() << std::endl;
+                std::cout << "seq"<< llabs(sg.get_fw_links(n)[0].dest) << ",seq" << llabs(sg.get_fw_links(n)[1].dest) << ",seq" << n << ",seq" << llabs(sg.get_bw_links(n)[0].dest) << ",seq" << llabs(sg.get_bw_links(n)[1].dest) <<"," << std::endl;
+                std::cout << sg.nodes[llabs(sg.get_fw_links(n)[0].dest)].sequence.size() << "," << sg.nodes[llabs(sg.get_fw_links(n)[1].dest)].sequence.size() << "," << n << "," << sg.nodes[llabs(sg.get_bw_links(n)[0].dest)].sequence.size() << "," << sg.nodes[llabs(sg.get_bw_links(n)[1].dest)].sequence.size() << std::endl;
              }
 
 

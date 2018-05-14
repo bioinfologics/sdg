@@ -53,8 +53,8 @@ int main(int argc, char * argv[]) {
         //===== LOAD GRAPH =====
         WorkSpace w;
         w.add_log_entry("Created with bsg-makeworkspace");
-        w.sg.load_from_gfa(gfa_filename);
-        w.add_log_entry("GFA imported from "+gfa_filename+" ("+std::to_string(w.sg.nodes.size()-1)+" nodes)");
+        w.getGraph().load_from_gfa(gfa_filename);
+        w.add_log_entry("GFA imported from "+gfa_filename+" ("+std::to_string(w.getGraph().nodes.size()-1)+" nodes)");
 
         if (kci_filename!=""){
             std::cout << "Loading kci files..." <<std::endl;
@@ -70,7 +70,7 @@ int main(int argc, char * argv[]) {
             for (std::string &filename: kci_files){
                 std::cout << "Loading " << filename << std::endl;
                 w.read_counts_header.push_back(filename);
-                w.kci.load_from_disk(filename);
+                w.getKCI().load_from_disk(filename);
                 w.add_log_entry("KCI kmer spectra imported from "+filename);
             }
             std::cout << "Files loaded: ";
@@ -79,9 +79,9 @@ int main(int argc, char * argv[]) {
         }
         for (auto lrds:lr_datastores){
             //create and load the datastore, and the mapper!
-            w.linked_read_datastores.emplace_back(lrds);
-            w.linked_read_mappers.emplace_back(w.sg,w.linked_read_datastores.back());
-            w.add_log_entry("LinkedReadDatastore imported from "+lrds+" ("+std::to_string(w.linked_read_datastores.back().size())+" reads)");
+            w.getLinkedReadDatastores().emplace_back(lrds);
+            w.getLinkedReadMappers().emplace_back(w.getGraph(),w.getLinkedReadDatastores().back());
+            w.add_log_entry("LinkedReadDatastore imported from "+lrds+" ("+std::to_string(w.getLinkedReadDatastores().back().size())+" reads)");
         }
 
         w.dump_to_disk(output);
@@ -158,19 +158,19 @@ int main(int argc, char * argv[]) {
         }
         WorkSpace w;
         w.load_from_disk(filename);
-        if (!w.sg.is_sane()) {
+        if (!w.getGraph().is_sane()) {
             sglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
             //return 1;
         }
         if (not gfafilename.empty()){
-            w.sg.write_to_gfa(gfafilename+".gfa");
+            w.getGraph().write_to_gfa(gfafilename+".gfa");
         }
         if (not nodeinfofilename.empty()){
            std::ofstream nif(nodeinfofilename+".csv");
            nif<<"ID, lenght, kci"<<std::endl;
-           for (auto n=1;n<w.sg.nodes.size();++n){
-               if (w.sg.nodes[n].status==sgNodeStatus_t::sgNodeDeleted) continue;
-               nif<<n<<", "<<w.sg.nodes[n].sequence.size()<<", "<<w.kci.compute_compression_for_node(n,1)<<std::endl;
+           for (auto n=1;n<w.getGraph().nodes.size();++n){
+               if (w.getGraph().nodes[n].status==sgNodeStatus_t::sgNodeDeleted) continue;
+               nif<<n<<", "<<w.getGraph().nodes[n].sequence.size()<<", "<<w.getKCI().compute_compression_for_node(n,1)<<std::endl;
            }
         }
     }
@@ -201,12 +201,12 @@ int main(int argc, char * argv[]) {
                 throw cxxopts::OptionException(" please specify kmer spectra file");
             }
 
-        if (not seqfilename.empty()) {
-            std::ofstream sof(seqfilename + ".fasta");
-            for (auto n:w.select_from_all_nodes(min_size,max_size,0,UINT32_MAX, minKCI, maxKCI)){
-                sof<<">seq"<<n<<std::endl<<w.sg.nodes[n].sequence<<std::endl;
-            }
-        }
+//        if (not seqfilename.empty()) {
+//            std::ofstream sof(seqfilename + ".fasta");
+//            for (auto n:w.select_from_all_nodes(min_size,max_size,0,UINT32_MAX, minKCI, maxKCI)){
+//                sof<<">seq"<<n<<std::endl<<w.sg.nodes[n].sequence<<std::endl;
+//            }
+//        }
 
         } catch (const cxxopts::OptionException &e) {
             std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
@@ -230,13 +230,13 @@ int main(int argc, char * argv[]) {
             std::ofstream assm_ofl("assmcn_profile"+std::to_string(cnode)+".cvg", std::ios_base::app);
 
             std::cout << "Profiling node:" << cnode << std::endl;
-            std::string sequence = w.sg.nodes[cnode].sequence;
+            std::string sequence = w.getGraph().nodes[cnode].sequence;
 
-            std::cout << "Coverage for: " << w.kci.read_counts.size() << "," << w.read_counts_header.size() << std::endl;
+            std::cout << "Coverage for: " << w.getKCI().read_counts.size() << "," << w.read_counts_header.size() << std::endl;
             for (auto ri=0; ri<w.read_counts_header.size(); ++ri){
 
                 // One extraction per set
-                auto read_coverage = w.kci.compute_node_coverage_profile(sequence, ri);
+                auto read_coverage = w.getKCI().compute_node_coverage_profile(sequence, ri);
                 reads_ofl << ">Reads_"<< prefix << "_"<< cnode << "_"<< w.read_counts_header[ri] << "|";
                 for (auto c: read_coverage[0]){
                     reads_ofl << c << " ";
@@ -244,7 +244,7 @@ int main(int argc, char * argv[]) {
                 reads_ofl << std::endl;
             }
 
-            auto coverages = w.kci.compute_node_coverage_profile(sequence, 0);
+            auto coverages = w.getKCI().compute_node_coverage_profile(sequence, 0);
             unique_ofl << ">Uniqueness_"<< prefix << "_" << cnode << "|";
             for (auto c: coverages[1]){
                 unique_ofl << c << " ";
@@ -295,7 +295,7 @@ int main(int argc, char * argv[]) {
         WorkSpace w;
         w.load_from_disk(filename);
         std::cout << "Sacando" << std::endl;
-        w.kci.compute_kci_profiles(prefix);
+        w.getKCI().compute_kci_profiles(prefix);
     }
     else {
         std::cout<<"Please specify one of: make, log, status, dump"<<std::endl;

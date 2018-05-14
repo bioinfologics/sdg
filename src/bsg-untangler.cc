@@ -90,9 +90,9 @@ int main(int argc, char * argv[]) {
     if (pop_errors){
         Untangler u(ws);
         u.pop_errors_by_ci_and_paths();
-        ws.sg.join_all_unitigs();
-        ws.kci.reindex_graph();
-        for (auto &m:ws.linked_read_mappers) {
+        ws.getGraph().join_all_unitigs();
+        ws.getKCI().reindex_graph();
+        for (auto &m:ws.getLinkedReadMappers()) {
             m.remap_all_reads();
         }
     }
@@ -100,24 +100,24 @@ int main(int argc, char * argv[]) {
         //==================== Development code (i.e. random tests!) ==============
         Untangler u(ws);
         u.expand_canonical_repeats_by_tags(.5,1.25,20);
-        if (!ws.sg.is_sane()) {
+        if (!ws.getGraph().is_sane()) {
             sglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
             return 1;
         }
-        ws.sg.join_all_unitigs();
-        ws.sg.write_to_gfa(output_prefix+"_repeat_solved.gfa");
-        ws.kci.reindex_graph();
-        for (auto &m:ws.linked_read_mappers) {
+        ws.getGraph().join_all_unitigs();
+        ws.getGraph().write_to_gfa(output_prefix+"_repeat_solved.gfa");
+        ws.getKCI().reindex_graph();
+        for (auto &m:ws.getLinkedReadMappers()) {
             m.remap_all_reads();
         }
     }
     if (bubbly_paths){
         Untangler u(ws);
         u.solve_bubbly_paths();
-        ws.sg.join_all_unitigs();
-        ws.sg.write_to_gfa(output_prefix+"_bubbly_solved.gfa");
-        ws.kci.reindex_graph();
-        for (auto &m:ws.linked_read_mappers) {
+        ws.getGraph().join_all_unitigs();
+        ws.getGraph().write_to_gfa(output_prefix+"_bubbly_solved.gfa");
+        ws.getKCI().reindex_graph();
+        for (auto &m:ws.getLinkedReadMappers()) {
             m.remap_all_reads();
         }
 
@@ -132,7 +132,7 @@ int main(int argc, char * argv[]) {
             for (auto node: bb.nodes){
                 std::cout << "seq" << abs(node) << ",";
             }
-            std::endl;
+            std::cout << std::endl;
             cont++;
         }
         //auto tni=u.find_tag_neighbours_with_imbalance(5000, .5, 1.25,.25);
@@ -147,24 +147,24 @@ int main(int argc, char * argv[]) {
         //get all bubbles that are short
         Untangler u(ws);
         for (auto b:u.find_bubbles(360,401)){
-            auto tA=ws.linked_read_mappers[0].get_node_tags(b.first);
-            auto tB=ws.linked_read_mappers[0].get_node_tags(b.second);
+            auto tA=ws.getLinkedReadMappers()[0].get_node_tags(b.first);
+            auto tB=ws.getLinkedReadMappers()[0].get_node_tags(b.second);
             std::set<bsg10xTag> shared;
             std::set_intersection(tA.begin(),tA.end(),tB.begin(),tB.end(),std::inserter(shared,shared.end()));
             if (shared.empty()) continue;
             std::cout<<"Bubble analysed: " << b.first << " and " << b.second << " share "<< shared.size()<< " tags" <<std::endl;
-            for (auto t: shared) std::cout<<"Tag "<<t<<" has "<<ws.linked_read_datastores[0].get_tag_reads(t).size()<<std::endl;
+            for (auto t: shared) std::cout<<"Tag "<<t<<" has "<<ws.getLinkedReadDatastores()[0].get_tag_reads(t).size()<<std::endl;
             std::set<uint64_t> readsA,readsB;
             std::cout<<"Reads in shared tags in A: ";
-            for (auto rm:ws.linked_read_mappers[0].reads_in_node[llabs(b.first)]) {
+            for (auto rm:ws.getLinkedReadMappers()[0].reads_in_node[llabs(b.first)]) {
                 readsA.insert(rm.read_id);
-                if (shared.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) std::cout<<" "<<rm.read_id;
+                if (shared.count(ws.getLinkedReadDatastores()[0].get_read_tag(rm.read_id))>0) std::cout<<" "<<rm.read_id;
             }
             std::cout<<std::endl;
             std::cout<<"Reads in shared tags in B: ";
-            for (auto rm:ws.linked_read_mappers[0].reads_in_node[llabs(b.second)]) {
+            for (auto rm:ws.getLinkedReadMappers()[0].reads_in_node[llabs(b.second)]) {
                 readsB.insert(rm.read_id);
-                if (shared.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id))>0) std::cout<<" "<<rm.read_id;
+                if (shared.count(ws.getLinkedReadDatastores()[0].get_read_tag(rm.read_id))>0) std::cout<<" "<<rm.read_id;
             }
             std::cout<<std::endl;
 
@@ -172,8 +172,8 @@ int main(int argc, char * argv[]) {
                 auto rb=(ra%2==1 ? ra+1 : ra-1);
                 if (readsB.count(rb)>0) {
                     std::cout<<"Read "<<ra<<" in A and read"<<rb<<" in B!!!"<<std::endl;
-                    std::cout<<ws.linked_read_datastores[0].get_read_sequence(ra)<<std::endl;
-                    std::cout<<ws.linked_read_datastores[0].get_read_sequence(rb)<<std::endl;
+                    std::cout<<ws.getLinkedReadDatastores()[0].get_read_sequence(ra)<<std::endl;
+                    std::cout<<ws.getLinkedReadDatastores()[0].get_read_sequence(rb)<<std::endl;
                 }
             }
         }
