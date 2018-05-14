@@ -585,15 +585,15 @@ std::vector<SequenceGraphPath> SequenceGraph::get_all_unitigs(uint16_t min_nodes
         //two passes: 0->fw, 1->bw, path is inverted twice, so still n is +
         for (auto pass=0; pass<2; ++pass) {
             //walk til a "non-unitig" junction
-            for (auto fn = get_fw_links(path.nodes.back()); fn.size() == 1; fn = get_fw_links(path.nodes.back())) {
+            for (auto fn = get_fw_links(path.getNodes().back()); fn.size() == 1; fn = get_fw_links(path.getNodes().back())) {
                 if (fn[0].dest != n and fn[0].dest != -n and get_bw_links(fn[0].dest).size() == 1) {
-                    path.nodes.emplace_back(fn[0].dest);
+                    path.getNodes().emplace_back(fn[0].dest);
                     used[fn[0].dest > 0 ? fn[0].dest : -fn[0].dest] = true;
                 } else break;
             }
             path.reverse();
         }
-        if (path.nodes.size()>=min_nodes) unitigs.push_back(path);
+        if (path.getNodes().size()>=min_nodes) unitigs.push_back(path);
     }
     return unitigs;
 }
@@ -606,7 +606,7 @@ void SequenceGraph::join_all_unitigs() {
 
 void SequenceGraph::join_path(SequenceGraphPath p, bool consume) {
     std::set<sgNodeID_t> pnodes;
-    for (auto n:p.nodes) {
+    for (auto n:p.getNodes()) {
         pnodes.insert( n );
         pnodes.insert( -n );
     }
@@ -614,9 +614,9 @@ void SequenceGraph::join_path(SequenceGraphPath p, bool consume) {
     if (!p.is_canonical()) p.reverse();
     sgNodeID_t new_node=add_node(Node(p.get_sequence()));
     //TODO:check, this may have a problem with a circle
-    for (auto l:get_bw_links(p.nodes.front())) add_link(new_node,l.dest,l.dist);
+    for (auto l:get_bw_links(p.getNodes().front())) add_link(new_node,l.dest,l.dist);
 
-    for (auto l:get_fw_links(p.nodes.back())) add_link(-new_node,l.dest,l.dist);
+    for (auto l:get_fw_links(p.getNodes().back())) add_link(-new_node,l.dest,l.dist);
 
     //TODO: update read mappings
     if (consume) {
@@ -626,11 +626,11 @@ void SequenceGraph::join_path(SequenceGraphPath p, bool consume) {
 }
 
 void SequenceGraph::consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes) {
-    for (auto n:p.nodes) {
+    for (auto n:p.getNodes()) {
         //check if the node has neighbours not included in the path.
         bool ext_neigh=false;
-        if (n!=p.nodes.back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
-        if (n!=p.nodes.front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
+        if (n!=p.getNodes().back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
+        if (n!=p.getNodes().front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
         if (ext_neigh) continue;
         remove_node(n);
     }
@@ -999,10 +999,10 @@ void SequenceGraph::print_bubbly_subgraph_stats(const std::vector<SequenceSubGra
         for (auto i=1; i<bp.nodes.size()-1; ++i){
             original_sizes.push_back(nodes[llabs(bp.nodes[i])].sequence.size());
             if (i%3==0){
-                p1.nodes.push_back(bp.nodes[i]);
-                p2.nodes.push_back(bp.nodes[i]);
-            } else if (i%3==1) p1.nodes.push_back(bp.nodes[i]);
-            else p2.nodes.push_back(bp.nodes[i]);
+                p1.getNodes().push_back(bp.nodes[i]);
+                p2.getNodes().push_back(bp.nodes[i]);
+            } else if (i%3==1) p1.getNodes().push_back(bp.nodes[i]);
+            else p2.getNodes().push_back(bp.nodes[i]);
         }
         solved_sizes.push_back(p1.get_sequence().size());
         total_solved_size+=solved_sizes.back();
@@ -1049,21 +1049,21 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
         next_paths.clear();
         for (auto &p:current_paths){
             //if node is a destination add it to final nodes
-            if (p.nodes.back()==-to) std::cout<<"WARNING: found path to -TO node"<<std::endl;
-            if (p.nodes.back()==to) {
+            if (p.getNodes().back()==-to) std::cout<<"WARNING: found path to -TO node"<<std::endl;
+            if (p.getNodes().back()==to) {
                 final_paths.push_back(p);
-                final_paths.back().nodes.pop_back();
+                final_paths.back().getNodes().pop_back();
             }
                 //else get fw links, compute distances for each, and if not >max_dist add to nodes
             else {
-                for (auto l:get_fw_links(p.nodes.back())){
-                    if (std::find(p.nodes.begin(),p.nodes.end(),l.dest)!=p.nodes.end()) {
+                for (auto l:get_fw_links(p.getNodes().back())){
+                    if (std::find(p.getNodes().begin(),p.getNodes().end(),l.dest)!=p.getNodes().end()) {
                         std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
                         return {};
                         //continue;
                     }
                     next_paths.push_back(p);
-                    next_paths.back().nodes.push_back(l.dest);
+                    next_paths.back().getNodes().push_back(l.dest);
                     if (next_paths.back().get_sequence().size()>max_size) next_paths.pop_back();
                 }
             }

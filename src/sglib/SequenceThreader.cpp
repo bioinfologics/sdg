@@ -605,17 +605,17 @@ int BridgedMappingThreads::bridge_to_thread(const SequenceGraphPath& sgp, const 
     }
 
     const auto last_mthread_node = last_mapping().dirnode();
-    if (last_mthread_node != sgp.nodes.front()) {
+    if (last_mthread_node != sgp.getNodes().front()) {
         std::cout << "ERR: First node of bridge mismatches last node of last mapping thread..." << std::endl;
-        std::cout << last_mthread_node << " != " << sgp.nodes.front() << std::endl;
+        std::cout << last_mthread_node << " != " << sgp.getNodes().front() << std::endl;
         return 3;
     }
 
     std::cout << "Checking new sequence mapping thread:" << std::endl;
 
-    if (sgp.nodes.back() != smt.first_mapping().dirnode()) {
+    if (sgp.getNodes().back() != smt.first_mapping().dirnode()) {
         std::cout << "ERR: First node of new mapping thread mismatches last node of bridge..." << std::endl;
-        std::cout << sgp.nodes.back() << " != " << smt.first_mapping().dirnode() << std::endl;
+        std::cout << sgp.getNodes().back() << " != " << smt.first_mapping().dirnode() << std::endl;
         return 4;
     }
 
@@ -630,13 +630,13 @@ SequenceGraphPath BridgedMappingThreads::get_complete_path() const {
     auto current_thread { mapping_threads.cbegin() };
     auto current_thread_path { current_thread -> get_graph_path() };
 
-    finalpath.nodes.insert(finalpath.nodes.end(), current_thread_path.nodes.cbegin(), current_thread_path.nodes.cend());
+    finalpath.getNodes().insert(finalpath.getNodes().end(), current_thread_path.getNodes().cbegin(), current_thread_path.getNodes().cend());
 
     for (const auto& bridge : bridging_paths) {
-        finalpath.nodes.insert(finalpath.nodes.end(), std::next(bridge.nodes.cbegin()), std::prev(bridge.nodes.cend()));
+        finalpath.getNodes().insert(finalpath.getNodes().end(), std::next(bridge.getNodes().cbegin()), std::prev(bridge.getNodes().cend()));
         std::advance(current_thread, 1);
         current_thread_path = current_thread -> get_graph_path();
-        finalpath.nodes.insert(finalpath.nodes.end(), current_thread_path.nodes.cbegin(), current_thread_path.nodes.cend());
+        finalpath.getNodes().insert(finalpath.getNodes().end(), current_thread_path.getNodes().cbegin(), current_thread_path.getNodes().cend());
     }
     return finalpath;
 }

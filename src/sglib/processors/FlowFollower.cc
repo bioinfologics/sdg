@@ -14,7 +14,7 @@ Flow FlowFollower::flow_from_node(sgNodeID_t n,float min_winner,float max_looser
     SequenceGraphPath p(ws.getGraph(), {n});
 //    for (auto i = 0; i < 2; ++i) {
         while (true) {
-            auto fwl = ws.getGraph().get_fw_links(p.nodes.back());
+            auto fwl = ws.getGraph().get_fw_links(p.getNodes().back());
             if (fwl.empty()) break;
             std::vector<sgNodeID_t> fw_nodes;
             bool no_distinctive=false;
@@ -56,17 +56,17 @@ Flow FlowFollower::flow_from_node(sgNodeID_t n,float min_winner,float max_looser
                 break;
             }
             bool b = false;
-            for (auto x:p.nodes) if (llabs(x) == llabs(best)) b = true;
+            for (auto x:p.getNodes()) if (llabs(x) == llabs(best)) b = true;
             if (b) {
                 //std::cout << "stopping on circular path" << std::endl;
                 break;
             }
-            p.nodes.push_back(best);
+            p.getNodes().push_back(best);
         }
 //        p.reverse();
 //    }
     Flow f;
-    f.nodes=p.nodes;
+    f.nodes=p.getNodes();
     return f;
 }
 
@@ -77,7 +77,7 @@ Flow FlowFollower::flow_from_node_kmers(sgNodeID_t n,const std::unordered_set<ui
     SequenceGraphPath p(sg, {n});
 //    for (auto i = 0; i < 2; ++i) {
     while (true) {
-        auto fwl = sg.get_fw_links(p.nodes.back());
+        auto fwl = sg.get_fw_links(p.getNodes().back());
         if (fwl.empty()) break;
         std::vector<sgNodeID_t> fw_nodes;
         bool no_distinctive=false;
@@ -119,17 +119,17 @@ Flow FlowFollower::flow_from_node_kmers(sgNodeID_t n,const std::unordered_set<ui
             break;
         }
         bool b = false;
-        for (auto x:p.nodes) if (llabs(x) == llabs(best)) b = true;
+        for (auto x:p.getNodes()) if (llabs(x) == llabs(best)) b = true;
         if (b) {
             //std::cout << "stopping on circular path" << std::endl;
             break;
         }
-        p.nodes.push_back(best);
+        p.getNodes().push_back(best);
     }
 //        p.reverse();
 //    }
     Flow f;
-    f.nodes=p.nodes;
+    f.nodes=p.getNodes();
     return f;
 }
 
@@ -350,8 +350,8 @@ SequenceGraphPath FlowFollower::skate_from_node(sgNodeID_t n) {
             auto fwls = path.get_next_links();
             if (fwls.empty()) break;
             //std::cout<<"Adding node "<<path.nodes.back()<<std::endl;
-            if (flows.count(path.nodes.back())>0 and flows[path.nodes.back()].nodes.size()>3) {
-                used_flows.push_back({flows[path.nodes.back()], true, 0});
+            if (flows.count(path.getNodes().back())>0 and flows[path.getNodes().back()].nodes.size()>3) {
+                used_flows.push_back({flows[path.getNodes().back()], true, 0});
                 //std::cout<<"Node has a flow with "<<flows[path.nodes.back()].nodes.size()<<" nodes, added as #"<<used_flows.size()-1<<std::endl;
             }
             sgNodeID_t next = 0;
@@ -378,9 +378,9 @@ SequenceGraphPath FlowFollower::skate_from_node(sgNodeID_t n) {
             }
             if (next == 0) break;
             bool b=false;
-            for (auto x:path.nodes) if (llabs(x)==llabs(next)) b=true;
+            for (auto x:path.getNodes()) if (llabs(x)==llabs(next)) b=true;
             if (b) break;
-            path.nodes.push_back(next);
+            path.getNodes().push_back(next);
         }
         path.reverse();
         used_flows.clear();
@@ -404,13 +404,13 @@ std::vector<SequenceGraphPath> FlowFollower::skate_from_all(int min_node_flow, u
         if (flows[n].nodes.size()>=min_node_flow or flows[-n].nodes.size()>=min_node_flow){
             auto p=skate_from_node(n);
             if (p.get_sequence().size()>min_path_length) {
-                if (llabs(p.nodes.front())>llabs(p.nodes.back())) p.reverse();
+                if (llabs(p.getNodes().front())>llabs(p.getNodes().back())) p.reverse();
 //#pragma omp critical
                 {
                     r.push_back(p);
 
                     std::cout << "PATH skated from " << n << std::endl;
-                    for (auto x:p.nodes) std::cout << "seq" << llabs(x) << ",";
+                    for (auto x:p.getNodes()) std::cout << "seq" << llabs(x) << ",";
                     std::cout << std::endl;
                 }
             }
@@ -425,10 +425,10 @@ std::vector<SequenceGraphPath> FlowFollower::skate_from_all(int min_node_flow, u
 
 void FlowFollower::load_flows_from_paths(const PathsDatastore & pd) {
     for (auto &path:pd.paths){
-        if (path.nodes.size()>3) {
+        if (path.getNodes().size()>3) {
             Flow f;
-            f.nodes=path.nodes;
-            flows[path.nodes[0]] = f;
+            f.nodes=path.getNodes();
+            flows[path.getNodes()[0]] = f;
         }
     }
 }

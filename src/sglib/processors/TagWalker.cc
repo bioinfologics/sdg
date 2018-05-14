@@ -90,7 +90,7 @@ std::vector<SequenceGraphPath> TagWalker::walk(float min_winner, float max_loose
 //        }
         for (auto i = 0; i < 2; ++i) {
             while (true) {
-                auto fwl = sg.get_fw_links(p.nodes.back());
+                auto fwl = sg.get_fw_links(p.getNodes().back());
                 if (fwl.empty()) break;
                 std::vector<sgNodeID_t> fw_nodes;
                 for (auto l:fwl) fw_nodes.push_back(l.dest);
@@ -125,15 +125,15 @@ std::vector<SequenceGraphPath> TagWalker::walk(float min_winner, float max_loose
                     break;
                 }
                 bool b = false;
-                for (auto n:p.nodes) if (llabs(n) == llabs(best)) b = true;
+                for (auto n:p.getNodes()) if (llabs(n) == llabs(best)) b = true;
                 if (b) {
                     //std::cout << "stopping on circular path" << std::endl;
                     break;
                 }
-                p.nodes.push_back(best);
+                p.getNodes().push_back(best);
             }
             p.reverse();
-            (pass==0?pathA:pathB).nodes=p.nodes;
+            (pass==0?pathA:pathB).getNodes()=p.getNodes();
         }
     }
     return {pathA,pathB};

@@ -10,8 +10,8 @@
 
 class SequenceGraph;
 class SequenceGraphPath {
-public:
     std::vector<sgNodeID_t> nodes;
+public:
     explicit SequenceGraphPath(SequenceGraph & _sg, const std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
 
     SequenceGraphPath(const SequenceGraphPath& sgp) : nodes(sgp.nodes), sg(sgp.sg) {};
@@ -31,6 +31,9 @@ public:
     void clear() {
         nodes.clear();
     };
+
+    std::vector<sgNodeID_t >& getNodes() {return nodes;}
+    const std::vector<sgNodeID_t >& getNodes() const {return nodes;}
 
 private:
     const SequenceGraph& sg;

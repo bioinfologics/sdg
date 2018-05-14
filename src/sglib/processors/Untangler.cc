@@ -138,7 +138,7 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
     reads_to_remap;
     for (auto &p:paths_solved) {
         ws.getGraph().join_path(p);
-        for (auto n:p.nodes) {
+        for (auto n:p.getNodes()) {
             for (auto rm:ws.getLinkedReadMappers()[0].reads_in_node[(n > 0 ? n : -n)]) {
                 reads_to_remap.insert((rm.read_id % 2 ? rm.read_id : rm.read_id - 1));
                 ws.getLinkedReadMappers()[0].read_to_node[rm.read_id] = 0;
@@ -308,7 +308,7 @@ uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
             //std::cout << std::endl << "PATH B (" << wp[1].get_sequence().size() << " bp): ";
             //for (auto n:wp[1].nodes) std::cout << "seq" << llabs(n) << ", ";
             //std::cout << std::endl;
-            if (parallelpaths[0].nodes.size()<4 or not all_nodes_consumed(parallelpaths)){
+            if (parallelpaths[0].getNodes().size()<4 or not all_nodes_consumed(parallelpaths)){
                 //std::cout << std::endl <<"NO ALL-CONSUMING PARALLEL PATHS"<<std::endl;
             }
             else {
@@ -337,22 +337,22 @@ uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
     //now join the paths that survived
     std::sort(new_ppaths.begin(),new_ppaths.end(),
               [](const std::vector<SequenceGraphPath> &a,const std::vector<SequenceGraphPath> &b)
-              {return a[0].nodes.size()>b[0].nodes.size();});
+              {return a[0].getNodes().size()>b[0].getNodes().size();});
     std::vector<bool> used(ws.getGraph().nodes.size());
     for (auto pp:new_ppaths){
-        if (pp[0].nodes.size()<4) continue;
+        if (pp[0].getNodes().size()<4) continue;
         bool skip=false;
-        for (auto &p:pp) for (auto n:p.nodes) if (used[llabs(n)]) {skip=true; break;}
+        for (auto &p:pp) for (auto n:p.getNodes()) if (used[llabs(n)]) {skip=true; break;}
         if (skip) continue;
         std::cout << "JOINING PARALLEL PATHS #"<<new_ppaths.size()-1;
         std::cout << std::endl << "PARALLEL PATH A (" << pp[0].get_sequence().size() << " bp): ";
-        for (auto n:pp[0].nodes) std::cout << "seq" << llabs(n) << ", ";
+        for (auto n:pp[0].getNodes()) std::cout << "seq" << llabs(n) << ", ";
         std::cout << std::endl << "PARALLEL PATH B (" << pp[1].get_sequence().size() << " bp): ";
-        for (auto n:pp[1].nodes) std::cout << "seq" << llabs(n) << ", ";
+        for (auto n:pp[1].getNodes()) std::cout << "seq" << llabs(n) << ", ";
         std::cout << std::endl;
         for (auto &p:pp) {
             std::vector<sgNodeID_t> middle_nodes;
-            for (auto it=p.nodes.begin()+1;it<p.nodes.end()-1;++it) middle_nodes.push_back(*it);
+            for (auto it=p.getNodes().begin()+1;it<p.getNodes().end()-1;++it) middle_nodes.push_back(*it);
             for (auto n:middle_nodes) used[llabs(n)]=true;
             ws.getGraph().join_path(SequenceGraphPath(ws.getGraph(),middle_nodes),true);
         }
@@ -370,10 +370,10 @@ uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
  */
 std::vector<SequenceGraphPath> Untangler::make_parallel_paths(std::vector<SequenceGraphPath> paths){
     sgNodeID_t source=0,sink=0;
-    for (auto na:paths[0].nodes){
+    for (auto na:paths[0].getNodes()){
         bool missing=false;
         for (auto op=paths.begin()+1;op<paths.end();++op)
-            if (std::find(op->nodes.begin(),op->nodes.end(),na)==op->nodes.end()) {
+            if (std::find(op->getNodes().begin(),op->getNodes().end(),na)==op->getNodes().end()) {
                 missing=true;
                 break;
             }
@@ -385,9 +385,9 @@ std::vector<SequenceGraphPath> Untangler::make_parallel_paths(std::vector<Sequen
     for (auto p:paths){
         pp.emplace_back(ws.getGraph());
         bool started=false,finished=false;
-        for (auto n:p.nodes){
+        for (auto n:p.getNodes()){
             if (n==source) started=true;
-            if(started and not finished) pp.back().nodes.emplace_back(n);
+            if(started and not finished) pp.back().getNodes().emplace_back(n);
             if (n==sink) finished=true;
         }
     }
@@ -400,10 +400,10 @@ std::vector<SequenceGraphPath> Untangler::make_parallel_paths(std::vector<Sequen
  */
 bool Untangler::all_nodes_consumed(std::vector<SequenceGraphPath> parallel_paths){
     std::unordered_set<sgNodeID_t> all_nodes;
-    for (auto &p:parallel_paths) for (auto &n:p.nodes) {all_nodes.insert(n);all_nodes.insert(-n);}
+    for (auto &p:parallel_paths) for (auto &n:p.getNodes()) {all_nodes.insert(n);all_nodes.insert(-n);}
 
     for (auto &p:parallel_paths){
-        for (auto ix=p.nodes.begin()+1;ix<p.nodes.end()-1;++ix) {
+        for (auto ix=p.getNodes().begin()+1;ix<p.getNodes().end()-1;++ix) {
             for (auto fc:ws.getGraph().get_fw_links(*ix))if (all_nodes.count(fc.dest) == 0) return false;
             for (auto bc:ws.getGraph().get_bw_links(*ix))if (all_nodes.count(bc.dest) == 0) return false;
         }
@@ -419,7 +419,7 @@ std::vector<sgNodeID_t> Untangler::shared_nodes(std::vector<std::vector<Sequence
     //checks if any of the nodes are present in more than 1 of the PP
     for (auto &pp:parallel_paths){
         current_nodes.clear();
-        for (auto &p:pp) for (auto n:p.nodes) current_nodes.insert(llabs(n));
+        for (auto &p:pp) for (auto n:p.getNodes()) current_nodes.insert(llabs(n));
         std::set_intersection(seen_nodes.begin(),seen_nodes.end(),current_nodes.begin(),current_nodes.end(),std::inserter(shared,shared.end()));
         for (auto &n:current_nodes) seen_nodes.insert(n);
     }
@@ -583,10 +583,10 @@ std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(cons
     if (hap1.size()==bp.nodes.size()/3) {
         SequenceGraphPath p1(sg),p2(sg);
         for (auto i=0;i<hap1.size();++i){
-            if (i>0) p1.nodes.push_back(bp.nodes[3*i]);
-            p1.nodes.push_back(hap1[i]);
-            if (i>0) p2.nodes.push_back(bp.nodes[3*i]);
-            p2.nodes.push_back(hap2[i]);
+            if (i>0) p1.getNodes().push_back(bp.nodes[3*i]);
+            p1.getNodes().push_back(hap1[i]);
+            if (i>0) p2.getNodes().push_back(bp.nodes[3*i]);
+            p2.getNodes().push_back(hap2[i]);
         }
         return {p1,p2};
     }
@@ -872,7 +872,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
         std::set<sgNodeID_t> used_nodes;
         for (auto p:paths) {
             sg.join_path(p,false);
-            for (auto n:p.nodes) used_nodes.insert(n);
+            for (auto n:p.getNodes()) used_nodes.insert(n);
         }
         for (auto n:used_nodes) sg.remove_node(n);
         //done!
@@ -1206,18 +1206,18 @@ void Untangler::connect_neighbours_trivial(uint64_t min_size, float min_ci, floa
         auto allpaths = sg.find_all_paths_between(ft.first, ft.second, 50000);
 //  is there only one? does it contain no selected node? other conditions? Optional: check the path is covered by kmers from tags on both ends of it.
         if (allpaths.size() != 1) continue;
-        for (auto &n: allpaths[0].nodes) if (not tagneighbours[llabs(n)].empty()) continue;
-        if (allpaths[0].nodes.empty()) continue; //XXX:these should actually be connected directly?
+        for (auto &n: allpaths[0].getNodes()) if (not tagneighbours[llabs(n)].empty()) continue;
+        if (allpaths[0].getNodes().empty()) continue; //XXX:these should actually be connected directly?
 //  create a single node with the sequence of the path, migrate connections from the nodes (sg function)
         auto new_node = sg.add_node(Node(allpaths[0].get_sequence()));
         auto old_fw = sg.get_fw_links(ft.first);
         for (auto &l:old_fw) {
-            if (l.dest == allpaths[0].nodes.front()) sg.add_link(-ft.first, new_node, l.dist);
+            if (l.dest == allpaths[0].getNodes().front()) sg.add_link(-ft.first, new_node, l.dist);
             sg.remove_link(l.source, l.dest);
         }
         auto old_bw = sg.get_bw_links(ft.second);
         for (auto &l:old_bw) {
-            if (l.dest == -allpaths[0].nodes.back()) sg.add_link(ft.second, -new_node, l.dist);
+            if (l.dest == -allpaths[0].getNodes().back()) sg.add_link(ft.second, -new_node, l.dist);
             sg.remove_link(l.source, l.dest);
         }
 //std::cout<<"Replaced connection between "<<ft.first<<" and "<<ft.second<<" through nodes ";
@@ -1279,13 +1279,13 @@ uint64_t Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float mi
 
             bool complex = false;
             for (auto p:allpaths) {
-                for (auto &n: p.nodes) {
+                for (auto &n: p.getNodes()) {
                     if (not tagneighbours[llabs(n)].empty()) {
                         complex = true;
                         //std::cout<<"A path node has other neighbours!"<<std::endl;
                     }
                 }
-                if (p.nodes.empty()) {
+                if (p.getNodes().empty()) {
                     complex = true;
                     //std::cout<<"Path is empty!"<<std::endl;
                 }
@@ -1333,12 +1333,12 @@ void Untangler::dettach_path_as_new_node(sgNodeID_t from, sgNodeID_t to, Sequenc
     auto new_node = sg.add_node(Node(path.get_sequence()));
     auto old_fw = sg.get_fw_links(from);
     for (auto &l:old_fw) {
-        if (l.dest == path.nodes.front()) sg.add_link(-from, new_node, l.dist);
+        if (l.dest == path.getNodes().front()) sg.add_link(-from, new_node, l.dist);
         sg.remove_link(l.source, l.dest);
     }
     auto old_bw = sg.get_bw_links(to);
     for (auto &l:old_bw) {
-        if (l.dest == -path.nodes.back()) sg.add_link(to, -new_node, l.dist);
+        if (l.dest == -path.getNodes().back()) sg.add_link(to, -new_node, l.dist);
         sg.remove_link(l.source, l.dest);
     }
 }
