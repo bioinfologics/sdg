@@ -31,10 +31,10 @@ public:
     PairedReadsDatastore(std::string filename){
         load_index(filename);
     };
-    PairedReadsDatastore(std::string read1_filename,std::string read2_filename, std::string output_filename, int readsize=250){
-        build_from_fastq(read1_filename,read2_filename,output_filename,readsize);
+    PairedReadsDatastore(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250){
+        build_from_fastq(read1_filename,read2_filename,output_filename,min_readsize,max_readsize);
     };
-    void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int readsize=250,size_t chunksize=10000000);
+    void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250, size_t chunksize=10000000);
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
     void load_index(std::string _filename);

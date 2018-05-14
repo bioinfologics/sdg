@@ -20,7 +20,7 @@ int main(int argc, char * argv[]) {
 
     if (0==strcmp(argv[1],"make")) {
         std::string read1, read2, read_type, output;
-        uint16_t readsize=150;
+        uint16_t min_readsize=0,max_readsize=150;
         try {
             cxxopts::Options options("bsg-datastore make", "BSG make datastore");
 
@@ -29,7 +29,8 @@ int main(int argc, char * argv[]) {
                     ("1,read1", "input reads, left", cxxopts::value<std::string>(read1))
                     ("2,read2", "input reads, right", cxxopts::value<std::string>(read2))
                     ("t,read_type", "One of: paired,10x", cxxopts::value<std::string>(read_type))
-                    ("s,max_read_size", "max read size for short reads, truncates if longer (default 150)", cxxopts::value<uint16_t>(readsize))
+                    ("l,min_read_size", "min size for each read, discards both if one is smaller (default 0)", cxxopts::value<uint16_t>(min_readsize))
+                    ("s,max_read_size", "max size for short reads, truncates if longer (default 150)", cxxopts::value<uint16_t>(max_readsize))
                     ("o,output", "output file", cxxopts::value<std::string>(output));
             auto newargc=argc-1;
             auto newargv=&argv[1];
@@ -53,11 +54,11 @@ int main(int argc, char * argv[]) {
         //===== DATASTORE CREATION =====
         if (read_type == "10x" or read_type == "10xseq") {
             LinkedReadsDatastore ds(read1, read2, output+".lrseq",(read_type == "10xseq" ? LinkedReadsFormat::seq
-                                                                                         : LinkedReadsFormat::UCDavis),readsize);
+                                                                                         : LinkedReadsFormat::UCDavis),max_readsize);
             //ds.dump_index_to_disk(output+".lrIdx");
         }
         else if (read_type == "paired") {
-            PairedReadsDatastore ds(read1, read2, output+".prseq",readsize);
+            PairedReadsDatastore ds(read1, read2, output+".prseq",min_readsize,max_readsize);
             //ds.dump_index_to_disk(output+".lrIdx");
         }
         else {

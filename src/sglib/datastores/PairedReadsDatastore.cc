@@ -7,7 +7,7 @@
 #include <strings.h>
 #include "PairedReadsDatastore.hpp"
 
-void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int _rs, size_t chunksize) {
+void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int _min_rs, int _rs, size_t chunksize) {
 
     //std::cout<<"Memory used by every read's entry:"<< sizeof(PairedRead)<<std::endl;
     //read each read, put it on the index and on the appropriate tag
@@ -24,7 +24,7 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     std::vector<PairedReadData> next_in_chunk;
     PairedReadData currrent_read;
     //First, create the chunk files
-    uint64_t pairs=0;
+    uint64_t pairs=0,discarded=0,truncated=0;
     std::ofstream output(output_filename.c_str());
     output.write((const char *) &readsize,sizeof(readsize));
     auto size_pos=output.tellp();
@@ -44,6 +44,12 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
         if (NULL == fgets(readbuffer, 999, fd2)) continue;
         if (NULL == fgets(readbuffer, 999, fd2)) continue;
         if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
+        if (currrent_read.seq1.size()<_min_rs or currrent_read.seq2.size()<_min_rs) {
+            ++discarded;
+            continue;
+        }
+        if (currrent_read.seq1.size()>_rs) ++truncated;
+        if (currrent_read.seq2.size()>_rs) ++truncated;
         ++pairs;
         readdatav.push_back(currrent_read);
         if (readdatav.size()==chunksize){
@@ -76,6 +82,8 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     output.write((const char *) &rts, sizeof(rts));
     output.close();
     //DONE!
+    sglib::OutputLog(sglib::LogLevels::INFO)<<discarded<<" pairs discarded due to short reads"<<std::endl;
+    sglib::OutputLog(sglib::LogLevels::INFO)<<truncated<<" reads where truncated to "<<_rs<<"bp"<<std::endl;
     sglib::OutputLog(sglib::LogLevels::INFO)<<"Datastore with "<<rts<<" reads ("<<pairs<<" pairs)"<<std::endl;
     filename=output_filename;
     fd=fopen(filename.c_str(),"r");
