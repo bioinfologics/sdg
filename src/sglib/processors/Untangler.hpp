@@ -27,6 +27,16 @@ public:
     std::vector<Link> links;
 };
 
+class PairedReadLinker {
+public:
+    PairedReadLinker(WorkSpace & _ws, Untangler & _u): ws(_ws),u(_u) {};
+    void generate_links(int min_reads);
+
+    WorkSpace &ws;
+    Untangler &u;
+    std::vector<Link> links;
+};
+
 class Untangler {
 public:
     explicit Untangler(WorkSpace & _ws): ws(_ws) {};

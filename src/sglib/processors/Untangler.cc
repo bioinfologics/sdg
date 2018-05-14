@@ -1517,3 +1517,59 @@ void Untangler::unroll_simple_loops() {
 
     }
 }
+
+void PairedReadLinker::generate_links(int min_reads) {
+    std::ofstream lof("paired_links.txt");
+    std::ofstream lof6K("paired_links6K.txt");
+    std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
+
+    //use all libraries collect votes on each link
+    for (auto pm:ws.paired_read_mappers) {
+        for (auto i = 1; i < pm.read_to_node.size(); i += 2) {
+            auto n1 = pm.read_to_node[i];
+            auto n2 = pm.read_to_node[i + 1];
+            if (n1 == 0 or n2 == 0 or n1 == n2) continue;
+            if (n1 > n2) std::swap(n1, n2);
+            ++lv[std::make_pair(n1, n2)];
+        }
+    }
+
+    std::vector<std::vector<std::pair<sgNodeID_t ,uint64_t>>> nodelinks(ws.sg.nodes.size()),nodelinks6K(ws.sg.nodes.size());
+    for (auto l:lv) {
+        if (l.second>=min_reads){
+            nodelinks[l.first.first].emplace_back(l.first.second,l.second);
+            nodelinks[l.first.second].emplace_back(l.first.first,l.second);
+            if (ws.sg.nodes[l.first.first].sequence.size()>=6000 and ws.sg.nodes[l.first.second].sequence.size()>=6000){
+                nodelinks6K[l.first.first].emplace_back(l.first.second,l.second);
+                nodelinks6K[l.first.second].emplace_back(l.first.first,l.second);
+            }
+        }
+    }
+    for (auto n=1;n<ws.sg.nodes.size();++n) {
+        if (!nodelinks[n].empty()) {
+            lof<<n<<": ";
+            for (auto l:nodelinks[n]) lof<<" "<<l.first<<"("<<l.second<<")";
+            lof<<std::endl;
+            lof<<"seq"<<n;
+            for (auto l:nodelinks[n]) lof<<", seq"<<l.first;
+            lof<<std::endl;
+        }
+        if (!nodelinks6K[n].empty()) {
+            lof6K<<n<<": ";
+            for (auto l:nodelinks6K[n]) lof6K<<" "<<l.first<<"("<<l.second<<")";
+            lof6K<<std::endl;
+            lof6K<<"seq"<<n;
+            for (auto l:nodelinks6K[n]) lof6K<<", seq"<<l.first;
+            lof6K<<std::endl;
+        }
+    }
+    //TODO: remove printing
+//    lof<<n<<": ";
+//    for (auto l:flv) lof<<" "<<l.first<<"("<<l.second<<")";
+//    lof<<std::endl;
+    //filter by min reads
+    //infer size?
+    //TODO:hardcoded LMP orientation
+    //check topology?
+
+}
