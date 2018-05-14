@@ -247,15 +247,25 @@ std::vector<uint64_t> PairedReadMapper::size_distribution() {
     rfdist.clear();
     rfdist.resize(20000);
     uint64_t frcount=0,rfcount=0;
+    std::vector<int32_t> read_firstpos(read_to_node.size()),read_lastpos(read_to_node.size());
+    std::vector<bool> read_rev(read_to_node.size());
+    for (auto n=1;n<sg.nodes.size();++n) {
+        for (auto &rm:reads_in_node[n]) {
+            read_firstpos[rm.read_id]=rm.first_pos;
+            read_lastpos[rm.read_id]=rm.last_pos;
+            read_rev[rm.read_id]=rm.rev;
+        }
+    }
     for (uint64_t r1=1;r1<read_to_node.size();r1+=2){
-
         if (read_to_node[r1]!=0 and read_to_node[r1]==read_to_node[r1+1]) {
             auto node=read_to_node[r1];
             ReadMapper rm1,rm2;
-            for (auto rm:reads_in_node[node]){
-                if (rm.read_id==r1) rm1=rm;
-                if (rm.read_id==r1+1) rm2=rm;
-            }
+            rm1.first_pos=read_firstpos[r1];
+            rm1.last_pos=read_lastpos[r1];
+            rm1.rev=read_rev[r1];
+            rm2.first_pos=read_firstpos[r1+1];
+            rm2.last_pos=read_lastpos[r1+1];
+            rm2.rev=read_rev[r1+1];
             if (rm1.first_pos>rm2.first_pos) std::swap(rm1,rm2);
             auto d=rm2.last_pos-rm1.first_pos;
             if (d>=rfdist.size()) continue;
