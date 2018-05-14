@@ -6,10 +6,7 @@
 #define BSG_READMAPPER_HPP
 #include "sglib/SequenceGraph.hpp"
 
-struct graphPosition{
-    sgNodeID_t node;
-    uint32_t pos;
-};
+
 
 class ReadMapper {
 public:

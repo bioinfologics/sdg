@@ -354,7 +354,7 @@ uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
     }
     ws.sg.write_to_gfa("graph_after_joining_walks.gfa");
     ws.linked_read_mappers[0].remove_obsolete_mappings();
-    ws.linked_read_mappers[0].update_graph_index();
+    ws.sg.create_index();
     ws.linked_read_mappers[0].map_reads();
     ws.kci.reindex_graph();
 }

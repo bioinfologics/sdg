@@ -39,52 +39,6 @@ void PairedReadMapper::read(std::ifstream &input_file) {
     }
 }
 
-void PairedReadMapper::update_graph_index() {
-    sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
-    const int k = 31;
-    uint64_t total_k=0;
-    std::vector<KmerIDX> kidxv;
-    for (auto &n:sg.nodes) if (n.sequence.size()>=k) total_k+=n.sequence.size()+1-k;
-    kidxv.reserve(total_k);
-    FastaRecord r;
-    kmerIDXFactory <FastaRecord> kcf({k});
-    for (sgNodeID_t n=1;n<sg.nodes.size();++n){
-        if (sg.nodes[n].sequence.size()>=k){
-            r.id=n;
-            r.seq=sg.nodes[n].sequence;
-            kcf.setFileRecord(r);
-            kcf.next_element(kidxv);
-        }
-    }
-    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
-    sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
-    std::sort(kidxv.begin(),kidxv.end());
-    sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
-    auto wi=kidxv.begin();
-    auto ri=kidxv.begin();
-    auto nri=kidxv.begin();
-    while (ri<kidxv.end()){
-        while (nri!=kidxv.end() and nri->kmer==ri->kmer) ++nri;
-        if (nri-ri==1) {
-            *wi=*ri;
-            ++wi;
-        }
-        ri=nri;
-
-    }
-
-    kidxv.resize(wi-kidxv.begin());
-    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
-    std::unordered_set<int32_t> seen_contigs;
-    seen_contigs.reserve(sg.nodes.size());
-    for (auto &kidx :kidxv) {
-        kmer_to_graphposition[kidx.kmer]={kidx.contigID,kidx.pos};
-        seen_contigs.insert((kidx.contigID>0?kidx.contigID:-kidx.contigID));
-    }
-    sglib::OutputLog(sglib::INFO)<<seen_contigs.size()<<" nodes with indexed kmers"<<std::endl;
-    reads_in_node.resize(sg.nodes.size());
-}
-
 
 
 class StreamKmerFactory : public  KMerFactory {
@@ -117,7 +71,6 @@ public:
 };
 
 void PairedReadMapper::remap_all_reads() {
-    update_graph_index();
     for (auto &rtn:read_to_node) rtn=0;
     for (auto &rin:reads_in_node) rin.clear();
     map_reads();
@@ -126,6 +79,7 @@ void PairedReadMapper::remap_all_reads() {
 void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 31;
     std::atomic_int64_t nokmers(0);
+    reads_in_node.resize(sg.nodes.size());
     read_to_node.resize(datastore.size()+1);
     if (not reads_to_remap.empty())
         sglib::OutputLog()<<reads_to_remap.size()<<" selected reads / "<<read_to_node.size()-1<<" total"<<std::endl;
@@ -171,8 +125,8 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                     ++nokmers;
                 }
                 for (auto &rk:readkmers) {
-                    auto nk = kmer_to_graphposition.find(rk.kmer);
-                    if (kmer_to_graphposition.end()!=nk) {
+                    auto nk = sg.kmer_to_graphposition.find(rk.kmer);
+                    if (sg.kmer_to_graphposition.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation

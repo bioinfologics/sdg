@@ -55,8 +55,9 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     sglib::OutputLog()<<"Mapping reads..."<<std::endl;
     auto pri=0;
+    ws.sg.create_index();
     for (auto &m:ws.paired_read_mappers) {
-        m.update_graph_index();
+
         m.map_reads();
         m.print_stats();
         auto sdist=m.size_distribution();
@@ -67,7 +68,6 @@ int main(int argc, char * argv[]) {
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
     }
     for (auto &m:ws.linked_read_mappers) {
-        m.update_graph_index();
         m.map_reads();
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
     }

@@ -25,7 +25,6 @@ public:
     };
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
-    void update_graph_index();
     void map_reads(std::unordered_set<uint64_t> const &  reads_to_remap={});
     void remap_all_reads();
     void map_read(uint64_t readID);
@@ -43,7 +42,6 @@ public:
         sgNodeID_t node;
         uint32_t pos;
     };
-    std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;
     std::vector<std::vector<ReadMapper>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
     std::vector<uint64_t> rfdist;
