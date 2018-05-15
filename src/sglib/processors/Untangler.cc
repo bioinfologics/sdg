@@ -62,7 +62,7 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
         }
 
 //                std::cout<<"Repeat: [ "<<-b0<<" | "<<-b1<<" ] <-> "<<n<<" <-> [ "<<f0<<" | "<<f1<<" ]"<<std::endl;
-        std::set<prm10xTag_t> b0tags, b1tags, f0tags, f1tags;
+        std::set<bsg10xTag> b0tags, b1tags, f0tags, f1tags;
 
 //                std::cout<<"Reads in nodes -> f0:"<<scaff.lrmappers[0].reads_in_node[(f0 > 0 ? f0 : -f0)].size()
 //                        <<"   f1:"<<scaff.lrmappers[0].reads_in_node[(f1 > 0 ? f1 : -f1)].size()
@@ -83,14 +83,14 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
         b0tags.erase(0);
         b1tags.erase(0);
 
-        std::set<prm10xTag_t> shared1,shared2;
+        std::set<bsg10xTag> shared1,shared2;
 
         for (auto t:f0tags) if (f1tags.count(t)>0) {shared1.insert(t);};
         for (auto t:shared1){f0tags.erase(t);f1tags.erase(t);};
         for (auto t:b0tags) if (b1tags.count(t)>0) {shared2.insert(t);};
         for (auto t:shared2) {b0tags.erase(t);b1tags.erase(t);};
 
-        std::set<prm10xTag_t> aa, bb, ba, ab;
+        std::set<bsg10xTag> aa, bb, ba, ab;
         std::set_intersection(b0tags.begin(), b0tags.end(), f0tags.begin(), f0tags.end(),
                               std::inserter(aa, aa.end()));
         std::set_intersection(b0tags.begin(), b0tags.end(), f1tags.begin(), f1tags.end(),
@@ -354,7 +354,7 @@ uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
     }
     ws.sg.write_to_gfa("graph_after_joining_walks.gfa");
     ws.linked_read_mappers[0].remove_obsolete_mappings();
-    ws.linked_read_mappers[0].update_graph_index();
+    ws.sg.create_index();
     ws.linked_read_mappers[0].map_reads();
     ws.kci.reindex_graph();
 }
@@ -1521,4 +1521,60 @@ void Untangler::unroll_simple_loops() {
         }
 
     }
+}
+
+void PairedReadLinker::generate_links(int min_reads) {
+    std::ofstream lof("paired_links.txt");
+    std::ofstream lof6K("paired_links6K.txt");
+    std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
+
+    //use all libraries collect votes on each link
+    for (auto pm:ws.paired_read_mappers) {
+        for (auto i = 1; i < pm.read_to_node.size(); i += 2) {
+            auto n1 = pm.read_to_node[i];
+            auto n2 = pm.read_to_node[i + 1];
+            if (n1 == 0 or n2 == 0 or n1 == n2) continue;
+            if (n1 > n2) std::swap(n1, n2);
+            ++lv[std::make_pair(n1, n2)];
+        }
+    }
+
+    std::vector<std::vector<std::pair<sgNodeID_t ,uint64_t>>> nodelinks(ws.sg.nodes.size()),nodelinks6K(ws.sg.nodes.size());
+    for (auto l:lv) {
+        if (l.second>=min_reads){
+            nodelinks[l.first.first].emplace_back(l.first.second,l.second);
+            nodelinks[l.first.second].emplace_back(l.first.first,l.second);
+            if (ws.sg.nodes[l.first.first].sequence.size()>=6000 and ws.sg.nodes[l.first.second].sequence.size()>=6000){
+                nodelinks6K[l.first.first].emplace_back(l.first.second,l.second);
+                nodelinks6K[l.first.second].emplace_back(l.first.first,l.second);
+            }
+        }
+    }
+    for (auto n=1;n<ws.sg.nodes.size();++n) {
+        if (!nodelinks[n].empty()) {
+            lof<<n<<": ";
+            for (auto l:nodelinks[n]) lof<<" "<<l.first<<"("<<l.second<<")";
+            lof<<std::endl;
+            lof<<"seq"<<n;
+            for (auto l:nodelinks[n]) lof<<", seq"<<l.first;
+            lof<<std::endl;
+        }
+        if (!nodelinks6K[n].empty()) {
+            lof6K<<n<<": ";
+            for (auto l:nodelinks6K[n]) lof6K<<" "<<l.first<<"("<<l.second<<")";
+            lof6K<<std::endl;
+            lof6K<<"seq"<<n;
+            for (auto l:nodelinks6K[n]) lof6K<<", seq"<<l.first;
+            lof6K<<std::endl;
+        }
+    }
+    //TODO: remove printing
+//    lof<<n<<": ";
+//    for (auto l:flv) lof<<" "<<l.first<<"("<<l.second<<")";
+//    lof<<std::endl;
+    //filter by min reads
+    //infer size?
+    //TODO:hardcoded LMP orientation
+    //check topology?
+
 }

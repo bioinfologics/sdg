@@ -9,6 +9,7 @@
 #include <math.h>
 #include <sglib/logger/OutputLog.h>
 #include "SequenceGraph.hpp"
+#include "sglib/factories/KMerFactory.h"
 
 bool Node::is_canonical() {
     for (size_t i=0,j=sequence.size()-1;i<j;++i,--j){
@@ -951,4 +952,89 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
         current_paths=next_paths;
     }
     return final_paths;
+}
+
+void SequenceGraph::create_index() {
+    class kmerPosFactory : protected KMerFactory {
+    public:
+        explicit kmerPosFactory(uint8_t k) : KMerFactory(k) {}
+
+        ~kmerPosFactory() {
+        }
+        void setFileRecord(FastaRecord &rec) {
+            currentRecord = rec;
+            fkmer=0;
+            rkmer=0;
+            last_unknown=0;
+        }
+
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        const bool next_element(std::vector<std::pair<uint64_t,graphPosition>> &mers) {
+            uint64_t p(0);
+            graphPosition pos;
+            while (p < currentRecord.seq.size()) {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                bases++;
+                fillKBuf(currentRecord.seq[p], p, fkmer, rkmer, last_unknown);
+                p++;
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        pos.node=currentRecord.id;
+                        pos.pos=p;
+                        mers.emplace_back(fkmer, pos);
+                    } else {
+                        // Is bwd
+                        pos.node=-currentRecord.id;
+                        pos.pos=p;
+                        mers.emplace_back(rkmer, pos);
+                    }
+                }
+            }
+            return false;
+        }
+
+    private:
+        FastaRecord currentRecord;
+        uint64_t bases;
+    };
+
+    sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
+    const int k = 31;
+    uint64_t total_k=0;
+    std::vector<std::pair<uint64_t,graphPosition>> kidxv;
+    for (auto &n:nodes) if (n.sequence.size()>=k) total_k+=n.sequence.size()+1-k;
+    kidxv.reserve(total_k);
+    FastaRecord r;
+    kmerPosFactory kcf({k});
+    for (sgNodeID_t n=1;n<nodes.size();++n){
+        if (nodes[n].sequence.size()>=k){
+            r.id=n;
+            r.seq=nodes[n].sequence;
+            kcf.setFileRecord(r);
+            kcf.next_element(kidxv);
+        }
+    }
+    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
+    sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
+    std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
+    sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
+    auto wi=kidxv.begin();
+    auto ri=kidxv.begin();
+    auto nri=kidxv.begin();
+    while (ri<kidxv.end()){
+        while (nri!=kidxv.end() and nri->first==ri->first) ++nri;
+        if (nri-ri==1) {
+            *wi=*ri;
+            ++wi;
+        }
+        ri=nri;
+
+    }
+
+    kidxv.resize(wi-kidxv.begin());
+    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
+    kmer_to_graphposition.insert(kidxv.begin(),kidxv.end());
+    sglib::OutputLog(sglib::INFO)<<"map ready"<<std::endl;
 }

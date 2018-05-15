@@ -146,39 +146,35 @@ include_directories("deps/kseqcpp/")
 
 ## Libraries
 add_library(sequence_graph SHARED
-            src/sglib/SMR.h
-            src/sglib/readers/Common.h
-            src/sglib/readers/FileReader.h
-            src/sglib/readers/SequenceGraphReader.h
-            src/sglib/factories/ContigBlockFactory.h
-            src/sglib/factories/ContigLink.h
-            src/sglib/factories/KMerFactory.h
-            src/sglib/factories/KMerIDXFactory.h
-            src/sglib/SequenceGraph.hpp
-            src/sglib/SequenceGraph.cc
-            src/sglib/PairedReadMapper.hpp
-            src/sglib/PairedReadMapper.cc
-            src/sglib/HaplotypeScorer.hpp
-            src/sglib/HaplotypeScorer.cpp
-            src/sglib/SequenceGraphJournal.hpp
-            src/sglib/SequenceGraphJournal.cc
-            src/sglib/SequenceGraph.cc
-            src/sglib/PairedReadMapper.cc
-            src/sglib/Scaffolder.cc
-            src/sglib/filesystem/check_or_create_directory.cc
-            src/sglib/filesystem/check_or_create_directory.h
+        src/sglib/SMR.h
+        src/sglib/readers/Common.h
+        src/sglib/readers/FileReader.h
+        src/sglib/readers/SequenceGraphReader.h
+        src/sglib/factories/ContigBlockFactory.h
+        src/sglib/factories/ContigLink.h
+        src/sglib/factories/KMerFactory.h
+        src/sglib/factories/KMerIDXFactory.h
+        src/sglib/SequenceGraph.hpp
+        src/sglib/SequenceGraph.cc
+        src/sglib/filesystem/check_or_create_directory.cc
+        src/sglib/filesystem/check_or_create_directory.h
         src/sglib/KmerCompressionIndex.cc
-            src/sglib/KmerCompressionIndex.hpp
-            src/sglib/GraphPartitioner.cc
-            src/sglib/GraphPartitioner.hpp
-            src/sglib/logger/OutputLog.h
-            src/sglib/logger/OutputLog.cc
+        src/sglib/KmerCompressionIndex.hpp
+        src/sglib/logger/OutputLog.h
+        src/sglib/logger/OutputLog.cc
         src/sglib/datastores/LinkedReadsDatastore.cc
         src/sglib/datastores/LinkedReadsDatastore.hpp
+        src/sglib/datastores/PairedReadsDatastore.cc
+        src/sglib/datastores/PairedReadsDatastore.hpp
+        src/sglib/mappers/ReadMapper.hpp
         src/sglib/mappers/LinkedReadMapper.cc
         src/sglib/mappers/LinkedReadMapper.hpp
+        src/sglib/mappers/PairedReadMapper.cc
+        src/sglib/mappers/PairedReadMapper.hpp
+        src/sglib/datastores/PathsDatastore.cc
+        src/sglib/datastores/PathsDatastore.hpp
         src/sglib/WorkSpace.cc
-        src/sglib/WorkSpace.hpp src/sglib/datastores/PathsDatastore.cc src/sglib/datastores/PathsDatastore.hpp)
+        src/sglib/WorkSpace.hpp)
 
 target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 

@@ -17,7 +17,10 @@
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
 
 enum sgNodeStatus_t {sgNodeActive,sgNodeDeleted};
-
+struct graphPosition{
+    sgNodeID_t node;
+    uint32_t pos;
+};
 class Node{
 public:
     Node(std::string _seq, sgNodeStatus_t _st) : sequence(_seq),status(_st){};
@@ -96,7 +99,8 @@ public:
     std::vector<SequenceGraphPath> get_all_unitigs(uint16_t min_nodes);
     // simplify --> executes expand_path on every multi-sequence unitig
     std::vector<SequenceSubGraph> get_all_tribbles();
-
+    void create_index();
+    void clear_index();
 
     // tip_clip -> eliminates tips.
 
@@ -110,7 +114,7 @@ public:
 
 
     //=== internal variables ===
-
+    std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;
     std::vector<Node> nodes;
     std::vector<std::vector<Link>> links;
     std::string filename,fasta_filename;

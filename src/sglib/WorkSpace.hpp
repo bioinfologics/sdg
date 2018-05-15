@@ -8,6 +8,8 @@
 
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
 #include <sglib/mappers/LinkedReadMapper.hpp>
+#include <sglib/datastores/PairedReadsDatastore.hpp>
+#include <sglib/mappers/PairedReadMapper.hpp>
 #include <sglib/datastores/PathsDatastore.hpp>
 #include "SequenceGraph.hpp"
 #include "KmerCompressionIndex.hpp"
@@ -41,6 +43,8 @@ public:
 
     //All status classes are public, treat them with care anyway ;)
     SequenceGraph sg;
+    std::vector<PairedReadsDatastore> paired_read_datastores;
+    std::vector<PairedReadMapper> paired_read_mappers;
     std::vector<LinkedReadsDatastore> linked_read_datastores;
     std::vector<LinkedReadMapper> linked_read_mappers;
     std::vector<PathsDatastore> path_datastores;

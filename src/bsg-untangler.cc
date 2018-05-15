@@ -18,7 +18,7 @@ int main(int argc, char * argv[]) {
     std::string workspace_file,output_prefix;
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
     bool repeat_expansion=false, neighbour_connection_graph=false, bubbly_paths=false;
-    bool unroll_loops=false,pop_errors=false;
+    bool unroll_loops=false,pop_errors=false, paired_scaff=false;
     bool explore_homopolymers=false;
     uint64_t min_backbone_node_size=2000;
     float min_backbone_ci=0.5;
@@ -33,6 +33,7 @@ int main(int argc, char * argv[]) {
                 ("help", "Print help")
                 ("w,workspace", "input workspace", cxxopts::value<std::string>(workspace_file))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
+                ("p,paired_reads","paired read scaffolding (experimental)",cxxopts::value<bool>(paired_scaff))
                 ("l,unroll_loops", "unroll simple loops",cxxopts::value<bool>(unroll_loops))
                 ("e,pop_errors", "pop unsupported short-bubbles (as errors)",cxxopts::value<bool>(pop_errors))
                 ("r,repeat_expansion","run tag-based repeat expansion", cxxopts::value<bool>(repeat_expansion))
@@ -77,7 +78,11 @@ int main(int argc, char * argv[]) {
     ws.load_from_disk(workspace_file);
     ws.add_log_entry("bsg-untangler run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
-
+    if (paired_scaff){
+        Untangler u(ws);
+        PairedReadLinker prl(ws,u);
+        prl.generate_links(5);
+    }
     if (unroll_loops){
         Untangler u(ws);
         u.unroll_simple_loops();

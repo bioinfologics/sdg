@@ -19,7 +19,7 @@ int main(int argc, char * argv[]) {
     }
 
     if (0==strcmp(argv[1],"make")) {
-        std::vector<std::string> lr_datastores;
+        std::vector<std::string> lr_datastores,pr_datastores;
         std::string output="";
         std::string gfa_filename="",kci_filename="";
         try {
@@ -28,6 +28,7 @@ int main(int argc, char * argv[]) {
             options.add_options()
                     ("help", "Print help")
                     ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename))
+                    ("p,paired_reads", "paired reads datastore", cxxopts::value<std::vector<std::string>>(pr_datastores))
                     ("l,linked_reads", "linked reads datastore", cxxopts::value<std::vector<std::string>>(lr_datastores))
                     ("k,kmerspectra", "KCI kmer spectra", cxxopts::value<std::string>(kci_filename))
                     ("o,output", "output file", cxxopts::value<std::string>(output));
@@ -77,6 +78,12 @@ int main(int argc, char * argv[]) {
             for (auto fn: w.read_counts_header) std::cout << fn << ",";
             std::cout << std::endl;
         }
+        for (auto prds:pr_datastores){
+            //create and load the datastore, and the mapper!
+            w.paired_read_datastores.emplace_back(prds);
+            w.paired_read_mappers.emplace_back(w.sg,w.paired_read_datastores.back());
+            w.add_log_entry("PairedReadDatastore imported from "+prds+" ("+std::to_string(w.paired_read_datastores.back().size())+" reads)");
+        }
         for (auto lrds:lr_datastores){
             //create and load the datastore, and the mapper!
             w.linked_read_datastores.emplace_back(lrds);
@@ -84,7 +91,7 @@ int main(int argc, char * argv[]) {
             w.add_log_entry("LinkedReadDatastore imported from "+lrds+" ("+std::to_string(w.linked_read_datastores.back().size())+" reads)");
         }
 
-        w.dump_to_disk(output);
+        w.dump_to_disk(output+".bsgws");
 
     }
     else if (0==strcmp(argv[1],"log")) {
