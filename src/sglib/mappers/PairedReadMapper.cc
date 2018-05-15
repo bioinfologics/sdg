@@ -78,7 +78,7 @@ void PairedReadMapper::remap_all_reads() {
 
 void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 31;
-    std::atomic_int64_t nokmers(0);
+    std::atomic<int64_t> nokmers(0);
     reads_in_node.resize(sg.nodes.size());
     read_to_node.resize(datastore.size()+1);
     if (not reads_to_remap.empty())

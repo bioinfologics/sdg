@@ -19,10 +19,10 @@ void WorkSpace::dump_to_disk(std::string filename) {
         of.write((char *) &l.timestamp,sizeof(l.timestamp));
         count=l.bsg_version.size();
         of.write((char *) &count,sizeof(count));
-        of.write((char *) l.bsg_version.c_str(), count);
+        of.write((char *) l.bsg_version.data(), count);
         count=l.log_text.size();
         of.write((char *) &count,sizeof(count));
-        of.write((char *) l.log_text.c_str(), count);
+        of.write((char *) l.log_text.data(), count);
 
     }
     //dump main graph
@@ -68,10 +68,10 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
         wsfile.read((char *) &timestamp,sizeof(timestamp));
         wsfile.read((char *) &ssize,sizeof(ssize));
         version.resize(ssize);
-        wsfile.read((char *) version.c_str(),ssize);
+        wsfile.read((char *) version.data(),ssize);
         wsfile.read((char *) &ssize,sizeof(ssize));
         text.resize(ssize);
-        wsfile.read((char *) text.c_str(),ssize);
+        wsfile.read((char *) text.data(),ssize);
         log.emplace_back(timestamp,version,text);
     }
     if (log_only) return;
@@ -90,17 +90,21 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
 //        }
 //    }
     wsfile.read((char *) &count,sizeof(count));
+    paired_read_datastores.reserve(count);
+    paired_read_mappers.reserve(count);
     for (auto i=0;i<count;++i){
         paired_read_datastores.emplace_back();
         paired_read_datastores.back().read(wsfile);
-        paired_read_mappers.emplace_back(sg,paired_read_datastores.back());
+        paired_read_mappers.emplace_back(sg,paired_read_datastores[i]);
         paired_read_mappers.back().read(wsfile);
     }
     wsfile.read((char *) &count,sizeof(count));
+    linked_read_datastores.reserve(count);
+    linked_read_mappers.reserve(count);
     for (auto i=0;i<count;++i){
         linked_read_datastores.emplace_back();
         linked_read_datastores.back().read(wsfile);
-        linked_read_mappers.emplace_back(sg,linked_read_datastores.back());
+        linked_read_mappers.emplace_back(sg,linked_read_datastores[i]);
         linked_read_mappers.back().read(wsfile);
     }
     if (!wsfile.eof()){
@@ -131,22 +135,30 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
 #pragma omp parallel
     {
         std::vector<sgNodeID_t> thread_nodes;
+        uint64_t ttbp=0;
 #pragma omp for schedule(static, 100)
         for (auto n=1;n<sg.nodes.size();++n) {
             if (sg.nodes[n].sequence.size() < min_size) continue;
             if (sg.nodes[n].sequence.size() > max_size) continue;
-            if (sg.get_fw_links(n).size() != 1 or sg.get_bw_links(n).size() != 1) continue;
-            auto ntags = linked_read_mappers[0].get_node_tags(n);
-            if (ntags.size() < min_tags or ntags.size() > max_tags) continue;
-            auto ci = kci.compute_compression_for_node(n, 1);
-            if (ci < min_ci or ci > max_ci) continue;
+            if (!linked_read_mappers.empty()) {
+                auto ntags = linked_read_mappers[0].get_node_tags(n);
+                if (ntags.size() < min_tags or ntags.size() > max_tags) continue;
+            }
+            if (!kci.graph_kmers.empty()) {
+                auto ci = kci.compute_compression_for_node(n, 1);
+                if (ci < min_ci or ci > max_ci) continue;
+            }
             ++tnodes;
             thread_nodes.emplace_back(n);
-            tbp += sg.nodes[n].sequence.size();
+
+            ttbp += sg.nodes[n].sequence.size();
         }
 
 #pragma omp critical(collect_selected_nodes)
-        nodes.insert(nodes.end(),thread_nodes.begin(),thread_nodes.end());
+        {
+            nodes.insert(nodes.end(), thread_nodes.begin(), thread_nodes.end());
+            tbp+=ttbp;
+        }
 
     }
     sglib::OutputLog()<< "Selected "<<tnodes<<" / "<<sg.nodes.size()<<" with a total "<<tbp<<"bp"<< std::endl;

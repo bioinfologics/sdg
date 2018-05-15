@@ -30,8 +30,8 @@ public:
 class PairedReadLinker {
 public:
     PairedReadLinker(WorkSpace & _ws, Untangler & _u): ws(_ws),u(_u) {};
-    void generate_links(int min_reads);
-
+    void generate_links( uint32_t min_size=1000, float min_ci=0, float max_ci=100,int min_reads=5);
+    std::vector<std::vector<sgNodeID_t>> find_chains();
     WorkSpace &ws;
     Untangler &u;
     std::vector<Link> links;

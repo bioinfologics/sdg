@@ -36,12 +36,8 @@ public:
     void load_from_disk(std::string filename);*/
     void print_stats();
 
-    SequenceGraph & sg;
-    PairedReadsDatastore &datastore;
-    struct graphPosition{
-        sgNodeID_t node;
-        uint32_t pos;
-    };
+    const SequenceGraph & sg;
+    const PairedReadsDatastore & datastore;
     std::vector<std::vector<ReadMapper>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
     std::vector<uint64_t> rfdist;

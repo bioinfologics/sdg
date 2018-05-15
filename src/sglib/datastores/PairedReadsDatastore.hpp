@@ -28,8 +28,9 @@ class BufferedPairedSequenceGetter;
 class PairedReadsDatastore {
 public:
     PairedReadsDatastore(){};
-    PairedReadsDatastore(std::string filename){
-        load_index(filename);
+    PairedReadsDatastore(std::string _filename){
+        filename=_filename;
+        load_index();
     };
     PairedReadsDatastore(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250){
         build_from_fastq(read1_filename,read2_filename,output_filename,min_readsize,max_readsize);
@@ -37,8 +38,8 @@ public:
     void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250, size_t chunksize=10000000);
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
-    void load_index(std::string _filename);
-    size_t size(){return _size;};
+    void load_index();
+    uint64_t size()const {return _size;};
     std::string get_read_sequence(size_t readID);
     std::string filename; //if store is in single file bsg format these two are the same as the index file.
 
@@ -46,7 +47,7 @@ public:
     uint64_t readpos_offset;
 private:
     //TODO: save size
-    size_t _size;
+    uint64_t _size;
     FILE * fd=NULL;
 
     //TODO: read sequence cache (std::map with a limit of elements and use count)

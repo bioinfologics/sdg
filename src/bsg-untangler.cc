@@ -81,7 +81,7 @@ int main(int argc, char * argv[]) {
     if (paired_scaff){
         Untangler u(ws);
         PairedReadLinker prl(ws,u);
-        prl.generate_links(5);
+        prl.generate_links(1000,.5,1.5,5);
     }
     if (unroll_loops){
         Untangler u(ws);

@@ -16,7 +16,7 @@
 
 class LogEntry{
 public:
-    LogEntry(std::time_t t, std::string v, std::string tx):timestamp(t),bsg_version(v),log_text(tx){};
+    LogEntry(std::time_t t, std::string v, std::string tx):timestamp(t),bsg_version(std::move(v)),log_text(std::move(tx)){};
     std::time_t timestamp;
     std::string bsg_version;
     std::string log_text;

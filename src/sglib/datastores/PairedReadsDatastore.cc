@@ -26,10 +26,10 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     //First, create the chunk files
     uint64_t pairs=0,discarded=0,truncated=0;
     std::ofstream output(output_filename.c_str());
+
     output.write((const char *) &readsize,sizeof(readsize));
     auto size_pos=output.tellp();
-    uint64_t rts=pairs*2;
-    output.write((const char *) &rts, sizeof(rts));
+    output.write((const char *) &_size, sizeof(_size));//just to save the space!
     while (!feof(fd1) and !feof(fd2)) {
 
         if (NULL == fgets(readbuffer, 999, fd1)) continue;
@@ -48,13 +48,20 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
             ++discarded;
             continue;
         }
-        if (currrent_read.seq1.size()>_rs) ++truncated;
-        if (currrent_read.seq2.size()>_rs) ++truncated;
+        if (currrent_read.seq1.size()>_rs) {
+            ++truncated;
+            currrent_read.seq1.resize(_rs);
+        }
+        if (currrent_read.seq2.size()>_rs) {
+            ++truncated;
+            currrent_read.seq2.resize(_rs);
+        }
         ++pairs;
         readdatav.push_back(currrent_read);
         if (readdatav.size()==chunksize){
             //dump
             char buffer[2*readsize+2];
+            bzero(buffer,2*readsize+2);
             for (auto &r:readdatav){
                 bzero(buffer,2*readsize+2);
                 memcpy(buffer,r.seq1.data(),(r.seq1.size()>readsize ? readsize : r.seq1.size()));
@@ -68,6 +75,7 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     if (readdatav.size()>0) {
         //dump
         char buffer[2*readsize+2];
+        bzero(buffer,2*readsize+2);
         for (auto &r:readdatav){
             bzero(buffer,2*readsize+2);
             memcpy(buffer,r.seq1.data(),(r.seq1.size()>readsize ? readsize : r.seq1.size()));
@@ -77,17 +85,16 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
         sglib::OutputLog()<<readdatav.size()<<" pairs dumped..."<<std::endl;
         readdatav.clear();
     }
-    rts=pairs*2;
+    _size=pairs*2;
     output.seekp(size_pos);
-    output.write((const char *) &rts, sizeof(rts));
+    output.write((const char *) &_size, sizeof(_size));
     output.close();
     //DONE!
     sglib::OutputLog(sglib::LogLevels::INFO)<<discarded<<" pairs discarded due to short reads"<<std::endl;
     sglib::OutputLog(sglib::LogLevels::INFO)<<truncated<<" reads where truncated to "<<_rs<<"bp"<<std::endl;
-    sglib::OutputLog(sglib::LogLevels::INFO)<<"Datastore with "<<rts<<" reads ("<<pairs<<" pairs)"<<std::endl;
+    sglib::OutputLog(sglib::LogLevels::INFO)<<"Datastore with "<<_size<<" reads ("<<pairs<<" pairs)"<<std::endl;
     filename=output_filename;
     fd=fopen(filename.c_str(),"r");
-    _size=rts;
 }
 
 void PairedReadsDatastore::read(std::ifstream &input_file) {
@@ -96,16 +103,13 @@ void PairedReadsDatastore::read(std::ifstream &input_file) {
     input_file.read((char *) &s, sizeof(s));
     filename.resize(s);
     input_file.read((char *) filename.data(), filename.size());
-    load_index(filename);
+    load_index();
 }
 
-void PairedReadsDatastore::load_index(std::string _filename){
-    uint64_t s;
-    filename=_filename;
+void PairedReadsDatastore::load_index(){
     fd=fopen(filename.c_str(),"r");
     fread( &readsize,sizeof(readsize),1,fd);
-    fread(&s,sizeof(s),1,fd);
-    _size=s;
+    fread( &_size,sizeof(_size),1,fd);
     readpos_offset=ftell(fd);
 }
 

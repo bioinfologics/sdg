@@ -334,7 +334,7 @@ void SequenceGraph::write(std::ofstream & output_file) {
         output_file.write((char *) &n.status,sizeof(n.status));
         count=n.sequence.size();
         output_file.write((char *) &count,sizeof(count));
-        output_file.write((char *) n.sequence.c_str(),count);
+        output_file.write((char *) n.sequence.data(),count);
     }
     count=links.size();
     output_file.write((char *) &count,sizeof(count));
@@ -358,7 +358,7 @@ void SequenceGraph::read(std::ifstream & input_file) {
         input_file.read((char *) &status,sizeof(status));
         input_file.read((char *) &seqsize,sizeof(seqsize));
         seq.resize(seqsize);
-        input_file.read((char *) seq.c_str(),seqsize);
+        input_file.read((char *) seq.data(),seqsize);
         nodes.emplace_back(seq);
         nodes.back().status=status;
         if (nodes.back().status==sgNodeStatus_t::sgNodeActive) ++active;
@@ -955,6 +955,7 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
 }
 
 void SequenceGraph::create_index() {
+    kmer_to_graphposition.clear();
     class kmerPosFactory : protected KMerFactory {
     public:
         explicit kmerPosFactory(uint8_t k) : KMerFactory(k) {}
@@ -1030,7 +1031,6 @@ void SequenceGraph::create_index() {
             ++wi;
         }
         ri=nri;
-
     }
 
     kidxv.resize(wi-kidxv.begin());
