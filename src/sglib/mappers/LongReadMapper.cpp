@@ -59,12 +59,8 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
             mappings.emplace_back(mapping);
         }
     }
-    for (std::vector<LongReadMapping>::const_iterator mappingItr = mappings.cbegin(); mappingItr != mappings.cend(); ++mappingItr) {
-        auto index = (unsigned long)std::distance(mappings.cbegin(), mappingItr);
-        read_to_mappings[mappingItr->read_id].push_back(index);
-        mappings_in_node[std::abs(mappingItr->node)].push_back(index);
-    }
 
+    update_indexes_from_mappings();
 }
 
 LongReadMapping LongReadMapper::createMapping(uint32_t readID, const mm_reg1_t *regs0, int j, long long int node) const {
@@ -97,4 +93,12 @@ void LongReadMapper::printMatch(const mm_idx_t *mi, std::ofstream &matchOutput, 
                 << "\t" << regs0[j].blen
                 << "\t" << regs0[j].mapq
                 << "\n";
+}
+
+void LongReadMapper::update_indexes_from_mappings() {
+    for (std::vector<LongReadMapping>::const_iterator mappingItr = mappings.cbegin(); mappingItr != mappings.cend(); ++mappingItr) {
+        auto index = (unsigned long)std::distance(mappings.cbegin(), mappingItr);
+        read_to_mappings[mappingItr->read_id].push_back(index);
+        mappings_in_node[std::abs(mappingItr->node)].push_back(index);
+    }
 }

@@ -10,6 +10,7 @@
 #include "sglib/readers/SequenceGraphReader.h"
 #include "sglib/KmerCompressionIndex.hpp"
 #include "sglib/WorkSpace.hpp"
+#include "sglib/mappers/LongReadMapper.hpp"
 %}
 %include "stdint.i"
 %include "inttypes.i"
@@ -20,10 +21,10 @@
 %include "sglib/types/GenericTypes.hpp"
 %include "sglib/graph/SequenceSubGraph.hpp"
 %include "sglib/graph/SequenceGraphPath.hpp"
-/* Parse the header file to generate wrappers */
 %include "sglib/graph/SequenceGraph.hpp"
 %include "sglib/KmerCompressionIndex.hpp"
 %include "sglib/WorkSpace.hpp"
+%include "sglib/mappers/LongReadMapper.hpp"
 
 namespace std {
    %template(vectorInt) vector<int>;
@@ -37,5 +38,6 @@ namespace std {
    %template(vectorUINT16) vector<uint16_t >;
    %template(vectorVectorUINT16) vector< vector <uint16_t > >;
    %template(vectorBool) vector<bool>;
+   %template(vectorLRMapping) vector<LongReadMapping>;
 };
 
