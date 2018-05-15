@@ -62,35 +62,38 @@ int main(int argc, char * argv[]) {
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
 
-    uint complexity=2;
+    unsigned int complexity=2;
     // If exploring complexity nodes I return to the same node, then it is a loop.
     const auto loopy_nodes(sg.get_loopy_nodes(complexity));
-    uint loop(0);
-    uint validLoops(0);
-    uint smallFlanks(0);
-    uint missingFlank(0);
+    unsigned int loop(0);
+    unsigned int validLoops(0);
+    unsigned int smallFlanks(0);
+    unsigned int missingFlank(0);
+    std::vector<sgNodeID_t > validLoopNodes;
+    validLoopNodes.reserve(1000);
     for (const auto &loopy_node:loopy_nodes) {
         bool isValidLoop(true);
         loop++;
         const auto flank(sg.get_flanking_nodes(loopy_node));
-        if (flank.size() == 1) {isValidLoop=false; missingFlank++;}
+        if (flank.size() <= 1) {isValidLoop=false; missingFlank++;}
         if (!isValidLoop) continue;
         for (const auto &fn: flank ) {
-            if (sg.nodes[(fn>0?fn:-fn)].sequence.size() < 1000) {isValidLoop = false; smallFlanks++; break;}
+            if (sg.nodes[(fn>0?fn:-fn)].sequence.size() < 1000) {
+                isValidLoop = false;
+                smallFlanks++;
+                break;
+            }
         }
         if (!isValidLoop) continue;
-        validLoops++;
+        validLoopNodes.emplace_back(loopy_node);
         std::cout << "Resolving loop " << loop << " / " << loopy_nodes.size() << "\n";
         std::cout << loopy_node << "\t" << sg.oldnames[loopy_node] << "\n";
-        std::cout << "Flank = ";
+        std::cout << "Flanks = ";
         std::copy(flank.begin(),flank.end(),std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
         std::cout << std::endl;
-
-        // check flank mappings (loop at the PAFs for now)
     }
-
-    sglib::OutputLog() << "Loops missing a flank = " << missingFlank << std::endl;
+    sglib::OutputLog() << "Loops missing flanks = " << missingFlank << std::endl;
     sglib::OutputLog() << "Flanks smaller than 1000bp = " << smallFlanks << std::endl;
-    sglib::OutputLog() << "Done resolving " << validLoops << "/" << loopy_nodes.size() << std::endl;
+
     return 0;
 }

@@ -41,7 +41,7 @@ public:
     std::vector<sgNodeID_t> get_fw_nodes(sgNodeID_t n) const;
     std::vector<sgNodeID_t> get_bw_nodes(sgNodeID_t n) const;
 
-    std::unordered_set<sgNodeID_t> get_neighbour_nodes(sgNodeID_t n) const {
+    std::vector<sgNodeID_t> get_neighbour_nodes(sgNodeID_t n) const {
         std::unordered_set<sgNodeID_t > result;
         auto fwns(get_fw_nodes(n));
         auto bwns(get_bw_nodes(n));
@@ -51,7 +51,7 @@ public:
         for (const auto &bn:bwns) {
             result.insert(bn);
         }
-        return result;
+        return std::vector<sgNodeID_t > (result.begin(), result.end());
     }
 
     bool is_sane() const;
