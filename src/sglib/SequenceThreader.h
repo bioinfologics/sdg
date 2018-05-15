@@ -14,7 +14,7 @@
 #include <sglib/factories/KMerIDXFactory.h>
 #include <sglib/logger/OutputLog.h>
 
-typedef uint64_t seqID_t;
+typedef int32_t seqID_t;
 
 enum MappingDirection {Nowhere, Forward, Backwards};
 
@@ -23,7 +23,8 @@ class SequenceMappingThread;
 class BridgedMappingThreads;
 
 class SequenceThreader {
-    using SequenceMappingStore = std::unordered_map<seqID_t, std::vector<SequenceMapping>>;
+    using SequenceMappingStore = std::map<seqID_t, std::vector<SequenceMapping>>;
+    using SequenceUnmappedKmers = std::map<seqID_t, std::vector<KmerIDX>>;
     using SequenceMappingPathsStore = std::unordered_map<seqID_t, std::vector<SequenceMappingThread>>;
     using BridgedMappingPathsStore = std::unordered_map<seqID_t, std::vector<BridgedMappingThreads>>;
 
@@ -33,14 +34,15 @@ public:
     void map_sequences(const std::string &filename, const std::string &output) {
         output_prefix = output;
         query_seq_file = filename;
-
         map_sequences_from_file(filename);
     }
     void print_mappings(std::ostream& out, bool use_oldnames = false) const;
+    void read_mappings(std::ifstream& in, bool use_oldnames);
+    void filter_mappings(double score = 90);
 
     // Connecting kmer mappings into threads through graph.
-    void filter_mappings(double score = 90);
-    void thread_mappings();
+
+    void thread_mappings_old();
     void bridge_threads();
     void print_paths(std::ostream& out, bool use_oldnames = false) const;
 
@@ -67,12 +69,17 @@ private:
     std::unordered_map<seqID_t, size_t> query_seq_sizes;
     std::unordered_map<seqID_t, std::string> query_seq_names;
 
-    // Results storage
+    // Mapping storage
     SequenceMappingStore mappings_of_sequence;
+    SequenceUnmappedKmers sequence_unmapped_kmers;
+
+
     SequenceMappingPathsStore mapping_threads_of_sequence;
     BridgedMappingPathsStore  bridged_mapping_threads_of_sequence;
-    std::vector<KmerIDX> unmapped_kmers;
 
+
+    std::tuple<std::vector<SequenceMapping>, std::vector<KmerIDX>> map_kmers_to_graph(seqID_t id, std::vector<KmerIDX>& kmers);
+    std::tuple<std::vector<SequenceMapping>, std::vector<KmerIDX>> map_sequence_to_graph(FastaRecord& seq);
     void map_sequences_from_file(const std::string &filename);
 };
 
@@ -82,10 +89,12 @@ class SequenceMapping {
 
 public:
     SequenceMapping();
+    SequenceMapping(seqID_t id, uint32_t seq_first, uint32_t seq_last, sgNodeID_t node, int32_t node_first,
+                    int32_t node_last, int32_t muk, uint64_t puk, uint64_t nk);;
     bool operator==(const SequenceMapping &other);
     bool operator<(const SequenceMapping &other) const;
     friend std::ostream& operator<<(std::ostream& stream, const SequenceMapping& sm);
-    void initiate_mapping(uint64_t sequence_id);
+    void initiate_mapping(seqID_t sequence_id);
     bool ismatched();
     void start_new_mapping(const graphPosition& gpos, uint32_t seqpos, const UniqueKmerIndex& counts);
     void extend(int32_t nodepos, uint32_t seqpos);

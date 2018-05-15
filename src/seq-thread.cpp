@@ -16,10 +16,10 @@ int main(int argc, char **argv) {
     std::string graph_filename;
     std::string reference_filename;
     std::string output_dir;
+    std::string mappings_file;
     int log_level;
     bool dump_unmapped, dump_mappings, dump_paths;
     double unique_kmer_threshold;
-
 
     // DEFAULT PARAMETERS... FIXED FOR NOW.
 
@@ -41,7 +41,8 @@ int main(int argc, char **argv) {
             ("m", "Dump graph node mappings", cxxopts::value<bool>(dump_mappings))
             ("p", "Dump connected paths", cxxopts::value<bool>(dump_paths))
             ("l,logging", "Logging level (0: INFO, 1: WARN, 2: DEBUG)", cxxopts::value<int>(log_level) -> default_value("0"), "log_level")
-            ("t,threshold", "% of unique Kmers required to keep mappings", cxxopts::value<double>(unique_kmer_threshold) -> default_value("90"), "unique_kmer_threshold");
+            ("t,threshold", "% of unique Kmers required to keep mappings", cxxopts::value<double>(unique_kmer_threshold) -> default_value("90"), "unique_kmer_threshold")
+            ("mapfile", "File of precomputed mappings", cxxopts::value<std::string>(mappings_file) -> default_value(""));
 // @formatter:on
 
     auto result (options.parse(argc, argv));
@@ -80,29 +81,33 @@ int main(int argc, char **argv) {
 // CONSTRUCT SEQUENCE_MAPPER...
     SequenceThreader tdr(sg, k);
 
-// MAP UNIQUE KMERS FROM FASTA SEQUENCES INTO GRAPH.
-    tdr.map_sequences(reference_filename, output_dir);
+// MAP UNIQUE KMERS FROM FASTA SEQUENCES INTO GRAPH, OR READ FROM FILE...
+    if(mappings_file.empty()) {
 
-    // Pre-filter mappings dump.
-    if (dump_mappings) {
-        sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping mappings." << std::endl;
-        std::ofstream mapping_dump(output_dir + "/mappings_unfiltered.txt");
-        tdr.print_mappings(mapping_dump, true);
-        mapping_dump.close();
+        tdr.map_sequences(reference_filename, output_dir);
+        if (dump_mappings) {
+            sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping mappings." << std::endl;
+            std::ofstream mapping_dump(output_dir + "/raw_mappings.txt");
+            tdr.print_mappings(mapping_dump, true);
+            mapping_dump.close();
+        }
+    } else {
+        sglib::OutputLog(sglib::LogLevels::INFO) << "Reading mappings from file: " << mappings_file << std::endl;
+        std::ifstream mappings_input(mappings_file);
+        tdr.read_mappings(mappings_input, true);
+        mappings_input.close();
     }
 
-    // Filter the mappings for quality.
+// FILTER MAPPINGS FOR QUALITY...
     tdr.filter_mappings(unique_kmer_threshold);
 
-    // Post-filter mappings dump.
     if (dump_mappings) {
-        sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping mappings." << std::endl;
-        std::ofstream mapping_dump(output_dir + "/mappings_filtered.txt");
+        sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping filtered mappings." << std::endl;
+        std::ofstream mapping_dump(output_dir + "/filtered_mappings.txt");
         tdr.print_mappings(mapping_dump, true);
         mapping_dump.close();
     }
 
-    // Unmapped node diagnostics dump.
     if (dump_unmapped) {
         sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping unmapped nodes." << std::endl;
         std::ofstream unmapped(output_dir + "/unmapped_nodes.txt");
@@ -110,7 +115,10 @@ int main(int argc, char **argv) {
         unmapped.close();
     }
 
-// CONNECT MAPPINGS INTO "MAPPING THREADS"...
+    exit(0);
+
+
+// CONNECT MAPPINGS INTO PATHS...
     tdr.thread_mappings();
 
     std::ofstream graph_paths_out(output_dir + "/mapped_paths_graph.fasta");

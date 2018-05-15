@@ -156,7 +156,7 @@ add_library(sequence_graph SHARED
             src/sglib/datastores/PathsDatastore.cc
             src/sglib/processors/PathExplorer.cpp
             src/sglib/SequenceThreader.cpp
-            src/sglib/UniqueKmerIndex.cpp
+            src/sglib/processors/UniqueKmerIndex.cpp
             src/sglib/graph/SequenceSubGraph.cpp
             src/sglib/graph/SequenceGraphPath.cpp
             src/sglib/mappers/LongReadMapper.cpp

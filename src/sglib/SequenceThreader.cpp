@@ -14,6 +14,7 @@
 #include <sglib/aligners/algorithms/SmithWaterman.h>
 #include <sglib/processors/PathExplorer.h>
 #include <sglib/utilities/nstats.h>
+#include <sstream>
 
 SequenceMapping::SequenceMapping(){
     // Just clean the structure, OSX doesn't give you clean memory
@@ -43,7 +44,7 @@ std::ostream& operator<<(std::ostream& stream, const SequenceMapping& sm) {
     return stream;
 }
 
-void SequenceMapping::initiate_mapping(uint64_t sequence_id) {
+void SequenceMapping::initiate_mapping(seqID_t sequence_id) {
     seq_id = sequence_id;
     first_seq_pos = 0;
     last_seq_pos = 0;
@@ -115,91 +116,98 @@ bool SequenceMapping::mapping_continues(const graphPosition& gpos) const {
     return same_node and direction_continues;
 }
 
-void SequenceThreader::map_sequences_from_file(const std::string &filename) {
+std::tuple<std::vector<SequenceMapping>, std::vector<KmerIDX>> SequenceThreader::map_kmers_to_graph(seqID_t id, std::vector<KmerIDX>& kmers) {
+    SequenceMapping mapping;
+    mapping.initiate_mapping(id);
+    // For each kmer on sequence.
+    uint64_t mapped_kmers_count {0};
+    std::vector<SequenceMapping> sequence_mappings;
+    std::vector<KmerIDX> unmapped_kmers;
+    for (auto &sk:kmers) {
+        bool found_kmer;
+        graphPosition graph_pos;
+        std::tie(found_kmer, graph_pos) = graph_kmer_index.find_unique_kmer_in_graph(sk.kmer);
+        // IF KMER EXISTS ON GRAPH
+        if (found_kmer) {
+            sglib::OutputLog(sglib::LogLevels::DEBUG) << "Found kmer: " << sk.kmer << "in graph" << std::endl;
+            sglib::OutputLog(sglib::LogLevels::DEBUG) << '(' << graph_pos.node << ", " << graph_pos.pos << ')' << std::endl;
+            mapped_kmers_count++;
+            // IF THE KMER MATCH IS THE FIRST MATCH FOR THE MAPPING...
+            if (!mapping.ismatched()) {
+                sglib::OutputLog(sglib::LogLevels::DEBUG) << "Kmer match is the first for the mapping." << std::endl;
+                mapping.start_new_mapping(graph_pos, sk.pos, graph_kmer_index);
+            } // IF THE KMER MATCH IS NOT THE FIRST MATCH FOR THE MAPPING...
+            else {
+                sglib::OutputLog(sglib::LogLevels::DEBUG) << "Kmer match is not the first match for the mapping." << std::endl;
+                // THERE ARE TWO SITUATIONS WHERE WE WOULD START A NEW MAPPING...
+                // A). WE ARE MAPPING TO A COMPLETELY DIFFERENT NODE...
+                // B). THE DIRECTION OF THE MAPPING IS FLIPPED...
 
+                if (!mapping.mapping_continues(graph_pos)) {
+                    sglib::OutputLog(sglib::LogLevels::DEBUG) << "Kmer match does not continues the current mapping." << std::endl;
+                    sequence_mappings.push_back(mapping);
+                    mapping.start_new_mapping(graph_pos, sk.pos, graph_kmer_index);
+                } else { // IF NODE KMER MAPS TO IS THE SAME, EXTEND THE CURRENT MAPPING...
+                    sglib::OutputLog(sglib::LogLevels::DEBUG) << "Kmer match continues the current mapping." << std::endl;
+                    mapping.extend(graph_pos.pos, sk.pos);
+                }
+            }
+        } else {
+            unmapped_kmers.emplace_back(sk.kmer);
+        }
+    }
+    // TODO : Check if this last push_back is required
+    if (mapping.ismatched()) sequence_mappings.push_back(mapping);
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Mapped " << mapped_kmers_count << " kmers from the reference." << std::endl;
+    return std::make_tuple(std::move(sequence_mappings), std::move(unmapped_kmers));
+}
+
+std::tuple<std::vector<SequenceMapping>, std::vector<KmerIDX>> SequenceThreader::map_sequence_to_graph(FastaRecord& seq) {
+    kmerIDXFactory<FastaRecord> kf({k});
+    std::vector<KmerIDX> sequence_kmers(0);
+    kf.setFileRecord(seq);
+    kf.next_element(sequence_kmers);
+    return map_kmers_to_graph(seq.id, sequence_kmers);
+}
+
+void SequenceThreader::map_sequences_from_file(const std::string &filename) {
     sglib::OutputLog(sglib::LogLevels::INFO) << "Mapping sequence kmers to graph." << std::endl;
     FastaReader<FastaRecord> fastaReader({0}, filename);
-    std::atomic<uint64_t> mapped_kmers_count(0), sequence_count(0);
+    std::atomic<uint64_t> sequence_count(0);
 
-#pragma omp parallel shared(fastaReader, mappings_of_sequence, unmapped_kmers, query_seq_sizes, query_seq_names)
+#pragma omp parallel shared(fastaReader, mappings_of_sequence, sequence_unmapped_kmers, query_seq_sizes, query_seq_names)
     {
         FastaRecord sequence;
-        std::vector<KmerIDX> seqkmers;
-        kmerIDXFactory<FastaRecord> kf({k});
-        SequenceMapping mapping;
         bool c;
 
-#pragma omp critical (readrec)
+#pragma omp critical (getrecord)
         {
             c = fastaReader.next_record(sequence);
         }
 
         while (c) {
             sequence_count++;
-            mapping.initiate_mapping((uint64_t) sequence.id);
+            std::vector<SequenceMapping> mappings;
+            std::vector<KmerIDX> unmapped_kmers;
+            sglib::OutputLog(sglib::LogLevels::INFO) << "Mapping sequence: " << sequence.name << " (" << sequence.id << ')' << std::endl;
+            std::tie(mappings, unmapped_kmers) = map_sequence_to_graph(sequence);
 
-            // get all Kmers from sequence.
-            seqkmers.clear();
-            kf.setFileRecord(sequence);
-            kf.next_element(seqkmers);
-
-            // For each unique kmer on sequence.
-            std::vector<SequenceMapping> sequence_mappings;
-            for (auto &sk:seqkmers) {
-                bool found_kmer;
-                graphPosition graph_pos;
-                std::tie(found_kmer, graph_pos) = graph_kmer_index.find_unique_kmer_in_graph(sk.kmer);
-                // IF KMER EXISTS ON GRAPH
-                if (found_kmer) {
-                    sglib::OutputLog(sglib::LogLevels::DEBUG) << "Found kmer: " << sk.kmer << "in graph" << std::endl;
-                    sglib::OutputLog(sglib::LogLevels::DEBUG) << '(' << graph_pos.node << ", " << graph_pos.pos << ')' << std::endl;
-                    mapped_kmers_count++;
-                    // IF THE KMER MATCH IS THE FIRST MATCH FOR THE MAPPING...
-                    if (!mapping.ismatched()) {
-                        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Kmer match is the first for the mapping." << std::endl;
-                        mapping.start_new_mapping(graph_pos, sk.pos, graph_kmer_index);
-                    } // IF THE KMER MATCH IS NOT THE FIRST MATCH FOR THE MAPPING...
-                    else {
-                        sglib::OutputLog(sglib::LogLevels::DEBUG) << "Kmer match is not the first match for the mapping." << std::endl;
-                        // THERE ARE TWO SITUATIONS WHERE WE WOULD START A NEW MAPPING...
-                        // A). WE ARE MAPPING TO A COMPLETELY DIFFERENT NODE...
-                        // B). THE DIRECTION OF THE MAPPING IS FLIPPED...
-
-                        if (!mapping.mapping_continues(graph_pos)) {
-                            sglib::OutputLog(sglib::LogLevels::DEBUG) << "Kmer match does not continues the current mapping." << std::endl;
-                            sequence_mappings.push_back(mapping);
-                            mapping.start_new_mapping(graph_pos, sk.pos, graph_kmer_index);
-                        } else { // IF NODE KMER MAPS TO IS THE SAME, EXTEND THE CURRENT MAPPING...
-                            sglib::OutputLog(sglib::LogLevels::DEBUG) << "Kmer match continues the current mapping." << std::endl;
-                            mapping.extend(graph_pos.pos, sk.pos);
-                        }
-                    }
-                } else {
-#pragma omp critical (save_unmapped_kmer)
-                    {
-                        unmapped_kmers.emplace_back(sk.kmer);
-                    }
-                }
-            }
-            // TODO : Check if this last push_back is required
-            if (mapping.ismatched()) sequence_mappings.push_back(mapping);
-
-#pragma omp critical (store_seqmapping)
+#pragma omp critical (store)
             {
-                mappings_of_sequence[sequence.id] = sequence_mappings;
+                sglib::OutputLog(sglib::LogLevels::INFO) << "Failed to map " << unmapped_kmers.size() << " kmers from the reference." << std::endl;
+                mappings_of_sequence[sequence.id] = mappings;
+                sequence_unmapped_kmers[sequence.id] = unmapped_kmers;
                 query_seq_sizes[sequence.id] = sequence.seq.size();
                 query_seq_names[sequence.id] = sequence.name;
             }
 
-#pragma omp critical (readrec)
+#pragma omp critical (getrecord)
             {
                 c = fastaReader.next_record(sequence);
             }
         }
     }
-    sglib::OutputLog(sglib::LogLevels::INFO) << "Mapped " << mapped_kmers_count << " Kmers from " << sequence_count << " sequences." << std::endl;
-    sglib::OutputLog(sglib::LogLevels::INFO) << "Failed to map " << unmapped_kmers.size() << " unique kmers from the reference." << std::endl;
- }
+}
 
 void SequenceThreader::filter_mappings(double score) {
     sglib::OutputLog(sglib::LogLevels::INFO) << "Filtering mappings using a threshold of " << score << "%." << std::endl;
@@ -212,6 +220,48 @@ void SequenceThreader::filter_mappings(double score) {
 }
 
 
+void SequenceThreader::print_mappings(std::ostream& out, bool use_oldnames) const {
+    out << "ref_sequence\tref_start\tref_end\tgraph_node\tnode_start\tnode_end\tunique_kmers_matched\tn_unique_kmers\tn_kmers" << std::endl;
+    for(const auto &it:mappings_of_sequence) {
+        for (const auto &sm:it.second) {
+            out << sm.seq_id << '\t' << sm.first_seq_pos << '\t' << sm.last_seq_pos << '\t';
+            out << (use_oldnames ? sg.nodeID_to_name(sm.absnode()) : std::to_string(sm.absnode())) << '\t';
+            out << sm.first_node_pos << '\t' << sm.last_node_pos  << '\t' << sm.matched_unique_kmers << '\t' << sm.possible_unique_matches;
+            out << '\t' << sm.n_kmers_in_node << std::endl;
+        }
+    }
+}
+
+SequenceMapping::SequenceMapping(seqID_t id, uint32_t seq_first, uint32_t seq_last, sgNodeID_t node, int32_t node_first,
+                                 int32_t node_last, int32_t muk, uint64_t puk, uint64_t nk)
+        : seq_id(id), first_seq_pos(seq_first), last_seq_pos(seq_last), node(node), first_node_pos(node_first),
+          last_node_pos(node_last), matched_unique_kmers(muk), possible_unique_matches(puk), n_kmers_in_node(nk)
+{}
+
+void SequenceThreader::read_mappings(std::ifstream& in, bool use_oldnames) {
+    std::string line;
+    getline(in, line); // Get the header and ignore it.
+    seqID_t id;
+    uint32_t seq_first, seq_last;
+    sgNodeID_t node;
+    int32_t node_first, node_last, muk;
+    uint64_t puk, nk;
+    if (use_oldnames) {
+        std::string node_name;
+        while(getline(in, line)) {
+            std::istringstream iss(line);
+            iss >> id >> seq_first >> seq_last >> node_name >> node_first >> node_last >> muk >> puk >> nk;
+            node = sg.oldnames_to_ids[node_name];
+            mappings_of_sequence[id].emplace_back(id, seq_first, seq_last, node, node_first, node_last, muk, puk, nk);
+        }
+    } else {
+        while(getline(in, line)) {
+            std::istringstream iss(line);
+            iss >> id >> seq_first >> seq_last >> node >> node_first >> node_last >> muk >> puk >> nk;
+            mappings_of_sequence[id].emplace_back(id, seq_first, seq_last, node, node_first, node_last, muk, puk, nk);
+        }
+    }
+}
 
 
 
@@ -220,7 +270,13 @@ void SequenceThreader::filter_mappings(double score) {
 
 
 
-void SequenceThreader::thread_mappings() {
+
+
+
+
+
+
+void SequenceThreader::thread_mappings_old() {
     sglib::OutputLog(sglib::LogLevels::INFO) << "Assembling mappings into contiguous threads." << std::endl;
     for(const auto& sequence_mappings : mappings_of_sequence) {
 
@@ -265,8 +321,13 @@ void SequenceThreader::bridge_threads() {
 
     while (c) {
 
+        std::cout << refsequence.id << ", " << refsequence.name << ", " << refsequence.seq.substr(0, 11) << "..." << std::endl;
+
+
         std::vector<SequenceMappingThread> threads = mapping_threads_of_sequence[refsequence.id];
         std::vector<BridgedMappingThreads> bridged_threads;
+
+        std::cout << "Thread size: " << threads.size() << std::endl;
 
         BridgedMappingThreads growing_thread { sg, threads[0] };
 
@@ -285,7 +346,6 @@ void SequenceThreader::bridge_threads() {
             if (first_idx > final_idx) {
                 std::swap(first_idx, final_idx);
             }
-
             // Extract the subsequence from the reference sequence...
             size_t len { size_t(final_idx) - size_t(first_idx) + 1 };
             std::string refsubstr { refsequence.seq.substr((size_t) first_idx, len) };
@@ -310,6 +370,9 @@ void SequenceThreader::bridge_threads() {
         }
 
         bridged_mapping_threads_of_sequence[refsequence.id] = bridged_threads;
+
+
+        std::cout << "Reading next sequence..." << std::endl;
 
         c = fastareader.next_record(refsequence);
     }
@@ -376,23 +439,7 @@ void SequenceThreader::query_threads_to_fasta(std::ofstream& output_file, bool u
     }
 }
 
-void SequenceThreader::print_mappings(std::ostream& out, bool use_oldnames) const {
-    for(auto it = mappings_of_sequence.begin(); it != mappings_of_sequence.end(); ++it) {
-        for (const auto &sm:it->second) {
-            auto sd = sm.seq_direction();
-            auto nd = sm.node_direction();
-            auto seqdir = sd == Forward ? "Forward" : sd == Backwards ? "Backwards" : "DIRERR";
-            auto nodedir = nd == Forward ? "Forward" : nd == Backwards ? "Backwards" : "DIRERR";
-            out << "Sequence: " << sm.seq_id << " from: ";
-            out << sm.first_seq_pos << " : " << sm.last_seq_pos << " (" << seqdir << ")";
-            out << ", maps to node: " << (use_oldnames ? sg.nodeID_to_name(sm.absnode()) : std::to_string(sm.absnode()));
-            out << " from: " << sm.first_node_pos << " : " << sm.last_node_pos  << " (" << nodedir << "). ";
-            out << sm.matched_unique_kmers << " / " << sm.possible_unique_matches << " unique kmers matched.";
-            out << " (" << sm.n_kmers_in_node << " kmers exist in node).";
-            out << std::endl;
-        }
-    }
-}
+
 
 void SequenceThreader::print_paths(std::ostream& out, bool use_oldnames) const {
     for(auto it = mapping_threads_of_sequence.begin(); it != mapping_threads_of_sequence.end(); ++it) {
