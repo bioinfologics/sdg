@@ -37,6 +37,8 @@ public:
     void remove_link(sgNodeID_t source, sgNodeID_t dest);
     std::vector<Link> get_fw_links( sgNodeID_t n);
     inline std::vector<Link> get_bw_links( sgNodeID_t n){ return get_fw_links (-n); };
+    void remove_transitive_links();
+    void print_perfect_chains();
     std::vector<std::vector<sgNodeID_t>> find_chains();
     WorkSpace &ws;
     Untangler &u;

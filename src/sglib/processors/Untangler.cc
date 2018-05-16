@@ -1625,3 +1625,22 @@ std::vector<Link> PairedReadLinker::get_fw_links( sgNodeID_t n){
     for (auto &l:links[(n>0 ? n : -n)]) if (l.source==-n) r.emplace_back(l);
     return r;
 }
+
+void PairedReadLinker::remove_transitive_links() {
+    std::cout<<"checking transitive connections..."<<std::endl;
+    for (auto n=1;n<ws.sg.nodes.size();++n) {
+        auto fwl = get_fw_links(n);
+        auto bwl = get_bw_links(n);
+        for (auto la:bwl){
+            for (auto lc:fwl){
+                for (auto afl:get_fw_links(-la.dest)) if (afl.dest==lc.dest) {
+                    std::cout<<"Transitive connection detected! "<<-la.dest<<" -> "<<n<<" -> "<<lc.dest<<std::endl;
+                    std::cout<<"  seq"<<llabs(la.dest)<<", seq"<<n<<", seq"<<llabs(lc.dest)<<std::endl;
+                }
+            }
+        }
+
+    }
+
+    std::cout<<"checking transitive connections DONE"<<std::endl;
+}
