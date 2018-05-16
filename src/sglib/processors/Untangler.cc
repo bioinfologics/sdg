@@ -1523,7 +1523,7 @@ void PairedReadLinker::generate_links( uint32_t min_size, float min_ci, float ma
     for (auto &n:ws.select_from_all_nodes(min_size,1000000000,0,1000000000,min_ci,max_ci)) to_link[n]=true;
 
     sglib::OutputLog()<<"filling orientation indexes"<<std::endl;
-    uint64_t revc=0,dirc=0;
+    uint64_t revc=0,dirc=0,false_rev=0,false_dir=0,true_rev=0,true_dir=0;
     std::vector<std::vector<bool>> orientation;
     for (auto &pm:ws.paired_read_mappers){
         orientation.emplace_back();
@@ -1531,12 +1531,15 @@ void PairedReadLinker::generate_links( uint32_t min_size, float min_ci, float ma
         for (auto n=1;n<ws.sg.nodes.size();++n)
             for (auto &rm:pm.reads_in_node[n]) {
             orientation.back()[rm.read_id]=rm.rev;
+            if (rm.first_pos<rm.last_pos){if (rm.rev) ++false_rev; else ++true_rev;};
+            if (rm.first_pos>rm.last_pos ){if (!rm.rev) ++false_dir; else ++true_dir;};
             if (rm.rev) revc++;
             else dirc++;
         }
     }
     std::ofstream lof("paired_links.txt");
-
+    sglib::OutputLog()<<"FW: "<<dirc<<" ( "<<true_dir<<" - "<< false_dir<<" )"<<std::endl;
+    sglib::OutputLog()<<"BW: "<<revc<<" ( "<<true_rev<<" - "<< false_rev<<" )"<<std::endl;
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
     sglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
     //use all libraries collect votes on each link
@@ -1546,9 +1549,9 @@ void PairedReadLinker::generate_links( uint32_t min_size, float min_ci, float ma
             sgNodeID_t n1 = pm.read_to_node[i];
             sgNodeID_t n2 = pm.read_to_node[i + 1];
             if (n1 == 0 or n2 == 0 or n1 == n2 or !to_link[n1] or !to_link[n2]) continue;
-            if (n1 > n2) std::swap(n1, n2);
-            if (!orientation[rmi][i]) n1=-n1;
-            if (!orientation[rmi][i+1]) n2=-n2;
+            if (orientation[rmi][i]) n1=-n1;
+            if (orientation[rmi][i+1]) n2=-n2;
+            if (llabs(n1) > llabs(n2)) std::swap(n1,n2);
             ++lv[std::make_pair(n1, n2)];
         }
         ++rmi;
@@ -1560,7 +1563,16 @@ void PairedReadLinker::generate_links( uint32_t min_size, float min_ci, float ma
         if (l.second>=min_reads){
             //todo: size, appropriate linkage handling, etc
             //todo: check alternative signs for same linkage
+            auto s=l.first.first;
+            auto d=l.first.second;
+            auto v1=std::make_pair(-s,d);
+            auto v2=std::make_pair(-s,-d);
+            auto v3=std::make_pair(s,-d);
+            if (lv.count(v1) and lv[v1]>5*l.second) continue;
+            if (lv.count(v2) and lv[v2]>5*l.second) continue;
+            if (lv.count(v3) and lv[v3]>5*l.second) continue;
             add_link(l.first.first,l.first.second,0);
+            //lof<<l.first.first<<" "<<l.first.second<<" "<<l.second<<std::endl;
         }
     }
     sglib::OutputLog()<<"dumping links"<<std::endl;
