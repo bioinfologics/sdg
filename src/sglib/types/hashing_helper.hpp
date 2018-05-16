@@ -9,6 +9,7 @@
 /**
  * Takes each of the elements in a tuple and combines them in a single hash value of size_t length
  */
+#ifndef SWIG
 namespace sglib {
     namespace
     {
@@ -63,4 +64,5 @@ namespace sglib {
 
     };
 }
+#endif
 #endif //BSG_HASHING_HELPER_HPP

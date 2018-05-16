@@ -17,7 +17,8 @@ endif (APPLE)
 PROJECT (bsg)
 ENABLE_TESTING()
 OPTION(BUILD_TESTING "Build tests." ON)
-OPTION(BUILD_DOC "Build documentation" OFF)
+OPTION(BUILD_DOC "Build documentation" ON)
+OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" ON)
 OPTION(BUILD_COV "Build coverage" OFF)
 
 # Get the remote url
@@ -279,20 +280,33 @@ install(TARGETS sequence_graph DESTINATION lib)
 install(DIRECTORY src/sglib
         DESTINATION include)
 
-FIND_PACKAGE(SWIG)
-INCLUDE(${SWIG_USE_FILE})
+IF(BUILD_PYTHON_INTERFACE)
+    FIND_PACKAGE(SWIG)
+    INCLUDE(${SWIG_USE_FILE})
 
-FIND_PACKAGE(PythonInterp)
-FIND_PACKAGE(PythonLibs)
-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+    FIND_PACKAGE(PythonInterp)
+    FIND_PACKAGE(PythonLibs)
+    INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
-SET(CMAKE_SWIG_FLAGS "")
+    add_custom_command (
+            OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
+            COMMAND ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/doxy2swig.py
+            --quiet ${CMAKE_BINARY_DIR}/docs/xml/index.xml
+            ${CMAKE_BINARY_DIR}/python_docs.i
+            COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
+            DEPENDS doc_doxygen
+            VERBATIM)
 
-SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES CPLUSPLUS ON)
-SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES SWIG_FLAGS "")
-SWIG_ADD_LIBRARY(bsg  LANGUAGE python SOURCES
-        interfaces/SequenceGraph.i
-        )
-SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} sequence_graph "")
+    add_custom_target(doxy2swig DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
+    SET(CMAKE_SWIG_FLAGS "")
+
+    SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES CPLUSPLUS ON)
+    SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES SWIG_FLAGS "")
+    SWIG_ADD_LIBRARY(bsg DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i LANGUAGE python SOURCES
+            interfaces/SequenceGraph.i
+            )
+    SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} sequence_graph "")
+    add_dependencies(_bsg doxy2swig)
+ENDIF()

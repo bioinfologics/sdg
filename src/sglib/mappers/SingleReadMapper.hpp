@@ -94,7 +94,7 @@ public:
         uint32_t sketch_not_in_index(0);
         uint32_t sketch_in_index(0);
         StrandedMinimiserSketchFactory kf(k, 1);
-        std::unordered_set<MinPosIDX> sketch;
+        std::vector<MinPosIDX> sketch;
         sketch.reserve(query.size());
 
         auto read_sketch_num(kf.getMinSketch(query, sketch));

@@ -11,7 +11,11 @@
 #include "sglib/KmerCompressionIndex.hpp"
 #include "sglib/WorkSpace.hpp"
 #include "sglib/mappers/LongReadMapper.hpp"
+#include "sglib/factories/StrandedMinSketchFactory.h"
+#include "sglib/indexers/minSketchIndex.hpp"
 %}
+
+%include "python_docs.i"
 %include "stdint.i"
 %include "inttypes.i"
 %include "std_string.i"
@@ -25,6 +29,8 @@
 %include "sglib/KmerCompressionIndex.hpp"
 %include "sglib/WorkSpace.hpp"
 %include "sglib/mappers/LongReadMapper.hpp"
+%include "sglib/factories/StrandedMinSketchFactory.h"
+%include "sglib/indexers/minSketchIndex.hpp"
 
 namespace std {
    %template(vectorInt) vector<int>;
@@ -39,5 +45,6 @@ namespace std {
    %template(vectorVectorUINT16) vector< vector <uint16_t > >;
    %template(vectorBool) vector<bool>;
    %template(vectorLRMapping) vector<LongReadMapping>;
+   %template(vectorMinPosIDX) vector<MinPosIDX>;
 };
 

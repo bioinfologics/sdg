@@ -19,10 +19,11 @@
  * find, end -> useful for lookup
  */
 class minSketchIndex {
+public:
     using Map = std::unordered_map<uint64_t, std::vector<graphStrandPos>>;
     using const_iterator = Map::const_iterator;
     using nc_pair = std::pair<uint64_t , std::vector<graphStrandPos>>;
-
+private:
     Map kmer_to_graphposition;
     uint8_t w = 0;
     uint8_t k = 0;
@@ -37,7 +38,7 @@ public:
     float get_avg_nodes_per_kmer() { return avg_nodes_per_kmer; }
     float generate_index(const SequenceGraph &sg) {
         StrandedMinimiserSketchFactory kf(k, w);
-        std::unordered_set<MinPosIDX> sketch;
+        std::vector<MinPosIDX> sketch;
         GraphNodeReader<FastaRecord> gnr({0,sg});
         FastaRecord node;
         while (gnr.next_record(node)) {
