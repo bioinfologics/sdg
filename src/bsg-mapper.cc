@@ -65,7 +65,7 @@ int main(int argc, char * argv[]) {
         std::ofstream df("prdist_"+std::to_string(pri++)+".csv");
         for (auto i=0;i<sdist.size();i+=10){
             uint64_t t=0;
-            for (auto j=i;j<i+10;++j) t+=sdist[i];
+            for (auto j=i;j<i+10;++j) t+=sdist[j];
             if (t>0) df<<i<<", "<<t<<std::endl;
         }
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
