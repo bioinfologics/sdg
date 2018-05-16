@@ -29,12 +29,18 @@ public:
 
 class PairedReadLinker {
 public:
-    PairedReadLinker(WorkSpace & _ws, Untangler & _u): ws(_ws),u(_u) {};
+    PairedReadLinker(WorkSpace & _ws, Untangler & _u): ws(_ws),u(_u) {
+        links.resize(ws.sg.nodes.size());
+    };
     void generate_links( uint32_t min_size=1000, float min_ci=0, float max_ci=100,int min_reads=5);
+    void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
+    void remove_link(sgNodeID_t source, sgNodeID_t dest);
+    std::vector<Link> get_fw_links( sgNodeID_t n);
+    inline std::vector<Link> get_bw_links( sgNodeID_t n){ return get_fw_links (-n); };
     std::vector<std::vector<sgNodeID_t>> find_chains();
     WorkSpace &ws;
     Untangler &u;
-    std::vector<Link> links;
+    std::vector<std::vector<Link>> links;
 };
 
 class Untangler {

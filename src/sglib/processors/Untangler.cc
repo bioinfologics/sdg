@@ -1522,38 +1522,65 @@ void PairedReadLinker::generate_links( uint32_t min_size, float min_ci, float ma
     std::vector<bool> to_link(ws.sg.nodes.size());
     for (auto &n:ws.select_from_all_nodes(min_size,1000000000,0,1000000000,min_ci,max_ci)) to_link[n]=true;
 
+    sglib::OutputLog()<<"filling orientation indexes"<<std::endl;
+    uint64_t revc=0,dirc=0;
+    std::vector<std::vector<bool>> orientation;
+    for (auto &pm:ws.paired_read_mappers){
+        orientation.emplace_back();
+        orientation.back().resize(pm.read_to_node.size());
+        for (auto n=1;n<ws.sg.nodes.size();++n)
+            for (auto &rm:pm.reads_in_node[n]) {
+            orientation.back()[rm.read_id]=rm.rev;
+            if (rm.rev) revc++;
+            else dirc++;
+        }
+    }
     std::ofstream lof("paired_links.txt");
 
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
-
+    sglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
     //use all libraries collect votes on each link
-    for (auto pm:ws.paired_read_mappers) {
+    auto rmi=0;
+    for (auto &pm:ws.paired_read_mappers) {
         for (auto i = 1; i < pm.read_to_node.size(); i += 2) {
-            auto n1 = pm.read_to_node[i];
-            auto n2 = pm.read_to_node[i + 1];
+            sgNodeID_t n1 = pm.read_to_node[i];
+            sgNodeID_t n2 = pm.read_to_node[i + 1];
             if (n1 == 0 or n2 == 0 or n1 == n2 or !to_link[n1] or !to_link[n2]) continue;
             if (n1 > n2) std::swap(n1, n2);
+            if (!orientation[rmi][i]) n1=-n1;
+            if (!orientation[rmi][i+1]) n2=-n2;
             ++lv[std::make_pair(n1, n2)];
         }
+        ++rmi;
     }
 
-    std::vector<std::vector<std::pair<sgNodeID_t ,uint64_t>>> nodelinks(ws.sg.nodes.size());
+    sglib::OutputLog()<<"adding links with "<<min_reads<<" votes"<<std::endl;
+    //std::vector<std::vector<std::pair<sgNodeID_t ,uint64_t>>> nodelinks(ws.sg.nodes.size());
     for (auto l:lv) {
         if (l.second>=min_reads){
-            nodelinks[l.first.first].emplace_back(l.first.second,l.second);
-            nodelinks[l.first.second].emplace_back(l.first.first,l.second);
+            //todo: size, appropriate linkage handling, etc
+            //todo: check alternative signs for same linkage
+            add_link(l.first.first,l.first.second,0);
         }
     }
+    sglib::OutputLog()<<"dumping links"<<std::endl;
     for (auto n=1;n<ws.sg.nodes.size();++n) {
-        if (!nodelinks[n].empty()) {
-            lof<<n<<": ";
-            for (auto l:nodelinks[n]) lof<<" "<<l.first<<"("<<l.second<<")";
-            lof<<std::endl;
-            lof<<"seq"<<n;
-            for (auto l:nodelinks[n]) lof<<", seq"<<l.first;
+        auto fwl=get_fw_links(n);
+        auto bwl=get_bw_links(n);
+        if (!fwl.empty()) {
+            lof<<n<<" FW: ";
+            for (auto &l:fwl) lof<<" "<<l.dest;
+            lof<<std::endl<<"          seq"<<n;
+            for (auto &l:fwl) lof<<", seq"<<llabs(l.dest);
             lof<<std::endl;
         }
-
+        if (!bwl.empty()) {
+            lof<<n<<" BW: ";
+            for (auto &l:bwl) lof<<" "<<l.dest;
+            lof<<std::endl<<"          seq"<<n;
+            for (auto &l:bwl) lof<<", seq"<<llabs(l.dest);
+            lof<<std::endl;
+        }
     }
     //TODO: remove printing
 //    lof<<n<<": ";
@@ -1562,6 +1589,27 @@ void PairedReadLinker::generate_links( uint32_t min_size, float min_ci, float ma
     //filter by min reads
     //infer size?
     //TODO:hardcoded LMP orientation
-    //check topology?
 
+
+}
+
+void PairedReadLinker::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d) {
+    Link l(source,dest,d);
+    links[(source > 0 ? source : -source)].emplace_back(l);
+    std::swap(l.source,l.dest);
+    links[(dest > 0 ? dest : -dest)].emplace_back(l);
+}
+
+void PairedReadLinker::remove_link(sgNodeID_t source, sgNodeID_t dest) {
+    auto & slinks = links[(source > 0 ? source : -source)];
+    slinks.erase(std::remove(slinks.begin(), slinks.end(), Link(source,dest,0)), slinks.end());
+    auto & dlinks = links[(dest > 0 ? dest : -dest)];
+    dlinks.erase(std::remove(dlinks.begin(), dlinks.end(), Link(dest,source,0)), dlinks.end());
+
+}
+
+std::vector<Link> PairedReadLinker::get_fw_links( sgNodeID_t n){
+    std::vector<Link> r;
+    for (auto &l:links[(n>0 ? n : -n)]) if (l.source==-n) r.emplace_back(l);
+    return r;
 }
