@@ -16,9 +16,10 @@ int main(int argc, char **argv) {
     std::string graph_filename;
     std::string reference_filename;
     std::string output_dir;
+    std::string index_file;
     std::string mappings_file;
     int log_level;
-    bool dump_unmapped, dump_mappings, dump_paths;
+    bool dump_index, dump_unmapped, dump_mappings, dump_paths;
     double unique_kmer_threshold;
 
     // DEFAULT PARAMETERS... FIXED FOR NOW.
@@ -37,12 +38,14 @@ int main(int argc, char **argv) {
             ("r,reference", "Reference FASTA of sequences to locate in graph", cxxopts::value<std::string>(reference_filename), "FASTA - Sequence file")
             ("g,graph", "Genome graph in GFA format", cxxopts::value<std::string>(graph_filename), "GFA file")
             ("o,output", "Output directory name", cxxopts::value<std::string>(output_dir) -> default_value(outdefault))
+            ("i", "Dump the unique kmer index file", cxxopts::value<bool>(dump_index))
             ("u", "Dump non-mapped graph nodes", cxxopts::value<bool>(dump_unmapped))
             ("m", "Dump graph node mappings", cxxopts::value<bool>(dump_mappings))
             ("p", "Dump connected paths", cxxopts::value<bool>(dump_paths))
             ("l,logging", "Logging level (0: INFO, 1: WARN, 2: DEBUG)", cxxopts::value<int>(log_level) -> default_value("0"), "log_level")
             ("t,threshold", "% of unique Kmers required to keep mappings", cxxopts::value<double>(unique_kmer_threshold) -> default_value("90"), "unique_kmer_threshold")
-            ("mapfile", "File of precomputed mappings", cxxopts::value<std::string>(mappings_file) -> default_value(""));
+            ("mapfile", "File of precomputed mappings", cxxopts::value<std::string>(mappings_file) -> default_value(""))
+            ("indexfile", "File containing the unique kmer index for the graph", cxxopts::value<std::string>(index_file) -> default_value(""));
 // @formatter:on
 
     auto result (options.parse(argc, argv));
@@ -74,25 +77,45 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-// LOAD GENOME GRAPH...
+// LOAD GENOME GRAPH AND UNIQUE KMER INDEX...
     SequenceGraph sg;
     sg.load_from_gfa(graph_filename);
 
+    uniqueKmerIndex uki(k);
+    uniqueKmerIndex uki2(k);
+    if (index_file.empty()) {
+        uki.generate_index(sg, k);
+        uki.write_to_file(output_dir + "/unique_kmer_index");
+        uki2.read_from_file(output_dir + "/unique_kmer_index");
+        std::cout << "Are they the same? : " << (uki == uki2) << std::endl;
+        exit(0);
+        if (dump_index) {
+            uki.write_to_file(output_dir + "/unique_kmer_index");
+        }
+    } else {
+        exit(0);
+        uki.read_from_file(index_file);
+        uki.write_to_file(output_dir + "/unique_kmer_index");
+    }
+
+    exit(0);
+
+
 // CONSTRUCT SEQUENCE_MAPPER...
-    SequenceThreader tdr(sg, k);
+    SequenceThreader tdr(sg, uki, k);
 
 // MAP UNIQUE KMERS FROM FASTA SEQUENCES INTO GRAPH, OR READ FROM FILE...
     if(mappings_file.empty()) {
 
         tdr.map_sequences(reference_filename, output_dir);
         if (dump_mappings) {
-            sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping mappings." << std::endl;
+            sglib::OutputLog() << "Dumping mappings." << std::endl;
             std::ofstream mapping_dump(output_dir + "/raw_mappings.txt");
             tdr.print_mappings(mapping_dump, true);
             mapping_dump.close();
         }
     } else {
-        sglib::OutputLog(sglib::LogLevels::INFO) << "Reading mappings from file: " << mappings_file << std::endl;
+        sglib::OutputLog() << "Reading mappings from file: " << mappings_file << std::endl;
         std::ifstream mappings_input(mappings_file);
         tdr.read_mappings(mappings_input, true);
         mappings_input.close();

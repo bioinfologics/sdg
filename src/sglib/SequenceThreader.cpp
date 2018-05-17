@@ -30,20 +30,6 @@ bool SequenceMapping::operator<(const SequenceMapping &other) const {
     return seq_id < other.seq_id;
 };
 
-std::ostream& operator<<(std::ostream& stream, const SequenceMapping& sm) {
-    auto sd = sm.seq_direction();
-    auto nd = sm.node_direction();
-    auto seqdir = sd == Forward ? "Forward" : sd == Backwards ? "Backwards" : "DIRERR";
-    auto nodedir = nd == Forward ? "Forward" : nd == Backwards ? "Backwards" : "DIRERR";
-    stream << "Sequence: " << sm.seq_id << " from: ";
-    stream << sm.first_seq_pos << " : " << sm.last_seq_pos << " (" << seqdir << ")";
-    stream << ", maps to node: " << sm.absnode();
-    stream << " from: " << sm.first_node_pos << " : " << sm.last_node_pos  << " (" << nodedir << "). ";
-    stream << sm.matched_unique_kmers << " / " << sm.possible_unique_matches << " unique kmers matched.";
-    stream << " (" << sm.n_kmers_in_node << " kmers exist in node).";
-    return stream;
-}
-
 void SequenceMapping::initiate_mapping(seqID_t sequence_id) {
     seq_id = sequence_id;
     first_seq_pos = 0;
@@ -59,7 +45,7 @@ bool SequenceMapping::ismatched(){
     return node != 0;
 }
 
-void SequenceMapping::start_new_mapping(const graphPosition& gpos, uint32_t seqpos, const UniqueKmerIndex& index) {
+void SequenceMapping::start_new_mapping(const graphStrandPos& gpos, uint32_t seqpos, const uniqueKmerIndex& index) {
     first_seq_pos = seqpos;
     last_seq_pos = seqpos;
     node = gpos.node;
@@ -110,7 +96,7 @@ bool SequenceMapping::direction_will_continue(int32_t next_position) const {
     }
 }
 
-bool SequenceMapping::mapping_continues(const graphPosition& gpos) const {
+bool SequenceMapping::mapping_continues(const graphStrandPos& gpos) const {
     auto same_node = absnode() == std::abs(gpos.node);
     auto direction_continues = direction_will_continue(gpos.pos);
     return same_node and direction_continues;
@@ -125,7 +111,7 @@ std::tuple<std::vector<SequenceMapping>, std::vector<KmerIDX>> SequenceThreader:
     std::vector<KmerIDX> unmapped_kmers;
     for (auto &sk:kmers) {
         bool found_kmer;
-        graphPosition graph_pos;
+        graphStrandPos graph_pos;
         std::tie(found_kmer, graph_pos) = graph_kmer_index.find_unique_kmer_in_graph(sk.kmer);
         // IF KMER EXISTS ON GRAPH
         if (found_kmer) {

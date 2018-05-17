@@ -36,20 +36,6 @@ UniqueKmerIndex::UniqueKmerIndex(const SequenceGraph& sg, const uint8_t k) : sg(
 
 }
 
-std::tuple<bool, graphPosition> UniqueKmerIndex::find_unique_kmer_in_graph(uint64_t kmer) const {
-    auto nk = kmer_to_node_map.find(kmer);
-    auto exists = kmer_to_node_map.end() != nk;
-    graphPosition p;
-    if (exists) {
-        p = nk->second;
-    }
-    return std::make_tuple(exists, p);
-}
-
-bool UniqueKmerIndex::is_unmappable(sgNodeID_t id) const {
-    return 0 == unique_kmers_per_node[std::abs(id)];
-}
-
 bool UniqueKmerIndex::traverse_dark_nodes(const sgNodeID_t start, const sgNodeID_t goal) {
     // Create a stack with the nodes and the path length
     struct visitor {
