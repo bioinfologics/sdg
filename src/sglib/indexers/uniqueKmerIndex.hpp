@@ -53,7 +53,6 @@ public:
         std::unordered_set<int32_t> seen_contigs;
         unique_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
         total_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
-
         for (auto &kidx : kmerIDX_SMR.process_from_memory()) {
             kmer_to_graphposition[kidx.kmer] = {kidx.contigID, kidx.pos};
             unique_kmers_per_node[std::abs(kidx.contigID)] += 1;
@@ -149,6 +148,22 @@ public:
         read_vector(inf, total_kmers_per_node);
 
         sglib::OutputLog() << "Done!" << std::endl;
+    }
+
+    std::string kmer_to_string(uint64_t kmer, int K) {
+        static char nucleotides [4] = {'A', 'C', 'G', 'T'};
+        std::string s;
+        for (int i = 0; i < K; ++i) {
+            s += nucleotides[kmer % 4];
+            kmer = kmer / 4;
+        }
+        return s;
+    }
+
+    void write_kmers_to_file(std::ofstream& out) {
+        for (const auto& it : kmer_to_graphposition) {
+            out << kmer_to_string(it.first, get_k()) << std::endl;
+        }
     }
 
     bool operator==(const uniqueKmerIndex &other) const {

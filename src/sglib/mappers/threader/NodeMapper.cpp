@@ -152,7 +152,7 @@ std::tuple<std::vector<NodeMapping>, std::vector<KmerIDX>> NodeMapper::map_kmers
         // IF KMER EXISTS ON GRAPH
         if (found_kmer) {
             sglib::OutputLog(sglib::LogLevels::DEBUG) << "Found kmer: " << sk.kmer << "in graph" << std::endl;
-            sglib::OutputLog(sglib::LogLevels::DEBUG) << '(' << graph_pos.node << ", " << graph_pos.pos << ')' << std::endl;
+            sglib::OutputLog(sglib::LogLevels::DEBUG) << '(' << sg.nodeID_to_name(graph_pos.node) << ", " << graph_pos.pos << ')' << std::endl;
             mapped_kmers_count++;
             // IF THE KMER MATCH IS THE FIRST MATCH FOR THE MAPPING...
             if (!mapping.ismatched()) {

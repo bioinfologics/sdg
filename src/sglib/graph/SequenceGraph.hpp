@@ -149,7 +149,7 @@ public:
     }
 
     const std::string& nodeID_to_name(sgNodeID_t id) const {
-        return oldnames[id];
+        return oldnames[std::abs(id)];
     }
 
 };

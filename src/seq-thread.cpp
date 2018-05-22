@@ -74,13 +74,6 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    KmerIDX kmer {0};
-
-    std::cout << kmer.to_string(31) << std::endl;
-
-    exit(0);
-
-
 // LOAD GENOME GRAPH...
     SequenceGraph sg;
     sg.load_from_gfa(graph_filename);
@@ -91,6 +84,9 @@ int main(int argc, char **argv) {
         uki.generate_index(sg, k);
         if (dump_index) {
             uki.write_to_file(output_dir + "/unique_kmer_index");
+            std::ofstream kmers(output_dir + "/index_kmers.txt");
+            uki.write_kmers_to_file(kmers);
+            kmers.close();
         }
     } else {
         uki.read_from_file(index_file);
@@ -126,6 +122,10 @@ int main(int argc, char **argv) {
 
 // FILTER MAPPINGS FOR QUALITY...
     mppr.filterMappings(unique_kmer_threshold);
+
+    std::ofstream filteredprint(output_dir + "/filtered_mappings.txt");
+    mppr.printMappings(filteredprint, true);
+    filteredprint.close();
 
     if (dump_unmapped) {
         sglib::OutputLog() << "Dumping unmapped nodes" << std::endl;

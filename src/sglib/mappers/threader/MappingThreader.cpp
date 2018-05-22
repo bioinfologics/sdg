@@ -32,7 +32,7 @@ void MappingThreader::thread_mappings() {
 
         for(const auto &sm : mappings) {
             // For every mapping hit the sequence has, try to append the node of the mapping hit to the current path.
-            std::cout << "Considering the mapping:" << std::endl << sm << std::endl;
+            std::cout << "Considering the mapping:" << std::endl << getGraph().nodeID_to_name(sm.absnode()) << std::endl;
 
             std::cout << "Can this mapping be connected to the previous one trivially?" << std::endl;
 
@@ -81,6 +81,7 @@ void MappingThreader::thread_mappings() {
             }
             std::cout << "Current path of mappings is " << mappingThread.size() << " nodes long." << std::endl;
         }
+        mappingThreads.emplace_back(mappingThread);
         mapping_threads_of_sequence.emplace(refsequence.id, mappingThreads);
         c = fastareader.next_record(refsequence);
     }

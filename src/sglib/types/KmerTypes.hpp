@@ -55,17 +55,6 @@ struct KmerIDX {
         }
     };
 
-    std::string to_string(int K) {
-        auto n = kmer;
-        static char nucleotides [4] = {'A', 'C', 'G', 'T'};
-        std::string s;
-        for (int i = 0; i < K; ++i) {
-            s += nucleotides[n % 4];
-            n = n / 4;
-        }
-        return s;
-    }
-
     uint64_t kmer;
     int32_t contigID;
     uint32_t pos;
