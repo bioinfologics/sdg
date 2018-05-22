@@ -5,7 +5,6 @@
 #ifndef BSG_UNIQUEKMERINDEX_HPP
 #define BSG_UNIQUEKMERINDEX_HPP
 
-
 #include <cstdint>
 #include <unordered_set>
 #include <iostream>
@@ -23,7 +22,7 @@ class uniqueKmerIndex {
     using pair = std::pair<uint64_t, graphStrandPos>;
 
     Map kmer_to_graphposition;
-    uint k;
+    uint8_t k;
     std::vector<uint64_t> unique_kmers_per_node;
     std::vector<uint64_t> total_kmers_per_node;
 
@@ -49,7 +48,7 @@ public:
         KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k}, {memlimit*GB, 0, 1, output_prefix});
 
         // Get the unique_kmers from the graph into a map
-        std::cout << "Indexing graph... " << std::endl;
+        sglib::OutputLog() << "Indexing graph" << std::endl;
         kmer_to_graphposition.clear();
         std::unordered_set<int32_t> seen_contigs;
         unique_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
@@ -73,6 +72,10 @@ public:
     const_iterator end() const {
         return kmer_to_graphposition.cend();
     };
+
+    uint8_t get_k() const {
+        return k;
+    }
 
     std::tuple<bool, graphStrandPos> find_unique_kmer_in_graph(const uint64_t kmer) const {
         const auto nk = find(kmer);

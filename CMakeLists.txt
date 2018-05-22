@@ -155,7 +155,8 @@ add_library(sequence_graph SHARED
         src/sglib/WorkSpace.cc
         src/sglib/datastores/PathsDatastore.cc
         src/sglib/processors/PathExplorer.cpp
-        src/sglib/SequenceThreader.cpp
+        src/sglib/mappers/threader/NodeMapper.cpp
+        src/sglib/mappers/threader/MappingThreader.cpp
         src/sglib/graph/SequenceSubGraph.cpp
         src/sglib/graph/SequenceGraphPath.cpp
         src/sglib/mappers/LongReadMapper.cpp

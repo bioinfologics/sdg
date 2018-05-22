@@ -9,21 +9,13 @@
 
 class PathExplorer {
 public:
-    explicit PathExplorer(SequenceGraph& sg) : sg(sg) {}
-    std::vector<SequenceGraphPath> collect_paths(const sgNodeID_t& seed, const sgNodeID_t& target,
-                                                 unsigned int size_limit = 0, unsigned int edge_limit = 0) const;
-
-    std::vector<SequenceGraphPath> collect_paths(const sgNodeID_t &seed, const sgNodeID_t &target,
-                                                 const std::string& query, unsigned int flank = 500) const;
-
-    int find_best_path(SequenceGraphPath& result,
-                       const sgNodeID_t& seed,
-                       const sgNodeID_t& target,
-                       const std::string& query,
-                       unsigned int flank = 500) const;
+    explicit PathExplorer(const SequenceGraph &sg) : sg(sg) {}
+    std::vector<SequenceGraphPath> collect_paths(sgNodeID_t seed, sgNodeID_t target, unsigned int size_limit = 0, unsigned int edge_limit = 0) const;
+    std::vector<SequenceGraphPath> collect_paths(sgNodeID_t seed, sgNodeID_t target, const std::string& query, unsigned int flank = 500) const;
+    bool find_best_path(SequenceGraphPath& result, sgNodeID_t seed, sgNodeID_t target, const std::string& query, unsigned int flank = 500) const;
 
 private:
-    SequenceGraph& sg;
+    const SequenceGraph& sg;
 };
 
 

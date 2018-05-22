@@ -72,7 +72,7 @@ std::string SequenceGraphPath::get_sequence() const {
     return s;
 }
 
-bool SequenceGraphPath::append_to_path(sgNodeID_t newnode) {
+bool SequenceGraphPath::append_to_path(const sgNodeID_t newnode) {
     if (nodes.empty()) {
         sglib::OutputLog(sglib::LogLevels::DEBUG) << "Path is new and empty." << std::endl;
         nodes.emplace_back(newnode);
@@ -128,4 +128,6 @@ SequenceGraphPath &SequenceGraphPath::operator=(const SequenceGraphPath &other) 
     return *this;
 }
 
-std::vector<Link> SequenceGraphPath::get_next_links() { return sg.get_fw_links(nodes.back());}
+std::vector<Link> SequenceGraphPath::get_next_links() {
+    return sg.get_fw_links(nodes.back());
+}

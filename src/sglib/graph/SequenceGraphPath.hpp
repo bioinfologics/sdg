@@ -13,6 +13,7 @@ class SequenceGraphPath {
 public:
     std::vector<sgNodeID_t> nodes;
     explicit SequenceGraphPath(SequenceGraph & _sg, const std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
+    explicit SequenceGraphPath(const SequenceGraph &_sg, const std::vector<sgNodeID_t> _nodes={}) : sg(_sg), nodes(_nodes) {};
 
     SequenceGraphPath(const SequenceGraphPath& sgp) : nodes(sgp.nodes), sg(sgp.sg) {};
 

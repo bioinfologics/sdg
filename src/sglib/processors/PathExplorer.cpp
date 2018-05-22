@@ -5,17 +5,16 @@
 #include <stack>
 #include <sglib/graph/SequenceGraphPath.hpp>
 #include <sglib/processors/PathExplorer.h>
-#include <sglib/readers/FileReader.h>
 #include <sglib/factories/KMerIDXFactory.h>
 
-std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t &seed, const sgNodeID_t &target,
+std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t seed, const sgNodeID_t target,
                                                            const std::string& query, const unsigned int flank) const {
     const unsigned int size_limit = (unsigned int) query.size() + flank;
     return collect_paths(seed, target, size_limit);
 }
 
-std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t& seed,
-                                                           const sgNodeID_t& target,
+std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t seed,
+                                                           const sgNodeID_t target,
                                                            const unsigned int size_limit,
                                                            const unsigned int edge_limit) const {
 
@@ -76,12 +75,7 @@ void build_unique_kmers(kmerIDXFactory<FastaRecord>& factory,
     kmers.erase(last, kmers.end());
 }
 
-int PathExplorer::find_best_path(SequenceGraphPath& result,
-                                 const sgNodeID_t& seed,
-                                 const sgNodeID_t& target,
-                                 const std::string& reference,
-                                 const unsigned int flank) const {
-
+bool PathExplorer::find_best_path(SequenceGraphPath& result, const sgNodeID_t seed, const sgNodeID_t target, const std::string& reference, const unsigned int flank) const {
     // BUILD a kmer set for the reference sequence.
     std::vector<KmerIDX> refkmers, pathkmers, matchingkmers;
     kmerIDXFactory<FastaRecord> kf({31});
@@ -92,7 +86,7 @@ int PathExplorer::find_best_path(SequenceGraphPath& result,
     if (!paths.empty()) {
         if (paths.size() == 1) {
             result = paths[0];
-            return 0;
+            return true;
         } else {
             size_t maxscore { 0 };
             std::vector<SequenceGraphPath>::const_iterator bestpath;
@@ -112,9 +106,9 @@ int PathExplorer::find_best_path(SequenceGraphPath& result,
                 }
             }
             result = *bestpath;
-            return 0;
+            return true;
         }
     } else {
-        return 1;
+        return false;
     }
 }

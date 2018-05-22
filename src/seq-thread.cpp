@@ -4,11 +4,8 @@
 
 #include <tuple>
 #include "cxxopts.hpp"
-#include <sglib/SequenceThreader.h>
-#include <sglib/filesystem/helpers.h>
-#include <sglib/logger/OutputLog.h>
-#include <sglib/aligners/submat/SubstitutionMatrix.h>
-#include <sglib/aligners/algorithms/SmithWaterman.h>
+#include <sglib/mappers/threader/NodeMapper.h>
+#include <sglib/mappers/threader/MappingThreader.h>
 
 int main(int argc, char **argv) {
 
@@ -48,7 +45,7 @@ int main(int argc, char **argv) {
             ("indexfile", "File containing the unique kmer index for the graph", cxxopts::value<std::string>(index_file) -> default_value(""));
 // @formatter:on
 
-    auto result (options.parse(argc, argv));
+    auto result(options.parse(argc, argv));
 
     if (0 != result.count("help")) {
         std::cout << options.help({""}) << std::endl;
@@ -77,88 +74,80 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-// LOAD GENOME GRAPH AND UNIQUE KMER INDEX...
+    KmerIDX kmer {0};
+
+    std::cout << kmer.to_string(31) << std::endl;
+
+    exit(0);
+
+
+// LOAD GENOME GRAPH...
     SequenceGraph sg;
     sg.load_from_gfa(graph_filename);
 
+// LOAD OR CONSTRUCT A UNIQUE KMER INDEX FOR GRAPH...
     uniqueKmerIndex uki(k);
-    uniqueKmerIndex uki2(k);
     if (index_file.empty()) {
         uki.generate_index(sg, k);
-        uki.write_to_file(output_dir + "/unique_kmer_index");
-        uki2.read_from_file(output_dir + "/unique_kmer_index");
-        std::cout << "Are they the same? : " << (uki == uki2) << std::endl;
-        exit(0);
         if (dump_index) {
             uki.write_to_file(output_dir + "/unique_kmer_index");
         }
     } else {
-        exit(0);
         uki.read_from_file(index_file);
-        uki.write_to_file(output_dir + "/unique_kmer_index");
     }
 
-    exit(0);
+// CONSTRUCT NODE_MAPPER...
 
+    NodeMapper mppr(sg, uki);
 
 // CONSTRUCT SEQUENCE_MAPPER...
-    SequenceThreader tdr(sg, uki, k);
+//   SequenceThreader tdr(sg, uki, k);
 
 // MAP UNIQUE KMERS FROM FASTA SEQUENCES INTO GRAPH, OR READ FROM FILE...
-    if(mappings_file.empty()) {
-
-        tdr.map_sequences(reference_filename, output_dir);
+    if (mappings_file.empty()) {
+        mppr.mapSequences(reference_filename);
         if (dump_mappings) {
-            sglib::OutputLog() << "Dumping mappings." << std::endl;
-            std::ofstream mapping_dump(output_dir + "/raw_mappings.txt");
-            tdr.print_mappings(mapping_dump, true);
-            mapping_dump.close();
+            mppr.write_mappings_to_binary_file(output_dir + "/raw_node_mappings");
         }
     } else {
-        sglib::OutputLog() << "Reading mappings from file: " << mappings_file << std::endl;
-        std::ifstream mappings_input(mappings_file);
-        tdr.read_mappings(mappings_input, true);
-        mappings_input.close();
+        mppr.read_mappings_from_binary_file(mappings_file);
     }
 
-// FILTER MAPPINGS FOR QUALITY...
-    tdr.filter_mappings(unique_kmer_threshold);
-
-    if (dump_mappings) {
-        sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping filtered mappings." << std::endl;
-        std::ofstream mapping_dump(output_dir + "/filtered_mappings.txt");
-        tdr.print_mappings(mapping_dump, true);
-        mapping_dump.close();
-    }
+    std::ofstream rawprint(output_dir + "/raw_mappings.txt");
+    mppr.printMappings(rawprint, true);
+    rawprint.close();
 
     if (dump_unmapped) {
-        sglib::OutputLog(sglib::LogLevels::INFO) << "Dumping unmapped nodes." << std::endl;
-        std::ofstream unmapped(output_dir + "/unmapped_nodes.txt");
-        tdr.print_unmapped_nodes(unmapped);
+        sglib::OutputLog() << "Dumping unmapped nodes" << std::endl;
+        std::ofstream unmapped(output_dir + "/unmapped_nodes_before_filter.txt");
+        mppr.print_unmapped_nodes(unmapped);
         unmapped.close();
     }
 
-    exit(0);
+// FILTER MAPPINGS FOR QUALITY...
+    mppr.filterMappings(unique_kmer_threshold);
 
+    if (dump_unmapped) {
+        sglib::OutputLog() << "Dumping unmapped nodes" << std::endl;
+        std::ofstream unmapped(output_dir + "/unmapped_nodes_after_filter.txt");
+        mppr.print_unmapped_nodes(unmapped);
+        unmapped.close();
+    }
 
 // CONNECT MAPPINGS INTO PATHS...
+    MappingThreader tdr { mppr };
+
     tdr.thread_mappings();
 
     std::ofstream graph_paths_out(output_dir + "/mapped_paths_graph.fasta");
-    tdr.graph_threads_to_fasta(graph_paths_out);
+    tdr.graph_threads_to_fasta(graph_paths_out, true);
     graph_paths_out.close();
 
     std::ofstream query_paths_out(output_dir + "/mapped_paths_query.fasta");
-    tdr.query_threads_to_fasta(query_paths_out);
+    tdr.query_threads_to_fasta(query_paths_out, true);
     query_paths_out.close();
 
-// TRY TO BRIDGE DISCONNECTED MAPPING THREADS...
-    tdr.bridge_threads();
-
-    std::ofstream bridged_graph_paths_out(output_dir + "/bridged_mapped_paths_graph.fasta");
-    tdr.bridged_graph_threads_to_fasta(bridged_graph_paths_out);
-
 // Calculate reference inclusion by query...
-    sglib::OutputLog(sglib::INFO) << "Finished threading " << reference_filename << " through graph " << graph_filename << '.' << std::endl;
+    sglib::OutputLog() << "Finished threading " << reference_filename << " through graph " << graph_filename << '.' << std::endl;
     tdr.calculate_reference_inclusion();
 }
