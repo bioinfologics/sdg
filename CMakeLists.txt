@@ -174,7 +174,9 @@ add_library(sequence_graph SHARED
         src/sglib/datastores/PathsDatastore.cc
         src/sglib/datastores/PathsDatastore.hpp
         src/sglib/WorkSpace.cc
-        src/sglib/WorkSpace.hpp)
+        src/sglib/WorkSpace.hpp
+        src/sglib/LinkageDiGraph.cc
+        src/sglib/LinkageDiGraph.hpp)
 
 target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
