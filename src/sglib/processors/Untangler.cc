@@ -1626,21 +1626,139 @@ std::vector<Link> PairedReadLinker::get_fw_links( sgNodeID_t n){
     return r;
 }
 
-void PairedReadLinker::remove_transitive_links() {
-    std::cout<<"checking transitive connections..."<<std::endl;
-    for (auto n=1;n<ws.sg.nodes.size();++n) {
-        auto fwl = get_fw_links(n);
-        auto bwl = get_bw_links(n);
-        for (auto la:bwl){
-            for (auto lc:fwl){
-                for (auto afl:get_fw_links(-la.dest)) if (afl.dest==lc.dest) {
-                    std::cout<<"Transitive connection detected! "<<-la.dest<<" -> "<<n<<" -> "<<lc.dest<<std::endl;
-                    std::cout<<"  seq"<<llabs(la.dest)<<", seq"<<n<<", seq"<<llabs(lc.dest)<<std::endl;
+//returns a list of all fw nodes up to radius jumps away.
+std::set<sgNodeID_t> PairedReadLinker::fw_reached_nodes(sgNodeID_t n, int radius) {
+    std::set<sgNodeID_t> reached,last={n};
+    for (auto i=0;i<radius;++i) {
+        std::set<sgNodeID_t> new_last;
+        for (auto l:last){
+            for (auto fwl:get_fw_links(l)){
+                new_last.insert(fwl.dest);
+                reached.insert(fwl.dest);
+            }
+        }
+        std::swap(last,new_last);
+    }
+    return reached;
+}
+
+void PairedReadLinker::remove_transitive_links(int radius) {
+    std::cout<<"removing transitive connections..."<<std::endl;
+
+    //TODO: check mutually transitive connections (A->B, B->C, A->C, C->B)
+    for (auto fn=1;fn<ws.sg.nodes.size();++fn) {
+        for (auto n:{fn,-fn}) {
+            //create a list of fw nodes reached through each fw connection in up to radius steps
+
+            auto fwl = get_fw_links(n);
+            std::vector<sgNodeID_t> neighbours;
+            std::vector<std::set<sgNodeID_t>> reaches;
+            for (auto fl:fwl){
+                neighbours.push_back(fl.dest);
+                reaches.push_back(fw_reached_nodes(fl.dest,radius));
+            }
+            if (neighbours.empty()) continue;
+            std::set<sgNodeID_t> indirect;
+            for (auto bi=0;bi<neighbours.size();++bi){
+                auto b=neighbours[bi];
+                for (auto ci=0;ci<neighbours.size();++ci){
+                    if (bi==ci) continue;
+                    auto c=neighbours[ci];
+                    //if C is reached through B but B is not through C, then remove connection to C.
+                    if (reaches[bi].count(c)>0 and reaches[ci].count(b)==0){
+                        //std::cout << "Transitive connection detected! " << n << " -> " << b << " -> "
+                        //          << c << std::endl;
+                        //std::cout << "  seq" << llabs(n) << ", seq" << b << ", seq" << llabs(c) << std::endl;
+                        indirect.insert(c);
+                    }
                 }
+
+            }
+            std::cout<<"Connections for node " <<labs(n) << (n>0 ? " FW":" BW")<<":"<<std::endl;
+            for (auto l:neighbours) {
+                std::cout<<l;
+                if (indirect.count(l)>0) std::cout<<" indirect"<<std::endl;
+                else std::cout<<" DIRECT!"<<std::endl;
             }
         }
 
     }
+    std::cout<<"removing transitive connections DONE"<<std::endl;
+}
 
-    std::cout<<"checking transitive connections DONE"<<std::endl;
+std::vector<std::vector<sgNodeID_t>> PairedReadLinker::find_local_problems(uint64_t long_node_size) {
+    std::vector<std::vector<sgNodeID_t>> local_problem;
+    std::vector<bool> used_fw(ws.sg.nodes.size());
+    std::vector<bool> used_bw(ws.sg.nodes.size());
+    for (auto n=1;n<ws.sg.nodes.size();++n) {
+        //start from a long node going fw (and later bw)
+        if (ws.sg.nodes[n].sequence.size()<long_node_size) continue;
+        for (auto sn:{n,-n}) {
+            if (sn==n and used_fw[n]) continue;
+            if (sn==-n and used_bw[n]) continue;
+            //get all bidirectional neighbours from all other nodes, dont go through long nodes (frontiers)
+            //std::cout<<"checking large node "<<n<<std::endl;
+            std::set<sgNodeID_t> internal_nodes;
+            std::set<sgNodeID_t> frontiers={sn};
+            bool mod=true;
+            while (mod) {
+                //std::cout<<" new expansion round "<<std::endl;
+                //std::cout<<"  frontiers: ";
+                //for (auto f:frontiers)std::cout<<" "<<f;
+                //std::cout<<std::endl;
+                //std::cout<<"  internals: ";
+                //for (auto f:internal_nodes)std::cout<<" "<<f;
+                //std::cout<<std::endl;
+                mod=false;
+                //grab all neighbours of internal nodes and all fw_neighbours of frontiers till no new nodes or too many
+                auto fwn=frontiers;
+                for (auto in:internal_nodes) {
+                    fwn.insert(in);
+                    fwn.insert(-in);
+                }
+                for (auto f:fwn) {
+                    //std::cout<<"  checking fw links of "<<f<<std::endl;
+                    for (auto fwl:get_fw_links(f)) {
+                        auto en=fwl.dest;
+                        //std::cout<<"    found connection to "<<en<<std::endl;
+                        if (ws.sg.nodes[llabs(en)].sequence.size()<long_node_size){
+                            //std::cout<<"     "<<en<<" is short"<<std::endl;
+                            if (internal_nodes.count(en)==0 and internal_nodes.count(-en)==0){
+                                mod=true;
+                                internal_nodes.insert(en);
+                                //std::cout<<"     "<<en<<" added to internal nodes"<<std::endl;
+                            }
+                        }
+                        else {
+                            //std::cout<<"     "<<en<<" is long"<<std::endl;
+                            if (frontiers.count(-en)==0){
+                                mod=true;
+                                frontiers.insert(-en);
+                                //std::cout<<"     "<<-en<<" added to frontiers"<<std::endl;
+                            }
+                        }
+                    }
+                }
+                if (frontiers.size()+internal_nodes.size()>100) break;
+            }
+            //add result to local_problem
+            if (frontiers.size()+internal_nodes.size()>100) continue;
+            local_problem.push_back({});
+            for (auto f:frontiers) {
+                local_problem.back().push_back(f);
+                if (f>0) used_fw[f]=true;
+                else used_bw[-f]=true;
+            }
+            for (auto f:internal_nodes) local_problem.back().push_back(f);
+        }
+    }
+    return local_problem;
+}
+
+std::vector<std::vector<sgNodeID_t>> PairedReadLinker::solve_local_problem(std::vector<sgNodeID_t> connected_nodes) {
+    PairedReadLinker local_linker(ws, u, *this, connected_nodes); //create a local linker with only the selected node's connections
+    local_linker.remove_transitive_links(10);
+    //if (local_linker.is_fully_solved()) return local_linker.get_all_lines();
+    return {};
+
 }

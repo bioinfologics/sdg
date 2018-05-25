@@ -82,9 +82,19 @@ int main(int argc, char * argv[]) {
         Untangler u(ws);
         PairedReadLinker prl(ws,u);
         prl.generate_links(min_backbone_node_size,min_backbone_ci,max_backbone_ci,5);
-        std::cout<<"calling remove_transitive_links"<<std::endl;
-        prl.remove_transitive_links();
-        std::cout<<"remove_transitive_links finished"<<std::endl;
+        //std::cout<<"calling remove_transitive_links"<<std::endl;
+        //prl.remove_transitive_links();
+        //std::cout<<"remove_transitive_links finished"<<std::endl;
+        for (auto lp:prl.find_local_problems(15000)){
+            std::cout<<"Local problem, frontiers: ";
+            for (auto n:lp) if (ws.sg.nodes[llabs(n)].sequence.size()>=15000) std::cout<<" "<<n;
+            std::cout<<std::endl<<"                internal: ";
+            for (auto n:lp) if (ws.sg.nodes[llabs(n)].sequence.size()<15000) std::cout<<" "<<n;
+            std::cout<<std::endl<<"    ";
+            for (auto n:lp) if (ws.sg.nodes[llabs(n)].sequence.size()) std::cout<<" seq"<<llabs(n)<<",";
+            std::cout<<std::endl<<std::endl;
+            prl.solve_local_problem(lp);
+        }
     }
     if (unroll_loops){
         Untangler u(ws);
