@@ -5,6 +5,7 @@
 #include <sglib/logger/OutputLog.h>
 #include <fstream>
 #include <strings.h>
+#include <cstring>
 #include "LinkedReadsDatastore.hpp"
 
 void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int _rs, size_t chunksize) {
