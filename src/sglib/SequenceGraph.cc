@@ -479,7 +479,8 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     std::cout<<nodes.size()-1<<" nodes after connecting with "<<lcount<<" links"<<std::endl;
 }
 
-void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<sgNodeID_t> & mark_red, const std::vector<double> & depths, const std::unordered_set<sgNodeID_t> & selected_nodes={}){
+void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<sgNodeID_t> & mark_red, const std::vector<double> & depths,
+                                 const std::unordered_set<sgNodeID_t> & selected_nodes={}, const std::vector<std::vector<Link>> & arg_links){
     std::string fasta_filename;
     //check the filename ends in .gfa
     if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
@@ -506,7 +507,7 @@ void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<
                 <<(mark_red.count(i)?"\tCL:Z:red":"")<<(depths.empty() or isnan(depths[i])?"":"\tDP:f:"+std::to_string(depths[i]))<<std::endl;
     }
 
-    for (auto &ls:links){
+    for (auto &ls:(arg_links.size()>0? arg_links:links)){
         for (auto &l:ls)
             if (l.source<=l.dest and (selected_nodes.empty() or
                     selected_nodes.count(l.source)>0 or selected_nodes.count(-l.source)>0 or

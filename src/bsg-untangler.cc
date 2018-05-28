@@ -83,6 +83,7 @@ int main(int argc, char * argv[]) {
         PairedReadLinker prl(ws,u);
         //prl.generate_links_size_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci,5);
         prl.generate_links_hspnp();
+        ws.sg.write_to_gfa("prl_hspnp_links.gfa",{},{},{},prl.links);
         //std::cout<<"calling remove_transitive_links"<<std::endl;
         //prl.remove_transitive_links();
         //std::cout<<"remove_transitive_links finished"<<std::endl;
