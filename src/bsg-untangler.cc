@@ -3,6 +3,7 @@
 #include <sglib/WorkSpace.hpp>
 #include <sglib/processors/Untangler.hpp>
 #include <sglib/processors/FlowFollower.hpp>
+#include <sglib/processors/LinkageUntangler.hpp>
 #include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"
 
@@ -79,15 +80,19 @@ int main(int argc, char * argv[]) {
     ws.add_log_entry("bsg-untangler run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     if (paired_scaff){
-        Untangler u(ws);
-        PairedReadLinker prl(ws,u);
+        LinkageUntangler lu(ws);
+        lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+        lu.report_node_selection();
+        auto ldg=lu.make_topology_linkage(10);
+        ws.sg.write_to_gfa("topology_links.gfa",{},{},{},ldg.links);
+        //PairedReadLinker prl(ws,u);
         //prl.generate_links_size_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci,5);
-        prl.generate_links_hspnp();
-        ws.sg.write_to_gfa("prl_hspnp_links.gfa",{},{},{},prl.links);
+        //prl.generate_links_hspnp();
+        //ws.sg.write_to_gfa("prl_hspnp_links.gfa",{},{},{},prl.links);
         //std::cout<<"calling remove_transitive_links"<<std::endl;
         //prl.remove_transitive_links();
         //std::cout<<"remove_transitive_links finished"<<std::endl;
-        for (auto lp:prl.find_local_problems(15000)){
+        /*for (auto lp:prl.find_local_problems(15000)){
             std::cout<<"Local problem, frontiers: ";
             for (auto n:lp) if (ws.sg.nodes[llabs(n)].sequence.size()>=15000) std::cout<<" "<<n;
             std::cout<<std::endl<<"                internal: ";
@@ -96,7 +101,7 @@ int main(int argc, char * argv[]) {
             for (auto n:lp) if (ws.sg.nodes[llabs(n)].sequence.size()) std::cout<<" seq"<<llabs(n)<<",";
             std::cout<<std::endl<<std::endl;
             prl.solve_local_problem(lp);
-        }
+        }*/
     }
     if (unroll_loops){
         Untangler u(ws);

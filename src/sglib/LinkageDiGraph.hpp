@@ -9,6 +9,7 @@
 #include "SequenceGraph.hpp"
 
 class LinkageDiGraph {
+public:
     LinkageDiGraph(SequenceGraph & _sg): sg(_sg){};
 
     void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
@@ -21,10 +22,6 @@ class LinkageDiGraph {
     void remove_transitive_links(int radius);
     void solve();
 
-
-
-
-private:
     SequenceGraph & sg;
     std::vector<std::vector<Link>> links;
 
