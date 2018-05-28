@@ -51,7 +51,7 @@ std::set<sgNodeID_t> LinkageDiGraph::fw_reached_nodes(sgNodeID_t n, int radius) 
 
 void LinkageDiGraph::remove_transitive_links(int radius) {
     std::cout<<"removing transitive connections..."<<std::endl;
-
+    std::set<std::pair<sgNodeID_t,sgNodeID_t>> indirect;
     //TODO: check mutually transitive connections (A->B, B->C, A->C, C->B)
     for (auto fn=1;fn<links.size();++fn) {
         for (auto n:{fn,-fn}) {
@@ -65,7 +65,7 @@ void LinkageDiGraph::remove_transitive_links(int radius) {
                 reaches.push_back(fw_reached_nodes(fl.dest,radius));
             }
             if (neighbours.empty()) continue;
-            std::set<sgNodeID_t> indirect;
+
             for (auto bi=0;bi<neighbours.size();++bi){
                 auto b=neighbours[bi];
                 for (auto ci=0;ci<neighbours.size();++ci){
@@ -76,19 +76,21 @@ void LinkageDiGraph::remove_transitive_links(int radius) {
                         //std::cout << "Transitive connection detected! " << n << " -> " << b << " -> "
                         //          << c << std::endl;
                         //std::cout << "  seq" << llabs(n) << ", seq" << b << ", seq" << llabs(c) << std::endl;
-                        indirect.insert(c);
+                        indirect.insert(std::make_pair(-n,c));
                     }
                 }
 
             }
-            std::cout<<"Connections for node " <<labs(n) << (n>0 ? " FW":" BW")<<":"<<std::endl;
-            for (auto l:neighbours) {
-                std::cout<<l;
-                if (indirect.count(l)>0) std::cout<<" indirect"<<std::endl;
-                else std::cout<<" DIRECT!"<<std::endl;
-            }
+//            std::cout<<"Connections for node " <<labs(n) << (n>0 ? " FW":" BW")<<":"<<std::endl;
+//            for (auto l:neighbours) {
+//                std::cout<<l;
+//                if (indirect.count(l)>0) std::cout<<" indirect"<<std::endl;
+//                else std::cout<<" DIRECT!"<<std::endl;
+//            }
         }
 
     }
+    std::cout<<indirect.size()<<" transitive connections found"<<std::endl;
+    for (auto ic:indirect) remove_link(ic.first,ic.second);
     std::cout<<"removing transitive connections DONE"<<std::endl;
 }

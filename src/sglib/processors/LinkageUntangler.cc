@@ -124,4 +124,5 @@ LinkageDiGraph LinkageUntangler::make_paired_linkage(int min_reads) {
             //lof<<l.first.first<<" "<<l.first.second<<" "<<l.second<<std::endl;
         }
     }
+    return ldg;
 }

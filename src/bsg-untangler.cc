@@ -82,12 +82,14 @@ int main(int argc, char * argv[]) {
     if (paired_scaff){
         LinkageUntangler lu(ws);
         lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+        //lu.select_nodes_by_HSPNPs();
         lu.report_node_selection();
         auto topology_ldg=lu.make_topology_linkage(10);
         ws.sg.write_to_gfa("topology_links.gfa",{},{},{},topology_ldg.links);
-        auto pair_ldg=lu.make_topology_linkage(5);
+        auto pair_ldg=lu.make_paired_linkage(20);
         ws.sg.write_to_gfa("pair_links.gfa",{},{},{},pair_ldg.links);
-        
+        pair_ldg.remove_transitive_links(10);
+        ws.sg.write_to_gfa("pair_links_no_transitive.gfa",{},{},{},pair_ldg.links);
         //PairedReadLinker prl(ws,u);
         //prl.generate_links_size_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci,5);
         //prl.generate_links_hspnp();
