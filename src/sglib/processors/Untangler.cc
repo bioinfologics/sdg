@@ -213,7 +213,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> hps;
     std::vector<bool> used(ws.sg.nodes.size(),false);
     //TODO: check the coverages are actually correct?
-    const double min_c1=0.75,max_c1=1.25,min_c2=1.5,max_c2=2.5;
+    const double min_c1=0.5,max_c1=1.5,min_c2=1.25,max_c2=3;
     /*
      * the loop always keep the first and the last elements as c=2 collapsed nodes.
      * it starts with a c=2 node, and goes thorugh all bubbles fw, then reverts the subgraph and repeats
@@ -223,8 +223,8 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
     for (auto n=1;n<ws.sg.nodes.size();++n){
         std::pair<sgNodeID_t,sgNodeID_t> hap={0,0};
         if (ws.sg.nodes[n].status==sgNodeDeleted) continue;
-        auto frontkci=ws.kci.compute_compression_for_node(n);
-        if (frontkci>max_c2 or frontkci<min_c2) continue;
+        //auto frontkci=ws.kci.compute_compression_for_node(n);
+        //if (frontkci>max_c2 or frontkci<min_c2) continue;
         auto m=n;
         //two passes: 0->fw, 1->bw,
         for (auto pass=0; pass<2; ++pass,m=-m) {
@@ -255,8 +255,8 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
             if (h0kc > max_c1 or h0kc < min_c1) continue;
             auto h1kc = ws.kci.compute_compression_for_node(hap.second);
             if (h1kc > max_c1 or h1kc < min_c1) continue;
-            auto ekc = ws.kci.compute_compression_for_node(hap0f[0].dest);
-            if (ekc > max_c2 or ekc < min_c2) continue;
+            //auto ekc = ws.kci.compute_compression_for_node(hap0f[0].dest);
+            //if (ekc > max_c2 or ekc < min_c2) continue;
 
 #pragma omp critical(hps)
             {
@@ -1518,9 +1518,24 @@ void Untangler::unroll_simple_loops() {
     }
 }
 
-void PairedReadLinker::generate_links( uint32_t min_size, float min_ci, float max_ci,int min_reads) {
+void PairedReadLinker::generate_links_size_ci( uint32_t min_size, float min_ci, float max_ci,int min_reads) {
     std::vector<bool> to_link(ws.sg.nodes.size());
     for (auto &n:ws.select_from_all_nodes(min_size,1000000000,0,1000000000,min_ci,max_ci)) to_link[n]=true;
+    generate_links(to_link,min_reads);
+}
+void PairedReadLinker::generate_links_hspnp(int min_reads) {
+    std::vector<bool> to_link(ws.sg.nodes.size());
+    uint64_t count=0,bp=0;
+    for (auto &n:u.get_all_HSPNPs()) {
+        to_link[llabs(n.first)]=true;
+        to_link[llabs(n.second)]=true;
+        ++count;
+        bp+=ws.sg.nodes[llabs(n.first)].sequence.size()+ws.sg.nodes[llabs(n.second)].sequence.size();
+    }
+    sglib::OutputLog()<<count<<" nodes in HSPNP selected for linkage totalling "<<bp<<std::endl;
+    generate_links(to_link,min_reads);
+}
+void PairedReadLinker::generate_links( const std::vector<bool> &to_link,int min_reads) {
 
     sglib::OutputLog()<<"filling orientation indexes"<<std::endl;
     uint64_t revc=0,dirc=0,false_rev=0,false_dir=0,true_rev=0,true_dir=0;

@@ -81,7 +81,8 @@ int main(int argc, char * argv[]) {
     if (paired_scaff){
         Untangler u(ws);
         PairedReadLinker prl(ws,u);
-        prl.generate_links(min_backbone_node_size,min_backbone_ci,max_backbone_ci,5);
+        //prl.generate_links_size_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci,5);
+        prl.generate_links_hspnp();
         //std::cout<<"calling remove_transitive_links"<<std::endl;
         //prl.remove_transitive_links();
         //std::cout<<"remove_transitive_links finished"<<std::endl;
