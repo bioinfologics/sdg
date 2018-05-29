@@ -18,7 +18,7 @@ public:
     void clear_node_selection();
     void report_node_selection();
     void select_nodes_by_size_and_ci( uint64_t min_size, float min_ci, float max_ci);
-    void select_nodes_by_HSPNPs();
+    void select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, float max_ci);
     void select_frontiers_by_size_and_ci();
 
     //Linkage creation methods (work on selected nodes)

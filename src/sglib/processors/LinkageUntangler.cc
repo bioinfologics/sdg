@@ -44,6 +44,58 @@ void LinkageUntangler::select_nodes_by_size_and_ci( uint64_t min_size, float min
     }
 }
 
+void LinkageUntangler::select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, float max_ci) {
+    //first, get all perfectly parallel nodes (TODO:generalise more)
+    //std::ofstream hl("hspnp_list.txt");
+    std::set<std::pair<sgNodeID_t, sgNodeID_t >> pnps, hspnps;
+#pragma omp parallel for schedule(static, 100)
+    for (sgNodeID_t n = 1; n < ws.sg.nodes.size(); ++n) {
+        if (ws.sg.nodes[n].status == sgNodeDeleted) continue;
+        if (ws.sg.nodes[n].sequence.size() < min_size) continue;
+        auto fwl = ws.sg.get_fw_links(n);
+        if (fwl.size() != 1) continue;
+        auto post = fwl[0].dest;
+        auto bwl = ws.sg.get_bw_links(n);
+        if (bwl.size() != 1) continue;
+        auto prev = -fwl[0].dest;
+        auto prev_fwl = ws.sg.get_fw_links(prev);
+        if (prev_fwl.size() != 2) continue;
+        auto post_bwl = ws.sg.get_bw_links(post);
+        if (post_bwl.size() != 2) continue;
+        if ((prev_fwl[0].dest == post_bwl[0].dest and prev_fwl[1].dest == post_bwl[1].dest)
+            or (prev_fwl[1].dest == post_bwl[0].dest and prev_fwl[0].dest == post_bwl[1].dest)) {
+            sgNodeID_t m;
+            if (llabs(prev_fwl[0].dest) != n and llabs(prev_fwl[1].dest) != n) std::cout<<"Error! cant find N in prev!"<<std::endl;
+            if (llabs(prev_fwl[0].dest) == n) m = llabs(prev_fwl[1].dest);
+            else m = llabs(prev_fwl[0].dest);
+#pragma omp critical(inserting_pnps)
+            {
+                if (n < m) pnps.insert(std::make_pair(n, m));
+                else pnps.insert(std::make_pair(m, n));
+            }
+            //Now evaluate coverage of the branches
+            auto c1 = ws.kci.compute_compression_for_node(n, 1);
+            if (std::isnan(c1) or c1<min_ci or c1>max_ci) continue;
+            auto c2 = ws.kci.compute_compression_for_node(m, 1);
+            if (std::isnan(c2) or c2<min_ci or c2>max_ci) continue;
+#pragma omp critical(inserting_hspnps)
+            {
+                //hl<<(n<m ? n:m)<<" "<<(n<m ? m:n)<<std::endl;
+                if (n < m) hspnps.insert(std::make_pair(n, m));
+                else hspnps.insert(std::make_pair(m, n));
+            }
+        }
+    }
+
+    sglib::OutputLog() << "Selecting HSPNPs: " << pnps.size() << " pairs passed topology, " << hspnps.size()
+                       << " passed CI" << std::endl;
+    for (auto p:hspnps) {
+        selected_nodes[p.first] = true;
+        selected_nodes[p.second] = true;
+    }
+
+}
+
 LinkageDiGraph LinkageUntangler::make_topology_linkage(int radius) {
     LinkageDiGraph ldg(ws.sg);
     for (auto m=1;m<ws.sg.nodes.size();++m) {

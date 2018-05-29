@@ -81,8 +81,8 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     if (paired_scaff){
         LinkageUntangler lu(ws);
-        lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
-        //lu.select_nodes_by_HSPNPs();
+        //lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+        lu.select_nodes_by_HSPNPs(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
         lu.report_node_selection();
         auto topology_ldg=lu.make_topology_linkage(10);
         ws.sg.write_to_gfa("topology_links.gfa",{},{},{},topology_ldg.links);
