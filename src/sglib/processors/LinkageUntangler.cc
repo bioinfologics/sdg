@@ -52,18 +52,22 @@ void LinkageUntangler::select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, f
     for (sgNodeID_t n = 1; n < ws.sg.nodes.size(); ++n) {
         if (ws.sg.nodes[n].status == sgNodeDeleted) continue;
         if (ws.sg.nodes[n].sequence.size() < min_size) continue;
+        //FW check
         auto fwl = ws.sg.get_fw_links(n);
         if (fwl.size() != 1) continue;
         auto post = fwl[0].dest;
-        auto bwl = ws.sg.get_bw_links(n);
-        if (bwl.size() != 1) continue;
-        auto prev = -fwl[0].dest;
-        auto prev_fwl = ws.sg.get_fw_links(prev);
-        if (prev_fwl.size() != 2) continue;
         auto post_bwl = ws.sg.get_bw_links(post);
         if (post_bwl.size() != 2) continue;
-        if ((prev_fwl[0].dest == post_bwl[0].dest and prev_fwl[1].dest == post_bwl[1].dest)
-            or (prev_fwl[1].dest == post_bwl[0].dest and prev_fwl[0].dest == post_bwl[1].dest)) {
+        if (llabs(post_bwl[0].dest)==llabs(post_bwl[1].dest))continue;
+        //BW check
+        auto bwl = ws.sg.get_bw_links(n);
+        if (bwl.size() != 1) continue;
+        auto prev = bwl[0].dest;
+        auto prev_fwl = ws.sg.get_bw_links(prev);
+        if (prev_fwl.size() != 2) continue;
+
+        if ((prev_fwl[0].dest == -post_bwl[0].dest and prev_fwl[1].dest == -post_bwl[1].dest)
+            or (prev_fwl[1].dest == -post_bwl[0].dest and prev_fwl[0].dest == -post_bwl[1].dest)) {
             sgNodeID_t m;
             if (llabs(prev_fwl[0].dest) != n and llabs(prev_fwl[1].dest) != n) std::cout<<"Error! cant find N in prev!"<<std::endl;
             if (llabs(prev_fwl[0].dest) == n) m = llabs(prev_fwl[1].dest);
