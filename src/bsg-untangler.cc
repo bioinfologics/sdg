@@ -19,12 +19,13 @@ int main(int argc, char * argv[]) {
     std::string workspace_file,output_prefix;
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
     bool repeat_expansion=false, neighbour_connection_graph=false, bubbly_paths=false;
-    bool unroll_loops=false,pop_errors=false, paired_scaff=false;
+    bool unroll_loops=false,pop_errors=false, paired_scaff=false, select_hspnps=false;
     bool explore_homopolymers=false;
     uint64_t min_backbone_node_size=1000;
     float min_backbone_ci=0.5;
     float max_backbone_ci=1.25;
     float tag_imbalance_ends=.1;
+    int min_pairs=7;
     int min_shared_tags=10;
     try
     {
@@ -41,7 +42,9 @@ int main(int argc, char * argv[]) {
                 ("b,bubbly_paths","run bubbly paths phasing", cxxopts::value<bool>(bubbly_paths))
                 //("n,neighbour_connections","run tag-based repeat neighbour_connection", cxxopts::value<bool>(neighbour_connection))
                 ("c,neighbour_connection_backbones","create tag-imbalance-based neighbour backbones", cxxopts::value<bool>(neighbour_connection_graph))
+                ("select_hspnp","select only Haplotype Specific Parallel Node Pairs to base scaffolding", cxxopts::value<bool>(select_hspnps))
                 ("min_backbone_node_size","minimum size of nodes to use in backbones",cxxopts::value<uint64_t>(min_backbone_node_size))
+                ("min_pairs","minimum number of pairs to connect two nodes",cxxopts::value<int>(min_pairs))
                 ("min_backbone_ci","minimum ci of nodes to use in backbones",cxxopts::value<float>(min_backbone_ci))
                 ("max_backbone_ci","minimum ci of nodes to use in backbones",cxxopts::value<float>(max_backbone_ci))
                 ("tag_imbalance_ends","percentage of node to use as tag-imbalanced end",cxxopts::value<float>(tag_imbalance_ends))
@@ -81,12 +84,13 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     if (paired_scaff){
         LinkageUntangler lu(ws);
-        //lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
-        lu.select_nodes_by_HSPNPs(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+        if (select_hspnps) lu.select_nodes_by_HSPNPs(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+        else lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+
         lu.report_node_selection();
         auto topology_ldg=lu.make_topology_linkage(10);
         ws.sg.write_to_gfa("topology_links.gfa",{},{},{},topology_ldg.links);
-        auto pair_ldg=lu.make_paired_linkage(20);
+        auto pair_ldg=lu.make_paired_linkage(min_pairs);
         ws.sg.write_to_gfa("pair_links.gfa",{},{},{},pair_ldg.links);
         pair_ldg.remove_transitive_links(10);
         ws.sg.write_to_gfa("pair_links_no_transitive.gfa",{},{},{},pair_ldg.links);
