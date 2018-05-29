@@ -20,6 +20,7 @@ public:
     std::set<sgNodeID_t> fw_reached_nodes(sgNodeID_t n, int radius);
 
     void remove_transitive_links(int radius);
+    void report_connectivity();
     void solve();
 
     SequenceGraph & sg;

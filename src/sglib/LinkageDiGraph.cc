@@ -2,6 +2,7 @@
 // Created by Bernardo Clavijo (EI) on 25/05/2018.
 //
 
+#include <sglib/logger/OutputLog.h>
 #include "LinkageDiGraph.hpp"
 void LinkageDiGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d) {
     if (llabs(source)>=links.size()) links.resize(llabs(source)+1);
@@ -93,4 +94,25 @@ void LinkageDiGraph::remove_transitive_links(int radius) {
     std::cout<<indirect.size()<<" transitive connections found"<<std::endl;
     for (auto ic:indirect) remove_link(ic.first,ic.second);
     std::cout<<"removing transitive connections DONE"<<std::endl;
+}
+
+void LinkageDiGraph::report_connectivity() {
+    uint64_t solved=0,solved_complex=0,solved_disconnected=0,complex=0,complex_disconected=0;
+    for (auto n=1;n<sg.nodes.size();++n){
+        if (sg.nodes[n].status==sgNodeDeleted) continue;
+        auto fc=get_fw_links(n).size();
+        auto bc=get_bw_links(n).size();
+        if (fc<bc) std::swap(fc,bc);
+        if (bc==0) {
+            if (fc==1) ++solved_disconnected;
+            else if (fc>1) ++complex_disconected;
+        }
+        else if (bc==1){
+            if (fc==1) ++solved;
+            else if (fc>1) ++solved_complex;
+        }
+        else ++complex;
+    }
+    sglib::OutputLog()<<"Connected node types:  1-1: "<<solved<<"  1-0: "<<solved_disconnected<<"  1-N: "<<solved_complex
+                       <<"  N-N: "<<complex<<"  N-0: "<<complex_disconected<<std::endl;
 }

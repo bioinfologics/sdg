@@ -89,10 +89,13 @@ int main(int argc, char * argv[]) {
 
         lu.report_node_selection();
         auto topology_ldg=lu.make_topology_linkage(10);
+        topology_ldg.report_connectivity();
         ws.sg.write_to_gfa("topology_links.gfa",{},{},{},topology_ldg.links);
         auto pair_ldg=lu.make_paired_linkage(min_pairs);
+        pair_ldg.report_connectivity();
         ws.sg.write_to_gfa("pair_links.gfa",{},{},{},pair_ldg.links);
         pair_ldg.remove_transitive_links(10);
+        pair_ldg.report_connectivity();
         ws.sg.write_to_gfa("pair_links_no_transitive.gfa",{},{},{},pair_ldg.links);
         //PairedReadLinker prl(ws,u);
         //prl.generate_links_size_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci,5);
