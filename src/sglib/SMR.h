@@ -441,7 +441,6 @@ private:
                 ++count0;
             }
             if (count0 == outBufferSize) {
-                std::cout << "Here!" << std::endl;
                 ::write(out, (char *) outfreqs, outBufferSize * sizeof(RecordType));
                 outCount += count0;
                 count0 = 0;
