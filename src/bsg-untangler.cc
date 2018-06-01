@@ -91,12 +91,31 @@ int main(int argc, char * argv[]) {
         auto topology_ldg=lu.make_topology_linkage(10);
         topology_ldg.report_connectivity();
         ws.sg.write_to_gfa("topology_links.gfa",{},{},{},topology_ldg.links);
-        auto pair_ldg=lu.make_paired_linkage(min_pairs);
-        pair_ldg.report_connectivity();
-        ws.sg.write_to_gfa("pair_links.gfa",{},{},{},pair_ldg.links);
-        pair_ldg.remove_transitive_links(10);
-        pair_ldg.report_connectivity();
-        ws.sg.write_to_gfa("pair_links_no_transitive.gfa",{},{},{},pair_ldg.links);
+        LinkageDiGraph gldg(ws.sg);
+        if (!ws.paired_read_mappers.empty()) {
+            auto pair_ldg = lu.make_paired_linkage(min_pairs);
+            pair_ldg.report_connectivity();
+            gldg.add_links(pair_ldg);
+            ws.sg.write_to_gfa("pair_links.gfa", {}, {}, {}, pair_ldg.links);
+            pair_ldg.remove_transitive_links(10);
+            pair_ldg.report_connectivity();
+            ws.sg.write_to_gfa("pair_links_no_transitive.gfa", {}, {}, {}, pair_ldg.links);
+        }
+        if (!ws.linked_read_mappers.empty()) {
+            auto tag_ldg = lu.make_tag_linkage(min_shared_tags);
+            tag_ldg.report_connectivity();
+            gldg.add_links(tag_ldg);
+            ws.sg.write_to_gfa("tag_links.gfa", {}, {}, {}, tag_ldg.links);
+            tag_ldg.remove_transitive_links(10);
+            tag_ldg.report_connectivity();
+            ws.sg.write_to_gfa("tag_links_no_transitive.gfa", {}, {}, {}, tag_ldg.links);
+        }
+        gldg.report_connectivity();
+        gldg.add_links(gldg);
+        ws.sg.write_to_gfa("general_links.gfa", {}, {}, {}, gldg.links);
+        gldg.remove_transitive_links(10);
+        gldg.report_connectivity();
+        ws.sg.write_to_gfa("general_links_no_transitive.gfa", {}, {}, {}, gldg.links);
         //PairedReadLinker prl(ws,u);
         //prl.generate_links_size_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci,5);
         //prl.generate_links_hspnp();

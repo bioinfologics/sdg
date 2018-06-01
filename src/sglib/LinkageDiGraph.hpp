@@ -13,6 +13,8 @@ public:
     LinkageDiGraph(SequenceGraph & _sg): sg(_sg){};
 
     void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
+    void add_links(const LinkageDiGraph &other);
+
     void remove_link(sgNodeID_t source, sgNodeID_t dest);
 
     std::vector<Link> get_fw_links( sgNodeID_t n);

@@ -4,6 +4,21 @@
 
 #include "LinkageUntangler.hpp"
 
+struct Counter
+{
+    struct value_type { template<typename T> value_type(const T&) { } };
+    void push_back(const value_type&) { ++count; }
+    size_t count = 0;
+};
+
+template<typename T1, typename T2>
+size_t intersection_size(const T1& s1, const T2& s2)
+{
+    Counter c;
+    set_intersection(s1.begin(), s1.end(), s2.begin(), s2.end(), std::back_inserter(c));
+    return c.count;
+}
+
 void LinkageUntangler::clear_node_selection() {
     selected_nodes.clear();
     selected_nodes.resize(ws.sg.nodes.size());
@@ -180,5 +195,109 @@ LinkageDiGraph LinkageUntangler::make_paired_linkage(int min_reads) {
             //lof<<l.first.first<<" "<<l.first.second<<" "<<l.second<<std::endl;
         }
     }
+    return ldg;
+}
+
+
+LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc) {
+    LinkageDiGraph ldg(ws.sg);
+    std::vector<std::pair<sgNodeID_t , sgNodeID_t >> pass_sharing;
+    //First, make a node->tag collection for all selected nodes (to speed up things)
+    sglib::OutputLog()<<"Creating node_tags sets"<<std::endl;
+    std::vector<std::set<bsg10xTag>> node_tags;
+    std::atomic<uint64_t> all_compared(0),linked(0);
+    node_tags.resize(ws.sg.nodes.size());
+    for (auto n=1;n<ws.sg.nodes.size();++n) {
+        if (!selected_nodes[n]) continue;
+        for (auto t:ws.linked_read_mappers[0].get_node_tags(n)) node_tags[n].insert(t);
+    }
+    //Now find the nodes with more than min_tags shared tags
+    sglib::OutputLog()<<"Finding intersecting nodes"<<std::endl;
+#pragma omp parallel for schedule(static,100)
+    for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) {
+        if (!selected_nodes[n]) continue;
+        for (sgNodeID_t m = n+1; m < ws.sg.nodes.size(); ++m) {
+            if (!selected_nodes[m]) continue;
+            uint32_t shared=intersection_size(node_tags[n],node_tags[m]);
+
+
+                ++all_compared;
+                if (shared>=min_reads) {
+#pragma omp critical
+                    pass_sharing.push_back(std::make_pair(n,m));
+                }
+
+        }
+    }
+    sglib::OutputLog()<<"Node pairs with more than "<<min_reads<<" shared tags: "<<pass_sharing.size()<<" / "<<all_compared<<std::endl;
+    sglib::OutputLog()<<"Evaluating tag imbalance"<<std::endl;
+    for (auto p:pass_sharing) {
+
+        auto n1 = p.first;
+        auto n2 = p.second;
+        std::set<bsg10xTag> shared_tags;
+        std::set_intersection(node_tags[n1].begin(), node_tags[n1].end(), node_tags[n2].begin(), node_tags[n2].end(),
+                              std::inserter(shared_tags, shared_tags.end()));
+        uint64_t n1_front_in = 0, n1_front_total = 0, n1_back_in = 0, n1_back_total = 0;
+        uint64_t n2_front_in = 0, n2_front_total = 0, n2_back_in = 0, n2_back_total = 0;
+        uint64_t n1first30point = ws.sg.nodes[n1].sequence.size() * end_perc;
+        uint64_t n1last30point = ws.sg.nodes[n1].sequence.size() * (1 - end_perc);
+        std::set<bsg10xTag> t1f,t1b,t2f,t2b,t1ft,t1bt,t2ft,t2bt;
+        for (auto rm:ws.linked_read_mappers[0].reads_in_node[n1]) {
+            if (rm.first_pos < n1first30point) {
+                ++n1_front_total;
+                t1ft.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
+                if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id)) > 0) {
+                    ++n1_front_in;
+                    t1f.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
+                }
+            }
+            if (rm.last_pos > n1last30point) {
+                ++n1_back_total;
+                t1bt.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
+                if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id)) > 0) {
+                    ++n1_back_in;
+                    t1b.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
+                }
+            }
+        }
+        auto n1f = (100.0 * n1_front_in / n1_front_total);
+        auto n1b = (100.0 * n1_back_in / n1_back_total);
+        uint64_t n2first30point = ws.sg.nodes[n2].sequence.size() * end_perc;
+        uint64_t n2last30point = ws.sg.nodes[n2].sequence.size() * (1 - end_perc);
+        for (auto rm:ws.linked_read_mappers[0].reads_in_node[n2]) {
+            if (rm.first_pos < n2first30point) {
+                ++n2_front_total;
+                t2ft.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
+                if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id)) > 0) {
+                    ++n2_front_in;
+                    t2f.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
+                }
+            }
+            if (rm.last_pos > n2last30point) {
+                ++n2_back_total;
+                t2bt.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
+                if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id)) > 0) {
+                    ++n2_back_in;
+                    t2b.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
+                }
+            }
+        }
+        auto n2f = (100.0 * n2_front_in / n2_front_total);
+        auto n2b = (100.0 * n2_back_in / n2_back_total);
+        if ( (ws.sg.nodes[llabs(n1)].sequence.size()>10000 and ws.sg.nodes[llabs(n2)].sequence.size()>10000) ){
+            std::cout<<"connection between "<<n1<<" and "<<n2<<" with "<<shared_tags.size()<<" tags: "<<n1f<<"("<<t1f.size()<<"):"<< n1b <<"("<<t1b.size()<<") <-> "<<n2f<<"("<<t2f.size()<<"):"<< n2b <<"("<<t2b.size()<<")"<<std::endl;
+            std::cout<<"F<->F: "<<intersection_size(t1f,t2f)<<" / "<<t1ft.size()<<":"<<t2ft.size();
+            std::cout<<"  F<->B: "<<intersection_size(t1f,t2b)<<" / "<<t1ft.size()<<":"<<t2bt.size();
+            std::cout<<"  B<->F: "<<intersection_size(t1b,t2f)<<" / "<<t1bt.size()<<":"<<t2ft.size();
+            std::cout<<"  B<->B: "<<intersection_size(t1b,t2b)<<" / "<<t1bt.size()<<":"<<t2bt.size()<<std::endl;
+        }
+        if (fabs(2 * (n1f - n1b) / (n1f + n1b)) > .1 and fabs(2 * (n2f - n2b) / (n2f + n2b)) > .1) {
+#pragma omp critical
+            ++linked;
+            ldg.add_link((n1f > n1b ? n1 : -n1), (n2f > n2b ? n2 : -n2), 0);
+        }
+    }
+    sglib::OutputLog()<<"Links created (passing tag imbalance): "<<linked<<std::endl;
     return ldg;
 }
