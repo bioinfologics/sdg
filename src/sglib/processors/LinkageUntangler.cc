@@ -142,7 +142,7 @@ LinkageDiGraph LinkageUntangler::make_topology_linkage(int radius) {
 
 LinkageDiGraph LinkageUntangler::make_paired_linkage(int min_reads) {
     LinkageDiGraph ldg(ws.sg);
-    sglib::OutputLog()<<"filling orientation indexes"<<std::endl;
+    /*sglib::OutputLog()<<"filling orientation indexes"<<std::endl;
     uint64_t revc=0,dirc=0,false_rev=0,false_dir=0,true_rev=0,true_dir=0;
     std::vector<std::vector<bool>> orientation;
     for (auto &pm:ws.paired_read_mappers){
@@ -159,7 +159,7 @@ LinkageDiGraph LinkageUntangler::make_paired_linkage(int min_reads) {
     }
     std::ofstream lof("paired_links.txt");
     sglib::OutputLog()<<"FW: "<<dirc<<" ( "<<true_dir<<" - "<< false_dir<<" )"<<std::endl;
-    sglib::OutputLog()<<"BW: "<<revc<<" ( "<<true_rev<<" - "<< false_rev<<" )"<<std::endl;
+    sglib::OutputLog()<<"BW: "<<revc<<" ( "<<true_rev<<" - "<< false_rev<<" )"<<std::endl;*/
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
     sglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
     //use all libraries collect votes on each link
@@ -169,8 +169,8 @@ LinkageDiGraph LinkageUntangler::make_paired_linkage(int min_reads) {
             sgNodeID_t n1 = pm.read_to_node[i];
             sgNodeID_t n2 = pm.read_to_node[i + 1];
             if (n1 == 0 or n2 == 0 or n1 == n2 or !selected_nodes[n1] or !selected_nodes[n2] ) continue;
-            if (orientation[rmi][i]) n1=-n1;
-            if (orientation[rmi][i+1]) n2=-n2;
+            if (pm.read_direction_in_node[i]) n1=-n1;
+            if (pm.read_direction_in_node[i+1]) n2=-n2;
             if (llabs(n1) > llabs(n2)) std::swap(n1,n2);
             ++lv[std::make_pair(n1, n2)];
         }
@@ -200,6 +200,8 @@ LinkageDiGraph LinkageUntangler::make_paired_linkage(int min_reads) {
 
 
 LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc) {
+
+    //STEP 1 - identify candidates by simple tag-sharing.
     LinkageDiGraph ldg(ws.sg);
     std::vector<std::pair<sgNodeID_t , sgNodeID_t >> pass_sharing;
     //First, make a node->tag collection for all selected nodes (to speed up things)
@@ -230,7 +232,62 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc)
         }
     }
     sglib::OutputLog()<<"Node pairs with more than "<<min_reads<<" shared tags: "<<pass_sharing.size()<<" / "<<all_compared<<std::endl;
-    sglib::OutputLog()<<"Evaluating tag imbalance"<<std::endl;
+
+    //STEP 2 - confirm directionality
+
+    //2.a create link direction counts:
+    std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
+    sglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
+    //use all libraries collect votes on each link
+    auto rmi=0;
+    for (auto &pm:ws.paired_read_mappers) {
+        for (auto i = 1; i < pm.read_to_node.size(); i += 2) {
+            sgNodeID_t n1 = pm.read_to_node[i];
+            sgNodeID_t n2 = pm.read_to_node[i + 1];
+            if (n1 == 0 or n2 == 0 or n1 == n2 or !selected_nodes[n1] or !selected_nodes[n2] ) continue;
+            if (pm.read_direction_in_node[i]) n1=-n1;
+            if (pm.read_direction_in_node[i+1]) n2=-n2;
+            if (llabs(n1) > llabs(n2)) std::swap(n1,n2);
+            ++lv[std::make_pair(n1, n2)];
+        }
+        ++rmi;
+    }
+    std::set<std::pair<sgNodeID_t ,sgNodeID_t >> used;
+    for (auto p:pass_sharing) {
+        auto bf=lv[std::make_pair(-p.first,p.second)];
+        auto bb=lv[std::make_pair(-p.first,-p.second)];
+        auto ff=lv[std::make_pair(p.first,p.second)];
+        auto fb=lv[std::make_pair(p.first,-p.second)];
+        auto total=bf+bb+ff+fb;
+        float bfp=((float) bf)/total;
+        float bbp=((float) bb)/total;
+        float ffp=((float) ff)/total;
+        float fbp=((float) fb)/total;
+        if (bf>=3 and bfp>=.75) {
+            ldg.add_link(-p.first,p.second,0);
+            used.insert(p);
+        }
+        else if (bb>=3 and bbp>=.75) {
+            ldg.add_link(-p.first,-p.second,0);
+            used.insert(p);
+        }
+        else if (ff>=3 and ffp>=.75) {
+            ldg.add_link(p.first,p.second,0);
+            used.insert(p);
+        }
+        else if (fb>=3 and fbp>=.75) {
+            ldg.add_link(p.first,-p.second,0);
+            used.insert(p);
+        }
+        /*std::cout<<"Evaluating connection between "<<p.first<<" and "<<p.second<<": "
+                <<lv[std::make_pair(-p.first,p.second)]<<" "
+                <<lv[std::make_pair(-p.first,-p.second)]<<" "
+                <<lv[std::make_pair(p.first,p.second)]<<" "
+                <<lv[std::make_pair(p.first,-p.second)]<<std::endl;*/
+    }
+
+
+    /*sglib::OutputLog()<<"Evaluating tag imbalance"<<std::endl;
     for (auto p:pass_sharing) {
 
         auto n1 = p.first;
@@ -297,7 +354,7 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc)
             ++linked;
             ldg.add_link((n1f > n1b ? n1 : -n1), (n2f > n2b ? n2 : -n2), 0);
         }
-    }
+    }*/
     sglib::OutputLog()<<"Links created (passing tag imbalance): "<<linked<<std::endl;
     return ldg;
 }

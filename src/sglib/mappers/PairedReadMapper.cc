@@ -37,6 +37,7 @@ void PairedReadMapper::read(std::ifstream &input_file) {
         reads_in_node[i].resize(mcount);
         input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapper) * mcount);
     }
+    populate_orientation();
 }
 
 
@@ -183,6 +184,7 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
     for (sgNodeID_t n=1;n<reads_in_node.size();++n){
         std::sort(reads_in_node[n].begin(),reads_in_node[n].end());
     }
+    populate_orientation();
 }
 
 ///**
@@ -283,4 +285,53 @@ std::vector<uint64_t> PairedReadMapper::size_distribution() {
     if (frcount>rfcount){
         return frdist;
     } else return rfdist;
+}
+
+void PairedReadMapper::populate_orientation() {
+    read_direction_in_node.clear();
+    read_direction_in_node.resize(read_to_node.size());
+    for (auto & nreads:reads_in_node){
+        for (auto &rm:nreads){
+            read_direction_in_node[rm.read_id]=rm.rev;
+        }
+    }
+}
+
+PairedReadConnectivityDetail::PairedReadConnectivityDetail(const PairedReadMapper &prm, sgNodeID_t source,
+                                                           sgNodeID_t dest) {
+    /*std::set<uint64_t> connecting_reads_s;
+    std::set<uint64_t> connecting_reads_d;
+    for (auto rm:prm.reads_in_node[llabs(source)]){
+        auto rs=rm.read_id;
+        auto rd=rs;
+        if (rs%2==1) rd=rs+1;
+        else rd=rs-1;
+        connecting_reads_s.insert(rs);
+        connecting_reads_d.insert(rd);
+    }*/
+    sgNodeID_t us=llabs(source);
+    sgNodeID_t  ud=llabs(dest);
+    for (auto rm:prm.reads_in_node[us]){
+        uint64_t r1,r2;
+        if (rm.read_id%2==1){
+            r1=rm.read_id;
+            r2=r1+1;
+        }
+        else{
+            r1=rm.read_id-1;
+            r2=r1+1;
+        }
+        if (prm.read_to_node[r1]==us){
+            if (prm.read_to_node[r2]==ud){
+                ++pairs_per_orientation[(prm.read_direction_in_node[r1]? 0:1)+(prm.read_direction_in_node[r2]? 0:2)];
+            }
+        }
+        else if (prm.read_to_node[r1]==ud) {
+            if (prm.read_to_node[r2]==us) {
+                ++pairs_per_orientation[(prm.read_direction_in_node[r2] ? 0 : 1)+(prm.read_direction_in_node[r1] ? 0 : 2)];
+            }
+
+        }
+    }
+
 }

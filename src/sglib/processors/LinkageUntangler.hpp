@@ -26,6 +26,7 @@ public:
     LinkageDiGraph make_paired_linkage(int min_reads);
     LinkageDiGraph make_tag_linkage(int min_reads,float end_perc=.3);
 
+
     //Problem localisation methods
 
 
