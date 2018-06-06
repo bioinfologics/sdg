@@ -87,6 +87,8 @@ int main(int argc, char * argv[]) {
         if (select_hspnps) lu.select_nodes_by_HSPNPs(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
         else lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
 
+        std::unordered_set<sgNodeID_t> selnodes;
+        for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
         lu.report_node_selection();
         auto topology_ldg=lu.make_topology_linkage(10);
         topology_ldg.report_connectivity();
@@ -109,6 +111,30 @@ int main(int argc, char * argv[]) {
             tag_ldg.remove_transitive_links(10);
             tag_ldg.report_connectivity();
             ws.sg.write_to_gfa("tag_links_no_transitive.gfa", {}, {}, {}, tag_ldg.links);
+            ws.sg.write_to_gfa("tag_links_no_transitive_selected_only.gfa", {}, {}, selnodes, tag_ldg.links);
+            //HACK: eliminate nodes with N-N and try again.
+            auto sel_orig=lu.selected_nodes;
+            uint64_t remNN=0;
+            for (auto n=1;n<ws.sg.nodes.size();++n){
+                if (lu.selected_nodes[n]){
+                    if (tag_ldg.get_fw_links(n).size()>1 and tag_ldg.get_bw_links(n).size()>1) {
+                        lu.selected_nodes[n]=false;
+                        ++remNN;
+                    }
+                }
+            }
+            sglib::OutputLog()<<"Re-trying tag connection after eliminating "<<remNN<<" N-N nodes"<<std::endl;
+            auto tag_ldg_noNN = lu.make_tag_linkage(min_shared_tags);
+            tag_ldg_noNN.report_connectivity();
+            //gldg.add_links(tag_ldg);
+            ws.sg.write_to_gfa("tag_links_noNN.gfa", {}, {}, {}, tag_ldg_noNN.links);
+            tag_ldg_noNN.remove_transitive_links(10);
+            tag_ldg_noNN.report_connectivity();
+            ws.sg.write_to_gfa("tag_links_noNN_no_transitive.gfa", {}, {}, {}, tag_ldg_noNN.links);
+            ws.sg.write_to_gfa("tag_links_noNN_no_transitive_selected_only.gfa", {}, {}, selnodes, tag_ldg_noNN.links);
+            lu.selected_nodes=sel_orig;
+
+
         }
         gldg.report_connectivity();
         gldg.add_links(gldg);

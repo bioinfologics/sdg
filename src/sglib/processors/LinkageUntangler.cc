@@ -19,6 +19,24 @@ size_t intersection_size(const T1& s1, const T2& s2)
     return c.count;
 }
 
+size_t intersection_size_fast(const std::vector<bsg10xTag>& v1, const std::vector<bsg10xTag>& v2)
+{
+    size_t s=0;
+    auto e1=v1.data()+v1.size();
+    auto e2=v2.data()+v2.size();
+
+    for (auto p1=v1.data(),p2=v2.data();p1<e1 and p2<e2;){
+        if (*p1==*p2) {
+            ++s;
+            ++p1;
+            ++p2;
+        }
+        else if (*p1<*p2) ++p1;
+        else ++p2;
+    }
+    return s;
+}
+
 void LinkageUntangler::clear_node_selection() {
     selected_nodes.clear();
     selected_nodes.resize(ws.sg.nodes.size());
@@ -206,30 +224,38 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc)
     std::vector<std::pair<sgNodeID_t , sgNodeID_t >> pass_sharing;
     //First, make a node->tag collection for all selected nodes (to speed up things)
     sglib::OutputLog()<<"Creating node_tags sets"<<std::endl;
-    std::vector<std::set<bsg10xTag>> node_tags;
+    std::vector<std::vector<bsg10xTag>> node_tags;
     std::atomic<uint64_t> all_compared(0),linked(0);
     node_tags.resize(ws.sg.nodes.size());
     for (auto n=1;n<ws.sg.nodes.size();++n) {
         if (!selected_nodes[n]) continue;
-        for (auto t:ws.linked_read_mappers[0].get_node_tags(n)) node_tags[n].insert(t);
+        auto nts=ws.linked_read_mappers[0].get_node_tags(n);
+        node_tags[n].reserve(nts.size());
+        for (auto t:nts) node_tags[n].push_back(t);
     }
     //Now find the nodes with more than min_tags shared tags
     sglib::OutputLog()<<"Finding intersecting nodes"<<std::endl;
-#pragma omp parallel for schedule(static,100)
-    for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) {
-        if (!selected_nodes[n]) continue;
-        for (sgNodeID_t m = n+1; m < ws.sg.nodes.size(); ++m) {
-            if (!selected_nodes[m]) continue;
-            uint32_t shared=intersection_size(node_tags[n],node_tags[m]);
+#pragma omp parallel
+    {
+        std::vector<std::pair<sgNodeID_t , sgNodeID_t >> thread_pass_sharing;
+#pragma omp for schedule(static,100)
 
+        for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) {
+            if (!selected_nodes[n]) continue;
+            for (sgNodeID_t m = n+1; m < ws.sg.nodes.size(); ++m) {
+                if (!selected_nodes[m]) continue;
+                if (node_tags[n].size()<min_reads or node_tags[m].size()<min_reads) continue;
+                size_t shared=intersection_size_fast(node_tags[n],node_tags[m]);
 
                 ++all_compared;
                 if (shared>=min_reads) {
-#pragma omp critical
-                    pass_sharing.push_back(std::make_pair(n,m));
+                    thread_pass_sharing.push_back(std::make_pair(n,m));
                 }
 
+            }
         }
+#pragma omp critical
+    pass_sharing.insert(pass_sharing.end(),thread_pass_sharing.begin(),thread_pass_sharing.end());
     }
     sglib::OutputLog()<<"Node pairs with more than "<<min_reads<<" shared tags: "<<pass_sharing.size()<<" / "<<all_compared<<std::endl;
 
@@ -286,6 +312,45 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc)
                 <<lv[std::make_pair(p.first,-p.second)]<<std::endl;*/
     }
 
+    //STEP 3 - Looking at disconnected ends on 1-0 and N-0 nodes
+    std::vector<sgNodeID_t> one_end_only;
+    uint64_t disc=0,ldisc=0,single=0,lsingle=0,both=0,lboth=0;
+    for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) {
+        if (!selected_nodes[n]) continue;
+        auto blc=ldg.get_bw_links(n).size();
+        auto flc=ldg.get_fw_links(n).size();
+
+        if (blc==0 and flc==0){
+            ++disc;
+            if (ws.sg.nodes[n].sequence.size()>2000) ++ldisc;
+        }
+        else if (blc==0 or flc==0){
+            if (blc==0) one_end_only.push_back(-n);
+            else one_end_only.push_back(n);
+            ++single;
+            if (ws.sg.nodes[n].sequence.size()>2000) ++lsingle;
+        } else {
+            ++both;
+            if (ws.sg.nodes[n].sequence.size()>2000) ++lboth;
+        }
+    }
+    /*sglib::OutputLog()<<both<<" nodes with both-sides linkage ( "<<lboth<<" >2kbp )"<<std::endl;
+    sglib::OutputLog()<<single<<" nodes with one-side linkage ( "<<lsingle<<" >2kbp )"<<std::endl;
+    sglib::OutputLog()<<disc<<" nodes without linkage ( "<<ldisc<<" >2kbp )"<<std::endl;*/
+    ldg.report_connectivity();
+    sglib::OutputLog()<<"Attempting single-side reconnection through topology"<<std::endl;
+    auto tldg=make_topology_linkage(30);
+    for (auto n:one_end_only){
+        //first look for the topology connection.
+        for (auto tfnl:tldg.get_fw_links(n)){
+            std::pair<sgNodeID_t, sgNodeID_t> pair;
+            pair.first=llabs(n);
+            pair.second=llabs(tfnl.dest);
+            if (pair.first>pair.second) std::swap(pair.first,pair.second);
+            for (auto ps:pass_sharing) if (ps==pair) ldg.add_link(tfnl.source,tfnl.dest,0);
+        }
+    }
+    ldg.report_connectivity();
 
     /*sglib::OutputLog()<<"Evaluating tag imbalance"<<std::endl;
     for (auto p:pass_sharing) {
@@ -354,7 +419,7 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc)
             ++linked;
             ldg.add_link((n1f > n1b ? n1 : -n1), (n2f > n2b ? n2 : -n2), 0);
         }
-    }*/
-    sglib::OutputLog()<<"Links created (passing tag imbalance): "<<linked<<std::endl;
+    }
+    sglib::OutputLog()<<"Links created (passing tag imbalance): "<<linked<<std::endl;*/
     return ldg;
 }
