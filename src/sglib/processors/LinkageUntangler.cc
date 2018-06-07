@@ -65,17 +65,16 @@ void LinkageUntangler::select_nodes_by_size_and_ci( uint64_t min_size, float min
     sglib::OutputLog()<<"LU selecting nodes by size and ci: size >= " << min_size << " bp  |  " << min_ci << "<= CI <=" << max_ci <<std::endl;
 #pragma omp parallel
     {
+        SequenceGraph &sg(ws.getGraph());
 #pragma omp for schedule(static, 100)
-        SequenceGraph& sg(ws.getGraph());
-        for (auto n=1;n<sg.nodes.size();++n) {
-            if (sg.nodes[n].status==sgNodeDeleted) continue;
+        for (auto n = 1; n < sg.nodes.size(); ++n) {
+            if (sg.nodes[n].status == sgNodeDeleted) continue;
             if (sg.nodes[n].sequence.size() < min_size) continue;
             auto ci = ws.getKCI().compute_compression_for_node(n, 1);
             if (std::isnan(ci) or ci < min_ci or ci > max_ci) continue;
-            #pragma omp critical(collect_selected_nodes)
-            selected_nodes[n]=true;
+#pragma omp critical(collect_selected_nodes)
+            selected_nodes[n] = true;
         }
-
     }
 }
 
