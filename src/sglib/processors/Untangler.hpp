@@ -27,6 +27,37 @@ public:
     std::vector<Link> links;
 };
 
+class PairedReadLinker {
+public:
+    PairedReadLinker(WorkSpace & _ws, Untangler & _u): ws(_ws),u(_u) {
+        links.resize(ws.sg.nodes.size());
+    };
+    PairedReadLinker(WorkSpace & _ws, Untangler & _u, PairedReadLinker & original, std::vector<sgNodeID_t> selected_nodes): ws(_ws),u(_u) {
+        links.resize(ws.sg.nodes.size());
+        std::set<sgNodeID_t> nodeset;
+        for (auto n:selected_nodes) nodeset.insert(llabs(n));
+        for (auto n:selected_nodes){
+            for (auto l:original.get_fw_links(n)) if (llabs(l.source)<=llabs(l.dest) and nodeset.count(llabs(l.dest))) add_link(l.source,l.dest,l.dist);
+            for (auto l:original.get_bw_links(n)) if (llabs(l.source)<=llabs(l.dest) and nodeset.count(llabs(l.dest))) add_link(l.source,l.dest,l.dist);
+        }
+    };
+    void generate_links_size_ci( uint32_t min_size=1000, float min_ci=.75, float max_ci=1.25,int min_reads=5) ;
+    void generate_links_hspnp( int min_reads=5) ;
+    void generate_links( const std::vector<bool> &to_link,int min_reads=5);
+    void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
+    void remove_link(sgNodeID_t source, sgNodeID_t dest);
+    std::vector<Link> get_fw_links( sgNodeID_t n);
+    inline std::vector<Link> get_bw_links( sgNodeID_t n){ return get_fw_links (-n); };
+    std::set<sgNodeID_t> fw_reached_nodes(sgNodeID_t n, int radius);
+    void remove_transitive_links(int radius);
+    void print_perfect_chains();
+    std::vector<std::vector<sgNodeID_t>> find_local_problems(uint64_t long_node_size);
+    std::vector<std::vector<sgNodeID_t>> solve_local_problem(std::vector<sgNodeID_t> connected_nodes);
+    WorkSpace &ws;
+    Untangler &u;
+    std::vector<std::vector<Link>> links;
+};
+
 class Untangler {
 public:
     explicit Untangler(WorkSpace & _ws): ws(_ws) {};

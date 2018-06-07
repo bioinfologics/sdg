@@ -63,7 +63,7 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
         }
 
 //                std::cout<<"Repeat: [ "<<-b0<<" | "<<-b1<<" ] <-> "<<n<<" <-> [ "<<f0<<" | "<<f1<<" ]"<<std::endl;
-        std::set<prm10xTag_t> b0tags, b1tags, f0tags, f1tags;
+        std::set<bsg10xTag> b0tags, b1tags, f0tags, f1tags;
 
 //                std::cout<<"Reads in nodes -> f0:"<<scaff.lrmappers[0].reads_in_node[(f0 > 0 ? f0 : -f0)].size()
 //                        <<"   f1:"<<scaff.lrmappers[0].reads_in_node[(f1 > 0 ? f1 : -f1)].size()
@@ -84,14 +84,14 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
         b0tags.erase(0);
         b1tags.erase(0);
 
-        std::set<prm10xTag_t> shared1,shared2;
+        std::set<bsg10xTag> shared1,shared2;
 
         for (auto t:f0tags) if (f1tags.count(t)>0) {shared1.insert(t);};
         for (auto t:shared1){f0tags.erase(t);f1tags.erase(t);};
         for (auto t:b0tags) if (b1tags.count(t)>0) {shared2.insert(t);};
         for (auto t:shared2) {b0tags.erase(t);b1tags.erase(t);};
 
-        std::set<prm10xTag_t> aa, bb, ba, ab;
+        std::set<bsg10xTag> aa, bb, ba, ab;
         std::set_intersection(b0tags.begin(), b0tags.end(), f0tags.begin(), f0tags.end(),
                               std::inserter(aa, aa.end()));
         std::set_intersection(b0tags.begin(), b0tags.end(), f1tags.begin(), f1tags.end(),
@@ -218,7 +218,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> hps;
     std::vector<bool> used(sg.nodes.size(),false);
     //TODO: check the coverages are actually correct?
-    const double min_c1=0.75,max_c1=1.25,min_c2=1.5,max_c2=2.5;
+    const double min_c1=0.5,max_c1=1.5,min_c2=1.25,max_c2=3;
     /*
      * the loop always keep the first and the last elements as c=2 collapsed nodes.
      * it starts with a c=2 node, and goes thorugh all bubbles fw, then reverts the subgraph and repeats
@@ -228,8 +228,8 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
     for (auto n=1;n<sg.nodes.size();++n){
         std::pair<sgNodeID_t,sgNodeID_t> hap={0,0};
         if (sg.nodes[n].status==sgNodeDeleted) continue;
-        auto frontkci=kci.compute_compression_for_node(n);
-        if (frontkci>max_c2 or frontkci<min_c2) continue;
+        //auto frontkci=kci.compute_compression_for_node(n);
+        //if (frontkci>max_c2 or frontkci<min_c2) continue;
         auto m=n;
         //two passes: 0->fw, 1->bw,
         for (auto pass=0; pass<2; ++pass,m=-m) {
@@ -260,8 +260,8 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
             if (h0kc > max_c1 or h0kc < min_c1) continue;
             auto h1kc = kci.compute_compression_for_node(hap.second);
             if (h1kc > max_c1 or h1kc < min_c1) continue;
-            auto ekc = kci.compute_compression_for_node(hap0f[0].dest);
-            if (ekc > max_c2 or ekc < min_c2) continue;
+            //auto ekc = kci.compute_compression_for_node(hap0f[0].dest);
+            //if (ekc > max_c2 or ekc < min_c2) continue;
 
 #pragma omp critical(hps)
             {
@@ -357,11 +357,11 @@ uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
             ws.getGraph().join_path(SequenceGraphPath(ws.getGraph(),middle_nodes),true);
         }
     }
-    ws.getGraph().write_to_gfa("graph_after_joining_walks.gfa");
+    ws.sg.write_to_gfa("graph_after_joining_walks.gfa");
     ws.getLinkedReadMappers()[0].remove_obsolete_mappings();
-    ws.getLinkedReadMappers()[0].update_graph_index();
+    ws.sg.create_index();
     ws.getLinkedReadMappers()[0].map_reads();
-    ws.getKCI().reindex_graph();
+    ws.kci.reindex_graph();
 }
 
 /**
@@ -1553,4 +1553,264 @@ void Untangler::unroll_simple_loops() {
         }
 
     }
+}
+
+void PairedReadLinker::generate_links_size_ci( uint32_t min_size, float min_ci, float max_ci,int min_reads) {
+    std::vector<bool> to_link(ws.sg.nodes.size());
+    for (auto &n:ws.select_from_all_nodes(min_size,1000000000,0,1000000000,min_ci,max_ci)) to_link[n]=true;
+    generate_links(to_link,min_reads);
+}
+void PairedReadLinker::generate_links_hspnp(int min_reads) {
+    std::vector<bool> to_link(ws.sg.nodes.size());
+    uint64_t count=0,bp=0;
+    for (auto &n:u.get_all_HSPNPs()) {
+        to_link[llabs(n.first)]=true;
+        to_link[llabs(n.second)]=true;
+        ++count;
+        bp+=ws.sg.nodes[llabs(n.first)].sequence.size()+ws.sg.nodes[llabs(n.second)].sequence.size();
+    }
+    sglib::OutputLog()<<count<<" nodes in HSPNP selected for linkage totalling "<<bp<<std::endl;
+    generate_links(to_link,min_reads);
+}
+void PairedReadLinker::generate_links( const std::vector<bool> &to_link,int min_reads) {
+
+    sglib::OutputLog()<<"filling orientation indexes"<<std::endl;
+    uint64_t revc=0,dirc=0,false_rev=0,false_dir=0,true_rev=0,true_dir=0;
+    std::vector<std::vector<bool>> orientation;
+    for (auto &pm:ws.paired_read_mappers){
+        orientation.emplace_back();
+        orientation.back().resize(pm.read_to_node.size());
+        for (auto n=1;n<ws.sg.nodes.size();++n)
+            for (auto &rm:pm.reads_in_node[n]) {
+            orientation.back()[rm.read_id]=rm.rev;
+            if (rm.first_pos<rm.last_pos){if (rm.rev) ++false_rev; else ++true_rev;};
+            if (rm.first_pos>rm.last_pos ){if (!rm.rev) ++false_dir; else ++true_dir;};
+            if (rm.rev) revc++;
+            else dirc++;
+        }
+    }
+    std::ofstream lof("paired_links.txt");
+    sglib::OutputLog()<<"FW: "<<dirc<<" ( "<<true_dir<<" - "<< false_dir<<" )"<<std::endl;
+    sglib::OutputLog()<<"BW: "<<revc<<" ( "<<true_rev<<" - "<< false_rev<<" )"<<std::endl;
+    std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
+    sglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
+    //use all libraries collect votes on each link
+    auto rmi=0;
+    for (auto &pm:ws.paired_read_mappers) {
+        for (auto i = 1; i < pm.read_to_node.size(); i += 2) {
+            sgNodeID_t n1 = pm.read_to_node[i];
+            sgNodeID_t n2 = pm.read_to_node[i + 1];
+            if (n1 == 0 or n2 == 0 or n1 == n2 or !to_link[n1] or !to_link[n2]) continue;
+            if (orientation[rmi][i]) n1=-n1;
+            if (orientation[rmi][i+1]) n2=-n2;
+            if (llabs(n1) > llabs(n2)) std::swap(n1,n2);
+            ++lv[std::make_pair(n1, n2)];
+        }
+        ++rmi;
+    }
+
+    sglib::OutputLog()<<"adding links with "<<min_reads<<" votes"<<std::endl;
+    //std::vector<std::vector<std::pair<sgNodeID_t ,uint64_t>>> nodelinks(ws.sg.nodes.size());
+    for (auto l:lv) {
+        if (l.second>=min_reads){
+            //todo: size, appropriate linkage handling, etc
+            //todo: check alternative signs for same linkage
+            auto s=l.first.first;
+            auto d=l.first.second;
+            auto v1=std::make_pair(-s,d);
+            auto v2=std::make_pair(-s,-d);
+            auto v3=std::make_pair(s,-d);
+            if (lv.count(v1) and lv[v1]>5*l.second) continue;
+            if (lv.count(v2) and lv[v2]>5*l.second) continue;
+            if (lv.count(v3) and lv[v3]>5*l.second) continue;
+            add_link(l.first.first,l.first.second,0);
+            //lof<<l.first.first<<" "<<l.first.second<<" "<<l.second<<std::endl;
+        }
+    }
+    sglib::OutputLog()<<"dumping links"<<std::endl;
+    for (auto n=1;n<ws.sg.nodes.size();++n) {
+        auto fwl=get_fw_links(n);
+        auto bwl=get_bw_links(n);
+        if (!fwl.empty()) {
+            lof<<n<<" FW: ";
+            for (auto &l:fwl) lof<<" "<<l.dest;
+            lof<<std::endl<<"          seq"<<n;
+            for (auto &l:fwl) lof<<", seq"<<llabs(l.dest);
+            lof<<std::endl;
+        }
+        if (!bwl.empty()) {
+            lof<<n<<" BW: ";
+            for (auto &l:bwl) lof<<" "<<l.dest;
+            lof<<std::endl<<"          seq"<<n;
+            for (auto &l:bwl) lof<<", seq"<<llabs(l.dest);
+            lof<<std::endl;
+        }
+    }
+    //TODO: remove printing
+//    lof<<n<<": ";
+//    for (auto l:flv) lof<<" "<<l.first<<"("<<l.second<<")";
+//    lof<<std::endl;
+    //filter by min reads
+    //infer size?
+    //TODO:hardcoded LMP orientation
+
+
+}
+
+void PairedReadLinker::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d) {
+    Link l(source,dest,d);
+    links[(source > 0 ? source : -source)].emplace_back(l);
+    std::swap(l.source,l.dest);
+    links[(dest > 0 ? dest : -dest)].emplace_back(l);
+}
+
+void PairedReadLinker::remove_link(sgNodeID_t source, sgNodeID_t dest) {
+    auto & slinks = links[(source > 0 ? source : -source)];
+    slinks.erase(std::remove(slinks.begin(), slinks.end(), Link(source,dest,0)), slinks.end());
+    auto & dlinks = links[(dest > 0 ? dest : -dest)];
+    dlinks.erase(std::remove(dlinks.begin(), dlinks.end(), Link(dest,source,0)), dlinks.end());
+
+}
+
+std::vector<Link> PairedReadLinker::get_fw_links( sgNodeID_t n){
+    std::vector<Link> r;
+    for (auto &l:links[(n>0 ? n : -n)]) if (l.source==-n) r.emplace_back(l);
+    return r;
+}
+
+//returns a list of all fw nodes up to radius jumps away.
+std::set<sgNodeID_t> PairedReadLinker::fw_reached_nodes(sgNodeID_t n, int radius) {
+    std::set<sgNodeID_t> reached,last={n};
+    for (auto i=0;i<radius;++i) {
+        std::set<sgNodeID_t> new_last;
+        for (auto l:last){
+            for (auto fwl:get_fw_links(l)){
+                new_last.insert(fwl.dest);
+                reached.insert(fwl.dest);
+            }
+        }
+        std::swap(last,new_last);
+    }
+    return reached;
+}
+
+void PairedReadLinker::remove_transitive_links(int radius) {
+    std::cout<<"removing transitive connections..."<<std::endl;
+
+    //TODO: check mutually transitive connections (A->B, B->C, A->C, C->B)
+    for (auto fn=1;fn<ws.sg.nodes.size();++fn) {
+        for (auto n:{fn,-fn}) {
+            //create a list of fw nodes reached through each fw connection in up to radius steps
+
+            auto fwl = get_fw_links(n);
+            std::vector<sgNodeID_t> neighbours;
+            std::vector<std::set<sgNodeID_t>> reaches;
+            for (auto fl:fwl){
+                neighbours.push_back(fl.dest);
+                reaches.push_back(fw_reached_nodes(fl.dest,radius));
+            }
+            if (neighbours.empty()) continue;
+            std::set<sgNodeID_t> indirect;
+            for (auto bi=0;bi<neighbours.size();++bi){
+                auto b=neighbours[bi];
+                for (auto ci=0;ci<neighbours.size();++ci){
+                    if (bi==ci) continue;
+                    auto c=neighbours[ci];
+                    //if C is reached through B but B is not through C, then remove connection to C.
+                    if (reaches[bi].count(c)>0 and reaches[ci].count(b)==0){
+                        //std::cout << "Transitive connection detected! " << n << " -> " << b << " -> "
+                        //          << c << std::endl;
+                        //std::cout << "  seq" << llabs(n) << ", seq" << b << ", seq" << llabs(c) << std::endl;
+                        indirect.insert(c);
+                    }
+                }
+
+            }
+            std::cout<<"Connections for node " <<labs(n) << (n>0 ? " FW":" BW")<<":"<<std::endl;
+            for (auto l:neighbours) {
+                std::cout<<l;
+                if (indirect.count(l)>0) std::cout<<" indirect"<<std::endl;
+                else std::cout<<" DIRECT!"<<std::endl;
+            }
+        }
+
+    }
+    std::cout<<"removing transitive connections DONE"<<std::endl;
+}
+
+std::vector<std::vector<sgNodeID_t>> PairedReadLinker::find_local_problems(uint64_t long_node_size) {
+    std::vector<std::vector<sgNodeID_t>> local_problem;
+    std::vector<bool> used_fw(ws.sg.nodes.size());
+    std::vector<bool> used_bw(ws.sg.nodes.size());
+    for (auto n=1;n<ws.sg.nodes.size();++n) {
+        //start from a long node going fw (and later bw)
+        if (ws.sg.nodes[n].sequence.size()<long_node_size) continue;
+        for (auto sn:{n,-n}) {
+            if (sn==n and used_fw[n]) continue;
+            if (sn==-n and used_bw[n]) continue;
+            //get all bidirectional neighbours from all other nodes, dont go through long nodes (frontiers)
+            //std::cout<<"checking large node "<<n<<std::endl;
+            std::set<sgNodeID_t> internal_nodes;
+            std::set<sgNodeID_t> frontiers={sn};
+            bool mod=true;
+            while (mod) {
+                //std::cout<<" new expansion round "<<std::endl;
+                //std::cout<<"  frontiers: ";
+                //for (auto f:frontiers)std::cout<<" "<<f;
+                //std::cout<<std::endl;
+                //std::cout<<"  internals: ";
+                //for (auto f:internal_nodes)std::cout<<" "<<f;
+                //std::cout<<std::endl;
+                mod=false;
+                //grab all neighbours of internal nodes and all fw_neighbours of frontiers till no new nodes or too many
+                auto fwn=frontiers;
+                for (auto in:internal_nodes) {
+                    fwn.insert(in);
+                    fwn.insert(-in);
+                }
+                for (auto f:fwn) {
+                    //std::cout<<"  checking fw links of "<<f<<std::endl;
+                    for (auto fwl:get_fw_links(f)) {
+                        auto en=fwl.dest;
+                        //std::cout<<"    found connection to "<<en<<std::endl;
+                        if (ws.sg.nodes[llabs(en)].sequence.size()<long_node_size){
+                            //std::cout<<"     "<<en<<" is short"<<std::endl;
+                            if (internal_nodes.count(en)==0 and internal_nodes.count(-en)==0){
+                                mod=true;
+                                internal_nodes.insert(en);
+                                //std::cout<<"     "<<en<<" added to internal nodes"<<std::endl;
+                            }
+                        }
+                        else {
+                            //std::cout<<"     "<<en<<" is long"<<std::endl;
+                            if (frontiers.count(-en)==0){
+                                mod=true;
+                                frontiers.insert(-en);
+                                //std::cout<<"     "<<-en<<" added to frontiers"<<std::endl;
+                            }
+                        }
+                    }
+                }
+                if (frontiers.size()+internal_nodes.size()>100) break;
+            }
+            //add result to local_problem
+            if (frontiers.size()+internal_nodes.size()>100) continue;
+            local_problem.push_back({});
+            for (auto f:frontiers) {
+                local_problem.back().push_back(f);
+                if (f>0) used_fw[f]=true;
+                else used_bw[-f]=true;
+            }
+            for (auto f:internal_nodes) local_problem.back().push_back(f);
+        }
+    }
+    return local_problem;
+}
+
+std::vector<std::vector<sgNodeID_t>> PairedReadLinker::solve_local_problem(std::vector<sgNodeID_t> connected_nodes) {
+    PairedReadLinker local_linker(ws, u, *this, connected_nodes); //create a local linker with only the selected node's connections
+    local_linker.remove_transitive_links(10);
+    //if (local_linker.is_fully_solved()) return local_linker.get_all_lines();
+    return {};
+
 }

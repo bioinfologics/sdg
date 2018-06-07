@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required (VERSION 2.8)
 
 if (NOT CMAKE_BUILD_TYPE)
     message(STATUS "No build type selected, default to Release")
@@ -152,11 +152,6 @@ add_library(sequence_graph SHARED
             src/sglib/KmerCompressionIndex.cc
             src/sglib/GraphPartitioner.cc
             src/sglib/logger/OutputLog.cc
-            src/sglib/datastores/LinkedReadsDatastore.cc
-            src/sglib/mappers/LinkedReadMapper.cc
-            src/sglib/processors/Untangler.cc
-            src/sglib/processors/TagWalker.cc
-            src/sglib/processors/FlowFollower.cc
             src/sglib/WorkSpace.cc
             src/sglib/datastores/PathsDatastore.cc
             src/sglib/processors/PathExplorer.cpp
@@ -166,7 +161,16 @@ add_library(sequence_graph SHARED
             src/sglib/graph/SequenceGraphPath.cpp
             src/sglib/mappers/LongReadMapper.cpp
             src/sglib/datastores/LongReadsDatastore.cpp
-            src/sglib/mappers/SingleReadMapper.cpp)
+            src/sglib/datastores/LinkedReadsDatastore.cc
+            src/sglib/mappers/LinkedReadMapper.cc
+            src/sglib/datastores/PairedReadsDatastore.cc
+            src/sglib/mappers/PairedReadMapper.cc
+            src/sglib/LinkageDiGraph.cc
+            src/sglib/processors/Untangler.cc
+            src/sglib/processors/TagWalker.cc
+            src/sglib/processors/FlowFollower.cc
+            src/sglib/processors/LinkageUntangler.cc
+        )
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 

@@ -8,13 +8,15 @@
 
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
 #include <sglib/mappers/LinkedReadMapper.hpp>
+#include <sglib/datastores/PairedReadsDatastore.hpp>
+#include <sglib/mappers/PairedReadMapper.hpp>
 #include <sglib/datastores/PathsDatastore.hpp>
 #include "sglib/graph/SequenceGraph.hpp"
 #include "KmerCompressionIndex.hpp"
 
 class LogEntry{
 public:
-    LogEntry(std::time_t t, std::string v, std::string tx):timestamp(t),bsg_version(v),log_text(tx){};
+    LogEntry(std::time_t t, std::string v, std::string tx):timestamp(t),bsg_version(std::move(v)),log_text(std::move(tx)){};
     std::time_t timestamp;
     std::string bsg_version;
     std::string log_text;
@@ -49,6 +51,8 @@ public:
     SequenceGraph& getGraph() {return sg;}
 
     std::vector<LinkedReadMapper>& getLinkedReadMappers() {return linked_read_mappers;}
+    std::vector<PairedReadsDatastore> paired_read_datastores;
+    std::vector<PairedReadMapper> paired_read_mappers;
     std::vector<LinkedReadsDatastore>& getLinkedReadDatastores() {return linked_read_datastores;}
     std::vector<PathsDatastore>& getPathsDatastore() {return path_datastores;}
     std::vector<std::string> read_counts_header;

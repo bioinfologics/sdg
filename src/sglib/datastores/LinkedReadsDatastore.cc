@@ -2,6 +2,10 @@
 // Created by Bernardo Clavijo (EI) on 10/02/2018.
 //
 
+#include <sglib/logger/OutputLog.h>
+#include <fstream>
+#include <strings.h>
+#include <cstring>
 #include "LinkedReadsDatastore.hpp"
 
 void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int _rs, size_t chunksize) {
@@ -17,11 +21,11 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     uint64_t tagged_reads=0;
     //first, build an index of tags and offsets
     sglib::OutputLog()<<"Building tag sorted chunks of "<<chunksize<<" pairs"<<std::endl;
-    std::vector<readData> readdatav;
+    std::vector<LinkedReadData> readdatav;
     readdatav.reserve(chunksize);
     std::vector<std::ifstream> chunkfiles;
-    std::vector<readData> next_in_chunk;
-    readData currrent_read;
+    std::vector<LinkedReadData> next_in_chunk;
+    LinkedReadData currrent_read;
     //First, create the chunk files
     uint64_t pairs=0;
     while (!feof(fd1) and !feof(fd2)) {
@@ -312,7 +316,7 @@ const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {
 //        auto read_ids=datastore.get_tag_reads(tag);
 //        bki->kmers.reserve(read_ids.size()*(datastore.readsize-K+1));
 //        for (auto rid:read_ids){
-//            skf.produce_all_kmers(blrsg.get_read_sequence(rid),bki->kmers);
+//            skf.produce_all_kmers(bprsg.get_read_sequence(rid),bki->kmers);
 //        }
 //        if (tag_kmers_buffer.size()>tagbufsize) tag_kmers_buffer.pop_front();
 //    }
@@ -323,7 +327,7 @@ void BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {
     auto read_ids=datastore.get_tag_reads(tag);
     counts.reserve(counts.size()+read_ids.size()*(datastore.readsize-K+1));
     for (auto rid:read_ids){
-        skf.produce_all_kmers(blrsg.get_read_sequence(rid),counts);
+        skf.produce_all_kmers(bprsg.get_read_sequence(rid),counts);
     }
 }
 

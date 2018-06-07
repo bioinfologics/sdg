@@ -22,7 +22,6 @@
 #include <sglib/logger/OutputLog.h>
 #include "SequenceGraphPath.hpp"
 
-
 bool Node::is_canonical() {
     for (size_t i=0,j=sequence.size()-1;i<j;++i,--j){
         char f=sequence[i];
@@ -360,7 +359,7 @@ void SequenceGraph::write(std::ofstream & output_file) {
         output_file.write((char *) &n.status,sizeof(n.status));
         count=n.sequence.size();
         output_file.write((char *) &count,sizeof(count));
-        output_file.write((char *) n.sequence.c_str(),count);
+        output_file.write((char *) n.sequence.data(),count);
     }
     count=links.size();
     output_file.write((char *) &count,sizeof(count));
@@ -384,7 +383,7 @@ void SequenceGraph::read(std::ifstream & input_file) {
         input_file.read((char *) &status,sizeof(status));
         input_file.read((char *) &seqsize,sizeof(seqsize));
         seq.resize(seqsize);
-        input_file.read((char *) seq.c_str(),seqsize);
+        input_file.read((char *) seq.data(),seqsize);
         nodes.emplace_back(seq);
         nodes.back().status=status;
         if (nodes.back().status==sgNodeStatus_t::sgNodeActive) ++active;
@@ -507,7 +506,8 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     sglib::OutputLog(sglib::LogLevels::INFO) << nodes.size() - 1 << " nodes after connecting with " << lcount << " links." << std::endl;
 }
 
-void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<sgNodeID_t> & mark_red, const std::vector<double> & depths, const std::unordered_set<sgNodeID_t> & selected_nodes){
+void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<sgNodeID_t> & mark_red, const std::vector<double> & depths,
+                                 const std::unordered_set<sgNodeID_t> & selected_nodes={}, const std::vector<std::vector<Link>> & arg_links){
     std::string fasta_filename;
     //check the filename ends in .gfa
     if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
@@ -534,7 +534,7 @@ void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<
                 <<(mark_red.count(i)?"\tCL:Z:red":"")<<(depths.empty() or std::isnan(depths[i])?"":"\tDP:f:"+std::to_string(depths[i]))<<std::endl;
     }
 
-    for (auto &ls:links){
+    for (auto &ls:(arg_links.size()>0? arg_links:links)){
         for (auto &l:ls)
             if (l.source<=l.dest and (selected_nodes.empty() or
                     selected_nodes.count(l.source)>0 or selected_nodes.count(-l.source)>0 or
@@ -1126,4 +1126,90 @@ std::vector<sgNodeID_t> SequenceGraph::get_flanking_nodes(sgNodeID_t loopy_node)
         neigh_set.insert(std::abs(n));
     }
     return std::vector<sgNodeID_t> (neigh_set.begin(), neigh_set.end());
+}
+
+
+void SequenceGraph::create_index() {
+    kmer_to_graphposition.clear();
+    class kmerPosFactory : protected KMerFactory {
+    public:
+        explicit kmerPosFactory(uint8_t k) : KMerFactory(k) {}
+
+        ~kmerPosFactory() {
+        }
+        void setFileRecord(FastaRecord &rec) {
+            currentRecord = rec;
+            fkmer=0;
+            rkmer=0;
+            last_unknown=0;
+        }
+
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        const bool next_element(std::vector<std::pair<uint64_t,graphPosition>> &mers) {
+            uint64_t p(0);
+            graphPosition pos;
+            while (p < currentRecord.seq.size()) {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                bases++;
+                fillKBuf(currentRecord.seq[p], p, fkmer, rkmer, last_unknown);
+                p++;
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        pos.node=currentRecord.id;
+                        pos.pos=p;
+                        mers.emplace_back(fkmer, pos);
+                    } else {
+                        // Is bwd
+                        pos.node=-currentRecord.id;
+                        pos.pos=p;
+                        mers.emplace_back(rkmer, pos);
+                    }
+                }
+            }
+            return false;
+        }
+
+    private:
+        FastaRecord currentRecord;
+        uint64_t bases;
+    };
+
+    sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
+    const int k = 31;
+    uint64_t total_k=0;
+    std::vector<std::pair<uint64_t,graphPosition>> kidxv;
+    for (auto &n:nodes) if (n.sequence.size()>=k) total_k+=n.sequence.size()+1-k;
+    kidxv.reserve(total_k);
+    FastaRecord r;
+    kmerPosFactory kcf({k});
+    for (sgNodeID_t n=1;n<nodes.size();++n){
+        if (nodes[n].sequence.size()>=k){
+            r.id=n;
+            r.seq=nodes[n].sequence;
+            kcf.setFileRecord(r);
+            kcf.next_element(kidxv);
+        }
+    }
+    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
+    sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
+    std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
+    sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
+    auto wi=kidxv.begin();
+    auto ri=kidxv.begin();
+    auto nri=kidxv.begin();
+    while (ri<kidxv.end()){
+        while (nri!=kidxv.end() and nri->first==ri->first) ++nri;
+        if (nri-ri==1) {
+            *wi=*ri;
+            ++wi;
+        }
+        ri=nri;
+    }
+
+    kidxv.resize(wi-kidxv.begin());
+    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
+    kmer_to_graphposition.insert(kidxv.begin(),kidxv.end());
+    sglib::OutputLog(sglib::INFO)<<"map ready"<<std::endl;
 }

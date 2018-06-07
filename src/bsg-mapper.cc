@@ -54,10 +54,28 @@ int main(int argc, char * argv[]) {
     ws.add_log_entry("bsg-mapper run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     sglib::OutputLog()<<"Mapping reads..."<<std::endl;
-    for (auto &m:ws.getLinkedReadMappers()) {
-        m.update_graph_index();
+    auto pri=0;
+    ws.sg.create_index();
+    for (auto &m:ws.getPairedReadMappers()) {
+        sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
+        m.map_reads();
+        m.print_stats();
+        sglib::OutputLog()<<"Computing size distribution..."<<std::endl;
+        auto sdist=m.size_distribution();
+        std::ofstream df("prdist_"+std::to_string(pri++)+".csv");
+        for (auto i=0;i<sdist.size();i+=10){
+            uint64_t t=0;
+            for (auto j=i;j<i+10;++j) t+=sdist[j];
+            if (t>0) df<<i<<", "<<t<<std::endl;
+        }
+        ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
+        sglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
+    }
+    for (auto &m:ws.getPairedReadMappers()) {
+        sglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
         m.map_reads();
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
+        sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }
     ws.getPathsDatastore().clear();
     ws.add_log_entry("path_datastores cleared");
