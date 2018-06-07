@@ -143,33 +143,32 @@ include_directories("deps/kseqcpp/")
 
 ## Libraries
 add_library(sequence_graph SHARED
-        src/sglib/graph/SequenceGraph.cc
-            src/sglib/PairedReadMapper.cc
-            src/sglib/HaplotypeScorer.cpp
-            src/sglib/SequenceGraphJournal.cc
-            src/sglib/Scaffolder.cc
-            src/sglib/filesystem/helpers.cc
-            src/sglib/PhaseScaffolder.cpp
-            src/sglib/KmerCompressionIndex.cc
-            src/sglib/GraphPartitioner.cc
-            src/sglib/logger/OutputLog.cc
-            src/sglib/datastores/LinkedReadsDatastore.cc
-            src/sglib/mappers/LinkedReadMapper.cc
-            src/sglib/processors/Untangler.cc
-            src/sglib/processors/TagWalker.cc
-            src/sglib/processors/FlowFollower.cc
-            src/sglib/WorkSpace.cc
-            src/sglib/datastores/PathsDatastore.cc
-            src/sglib/processors/PathExplorer.cpp
-            src/sglib/SequenceThreader.cpp
-            src/sglib/UniqueKmerIndex.cpp
+            src/sglib/graph/SequenceGraph.cc
             src/sglib/graph/SequenceSubGraph.cpp
             src/sglib/graph/SequenceGraphPath.cpp
-            src/sglib/mappers/LongReadMapper.cpp
+            src/sglib/graph/LinkageDiGraph.cc
+            src/sglib/filesystem/helpers.cc
+            src/sglib/logger/OutputLog.cc
+            src/sglib/datastores/PairedReadsDatastore.cc
+            src/sglib/datastores/LinkedReadsDatastore.cc
+            src/sglib/datastores/PathsDatastore.cc
             src/sglib/datastores/LongReadsDatastore.cpp
+            src/sglib/mappers/LongReadMapper.cpp
             src/sglib/mappers/SingleReadMapper.cpp
             src/sglib/mappers/threader/NodeMapper.cpp
             src/sglib/mappers/threader/MappingThreader.cpp
+            src/sglib/mappers/LinkedReadMapper.cc
+            src/sglib/mappers/PairedReadMapper.cc
+            src/sglib/processors/Untangler.cc
+            src/sglib/processors/TagWalker.cc
+            src/sglib/processors/FlowFollower.cc
+            src/sglib/processors/PathExplorer.cpp
+            src/sglib/processors/LinkageUntangler.cc
+            src/sglib/WorkSpace.cc
+            src/sglib/SequenceThreader.cpp
+            src/sglib/KmerCompressionIndex.cc
+            src/sglib/SequenceGraphJournal.cc
+            src/sglib/Scaffolder.cc
         )
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})

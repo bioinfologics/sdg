@@ -38,7 +38,7 @@ void TagWalker::dump_reads(std::string prefix) {
 }
 
 std::vector<std::unordered_set<uint64_t>> TagWalker::get_distinctive_kmers(std::vector<sgNodeID_t> nodes) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
     auto linked_read_mappers(ws.getLinkedReadMappers());
     auto linked_read_datastores(ws.getLinkedReadDatastores());
 
@@ -64,7 +64,7 @@ std::vector<std::unordered_set<uint64_t>> TagWalker::get_distinctive_kmers(std::
 }
 
 std::vector<SequenceGraphPath> TagWalker::walk(float min_winner, float max_looser) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
     auto linked_read_mappers(ws.getLinkedReadMappers());
     auto linked_read_datastores(ws.getLinkedReadDatastores());
 

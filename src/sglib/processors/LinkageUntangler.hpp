@@ -7,7 +7,7 @@
 
 
 #include <sglib/WorkSpace.hpp>
-#include <sglib/LinkageDiGraph.hpp>
+#include <sglib/graph/LinkageDiGraph.hpp>
 
 class LinkageUntangler {
 public:

@@ -49,7 +49,7 @@ int main(int argc, char * argv[]) {
         w.load_from_disk(filename);
         //auto min_size = 700;
         int LENGTH = 1000;
-        auto sg(w.getGraph());
+        SequenceGraph& sg(w.getGraph());
         for (auto n=1; n<sg.nodes.size(); ++n){
             // All components has to be long
             if (sg.get_bw_links(n).size()==2 and

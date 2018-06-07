@@ -4,6 +4,7 @@
 
 #include <stack>
 #include <sglib/graph/SequenceGraphPath.hpp>
+#include <sglib/readers/FileReader.h>
 #include <sglib/processors/PathExplorer.h>
 #include <sglib/factories/KMerIDXFactory.h>
 

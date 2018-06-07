@@ -6,6 +6,7 @@
 #define BSG_PAIREDREADMAPPER_HPP
 
 #include <map>
+#include <fstream>
 
 #include "sglib/types/MappingTypes.hpp"
 #include "sglib/factories/KMerIDXFactory.h"

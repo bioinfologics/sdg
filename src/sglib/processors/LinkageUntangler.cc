@@ -45,7 +45,7 @@ void LinkageUntangler::clear_node_selection() {
 }
 
 void LinkageUntangler::report_node_selection() {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
     uint64_t total_bp=0,total_count=0,selected_bp=0,selected_count=0;
     for (auto n=1;n<sg.nodes.size();++n) {
         if (sg.nodes[n].status == sgNodeDeleted) continue;
@@ -66,7 +66,7 @@ void LinkageUntangler::select_nodes_by_size_and_ci( uint64_t min_size, float min
 #pragma omp parallel
     {
 #pragma omp for schedule(static, 100)
-        auto sg(ws.getGraph());
+        SequenceGraph& sg(ws.getGraph());
         for (auto n=1;n<sg.nodes.size();++n) {
             if (sg.nodes[n].status==sgNodeDeleted) continue;
             if (sg.nodes[n].sequence.size() < min_size) continue;
@@ -82,7 +82,7 @@ void LinkageUntangler::select_nodes_by_size_and_ci( uint64_t min_size, float min
 void LinkageUntangler::select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, float max_ci) {
     //first, get all perfectly parallel nodes (TODO:generalise more)
     //std::ofstream hl("hspnp_list.txt");
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
     std::set<std::pair<sgNodeID_t, sgNodeID_t >> pnps, hspnps;
 #pragma omp parallel for schedule(static, 100)
     for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
@@ -221,7 +221,7 @@ LinkageDiGraph LinkageUntangler::make_paired_linkage(int min_reads) {
 
 
 LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
     //STEP 1 - identify candidates by simple tag-sharing.
     LinkageDiGraph ldg(sg);
     std::vector<std::pair<sgNodeID_t , sgNodeID_t >> pass_sharing;

@@ -1,11 +1,12 @@
 //
 // Created by Bernardo Clavijo (EI) on 03/11/2017.
 //
-#include <iostream>
 #include <iomanip>
 #include <cassert>
 #include <atomic>
 #include <sglib/utilities/omp_safe.hpp>
+#include <fstream>
+#include <iostream>
 #include "PairedReadMapper.hpp"
 void PairedReadMapper::write(std::ofstream &output_file) {
     //read-to-node
@@ -191,7 +192,7 @@ void PairedReadMapper::remove_obsolete_mappings(){
             ++reads;
         }
     }
-    std::cout << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
+    sglib::OutputLog(sglib::INFO, false) << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
 }
 
 void PairedReadMapper::print_stats(){

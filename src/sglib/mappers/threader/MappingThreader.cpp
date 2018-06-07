@@ -60,7 +60,7 @@ void MappingThreader::thread_mappings() {
                     sglib::OutputLog(sglib::LogLevels::DEBUG) << "Adding the nodes of this suitable path to the sequence mapping thread" << std::endl;
                     sglib::OutputLog(sglib::LogLevels::DEBUG) << "Current bestpath: ";
                     if (sglib::OutputLogLevel >= sglib::LogLevels::DEBUG) {
-                        for (const auto &node : bestpath.nodes) {
+                        for (const auto &node : bestpath.getNodes()) {
                             std::cout << node << ", ";
                         }
                         std::cout << std::endl;
@@ -150,7 +150,7 @@ bool MappingThreader::append_mapping_trivially(MappingThread &thread, NodeMappin
 }
 
 bool MappingThreader::append_mapping_with_path(MappingThread &thread, NodeMapping mapping, SequenceGraphPath &path) {
-    for (auto node = ++path.nodes.begin(); node != path.nodes.end(); ++node) {
+    for (auto node = ++path.getNodes().begin(); node != path.getNodes().end(); ++node) {
         sglib::OutputLog(sglib::LogLevels::DEBUG) << "Adding node: " << *node << std::endl;
         auto status = thread.node_path.append_to_path(*node);
         sglib::OutputLog(sglib::LogLevels::DEBUG) << status << std::endl;

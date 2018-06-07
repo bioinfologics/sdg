@@ -153,26 +153,25 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
 
 uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags) {
     uint64_t aa_count=0,ab_count=0,unsolved_count=0;
-    auto sg = ws.getGraph();
     auto linked_read_mappers = ws.getLinkedReadMappers();
     auto kci = ws.getKCI();
     std::cout << " Finding trivial repeats to analyse with tags" << std::endl;
-    for (auto n = 1; n < sg.nodes.size(); ++n) {
-        auto fwl = sg.get_fw_links(n);
-        auto bwl = sg.get_bw_links(n);
+    for (auto n = 1; n < ws.getGraph().nodes.size(); ++n) {
+        auto fwl = ws.getGraph().get_fw_links(n);
+        auto bwl = ws.getGraph().get_bw_links(n);
         if (fwl.size() != 2 or bwl.size() != 2) continue;
         auto f0 = fwl[0].dest;
         auto f1 = fwl[1].dest;
         auto b0 = bwl[0].dest;
         auto b1 = bwl[1].dest;
-        if (sg.get_bw_links(f0).size()!=1
-            or sg.get_bw_links(f1).size()!=1
-               or sg.get_fw_links(b0).size()!=1
-                  or sg.get_fw_links(b1).size()!=1)
+        if (ws.getGraph().get_bw_links(f0).size()!=1
+            or ws.getGraph().get_bw_links(f1).size()!=1
+               or ws.getGraph().get_fw_links(b0).size()!=1
+                  or ws.getGraph().get_fw_links(b1).size()!=1)
             continue;
         sgNodeID_t all[4] = {f0, f1, b0, b1};
         bool ok = true;
-        for (auto x:all) if (x == n or x == -n or sg.nodes[(x > 0 ? x : -x)].sequence.size() < 199) ok = false;
+        for (auto x:all) if (x == n or x == -n or ws.getGraph().nodes[(x > 0 ? x : -x)].sequence.size() < 199) ok = false;
         for (auto j = 0; j < 3; ++j)
             for (auto i = j + 1; i < 4; ++i)
                 if (all[i] == all[j] or all[i] == -all[j])ok = false; //looping node
@@ -199,10 +198,10 @@ uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci,
 
         if (aa > min_tags and bb > min_tags and std::min(aa, bb) > 10 * std::max(ab, ba)) {
             ++aa_count;
-            sg.expand_node(n,{{b0},{b1}},{{f0},{f1}});
+            ws.getGraph().expand_node(n,{{b0},{b1}},{{f0},{f1}});
         } else if (ba > min_tags and ab > min_tags and std::min(ba, ab) > 10 * std::max(aa, bb)) {
             ++ab_count;
-            sg.expand_node(n,{{b0},{b1}},{{f1},{f0}});
+            ws.getGraph().expand_node(n,{{b0},{b1}},{{f1},{f0}});
         }
         else {
             ++unsolved_count;
@@ -213,10 +212,9 @@ uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci,
 }
 
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
-    auto sg = ws.getGraph();
     auto kci = ws.getKCI();
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> hps;
-    std::vector<bool> used(sg.nodes.size(),false);
+    std::vector<bool> used(ws.getGraph().nodes.size(),false);
     //TODO: check the coverages are actually correct?
     const double min_c1=0.5,max_c1=1.5,min_c2=1.25,max_c2=3;
     /*
@@ -225,9 +223,9 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
      */
 
 #pragma omp parallel for schedule(static, 10)
-    for (auto n=1;n<sg.nodes.size();++n){
+    for (auto n=1;n<ws.getGraph().nodes.size();++n){
         std::pair<sgNodeID_t,sgNodeID_t> hap={0,0};
-        if (sg.nodes[n].status==sgNodeDeleted) continue;
+        if (ws.getGraph().nodes[n].status==sgNodeDeleted) continue;
         //auto frontkci=kci.compute_compression_for_node(n);
         //if (frontkci>max_c2 or frontkci<min_c2) continue;
         auto m=n;
@@ -235,7 +233,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
         for (auto pass=0; pass<2; ++pass,m=-m) {
 
             //check bubble going forward ------------
-            auto fw_l = sg.get_fw_links(m);
+            auto fw_l = ws.getGraph().get_fw_links(m);
             //fork opening
             if (fw_l.size() != 2) continue;
             hap.first = fw_l[0].dest;
@@ -253,8 +251,8 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
             if (used_hspnp) continue;
             if (hap.first == n or hap.first == -n or hap.second == n or hap.second == -n or hap.first == hap.second) continue;
             //fork.closing
-            auto hap0f = sg.get_fw_links(hap.first);
-            auto hap1f = sg.get_fw_links(hap.second);
+            auto hap0f = ws.getGraph().get_fw_links(hap.first);
+            auto hap1f = ws.getGraph().get_fw_links(hap.second);
             if (hap0f.size() != 1 or hap1f.size() != 1 or hap0f[0].dest != hap1f[0].dest) continue;
             auto h0kc = kci.compute_compression_for_node(hap.first);
             if (h0kc > max_c1 or h0kc < min_c1) continue;
@@ -431,20 +429,19 @@ std::vector<sgNodeID_t> Untangler::shared_nodes(std::vector<std::vector<Sequence
 
 
 void Untangler::analise_paths_through_nodes() {
-    auto sg(ws.getGraph());
     auto kci(ws.getKCI());
     std::cout<<"computing KCI for all nodes"<<std::endl;
     ws.getKCI().compute_all_nodes_kci(1);
     std::ofstream kciof("kci_dump.csv");
-    for (auto i=1;i<sg.nodes.size();++i) kciof<<"seq"<<i<<", "<<kci.nodes_depth[i]<<std::endl;
+    for (auto i=1;i<ws.getGraph().nodes.size();++i) kciof<<"seq"<<i<<", "<<kci.nodes_depth[i]<<std::endl;
     std::cout<<"DONE!"<<std::endl;
     //CRAP regions
-    std::vector<bool> used(sg.nodes.size(),false),aborted(sg.nodes.size(),false);
+    std::vector<bool> used(ws.getGraph().nodes.size(),false),aborted(ws.getGraph().nodes.size(),false);
     std::vector<SequenceSubGraph> craps;
-    for (sgNodeID_t n=1;n<sg.nodes.size();++n) {
+    for (sgNodeID_t n=1;n<ws.getGraph().nodes.size();++n) {
         if (used[n]) continue;
-        if (kci.nodes_depth[n]<1.5 and sg.nodes[n].sequence.size()>500) continue;
-        SequenceSubGraph crap(sg);
+        if (kci.nodes_depth[n]<1.5 and ws.getGraph().nodes[n].sequence.size()>500) continue;
+        SequenceSubGraph crap(ws.getGraph());
         std::vector<sgNodeID_t> to_explore={n};
         std::cout<<"Exploring node "<<n<<std::endl;
         while (!to_explore.empty()){
@@ -452,13 +449,13 @@ void Untangler::analise_paths_through_nodes() {
             //std::cout<<" Exploring "<<to_explore.size()<< " neighbors"<<std::endl;
             for (auto ne:to_explore){
                 //std::cout<<"  Exploring node #"<<ne<<std::endl;
-                for (auto neigh:sg.links[ne]){
+                for (auto neigh:ws.getGraph().links[ne]){
                     auto x=llabs(neigh.dest);
                     //std::cout<<"  Exploring neighbour #"<<x<<std::endl;
                     if (std::find(crap.nodes.begin(),crap.nodes.end(),x)==crap.nodes.end()) {
                         //std::cout<<"  ADDING to crap!"<<x<<std::endl;
                         crap.nodes.emplace_back(x);
-                        if (not (kci.nodes_depth[x]<1.5 and sg.nodes[x].sequence.size()>500)) {
+                        if (not (kci.nodes_depth[x]<1.5 and ws.getGraph().nodes[x].sequence.size()>500)) {
                             //std::cout<<"  ADDING to explore list (size="<<ws.sg.nodes[x].sequence.size()<<")"<<std::endl;
                             new_to_explore.emplace_back(x);
                         }
@@ -490,30 +487,29 @@ void Untangler::analise_paths_through_nodes() {
 }
 
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::find_bubbles(uint32_t min_size,uint32_t max_size) {
-    auto sg(ws.getGraph());
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> r;
-    std::vector<bool> used(sg.nodes.size(),false);
+    std::vector<bool> used(ws.getGraph().nodes.size(),false);
     sgNodeID_t n1,n2;
     size_t s1,s2;
-    for (n1=1;n1<sg.nodes.size();++n1){
+    for (n1=1;n1<ws.getGraph().nodes.size();++n1){
         if (used[n1]) continue;
         //get "topologically correct" bubble: prev -> [n1 | n2] -> next
-        s1=sg.nodes[n1].sequence.size();
+        s1=ws.getGraph().nodes[n1].sequence.size();
         if (s1<min_size or s1>max_size) continue;
-        auto fwl=sg.get_fw_links(n1);
+        auto fwl=ws.getGraph().get_fw_links(n1);
         if (fwl.size()!=1) continue;
         auto next=fwl[0].dest;
-        auto bwl=sg.get_bw_links(n1);
+        auto bwl=ws.getGraph().get_bw_links(n1);
         if (bwl.size()!=1) continue;
         auto prev=bwl[0].dest;
-        auto parln=sg.get_bw_links(next);
+        auto parln=ws.getGraph().get_bw_links(next);
         if (parln.size()!=2) continue;
-        auto parlp=sg.get_fw_links(-prev);
+        auto parlp=ws.getGraph().get_fw_links(-prev);
         if (parlp.size()!=2) continue;
         if (parlp[0].dest!=n1) n2=parlp[0].dest;
         else n2=parlp[1].dest;
         if (n2!=-parln[0].dest and n2!=-parln[1].dest) continue;
-        s2=sg.nodes[n2].sequence.size();
+        s2=ws.getGraph().nodes[n2].sequence.size();
         if (s2<min_size or s2>max_size) continue;
         used[n1]=true;
         used[n2]=true;
@@ -528,7 +524,6 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::find_bubbles(uint32_t m
  * @return
  */
 std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(const SequenceSubGraph &bp, bool &no_tags) {
-    auto sg(ws.getGraph());
     auto linked_read_mappers(ws.getLinkedReadMappers());
     int min_tags=20; no_tags=false;
     std::vector<std::set<bsg10xTag>> node_tags;
@@ -538,7 +533,7 @@ std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(cons
         node_tags.emplace_back(linked_read_mappers[0].get_node_tags(n));
         if (i%3>0 and node_tags.back().size()<min_tags) {
             no_tags=true;
-            return {SequenceGraphPath(sg),SequenceGraphPath(sg)};
+            return {SequenceGraphPath(ws.getGraph()),SequenceGraphPath(ws.getGraph())};
         };//check failed: min-tags
     }
     //init the haplotypes anchoring all nodes to previous tags
@@ -581,7 +576,7 @@ std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(cons
     }
     //std::cout<<std::endl;
     if (hap1.size()==bp.nodes.size()/3) {
-        SequenceGraphPath p1(sg),p2(sg);
+        SequenceGraphPath p1(ws.getGraph()),p2(ws.getGraph());
         for (auto i=0;i<hap1.size();++i){
             if (i>0) p1.getNodes().push_back(bp.nodes[3*i]);
             p1.getNodes().push_back(hap1[i]);
@@ -590,7 +585,7 @@ std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(cons
         }
         return {p1,p2};
     }
-    return {SequenceGraphPath(sg),SequenceGraphPath(sg)};
+    return {SequenceGraphPath(ws.getGraph()),SequenceGraphPath(ws.getGraph())};
 }
 
 /**
@@ -601,7 +596,7 @@ std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(cons
  */
 std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bubbly_path_2(const SequenceSubGraph &bp) {
     auto linked_read_mappers(ws.getLinkedReadMappers());
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
     std::cout<<std::endl<<"solve_bubbly_path_2 started for "<<bp.nodes.size()<<" nodes ("<<bp.nodes.size()/3<<" bubbles)"
              <<"between "<<bp.nodes.front()<<" and "<<bp.nodes.back()<<std::endl;
     std::cout<<"Nodes in bubbly path:";
@@ -798,8 +793,8 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
 }
 
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
-    auto sg(ws.getGraph());
-    auto kci(ws.getKCI());
+    SequenceGraph& sg(ws.getGraph());
+    KmerCompressionIndex& kci(ws.getKCI());
     //TODO: 3-part structure:
     // 1) find, report validate kci, report
     // 2) For each: solve
@@ -881,8 +876,8 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
 }
 
 void Untangler::pop_errors_by_ci_and_paths() {
-    auto sg(ws.getGraph());
-    auto kci(ws.getKCI());
+    SequenceGraph& sg(ws.getGraph());
+    KmerCompressionIndex& kci(ws.getKCI());
 
     sglib::OutputLog()<<"Popping errors..."<<std::endl;
     auto bubbles=find_bubbles(200, 450);
@@ -923,8 +918,8 @@ void Untangler::pop_errors_by_ci_and_paths() {
  * @return
  */
 std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_neighbours(uint32_t min_size, float min_ci, float max_ci) {
-    auto sg(ws.getGraph());
-    auto linked_read_mappers(ws.getLinkedReadMappers());
+    SequenceGraph& sg(ws.getGraph());
+    std::vector<LinkedReadMapper>& linked_read_mappers(ws.getLinkedReadMappers());
 
     SequenceGraph tsg;
     std::map<sgNodeID_t,sgNodeID_t> general_to_tag;
@@ -992,9 +987,9 @@ std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_nei
  * @return
  */
 std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_size, float min_ci, float max_ci, float end_perc) {
-    auto sg(ws.getGraph());
-    auto linked_read_mappers(ws.getLinkedReadMappers());
-    auto linked_read_datastores(ws.getLinkedReadDatastores());
+    SequenceGraph& sg(ws.getGraph());
+    std::vector<LinkedReadMapper>& linked_read_mappers(ws.getLinkedReadMappers());
+    std::vector<LinkedReadsDatastore>& linked_read_datastores(ws.getLinkedReadDatastores());
     //TODO: divide this and make iterative: start by big fish, then add small in-betweens, simplify transitives into subgraphs
     SequenceGraph tsg;
     std::map<sgNodeID_t,sgNodeID_t> general_to_tag,tag_to_general;
@@ -1124,7 +1119,7 @@ std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_si
 }
 
 uint64_t Untangler::connect_neighbours(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
     //first find all nodes' neighbours
     auto tagneighbours=find_tag_neighbours(min_size,min_ci,max_ci);
     std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> fndist(sg.nodes.size()),bndist(sg.nodes.size());
@@ -1181,7 +1176,7 @@ void Untangler::connect_neighbours_trivial(uint64_t min_size, float min_ci, floa
                                            const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,
                                            const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,
                                            const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & fndist) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
     std::cout << "Finding trivial connections" << std::endl;
     std::vector<std::pair<sgNodeID_t, sgNodeID_t>> from_to;
     for (auto n = 1; n < sg.nodes.size(); ++n) {
@@ -1234,9 +1229,9 @@ uint64_t Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float mi
                                            const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,
                                            const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,
                                            const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & fndist) {
-    auto sg(ws.getGraph());
-    auto linked_read_datastores(ws.getLinkedReadDatastores());
-    auto linked_read_mappers(ws.getLinkedReadMappers());
+    SequenceGraph& sg(ws.getGraph());
+    std::vector<LinkedReadsDatastore>& linked_read_datastores(ws.getLinkedReadDatastores());
+    std::vector<LinkedReadMapper>& linked_read_mappers(ws.getLinkedReadMappers());
     std::cout << "Finding multi-path connections to same neighbour" << std::endl;
     std::vector<std::pair<sgNodeID_t, sgNodeID_t>> from_to;
     std::vector<sgNodeID_t> single_fw(sg.nodes.size(),0),single_bw(sg.nodes.size(),0);
@@ -1329,7 +1324,7 @@ uint64_t Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float mi
 }
 
 void Untangler::dettach_path_as_new_node(sgNodeID_t from, sgNodeID_t to, SequenceGraphPath path) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
     auto new_node = sg.add_node(Node(path.get_sequence()));
     auto old_fw = sg.get_fw_links(from);
     for (auto &l:old_fw) {
@@ -1346,7 +1341,7 @@ void Untangler::dettach_path_as_new_node(sgNodeID_t from, sgNodeID_t to, Sequenc
 std::vector<SequenceGraphPath> Untangler::get_all_tag_covered_paths(sgNodeID_t from, sgNodeID_t to,
                                                                     std::set<bsg10xTag> &tags,
                                                                     BufferedTagKmerizer &btk) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
 
     int64_t max_distance=50000;
     auto allpaths = sg.find_all_paths_between(from, to, max_distance);
@@ -1384,9 +1379,9 @@ std::vector<SequenceGraphPath> Untangler::get_all_tag_covered_paths(sgNodeID_t f
  */
 std::pair<float,float> Untangler::tag_read_percentage_at_ends(sgNodeID_t node, std::set<bsg10xTag> tags, float end_perc,
                                                               uint32_t end_size) {
-    auto sg(ws.getGraph());
-    auto linked_read_mappers(ws.getLinkedReadMappers());
-    auto linked_read_datastores(ws.getLinkedReadDatastores());
+    SequenceGraph& sg(ws.getGraph());
+    std::vector<LinkedReadMapper>& linked_read_mappers(ws.getLinkedReadMappers());
+    std::vector<LinkedReadsDatastore>& linked_read_datastores(ws.getLinkedReadDatastores());
     auto n1=llabs(node);
     if (end_size==0) end_size=sg.nodes[n1].sequence.size()*end_perc;
     auto first_chunk=end_size;
@@ -1418,7 +1413,7 @@ std::pair<float,float> Untangler::tag_read_percentage_at_ends(sgNodeID_t node, s
  * @return
  */
 std::vector<Backbone> Untangler::create_backbones(uint64_t min_size, float min_ci, float max_ci, float end_perc, int min_shared_tags) {
-    auto linked_read_mappers(ws.getLinkedReadMappers());
+    std::vector<LinkedReadMapper>& linked_read_mappers(ws.getLinkedReadMappers());
 
     std::vector<Backbone> backbones;
     auto selected_nodes=ws.select_from_all_nodes(min_size,1000000,20,200000, min_ci, max_ci);
@@ -1529,8 +1524,8 @@ std::vector<Backbone> Untangler::create_backbones(uint64_t min_size, float min_c
 }
 
 void Untangler::unroll_simple_loops() {
-    auto sg(ws.getGraph());
-    auto kci(ws.getKCI());
+    SequenceGraph& sg(ws.getGraph());
+    KmerCompressionIndex& kci(ws.getKCI());
 
     std::vector<bool> used(sg.nodes.size(),false);
     for (auto i=1;i<sg.nodes.size();++i){
@@ -1556,13 +1551,13 @@ void Untangler::unroll_simple_loops() {
 }
 
 void PairedReadLinker::generate_links_size_ci( uint32_t min_size, float min_ci, float max_ci,int min_reads) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
     std::vector<bool> to_link(sg.nodes.size());
     for (auto &n:ws.select_from_all_nodes(min_size,1000000000,0,1000000000,min_ci,max_ci)) to_link[n]=true;
     generate_links(to_link,min_reads);
 }
 void PairedReadLinker::generate_links_hspnp(int min_reads) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
     std::vector<bool> to_link(sg.nodes.size());
     uint64_t count=0,bp=0;
     for (auto &n:u.get_all_HSPNPs()) {
@@ -1575,7 +1570,7 @@ void PairedReadLinker::generate_links_hspnp(int min_reads) {
     generate_links(to_link,min_reads);
 }
 void PairedReadLinker::generate_links( const std::vector<bool> &to_link,int min_reads) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
     sglib::OutputLog()<<"filling orientation indexes"<<std::endl;
     uint64_t revc=0,dirc=0,false_rev=0,false_dir=0,true_rev=0,true_dir=0;
     std::vector<std::vector<bool>> orientation;
@@ -1698,7 +1693,7 @@ std::set<sgNodeID_t> PairedReadLinker::fw_reached_nodes(sgNodeID_t n, int radius
 
 void PairedReadLinker::remove_transitive_links(int radius) {
     std::cout<<"removing transitive connections..."<<std::endl;
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
 
     //TODO: check mutually transitive connections (A->B, B->C, A->C, C->B)
     for (auto fn=1;fn<sg.nodes.size();++fn) {
@@ -1742,7 +1737,7 @@ void PairedReadLinker::remove_transitive_links(int radius) {
 }
 
 std::vector<std::vector<sgNodeID_t>> PairedReadLinker::find_local_problems(uint64_t long_node_size) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
     std::vector<std::vector<sgNodeID_t>> local_problem;
     std::vector<bool> used_fw(sg.nodes.size());
     std::vector<bool> used_bw(sg.nodes.size());

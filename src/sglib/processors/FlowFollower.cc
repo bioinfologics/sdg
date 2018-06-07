@@ -71,7 +71,7 @@ Flow FlowFollower::flow_from_node(sgNodeID_t n,float min_winner,float max_looser
 }
 
 Flow FlowFollower::flow_from_node_kmers(sgNodeID_t n,const std::unordered_set<uint64_t> &kmers) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
 
     //std::cout<<"Flowing from "<<n<<" with "<<kmers.size()<<" kmers"<<std::endl;
     SequenceGraphPath p(sg, {n});
@@ -135,7 +135,7 @@ Flow FlowFollower::flow_from_node_kmers(sgNodeID_t n,const std::unordered_set<ui
 
 
 std::vector<std::unordered_set<uint64_t>> FlowFollower::get_distinctive_kmers(std::vector<sgNodeID_t> nodes) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
 
     std::unordered_set<uint64_t> seen_kmers,shared_kmers;
     std::vector<std::unordered_set<uint64_t>> distinctive_kmers;
@@ -176,7 +176,7 @@ std::string DNArc(const std::string & s ){
  * @return
  */
 std::vector<std::unordered_set<uint64_t>> FlowFollower::get_distinctive_kmers_truncated(std::vector<sgNodeID_t> nodes) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
 
     //TODO: consider the case where both things are completely different!
     std::vector<std::vector<uint64_t>> node_kmers;
@@ -282,7 +282,7 @@ void FlowFollower::create_flows() {
  *
  */
 void FlowFollower::create_flows_fast() {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
     auto linked_read_mappers(ws.getLinkedReadMappers());
     auto linked_read_datastores(ws.getLinkedReadDatastores());
 
@@ -338,7 +338,7 @@ void FlowFollower::create_flows_fast() {
  * @return
  */
 SequenceGraphPath FlowFollower::skate_from_node(sgNodeID_t n) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
 
     struct used_flow_t{Flow flow; bool active; uint32_t pos;} ;
     std::vector<struct used_flow_t> used_flows;
@@ -389,7 +389,7 @@ SequenceGraphPath FlowFollower::skate_from_node(sgNodeID_t n) {
 }
 
 std::vector<SequenceGraphPath> FlowFollower::skate_from_all(int min_node_flow, uint64_t min_path_length) {
-    auto sg(ws.getGraph());
+    SequenceGraph& sg(ws.getGraph());
 
     std::vector<SequenceGraphPath> r;
     std::vector<sgNodeID_t> nv;
