@@ -14,12 +14,12 @@
 #include <omp.h>
 #include <parallel/algorithm>
 #else
-static inline int omp_get_max_threads();
+constexpr static inline int omp_get_max_threads();
 static inline int omp_get_thread_num();
 #endif
 
 #ifndef _OPENMP
-int omp_get_max_threads() {return 1u;}
+constexpr int omp_get_max_threads() {return 1u;}
 int omp_get_thread_num() {return 0u;}
 #endif
 
