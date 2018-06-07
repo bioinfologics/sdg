@@ -5,16 +5,16 @@
 #include <stack>
 #include <sglib/graph/SequenceGraphPath.hpp>
 #include <sglib/processors/PathExplorer.h>
-#include <sglib/aligners/algorithms/SmithWaterman.h>
+#include <sglib/factories/KMerIDXFactory.h>
 
-std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t &seed, const sgNodeID_t &target,
+std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t seed, const sgNodeID_t target,
                                                            const std::string& query, const unsigned int flank) const {
     const unsigned int size_limit = (unsigned int) query.size() + flank;
     return collect_paths(seed, target, size_limit);
 }
 
-std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t& seed,
-                                                           const sgNodeID_t& target,
+std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t seed,
+                                                           const sgNodeID_t target,
                                                            const unsigned int size_limit,
                                                            const unsigned int edge_limit) const {
 
@@ -35,7 +35,7 @@ std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t& see
     while (!to_visit.empty()) {
         const auto activeNode(to_visit.top());
         to_visit.pop();
-        if (visited.find(activeNode.node) == visited.end() and (activeNode.path_length < edge_limit or edge_limit==0) and (activeNode.dist < size_limit or size_limit==0) )
+        if (visited.find(activeNode.node) == visited.end() and (activeNode.path_length < edge_limit or edge_limit == 0) and (activeNode.dist < size_limit or size_limit == 0) )
         {
             visited.emplace(activeNode.node);
 
@@ -48,7 +48,7 @@ std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t& see
 
             for (const auto &l : sg.get_fw_links(activeNode.node)) {
                 // For each child of the current node, create a child visitor object, and enter it into the parent map.
-                visitor child { l.dest, activeNode.dist + uint(sg.nodes[std::abs(l.dest)].sequence.length()), activeNode.path_length + 1 };
+                visitor child { l.dest, activeNode.dist + uint(sg.nodes[std::abs(l.dest)].sequence.length() + l.dist), activeNode.path_length + 1 };
 
                 // If I've found the target along this dfs path, I need to collect it and put it into a SequenceGraphPath object.
                 if (child.node == target) {
@@ -63,34 +63,52 @@ std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t& see
     return collected_paths;
 }
 
-int PathExplorer::find_best_path(SequenceGraphPath& result,
-                                 const sgNodeID_t& seed,
-                                 const sgNodeID_t& target,
-                                 const std::string& query,
-                                 const unsigned int flank) const {
+void build_unique_kmers(kmerIDXFactory<FastaRecord>& factory,
+                                        const std::string& sequence,
+                                        std::vector<KmerIDX>& kmers) {
+    kmers.clear();
+    FastaRecord record {0, "", sequence};
+    factory.setFileRecord(record);
+    factory.next_element(kmers);
+    std::sort(kmers.begin(), kmers.end());
+    auto last = std::unique(kmers.begin(), kmers.end());
+    kmers.erase(last, kmers.end());
+}
 
-    const auto paths { collect_paths(seed, target, query, flank) };
+bool PathExplorer::find_best_path(SequenceGraphPath& result, const sgNodeID_t seed, const sgNodeID_t target, const std::string& reference, const unsigned int flank) const {
+    // BUILD a kmer set for the reference sequence.
+    std::vector<KmerIDX> refkmers, pathkmers, matchingkmers;
+    kmerIDXFactory<FastaRecord> kf({31});
+    build_unique_kmers(kf, reference, refkmers);
+
+    const std::vector<SequenceGraphPath> paths { collect_paths(seed, target, reference, flank) };
 
     if (!paths.empty()) {
         if (paths.size() == 1) {
             result = paths[0];
-            return 0;
+            return true;
         } else {
-            // Determine the best path of several, using the Smith Waterman alignment.
-            sglib::alignment::algorithms::SmithWaterman<int> sw { paths.front().get_sequence().size(), query.size() };
-            int maxscore { 0 };
+            size_t maxscore { 0 };
             std::vector<SequenceGraphPath>::const_iterator bestpath;
             for (auto path {paths.cbegin()}; path != paths.cend(); ++path) {
-                const auto alignres { sw.run(path -> get_sequence(), query, -10, -1) };
-                if (std::get<0>(alignres) > maxscore) {
-                    maxscore = std::get<0>(alignres);
+
+                // Scoring paths by matching kmers.
+                std::string pathseq { path->get_sequence() };
+                build_unique_kmers(kf, pathseq, pathkmers);
+                matchingkmers.clear();
+                std::back_insert_iterator<std::vector<KmerIDX>> it = std::set_intersection(pathkmers.begin(), pathkmers.end(),
+                                                                                           refkmers.begin(), refkmers.end(),
+                                                                                           std::back_inserter(matchingkmers));
+                size_t score = matchingkmers.size();
+                if (score > maxscore) {
+                    maxscore = score;
                     bestpath = path;
                 }
             }
             result = *bestpath;
+            return true;
         }
     } else {
-        return 1;
+        return false;
     }
-
 }

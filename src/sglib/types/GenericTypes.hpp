@@ -11,11 +11,10 @@
 #include <limits>
 #include "hashing_helper.hpp"
 
-
-
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
+typedef int32_t seqID_t; //first sequence is 0;
 
-enum sgNodeStatus_t {sgNodeActive,sgNodeDeleted};
+enum sgNodeStatus_t {sgNodeActive, sgNodeDeleted};
 
 class Node{
 public:

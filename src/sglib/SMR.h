@@ -213,6 +213,9 @@ public:
             sglib::OutputLog(sglib::DEBUG) << "Done reduction in " << elapsed_seconds.count() << "s" << std::endl;
             //TODO: remove instance / never create the final files?
             std::vector<RecordType> result(getRecords());
+            //for (const auto& it : result) {
+             //   if(it.count > 1) std::cout << (int)it.count << std::endl;
+            //}
             sglib::remove_directory(tmpInstance);
             return result;
         }
@@ -527,7 +530,7 @@ private:
         std::string outBatchName(std::string(tmpInstance + "thread_0" + "_batch_" + std::to_string(currentBatch) + ".tmc"));
         // Simply dump the file
         std::ofstream outBatch(outBatchName.data(), std::ios_base::binary | std::ios_base::out | std::ios_base::trunc);
-        auto size(_elements.size());
+        uint64_t size(_elements.size());
         outBatch.write((char *)&size, sizeof(size));
         outBatch.write((char *)_elements.data(), size*sizeof(RecordType));
         outBatch.close();
@@ -586,7 +589,7 @@ private:
             throw ("Couldn't open " + finalFile);
         }
         uint64_t numElements = 0;
-        outf.read(reinterpret_cast<char *>(&numElements), sizeof(numElements));
+        if (totalFilteredRecords!=0) outf.read(reinterpret_cast<char *>(&numElements), sizeof(numElements));
         // reserve capacity
         std::vector<RecordType> vec;
         vec.reserve(numElements);
@@ -606,19 +609,12 @@ private:
 
         std::string finalFilename(std::string(outdir+"final.kc"));
         std::vector<std::string> threadFiles(maxThreads);
-
         for (auto threadID = 0; threadID < maxThreads; threadID++) {
             std::string name(tmpInstance + "thread_" + std::to_string(threadID) + ".tmc");
 
             threadFiles[threadID] = name;
         }
-        if (threadFiles.size() == 1) {
-            bool check_ok = sglib::copy_file(threadFiles[0], finalFilename, false);
-            assert(check_ok);
-            remove(threadFiles[0].c_str());
-        } else {
-            totalFilteredRecords = merge(finalFilename, threadFiles);
-        }
+        totalFilteredRecords = merge(finalFilename, threadFiles);
         return readFinalkc(finalFilename);
     }
 

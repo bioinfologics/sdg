@@ -25,6 +25,7 @@ class SequenceSubGraph;
 class SequenceGraph {
 public:
     SequenceGraph(){};
+    SequenceGraph(const SequenceGraph &sg) = delete; // Avoid implicit generation of the copy constructor.
     //=== I/O functions ===
     void load_from_gfa(std::string filename);
     void write_to_gfa(std::string filename, const std::unordered_set<sgNodeID_t> & mark_red={}, const std::vector<double> & depths={},
@@ -186,7 +187,7 @@ public:
     }
 
     const std::string& nodeID_to_name(sgNodeID_t id) const {
-        return oldnames[id];
+        return oldnames[std::abs(id)];
     }
 
     void create_index();

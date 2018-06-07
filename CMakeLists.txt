@@ -145,11 +145,19 @@ include_directories("deps/kseqcpp/")
 add_library(sequence_graph SHARED
         src/sglib/graph/SequenceGraph.cc
             src/sglib/PairedReadMapper.cc
+            src/sglib/HaplotypeScorer.cpp
             src/sglib/SequenceGraphJournal.cc
             src/sglib/Scaffolder.cc
             src/sglib/filesystem/helpers.cc
+            src/sglib/PhaseScaffolder.cpp
             src/sglib/KmerCompressionIndex.cc
+            src/sglib/GraphPartitioner.cc
             src/sglib/logger/OutputLog.cc
+            src/sglib/datastores/LinkedReadsDatastore.cc
+            src/sglib/mappers/LinkedReadMapper.cc
+            src/sglib/processors/Untangler.cc
+            src/sglib/processors/TagWalker.cc
+            src/sglib/processors/FlowFollower.cc
             src/sglib/WorkSpace.cc
             src/sglib/datastores/PathsDatastore.cc
             src/sglib/processors/PathExplorer.cpp
@@ -159,15 +167,9 @@ add_library(sequence_graph SHARED
             src/sglib/graph/SequenceGraphPath.cpp
             src/sglib/mappers/LongReadMapper.cpp
             src/sglib/datastores/LongReadsDatastore.cpp
-            src/sglib/datastores/LinkedReadsDatastore.cc
-            src/sglib/mappers/LinkedReadMapper.cc
-            src/sglib/datastores/PairedReadsDatastore.cc
-            src/sglib/mappers/PairedReadMapper.cc
-            src/sglib/LinkageDiGraph.cc
-            src/sglib/processors/Untangler.cc
-            src/sglib/processors/TagWalker.cc
-            src/sglib/processors/FlowFollower.cc
-            src/sglib/processors/LinkageUntangler.cc
+            src/sglib/mappers/SingleReadMapper.cpp
+            src/sglib/mappers/threader/NodeMapper.cpp
+            src/sglib/mappers/threader/MappingThreader.cpp
         )
 
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})

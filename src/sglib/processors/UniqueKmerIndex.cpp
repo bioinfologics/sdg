@@ -4,7 +4,7 @@
 
 #include <tuple>
 #include <stack>
-#include <sglib/UniqueKmerIndex.h>
+#include <sglib/processors/UniqueKmerIndex.h>
 #include <sglib/SMR.h>
 #include <sglib/factories/KMerIDXFactory.h>
 #include <sglib/readers/FileReader.h>
@@ -22,7 +22,7 @@ UniqueKmerIndex::UniqueKmerIndex(const SequenceGraph& sg, const uint8_t k) : sg(
     total_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
 
     for (auto &kidx :kmerIDX_SMR.process_from_memory()) {
-        kmer_to_node_map[kidx.kmer] = { kidx.contigID, kidx.pos };
+        kmer_to_node_map[kidx.kmer] = graphPosition{kidx.contigID, kidx.pos};
         unique_kmers_per_node[std::abs(kidx.contigID)] += 1;
     }
 
@@ -34,20 +34,6 @@ UniqueKmerIndex::UniqueKmerIndex(const SequenceGraph& sg, const uint8_t k) : sg(
     sglib::OutputLog(sglib::LogLevels::INFO) << "Number of " << int(k) << "-kmers seen in assembly " << uniqKmer_statistics[0] << '.' << std::endl;
     sglib::OutputLog(sglib::LogLevels::INFO) << "Number of contigs from the assembly " << uniqKmer_statistics[2] << '.' << std::endl;
 
-}
-
-std::tuple<bool, graphPosition> UniqueKmerIndex::find_unique_kmer_in_graph(uint64_t kmer) const {
-    auto nk = kmer_to_node_map.find(kmer);
-    auto exists = kmer_to_node_map.end() != nk;
-    graphPosition p;
-    if (exists) {
-        p = nk->second;
-    }
-    return std::make_tuple(exists, p);
-}
-
-bool UniqueKmerIndex::is_unmappable(sgNodeID_t id) const {
-    return 0 == unique_kmers_per_node[std::abs(id)];
 }
 
 bool UniqueKmerIndex::traverse_dark_nodes(const sgNodeID_t start, const sgNodeID_t goal) {

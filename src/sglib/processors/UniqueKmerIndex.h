@@ -26,10 +26,6 @@ public:
         return total_kmers_per_node[std::abs(node)];
     }
 
-    std::tuple<bool, graphPosition> find_unique_kmer_in_graph(uint64_t kmer) const;
-
-    bool is_unmappable(sgNodeID_t id) const;
-
     bool traverse_dark_nodes(const sgNodeID_t seed, const sgNodeID_t goal);
 };
 

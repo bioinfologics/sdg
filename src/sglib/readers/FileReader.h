@@ -36,11 +36,16 @@ public:
     explicit FastaReader(FastxReaderParams params, const std::string &filepath) : params(params), numRecords(0) {
         sglib::OutputLog(sglib::LogLevels::INFO) << "Opening: " << filepath << "\n";
         gz_file = gzopen(filepath.c_str(), "r");
-        if (gz_file == Z_NULL) {
+        if (gz_file == Z_NULL || gz_file == NULL) {
             sglib::OutputLog(sglib::LogLevels::WARN) << "Error opening FASTA " << filepath << ": " << std::strerror(errno) << std::endl;
             exit(1);
         }
         ks = new kstream<gzFile, FunctorZlib>(gz_file, gzr);
+    }
+
+    ~FastaReader() {
+        delete ks;
+        gzclose(gz_file);
     }
 
     /**
