@@ -7,10 +7,11 @@
 
 
 #include <sglib/graph/SequenceGraph.hpp>
-#include <sglib/PairedReadMapper.h>
 #include <sglib/types/KmerTypes.hpp>
 #include <sglib/factories/SkipMerIndexFactory.hpp>
-
+#include <sglib/readers/FileReader.h>
+#include <sglib/readers/SequenceGraphReader.h>
+#include <cmath>
 class SkipMerIndex {
     using Map = std::unordered_map<uint64_t, graphStrandPos>;
     using const_iterator = std::unordered_map<uint64_t, graphStrandPos>::const_iterator;

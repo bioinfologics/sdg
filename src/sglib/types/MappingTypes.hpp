@@ -12,8 +12,6 @@
 #include "GenericTypes.hpp"
 #include "hashing_helper.hpp"
 
-typedef uint32_t prm10xTag_t;
-
 class ReadMapping {
 public:
     ReadMapping(){

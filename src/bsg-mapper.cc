@@ -55,7 +55,7 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     sglib::OutputLog()<<"Mapping reads..."<<std::endl;
     auto pri=0;
-    ws.sg.create_index();
+    ws.getGraph().create_index();
     for (auto &m:ws.getPairedReadMappers()) {
         sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         m.map_reads();

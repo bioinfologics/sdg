@@ -507,7 +507,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
 }
 
 void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<sgNodeID_t> & mark_red, const std::vector<double> & depths,
-                                 const std::unordered_set<sgNodeID_t> & selected_nodes={}, const std::vector<std::vector<Link>> & arg_links){
+                                 const std::unordered_set<sgNodeID_t> & selected_nodes, const std::vector<std::vector<Link>> & arg_links){
     std::string fasta_filename;
     //check the filename ends in .gfa
     if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
@@ -1152,7 +1152,7 @@ void SequenceGraph::create_index() {
                 //fkmer: grows from the right (LSB)
                 //rkmer: grows from the left (MSB)
                 bases++;
-                fillKBuf(currentRecord.seq[p], p, fkmer, rkmer, last_unknown);
+                fillKBuf(currentRecord.seq[p], fkmer, rkmer, last_unknown);
                 p++;
                 if (last_unknown >= K) {
                     if (fkmer <= rkmer) {

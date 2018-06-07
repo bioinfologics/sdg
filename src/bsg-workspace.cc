@@ -58,14 +58,14 @@ int main(int argc, char * argv[]) {
         w.add_log_entry("GFA imported from "+gfa_filename+" ("+std::to_string(w.getGraph().nodes.size()-1)+" nodes)");
 
         if (kci_filename!=""){
-            w.kci.load_from_disk(kci_filename);
+            w.getKCI().load_from_disk(kci_filename);
             w.add_log_entry("KCI kmer spectra imported from "+kci_filename);
         }
         for (auto prds:pr_datastores){
             //create and load the datastore, and the mapper!
-            w.paired_read_datastores.emplace_back(prds);
-            w.paired_read_mappers.emplace_back(w.sg,w.paired_read_datastores.back());
-            w.add_log_entry("PairedReadDatastore imported from "+prds+" ("+std::to_string(w.paired_read_datastores.back().size())+" reads)");
+            w.getPairedReadDatastores().emplace_back(prds);
+            w.getPairedReadMappers().emplace_back(w.getGraph(),w.getPairedReadDatastores().back());
+            w.add_log_entry("PairedReadDatastore imported from "+prds+" ("+std::to_string(w.getPairedReadDatastores().back().size())+" reads)");
         }
         for (auto lrds:lr_datastores){
             //create and load the datastore, and the mapper!

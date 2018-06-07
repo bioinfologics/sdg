@@ -27,6 +27,8 @@ class WorkSpace {
     std::vector<LinkedReadsDatastore> linked_read_datastores;
     std::vector<LinkedReadMapper> linked_read_mappers;
     std::vector<PathsDatastore> path_datastores;
+    std::vector<PairedReadsDatastore> paired_read_datastores;
+    std::vector<PairedReadMapper> paired_read_mappers;
     KmerCompressionIndex kci;
     std::string verbose_log="";
     std::vector<LogEntry> log;
@@ -51,9 +53,9 @@ public:
     SequenceGraph& getGraph() {return sg;}
 
     std::vector<LinkedReadMapper>& getLinkedReadMappers() {return linked_read_mappers;}
-    std::vector<PairedReadsDatastore> paired_read_datastores;
-    std::vector<PairedReadMapper> paired_read_mappers;
     std::vector<LinkedReadsDatastore>& getLinkedReadDatastores() {return linked_read_datastores;}
+    std::vector<PairedReadMapper>& getPairedReadMappers() {return paired_read_mappers;}
+    std::vector<PairedReadsDatastore>& getPairedReadDatastores() {return paired_read_datastores;}
     std::vector<PathsDatastore>& getPathsDatastore() {return path_datastores;}
     std::vector<std::string> read_counts_header;
 };

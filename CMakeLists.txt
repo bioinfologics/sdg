@@ -145,12 +145,10 @@ include_directories("deps/kseqcpp/")
 add_library(sequence_graph SHARED
         src/sglib/graph/SequenceGraph.cc
             src/sglib/PairedReadMapper.cc
-            src/sglib/HaplotypeScorer.cpp
             src/sglib/SequenceGraphJournal.cc
             src/sglib/Scaffolder.cc
             src/sglib/filesystem/helpers.cc
             src/sglib/KmerCompressionIndex.cc
-            src/sglib/GraphPartitioner.cc
             src/sglib/logger/OutputLog.cc
             src/sglib/WorkSpace.cc
             src/sglib/datastores/PathsDatastore.cc
@@ -209,8 +207,6 @@ add_executable(bsg-flowmaker
         )
 
 ## add executables and respective sources
-add_executable(gfa-pairscaff
-        src/gfa-pairscaff.cc)
 
 add_executable(gfa-align
                src/gfa-align.cc)
@@ -247,7 +243,6 @@ target_link_libraries(bsg-flowmaker sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-kmerspectra sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
-target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(seq-thread sequence_graph)
 target_link_libraries(map-lr sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_SOURCE_DIR}/src/sglib/mappers/minimap2/libminimap2.a)
@@ -270,7 +265,6 @@ ENDIF()
 
 install(TARGETS
         seq-sorter
-        gfa-pairscaff
         gfa-align
         map-lr
         seq-thread

@@ -88,34 +88,34 @@ int main(int argc, char * argv[]) {
         else lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
 
         std::unordered_set<sgNodeID_t> selnodes;
-        for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
+        for (sgNodeID_t n=1;n<ws.getGraph().nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
         lu.report_node_selection();
         auto topology_ldg=lu.make_topology_linkage(10);
         topology_ldg.report_connectivity();
-        ws.sg.write_to_gfa("topology_links.gfa",{},{},{},topology_ldg.links);
-        LinkageDiGraph gldg(ws.sg);
-        if (!ws.paired_read_mappers.empty()) {
+        ws.getGraph().write_to_gfa("topology_links.gfa",{},{},{},topology_ldg.links);
+        LinkageDiGraph gldg(ws.getGraph());
+        if (!ws.getPairedReadMappers().empty()) {
             auto pair_ldg = lu.make_paired_linkage(min_pairs);
             pair_ldg.report_connectivity();
             gldg.add_links(pair_ldg);
-            ws.sg.write_to_gfa("pair_links.gfa", {}, {}, {}, pair_ldg.links);
+            ws.getGraph().write_to_gfa("pair_links.gfa", {}, {}, {}, pair_ldg.links);
             pair_ldg.remove_transitive_links(10);
             pair_ldg.report_connectivity();
-            ws.sg.write_to_gfa("pair_links_no_transitive.gfa", {}, {}, {}, pair_ldg.links);
+            ws.getGraph().write_to_gfa("pair_links_no_transitive.gfa", {}, {}, {}, pair_ldg.links);
         }
-        if (!ws.linked_read_mappers.empty()) {
+        if (!ws.getLinkedReadMappers().empty()) {
             auto tag_ldg = lu.make_tag_linkage(min_shared_tags);
             tag_ldg.report_connectivity();
             gldg.add_links(tag_ldg);
-            ws.sg.write_to_gfa("tag_links.gfa", {}, {}, {}, tag_ldg.links);
+            ws.getGraph().write_to_gfa("tag_links.gfa", {}, {}, {}, tag_ldg.links);
             tag_ldg.remove_transitive_links(10);
             tag_ldg.report_connectivity();
-            ws.sg.write_to_gfa("tag_links_no_transitive.gfa", {}, {}, {}, tag_ldg.links);
-            ws.sg.write_to_gfa("tag_links_no_transitive_selected_only.gfa", {}, {}, selnodes, tag_ldg.links);
+            ws.getGraph().write_to_gfa("tag_links_no_transitive.gfa", {}, {}, {}, tag_ldg.links);
+            ws.getGraph().write_to_gfa("tag_links_no_transitive_selected_only.gfa", {}, {}, selnodes, tag_ldg.links);
             //HACK: eliminate nodes with N-N and try again.
             auto sel_orig=lu.selected_nodes;
             uint64_t remNN=0;
-            for (auto n=1;n<ws.sg.nodes.size();++n){
+            for (auto n=1;n<ws.getGraph().nodes.size();++n){
                 if (lu.selected_nodes[n]){
                     if (tag_ldg.get_fw_links(n).size()>1 and tag_ldg.get_bw_links(n).size()>1) {
                         lu.selected_nodes[n]=false;
@@ -127,21 +127,21 @@ int main(int argc, char * argv[]) {
             auto tag_ldg_noNN = lu.make_tag_linkage(min_shared_tags);
             tag_ldg_noNN.report_connectivity();
             //gldg.add_links(tag_ldg);
-            ws.sg.write_to_gfa("tag_links_noNN.gfa", {}, {}, {}, tag_ldg_noNN.links);
+            ws.getGraph().write_to_gfa("tag_links_noNN.gfa", {}, {}, {}, tag_ldg_noNN.links);
             tag_ldg_noNN.remove_transitive_links(10);
             tag_ldg_noNN.report_connectivity();
-            ws.sg.write_to_gfa("tag_links_noNN_no_transitive.gfa", {}, {}, {}, tag_ldg_noNN.links);
-            ws.sg.write_to_gfa("tag_links_noNN_no_transitive_selected_only.gfa", {}, {}, selnodes, tag_ldg_noNN.links);
+            ws.getGraph().write_to_gfa("tag_links_noNN_no_transitive.gfa", {}, {}, {}, tag_ldg_noNN.links);
+            ws.getGraph().write_to_gfa("tag_links_noNN_no_transitive_selected_only.gfa", {}, {}, selnodes, tag_ldg_noNN.links);
             lu.selected_nodes=sel_orig;
 
 
         }
         gldg.report_connectivity();
         gldg.add_links(gldg);
-        ws.sg.write_to_gfa("general_links.gfa", {}, {}, {}, gldg.links);
+        ws.getGraph().write_to_gfa("general_links.gfa", {}, {}, {}, gldg.links);
         gldg.remove_transitive_links(10);
         gldg.report_connectivity();
-        ws.sg.write_to_gfa("general_links_no_transitive.gfa", {}, {}, {}, gldg.links);
+        ws.getGraph().write_to_gfa("general_links_no_transitive.gfa", {}, {}, {}, gldg.links);
         //PairedReadLinker prl(ws,u);
         //prl.generate_links_size_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci,5);
         //prl.generate_links_hspnp();

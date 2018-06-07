@@ -39,19 +39,20 @@ size_t intersection_size_fast(const std::vector<bsg10xTag>& v1, const std::vecto
 
 void LinkageUntangler::clear_node_selection() {
     selected_nodes.clear();
-    selected_nodes.resize(ws.sg.nodes.size());
+    selected_nodes.resize(ws.getGraph().nodes.size());
     frontier_nodes.clear();
-    frontier_nodes.resize(ws.sg.nodes.size());
+    frontier_nodes.resize(ws.getGraph().nodes.size());
 }
 
 void LinkageUntangler::report_node_selection() {
+    auto sg(ws.getGraph());
     uint64_t total_bp=0,total_count=0,selected_bp=0,selected_count=0;
-    for (auto n=1;n<ws.sg.nodes.size();++n) {
-        if (ws.sg.nodes[n].status == sgNodeDeleted) continue;
-        total_bp+=ws.sg.nodes[n].sequence.size();
+    for (auto n=1;n<sg.nodes.size();++n) {
+        if (sg.nodes[n].status == sgNodeDeleted) continue;
+        total_bp+=sg.nodes[n].sequence.size();
         ++total_count;
         if (selected_nodes[n]) {
-            selected_bp += ws.sg.nodes[n].sequence.size();
+            selected_bp += sg.nodes[n].sequence.size();
             ++selected_count;
         }
     }
@@ -65,10 +66,11 @@ void LinkageUntangler::select_nodes_by_size_and_ci( uint64_t min_size, float min
 #pragma omp parallel
     {
 #pragma omp for schedule(static, 100)
-        for (auto n=1;n<ws.sg.nodes.size();++n) {
-            if (ws.sg.nodes[n].status==sgNodeDeleted) continue;
-            if (ws.sg.nodes[n].sequence.size() < min_size) continue;
-            auto ci = ws.kci.compute_compression_for_node(n, 1);
+        auto sg(ws.getGraph());
+        for (auto n=1;n<sg.nodes.size();++n) {
+            if (sg.nodes[n].status==sgNodeDeleted) continue;
+            if (sg.nodes[n].sequence.size() < min_size) continue;
+            auto ci = ws.getKCI().compute_compression_for_node(n, 1);
             if (std::isnan(ci) or ci < min_ci or ci > max_ci) continue;
             #pragma omp critical(collect_selected_nodes)
             selected_nodes[n]=true;
@@ -80,23 +82,24 @@ void LinkageUntangler::select_nodes_by_size_and_ci( uint64_t min_size, float min
 void LinkageUntangler::select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, float max_ci) {
     //first, get all perfectly parallel nodes (TODO:generalise more)
     //std::ofstream hl("hspnp_list.txt");
+    auto sg(ws.getGraph());
     std::set<std::pair<sgNodeID_t, sgNodeID_t >> pnps, hspnps;
 #pragma omp parallel for schedule(static, 100)
-    for (sgNodeID_t n = 1; n < ws.sg.nodes.size(); ++n) {
-        if (ws.sg.nodes[n].status == sgNodeDeleted) continue;
-        if (ws.sg.nodes[n].sequence.size() < min_size) continue;
+    for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
+        if (sg.nodes[n].status == sgNodeDeleted) continue;
+        if (sg.nodes[n].sequence.size() < min_size) continue;
         //FW check
-        auto fwl = ws.sg.get_fw_links(n);
+        auto fwl = sg.get_fw_links(n);
         if (fwl.size() != 1) continue;
         auto post = fwl[0].dest;
-        auto post_bwl = ws.sg.get_bw_links(post);
+        auto post_bwl = sg.get_bw_links(post);
         if (post_bwl.size() != 2) continue;
         if (llabs(post_bwl[0].dest)==llabs(post_bwl[1].dest))continue;
         //BW check
-        auto bwl = ws.sg.get_bw_links(n);
+        auto bwl = sg.get_bw_links(n);
         if (bwl.size() != 1) continue;
         auto prev = bwl[0].dest;
-        auto prev_fwl = ws.sg.get_bw_links(prev);
+        auto prev_fwl = sg.get_bw_links(prev);
         if (prev_fwl.size() != 2) continue;
 
         if ((prev_fwl[0].dest == -post_bwl[0].dest and prev_fwl[1].dest == -post_bwl[1].dest)
@@ -111,9 +114,9 @@ void LinkageUntangler::select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, f
                 else pnps.insert(std::make_pair(m, n));
             }
             //Now evaluate coverage of the branches
-            auto c1 = ws.kci.compute_compression_for_node(n, 1);
+            auto c1 = ws.getKCI().compute_compression_for_node(n, 1);
             if (std::isnan(c1) or c1<min_ci or c1>max_ci) continue;
-            auto c2 = ws.kci.compute_compression_for_node(m, 1);
+            auto c2 = ws.getKCI().compute_compression_for_node(m, 1);
             if (std::isnan(c2) or c2<min_ci or c2>max_ci) continue;
 #pragma omp critical(inserting_hspnps)
             {
@@ -134,15 +137,15 @@ void LinkageUntangler::select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, f
 }
 
 LinkageDiGraph LinkageUntangler::make_topology_linkage(int radius) {
-    LinkageDiGraph ldg(ws.sg);
-    for (auto m=1;m<ws.sg.nodes.size();++m) {
+    LinkageDiGraph ldg(ws.getGraph());
+    for (auto m=1;m<ws.getGraph().nodes.size();++m) {
         if (!selected_nodes[m]) continue;
         for (auto n:{m,-m}) {
             std::set<sgNodeID_t> reached, last = {n};
             for (auto i = 0; i < radius; ++i) {
                 std::set<sgNodeID_t> new_last;
                 for (auto l:last) {
-                    for (auto fwl:ws.sg.get_fw_links(l)) {
+                    for (auto fwl:ws.getGraph().get_fw_links(l)) {
                         if (selected_nodes[llabs(fwl.dest)]) {
                             ldg.add_link(-n, fwl.dest, 0);
                         } else {
@@ -159,7 +162,7 @@ LinkageDiGraph LinkageUntangler::make_topology_linkage(int radius) {
 }
 
 LinkageDiGraph LinkageUntangler::make_paired_linkage(int min_reads) {
-    LinkageDiGraph ldg(ws.sg);
+    LinkageDiGraph ldg(ws.getGraph());
     /*sglib::OutputLog()<<"filling orientation indexes"<<std::endl;
     uint64_t revc=0,dirc=0,false_rev=0,false_dir=0,true_rev=0,true_dir=0;
     std::vector<std::vector<bool>> orientation;
@@ -182,7 +185,7 @@ LinkageDiGraph LinkageUntangler::make_paired_linkage(int min_reads) {
     sglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
     //use all libraries collect votes on each link
     auto rmi=0;
-    for (auto &pm:ws.paired_read_mappers) {
+    for (auto &pm:ws.getPairedReadMappers()) {
         for (auto i = 1; i < pm.read_to_node.size(); i += 2) {
             sgNodeID_t n1 = pm.read_to_node[i];
             sgNodeID_t n2 = pm.read_to_node[i + 1];
@@ -218,18 +221,18 @@ LinkageDiGraph LinkageUntangler::make_paired_linkage(int min_reads) {
 
 
 LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc) {
-
+    auto sg(ws.getGraph());
     //STEP 1 - identify candidates by simple tag-sharing.
-    LinkageDiGraph ldg(ws.sg);
+    LinkageDiGraph ldg(sg);
     std::vector<std::pair<sgNodeID_t , sgNodeID_t >> pass_sharing;
     //First, make a node->tag collection for all selected nodes (to speed up things)
     sglib::OutputLog()<<"Creating node_tags sets"<<std::endl;
     std::vector<std::vector<bsg10xTag>> node_tags;
     std::atomic<uint64_t> all_compared(0),linked(0);
-    node_tags.resize(ws.sg.nodes.size());
-    for (auto n=1;n<ws.sg.nodes.size();++n) {
+    node_tags.resize(sg.nodes.size());
+    for (auto n=1;n<sg.nodes.size();++n) {
         if (!selected_nodes[n]) continue;
-        auto nts=ws.linked_read_mappers[0].get_node_tags(n);
+        auto nts=ws.getLinkedReadMappers()[0].get_node_tags(n);
         node_tags[n].reserve(nts.size());
         for (auto t:nts) node_tags[n].push_back(t);
     }
@@ -240,9 +243,9 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc)
         std::vector<std::pair<sgNodeID_t , sgNodeID_t >> thread_pass_sharing;
 #pragma omp for schedule(static,100)
 
-        for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) {
+        for (sgNodeID_t n=1;n<sg.nodes.size();++n) {
             if (!selected_nodes[n]) continue;
-            for (sgNodeID_t m = n+1; m < ws.sg.nodes.size(); ++m) {
+            for (sgNodeID_t m = n+1; m < sg.nodes.size(); ++m) {
                 if (!selected_nodes[m]) continue;
                 if (node_tags[n].size()<min_reads or node_tags[m].size()<min_reads) continue;
                 size_t shared=intersection_size_fast(node_tags[n],node_tags[m]);
@@ -266,7 +269,7 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc)
     sglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
     //use all libraries collect votes on each link
     auto rmi=0;
-    for (auto &pm:ws.paired_read_mappers) {
+    for (auto &pm:ws.getPairedReadMappers()) {
         for (auto i = 1; i < pm.read_to_node.size(); i += 2) {
             sgNodeID_t n1 = pm.read_to_node[i];
             sgNodeID_t n2 = pm.read_to_node[i + 1];
@@ -315,23 +318,23 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc)
     //STEP 3 - Looking at disconnected ends on 1-0 and N-0 nodes
     std::vector<sgNodeID_t> one_end_only;
     uint64_t disc=0,ldisc=0,single=0,lsingle=0,both=0,lboth=0;
-    for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) {
+    for (sgNodeID_t n=1;n<sg.nodes.size();++n) {
         if (!selected_nodes[n]) continue;
         auto blc=ldg.get_bw_links(n).size();
         auto flc=ldg.get_fw_links(n).size();
 
         if (blc==0 and flc==0){
             ++disc;
-            if (ws.sg.nodes[n].sequence.size()>2000) ++ldisc;
+            if (sg.nodes[n].sequence.size()>2000) ++ldisc;
         }
         else if (blc==0 or flc==0){
             if (blc==0) one_end_only.push_back(-n);
             else one_end_only.push_back(n);
             ++single;
-            if (ws.sg.nodes[n].sequence.size()>2000) ++lsingle;
+            if (sg.nodes[n].sequence.size()>2000) ++lsingle;
         } else {
             ++both;
-            if (ws.sg.nodes[n].sequence.size()>2000) ++lboth;
+            if (sg.nodes[n].sequence.size()>2000) ++lboth;
         }
     }
     /*sglib::OutputLog()<<both<<" nodes with both-sides linkage ( "<<lboth<<" >2kbp )"<<std::endl;

@@ -5,10 +5,8 @@
 #include <iomanip>
 #include <cassert>
 #include <atomic>
-#include <omp.h>
+#include <sglib/utilities/omp_safe.hpp>
 #include "PairedReadMapper.hpp"
-#include <parallel/algorithm>
-
 void PairedReadMapper::write(std::ofstream &output_file) {
     //read-to-node
     uint64_t count=read_to_node.size();
@@ -20,7 +18,7 @@ void PairedReadMapper::write(std::ofstream &output_file) {
     for (auto i=0;i<count;++i) {
         uint64_t mcount=reads_in_node[i].size();
         output_file.write((const char *) &mcount,sizeof(mcount));
-        output_file.write((const char *) reads_in_node[i].data(), sizeof(ReadMapper) * mcount);
+        output_file.write((const char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
     }
 }
 
@@ -35,41 +33,10 @@ void PairedReadMapper::read(std::ifstream &input_file) {
         uint64_t mcount;
         input_file.read(( char *) &mcount,sizeof(mcount));
         reads_in_node[i].resize(mcount);
-        input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapper) * mcount);
+        input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
     }
     populate_orientation();
 }
-
-
-
-class StreamKmerFactory : public  KMerFactory {
-public:
-    explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
-    inline void produce_all_kmers(const char * seq, std::vector<KmerIDX> &mers){
-        // TODO: Adjust for when K is larger than what fits in uint64_t!
-        last_unknown=0;
-        fkmer=0;
-        rkmer=0;
-        auto s=seq;
-        while (*s!='\0' and *s!='\n') {
-            //fkmer: grows from the right (LSB)
-            //rkmer: grows from the left (MSB)
-            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
-            if (last_unknown >= K) {
-                if (fkmer <= rkmer) {
-                    // Is fwd
-                    mers.emplace_back(fkmer);
-                    mers.back().contigID=1;
-                } else {
-                    // Is bwd
-                    mers.emplace_back(rkmer);
-                    mers.back().contigID=-1;
-                }
-            }
-            ++s;
-        }
-    }
-};
 
 void PairedReadMapper::remap_all_reads() {
     for (auto &rtn:read_to_node) rtn=0;
@@ -89,14 +56,14 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
      * Read mapping in parallel,
      */
     uint64_t thread_mapped_count[omp_get_max_threads()],thread_total_count[omp_get_max_threads()],thread_multimap_count[omp_get_max_threads()];
-    std::vector<ReadMapper> thread_mapping_results[omp_get_max_threads()];
+    std::vector<ReadMapping> thread_mapping_results[omp_get_max_threads()];
     sglib::OutputLog(sglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
 #pragma omp parallel
     {
         const int min_matches=1;
         std::vector<KmerIDX> readkmers;
         StreamKmerFactory skf(31);
-        ReadMapper mapping;
+        ReadMapping mapping;
         auto blrs=BufferedPairedSequenceGetter(datastore,128*1024,260);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
         auto & mapped_count=thread_mapped_count[omp_get_thread_num()];
@@ -121,7 +88,7 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                 //get all kmers from read
                 auto seq=blrs.get_read_sequence(readID);
                 readkmers.clear();
-                skf.produce_all_kmers(seq,readkmers);
+                skf.produce_all_kmers(0, seq,readkmers);
                 if (readkmers.size()==0) {
                     ++nokmers;
                 }
@@ -261,7 +228,7 @@ std::vector<uint64_t> PairedReadMapper::size_distribution() {
     for (uint64_t r1=1;r1<read_to_node.size();r1+=2){
         if (read_to_node[r1]!=0 and read_to_node[r1]==read_to_node[r1+1]) {
             auto node=read_to_node[r1];
-            ReadMapper rm1,rm2;
+            ReadMapping rm1,rm2;
             rm1.first_pos=read_firstpos[r1];
             rm1.last_pos=read_lastpos[r1];
             rm1.rev=read_rev[r1];

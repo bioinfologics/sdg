@@ -24,7 +24,7 @@ void LinkedReadMapper::write(std::ofstream &output_file) {
     for (auto i=0;i<count;++i) {
         uint64_t mcount=reads_in_node[i].size();
         output_file.write((const char *) &mcount,sizeof(mcount));
-        output_file.write((const char *) reads_in_node[i].data(), sizeof(ReadMapper) * mcount);
+        output_file.write((const char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
     }
 }
 
@@ -39,41 +39,9 @@ void LinkedReadMapper::read(std::ifstream &input_file) {
         uint64_t mcount;
         input_file.read(( char *) &mcount,sizeof(mcount));
         reads_in_node[i].resize(mcount);
-        input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapper) * mcount);
+        input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
     }
 }
-
-
-
-class StreamKmerFactory : public  KMerFactory {
-public:
-    explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
-    inline void produce_all_kmers(const char * seq, std::vector<KmerIDX> &mers){
-        // TODO: Adjust for when K is larger than what fits in uint64_t!
-        last_unknown=0;
-        fkmer=0;
-        rkmer=0;
-        auto s=seq;
-        while (*s!='\0' and *s!='\n') {
-            //fkmer: grows from the right (LSB)
-            //rkmer: grows from the left (MSB)
-            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
-            if (last_unknown >= K) {
-                if (fkmer <= rkmer) {
-                    // Is fwd
-                    mers.emplace_back(fkmer);
-                    mers.back().contigID=1;
-                } else {
-                    // Is bwd
-                    mers.emplace_back(rkmer);
-                    mers.back().contigID=-1;
-                }
-            }
-            ++s;
-        }
-    }
-};
-
 
 void LinkedReadMapper::remap_all_reads() {
     for (auto &rtn:read_to_node) rtn=0;
@@ -92,14 +60,14 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
      * Read mapping in parallel,
      */
     std::vector<uint64_t> thread_mapped_count(omp_get_max_threads()),thread_total_count(omp_get_max_threads()),thread_multimap_count(omp_get_max_threads());
-    std::vector<std::vector<ReadMapper>> thread_mapping_results(omp_get_max_threads());
+    std::vector<std::vector<ReadMapping>> thread_mapping_results(omp_get_max_threads());
     sglib::OutputLog(sglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
 #pragma omp parallel
     {
         const int min_matches=1;
         std::vector<KmerIDX> readkmers;
         StreamKmerFactory skf(31);
-        ReadMapper mapping;
+        ReadMapping mapping;
         auto blrs=BufferedLRSequenceGetter(datastore,128*1024,260);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
         auto & mapped_count=thread_mapped_count[omp_get_thread_num()];

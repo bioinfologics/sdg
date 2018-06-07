@@ -27,7 +27,8 @@ public:
     SequenceGraph(){};
     //=== I/O functions ===
     void load_from_gfa(std::string filename);
-    void write_to_gfa(std::string filename,const std::unordered_set<sgNodeID_t> & marked_red={}, const std::vector<double> & depths={}, const std::unordered_set<sgNodeID_t> & selected_nodes={});
+    void write_to_gfa(std::string filename, const std::unordered_set<sgNodeID_t> & mark_red={}, const std::vector<double> & depths={},
+                      const std::unordered_set<sgNodeID_t> & selected_nodes={}, const std::vector<std::vector<Link>> & arg_links={});
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
 
@@ -165,6 +166,7 @@ public:
     std::vector<sgNodeID_t> oldnames_to_nodes(std::string _oldnames);
     std::vector<std::string> oldnames;
     std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids;
+    std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;
 
     Node& get_node(sgNodeID_t n) { return nodes[(n>0)?n:-n];}
     void consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes);
@@ -187,6 +189,7 @@ public:
         return oldnames[id];
     }
 
+    void create_index();
 };
 
 #endif //SG_SEQUENCEGRAPH_HPP

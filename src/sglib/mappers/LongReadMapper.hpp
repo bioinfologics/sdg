@@ -11,10 +11,10 @@
 #include <sglib/readers/FileReader.h>
 #include <sglib/readers/SequenceGraphReader.h>
 #include <sglib/SMR.h>
-#include <sglib/PairedReadMapper.h>
 #include <sglib/factories/StrandedMinSketchFactory.h>
 #include <sglib/indexers/minSketchIndex.hpp>
 #include <sglib/datastores/LongReadsDatastore.hpp>
+#include <sglib/types/MappingTypes.hpp>
 #include <sglib/mappers/minimap2/minimap.h>
 
 

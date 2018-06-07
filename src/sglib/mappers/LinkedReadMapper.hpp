@@ -8,8 +8,8 @@
 #include <map>
 
 #include "sglib/graph/SequenceGraph.hpp"
-#include "sglib/mappers/ReadMapper.hpp"
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
+#include <sglib/types/MappingTypes.hpp>
 
 /**
  * @brief A mapper for linked reads from a LinkedReadsDatastore.
@@ -17,6 +17,35 @@
  * Supports partial remapping of unmapped reads or of a selection list.
  */
 class LinkedReadMapper {
+    class StreamKmerFactory : public  KMerFactory {
+    public:
+        explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
+        inline void produce_all_kmers(const char * seq, std::vector<KmerIDX> &mers){
+            // TODO: Adjust for when K is larger than what fits in uint64_t!
+            last_unknown=0;
+            fkmer=0;
+            rkmer=0;
+            auto s=seq;
+            while (*s!='\0' and *s!='\n') {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                fillKBuf(*s, fkmer, rkmer, last_unknown);
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        mers.emplace_back(fkmer);
+                        mers.back().contigID=1;
+                    } else {
+                        // Is bwd
+                        mers.emplace_back(rkmer);
+                        mers.back().contigID=-1;
+                    }
+                }
+                ++s;
+            }
+        }
+    };
+
 public:
     LinkedReadMapper(SequenceGraph &_sg, LinkedReadsDatastore &_datastore) : sg(_sg),datastore(_datastore){
         reads_in_node.resize(sg.nodes.size());
@@ -36,7 +65,7 @@ public:
 
     SequenceGraph & sg;
     LinkedReadsDatastore &datastore;
-    std::vector<std::vector<ReadMapper>> reads_in_node;
+    std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
 
 };

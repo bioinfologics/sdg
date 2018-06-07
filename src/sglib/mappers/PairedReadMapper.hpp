@@ -7,7 +7,7 @@
 
 #include <map>
 
-#include "sglib/mappers/ReadMapper.hpp"
+#include "sglib/types/MappingTypes.hpp"
 #include "sglib/factories/KMerIDXFactory.h"
 #include "sglib/readers/SequenceGraphReader.h"
 #include "sglib/SMR.h"
@@ -44,7 +44,7 @@ public:
 
     const SequenceGraph & sg;
     const PairedReadsDatastore & datastore;
-    std::vector<std::vector<ReadMapper>> reads_in_node;
+    std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
     //TODO: reading and writing this would simplify things??
     std::vector<bool> read_direction_in_node;//0-> fw, 1->rev;

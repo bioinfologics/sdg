@@ -6,7 +6,7 @@
 #define BSG_LINKAGEDIGRAPH_HPP
 
 
-#include "SequenceGraph.hpp"
+#include <sglib/graph/SequenceGraph.hpp>
 
 class LinkageDiGraph {
 public:

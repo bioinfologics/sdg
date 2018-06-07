@@ -8,6 +8,7 @@
 #include <sglib/mappers/LinkedReadMapper.hpp>
 #include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/graph/SequenceGraphPath.hpp>
+#include <sglib/mappers/PairedReadMapper.hpp>
 #include "PairedReadMapper.h"
 #include "KmerCompressionIndex.hpp"
 
