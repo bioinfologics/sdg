@@ -68,13 +68,15 @@ void NodeMapper::print_unmapped_nodes(std::ofstream& output_file) const {
         }
     }
     std::set_difference(all.begin(), all.end(), mapped.begin(), mapped.end(), std::inserter(diff, diff.end()));
-    for (const auto& node : diff) {
-        output_file << sg.nodeID_to_name(node) << '\t' << sg.nodes[node].sequence.size() << '\t';
-        output_file << std::to_string(graph_kmer_index.total_kmers_in_node(node)) << '\t';
-        output_file << std::to_string(graph_kmer_index.unique_kmers_in_node(node)) << '\t';
-        output_file << std::to_string(sg.get_fw_links(node).size()) << '\t';
-        output_file << std::to_string(sg.get_bw_links(node).size()) << '\t';
-        output_file << std::endl;
+    if (!diff.empty()) {
+        for (const auto& node : diff) {
+            output_file << sg.nodeID_to_name(node) << '\t' << sg.nodes[node].sequence.size() << '\t';
+            output_file << std::to_string(graph_kmer_index.total_kmers_in_node(node)) << '\t';
+            output_file << std::to_string(graph_kmer_index.unique_kmers_in_node(node)) << '\t';
+            output_file << std::to_string(sg.get_fw_links(node).size()) << '\t';
+            output_file << std::to_string(sg.get_bw_links(node).size()) << '\t';
+            output_file << std::endl;
+        }
     }
 }
 /*

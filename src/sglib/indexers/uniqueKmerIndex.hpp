@@ -29,12 +29,69 @@ class uniqueKmerIndex {
 public:
     explicit uniqueKmerIndex(uint k) : k(k) {}
 
-    uniqueKmerIndex(const SequenceGraph &sg, uint k, uint64_t memlimit = 4) :
+    uniqueKmerIndex(const SequenceGraph &sg, uint k) :
             k(k)
     {
-        generate_index(sg, k, memlimit);
+        generate_index(sg, k);
     }
 
+    void generate_index(const SequenceGraph &sg, uint8_t k) {
+        std::vector<KmerIDX> kidxv;
+        uint64_t total_k { 0 };
+        total_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
+        for (sgNodeID_t node = 0; node < sg.nodes.size(); node++) {
+            auto sgnode = sg.nodes[node];
+            if (sgnode.sequence.size() >= k) {
+                auto n = sgnode.sequence.size() + 1 - k;
+                total_k += n;
+                total_kmers_per_node[node] = n;
+            }
+        }
+        kidxv.reserve(total_k);
+        FastaRecord r;
+        kmerIDXFactory<FastaRecord> kcf({k});
+        for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
+            if (sg.nodes[n].sequence.size() >= k) {
+                r.id = n;
+                r.seq = sg.nodes[n].sequence;
+                kcf.setFileRecord(r);
+                kcf.next_element(kidxv);
+            }
+        }
+        sglib::OutputLog(sglib::INFO) << kidxv.size() << " kmers in total" << std::endl;
+        sglib::OutputLog(sglib::INFO) << "  Sorting..." << std::endl;
+        std::sort(kidxv.begin(), kidxv.end());
+
+        sglib::OutputLog(sglib::INFO) << "  Merging..." << std::endl;
+        auto wi = kidxv.begin();
+        auto ri = kidxv.begin();
+        auto nri = kidxv.begin();
+        while (ri < kidxv.end()) {
+            //std::cout << "ri kmer: " << ri -> kmer << std::endl;
+            while (nri != kidxv.end() and nri -> kmer == ri -> kmer) {
+                //std::cout << "nri kmer: " << nri -> kmer << std::endl;
+                ++nri;
+            }
+            //std::cout << "kmer appears " << nri - ri << " time(s)" << std::endl;
+            if (nri - ri == 1) {
+                *wi = *ri;
+                ++wi;
+            }
+            ri = nri;
+        }
+        kidxv.resize(wi - kidxv.begin());
+        sglib::OutputLog(sglib::INFO) << kidxv.size() << " unique kmers in index, creating map" << std::endl;
+        std::unordered_set<int32_t> seen_contigs;
+        seen_contigs.reserve(sg.nodes.size());
+        unique_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
+        for (auto &kidx :kidxv) {
+            kmer_to_graphposition[kidx.kmer] = { kidx.contigID, kidx.pos };
+            unique_kmers_per_node[std::abs(kidx.contigID)] += 1;
+            seen_contigs.insert((kidx.contigID > 0 ? kidx.contigID : -kidx.contigID));
+        }
+        sglib::OutputLog(sglib::INFO) << seen_contigs.size() << " nodes with indexed kmers" <<std::endl;
+    }
+/*
     void generate_index(const SequenceGraph &sg, uint8_t k, uint64_t memlimit = 4) {
         const std::string output_prefix("./");
 
@@ -53,7 +110,8 @@ public:
         std::unordered_set<int32_t> seen_contigs;
         unique_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
         total_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
-        for (auto &kidx : kmerIDX_SMR.process_from_memory()) {
+        auto idxes = kmerIDX_SMR.process_from_memory();
+        for (auto &kidx : idxes) {
             kmer_to_graphposition[kidx.kmer] = {kidx.contigID, kidx.pos};
             unique_kmers_per_node[std::abs(kidx.contigID)] += 1;
             seen_contigs.insert(std::abs(kidx.contigID));
@@ -63,7 +121,7 @@ public:
             total_kmers_per_node[node] = sg.nodes[node].sequence.size() - (k - 1);
         }
     }
-
+*/
     const_iterator find(const uint64_t hash) const {
         return kmer_to_graphposition.find(hash);
     };
@@ -164,6 +222,7 @@ public:
         for (const auto& it : kmer_to_graphposition) {
             out << kmer_to_string(it.first, get_k()) << std::endl;
         }
+        out.flush();
     }
 
     bool operator==(const uniqueKmerIndex &other) const {

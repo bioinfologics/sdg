@@ -97,7 +97,6 @@ int main(int argc, char **argv) {
     NodeMapper mppr(sg, uki);
 
 // CONSTRUCT SEQUENCE_MAPPER...
-//   SequenceThreader tdr(sg, uki, k);
 
 // MAP UNIQUE KMERS FROM FASTA SEQUENCES INTO GRAPH, OR READ FROM FILE...
     if (mappings_file.empty()) {

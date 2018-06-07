@@ -41,9 +41,6 @@ class MappingThread {
 public:
     explicit MappingThread(const SequenceGraph& _sg) : ordered_mappings(), node_path(_sg) {};
     MappingThread(const MappingThread& smt) = default;
-    //bool append_mapping_trivially(NodeMapping mapping);
-    //bool append_mapping_with_path(NodeMapping mapping, SequenceGraphPath &path);
-    //bool append_node(sgNodeID_t node);
     void clear() { ordered_mappings.clear(); node_path.clear(); };
     size_t size() const { return ordered_mappings.size(); };
     uint32_t queryStart() const { return firstMapping().query_start(); }
@@ -53,7 +50,8 @@ public:
     NodeMapping lastMapping() const { return ordered_mappings.back(); }
     SequenceGraphPath get_graph_path() const { return node_path; }
     void print_path_header(std::ostream& output_file, bool use_oldnames = true) const;
-    void print_sequence(std::ofstream& output_file) const;
+    std::string get_sequence() const { return node_path.get_sequence(); };
+    void print_sequence(std::ofstream& output_file) const { output_file << get_sequence(); };
 
 
 private:
