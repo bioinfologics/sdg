@@ -63,12 +63,7 @@ public:
         last_unknown=0;
     }
 
-    ~StringKMerFactory() {
-#pragma omp critical (KMerFactoryDestructor)
-        {
-            //std::cout << "Bases processed " << bases << "\n";
-        }
-    }
+    ~StringKMerFactory() {}
 
     // TODO: Adjust for when K is larger than what fits in uint64_t!
     const bool create_kmers(std::vector<uint64_t> &mers) {

@@ -52,8 +52,7 @@ public:
         opt.flag |= MM_F_CIGAR;
     }
 
-    void update_graph_index()
-    {
+    void update_graph_index() {
         std::vector<const char *> names(sg.nodes.size());
         std::vector<const char *> seqs(sg.nodes.size());
         for (std::vector<std::string>::size_type i = 1; i < seqs.size(); i++) {

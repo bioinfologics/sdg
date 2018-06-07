@@ -72,7 +72,7 @@ namespace std {
 
 
 /**
- * Stores a ±node,position pair, where the node encodes the direction
+ * Stores a signed node,position pair, where the node encodes the direction
  * The sign on the Node translates to: as seen in node sequence (+) and reverse complement of node sequence(-)
  */
 struct graphStrandPos{
@@ -88,7 +88,7 @@ struct graphStrandPos{
 };
 
 /**
- * Stores a hash(kmer),±position pair where the position encodes for fwd or rc of the kmer
+ * Stores a hash(kmer), signed position pair where the position encodes for fwd or rc of the kmer
  * The sign on the position translates to: as seen on the input sequence (+) and reverse complement of the input seq (-)
  */
 class MinPosIDX {

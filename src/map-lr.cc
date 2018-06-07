@@ -201,5 +201,6 @@ int main(int argc, char * argv[]) {
         rm.update_graph_index();
         rm.map_reads();
     }
+
     return 0;
 }

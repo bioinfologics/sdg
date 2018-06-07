@@ -20,12 +20,8 @@ class kmerIDXFactory : protected KMerFactory {
 public:
     explicit kmerIDXFactory(KMerIDXFactoryParams params) : KMerFactory(params.k) {}
 
-    ~kmerIDXFactory() {
-#pragma omp critical (KMerFactoryDestructor)
-        {
-            //std::cout << "Bases processed " << bases << "\n";
-        }
-    }
+    ~kmerIDXFactory() {}
+
     void setFileRecord(FileRecord &rec) {
         currentRecord = rec;
         fkmer=0;

@@ -13,7 +13,7 @@
 
 
 /**
- * Stores a look-up table of minSketch -> ±Node,position
+ * Stores a look-up table of minSketch -> signed Node,position
  * Provides a couple of helper functions such as:
  * read, write -> stores the current index to disk and loads it from disk
  * find, end -> useful for lookup
