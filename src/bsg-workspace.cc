@@ -282,8 +282,8 @@ int main(int argc, char * argv[]) {
             options.add_options()
                     ("help", "Print help")
                     ("w,workspace", "workspace filename", cxxopts::value<std::string>(filename))
-                    ("p,prefix", "Prefix for the output file", cxxopts::value<std::string>(prefix))
-                    ("b,whitelist", "Backbone nodeid list", cxxopts::value<std::string>(backbone_whitelist));
+                    ("p,prefix", "Prefix for the output file", cxxopts::value<std::string>(prefix));
+//                    ("b,whitelist", "Backbone nodeid list", cxxopts::value<std::string>(backbone_whitelist));
 
             auto newargc=argc-1;
             auto newargv=&argv[1];
@@ -307,18 +307,18 @@ int main(int argc, char * argv[]) {
         WorkSpace w;
         w.load_from_disk(filename);
 
-        std::vector<sgNodeID_t> whitelist;
+//        std::vector<sgNodeID_t> whitelist;
         // Load backbones whitelist
-        std::cout << "Loading the whitelist" << std::endl;
-        std::ifstream infile(backbone_whitelist);
-        sgNodeID_t a;
-        while (infile >> a){
-            whitelist.emplace_back(a);
-        }
-        std::cout << "whitelist node spread: " << whitelist[0] << "," << whitelist[whitelist.size()] << std::endl;
+//        std::cout << "Loading the whitelist" << std::endl;
+//        std::ifstream infile(backbone_whitelist);
+//        sgNodeID_t a;
+//        while (infile >> a){
+//            whitelist.emplace_back(a);
+//        }
+//        std::cout << "whitelist node spread: " << whitelist[0] << "," << whitelist[whitelist.size()] << std::endl;
+//        std::cout << "Done loading the whitelist" << std::endl;
 
-        std::cout << "Done loading the whitelist" << std::endl;
-        w.kci.compute_kci_profiles(prefix, whitelist);
+        w.kci.compute_kci_profiles(prefix);
     }
     else {
         std::cout<<"Please specify one of: make, log, status, dump"<<std::endl;

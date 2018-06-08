@@ -328,7 +328,7 @@ void KmerCompressionIndex::compute_all_nodes_kci(uint16_t max_graph_freq) {
     }
 }
 
-void KmerCompressionIndex::compute_kci_profiles(std::string filename, std::vector<sgNodeID_t> node_whitelist) {
+void KmerCompressionIndex::compute_kci_profiles(std::string filename) {
     // vector to store vector of zero counts
     std::ofstream of(filename+"_kci.csv");
 
