@@ -19,7 +19,7 @@ int main(int argc, char * argv[]) {
     }
 
     if (0==strcmp(argv[1],"make")) {
-        std::vector<std::string> lr_datastores,pr_datastores;
+        std::vector<std::string> lr_datastores,pr_datastores,Lr_datastores;
         std::string output="";
         std::string gfa_filename="",kci_filename="";
         try {
@@ -30,6 +30,7 @@ int main(int argc, char * argv[]) {
                     ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename))
                     ("p,paired_reads", "paired reads datastore", cxxopts::value<std::vector<std::string>>(pr_datastores))
                     ("l,linked_reads", "linked reads datastore", cxxopts::value<std::vector<std::string>>(lr_datastores))
+                    ("L,long_reads", "long reads datastore", cxxopts::value<std::vector<std::string>>(Lr_datastores))
                     ("k,kmerspectra", "KCI kmer spectra", cxxopts::value<std::string>(kci_filename))
                     ("o,output", "output file", cxxopts::value<std::string>(output));
             auto newargc=argc-1;
@@ -72,6 +73,13 @@ int main(int argc, char * argv[]) {
             w.getLinkedReadDatastores().emplace_back(lrds);
             w.getLinkedReadMappers().emplace_back(w.getGraph(),w.getLinkedReadDatastores().back());
             w.add_log_entry("LinkedReadDatastore imported from "+lrds+" ("+std::to_string(w.getLinkedReadDatastores().back().size())+" reads)");
+        }
+
+        for (auto Lrds:Lr_datastores){
+            //create and load the datastore, and the mapper!
+            w.getLongReadDatastores().emplace_back(Lrds);
+            w.getLongReadMappers().emplace_back(w.getGraph(),w.getLongReadDatastores().back());
+            w.add_log_entry("LongReadDatastore imported from "+Lrds+" ("+std::to_string(w.getLongReadDatastores().back().size())+" reads)");
         }
 
         w.dump_to_disk(output+".bsgws");

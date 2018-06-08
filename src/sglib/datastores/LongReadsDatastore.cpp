@@ -5,6 +5,7 @@
 #include "LongReadsDatastore.hpp"
 
 void LongReadsDatastore::load_index(std::string &file) {
+    filename = file;
     std::ifstream ifs(file, std::ios_base::binary);
     std::getline(ifs, long_read_file, '\0');
     long_read_fd = ::open(long_read_file.c_str(), O_RDONLY);
@@ -12,7 +13,7 @@ void LongReadsDatastore::load_index(std::string &file) {
         perror("fstat");
         exit(EXIT_FAILURE);
     }
-    read(ifs);
+    read_rtfr(ifs);
 
     struct stat sb;
 
@@ -29,7 +30,7 @@ void LongReadsDatastore::load_index(std::string &file) {
 
 }
 
-uint32_t LongReadsDatastore::build_from_fastq(std::string long_read_file, std::string output_file) {
+uint32_t LongReadsDatastore::build_from_fastq(std::string long_read_file) {
     // open the file
     read_to_fileRecord.reserve(100000);
     uint32_t numRecords(0);
@@ -73,17 +74,32 @@ uint32_t LongReadsDatastore::build_from_fastq(std::string long_read_file, std::s
     return static_cast<uint32_t>(read_to_fileRecord.size());
 }
 
-void LongReadsDatastore::read(std::ifstream &ifs) {
+void LongReadsDatastore::read_rtfr(std::ifstream &ifs) {
     uint64_t s;
     ifs.read((char *) &s, sizeof(s));
     read_to_fileRecord.resize(s);
     ifs.read((char *) read_to_fileRecord.data(), s*sizeof(read_to_fileRecord[0]));
 }
 
-void LongReadsDatastore::write(std::ofstream &output_file) {
+void LongReadsDatastore::write_rtfr(std::ofstream &output_file) {
+    //read filename
     uint64_t s=read_to_fileRecord.size();
     output_file.write((char *) &s,sizeof(s));
     output_file.write((char *)read_to_fileRecord.data(),s*sizeof(read_to_fileRecord[0]));
+}
+
+void LongReadsDatastore::read(std::ifstream &ifs) {
+    uint64_t s;
+    ifs.read((char *) &s, sizeof(s));
+    filename.resize(s);
+    ifs.read((char *) filename.data(), s*sizeof(filename[0]));
+}
+
+void LongReadsDatastore::write(std::ofstream &output_file) {
+    //read filename
+    uint64_t s=filename.size();
+    output_file.write((char *) &s,sizeof(s));
+    output_file.write((char *)filename.data(),s*sizeof(filename[0]));
 }
 
 std::string LongReadsDatastore::get_read_sequence(size_t readID) {
@@ -100,10 +116,11 @@ LongReadsDatastore::LongReadsDatastore(std::string filename) {
 }
 
 LongReadsDatastore::LongReadsDatastore(std::string long_read_file, std::string output_file) {
-    build_from_fastq(long_read_file, output_file);
+    filename = output_file;
+    build_from_fastq(long_read_file);
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
     ofs.write(long_read_file.data(), long_read_file.size()+1);
-    write(ofs);
+    write_rtfr(ofs);
 
     long_read_fd = ::open(long_read_file.c_str(), O_RDONLY);
     if (long_read_fd == -1) {

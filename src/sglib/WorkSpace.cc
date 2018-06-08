@@ -46,6 +46,13 @@ void WorkSpace::dump_to_disk(std::string filename) {
         linked_read_mappers[i].write(of);
     }
 
+    //long read datastores
+    count=long_read_datastores.size();
+    of.write((char *) &count,sizeof(count));
+    for (auto i=0;i<count;++i){
+        long_read_datastores[i].write(of);
+        long_read_mappers[i].write(of);
+    }
 
     count=path_datastores.size();
     of.write((char *) &count,sizeof(count));
@@ -101,7 +108,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     wsfile.read((char *) &count,sizeof(count));
     paired_read_datastores.reserve(count);
     paired_read_mappers.reserve(count);
-    for (auto i=0;i<count;++i){
+    for (auto i=0;i<count;++i) {
         paired_read_datastores.emplace_back();
         paired_read_datastores.back().read(wsfile);
         paired_read_mappers.emplace_back(sg,paired_read_datastores[i]);
@@ -110,13 +117,23 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     wsfile.read((char *) &count,sizeof(count));
     linked_read_datastores.reserve(count);
     linked_read_mappers.reserve(count);
-    for (auto i=0;i<count;++i){
+    for (auto i=0;i<count;++i) {
         linked_read_datastores.emplace_back();
         linked_read_datastores.back().read(wsfile);
         linked_read_mappers.emplace_back(sg,linked_read_datastores[i]);
         linked_read_mappers.back().read(wsfile);
     }
-    if (!wsfile.eof()){
+    wsfile.read((char *) &count,sizeof(count));
+    long_read_datastores.reserve(count);
+    long_read_mappers.reserve(count);
+    for (auto i=0;i<count;++i) {
+        long_read_datastores.emplace_back();
+        long_read_datastores.back().read(wsfile);
+        long_read_mappers.emplace_back(sg,long_read_datastores[i]);
+        long_read_mappers.back().read(wsfile);
+    }
+
+    if (!wsfile.eof()) {
         wsfile.read((char *) &count,sizeof(count));
         for (auto i=0;i<count;++i){
             path_datastores.emplace_back(sg);

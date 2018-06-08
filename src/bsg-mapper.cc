@@ -71,8 +71,15 @@ int main(int argc, char * argv[]) {
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
         sglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
     }
-    for (auto &m:ws.getPairedReadMappers()) {
+    for (auto &m:ws.getLinkedReadMappers()) {
         sglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
+        m.map_reads();
+        ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
+        sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
+    }
+    for (auto &m: ws.getLongReadMappers()) {
+        sglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
+        m.update_graph_index();
         m.map_reads();
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
         sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;

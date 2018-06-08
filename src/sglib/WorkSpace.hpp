@@ -11,6 +11,7 @@
 #include <sglib/datastores/PairedReadsDatastore.hpp>
 #include <sglib/mappers/PairedReadMapper.hpp>
 #include <sglib/datastores/PathsDatastore.hpp>
+#include <sglib/mappers/LongReadMapper.hpp>
 #include "sglib/graph/SequenceGraph.hpp"
 #include "KmerCompressionIndex.hpp"
 
@@ -26,9 +27,11 @@ class WorkSpace {
     SequenceGraph sg;
     std::vector<LinkedReadsDatastore> linked_read_datastores;
     std::vector<LinkedReadMapper> linked_read_mappers;
-    std::vector<PathsDatastore> path_datastores;
     std::vector<PairedReadsDatastore> paired_read_datastores;
     std::vector<PairedReadMapper> paired_read_mappers;
+    std::vector<LongReadMapper> long_read_mappers;
+    std::vector<LongReadsDatastore> long_read_datastores;
+    std::vector<PathsDatastore> path_datastores;
     KmerCompressionIndex kci;
     std::string verbose_log="";
     std::vector<LogEntry> log;
@@ -56,6 +59,8 @@ public:
     std::vector<LinkedReadsDatastore>& getLinkedReadDatastores() {return linked_read_datastores;}
     std::vector<PairedReadMapper>& getPairedReadMappers() {return paired_read_mappers;}
     std::vector<PairedReadsDatastore>& getPairedReadDatastores() {return paired_read_datastores;}
+    std::vector<LongReadMapper>& getLongReadMappers() {return long_read_mappers;}
+    std::vector<LongReadsDatastore>& getLongReadDatastores() {return long_read_datastores;}
     std::vector<PathsDatastore>& getPathsDatastore() {return path_datastores;}
     std::vector<std::string> read_counts_header;
 };

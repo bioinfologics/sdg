@@ -126,7 +126,7 @@ void map_using_lrMapper(uint8_t k, uint8_t w, SequenceGraph &sg, std::string &ou
     }
     (w==0)?(uint8_t)(k*.66f):w;
     LongReadsDatastore datastore(long_reads);
-    LongReadMapper rm(k, w, sg, datastore);
+    LongReadMapper rm(sg, datastore, k, w);
     rm.update_graph_index();
     rm.map_reads();
 }
@@ -191,7 +191,7 @@ int main(int argc, char * argv[]) {
     SequenceGraph sg;
     sg.load_from_gfa(gfa_filename);
     LongReadsDatastore datastore(lr_datastore);
-    LongReadMapper rm(K, W, sg, datastore);
+    LongReadMapper rm(sg, datastore, K, W);
 
 
     if (0) {
