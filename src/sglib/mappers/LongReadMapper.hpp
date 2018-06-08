@@ -17,7 +17,9 @@
 #include <sglib/types/MappingTypes.hpp>
 #include <sglib/mappers/minimap2/minimap.h>
 
-
+/**
+ * Long read mapping to the graph, this class manages storage and computation of the alignments.
+ */
 class LongReadMapper {
     SequenceGraph & sg;
     minSketchIndex index;
@@ -26,9 +28,11 @@ class LongReadMapper {
     uint8_t k=15;
     uint8_t w=10;
 
-    std::vector<LongReadMapping> mappings;
+    /**
+     * Stores an index of the mappings of a node to all the mappings where it appears.
+     * This index can be queried to get information about all reads that map to a node.
+     */
     std::vector< std::vector < std::vector<LongReadMapping>::size_type > > mappings_in_node;        /// Mappings matching node
-    std::vector< std::vector < std::vector<LongReadMapping>::size_type > > read_to_mappings;    /// Nodes in the read, 0 or empty = unmapped
 
     void update_indexes_from_mappings();
     LongReadMapping createMapping(uint32_t readID, const mm_reg1_t *regs0, int j, long long int node) const;
@@ -36,6 +40,17 @@ class LongReadMapper {
                     int read_len, const mm_reg1_t *regs0, int j);
 
 public:
+    /**
+     * This public member stores a flat list of mappings from the reads, it is accesed using the mappings_in_node index
+     * or the read_to_mappings index.
+     */
+    std::vector<LongReadMapping> mappings;
+    /**
+     * Stores an index of the resulting mappings of a single long read, for each long read, stores the position of it's mappings.
+     * This index can be used to query all the nodes that map to a single read.
+     */
+    std::vector< std::vector < std::vector<LongReadMapping>::size_type > > read_to_mappings;    /// Nodes in the read, 0 or empty = unmapped
+
     LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k=15, uint8_t w=10)
             : sg(sg), k(k), w(((w == 0) ? (uint8_t)(k * 0.66f) : w) ), index(sg, k, w), datastore(ds) {
         mappings_in_node.resize(sg.nodes.size());
