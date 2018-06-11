@@ -130,11 +130,6 @@ IF(BUILD_DOC)
     endif (DOXYGEN_FOUND)
 ENDIF()
 
-if(BUILD_TESTING)
-    add_subdirectory("tests/googletest")
-    include_directories("tests/googletest/googletest/include/")
-    include_directories("tests/googletest/googletest/src/")
-ENDIF()
 ## Include directories
 include_directories("src/")
 include_directories("deps/cxxopts/include")
@@ -254,13 +249,17 @@ target_link_libraries(gfa-indexer sequence_graph)
 target_link_libraries(resolve-loops sequence_graph)
 
 IF(BUILD_TESTING)
-    add_executable(runBasicTests tests/sglib/basic_check.cc)
+    add_executable(runBasicTests
+            tests/sglib/catch-main.cpp
+            tests/sglib/smr_tests.cpp)
+
     IF(BUILD_COV)
         set_target_properties(runBasicTests PROPERTIES
                           COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
                           LINK_FLAGS    "--coverage")
     ENDIF()
-    target_link_libraries(runBasicTests gtest gtest_main sequence_graph)
+
+    target_link_libraries(runBasicTests sequence_graph)
     add_test(basicTests runBasicTests)
 ENDIF()
 
