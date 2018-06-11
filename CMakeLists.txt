@@ -132,7 +132,7 @@ ENDIF()
 
 ## Include directories
 include_directories("src/")
-include_directories("deps/cxxopts/include")
+include_directories("deps/cxxopts/")
 include_directories("deps/kseqcpp/")
 ## Set sources variables
 
