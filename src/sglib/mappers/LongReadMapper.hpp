@@ -15,7 +15,7 @@
 #include <sglib/indexers/minSketchIndex.hpp>
 #include <sglib/datastores/LongReadsDatastore.hpp>
 #include <sglib/types/MappingTypes.hpp>
-#include <sglib/mappers/minimap2/minimap.h>
+#include <minimap.h>
 
 /**
  * Long read mapping to the graph, this class manages storage and computation of the alignments.

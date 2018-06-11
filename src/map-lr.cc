@@ -14,7 +14,7 @@
 
 #include <sglib/utilities/omp_safe.hpp>
 #include <vector>
-#include <sglib/mappers/minimap2/minimap.h>
+#include <minimap.h>
 
 void
 printMatch(const mm_idx_t *mi, std::ofstream &matchOutput, uint32_t readID, const std::string &read_name,

@@ -74,6 +74,26 @@ else()
     add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
 endif()
 
+include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
+
+ExternalProject_Add(minimap2
+        PREFIX minimap2
+        DOWNLOAD_DIR src/sglib/mappers/minimap2/download
+        URL https://github.com/lh3/minimap2/archive/v2.10.tar.gz
+        UPDATE_COMMAND ""
+        SOURCE_DIR src/sglib/mappers/minimap2/
+        BUILD_IN_SOURCE 1
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND "make"
+        INSTALL_COMMAND ""
+        )
+
+ExternalProject_Get_Property(minimap2 SOURCE_DIR)
+message(STATUS "Source directory of minimap2 ${SOURCE_DIR}")
+set(MM2_LIBRARY_DIR ${SOURCE_DIR})
+
+include_directories(${SOURCE_DIR})
+
 ## Compiler flags
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -w -Wno-deprecated -std=c++11")
 
@@ -105,7 +125,7 @@ if (BZIP2_FOUND)
     set(DEPENDENCY_LIBS ${DEPENDENCY_LIBS} ${BZIP2_LIBRARIES})
 endif()
 
-set(DEPENDENCY_LIBS ${DEPENDENCY_LIBS} ${CMAKE_SOURCE_DIR}/src/sglib/mappers/minimap2/libminimap2.a)
+set(DEPENDENCY_LIBS ${DEPENDENCY_LIBS} ${MM2_LIBRARY_DIR}/libminimap2.a)
 
 # check if Doxygen is installed
 IF(BUILD_DOC)
@@ -166,6 +186,7 @@ add_library(sequence_graph SHARED
             src/sglib/Scaffolder.cc
         )
 
+add_dependencies(sequence_graph minimap2)
 target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 
 if (BUILD_COV)
@@ -241,7 +262,7 @@ target_link_libraries(bsg-kmerspectra sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(seq-thread sequence_graph)
-target_link_libraries(map-lr sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_SOURCE_DIR}/src/sglib/mappers/minimap2/libminimap2.a)
+target_link_libraries(map-lr sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${MM2_LIBRARY_DIR}/libminimap2.a)
 target_link_libraries(lr-datastore sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract sequence_graph)
 target_link_libraries(gfa-set sequence_graph)
