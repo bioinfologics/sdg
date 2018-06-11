@@ -84,7 +84,7 @@ ExternalProject_Add(minimap2
         SOURCE_DIR src/sglib/mappers/minimap2/
         BUILD_IN_SOURCE 1
         CONFIGURE_COMMAND ""
-        BUILD_COMMAND "make"
+        BUILD_COMMAND make CFLAGS=-fPIC
         INSTALL_COMMAND ""
         )
 
