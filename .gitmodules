@@ -1,6 +1,3 @@
 [submodule "deps/kseqcpp"]
 	path = deps/kseqcpp
 	url = https://github.com/ljyanesm/kseqcpp.git
-[submodule "deps/cxxopts"]
-	path = deps/cxxopts
-	url = https://github.com/jarro2783/cxxopts.git
