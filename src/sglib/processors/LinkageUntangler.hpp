@@ -27,6 +27,11 @@ public:
     LinkageDiGraph make_paired_linkage(int min_reads);
     LinkageDiGraph make_tag_linkage(int min_reads,float end_perc=.3);
 
+    //Linkage filtering methods
+    LinkageDiGraph filter_linkage_to_hspnp_duos( uint64_t min_size, float min_ci, float max_ci, const LinkageDiGraph & ldg);
+
+    //Graph untangling methods
+    void expand_trivial_repeats(const LinkageDiGraph &);
 
     //Problem localisation methods
 

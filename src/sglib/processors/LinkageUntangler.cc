@@ -421,3 +421,69 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc)
     sglib::OutputLog()<<"Links created (passing tag imbalance): "<<linked<<std::endl;*/
     return ldg;
 }
+
+LinkageDiGraph LinkageUntangler::filter_linkage_to_hspnp_duos(uint64_t min_size, float min_ci, float max_ci,
+                                                              const LinkageDiGraph &ldg_old) {
+    std::unordered_map<sgNodeID_t,sgNodeID_t> node_to_parallel;
+    //1- get all hspnps -> create a map of parallels
+    LinkageDiGraph ldg_new(ws.sg);
+    auto hspnps=get_HSPNPs(min_size,min_ci,max_ci);
+    for (auto h:hspnps) {
+        node_to_parallel[h.first]=h.second;
+        node_to_parallel[-h.first]=-h.second;
+        node_to_parallel[h.second]=h.first;
+        node_to_parallel[-h.second]=-h.first;
+    }
+    //2- hspnp -> look for links in one direction from one of the nodes, and same direction for the other
+    for (auto h:hspnps){
+        auto hr=h;
+        hr.first=-hr.first;
+        hr.second=-hr.second;
+        for (auto hspnp:{h,hr}) {
+            auto n1fs = ldg_old.get_fw_links(hspnp.first);
+            auto n2fs = ldg_old.get_fw_links(hspnp.second);
+            for (auto n1f:n1fs) {
+                for (auto n2f:n2fs) {
+                    if (node_to_parallel.count(n1f.dest) and node_to_parallel[n1f.dest] == n2f.dest) {
+                        // if links are to parts of the same node -> introduce linkage on newldg.
+                        ldg_new.add_link(-hspnp.first, n1f.dest, 0);
+                        ldg_new.add_link(-hspnp.second, n2f.dest, 0);
+                    }
+                }
+            }
+        }
+    }
+    return ldg_new;
+
+}
+
+void LinkageUntangler::expand_trivial_repeats(const LinkageDiGraph & ldg) {
+    uint64_t aa=0,ab=0;
+    for (auto n=1;n<ws.sg.nodes.size();++n) {
+        if (ws.sg.nodes[n].status == sgNodeDeleted) continue;
+        //check node is 2-2
+        auto bwl=ws.sg.get_bw_links(n);
+        if (bwl.size()!=2) continue;
+        auto fwl=ws.sg.get_fw_links(n);
+        if (fwl.size()!=2) continue;
+        auto p1=-bwl[0].dest;
+        auto p2=-bwl[1].dest;
+        auto n1=fwl[0].dest;
+        auto n2=fwl[1].dest;
+        //check bw nodes have only one fw, is one of the fws and not the same
+        auto p1ll=ldg.get_fw_links(p1);
+        if (p1ll.size()!=1) continue;
+        auto p2ll=ldg.get_fw_links(p2);
+        if (p2ll.size()!=1) continue;
+        if (p1ll[0].dest==n1 and p2ll[0].dest==n2){
+            ws.sg.expand_node(n,{{p1},{p2}},{{n1},{n2}});
+            ++aa;
+        }
+        else if (p2ll[0].dest==n1 and p1ll[0].dest==n2) {
+            ws.sg.expand_node(n,{{p1},{p2}},{{n2},{n1}});
+            ++ab;
+        }
+        else continue;
+    }
+    sglib::OutputLog()<<"Repeat expansion: AA:"<<aa<<"  AB:"<<ab<<std::endl;
+}

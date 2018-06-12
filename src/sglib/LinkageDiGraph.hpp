@@ -25,6 +25,7 @@ public:
     void report_connectivity();
     void solve();
 
+
     SequenceGraph & sg;
     std::vector<std::vector<Link>> links;
 
