@@ -27,19 +27,19 @@ void LinkageDiGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
 
 }
 
-std::vector<Link> LinkageDiGraph::get_fw_links( sgNodeID_t n){
+std::vector<Link> LinkageDiGraph::get_fw_links( sgNodeID_t n) const {
     std::vector<Link> r;
     if (llabs(n)>=links.size()) return r;
     for (auto &l:links[(n>0 ? n : -n)]) if (l.source==-n) r.emplace_back(l);
     return r;
 }
 
-std::vector<Link> LinkageDiGraph::get_bw_links(sgNodeID_t n) {
+std::vector<Link> LinkageDiGraph::get_bw_links(sgNodeID_t n) const {
     return get_fw_links (-n);
 }
 
 //returns a list of all fw nodes up to radius jumps away.
-std::set<sgNodeID_t> LinkageDiGraph::fw_reached_nodes(sgNodeID_t n, int radius) {
+std::set<sgNodeID_t> LinkageDiGraph::fw_reached_nodes(sgNodeID_t n, int radius) const {
     std::set<sgNodeID_t> reached,last={n};
     for (auto i=0;i<radius;++i) {
         std::set<sgNodeID_t> new_last;
