@@ -26,6 +26,8 @@ public:
     void query_threads_to_fasta(std::ofstream& output_file, bool use_oldnames) const;
     void calculate_reference_inclusion();
 
+    void dump_thread_lengths(std::ofstream& output_file) const;
+
 private:
     NodeMapper &mapper;
     SequenceMappingPathsStore mapping_threads_of_sequence;
