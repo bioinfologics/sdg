@@ -308,14 +308,19 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc)
     ldg.report_connectivity();
     sglib::OutputLog()<<"Attempting single-side reconnection through topology"<<std::endl;
     auto tldg=make_topology_linkage(30);
-    for (auto n:one_end_only){
+#pragma omp parallel for
+    for (auto i=0; i<one_end_only.size();++i){
+        auto n=one_end_only[i];
         //first look for the topology connection.
         for (auto tfnl:tldg.get_fw_links(n)){
             std::pair<sgNodeID_t, sgNodeID_t> pair;
             pair.first=llabs(n);
             pair.second=llabs(tfnl.dest);
             if (pair.first>pair.second) std::swap(pair.first,pair.second);
-            for (auto ps:pass_sharing) if (ps==pair) ldg.add_link(tfnl.source,tfnl.dest,0);
+            for (auto ps:pass_sharing) if (ps==pair) {
+#pragma omp critical (add_topo_link)
+                ldg.add_link(tfnl.source,tfnl.dest,0);
+            }
         }
     }
     ldg.report_connectivity();
