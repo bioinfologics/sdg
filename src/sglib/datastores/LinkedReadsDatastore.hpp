@@ -20,7 +20,7 @@
 #include <sglib/factories/KMerFactory.h>
 
 typedef uint32_t bsg10xTag;
-enum LinkedReadsFormat {UCDavis,raw,seq};
+enum class LinkedReadsFormat {UCDavis,raw,seq};
 struct LinkedReadData {
     bsg10xTag tag;
     std::string seq1,seq2;

@@ -17,19 +17,19 @@
 
 #include <sglib/types/GenericTypes.hpp>
 #include <sys/stat.h>
+struct ReadPosSize {
+    off_t offset = 0;
+    uint32_t record_size = 0;
+
+    ReadPosSize() {}
+    ReadPosSize(off_t offset, uint32_t record_size) : offset(offset), record_size(record_size) {}
+
+    bool operator==(const ReadPosSize &other) const {
+        return (std::tie(offset, record_size) == std::tie(other.offset, other.record_size));
+    }
+};
 
 class LongReadsDatastore {
-    struct ReadPosSize {
-        off_t offset = 0;
-        uint32_t record_size = 0;
-
-        ReadPosSize() {}
-        ReadPosSize(off_t offset, uint32_t record_size) : offset(offset), record_size(record_size) {}
-
-        bool operator==(const ReadPosSize &other) const {
-            return (std::tie(offset, record_size) == std::tie(other.offset, other.record_size));
-        }
-    };
 
     void *mapped_readfile = 0;
     off_t offset = 0;

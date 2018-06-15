@@ -518,11 +518,6 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::find_bubbles(uint32_t m
     return r;
 }
 
-/**
- * @brief solves a single bubbly path, returns the paths for the 2 new nodes or empty paths if unsolved
- * @param bp
- * @return
- */
 std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(const SequenceSubGraph &bp, bool &no_tags) {
     auto linked_read_mappers(ws.getLinkedReadMappers());
     int min_tags=20; no_tags=false;
@@ -979,13 +974,7 @@ std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_nei
 
 
 
-/**
- * @brief grabs all "long" haplotype-specific nodes, uses tags to find neighbours, uses imbalance to impute direction.
- * @param min_size
- * @param min_ci
- * @param max_ci
- * @return
- */
+
 std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_size, float min_ci, float max_ci, float end_perc) {
     SequenceGraph& sg(ws.getGraph());
     std::vector<LinkedReadMapper>& linked_read_mappers(ws.getLinkedReadMappers());
@@ -1369,14 +1358,6 @@ std::vector<SequenceGraphPath> Untangler::get_all_tag_covered_paths(sgNodeID_t f
     return sol;
 }
 
-/**
- * @brief returns the percentage of reads in both ends of node covered by tags in tags
- * @param node
- * @param tags
- * @param end_perc
- * @param end_size
- * @return
- */
 std::pair<float,float> Untangler::tag_read_percentage_at_ends(sgNodeID_t node, std::set<bsg10xTag> tags, float end_perc,
                                                               uint32_t end_size) {
     SequenceGraph& sg(ws.getGraph());

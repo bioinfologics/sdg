@@ -78,13 +78,13 @@ include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
 
 ExternalProject_Add(minimap2
         PREFIX minimap2
-        DOWNLOAD_DIR src/sglib/mappers/minimap2/download
+        DOWNLOAD_DIR tmp/minimap2/download
         URL https://github.com/lh3/minimap2/archive/v2.10.tar.gz
         UPDATE_COMMAND ""
-        SOURCE_DIR src/sglib/mappers/minimap2/
+        SOURCE_DIR tmp/minimap2/
         BUILD_IN_SOURCE 1
         CONFIGURE_COMMAND ""
-        BUILD_COMMAND make CFLAGS=-fPIC
+        BUILD_COMMAND make CFLAGS=-fPIC libminimap2.a
         INSTALL_COMMAND ""
         )
 

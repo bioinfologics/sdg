@@ -28,9 +28,14 @@
 %include "sglib/graph/SequenceGraph.hpp"
 %include "sglib/KmerCompressionIndex.hpp"
 %include "sglib/WorkSpace.hpp"
-%include "sglib/mappers/LongReadMapper.hpp"
 %include "sglib/factories/StrandedMinSketchFactory.h"
 %include "sglib/indexers/minSketchIndex.hpp"
+%include "sglib/datastores/LinkedReadsDatastore.hpp"
+%include "sglib/datastores/LongReadsDatastore.hpp"
+%include "sglib/datastores/PairedReadsDatastore.hpp"
+%include "sglib/mappers/LongReadMapper.hpp"
+%include "sglib/mappers/LinkedReadMapper.hpp"
+%include "sglib/mappers/PairedReadMapper.hpp"
 
 namespace std {
    %template(vectorInt) vector<int>;
@@ -38,13 +43,15 @@ namespace std {
    %template(vectorFloat) vector<float>;
    %template(vectorString) vector<string>;
    %template(vectorSGNode) vector<sgNodeID_t>;
-//   %template(vectorPath) vector<SequenceGraphPath>;
+   //%template(vectorPath) vector<SequenceGraphPath>;
    %template(vectorNode) vector<Node>;
    %template(vectorNodeVisitor) vector<nodeVisitor>;
    %template(vectorUINT16) vector<uint16_t >;
    %template(vectorVectorUINT16) vector< vector <uint16_t > >;
    %template(vectorBool) vector<bool>;
-   %template(vectorLRMapping) vector<LongReadMapping>;
    %template(vectorMinPosIDX) vector<MinPosIDX>;
+   %template(vectorReadPosSize) std::vector< ReadPosSize >;
+   %template(vectorReadMapping) std::vector<ReadMapping>;
+   %template(vectorLongReadMapping) std::vector<LongReadMapping>;
 };
 

@@ -22,7 +22,18 @@
 
 class SequenceGraphPath;
 class SequenceSubGraph;
+/**
+ * @brief Class representing sequence graphs
+ *
+ * This class represents the assembly problem as a flow formulation.
+ * The most important features of this class are:
+ *      - Nodes start from 1.
+ *      - Nodes are signed to represent the direction in which they are being considered.
+ *      - Nodes are saved in canonical form.
+ */
 class SequenceGraph {
+    void consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes);
+
 public:
     SequenceGraph(){};
     SequenceGraph(const SequenceGraph &sg) = delete; // Avoid implicit generation of the copy constructor.
@@ -34,15 +45,50 @@ public:
     void read(std::ifstream & input_file);
 
     //=== graph operations ===
+    /**
+     * Adds a new node to the graph
+     * @param n Node object to add
+     * @return
+     * Returns the ID of the added node
+     */
     sgNodeID_t add_node(Node n);
     void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
-
+    /**
+     * Get list of Links from a node
+     * @param n Node to search links for
+     * @return
+     * Returns a vector of Links leaving from n
+     */
     std::vector<Link> get_fw_links( sgNodeID_t n) const ;
+    /**
+     * Get list of links to a node
+     * @param n Node to search links for
+     * @return
+     * Returns a vector of Links going to n
+     */
     std::vector<Link> get_bw_links( sgNodeID_t n) const ;
 
+    /**
+     * Find node IDs for forward nodes of n
+     * @param n Node to search neighbours for
+     * @return
+     * Returns a vector of forward node IDs
+     */
     std::vector<sgNodeID_t> get_fw_nodes(sgNodeID_t n) const;
+    /**
+     * Find node IDs for backward nodes of n
+     * @param n Node to search neighbours for
+     * @return
+     * Returns a vector of backward node IDs
+     */
     std::vector<sgNodeID_t> get_bw_nodes(sgNodeID_t n) const;
 
+    /**
+     * Find node IDs for neighbouring nodes of n
+     * @param n Node to search neighbours for
+     * @return
+     * Returns a vector of neighbouring node IDs
+     */
     std::vector<sgNodeID_t> get_neighbour_nodes(sgNodeID_t n) const {
         std::unordered_set<sgNodeID_t > result;
         auto fwns(get_fw_nodes(n));
@@ -56,6 +102,11 @@ public:
         return std::vector<sgNodeID_t > (result.begin(), result.end());
     }
 
+    /**
+     * Graph sanity check, makes sure the graph abides to the expected structure
+     * @return
+     * Whether the graph is valid or not
+     */
     bool is_sane() const;
 
     /*
@@ -126,9 +177,17 @@ public:
      */
     std::vector<nodeVisitor> explore_nodes(std::vector<std::string> &nodes, unsigned int size_limit, unsigned int edge_limit);
 
-    // remove_node
-    void remove_node(sgNodeID_t);
+    /**
+     * Delete a node
+     * @param n ID of the node
+     */
+    void remove_node(sgNodeID_t n);
     // remove_link
+    /**
+     * Delete a link
+     * @param source source
+     * @param dest  destination
+     */
     void remove_link(sgNodeID_t source, sgNodeID_t dest);
     //These two need to mark expanded edges, and transfer read maps and unique kmers for non-expanded, but just read map for expanded.
 
@@ -144,6 +203,14 @@ public:
     std::vector<std::pair<sgNodeID_t,int64_t>> get_distances_to(sgNodeID_t n, std::set<sgNodeID_t> destinations, int64_t max_dist);
     std::vector<SequenceSubGraph> get_all_bubbly_subgraphs(uint32_t maxsubgraphs = 0);
     void print_bubbly_subgraph_stats(const std::vector<SequenceSubGraph> &bubbly_paths);
+
+    /**
+     *
+     * @param from
+     * @param to
+     * @param max_size
+     * @return
+     */
     std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size);
     // simplify --> executes expand_path on every multi-sequence unitig
 
@@ -161,21 +228,40 @@ public:
 
     //=== internal variables ===
 
-    std::vector<Node> nodes;
-    std::vector<std::vector<Link>> links;
-    std::string filename,fasta_filename;
-    std::vector<sgNodeID_t> oldnames_to_nodes(std::string _oldnames);
-    std::vector<std::string> oldnames;
-    std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids;
-    std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;
+    std::vector<Node> nodes;    /// Contains the actual nodes from the graph, nodes are generally accesed using its IDs on to this structure.
+    std::vector<std::vector<Link>> links;   /// List of all links, links are stored in their canonical from (-1 -> 2)
+    std::string filename,fasta_filename;    /// Name of the files containing the graph and the fasta.
+    std::vector<std::string> oldnames;      /// Mapping structure IDs to input names
+    std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids; /// Mapping structure from input names -> IDs
+    std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;  /// Indexing structure saves a unique kmer -> graphPosition
 
+    /**
+     * From a list of names get a list of node IDs from the graph
+     * @param _oldnames String containing old names
+     * @return
+     * List of node IDs from the graph
+     */
+    std::vector<sgNodeID_t> oldnames_to_nodes(std::string _oldnames);
+
+    /**
+     * Get the node object containing all node information
+     * @param n Node ID from the graph
+     * @return
+     * Node sequence and status
+     */
     Node& get_node(sgNodeID_t n) { return nodes[(n>0)?n:-n];}
-    void consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes);
 
     std::vector<sgNodeID_t > find_canonical_repeats();
 
     bool is_loop(std::array<sgNodeID_t, 4> nodes);
 
+    /**
+     * Checks existance of a link in the graph
+     * @param from  Directed node
+     * @param to    Directed node
+     * @return
+     * True if the Link on the direction of the nodes provided exists
+     */
     bool link_exists(sgNodeID_t from, sgNodeID_t to) const {
         // Look for link between starting node and the new node.
         auto l = links[std::abs(from)].begin();
@@ -186,10 +272,20 @@ public:
         return l != links[std::abs(from)].end();
     }
 
+    /**
+     * Get Name of a node
+     * @param id Node ID in the graph
+     * @return
+     * Name of the node
+     */
     const std::string& nodeID_to_name(sgNodeID_t id) const {
         return oldnames[std::abs(id)];
     }
 
+    /**
+     * Function to index the graph
+     * Stores the result in the local kmer_to_graphposition object
+     */
     void create_index();
 };
 
