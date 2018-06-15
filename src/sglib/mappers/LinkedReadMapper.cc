@@ -260,7 +260,7 @@ std::map<bsg10xTag, std::vector<sgNodeID_t>> LinkedReadMapper::get_nodes_per_tag
         for (auto &n:curr_nodes)
             nodes_per_tag[curr_tag].emplace_back(n);
     }
-    
+
     return nodes_per_tag;
 }
 

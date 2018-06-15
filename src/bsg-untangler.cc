@@ -105,6 +105,31 @@ int main(int argc, char * argv[]) {
         }*/
         if (!ws.linked_read_mappers.empty()) {
             auto tag_ldg = lu.make_tag_linkage(min_shared_tags);
+            tag_ldg.remove_transitive_links(10);
+            tag_ldg.report_connectivity();
+            ws.sg.write_to_gfa(output_prefix+"_tag_nt.gfa", {}, {}, selnodes, tag_ldg.links);
+            sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
+            //HACK: eliminate nodes with N-N and try again.
+            auto sel_orig=lu.selected_nodes;
+            uint64_t remNN=0;
+            for (auto n=1;n<ws.sg.nodes.size();++n){
+                if (lu.selected_nodes[n]){
+                    if (tag_ldg.get_fw_links(n).size()>1 and tag_ldg.get_bw_links(n).size()>1) {
+                        lu.selected_nodes[n]=false;
+                        ++remNN;
+                    }
+                }
+            }
+            sglib::OutputLog()<<"Re-trying tag connection after eliminating "<<remNN<<" N-N nodes"<<std::endl;
+            auto tag_ldg_noNN = lu.make_tag_linkage(min_shared_tags);
+            tag_ldg_noNN.report_connectivity();
+            tag_ldg_noNN.remove_transitive_links(10);
+            tag_ldg_noNN.report_connectivity();
+            ws.sg.write_to_gfa(output_prefix+"_tag_noNN_nt.gfa", {}, {}, selnodes, tag_ldg_noNN.links);
+            lu.selected_nodes=sel_orig;
+
+            exit(0);
+
             tag_ldg.report_connectivity();
             gldg.add_links(tag_ldg);
             ws.sg.write_to_gfa("tag_links.gfa", {}, {}, {}, tag_ldg.links);
