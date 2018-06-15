@@ -13,9 +13,9 @@ class MappingThread;
 // Node mapper.
 
 class MappingThreader {
-    using SequenceMappingPathsStore = std::unordered_map<seqID_t, std::vector<MappingThread>>;
 
 public:
+    using SequenceMappingPathsStore = std::unordered_map<seqID_t, std::vector<MappingThread>>;
     MappingThreader(NodeMapper& mppr) : mapper(mppr) {};
     const std::string getQueryFile() const { return mapper.getQueryFile(); }
     const SequenceGraph& getGraph() const { return mapper.getGraph(); }

@@ -10,9 +10,15 @@
 #include "sglib/readers/SequenceGraphReader.h"
 #include "sglib/KmerCompressionIndex.hpp"
 #include "sglib/WorkSpace.hpp"
-#include "sglib/mappers/LongReadMapper.hpp"
 #include "sglib/factories/StrandedMinSketchFactory.h"
 #include "sglib/indexers/minSketchIndex.hpp"
+#include "sglib/indexers/uniqueKmerIndex.hpp"
+#include "sglib/mappers/LinkedReadMapper.hpp"
+#include "sglib/mappers/LongReadMapper.hpp"
+#include "sglib/mappers/PairedReadMapper.hpp"
+//#include "sglib/mappers/threader/NodeMapping.hpp"
+#include "sglib/mappers/threader/NodeMapper.h"
+#include "sglib/mappers/threader/MappingThreader.h"
 %}
 
 %include "python_docs.i"
@@ -26,6 +32,7 @@
 %include "sglib/graph/SequenceSubGraph.hpp"
 %include "sglib/graph/SequenceGraphPath.hpp"
 %include "sglib/graph/SequenceGraph.hpp"
+%include "sglib/indexers/uniqueKmerIndex.hpp"
 %include "sglib/KmerCompressionIndex.hpp"
 %include "sglib/WorkSpace.hpp"
 %include "sglib/factories/StrandedMinSketchFactory.h"
@@ -36,6 +43,9 @@
 %include "sglib/mappers/LongReadMapper.hpp"
 %include "sglib/mappers/LinkedReadMapper.hpp"
 %include "sglib/mappers/PairedReadMapper.hpp"
+//%include "sglib/mappers/threader/NodeMapping.hpp"
+%include "sglib/mappers/threader/NodeMapper.h"
+%include "sglib/mappers/threader/MappingThreader.h"
 
 namespace std {
    %template(vectorInt) vector<int>;
@@ -54,4 +64,3 @@ namespace std {
    %template(vectorReadMapping) std::vector<ReadMapping>;
    %template(vectorLongReadMapping) std::vector<LongReadMapping>;
 };
-

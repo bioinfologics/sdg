@@ -18,7 +18,7 @@ PROJECT (bsg)
 ENABLE_TESTING()
 OPTION(BUILD_TESTING "Build tests." ON)
 OPTION(BUILD_DOC "Build documentation" ON)
-OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" OFF)
+OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" ON)
 OPTION(BUILD_COV "Build coverage" OFF)
 
 # Get the remote url

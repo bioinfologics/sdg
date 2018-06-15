@@ -53,10 +53,10 @@ private:
 };
 
 class NodeMapper {
-    using SequenceMappingStore = std::unordered_map<seqID_t, std::vector<NodeMapping>>;
     using SequenceUnmappedKmers = std::unordered_map<seqID_t, std::vector<KmerIDX>>;
 
 public:
+    using SequenceMappingStore = std::unordered_map<seqID_t, std::vector<NodeMapping>>;
     NodeMapper(SequenceGraph &sg, uniqueKmerIndex &uki);
     void mapSequences(const std::string &filename);
     void write_mappings_to_binary_file(std::string filename) const;

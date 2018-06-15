@@ -18,7 +18,6 @@
 
 class uniqueKmerIndex {
     using Map = std::unordered_map<uint64_t, graphStrandPos>;
-    using const_iterator = std::unordered_map<uint64_t, graphStrandPos>::const_iterator;
     using pair = std::pair<uint64_t, graphStrandPos>;
 
     Map kmer_to_graphposition;
@@ -27,6 +26,7 @@ class uniqueKmerIndex {
     std::vector<uint64_t> total_kmers_per_node;
 
 public:
+    using const_iterator = std::unordered_map<uint64_t, graphStrandPos>::const_iterator;
     explicit uniqueKmerIndex(uint k) : k(k) {}
 
     uniqueKmerIndex(const SequenceGraph &sg, uint k) :
