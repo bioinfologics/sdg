@@ -222,20 +222,29 @@ std::vector<uint64_t> LinkedReadsDatastore::get_tag_reads(bsg10xTag tag) const {
 bsg10xTag LinkedReadsDatastore::get_read_tag(size_t readID) {
     return read_tag[(readID-1)/2];
 }
+std::vector<std::pair<bsg10xTag, uint32_t>> LinkedReadsDatastore::get_readcount_per_tag() {
+    std::vector<std::pair<bsg10xTag, uint32_t>> readcount;
+    auto curr_tag=read_tag[0];
+    uint32_t curr_count=0;
+    for (auto &t:read_tag){
+        if (t!=curr_tag){
+            if (curr_tag!=0) readcount.emplace_back(curr_tag,curr_count);
+            curr_count=0;
+            curr_tag=t;
+        }
+        ++curr_count;
+    }
+    if (curr_tag!=0) readcount.emplace_back(curr_tag,curr_count);
+    return readcount;
+}
+
 
 void LinkedReadsDatastore::dump_tag_occupancy_histogram(std::string filename) {
     std::ofstream tohf(filename);
     uint64_t oh[10001];
     for (auto &o:oh) o=0;
-    auto curr_tag=read_tag[0];
-    uint64_t curr_count=0;
-    for (auto &t:read_tag){
-        if (t!=curr_tag){
-            if (curr_tag!=0) ++oh[(curr_count>10000 ? 10000:curr_count)];
-            curr_count=0;
-            curr_tag=t;
-        }
-        ++curr_count;
+    for (auto &t:get_readcount_per_tag()){
+        ++oh[(t.second>10000 ? 10000:t.second)];
     }
     for (auto i=0;i<10001;++i)
         if (oh[i]) tohf<<i<<","<<oh[i]<<std::endl;
