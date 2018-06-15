@@ -219,43 +219,13 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc)
 
     //STEP 1 - identify candidates by simple tag-sharing.
     LinkageDiGraph ldg(ws.sg);
-    std::vector<std::pair<sgNodeID_t , sgNodeID_t >> pass_sharing;
-    //First, make a node->tag collection for all selected nodes (to speed up things)
-    sglib::OutputLog()<<"Creating node_tags sets"<<std::endl;
-    std::vector<std::vector<bsg10xTag>> node_tags;
-    std::atomic<uint64_t> all_compared(0),linked(0);
-    node_tags.resize(ws.sg.nodes.size());
-    for (auto n=1;n<ws.sg.nodes.size();++n) {
-        if (!selected_nodes[n]) continue;
-        auto nts=ws.linked_read_mappers[0].get_node_tags(n);
-        node_tags[n].reserve(nts.size());
-        for (auto t:nts) node_tags[n].push_back(t);
-    }
-    //Now find the nodes with more than min_tags shared tags
-    sglib::OutputLog()<<"Finding intersecting nodes"<<std::endl;
-#pragma omp parallel
-    {
-        std::vector<std::pair<sgNodeID_t , sgNodeID_t >> thread_pass_sharing;
-#pragma omp for schedule(static,100)
 
-        for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) {
-            if (!selected_nodes[n]) continue;
-            for (sgNodeID_t m = n+1; m < ws.sg.nodes.size(); ++m) {
-                if (!selected_nodes[m]) continue;
-                if (node_tags[n].size()<min_reads or node_tags[m].size()<min_reads) continue;
-                size_t shared=intersection_size_fast(node_tags[n],node_tags[m]);
+    //Step 1 - tag neighbours.
 
-                ++all_compared;
-                if (shared>=min_reads) {
-                    thread_pass_sharing.push_back(std::make_pair(n,m));
-                }
+    sglib::OutputLog()<<"Getting tag neighbours"<<std::endl;
+    auto pass_sharing=ws.linked_read_mappers[0].get_tag_neighbour_nodes(min_reads,selected_nodes);
 
-            }
-        }
-#pragma omp critical
-    pass_sharing.insert(pass_sharing.end(),thread_pass_sharing.begin(),thread_pass_sharing.end());
-    }
-    sglib::OutputLog()<<"Node pairs with more than "<<min_reads<<" shared tags: "<<pass_sharing.size()<<" / "<<all_compared<<std::endl;
+    sglib::OutputLog()<<"Node pairs with more than "<<min_reads<<" shared tags: "<<pass_sharing.size()<<std::endl;
 
     //STEP 2 - confirm directionality
 
