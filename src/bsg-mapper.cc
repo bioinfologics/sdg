@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/WorkSpace.hpp>
+#include <sglib/workspace/WorkSpace.hpp>
 #include <sglib/processors/Untangler.hpp>
 #include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"
@@ -55,7 +55,8 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     sglib::OutputLog()<<"Mapping reads..."<<std::endl;
     auto pri=0;
-    ws.getGraph().create_index();
+    if (ws.getPairedReadMappers().size() > 0 or ws.getLinkedReadMappers().size() > 0)
+        ws.getGraph().create_index();
     for (auto &m:ws.getPairedReadMappers()) {
         sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         m.map_reads();
@@ -78,11 +79,11 @@ int main(int argc, char * argv[]) {
         sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }
     for (auto &m: ws.getLongReadMappers()) {
-        sglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
+        sglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
         m.update_graph_index();
         m.map_reads();
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
-        sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
+        sglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
     }
     ws.getPathsDatastore().clear();
     ws.add_log_entry("path_datastores cleared");

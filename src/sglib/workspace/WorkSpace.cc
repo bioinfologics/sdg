@@ -141,15 +141,15 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
         }
     }
     //[GONZA]
-    int v;
-    wsfile.read((char *) &v, sizeof(v));
-    read_counts_header.resize(v);
-    for (int i=0; i<read_counts_header.size(); ++i){
-        int hs;
-        wsfile.read((char *) &hs, sizeof(hs));
-        read_counts_header[i].resize(hs);
-        wsfile.read((char *) read_counts_header[i].data(), hs*sizeof(char));
-    }
+//    int v;
+//    wsfile.read((char *) &v, sizeof(v));
+//    read_counts_header.resize(v);
+//    for (int i=0; i<read_counts_header.size(); ++i){
+//        int hs;
+//        wsfile.read((char *) &hs, sizeof(hs));
+//        read_counts_header[i].resize(hs);
+//        wsfile.read((char *) read_counts_header[i].data(), hs*sizeof(char));
+//    }
 }
 
 void WorkSpace::print_log() {

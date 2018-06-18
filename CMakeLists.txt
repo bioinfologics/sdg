@@ -157,7 +157,7 @@ include_directories("deps/kseqcpp/")
 ## Set sources variables
 
 ## Libraries
-add_library(sequence_graph SHARED
+add_library(bsg SHARED
             src/sglib/graph/SequenceGraph.cc
             src/sglib/graph/SequenceSubGraph.cpp
             src/sglib/graph/SequenceGraphPath.cpp
@@ -179,18 +179,18 @@ add_library(sequence_graph SHARED
             src/sglib/processors/FlowFollower.cc
             src/sglib/processors/PathExplorer.cpp
             src/sglib/processors/LinkageUntangler.cc
-            src/sglib/WorkSpace.cc
+        src/sglib/workspace/WorkSpace.cc
             src/sglib/SequenceThreader.cpp
             src/sglib/KmerCompressionIndex.cc
             src/sglib/SequenceGraphJournal.cc
             src/sglib/Scaffolder.cc
         )
 
-add_dependencies(sequence_graph minimap2)
-target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
+add_dependencies(bsg minimap2)
+target_link_libraries(bsg ${DEPENDENCY_LIBS})
 
 if (BUILD_COV)
-    set_target_properties(sequence_graph PROPERTIES
+    set_target_properties(bsg PROPERTIES
                       COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
                       LINK_FLAGS    "--coverage")
 endif()
@@ -252,22 +252,22 @@ add_executable(lr-datastore
 add_executable(resolve-loops
         src/resolve-loops.cc)
 
-target_link_libraries(bsg-workspace sequence_graph)
-target_link_libraries(gfa-exploregraph sequence_graph)
-target_link_libraries(bsg-datastore sequence_graph)
-target_link_libraries(bsg-mapper sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-flowmaker sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-kmerspectra sequence_graph)
-target_link_libraries(seq-sorter sequence_graph)
-target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(seq-thread sequence_graph)
-target_link_libraries(map-lr sequence_graph ${CMAKE_THREAD_LIBS_INIT} ${MM2_LIBRARY_DIR}/libminimap2.a)
-target_link_libraries(lr-datastore sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(gfa-extract sequence_graph)
-target_link_libraries(gfa-set sequence_graph)
-target_link_libraries(gfa-indexer sequence_graph)
-target_link_libraries(resolve-loops sequence_graph)
+target_link_libraries(bsg-workspace bsg)
+target_link_libraries(gfa-exploregraph bsg)
+target_link_libraries(bsg-datastore bsg)
+target_link_libraries(bsg-mapper bsg ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-flowmaker bsg ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-untangler bsg ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-kmerspectra bsg)
+target_link_libraries(seq-sorter bsg)
+target_link_libraries(gfa-align bsg ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(seq-thread bsg)
+target_link_libraries(map-lr bsg ${CMAKE_THREAD_LIBS_INIT} ${MM2_LIBRARY_DIR}/libminimap2.a)
+target_link_libraries(lr-datastore bsg ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(gfa-extract bsg)
+target_link_libraries(gfa-set bsg)
+target_link_libraries(gfa-indexer bsg)
+target_link_libraries(resolve-loops bsg)
 
 IF(BUILD_TESTING)
     add_executable(runBasicTests
@@ -280,7 +280,7 @@ IF(BUILD_TESTING)
                           LINK_FLAGS    "--coverage")
     ENDIF()
 
-    target_link_libraries(runBasicTests sequence_graph)
+    target_link_libraries(runBasicTests bsg)
     add_test(basicTests runBasicTests)
 ENDIF()
 
@@ -294,7 +294,7 @@ install(TARGETS
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib/static)
 
-install(TARGETS sequence_graph DESTINATION lib)
+install(TARGETS bsg DESTINATION lib)
 
 install(DIRECTORY src/sglib
         DESTINATION include)
@@ -326,6 +326,6 @@ IF(BUILD_PYTHON_INTERFACE)
     SWIG_ADD_LIBRARY(bsg DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i LANGUAGE python SOURCES
             interfaces/SequenceGraph.i
             )
-    SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} sequence_graph "")
+    SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} bsg "")
     add_dependencies(_bsg doxy2swig)
 ENDIF()

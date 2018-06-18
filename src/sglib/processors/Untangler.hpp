@@ -6,7 +6,7 @@
 #define BSG_UNTANGLER_HPP
 
 
-#include <sglib/WorkSpace.hpp>
+#include <sglib/workspace/WorkSpace.hpp>
 class Untangler;
 /**
  * @brief a set of ordered nodes. Can be contiguous or not. node ids refer to nodes in ws.

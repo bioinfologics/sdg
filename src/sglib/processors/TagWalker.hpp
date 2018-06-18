@@ -6,7 +6,7 @@
 #define BSG_TAGWALKER_HPP
 
 
-#include <sglib/WorkSpace.hpp>
+#include <sglib/workspace/WorkSpace.hpp>
 
 class TagWalker {
 public:

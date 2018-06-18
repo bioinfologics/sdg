@@ -42,8 +42,17 @@ int main(int argc, char * argv[]) {
                 exit(0);
             }
 
-            if (read1 == "" or read2 == "" or read_type == "" or output == "") {
-                throw cxxopts::OptionException(" please specify input files, type and output prefix");
+            if (read_type == "") {
+                throw cxxopts::OptionException(" please specify an input type");
+            }
+            if (long_reads == "" and (read1 == "" or read2 == "" )) {
+                throw cxxopts::OptionException(" please specify the paired read files");
+            }
+            if (read_type == "long" and long_reads == "") {
+                throw cxxopts::OptionException(" please specify the long read files");
+            }
+            if (output == "") {
+                throw cxxopts::OptionException(" please specify an output prefix");
             }
 
 

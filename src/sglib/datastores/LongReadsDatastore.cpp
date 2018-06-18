@@ -93,6 +93,7 @@ void LongReadsDatastore::read(std::ifstream &ifs) {
     ifs.read((char *) &s, sizeof(s));
     filename.resize(s);
     ifs.read((char *) filename.data(), s*sizeof(filename[0]));
+    load_index(filename);
 }
 
 void LongReadsDatastore::write(std::ofstream &output_file) {

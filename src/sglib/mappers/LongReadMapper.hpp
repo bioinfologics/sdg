@@ -12,7 +12,6 @@
 #include <sglib/readers/SequenceGraphReader.h>
 #include <sglib/SMR.h>
 #include <sglib/factories/StrandedMinSketchFactory.h>
-#include <sglib/indexers/minSketchIndex.hpp>
 #include <sglib/datastores/LongReadsDatastore.hpp>
 #include <sglib/types/MappingTypes.hpp>
 #include <minimap.h>
@@ -22,7 +21,6 @@
  */
 class LongReadMapper {
     SequenceGraph & sg;
-    minSketchIndex index;
     mm_idx_t *graph_index = nullptr;
     mm_mapopt_t opt;
     uint8_t k=15;
@@ -52,12 +50,19 @@ public:
     std::vector< std::vector < std::vector<LongReadMapping>::size_type > > read_to_mappings;    /// Nodes in the read, 0 or empty = unmapped
 
     LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k=15, uint8_t w=10)
-            : sg(sg), k(k), w(((w == 0) ? (uint8_t)(k * 0.66f) : w) ), index(sg, k, w), datastore(ds) {
+            : sg(sg), k(k), w(((w == 0) ? (uint8_t)(k * 0.66f) : w) ), datastore(ds) {
         mappings_in_node.resize(sg.nodes.size());
         read_to_mappings.resize(datastore.size());
 
         std::vector<const char *> names(sg.nodes.size());
         std::vector<const char *> seqs(sg.nodes.size());
+        if (sg.oldnames.size() == 0) { // TODO: Fix this hack when loading the workspace or when mapping
+            sg.oldnames.resize(sg.nodes.size());
+            for (std::vector<std::string>::size_type i = 1; i < seqs.size(); i++) {
+                sg.oldnames[i] = std::to_string(i);
+                sg.oldnames_to_ids[std::to_string(i)] = sgNodeID_t(i);
+            }
+        }
         for (std::vector<std::string>::size_type i = 1; i < seqs.size(); i++) {
             names[i] = sg.oldnames[i].data();
             seqs[i] = sg.nodes[i].sequence.data();
@@ -130,7 +135,13 @@ public:
     }
 
     void write(std::ofstream &ofs) {
-
+        auto mapSize(mappings.size());
+        ofs.write(reinterpret_cast<char *>(&k), sizeof(k));
+        ofs.write(reinterpret_cast<char *>(&w), sizeof(w));
+        ofs.write(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
+        mappings.reserve(mapSize);
+        ofs.write(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+        sglib::OutputLog() << "Done!" << std::endl;
     }
     LongReadsDatastore datastore;
 };

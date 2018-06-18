@@ -13,7 +13,7 @@
 #include <sglib/datastores/PathsDatastore.hpp>
 #include <sglib/mappers/LongReadMapper.hpp>
 #include "sglib/graph/SequenceGraph.hpp"
-#include "KmerCompressionIndex.hpp"
+#include "sglib/KmerCompressionIndex.hpp"
 
 class LogEntry{
 public:

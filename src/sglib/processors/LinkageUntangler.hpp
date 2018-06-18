@@ -6,7 +6,7 @@
 #define BSG_LINKAGEUNTANGLER_HPP
 
 
-#include <sglib/WorkSpace.hpp>
+#include <sglib/workspace/WorkSpace.hpp>
 #include <sglib/graph/LinkageDiGraph.hpp>
 
 class LinkageUntangler {

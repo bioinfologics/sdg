@@ -9,14 +9,13 @@
 #include "sglib/graph/SequenceGraph.hpp"
 #include "sglib/readers/SequenceGraphReader.h"
 #include "sglib/KmerCompressionIndex.hpp"
-#include "sglib/WorkSpace.hpp"
-#include "sglib/factories/StrandedMinSketchFactory.h"
-#include "sglib/indexers/minSketchIndex.hpp"
+#include "sglib/workspace/WorkSpace.hpp"
+
+
 #include "sglib/indexers/uniqueKmerIndex.hpp"
 #include "sglib/mappers/LinkedReadMapper.hpp"
 #include "sglib/mappers/LongReadMapper.hpp"
 #include "sglib/mappers/PairedReadMapper.hpp"
-//#include "sglib/mappers/threader/NodeMapping.hpp"
 #include "sglib/mappers/threader/NodeMapper.h"
 #include "sglib/mappers/threader/MappingThreader.h"
 %}
@@ -34,16 +33,15 @@
 %include "sglib/graph/SequenceGraph.hpp"
 %include "sglib/indexers/uniqueKmerIndex.hpp"
 %include "sglib/KmerCompressionIndex.hpp"
-%include "sglib/WorkSpace.hpp"
-%include "sglib/factories/StrandedMinSketchFactory.h"
-%include "sglib/indexers/minSketchIndex.hpp"
+%include "sglib/workspace/WorkSpace.hpp"
+
+
 %include "sglib/datastores/LinkedReadsDatastore.hpp"
 %include "sglib/datastores/LongReadsDatastore.hpp"
 %include "sglib/datastores/PairedReadsDatastore.hpp"
 %include "sglib/mappers/LongReadMapper.hpp"
 %include "sglib/mappers/LinkedReadMapper.hpp"
 %include "sglib/mappers/PairedReadMapper.hpp"
-//%include "sglib/mappers/threader/NodeMapping.hpp"
 %include "sglib/mappers/threader/NodeMapper.h"
 %include "sglib/mappers/threader/MappingThreader.h"
 
