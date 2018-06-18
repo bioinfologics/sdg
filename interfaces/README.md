@@ -18,6 +18,9 @@ The library should be available and can be loaded using:
 
 ```python
 import bsg
+bsg.__version__
+    '0.1'
+
 ```
 
 Documentation for the functions is available to the user by doing:

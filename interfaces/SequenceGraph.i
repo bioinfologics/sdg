@@ -62,3 +62,7 @@ namespace std {
    %template(vectorReadMapping) std::vector<ReadMapping>;
    %template(vectorLongReadMapping) std::vector<LongReadMapping>;
 };
+
+%pythoncode %{
+__version__ = "0.1"
+%}
