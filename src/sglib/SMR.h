@@ -188,37 +188,51 @@ public:
      * Filtered vector of RecordType elements
      */
     std::vector<RecordType> process_from_memory(const bool do_work = true) {
-        tmpInstance = sglib::create_temp_directory(tmpBase) + "/";
-        std::ifstream final_file(outdir+"final.kc");
-        if (final_file.is_open() and !do_work) {
-            sglib::OutputLog(sglib::DEBUG) << "Using precomputed sum file at " << outdir << "final.kc" << std::endl;
-            return readFinalkc(outdir + "final.kc");
-        } else {
-            uint64_t numFileRecords(0);
+        uint64_t numFileRecords(0);
 
-            std::chrono::time_point<std::chrono::system_clock> start, end;
-            start = std::chrono::system_clock::now();
+        std::chrono::time_point<std::chrono::system_clock> start, end;
+        start = std::chrono::system_clock::now();
 
-            sglib::OutputLog(sglib::DEBUG) << "Reading From memory" << std::endl;
-            FileReader myFileReader(reader_parameters);
-            sglib::OutputLog(sglib::DEBUG) << "Begin reduction using " << numElementsPerBatch << " elements per batch ("
-                                           << ceil(uint64_t((numElementsPerBatch * sizeof(RecordType) * maxThreads)) /
-                                                   (1.0f * 1024 * 1024 * 1024)) << "GB)" << std::endl;
-            mapElementsToBatches(myFileReader, numFileRecords);
+        sglib::OutputLog(sglib::DEBUG) << "Reading From memory" << std::endl;
+        FileReader myFileReader(reader_parameters);
+        sglib::OutputLog(sglib::DEBUG) << "Begin reduction using " << numElementsPerBatch << " elements per batch ("
+                                       << ceil(uint64_t((numElementsPerBatch * sizeof(RecordType) * maxThreads)) /
+                                               (1.0f * 1024 * 1024 * 1024)) << "GB)" << std::endl;
 
-            readerStatistics = myFileReader.getSummaryStatistics();
 
-            end = std::chrono::system_clock::now();
-            std::chrono::duration<double> elapsed_seconds = end - start;
-            sglib::OutputLog(sglib::DEBUG) << "Done reduction in " << elapsed_seconds.count() << "s" << std::endl;
-            //TODO: remove instance / never create the final files?
-            std::vector<RecordType> result(getRecords());
-            //for (const auto& it : result) {
-             //   if(it.count > 1) std::cout << (int)it.count << std::endl;
-            //}
-            sglib::remove_directory(tmpInstance);
-            return result;
+        FileRecord fileRecord;
+        RecordFactory myRecordFactory(factory_parameters);
+
+        std::vector<RecordType> result;
+        while (myFileReader.next_record(fileRecord)) {
+            std::vector<RecordType> record;
+            myRecordFactory.setFileRecord(fileRecord);
+            myRecordFactory.next_element(record);
+            result.insert(result.end(), record.cbegin(), record.cend());
         }
+
+        std::sort(result.begin(),result.end());
+        auto wi=result.begin();
+        auto ri=result.begin();
+        auto nri=result.begin();
+        while (ri<result.end()){
+            while (nri!=result.end() and nri==ri) ++nri;
+            if (nri-ri==1) {
+                *wi=*ri;
+                ++wi;
+            }
+            ri=nri;
+        }
+        result.resize(wi-result.begin());
+
+
+        readerStatistics = myFileReader.getSummaryStatistics();
+
+        end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_seconds = end - start;
+        sglib::OutputLog(sglib::DEBUG) << "Done reduction in " << elapsed_seconds.count() << "s" << std::endl;
+
+        return result;
     };
 
     /**
