@@ -120,3 +120,31 @@ void LinkageDiGraph::report_connectivity() {
     sglib::OutputLog()<<"Connected node types:  1-1: "<<solved<<"  1-0: "<<solved_disconnected<<"  1-N: "<<solved_complex
                        <<"  N-N: "<<complex<<"  N-0: "<<complex_disconected<<std::endl;
 }
+
+
+std::vector<std::vector<sgNodeID_t>> LinkageDiGraph::get_all_lines(uint16_t min_nodes) const {
+    std::vector<std::vector<sgNodeID_t>> unitigs;
+    std::vector<bool> used(sg.nodes.size(),false);
+
+    for (auto n=1;n<sg.nodes.size();++n){
+        if (used[n] or sg.nodes[n].status==sgNodeDeleted) continue;
+        used[n]=true;
+        std::vector<sgNodeID_t> path={n};
+
+        //two passes: 0->fw, 1->bw, path is inverted twice, so still n is +
+        for (auto pass=0; pass<2; ++pass) {
+            //walk til a "non-unitig" junction
+            for (auto fn = get_fw_links(path.back()); fn.size() == 1; fn = get_fw_links(path.back())) {
+                if (fn[0].dest != n and fn[0].dest != -n and get_bw_links(fn[0].dest).size() == 1) {
+                    path.emplace_back(fn[0].dest);
+                    used[fn[0].dest > 0 ? fn[0].dest : -fn[0].dest] = true;
+                } else break;
+            }
+            std::vector<sgNodeID_t> rpath;
+            for (auto rn=path.rbegin();rn!=path.rend();++rn) rpath.emplace_back(-*rn);
+            path=rpath;
+        }
+        if (path.size()>=min_nodes) unitigs.push_back(path);
+    }
+    return unitigs;
+}

@@ -32,6 +32,7 @@ public:
 
     //Graph untangling methods
     void expand_trivial_repeats(const LinkageDiGraph &);
+    void expand_linear_regions(const LinkageDiGraph &);
 
     //Problem localisation methods
 

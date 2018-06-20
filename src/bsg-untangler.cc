@@ -108,6 +108,9 @@ int main(int argc, char * argv[]) {
             tag_ldg.remove_transitive_links(10);
             tag_ldg.report_connectivity();
             ws.sg.write_to_gfa(output_prefix+"_tag_nt.gfa", {}, {}, selnodes, tag_ldg.links);
+            sglib::OutputLog()<<"Simplifying linear paths"<<std::endl;
+            lu.expand_linear_regions(tag_ldg);
+            sglib::OutputLog()<<"TODO: remap reads..."<<std::endl;
             sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
             //HACK: eliminate nodes with N-N and try again.
             auto sel_orig=lu.selected_nodes;
@@ -127,6 +130,8 @@ int main(int argc, char * argv[]) {
             tag_ldg_noNN.report_connectivity();
             ws.sg.write_to_gfa(output_prefix+"_tag_noNN_nt.gfa", {}, {}, selnodes, tag_ldg_noNN.links);
             lu.selected_nodes=sel_orig;
+
+
 
             exit(0);
 

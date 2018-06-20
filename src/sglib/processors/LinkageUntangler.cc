@@ -462,3 +462,11 @@ void LinkageUntangler::expand_trivial_repeats(const LinkageDiGraph & ldg) {
     }
     sglib::OutputLog()<<"Repeat expansion: AA:"<<aa<<"  AB:"<<ab<<std::endl;
 }
+
+void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
+    sglib::OutputLog()<<"Expanding linear regions..."<<std::endl;
+    sglib::OutputLog()<<"Looking for \"lines\"..."<<std::endl;
+    auto lines=ldg.get_all_lines(2);
+    sglib::OutputLog()<<"There are "<<lines.size()<<" \"lines\" to analyse"<<std::endl;
+
+}
