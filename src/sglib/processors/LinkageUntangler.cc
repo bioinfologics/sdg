@@ -444,6 +444,7 @@ LinkageDiGraph LinkageUntangler::make_longRead_linkage(int min_reads) {
                     sgNodeID_t n1=lm.mappings[lm.read_to_mappings[r][i]].node;
                     sgNodeID_t n2=lm.mappings[lm.read_to_mappings[r][j]].node;
                     if (n1 == 0 or n2 == 0 or n1 == n2 or !selected_nodes[n1] or !selected_nodes[n2]) continue;
+                    n1=-n1;//get the output end
                     if (llabs(n1) > llabs(n2)) std::swap(n1, n2);
                     ++lv[std::make_pair(n1, n2)];
                 }
@@ -451,26 +452,6 @@ LinkageDiGraph LinkageUntangler::make_longRead_linkage(int min_reads) {
         }
         ++rmi;
     }
-
-    sglib::OutputLog()<<"adding links with "<<min_reads<<" votes"<<std::endl;
-    //std::vector<std::vector<std::pair<sgNodeID_t ,uint64_t>>> nodelinks(ws.sg.nodes.size());
-    for (auto l:lv) {
-        if (l.second>=min_reads){
-            //todo: size, appropriate linkage handling, etc
-            //todo: check alternative signs for same linkage
-            auto s=l.first.first;
-            auto d=l.first.second;
-            auto v1=std::make_pair(-s,d);
-            auto v2=std::make_pair(-s,-d);
-            auto v3=std::make_pair(s,-d);
-            if (lv.count(v1) and lv[v1]>5*l.second) continue;
-            if (lv.count(v2) and lv[v2]>5*l.second) continue;
-            if (lv.count(v3) and lv[v3]>5*l.second) continue;
-            ldg.add_link(l.first.first,l.first.second,0);
-        }
-    }
-
-
 
     return ldg;
 }

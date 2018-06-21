@@ -54,36 +54,24 @@ public:
         mappings_in_node.resize(sg.nodes.size());
         read_to_mappings.resize(datastore.size());
 
-        std::vector<const char *> names(sg.nodes.size());
-        std::vector<const char *> seqs(sg.nodes.size());
-        if (sg.oldnames.size() == 0) { // TODO: Fix this hack when loading the workspace or when mapping
-            sg.oldnames.resize(sg.nodes.size());
-            for (std::vector<std::string>::size_type i = 1; i < seqs.size(); i++) {
-                sg.oldnames[i] = std::to_string(i);
-                sg.oldnames_to_ids[std::to_string(i)] = sgNodeID_t(i);
-            }
-        }
-        for (std::vector<std::string>::size_type i = 1; i < seqs.size(); i++) {
-            names[i] = sg.oldnames[i].data();
-            seqs[i] = sg.nodes[i].sequence.data();
-        }
-
         mm_mapopt_init(&opt);
         opt.flag |= MM_F_CIGAR;
     }
 
     void update_graph_index() {
-        std::vector<const char *> names(sg.nodes.size());
+        std::vector<std::string> names(sg.nodes.size());
+        std::vector<const char *> pt_names(sg.nodes.size());
         std::vector<const char *> seqs(sg.nodes.size());
         for (std::vector<std::string>::size_type i = 1; i < seqs.size(); i++) {
-            names[i] = sg.oldnames[i].data();
+            names[i] = std::to_string(i);
+            pt_names[i] = names[i].data();
             seqs[i] = sg.nodes[i].sequence.data();
         }
         if (graph_index != nullptr) {
             mm_idx_destroy(graph_index);
             graph_index = nullptr;
         }
-        graph_index = mm_idx_str(w, k, 0, 14, static_cast<int>(seqs.size()-1), &seqs[1], &names[1]);
+        graph_index = mm_idx_str(w, k, 0, 14, static_cast<int>(seqs.size()-1), &seqs[1], &pt_names[1]);
         mm_mapopt_update(&opt, graph_index);
     }
 

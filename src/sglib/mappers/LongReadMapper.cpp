@@ -10,7 +10,6 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 #pragma omp parallel
     {
         mm_tbuf_t *buf = mm_tbuf_init();
-        //std::ofstream matchOutput(std::string("thread_")+std::to_string(omp_get_thread_num())+std::string(".paf"));
 #pragma omp for
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
             if (!((readIDs.size()>0 and readIDs.count(readID)>0) or (readIDs.empty() and read_to_mappings[readID].empty())))
@@ -24,28 +23,19 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 
             if (n_regs0<=1) {
                 for (int j = 0; j < n_regs0; j++) {
-                    auto node = sg.oldnames_to_ids.at(graph_index->seq[regs0[j].rid].name);
-#pragma omp critical(printMatch)
-                    {
-//                        printMatch(graph_index, matchOutput, readID, read_name, read_len, regs0, j);
-                    }
+                    auto node = sgNodeID_t (graph_index->seq[regs0[j].rid].name);
                     LongReadMapping mapping = createMapping(readID, regs0, j, node);
                     thread_mappings[omp_get_thread_num()].emplace_back(mapping);
                 }
             }
             if (n_regs0 > 1) {
                 for (int j = 0; j < n_regs0 - 1; ++j) {
-                    auto fromNode = sg.oldnames_to_ids.at(graph_index->seq[regs0[j].rid].name);
-                    auto toNode = sg.oldnames_to_ids.at(graph_index->seq[regs0[j+1].rid].name);
+                    auto fromNode = sgNodeID_t (graph_index->seq[regs0[j].rid].name);
+                    auto toNode = sgNodeID_t (graph_index->seq[regs0[j+1].rid].name);
                     LongReadMapping mapping = createMapping(readID, regs0, j, fromNode);
                     thread_mappings[omp_get_thread_num()].emplace_back(mapping);
                     mapping = createMapping(readID, regs0, j+1, toNode);
                     thread_mappings[omp_get_thread_num()].emplace_back(mapping);
-#pragma omp critical(printMatch)
-                    {
-//                        printMatch(graph_index, matchOutput, readID, read_name, read_len, regs0, j);
-//                        printMatch(graph_index, matchOutput, readID, read_name, read_len, regs0, j + 1);
-                    }
                 }
             }
             for (int i = 0; i<n_regs0;i++) free(regs0[i].p);
