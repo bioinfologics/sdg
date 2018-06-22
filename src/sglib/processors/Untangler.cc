@@ -1473,33 +1473,38 @@ std::vector<Backbone> Untangler::create_backbones(uint64_t min_size, float min_c
     //check and remove simple linear transitive connections
 
     //check nodes with multiple incoherent transtitions (repeats)
-/*
-    std::vector<bool> used(selected_nodes.size(),false);
-    for (auto i1=0;i1<selected_nodes.size();++i1) {
-        if (selected_nodes[i1]) continue;
-        auto n1 = selected_nodes[i1];
-        backbones.emplace_back(ws,*this);
-        used[n1]=true;
-        std::vector<sgNodeID_t> last_added={i1};
-        backbones.back().nodes.push_back(n1);
-        while (not last_added.empty()){
-            std::vector<sgNodeID_t> new_last_added;
-            for (auto x:last_added){
-                for (auto y:node_neighbours[x]){
-                    if (not used[y]){
-                        used[y]=true;
-                        backbones.back().nodes.push_back(selected_nodes[y]);
-                        new_last_added.push_back(y);
-                    }
-                }
-            }
-            last_added=new_last_added;
-        }
-        std::cout<<"new backbone: ";
-        for (auto n:backbones.back().nodes) std::cout<<"seq"<<n<<", ";
-        std::cout<<std::endl;
-    }
-*/
+
+//    std::vector<bool> used(selected_nodes.size(),false);
+//    for (auto i1=0;i1<selected_nodes.size();++i1) {
+////        if (selected_nodes[i1]) continue;
+//        if (used[i1]) continue;
+//        auto n1 = selected_nodes[i1];
+//        backbones.emplace_back(ws,*this);
+//        used[n1]=true;
+//        std::vector<sgNodeID_t> last_added={i1};
+//        backbones.back().nodes.push_back(n1);
+//        while (not last_added.empty()){
+//            std::vector<sgNodeID_t> new_last_added;
+//            for (auto x:last_added){
+////                for (auto y:node_neighbours[x]){
+//                auto node_neighbours = fw_neighbours[x];
+//                node_neighbours.insert(node_neighbours.end(), bw_neighbours[x].begin(), bw_neighbours[x].end());
+////                for (auto y:node_neighbours[x]){
+//                for (auto y:node_neighbours){
+//                    if (not used[y]){
+//                        used[y]=true;
+//                        backbones.back().nodes.push_back(selected_nodes[y]);
+//                        new_last_added.push_back(y);
+//                    }
+//                }
+//            }
+//            last_added=new_last_added;
+//        }
+//        std::cout<<"new backbone: ";
+//        for (auto n:backbones.back().nodes) std::cout<<"seq"<<n<<", ";
+//        std::cout<<std::endl;
+//    }
+
     return backbones;
 
 }

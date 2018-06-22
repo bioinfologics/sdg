@@ -5,6 +5,8 @@
 
 #include "KmerCompressionIndex.hpp"
 #include <atomic>
+#include <backward/strstream>
+#include <sstream>
 #include <sglib/readers/FileReader.h>
 
 
@@ -331,18 +333,27 @@ void KmerCompressionIndex::compute_kci_profiles(std::string filename) {
     // vector to store vector of zero counts
     std::ofstream of(filename+"_kci.csv");
 
-    for (sgNodeID_t n=0; n<sg.nodes.size(); ++n){
-        of << "seq" <<n<<" | ";
+
+//    for (sgNodeID_t n: node_whitelist){
+        // if para chequear que el nodo esta en el grafo
+#pragma omp parallel for schedule(static, 20)
+    for (auto n=1; n<sg.nodes.size(); ++n){
+        if (sg.nodes[n].status == sgNodeDeleted) continue;
+        std::stringstream ss;
+        ss << "seq" << n <<" | ";
+        // TODO: complete this to throw a warning when accessing a deleted node
         for (auto var=0; var < read_counts.size(); ++var) {
             auto zero_count = 0;
             auto read_coverage = compute_node_coverage_profile(sg.nodes[n].sequence, var);
             for (auto c: read_coverage[0]) {
-                if (c == 0){
+                // TODO: Corregir este threhold
+                if (c < 3){
                     zero_count++;
                 }
             }
-            of << zero_count << ",";
+            ss << zero_count << ",";
         }
-        of << std::endl;
+#pragma omp critical
+        of << ss.str() << std::endl;
     }
 }
