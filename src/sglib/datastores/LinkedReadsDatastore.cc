@@ -289,7 +289,7 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
     all_kmers.reserve(read_ids.size()*(readsize-k+1));
     for (auto rid:read_ids){
             skf.produce_all_kmers(blrsg.get_read_sequence(rid),all_kmers);
-     }
+    }
     std::sort(all_kmers.begin(),all_kmers.end());
     std::unordered_set<uint64_t> kset;
     auto ri=all_kmers.begin();
@@ -334,7 +334,7 @@ const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {
 
 void BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {
     auto read_ids=datastore.get_tag_reads(tag);
-    counts.reserve(counts.size()+read_ids.size()*(datastore.readsize-K+1));
+    //counts.reserve(counts.size()+read_ids.size()*(datastore.readsize-K+1));
     for (auto rid:read_ids){
         skf.produce_all_kmers(bprsg.get_read_sequence(rid),counts);
     }
@@ -343,7 +343,9 @@ void BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {
 std::unordered_set<uint64_t> BufferedTagKmerizer::get_tags_kmers(int min_tag_cov, std::set<bsg10xTag> tags) {
     counts.clear();
     for (auto t:tags) get_tag_kmers(t);
+    std::cout<<"Sorting "<<counts.size()<<" kmers..."<<std::endl;
     std::sort(counts.begin(),counts.end());
+    std::cout<<"...DONE"<<std::endl;
     uint64_t curr_k=UINT64_MAX;
     int curr_count=0;
     auto wi=counts.begin();

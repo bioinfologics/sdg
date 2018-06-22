@@ -696,7 +696,7 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
             //now check for untagged (i.e. kmer coverage)
             if (tagkmers1.empty()){
                 std::cout<<"Generating tag kmers for current solution as this is the first walk-in situation"<<std::endl;
-                BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,5000,200000,1000);
+                BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,200000,1000);
                 std::set<bsg10xTag> exctags1,exctags2;
                 for (auto t:tags1) if (tags2.count(t)==0) exctags1.insert(t);
                 for (auto t:tags2) if (tags1.count(t)==0) exctags2.insert(t);
@@ -1060,7 +1060,7 @@ std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_si
         }
     }
     tsg.write_to_gfa("tag_neighbours_imbdir.gfa");
-    BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,5000,200000,1000);
+    BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,200000,1000);
     uint64_t perf_ts=0;
     for (auto n=1;n<tsg.nodes.size();++n){
         auto b=n;
@@ -1244,7 +1244,7 @@ uint64_t Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float mi
     std::vector<std::pair<std::pair<sgNodeID_t,sgNodeID_t>,SequenceGraphPath>> final_sols;
 #pragma omp parallel
     {
-        BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,5000,200000,1000);
+        BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,200000,1000);
 #pragma omp for schedule(dynamic,10)
         for (auto idx = 0; idx < from_to.size(); ++idx) {
             auto &ft = from_to[idx];

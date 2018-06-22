@@ -464,9 +464,196 @@ void LinkageUntangler::expand_trivial_repeats(const LinkageDiGraph & ldg) {
 }
 
 void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
-    sglib::OutputLog()<<"Expanding linear regions..."<<std::endl;
-    sglib::OutputLog()<<"Looking for \"lines\"..."<<std::endl;
+    sglib::OutputLog()<<"Starting linear region expansion..."<<std::endl;
+    //sglib::OutputLog()<<"Looking for \"lines\"..."<<std::endl;
     auto lines=ldg.get_all_lines(2);
-    sglib::OutputLog()<<"There are "<<lines.size()<<" \"lines\" to analyse"<<std::endl;
+    sglib::OutputLog()<<"Creating tag sets for "<<lines.size()<<" linear regions"<<std::endl;
+    //sglib::OutputLog()<<"TODO: now use tags and LMPs to find paths between elements in the line"<<std::endl;
+    //lines.resize(50);
+    //Step 1: get tagsets for lines.
+    std::vector<std::set<bsg10xTag>> linetagsets;
+    linetagsets.reserve(lines.size());
+    BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,100000,1000);
+    for (auto l:lines){
+        //sglib::OutputLog()<<"Analising line: ";
+        //for (auto &ln:l) std::cout<<"seq"<<llabs(ln)<<", ";
+        //for (auto &ln:l) std::cout<<ln<<" ";
+        //std::cout<<std::endl;
+        std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
+        for (auto &ln:l) {
+            std::map<bsg10xTag ,uint32_t> ntagcounts;
+            for (auto rm:ws.linked_read_mappers[0].reads_in_node[llabs(ln)]){
+                auto tag=ws.linked_read_datastores[0].get_read_tag(rm.read_id);
+                ++ntagcounts[tag];
+            }
+            for (auto ntc:ntagcounts) {
+                ++tagcounts[ntc.first].first;
+                tagcounts[ntc.first].second+=ntc.second;
+            }
+        }
+        std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagtotals;
+        std::set<bsg10xTag> lineTagSet;
+        for (auto tc:tagcounts) {
+            auto tag=tc.first;
+            auto reads=ws.linked_read_datastores[0].get_tag_reads(tc.first);
+            std::set<sgNodeID_t> nodes;
+            for (auto r:reads) nodes.insert(ws.linked_read_mappers[0].read_to_node[r]);
+            tagtotals[tag].first=nodes.size()-nodes.count(0);
+            tagtotals[tag].second=reads.size();
+            if (tc.second.first>1 and reads.size()<3000) lineTagSet.insert(tc.first);
+        }
+        linetagsets.push_back(lineTagSet);
+        if (linetagsets.size()%100==0) std::cout<<"."<<std::flush;
+    }
+    std::cout<<std::endl;
+    sglib::OutputLog()<<"Creating path collections to be evaluated for "<<lines.size()<<" linear regions"<<std::endl;
+    std::vector<std::vector<std::vector<SequenceGraphPath>>> alternatives;
+    uint64_t total_paths=0;
+    alternatives.reserve(lines.size());
+    for (auto l:lines) {
+        alternatives.emplace_back();
+        for (auto i = 0; i < l.size() - 1; ++i) {
+            //get all possible paths between 2 nodes
+            auto from = l[i];
+            auto to = l[i + 1];
+            auto paths = ws.sg.find_all_paths_between(from, to, 400000);
+            alternatives.back().emplace_back(paths);
+            total_paths+=paths.size();
+            //sglib::OutputLog() << paths.size() << " paths to go from " << from << " to " << to << std::endl;
+        }
+        if (alternatives.size()%100==0) std::cout<<"."<<std::flush;
+    }
+    std::cout<<std::endl;
+    sglib::OutputLog()<<"Total paths to evaluate: "<<total_paths<<std::endl;
+    //Now use a function that only counts coverage on the set of kmers from all paths collections for each line
+    //kmer_coverage_in_tagreads(&std::map<kmer, coverage> (init at 0), std::set<tag> linetagset);
+
+    class KmerMapCreator : public  KMerFactory {
+    public:
+        explicit KmerMapCreator(uint8_t k) : KMerFactory(k){}
+        inline void create_all_kmers(const char * seq, std::unordered_map<uint64_t,uint32_t> &mers){
+            // TODO: Adjust for when K is larger than what fits in uint64_t!
+            last_unknown=0;
+            fkmer=0;
+            rkmer=0;
+            auto s=seq;
+            while (*s!='\0' and *s!='\n') {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        mers[fkmer]=0;
+                    } else {
+                        // Is bwd
+                        mers[rkmer]=0;
+                    }
+                }
+                ++s;
+            }
+        }
+    };
+    class KmerMapCounter : public  KMerFactory {
+    public:
+        explicit KmerMapCounter(uint8_t k) : KMerFactory(k){}
+        inline void count_all_kmers(const char * seq, std::unordered_map<uint64_t,uint32_t> &mers){
+            // TODO: Adjust for when K is larger than what fits in uint64_t!
+            last_unknown=0;
+            fkmer=0;
+            rkmer=0;
+            auto s=seq;
+            while (*s!='\0' and *s!='\n') {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        auto m=mers.find(fkmer);
+                        if (m!=mers.end()) ++m->second;
+                    } else {
+                        // Is bwd
+                        auto m=mers.find(rkmer);
+                        if (m!=mers.end()) ++m->second;
+                    }
+                }
+                ++s;
+            }
+        }
+    };
+    std::cout << "creating and populating the maps as of now" << std::endl;
+    std::vector<std::unordered_map<uint64_t, uint32_t>> linekmercoverages;
+    linekmercoverages.resize(lines.size());
+#pragma omp parallel
+    {
+        KmerMapCounter km_count(31);
+        KmerMapCreator km_create(31);
+        BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+        uint64_t done=0;
+#pragma omp for schedule(static, 100)
+        for (auto i = 0; i < lines.size(); ++i) {
+            //map with all kmers of paths to be evaluated
+            std::unordered_map<uint64_t, uint32_t> kmercoverages;
+
+            for (auto &alts:alternatives[i]) {
+                for (auto &a:alts) {
+                    for (auto n:a.nodes) {
+                        km_create.create_all_kmers(ws.sg.nodes[llabs(n)].sequence.c_str(), kmercoverages);
+                    }
+                }
+            }
+            for (auto &t:linetagsets[i]) {
+                for (auto rid:ws.linked_read_datastores[0].get_tag_reads(t)) {
+                    km_count.count_all_kmers(blrsg.get_read_sequence(rid), kmercoverages);
+                }
+            }
+#pragma omp critical
+            linekmercoverages[i]=kmercoverages;
+            ++done;
+            if (done % 100 == 0) std::cout << "." << std::flush;
+            //count from the tag's reads
+            //btk.get_tag_kmers()
+        }
+    }
+    std::cout<<"DONE"<<std::endl;
+
+    //sglib::OutputLog()<<"Selected Tags in line: "<<lineTagSet.size()<<std::endl;
+    //auto lineKmerSet=btk.get_tags_kmers(3,lineTagSet);
+    //sglib::OutputLog()<<"Selected Kmers in line: "<<lineKmerSet.size()<<std::endl;
+
+//        for (auto c=l.size();c>1;--c) {
+//            for (auto tc:tagcounts) {
+//                if (tc.second.first == c)
+//                    std::cout << "Tag: " << tc.first
+//                              << "  Nodes: " << tc.second.first << "/" <<tagtotals[tc.first].first
+//                              << "  Reads: " << tc.second.second << " / " << tagtotals[tc.first].second << std::endl;
+//            }
+//        }
+//        for (auto c=l.size();c>1;--c) {
+//            for (auto tc:tagcounts) {
+//                if (tc.second.first == c)
+//                    std::cout << tc.first
+//                              << ", " << tc.second.first << ", " <<tagtotals[tc.first].first
+//                              << ", " << tc.second.second << ", " << tagtotals[tc.first].second << std::endl;
+//            }
+//        }
+    //check tags shared with other nodes in the line and "new tags"
+/*        for (auto &ln:l)
+        std::cout<<std::endl;
+        for (auto i=0;i<l.size()-1;++i) {
+            //get all possible paths between 2 nodes
+            auto from=l[i];
+            auto to=l[i+1];
+            auto paths=ws.sg.find_all_paths_between(from,to,400000);
+            sglib::OutputLog()<<paths.size()<<" paths to go from "<<from<<" to "<<to<<std::endl;
+
+        }*/
+
+
+
+
+
 
 }
+

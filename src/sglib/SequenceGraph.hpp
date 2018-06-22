@@ -133,6 +133,7 @@ public:
     explicit SequenceGraphPath(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
     std::string get_fasta_header();
     std::string get_sequence();
+    size_t get_sequence_size_fast();
     std::vector<Link> get_next_links() { return sg.get_fw_links(nodes.back());}
     bool extend_if_coherent(SequenceGraphPath s);
     void reverse();

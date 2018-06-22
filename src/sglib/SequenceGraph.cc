@@ -595,6 +595,31 @@ std::string SequenceGraphPath::get_sequence() {
     return s;
 }
 
+size_t SequenceGraphPath::get_sequence_size_fast() {
+    size_t size=0;
+    //std::string s="";
+    sgNodeID_t pnode=0;
+    // just iterate over every node in path - contig names are converted to ids at construction
+    for (auto &n:nodes) {
+        std::string nseq;
+        size=sg.nodes[llabs(n)].sequence.size();
+        if (pnode !=0){
+            //find link between pnode' output (+pnode) and n's sink (-n)
+            auto l=sg.links[llabs(pnode)].begin();
+            for (;l!=sg.links[llabs(pnode)].end();++l)
+                if (l->source==pnode and l->dest==n) break;
+            if (l==sg.links[llabs(pnode)].end()) {
+                std::cout<<"can't find a link between "<<pnode<<" and "<<n<<std::endl;
+                throw std::runtime_error("path has no link");
+            } else {
+                size+=l->dist;
+            }
+        }
+        pnode=-n;
+    }
+    return size;
+}
+
 std::vector<SequenceGraphPath> SequenceGraph::get_all_unitigs(uint16_t min_nodes) {
     std::vector<SequenceGraphPath> unitigs;
     std::vector<bool> used(nodes.size(),false);
@@ -931,7 +956,7 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
         next_paths.clear();
         for (auto &p:current_paths){
             //if node is a destination add it to final nodes
-            if (p.nodes.back()==-to) std::cout<<"WARNING: found path to -TO node"<<std::endl;
+            if (p.nodes.back()==-to) return {};//std::cout<<"WARNING: found path to -TO node"<<std::endl;
             if (p.nodes.back()==to) {
                 final_paths.push_back(p);
                 final_paths.back().nodes.pop_back();
@@ -940,13 +965,13 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
             else {
                 for (auto l:get_fw_links(p.nodes.back())){
                     if (std::find(p.nodes.begin(),p.nodes.end(),l.dest)!=p.nodes.end()) {
-                        std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
+                        //std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
                         return {};
                         //continue;
                     }
                     next_paths.push_back(p);
                     next_paths.back().nodes.push_back(l.dest);
-                    if (next_paths.back().get_sequence().size()>max_size) next_paths.pop_back();
+                    if (next_paths.back().get_sequence_size_fast()>max_size) next_paths.pop_back();
                 }
             }
         }
