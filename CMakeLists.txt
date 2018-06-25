@@ -79,15 +79,14 @@ include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
 ExternalProject_Add(minimap2
         PREFIX minimap2
         DOWNLOAD_DIR tmp/minimap2/download
-        URL https://github.com/lh3/minimap2/archive/v2.10.tar.gz
+        DOWNLOAD_COMMAND wget https://github.com/lh3/minimap2/archive/v2.10.tar.gz && tar xf v2.10.tar.gz
         UPDATE_COMMAND ""
-        SOURCE_DIR tmp/minimap2/
+        SOURCE_DIR tmp/minimap2/download/minimap2-2.10
         BUILD_IN_SOURCE 1
         CONFIGURE_COMMAND ""
         BUILD_COMMAND make CFLAGS=-fPIC libminimap2.a
         INSTALL_COMMAND ""
         )
-
 ExternalProject_Get_Property(minimap2 SOURCE_DIR)
 message(STATUS "Source directory of minimap2 ${SOURCE_DIR}")
 set(MM2_LIBRARY_DIR ${SOURCE_DIR})
