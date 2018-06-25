@@ -427,7 +427,7 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc)
 }
 
 
-LinkageDiGraph LinkageUntangler::make_longRead_linkage(int min_reads) {
+LinkageDiGraph LinkageUntangler::make_longRead_linkage() {
     SequenceGraph& sg(ws.getGraph());
     LinkageDiGraph ldg(sg);
 

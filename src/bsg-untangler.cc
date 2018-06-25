@@ -136,6 +136,15 @@ int main(int argc, char * argv[]) {
 
 
         }
+        if (!ws.getLongReadMappers().empty()) {
+            auto long_ldg = lu.make_longRead_linkage();
+            long_ldg.report_connectivity();
+            ws.getGraph().write_to_gfa("long_links.gfa", {}, {}, {}, long_ldg.links);
+            long_ldg.remove_transitive_links(10);
+            long_ldg.report_connectivity();
+            ws.getGraph().write_to_gfa("long_links_no_transitive.gfa", {}, {}, {}, long_ldg.links);
+            ws.getGraph().write_to_gfa("long_links_no_transitive_selected_only.gfa", {}, {}, selnodes, long_ldg.links);
+        }
         gldg.report_connectivity();
         gldg.add_links(gldg);
         ws.getGraph().write_to_gfa("general_links.gfa", {}, {}, {}, gldg.links);

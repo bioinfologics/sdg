@@ -5,7 +5,6 @@
 
 #include "KmerCompressionIndex.hpp"
 #include <atomic>
-#include <backward/strstream>
 #include <sstream>
 #include <sglib/readers/FileReader.h>
 

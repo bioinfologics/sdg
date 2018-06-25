@@ -102,7 +102,7 @@ public:
         inf.read(reinterpret_cast<char *>(&k), sizeof(k));
         inf.read(reinterpret_cast<char *>(&w), sizeof(w));
         inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
-        mappings.reserve(mapSize);
+        mappings.resize(mapSize);
         inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
 
         sglib::OutputLog() << "Updating read mapping indexes!" << std::endl;
