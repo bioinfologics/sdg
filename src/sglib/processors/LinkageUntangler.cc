@@ -469,7 +469,8 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
     auto lines=ldg.get_all_lines(2);
     sglib::OutputLog()<<"Creating tag sets for "<<lines.size()<<" linear regions"<<std::endl;
     //sglib::OutputLog()<<"TODO: now use tags and LMPs to find paths between elements in the line"<<std::endl;
-    //lines.resize(50);
+    //sglib::OutputLog()<<"USING ONLY 100 lines as a test"<<std::endl;
+    //lines.resize(100);
     //Step 1: get tagsets for lines.
     std::vector<std::set<bsg10xTag>> linetagsets;
     linetagsets.reserve(lines.size());
@@ -513,7 +514,6 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
     for (auto l:lines) {
         alternatives.emplace_back();
         for (auto i = 0; i < l.size() - 1; ++i) {
-            //get all possible paths between 2 nodes
             auto from = l[i];
             auto to = l[i + 1];
             auto paths = ws.sg.find_all_paths_between(from, to, 400000);
@@ -582,6 +582,34 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
             }
         }
     };
+    class KmerVectorCreator : public  KMerFactory {
+    public:
+        explicit KmerVectorCreator(uint8_t k) : KMerFactory(k){}
+        inline std::vector<uint64_t> count_all_kmers(const char * seq){
+            // TODO: Adjust for when K is larger than what fits in uint64_t!
+            std::vector<uint64_t> v;
+            last_unknown=0;
+            fkmer=0;
+            rkmer=0;
+            auto s=seq;
+            while (*s!='\0' and *s!='\n') {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        v.emplace_back(fkmer);
+                    } else {
+                        // Is bwd
+                        v.emplace_back(rkmer);
+                    }
+                }
+                ++s;
+            }
+            return v;
+        }
+    };
     std::cout << "creating and populating the maps as of now" << std::endl;
     std::vector<std::unordered_map<uint64_t, uint32_t>> linekmercoverages;
     linekmercoverages.resize(lines.size());
@@ -590,12 +618,19 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
         KmerMapCounter km_count(31);
         KmerMapCreator km_create(31);
         BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+        std::unordered_map<uint64_t, uint32_t> kmercoverages;
         uint64_t done=0;
 #pragma omp for schedule(static, 100)
         for (auto i = 0; i < lines.size(); ++i) {
             //map with all kmers of paths to be evaluated
-            std::unordered_map<uint64_t, uint32_t> kmercoverages;
-
+            kmercoverages.clear();
+//            size_t t=0;
+//            for (auto &alts:alternatives[i]) {
+//                for (auto &a:alts) {
+//                    for (auto n:a.nodes) t += ws.sg.nodes[llabs(n)].sequence.size();
+//                }
+//            }
+//            kmercoverages.reserve(t);
             for (auto &alts:alternatives[i]) {
                 for (auto &a:alts) {
                     for (auto n:a.nodes) {
@@ -617,7 +652,35 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
         }
     }
     std::cout<<"DONE"<<std::endl;
-
+    sglib::OutputLog()<<"evaluating alternative paths between each pair of adjacent nodes"<<std::endl;
+    KmerVectorCreator kvc(31);
+    uint64_t solved=0,unsolved=0;
+    for (auto i=0;i<lines.size();++i){
+        for (auto ia=0;ia<alternatives[i].size();++ia){
+            int best=-1;
+            for (auto j=0;j<alternatives[i][ia].size();++j){
+                uint64_t missed=0;
+                for (auto n:alternatives[i][ia][j].nodes) {
+                    for (auto x:kvc.count_all_kmers(ws.sg.nodes[llabs(n)].sequence.c_str())) {
+                        if (linekmercoverages[i][x] < 4) ++missed;//TODO: maybe ask for more than 1 read coverage?
+                    }
+                }
+                if (missed==0){
+                    if (best==-1) {
+                        best = j;
+                    }
+                    else {
+                        best = -1;
+                        break;
+                    }
+                }
+            }
+            //std::cout<<"Solution for line "<<i<<" jump #"<<ia<<": "<<best<<" / "<<alternatives[i][ia].size() <<std::endl;
+            if (best==-1) ++unsolved;
+            else ++solved;
+        }
+    }
+    std::cout<<"Solved: "<<solved<<"   Unsolved: "<<unsolved<<std::endl;
     //sglib::OutputLog()<<"Selected Tags in line: "<<lineTagSet.size()<<std::endl;
     //auto lineKmerSet=btk.get_tags_kmers(3,lineTagSet);
     //sglib::OutputLog()<<"Selected Kmers in line: "<<lineKmerSet.size()<<std::endl;

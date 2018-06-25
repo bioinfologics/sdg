@@ -216,7 +216,7 @@ add_executable(bsg-untangler
         src/sglib/processors/Untangler.hpp
         src/sglib/processors/Untangler.cc
         src/sglib/processors/TagWalker.cc src/sglib/processors/TagWalker.hpp
-        src/sglib/processors/FlowFollower.cc src/sglib/processors/FlowFollower.hpp src/sglib/processors/LinkageUntangler.cc src/sglib/processors/LinkageUntangler.hpp)
+        src/sglib/processors/FlowFollower.cc src/sglib/processors/FlowFollower.hpp src/sglib/processors/LinkageUntangler.cc src/sglib/processors/LinkageUntangler.hpp src/sglib/processors/GraphEditor.cc src/sglib/processors/GraphEditor.hpp)
 
 
 add_executable(bsg-flowmaker
