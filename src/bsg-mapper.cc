@@ -58,7 +58,7 @@ int main(int argc, char * argv[]) {
     ws.sg.create_index();
     for (auto &m:ws.paired_read_mappers) {
         sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
-        m.map_reads();
+        m.remap_all_reads();
         m.print_stats();
         sglib::OutputLog()<<"Computing size distribution..."<<std::endl;
         auto sdist=m.size_distribution();
@@ -73,7 +73,7 @@ int main(int argc, char * argv[]) {
     }
     for (auto &m:ws.linked_read_mappers) {
         sglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
-        m.map_reads();
+        m.remap_all_reads();
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
         sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }

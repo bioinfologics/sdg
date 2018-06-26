@@ -83,28 +83,44 @@ int main(int argc, char * argv[]) {
     ws.add_log_entry("bsg-untangler run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     if (paired_scaff){
-        LinkageUntangler lu(ws);
-        if (select_hspnps) lu.select_nodes_by_HSPNPs(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
-        else lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
-
-        std::unordered_set<sgNodeID_t> selnodes;
-        for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
-        lu.report_node_selection();
-        /*auto topology_ldg=lu.make_topology_linkage(10);
-        topology_ldg.report_connectivity();
-        ws.sg.write_to_gfa("topology_links.gfa",{},{},{},topology_ldg.links);*/
-        LinkageDiGraph gldg(ws.sg);
-        /*if (!ws.paired_read_mappers.empty()) {
-            auto pair_ldg = lu.make_paired_linkage(min_pairs);
-            pair_ldg.report_connectivity();
-            gldg.add_links(pair_ldg);
-            ws.sg.write_to_gfa("pair_links.gfa", {}, {}, {}, pair_ldg.links);
-            pair_ldg.remove_transitive_links(10);
-            pair_ldg.report_connectivity();
-            ws.sg.write_to_gfa("pair_links_no_transitive.gfa", {}, {}, {}, pair_ldg.links);
-        }*/
         if (!ws.linked_read_mappers.empty()) {
             for (auto round=1;round<11;++round) {
+                sglib::OutputLog()<<"STARTING ROUND #"<<std::to_string(round)<<std::endl;
+                LinkageUntangler lu(ws);
+                if (select_hspnps) lu.select_nodes_by_HSPNPs(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+                else lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+
+                std::unordered_set<sgNodeID_t> selnodes;
+                for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
+                lu.report_node_selection();
+                /*auto topology_ldg=lu.make_topology_linkage(10);
+                topology_ldg.report_connectivity();
+                ws.sg.write_to_gfa("topology_links.gfa",{},{},{},topology_ldg.links);*/
+                LinkageDiGraph gldg(ws.sg);
+                /*if (!ws.paired_read_mappers.empty()) {
+                    auto pair_ldg = lu.make_paired_linkage(min_pairs);
+                    pair_ldg.report_connectivity();
+                    gldg.add_links(pair_ldg);
+                    ws.sg.write_to_gfa("pair_links.gfa", {}, {}, {}, pair_ldg.links);
+                    pair_ldg.remove_transitive_links(10);
+                    pair_ldg.report_connectivity();
+                    ws.sg.write_to_gfa("pair_links_no_transitive.gfa", {}, {}, {}, pair_ldg.links);
+                }*/
+                sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
+                //HACK: eliminate nodes with N-N and try again.
+                auto pre_tag_ldg = lu.make_tag_linkage(min_shared_tags);
+                pre_tag_ldg.remove_transitive_links(10);
+                pre_tag_ldg.report_connectivity();
+                uint64_t remNN=0;
+                for (auto n=1;n<ws.sg.nodes.size();++n){
+                    if (lu.selected_nodes[n]){
+                        if (pre_tag_ldg.get_fw_links(n).size()>1 and pre_tag_ldg.get_bw_links(n).size()>1) {
+                            lu.selected_nodes[n]=false;
+                            ++remNN;
+                        }
+                    }
+                }
+                sglib::OutputLog()<<"Re-trying tag connection after eliminating "<<remNN<<" N-N nodes"<<std::endl;
                 auto tag_ldg = lu.make_tag_linkage(min_shared_tags);
                 tag_ldg.remove_transitive_links(10);
                 tag_ldg.report_connectivity();
@@ -114,6 +130,7 @@ int main(int argc, char * argv[]) {
                 auto joined=ws.sg.join_all_unitigs();
                 ws.sg.write_to_gfa(output_prefix + "_after_expansion_" + std::to_string(round) + ".gfa", {}, {});
                 //sglib::OutputLog()<<"TODO: remap reads and re-start the whole thing..."<<std::endl;
+                ws.kci.reindex_graph();
                 ws.remap_all();
                 if (joined==0) break;
             }
