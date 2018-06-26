@@ -99,6 +99,13 @@ void SequenceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d) {
     links[(dest > 0 ? dest : -dest)].emplace_back(l);
 }
 
+Link SequenceGraph::get_link(sgNodeID_t source, sgNodeID_t dest) {
+    for (auto l:links[(source > 0 ? source : -source)]) {
+        if (l.source==source,l.dest==dest) return l;
+    }
+    return Link(0,0,0);
+}
+
 void SequenceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
     auto & slinks = links[(source > 0 ? source : -source)];
     slinks.erase(std::remove(slinks.begin(), slinks.end(), Link(source,dest,0)), slinks.end());
@@ -645,10 +652,13 @@ std::vector<SequenceGraphPath> SequenceGraph::get_all_unitigs(uint16_t min_nodes
     return unitigs;
 }
 
-void SequenceGraph::join_all_unitigs() {
+uint32_t SequenceGraph::join_all_unitigs() {
+    uint32_t joined=0;
     for (auto p:get_all_unitigs(2)){
         join_path(p);
+        ++joined;
     }
+    return joined;
 }
 
 void SequenceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
@@ -688,6 +698,22 @@ bool SequenceGraphPath::is_canonical() {
     auto rp=*this;
     rp.reverse();
     return this->get_sequence()<rp.get_sequence();
+}
+
+bool SequenceGraphPath::is_unitig() {
+    for (auto i=0;i<nodes.size();++i) {
+        auto fwl=sg.get_fw_links(nodes[i]);
+        auto bwl=sg.get_bw_links(nodes[i]);
+        if (i>0){
+            if (bwl.size()!=1) return false;
+            if (bwl[0].dest!=-nodes[i-1]) return false;
+        }
+        if (i<nodes.size()-1){
+            if (fwl.size()!=1) return false;
+            if (fwl[0].dest!=nodes[i+1]) return false;
+        }
+    }
+    return true;
 }
 
 const bool SequenceGraphPath::operator<(const SequenceGraphPath &other) {

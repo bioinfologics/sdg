@@ -34,6 +34,10 @@ public:
 
     void load_from_disk(std::string filename,bool log_only=false);
 
+    //general operations
+
+    void remap_all();
+
     //Projected operations with info from the graph
 
     std::vector<sgNodeID_t>

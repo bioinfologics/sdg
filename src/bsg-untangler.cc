@@ -104,13 +104,20 @@ int main(int argc, char * argv[]) {
             ws.sg.write_to_gfa("pair_links_no_transitive.gfa", {}, {}, {}, pair_ldg.links);
         }*/
         if (!ws.linked_read_mappers.empty()) {
-            auto tag_ldg = lu.make_tag_linkage(min_shared_tags);
-            tag_ldg.remove_transitive_links(10);
-            tag_ldg.report_connectivity();
-            ws.sg.write_to_gfa(output_prefix+"_tag_nt.gfa", {}, {}, selnodes, tag_ldg.links);
-            sglib::OutputLog()<<"Simplifying linear paths"<<std::endl;
-            lu.expand_linear_regions(tag_ldg);
-            sglib::OutputLog()<<"TODO: remap reads..."<<std::endl;
+            for (auto round=1;round<11;++round) {
+                auto tag_ldg = lu.make_tag_linkage(min_shared_tags);
+                tag_ldg.remove_transitive_links(10);
+                tag_ldg.report_connectivity();
+                ws.sg.write_to_gfa(output_prefix + "_tag_nt_" + std::to_string(round) + ".gfa", {}, {}, selnodes, tag_ldg.links);
+                sglib::OutputLog() << "Simplifying linear paths" << std::endl;
+                lu.expand_linear_regions(tag_ldg);
+                auto joined=ws.sg.join_all_unitigs();
+                ws.sg.write_to_gfa(output_prefix + "_after_expansion_" + std::to_string(round) + ".gfa", {}, {});
+                //sglib::OutputLog()<<"TODO: remap reads and re-start the whole thing..."<<std::endl;
+                ws.remap_all();
+                if (joined==0) break;
+            }
+            /*
             sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
             //HACK: eliminate nodes with N-N and try again.
             auto sel_orig=lu.selected_nodes;
@@ -129,11 +136,11 @@ int main(int argc, char * argv[]) {
             tag_ldg_noNN.remove_transitive_links(10);
             tag_ldg_noNN.report_connectivity();
             ws.sg.write_to_gfa(output_prefix+"_tag_noNN_nt.gfa", {}, {}, selnodes, tag_ldg_noNN.links);
-            lu.selected_nodes=sel_orig;
+            lu.selected_nodes=sel_orig;*/
 
 
 
-            exit(0);
+            /*exit(0);
 
             tag_ldg.report_connectivity();
             gldg.add_links(tag_ldg);
@@ -162,7 +169,7 @@ int main(int argc, char * argv[]) {
                 ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
                 sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
             }
-            /*
+
             tag_ldg.remove_transitive_links(10);
             tag_ldg.report_connectivity();
             ws.sg.write_to_gfa("tag_links_no_transitive.gfa", {}, {}, {}, tag_ldg.links);
@@ -191,12 +198,12 @@ int main(int argc, char * argv[]) {
 
 
         }
-        gldg.report_connectivity();
+        /*gldg.report_connectivity();
         gldg.add_links(gldg);
         ws.sg.write_to_gfa("general_links.gfa", {}, {}, {}, gldg.links);
         gldg.remove_transitive_links(10);
         gldg.report_connectivity();
-        ws.sg.write_to_gfa("general_links_no_transitive.gfa", {}, {}, {}, gldg.links);
+        ws.sg.write_to_gfa("general_links_no_transitive.gfa", {}, {}, {}, gldg.links);*/
         //PairedReadLinker prl(ws,u);
         //prl.generate_links_size_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci,5);
         //prl.generate_links_hspnp();

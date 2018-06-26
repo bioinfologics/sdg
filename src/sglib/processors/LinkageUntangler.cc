@@ -3,6 +3,7 @@
 //
 
 #include "LinkageUntangler.hpp"
+#include "GraphEditor.hpp"
 
 struct Counter
 {
@@ -655,6 +656,8 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
     sglib::OutputLog()<<"evaluating alternative paths between each pair of adjacent nodes"<<std::endl;
     KmerVectorCreator kvc(31);
     uint64_t solved=0,unsolved=0;
+    GraphEditor ged(ws);
+    std::vector<SequenceGraphPath> sols;
     for (auto i=0;i<lines.size();++i){
         for (auto ia=0;ia<alternatives[i].size();++ia){
             int best=-1;
@@ -676,11 +679,31 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
                 }
             }
             //std::cout<<"Solution for line "<<i<<" jump #"<<ia<<": "<<best<<" / "<<alternatives[i][ia].size() <<std::endl;
+            if (best!=-1){
+                for (auto n:alternatives[i][ia][best].nodes) {
+                    if (selected_nodes[llabs(n)]){
+                        best=-1;
+                        break;
+                    }
+                }
+            }
             if (best==-1) ++unsolved;
-            else ++solved;
+            else {
+                ++solved;
+                sols.emplace_back(ws.sg);
+                sols.back().nodes.emplace_back(lines[i][ia]);
+                for (auto n:alternatives[i][ia][best].nodes) sols.back().nodes.emplace_back(n);
+                sols.back().nodes.emplace_back(lines[i][ia+1]);
+            }
         }
     }
     std::cout<<"Solved: "<<solved<<"   Unsolved: "<<unsolved<<std::endl;
+    sglib::OutputLog()<<"Applying solutions in the graph"<<std::endl;
+    uint64_t applied=0;
+    for (auto s:sols) {
+        if (ged.detach_path(s)) ++applied;
+    }
+    sglib::OutputLog()<<applied<<" solutions applied"<<std::endl;
     //sglib::OutputLog()<<"Selected Tags in line: "<<lineTagSet.size()<<std::endl;
     //auto lineKmerSet=btk.get_tags_kmers(3,lineTagSet);
     //sglib::OutputLog()<<"Selected Kmers in line: "<<lineKmerSet.size()<<std::endl;

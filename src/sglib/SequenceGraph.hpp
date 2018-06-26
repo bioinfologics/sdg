@@ -61,6 +61,7 @@ public:
     //=== graph operations ===
     sgNodeID_t add_node(Node n);
     void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
+    Link get_link( sgNodeID_t source, sgNodeID_t dest);
     std::vector<Link> get_fw_links( sgNodeID_t n);
     inline std::vector<Link> get_bw_links( sgNodeID_t n){ return get_fw_links (-n); };
 
@@ -96,7 +97,7 @@ public:
     void expand_path(SequenceGraphPath p);
     void join_path(SequenceGraphPath p, bool consume_nodes=true);
     // expand_path --> creates an edge with the consensus of a path, eliminates old nodes if only in path and unused edges
-    void join_all_unitigs();
+    uint32_t join_all_unitigs();
     std::vector<SequenceGraphPath> get_all_unitigs(uint16_t min_nodes);
     // simplify --> executes expand_path on every multi-sequence unitig
     std::vector<SequenceSubGraph> get_all_tribbles();
@@ -138,6 +139,7 @@ public:
     bool extend_if_coherent(SequenceGraphPath s);
     void reverse();
     bool is_canonical();
+    bool is_unitig();
     const bool operator< (const SequenceGraphPath & other);
     const bool operator== (const SequenceGraphPath & other);
 
