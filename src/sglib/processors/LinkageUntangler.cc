@@ -434,16 +434,16 @@ LinkageDiGraph LinkageUntangler::make_longRead_linkage() {
     // For each read link every node with every other coming forward in the correct direction,
     // only using the canonical link direction (1,2) instead of (2,1)
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
-    sglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
+    sglib::OutputLog()<<"collecting link votes across all long read libraries"<<std::endl;
     //use all libraries collect votes on each link
     auto rmi=0;
     for (LongReadMapper &lm:ws.getLongReadMappers()) {
-        for (auto r = 0; r < lm.read_to_mappings.size(); r++) { // For all reads
-            for (auto i = 0; i < lm.read_to_mappings[r].size() - 1; i++) { // All "forward" mappings
+        for (auto r = 0UL; r < lm.read_to_mappings.size(); r++) { // For all reads
+            for (auto i = 0UL; !lm.read_to_mappings[r].empty() && i < lm.read_to_mappings[r].size() - 1; i++) { // All "forward" mappings
                 for (auto j = i + 1; j < lm.read_to_mappings[r].size(); j++) {
                     sgNodeID_t n1=lm.mappings[lm.read_to_mappings[r][i]].node;
                     sgNodeID_t n2=lm.mappings[lm.read_to_mappings[r][j]].node;
-                    if (n1 == 0 or n2 == 0 or n1 == n2 or !selected_nodes[n1] or !selected_nodes[n2]) continue;
+                    if (n1 == 0 or n2 == 0 or n1 == n2 or !selected_nodes[std::abs(n1)] or !selected_nodes[std::abs(n2)]) continue;
                     n1=-n1;//get the output end
                     if (llabs(n1) > llabs(n2)) std::swap(n1, n2);
                     ++lv[std::make_pair(n1, n2)];
@@ -452,6 +452,11 @@ LinkageDiGraph LinkageUntangler::make_longRead_linkage() {
         }
         ++rmi;
     }
-
+    sglib::OutputLog()<<"adding links"<<std::endl;
+    for (auto l:lv) {
+        auto s=l.first.first;
+        auto d=l.first.second;
+        ldg.add_link(l.first.first,l.first.second,0);
+    }
     return ldg;
 }
