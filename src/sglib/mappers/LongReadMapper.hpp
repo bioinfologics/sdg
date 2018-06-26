@@ -38,6 +38,27 @@ class LongReadMapper {
                     int read_len, const mm_reg1_t *regs0, int j);
 
 public:
+
+    LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k=15, uint8_t w=10);
+    ~LongReadMapper();
+
+    void update_graph_index();
+    LongReadsDatastore& getLongReadsDatastore() {return datastore;}
+
+
+    void map_reads(std::unordered_set<uint32_t> readIDs = {});
+
+    void read(std::string filename);
+
+    void read(std::ifstream &inf);
+
+    void write(std::string filename);
+
+    void write(std::ofstream &ofs);
+
+
+
+    LongReadsDatastore datastore;
     /**
      * This public member stores a flat list of mappings from the reads, it is accesed using the mappings_in_node index
      * or the read_to_mappings index.
@@ -48,90 +69,6 @@ public:
      * This index can be used to query all the nodes that map to a single read.
      */
     std::vector< std::vector < std::vector<LongReadMapping>::size_type > > read_to_mappings;    /// Nodes in the read, 0 or empty = unmapped
-
-    LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k=15, uint8_t w=10)
-            : sg(sg), k(k), w(((w == 0) ? (uint8_t)(k * 0.66f) : w) ), datastore(ds) {
-        mappings_in_node.resize(sg.nodes.size());
-        read_to_mappings.resize(datastore.size());
-
-        mm_mapopt_init(&opt);
-        opt.flag |= MM_F_CIGAR;
-    }
-
-    void update_graph_index() {
-        std::vector<std::string> names(sg.nodes.size());
-        std::vector<const char *> pt_names(sg.nodes.size());
-        std::vector<const char *> seqs(sg.nodes.size());
-        for (std::vector<std::string>::size_type i = 1; i < seqs.size(); i++) {
-            names[i] = std::to_string(i);
-            pt_names[i] = names[i].data();
-            seqs[i] = sg.nodes[i].sequence.data();
-        }
-        if (graph_index != nullptr) {
-            mm_idx_destroy(graph_index);
-            graph_index = nullptr;
-        }
-        graph_index = mm_idx_str(w, k, 0, 14, static_cast<int>(seqs.size()-1), &seqs[1], &pt_names[1]);
-        mm_mapopt_update(&opt, graph_index);
-    }
-
-    ~LongReadMapper() {
-        mm_idx_destroy(graph_index);
-    }
-
-    void map_reads(std::unordered_set<uint32_t> readIDs = {});
-    LongReadsDatastore& getLongReadsDatastore() {return datastore;}
-    void read(std::string filename) {
-        // Read the mappings from file
-        sglib::OutputLog() << "Reading long read mappings" << std::endl;
-        std::ifstream inf(filename, std::ios_base::binary);
-        auto mapSize(mappings.size());
-        inf.read(reinterpret_cast<char *>(&k), sizeof(k));
-        inf.read(reinterpret_cast<char *>(&w), sizeof(w));
-        inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
-        mappings.reserve(mapSize);
-        inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
-
-        sglib::OutputLog() << "Updating read mapping indexes!" << std::endl;
-        update_indexes_from_mappings();
-        sglib::OutputLog() << "Done!" << std::endl;
-    }
-
-    void read(std::ifstream &inf) {
-        auto mapSize(mappings.size());
-        inf.read(reinterpret_cast<char *>(&k), sizeof(k));
-        inf.read(reinterpret_cast<char *>(&w), sizeof(w));
-        inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
-        mappings.resize(mapSize);
-        inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
-
-        sglib::OutputLog() << "Updating read mapping indexes!" << std::endl;
-        update_indexes_from_mappings();
-        sglib::OutputLog() << "Done!" << std::endl;
-    }
-
-    void write(std::string filename) {
-        // Write mappings to file
-        sglib::OutputLog() << "Dumping long read mappings" << std::endl;
-        std::ofstream outf(filename, std::ios_base::binary);
-        auto mapSize(mappings.size());
-        outf.write(reinterpret_cast<const char *>(&k), sizeof(k));
-        outf.write(reinterpret_cast<const char *>(&w), sizeof(w));
-        outf.write(reinterpret_cast<const char *>(&mapSize), sizeof(mapSize));
-        outf.write(reinterpret_cast<const char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
-        sglib::OutputLog() << "Done!" << std::endl;
-    }
-
-    void write(std::ofstream &ofs) {
-        auto mapSize(mappings.size());
-        ofs.write(reinterpret_cast<char *>(&k), sizeof(k));
-        ofs.write(reinterpret_cast<char *>(&w), sizeof(w));
-        ofs.write(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
-        mappings.reserve(mapSize);
-        ofs.write(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
-        sglib::OutputLog() << "Done!" << std::endl;
-    }
-    LongReadsDatastore datastore;
 };
 
 

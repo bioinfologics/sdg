@@ -23,15 +23,15 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 
             if (n_regs0<=1) {
                 for (int j = 0; j < n_regs0; j++) {
-                    auto node = sgNodeID_t (graph_index->seq[regs0[j].rid].name);
+                    auto node = std::stoull(graph_index->seq[regs0[j].rid].name);
                     LongReadMapping mapping = createMapping(readID, regs0, j, node);
                     thread_mappings[omp_get_thread_num()].emplace_back(mapping);
                 }
             }
             if (n_regs0 > 1) {
                 for (int j = 0; j < n_regs0 - 1; ++j) {
-                    auto fromNode = sgNodeID_t (graph_index->seq[regs0[j].rid].name);
-                    auto toNode = sgNodeID_t (graph_index->seq[regs0[j+1].rid].name);
+                    auto fromNode = std::stoull(graph_index->seq[regs0[j].rid].name);
+                    auto toNode = std::stoull(graph_index->seq[regs0[j+1].rid].name);
                     LongReadMapping mapping = createMapping(readID, regs0, j, fromNode);
                     thread_mappings[omp_get_thread_num()].emplace_back(mapping);
                     mapping = createMapping(readID, regs0, j+1, toNode);
@@ -55,7 +55,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 
 LongReadMapping LongReadMapper::createMapping(uint32_t readID, const mm_reg1_t *regs0, int j, long long int node) const {
     LongReadMapping mapping;
-    mapping.node = node * (regs0[j].rev == 0) ? 1 : -1;
+    mapping.node = node * ((regs0[j].rev == 0) ? 1 : -1);
     mapping.nStart = regs0[j].rs;
     mapping.nEnd = regs0[j].re;
     mapping.qStart = regs0[j].qs;
@@ -91,4 +91,85 @@ void LongReadMapper::update_indexes_from_mappings() {
         read_to_mappings[mappingItr->read_id].push_back(index);
         mappings_in_node[std::abs(mappingItr->node)].push_back(index);
     }
+}
+
+LongReadMapper::LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k, uint8_t w)
+        : sg(sg), k(k), w(((w == 0) ? (uint8_t)(k * 0.66f) : w) ), datastore(ds) {
+    mappings_in_node.resize(sg.nodes.size());
+    read_to_mappings.resize(datastore.size());
+
+    mm_mapopt_init(&opt);
+    opt.flag |= MM_F_CIGAR;
+}
+
+void LongReadMapper::update_graph_index() {
+    std::vector<std::string> names(sg.nodes.size());
+    std::vector<const char *> pt_names(sg.nodes.size());
+    std::vector<const char *> seqs(sg.nodes.size());
+    for (std::vector<std::string>::size_type i = 1; i < seqs.size(); i++) {
+        names[i] = std::to_string(i);
+        pt_names[i] = names[i].data();
+        seqs[i] = sg.nodes[i].sequence.data();
+    }
+    if (graph_index != nullptr) {
+        mm_idx_destroy(graph_index);
+        graph_index = nullptr;
+    }
+    graph_index = mm_idx_str(w, k, 0, 14, static_cast<int>(seqs.size()-1), &seqs[1], &pt_names[1]);
+    mm_mapopt_update(&opt, graph_index);
+}
+
+LongReadMapper::~LongReadMapper() {
+    mm_idx_destroy(graph_index);
+}
+
+void LongReadMapper::read(std::string filename) {
+    // Read the mappings from file
+    sglib::OutputLog() << "Reading long read mappings" << std::endl;
+    std::ifstream inf(filename, std::ios_base::binary);
+    auto mapSize(mappings.size());
+    inf.read(reinterpret_cast<char *>(&k), sizeof(k));
+    inf.read(reinterpret_cast<char *>(&w), sizeof(w));
+    inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
+    mappings.reserve(mapSize);
+    inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+
+    sglib::OutputLog() << "Updating read mapping indexes!" << std::endl;
+    update_indexes_from_mappings();
+    sglib::OutputLog() << "Done!" << std::endl;
+}
+
+void LongReadMapper::read(std::ifstream &inf) {
+    auto mapSize(mappings.size());
+    inf.read(reinterpret_cast<char *>(&k), sizeof(k));
+    inf.read(reinterpret_cast<char *>(&w), sizeof(w));
+    inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
+    mappings.resize(mapSize);
+    inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+
+    sglib::OutputLog() << "Updating read mapping indexes!" << std::endl;
+    update_indexes_from_mappings();
+    sglib::OutputLog() << "Done!" << std::endl;
+}
+
+void LongReadMapper::write(std::string filename) {
+    // Write mappings to file
+    sglib::OutputLog() << "Dumping long read mappings" << std::endl;
+    std::ofstream outf(filename, std::ios_base::binary);
+    auto mapSize(mappings.size());
+    outf.write(reinterpret_cast<const char *>(&k), sizeof(k));
+    outf.write(reinterpret_cast<const char *>(&w), sizeof(w));
+    outf.write(reinterpret_cast<const char *>(&mapSize), sizeof(mapSize));
+    outf.write(reinterpret_cast<const char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+    sglib::OutputLog() << "Done!" << std::endl;
+}
+
+void LongReadMapper::write(std::ofstream &ofs) {
+    auto mapSize(mappings.size());
+    ofs.write(reinterpret_cast<char *>(&k), sizeof(k));
+    ofs.write(reinterpret_cast<char *>(&w), sizeof(w));
+    ofs.write(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
+    mappings.reserve(mapSize);
+    ofs.write(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+    sglib::OutputLog() << "Done!" << std::endl;
 }
