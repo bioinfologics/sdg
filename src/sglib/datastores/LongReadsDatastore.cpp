@@ -105,10 +105,10 @@ void LongReadsDatastore::write(std::ofstream &output_file) {
 
 std::string LongReadsDatastore::get_read_sequence(size_t readID) {
     // Calculate the number of pages to mmap
-
-
+    auto fileOffset = read_to_fileRecord[readID].offset+1;
+    auto recordSize = read_to_fileRecord[readID].record_size;
     // Copy out the part where the sequence by
-    std::string result((char*)mapped_readfile+read_to_fileRecord[readID].offset+1, read_to_fileRecord[readID].record_size-1);
+    std::string result((char*)mapped_readfile+fileOffset, recordSize);
     return result;
 }
 

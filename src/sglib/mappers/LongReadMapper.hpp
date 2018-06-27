@@ -37,6 +37,26 @@ class LongReadMapper {
     void printMatch(const mm_idx_t *mi, std::ofstream &matchOutput, uint32_t readID, const std::string &read_name,
                     int read_len, const mm_reg1_t *regs0, int j);
 
+    bool link_is_valid(const LongReadMapping& fromMapping, const LongReadMapping& toMapping) {
+        // Check that the mappings are larger than 200bp
+        if (fromMapping.qEnd-fromMapping.qStart < 80 or toMapping.qEnd-toMapping.qStart < 80) {
+            return false;
+        }
+        // Check the query is not overlapped by more than 60%
+        if (toMapping.qStart <= fromMapping.qEnd) {
+            auto olpSize = std::max(fromMapping.qStart,toMapping.qStart) - std::min(fromMapping.qEnd,toMapping.qEnd);
+            if (olpSize > std::abs(fromMapping.qEnd - fromMapping.qStart)*.8 or olpSize > std::abs(toMapping.qEnd-toMapping.qStart)*.8) {
+                return false;
+            }
+        }
+
+        // Check that the score is over 90% on both ends
+//        if (fromMapping.score < std::abs(fromMapping.qEnd-fromMapping.qStart)*.9f or
+//            toMapping.score < std::abs(toMapping.qEnd - toMapping.qStart)*.9f) {
+//            return false;
+//        }
+        return true;
+    }
 public:
 
     LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k=15, uint8_t w=10);

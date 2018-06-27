@@ -23,19 +23,22 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 
             if (n_regs0<=1) {
                 for (int j = 0; j < n_regs0; j++) {
-                    auto node = std::stoull(graph_index->seq[regs0[j].rid].name);
+                    auto node = regs0[j].rid + 1;
                     LongReadMapping mapping = createMapping(readID, regs0, j, node);
                     thread_mappings[omp_get_thread_num()].emplace_back(mapping);
                 }
             }
             if (n_regs0 > 1) {
                 for (int j = 0; j < n_regs0 - 1; ++j) {
-                    auto fromNode = std::stoull(graph_index->seq[regs0[j].rid].name);
-                    auto toNode = std::stoull(graph_index->seq[regs0[j+1].rid].name);
-                    LongReadMapping mapping = createMapping(readID, regs0, j, fromNode);
-                    thread_mappings[omp_get_thread_num()].emplace_back(mapping);
-                    mapping = createMapping(readID, regs0, j+1, toNode);
-                    thread_mappings[omp_get_thread_num()].emplace_back(mapping);
+                    auto fromNode = regs0[j].rid+1;
+                    auto toNode =   regs0[j+1].rid+1;
+                    LongReadMapping fromMapping = createMapping(readID, regs0, j, fromNode);
+                    LongReadMapping toMapping = createMapping(readID, regs0, j+1, toNode);
+
+                    if (link_is_valid(fromMapping, toMapping)) {
+                        thread_mappings[omp_get_thread_num()].emplace_back(fromMapping);
+                        thread_mappings[omp_get_thread_num()].emplace_back(toMapping);
+                    }
                 }
             }
             for (int i = 0; i<n_regs0;i++) free(regs0[i].p);

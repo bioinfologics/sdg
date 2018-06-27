@@ -454,9 +454,19 @@ LinkageDiGraph LinkageUntangler::make_longRead_linkage() {
     }
     sglib::OutputLog()<<"adding links"<<std::endl;
     for (auto l:lv) {
-        auto s=l.first.first;
-        auto d=l.first.second;
-        ldg.add_link(l.first.first,l.first.second,0);
+        if (l.second >= 5) {
+            //todo: size, appropriate linkage handling, etc
+            //todo: check alternative signs for same linkage
+            auto s = l.first.first;
+            auto d = l.first.second;
+            auto v1 = std::make_pair(-s, d);
+            auto v2 = std::make_pair(-s, -d);
+            auto v3 = std::make_pair(s, -d);
+            if (lv.count(v1) and lv[v1] > 5 * l.second) continue;
+            if (lv.count(v2) and lv[v2] > 5 * l.second) continue;
+            if (lv.count(v3) and lv[v3] > 5 * l.second) continue;
+            ldg.add_link(l.first.first, l.first.second, 0);
+        }
     }
     return ldg;
 }

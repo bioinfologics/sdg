@@ -80,6 +80,7 @@ int main(int argc, char * argv[]) {
     WorkSpace ws;
     sglib::OutputLog()<<"Loading Workspace..."<<std::endl;
     ws.load_from_disk(workspace_file);
+    ws.getKCI().uniq_mode=50;
     ws.add_log_entry("bsg-untangler run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     if (paired_scaff){
