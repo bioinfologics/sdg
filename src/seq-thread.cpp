@@ -149,4 +149,8 @@ int main(int argc, char **argv) {
 // Calculate reference inclusion by query...
     sglib::OutputLog() << "Finished threading " << reference_filename << " through graph " << graph_filename << '.' << std::endl;
     tdr.calculate_reference_inclusion();
+
+    std::ofstream thread_lengths_out(output_dir + "/thread_lengths.txt");
+    tdr.dump_thread_lengths(thread_lengths_out);
+    thread_lengths_out.close();
 }

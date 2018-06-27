@@ -201,3 +201,12 @@ void MappingThread::print_path_header(std::ostream& output_file, bool use_oldnam
     fasta_header.erase(fasta_header.begin());
     output_file << fasta_header;
 }
+
+void MappingThreader::dump_thread_lengths(std::ofstream& output_file) const {
+    for (const auto& sequence_threads : mapping_threads_of_sequence) {
+        for (const auto& thread : sequence_threads.second) {
+            output_file << sequence_threads.first << '\t' << thread.queryStart() << '\t' << thread.queryEnd();
+            output_file << '\t' << thread.get_sequence().length() << std::endl;
+        }
+    }
+}
