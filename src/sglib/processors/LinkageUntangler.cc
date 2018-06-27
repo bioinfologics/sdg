@@ -5,6 +5,120 @@
 #include "LinkageUntangler.hpp"
 #include "GraphEditor.hpp"
 
+class KmerMapCreator : public  KMerFactory {
+public:
+    explicit KmerMapCreator(uint8_t k) : KMerFactory(k){}
+    inline void create_all_kmers(const char * seq, std::unordered_map<uint64_t,uint32_t> &mers){
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        last_unknown=0;
+        fkmer=0;
+        rkmer=0;
+        auto s=seq;
+        while (*s!='\0' and *s!='\n') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers[fkmer]=0;
+                } else {
+                    // Is bwd
+                    mers[rkmer]=0;
+                }
+            }
+            ++s;
+        }
+    }
+};
+class KmerMapCounter : public  KMerFactory {
+public:
+    explicit KmerMapCounter(uint8_t k) : KMerFactory(k){}
+    inline void count_all_kmers(const char * seq, std::unordered_map<uint64_t,uint32_t> &mers){
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        last_unknown=0;
+        fkmer=0;
+        rkmer=0;
+        auto s=seq;
+        while (*s!='\0' and *s!='\n') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    auto m=mers.find(fkmer);
+                    if (m!=mers.end()) ++m->second;
+                } else {
+                    // Is bwd
+                    auto m=mers.find(rkmer);
+                    if (m!=mers.end()) ++m->second;
+                }
+            }
+            ++s;
+        }
+    }
+};
+class KmerVectorCreator : public  KMerFactory {
+public:
+    explicit KmerVectorCreator(uint8_t k) : KMerFactory(k){}
+    inline std::vector<uint64_t> count_all_kmers(const char * seq){
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        std::vector<uint64_t> v;
+        last_unknown=0;
+        fkmer=0;
+        rkmer=0;
+        auto s=seq;
+        while (*s!='\0' and *s!='\n') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    v.emplace_back(fkmer);
+                } else {
+                    // Is bwd
+                    v.emplace_back(rkmer);
+                }
+            }
+            ++s;
+        }
+        return v;
+    }
+};
+
+class UncoveredKmerCounter : public  KMerFactory {
+public:
+    explicit UncoveredKmerCounter(uint8_t k, const std::unordered_set<uint64_t> & _kset) : KMerFactory(k),kset(_kset){}
+    inline uint64_t count_uncovered(const char * seq){
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+
+        last_unknown=0;
+        fkmer=0;
+        rkmer=0;
+        auto s=seq;
+        uint64_t uncovered=0;
+        while (*s!='\0' and *s!='\n') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    if (kset.count(fkmer)==0) ++uncovered;
+                } else {
+                    // Is bwd
+                    if (kset.count(rkmer)==0) ++uncovered;
+                }
+            }
+            ++s;
+        }
+        return uncovered;
+    }
+    const std::unordered_set<uint64_t> & kset;
+};
+
+
 struct Counter
 {
     struct value_type { template<typename T> value_type(const T&) { } };
@@ -470,9 +584,9 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
     auto lines=ldg.get_all_lines(2);
     sglib::OutputLog()<<"Creating tag sets for "<<lines.size()<<" linear regions"<<std::endl;
     //sglib::OutputLog()<<"TODO: now use tags and LMPs to find paths between elements in the line"<<std::endl;
-    //sglib::OutputLog()<<"USING ONLY 100 lines as a test"<<std::endl;
-    //lines.resize(100);
-    //Step 1: get tagsets for lines.
+    //sglib::OutputLog()<<"USING ONLY 10 lines as a test"<<std::endl;
+    //lines.resize(10);
+    //---------------------------------Step 1: get tagsets for lines.
     std::vector<std::set<bsg10xTag>> linetagsets;
     linetagsets.reserve(lines.size());
     BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,100000,1000);
@@ -510,14 +624,16 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
     std::cout<<std::endl;
     sglib::OutputLog()<<"Creating path collections to be evaluated for "<<lines.size()<<" linear regions"<<std::endl;
     std::vector<std::vector<std::vector<SequenceGraphPath>>> alternatives;
-    uint64_t total_paths=0;
+    uint64_t total_paths=0,found=0,evaluated=0;
     alternatives.reserve(lines.size());
     for (auto l:lines) {
         alternatives.emplace_back();
         for (auto i = 0; i < l.size() - 1; ++i) {
+            evaluated++;
             auto from = l[i];
             auto to = l[i + 1];
-            auto paths = ws.sg.find_all_paths_between(from, to, 400000);
+            auto paths = ws.sg.find_all_paths_between(from, to, 400000, 20);
+            if (paths.size()>0) found++;
             alternatives.back().emplace_back(paths);
             total_paths+=paths.size();
             //sglib::OutputLog() << paths.size() << " paths to go from " << from << " to " << to << std::endl;
@@ -525,92 +641,11 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
         if (alternatives.size()%100==0) std::cout<<"."<<std::flush;
     }
     std::cout<<std::endl;
+    sglib::OutputLog()<<"Junctions with possible paths: "<<found<<" / "<<evaluated<<std::endl;
     sglib::OutputLog()<<"Total paths to evaluate: "<<total_paths<<std::endl;
     //Now use a function that only counts coverage on the set of kmers from all paths collections for each line
     //kmer_coverage_in_tagreads(&std::map<kmer, coverage> (init at 0), std::set<tag> linetagset);
 
-    class KmerMapCreator : public  KMerFactory {
-    public:
-        explicit KmerMapCreator(uint8_t k) : KMerFactory(k){}
-        inline void create_all_kmers(const char * seq, std::unordered_map<uint64_t,uint32_t> &mers){
-            // TODO: Adjust for when K is larger than what fits in uint64_t!
-            last_unknown=0;
-            fkmer=0;
-            rkmer=0;
-            auto s=seq;
-            while (*s!='\0' and *s!='\n') {
-                //fkmer: grows from the right (LSB)
-                //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
-                if (last_unknown >= K) {
-                    if (fkmer <= rkmer) {
-                        // Is fwd
-                        mers[fkmer]=0;
-                    } else {
-                        // Is bwd
-                        mers[rkmer]=0;
-                    }
-                }
-                ++s;
-            }
-        }
-    };
-    class KmerMapCounter : public  KMerFactory {
-    public:
-        explicit KmerMapCounter(uint8_t k) : KMerFactory(k){}
-        inline void count_all_kmers(const char * seq, std::unordered_map<uint64_t,uint32_t> &mers){
-            // TODO: Adjust for when K is larger than what fits in uint64_t!
-            last_unknown=0;
-            fkmer=0;
-            rkmer=0;
-            auto s=seq;
-            while (*s!='\0' and *s!='\n') {
-                //fkmer: grows from the right (LSB)
-                //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
-                if (last_unknown >= K) {
-                    if (fkmer <= rkmer) {
-                        // Is fwd
-                        auto m=mers.find(fkmer);
-                        if (m!=mers.end()) ++m->second;
-                    } else {
-                        // Is bwd
-                        auto m=mers.find(rkmer);
-                        if (m!=mers.end()) ++m->second;
-                    }
-                }
-                ++s;
-            }
-        }
-    };
-    class KmerVectorCreator : public  KMerFactory {
-    public:
-        explicit KmerVectorCreator(uint8_t k) : KMerFactory(k){}
-        inline std::vector<uint64_t> count_all_kmers(const char * seq){
-            // TODO: Adjust for when K is larger than what fits in uint64_t!
-            std::vector<uint64_t> v;
-            last_unknown=0;
-            fkmer=0;
-            rkmer=0;
-            auto s=seq;
-            while (*s!='\0' and *s!='\n') {
-                //fkmer: grows from the right (LSB)
-                //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
-                if (last_unknown >= K) {
-                    if (fkmer <= rkmer) {
-                        // Is fwd
-                        v.emplace_back(fkmer);
-                    } else {
-                        // Is bwd
-                        v.emplace_back(rkmer);
-                    }
-                }
-                ++s;
-            }
-            return v;
-        }
-    };
     std::cout << "creating and populating the maps as of now" << std::endl;
     std::vector<std::unordered_map<uint64_t, uint32_t>> linekmercoverages;
     linekmercoverages.resize(lines.size());
@@ -655,17 +690,18 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
     std::cout<<"DONE"<<std::endl;
     sglib::OutputLog()<<"evaluating alternative paths between each pair of adjacent nodes"<<std::endl;
     KmerVectorCreator kvc(31);
-    uint64_t solved=0,unsolved=0;
+    uint64_t solved=0,none_covered=0,too_many_covered=0,no_paths=0;
     GraphEditor ged(ws);
     std::vector<SequenceGraphPath> sols;
     for (auto i=0;i<lines.size();++i){
         for (auto ia=0;ia<alternatives[i].size();++ia){
             int best=-1;
+            bool too_many=false;
             for (auto j=0;j<alternatives[i][ia].size();++j){
                 uint64_t missed=0;
                 for (auto n:alternatives[i][ia][j].nodes) {
                     for (auto x:kvc.count_all_kmers(ws.sg.nodes[llabs(n)].sequence.c_str())) {
-                        if (linekmercoverages[i][x] < 4) ++missed;//TODO: maybe ask for more than 1 read coverage?
+                        if (linekmercoverages[i][x] < 8) ++missed;//TODO: maybe ask for more than 1 read coverage?
                     }
                 }
                 if (missed==0){
@@ -673,6 +709,7 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
                         best = j;
                     }
                     else {
+                        too_many=true;
                         best = -1;
                         break;
                     }
@@ -687,7 +724,11 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
                     }
                 }
             }
-            if (best==-1) ++unsolved;
+            if (best==-1) {
+                if (alternatives[i][ia].empty()) ++no_paths;
+                else if (too_many) ++too_many_covered;
+                else ++none_covered;
+            }
             else {
                 ++solved;
                 sols.emplace_back(ws.sg);
@@ -697,49 +738,133 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
             }
         }
     }
-    std::cout<<"Solved: "<<solved<<"   Unsolved: "<<unsolved<<std::endl;
+    std::cout<<"Solved: "<<solved<<"  Too many covered paths: "<<too_many_covered<<"  No covered paths: "<<none_covered<<"  No paths found: "<<no_paths<<std::endl;
     sglib::OutputLog()<<"Applying solutions in the graph"<<std::endl;
     uint64_t applied=0;
     for (auto s:sols) {
         if (ged.detach_path(s)) ++applied;
     }
     sglib::OutputLog()<<applied<<" solutions applied"<<std::endl;
-    //sglib::OutputLog()<<"Selected Tags in line: "<<lineTagSet.size()<<std::endl;
-    //auto lineKmerSet=btk.get_tags_kmers(3,lineTagSet);
-    //sglib::OutputLog()<<"Selected Kmers in line: "<<lineKmerSet.size()<<std::endl;
-
-//        for (auto c=l.size();c>1;--c) {
-//            for (auto tc:tagcounts) {
-//                if (tc.second.first == c)
-//                    std::cout << "Tag: " << tc.first
-//                              << "  Nodes: " << tc.second.first << "/" <<tagtotals[tc.first].first
-//                              << "  Reads: " << tc.second.second << " / " << tagtotals[tc.first].second << std::endl;
-//            }
-//        }
-//        for (auto c=l.size();c>1;--c) {
-//            for (auto tc:tagcounts) {
-//                if (tc.second.first == c)
-//                    std::cout << tc.first
-//                              << ", " << tc.second.first << ", " <<tagtotals[tc.first].first
-//                              << ", " << tc.second.second << ", " << tagtotals[tc.first].second << std::endl;
-//            }
-//        }
-    //check tags shared with other nodes in the line and "new tags"
-/*        for (auto &ln:l)
-        std::cout<<std::endl;
-        for (auto i=0;i<l.size()-1;++i) {
-            //get all possible paths between 2 nodes
-            auto from=l[i];
-            auto to=l[i+1];
-            auto paths=ws.sg.find_all_paths_between(from,to,400000);
-            sglib::OutputLog()<<paths.size()<<" paths to go from "<<from<<" to "<<to<<std::endl;
-
-        }*/
-
-
-
-
-
-
 }
 
+void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg) {
+    sglib::OutputLog()<<"Starting linear region consolidation via skating with line tag collection..."<<std::endl;
+    auto lines=ldg.get_all_lines(2);
+    //sglib::OutputLog()<<"USING ONLY 100 lines as a test"<<std::endl;
+    //lines.resize(100);
+    sglib::OutputLog()<<"Creating tag sets for "<<lines.size()<<" linear regions"<<std::endl;
+    //---------------------------------Step 1: get tagsets for lines.
+    std::vector<std::set<bsg10xTag>> linetagsets;
+    linetagsets.reserve(lines.size());
+    BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,100000,1000);
+    for (auto l:lines){
+        //sglib::OutputLog()<<"Analising line: ";
+        //for (auto &ln:l) std::cout<<"seq"<<llabs(ln)<<", ";
+        //for (auto &ln:l) std::cout<<ln<<" ";
+        //std::cout<<std::endl;
+        std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
+        for (auto &ln:l) {
+            std::map<bsg10xTag ,uint32_t> ntagcounts;
+            for (auto rm:ws.linked_read_mappers[0].reads_in_node[llabs(ln)]){
+                auto tag=ws.linked_read_datastores[0].get_read_tag(rm.read_id);
+                ++ntagcounts[tag];
+            }
+            for (auto ntc:ntagcounts) {
+                ++tagcounts[ntc.first].first;
+                tagcounts[ntc.first].second+=ntc.second;
+            }
+        }
+        std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagtotals;
+        std::set<bsg10xTag> lineTagSet;
+        for (auto tc:tagcounts) {
+            auto tag=tc.first;
+            auto reads=ws.linked_read_datastores[0].get_tag_reads(tc.first);
+            std::set<sgNodeID_t> nodes;
+            for (auto r:reads) nodes.insert(ws.linked_read_mappers[0].read_to_node[r]);
+            tagtotals[tag].first=nodes.size()-nodes.count(0);
+            tagtotals[tag].second=reads.size();
+            if (tc.second.first>1 and reads.size()<3000) lineTagSet.insert(tc.first);
+        }
+        linetagsets.push_back(lineTagSet);
+        if (linetagsets.size()%100==0) std::cout<<"."<<std::flush;
+    }
+    std::cout<<std::endl;
+    uint64_t jc=0;
+    for (auto &l:lines) jc+=l.size()-1;
+    sglib::OutputLog()<<"Skating across "<<jc<<" junctions in "<<lines.size()<<" linear regions"<<std::endl;
+
+    std::vector<SequenceGraphPath> sols;
+#pragma omp parallel
+    {
+        BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+        std::vector<SequenceGraphPath> tsols;
+        uint64_t donelines=0;
+#pragma omp for schedule(dynamic,1)
+        for (auto i=0; i<lines.size(); ++i){
+            //std::cout<<"Creating kmer set for line"<<i<<" from tags"<<std::endl;
+            auto ltkmers=ws.linked_read_datastores[0].get_tags_kmers(31,3,linetagsets[i],blrsg);
+            //std::cout<<"Line kmer set has "<<ltkmers.size()<<" kmers"<<std::endl;
+            UncoveredKmerCounter ukc(31,ltkmers);
+            //std::cout<<"Evaluating paths for "<<lines[i].size()-1<<" junctions"<<std::endl;
+            for (auto j=0;j<lines[i].size()-1;++j){
+                auto from=lines[i][j];
+                auto to=lines[i][j+1];
+                //std::cout<<std::endl<<std::endl<<"Junction #"<<j+1<<" from "<<from<<" to "<<to<<std::endl;
+                std::vector<std::vector<sgNodeID_t>> skated_paths;
+                skated_paths.push_back({from});
+                int max_nodes=50;
+                while (--max_nodes and not skated_paths.empty()){
+                    //std::cout<<std::endl<<"expansion round starting with "<<skated_paths.size()<<" paths "<<std::endl;
+                    auto old_skated=skated_paths;
+                    skated_paths.clear();
+                    bool loop=false;
+                    for (auto p:old_skated) {
+                        if (p.back()==to) {
+                            skated_paths.push_back(p);
+                            continue;
+                        }
+                        //std::cout<<" expanding fw from node "<<p.back()<<std::endl;
+                        for (auto fwl:ws.sg.get_fw_links(p.back())) {
+                            //std::cout<<"  considering fwl to "<<fwl.dest<<std::endl;
+                            if (std::count(p.begin(),p.end(),fwl.dest)>0 or std::count(p.begin(),p.end(),-fwl.dest)>0){
+                                loop=true;
+                                //std::cout<<"loop detected, aborting junction analysis"<<std::endl;
+                                break;
+                            }
+                            auto u=ukc.count_uncovered(ws.sg.nodes[llabs(fwl.dest)].sequence.c_str());
+                            //std::cout<<"  Uncovered kmers in "<<fwl.dest<<" ("<<ws.sg.nodes[llabs(fwl.dest)].sequence.size()<<" bp): "
+                            //                                                                                                <<u<<std::endl;
+                            if ( u == 0) {
+                                //std::cout<<"  path can continue in node"<<fwl.dest<<std::endl;
+                                skated_paths.push_back(p);
+                                skated_paths.back().push_back(fwl.dest);
+                            }
+                        }
+                    }
+                    if (loop) {
+                        skated_paths.clear();
+                        break;
+                    }
+                }
+                uint64_t complete=0,incomplete=0;
+                for (auto p:skated_paths) {
+                    if (p.back()==to) ++complete;
+                    else ++incomplete;
+                }
+                if (complete==1 and incomplete==0) tsols.emplace_back(SequenceGraphPath(ws.sg,skated_paths[0]));
+                //std::cout<<"Skating line #"<<i+1<<" junction #"<<j+1<<" produced "<<complete<<" complete paths and "<<incomplete<<" possibly incomplete paths"<<std::endl;
+            }
+
+        }
+#pragma omp critical
+        sols.insert(sols.end(),tsols.begin(),tsols.end());
+        if (++donelines%100==0) std::cout<<"."<<std::flush;
+    }
+    sglib::OutputLog()<<"Applying "<<sols.size()<<" solutions in the graph"<<std::endl;
+    GraphEditor ged(ws);
+    uint64_t applied=0;
+    for (auto s:sols) {
+        if (ged.detach_path(s)) ++applied;
+    }
+    sglib::OutputLog()<<applied<<" solutions applied"<<std::endl;
+}

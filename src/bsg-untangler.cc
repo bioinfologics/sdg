@@ -126,7 +126,7 @@ int main(int argc, char * argv[]) {
                 tag_ldg.report_connectivity();
                 ws.sg.write_to_gfa(output_prefix + "_tag_nt_" + std::to_string(round) + ".gfa", {}, {}, selnodes, tag_ldg.links);
                 sglib::OutputLog() << "Simplifying linear paths" << std::endl;
-                lu.expand_linear_regions(tag_ldg);
+                lu.expand_linear_regions_skating(tag_ldg);
                 auto joined=ws.sg.join_all_unitigs();
                 ws.sg.write_to_gfa(output_prefix + "_after_expansion_" + std::to_string(round) + ".gfa", {}, {});
                 //sglib::OutputLog()<<"TODO: remap reads and re-start the whole thing..."<<std::endl;

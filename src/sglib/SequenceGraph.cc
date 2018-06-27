@@ -971,11 +971,11 @@ const uint64_t SequenceSubGraph::total_size() const {
     return t;
 }
 
-std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size) {
+std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes) {
     std::vector<SequenceGraphPath> current_paths,next_paths,final_paths;
     for(auto &fl:get_fw_links(from)) current_paths.emplace_back(SequenceGraphPath(*this,{fl.dest}));
-    int rounds=20;
-    while (not current_paths.empty() and --rounds>0){
+    //int rounds=20;
+    while (not current_paths.empty() and --max_nodes>0){
         //std::cout<<"starting round of context expansion, current nodes:  ";
         //for (auto cn:current_nodes) std::cout<<cn.first<<"("<<cn.second<<")  ";
         //std::cout<<std::endl;
