@@ -5,12 +5,27 @@
 #include "GraphEditor.hpp"
 
 bool GraphEditor::detach_path(SequenceGraphPath p, bool consume_tips) {
+    if (p.nodes.size()==1) return true;
     //TODO: check the path is valid?
-    if (p.nodes.size()<3) return false;
+    if (p.nodes.size()==2) {
+        //std::cout<<"DETACHING path with only 2 nodes"<<std::endl;
+        if (p.nodes.size()==2){
+            auto fwls=ws.sg.get_fw_links(p.nodes[0]);
+            for (auto l:fwls) if (l.dest!=p.nodes[1]) ws.sg.remove_link(l.source,l.dest);
+            auto bwls=ws.sg.get_bw_links(p.nodes[1]);
+            for (auto l:bwls) if (l.dest!=-p.nodes[0]) ws.sg.remove_link(l.source,l.dest);
+        }
+        return true;
+    }
     //check if the path is already detached.
     if (p.is_unitig()) return true;
     //check if the nodes in the path have already been modified
-    for (auto n:p.nodes) if (edited_nodes.count(llabs(n))>0) return false;
+    for (auto n:p.nodes) {
+        if (edited_nodes.count(llabs(n))>0) {
+            std::cout<<"NOT DETACHING: path has already edited-out nodes"<<std::endl;
+            return false;
+        }
+    }
     //TODO: create a new node with the sequence of the "middle" nodes
     auto pmid=p;
     pmid.nodes.clear();
