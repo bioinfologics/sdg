@@ -837,7 +837,7 @@ void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg)
                             //                                                                                                <<u<<std::endl;
                             if ( u == 0) {
                                 //check for a path that reaches a selected node that is not connected here
-                                if (selected_nodes[llabs(fwl.dest)]) {
+                                if (selected_nodes[llabs(fwl.dest)] and fwl.dest!=to) {
                                     crosstalk=true;
                                     break;
                                 }
@@ -860,11 +860,10 @@ void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg)
                 if (complete==1 and incomplete==0) tsols.emplace_back(SequenceGraphPath(ws.sg,skated_paths[0]));
                 //std::cout<<"Skating line #"<<i+1<<" junction #"<<j+1<<" produced "<<complete<<" complete paths and "<<incomplete<<" possibly incomplete paths"<<std::endl;
             }
-
+            if (++donelines%100==0) std::cout<<"."<<std::flush;
         }
 #pragma omp critical
         sols.insert(sols.end(),tsols.begin(),tsols.end());
-        if (++donelines%100==0) std::cout<<"."<<std::flush;
     }
     sglib::OutputLog()<<"Applying "<<sols.size()<<" solutions in the graph"<<std::endl;
     GraphEditor ged(ws);
