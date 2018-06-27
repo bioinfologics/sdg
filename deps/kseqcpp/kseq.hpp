@@ -41,7 +41,7 @@
 
 #if HAVE_ZLIB
 #include <zlib.h>
-class FunctorZlib 
+class FunctorZlib
 {
 public:
     int operator()(gzFile file, void * buffer, unsigned int len)
@@ -57,7 +57,7 @@ public:
 class FunctorBZlib2
 {
 public:
-    int operator()(BZFILE* file, void * buffer, int len) 
+    int operator()(BZFILE* file, void * buffer, int len)
     {
         return BZ2_bzread(file, buffer, len );
     }
@@ -157,11 +157,6 @@ public:
         seq.seq.clear();
         seq.qual.clear();
 
-        if (c != '\n') {
-            std::cerr << "ERROR: Unexpected record start, last valid record: " << seq.name << std::endl;
-            return -3;
-        }
-
         if (getName(seq) == -1) {
             if (is_eof != 1) {
                 std::cerr << "ERROR: Unexpected ID after " << seq.name << std::endl;
@@ -183,7 +178,7 @@ public:
         }
 
         getSeq(seq);
-        if (c == '\n') {
+        if (c == '>') {
             return (int) seq.seq.length();
         } else if (is_eof != 1) {
             std::cerr << "ERROR: There was an error reading the sequence of the record: " << seq.name << std::endl;
