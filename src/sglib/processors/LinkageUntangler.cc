@@ -817,7 +817,7 @@ void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg)
                     //std::cout<<std::endl<<"expansion round starting with "<<skated_paths.size()<<" paths "<<std::endl;
                     auto old_skated=skated_paths;
                     skated_paths.clear();
-                    bool loop=false;
+                    bool loop=false,crosstalk=false;
                     for (auto p:old_skated) {
                         if (p.back()==to) {
                             skated_paths.push_back(p);
@@ -831,17 +831,23 @@ void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg)
                                 //std::cout<<"loop detected, aborting junction analysis"<<std::endl;
                                 break;
                             }
+
                             auto u=ukc.count_uncovered(ws.sg.nodes[llabs(fwl.dest)].sequence.c_str());
                             //std::cout<<"  Uncovered kmers in "<<fwl.dest<<" ("<<ws.sg.nodes[llabs(fwl.dest)].sequence.size()<<" bp): "
                             //                                                                                                <<u<<std::endl;
                             if ( u == 0) {
+                                //check for a path that reaches a selected node that is not connected here
+                                if (selected_nodes[llabs(fwl.dest)]) {
+                                    crosstalk=true;
+                                    break;
+                                }
                                 //std::cout<<"  path can continue in node"<<fwl.dest<<std::endl;
                                 skated_paths.push_back(p);
                                 skated_paths.back().push_back(fwl.dest);
                             }
                         }
                     }
-                    if (loop) {
+                    if (loop or crosstalk) {
                         skated_paths.clear();
                         break;
                     }
