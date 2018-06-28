@@ -222,7 +222,7 @@ std::vector<uint64_t> LinkedReadsDatastore::get_tag_reads(bsg10xTag tag) const {
 bsg10xTag LinkedReadsDatastore::get_read_tag(size_t readID) {
     return read_tag[(readID-1)/2];
 }
-std::vector<std::pair<bsg10xTag, uint32_t>> LinkedReadsDatastore::get_readcount_per_tag() {
+std::vector<std::pair<bsg10xTag, uint32_t>> LinkedReadsDatastore::get_tag_readcount() {
     std::vector<std::pair<bsg10xTag, uint32_t>> readcount;
     auto curr_tag=read_tag[0];
     uint32_t curr_count=0;
@@ -243,7 +243,7 @@ void LinkedReadsDatastore::dump_tag_occupancy_histogram(std::string filename) {
     std::ofstream tohf(filename);
     uint64_t oh[10001];
     for (auto &o:oh) o=0;
-    for (auto &t:get_readcount_per_tag()){
+    for (auto &t:get_tag_readcount()){
         ++oh[(t.second>10000 ? 10000:t.second)];
     }
     for (auto i=0;i<10001;++i)

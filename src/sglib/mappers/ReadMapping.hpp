@@ -2,26 +2,26 @@
 // Created by Bernardo Clavijo (EI) on 10/05/2018.
 //
 
-#ifndef BSG_READMAPPER_HPP
-#define BSG_READMAPPER_HPP
+#ifndef BSG_READMAPPING_HPP
+#define BSG_READMAPPING_HPP
 #include "sglib/SequenceGraph.hpp"
 
 
 
-class ReadMapper {
+class ReadMapping {
 public:
-    ReadMapper(){
+    ReadMapping(){
         //just clean the structure, OSX doesn't give you clean memory
-        bzero(this, sizeof(ReadMapper));
+        bzero(this, sizeof(ReadMapping));
     }
-    bool operator==(const ReadMapper &other){
+    bool operator==(const ReadMapping &other){
         return this==&other;
     };
-    bool operator<(const ReadMapper &other) const {
+    bool operator<(const ReadMapping &other) const {
         if (node!=other.node) return node<other.node;
         return read_id<other.read_id;
     };
-    void merge(const ReadMapper &other){};
+    void merge(const ReadMapping &other){};
 
     sgNodeID_t node;
     uint64_t read_id;
@@ -31,4 +31,4 @@ public:
     bool rev=false;
 
 };
-#endif //BSG_READMAPPER_HPP
+#endif //BSG_READMAPPING_HPP

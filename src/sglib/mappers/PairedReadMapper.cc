@@ -20,7 +20,7 @@ void PairedReadMapper::write(std::ofstream &output_file) {
     for (auto i=0;i<count;++i) {
         uint64_t mcount=reads_in_node[i].size();
         output_file.write((const char *) &mcount,sizeof(mcount));
-        output_file.write((const char *) reads_in_node[i].data(), sizeof(ReadMapper) * mcount);
+        output_file.write((const char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
     }
 }
 
@@ -35,7 +35,7 @@ void PairedReadMapper::read(std::ifstream &input_file) {
         uint64_t mcount;
         input_file.read(( char *) &mcount,sizeof(mcount));
         reads_in_node[i].resize(mcount);
-        input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapper) * mcount);
+        input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
     }
     populate_orientation();
 }
@@ -89,14 +89,14 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
      * Read mapping in parallel,
      */
     uint64_t thread_mapped_count[omp_get_max_threads()],thread_total_count[omp_get_max_threads()],thread_multimap_count[omp_get_max_threads()];
-    std::vector<ReadMapper> thread_mapping_results[omp_get_max_threads()];
+    std::vector<ReadMapping> thread_mapping_results[omp_get_max_threads()];
     sglib::OutputLog(sglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
 #pragma omp parallel
     {
         const int min_matches=1;
         std::vector<KmerIDX> readkmers;
         StreamKmerFactory skf(31);
-        ReadMapper mapping;
+        ReadMapping mapping;
         auto blrs=BufferedPairedSequenceGetter(datastore,128*1024,260);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
         auto & mapped_count=thread_mapped_count[omp_get_thread_num()];
@@ -261,7 +261,7 @@ std::vector<uint64_t> PairedReadMapper::size_distribution() {
     for (uint64_t r1=1;r1<read_to_node.size();r1+=2){
         if (read_to_node[r1]!=0 and read_to_node[r1]==read_to_node[r1+1]) {
             auto node=read_to_node[r1];
-            ReadMapper rm1,rm2;
+            ReadMapping rm1,rm2;
             rm1.first_pos=read_firstpos[r1];
             rm1.last_pos=read_lastpos[r1];
             rm1.rev=read_rev[r1];
@@ -323,12 +323,12 @@ PairedReadConnectivityDetail::PairedReadConnectivityDetail(const PairedReadMappe
         }
         if (prm.read_to_node[r1]==us){
             if (prm.read_to_node[r2]==ud){
-                ++pairs_per_orientation[(prm.read_direction_in_node[r1]? 0:1)+(prm.read_direction_in_node[r2]? 0:2)];
+                ++orientation_paircount[(prm.read_direction_in_node[r1]? 0:1)+(prm.read_direction_in_node[r2]? 0:2)];
             }
         }
         else if (prm.read_to_node[r1]==ud) {
             if (prm.read_to_node[r2]==us) {
-                ++pairs_per_orientation[(prm.read_direction_in_node[r2] ? 0 : 1)+(prm.read_direction_in_node[r1] ? 0 : 2)];
+                ++orientation_paircount[(prm.read_direction_in_node[r2] ? 0 : 1)+(prm.read_direction_in_node[r1] ? 0 : 2)];
             }
 
         }

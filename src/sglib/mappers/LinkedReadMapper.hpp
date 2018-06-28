@@ -7,7 +7,7 @@
 
 #include <map>
 
-#include "sglib/mappers/ReadMapper.hpp"
+#include "sglib/mappers/ReadMapping.hpp"
 #include "sglib/factories/KMerIDXFactory.h"
 #include "sglib/readers/SequenceGraphReader.h"
 #include "sglib/SMR.h"
@@ -35,12 +35,13 @@ public:
     void load_from_disk(std::string filename);*/
     void print_stats(){};
     std::set<bsg10xTag> get_node_tags(sgNodeID_t n);
-    std::map<bsg10xTag, std::vector<sgNodeID_t>> get_nodes_per_tag(uint32_t min_nodes=2,const std::vector<bool> & selected_nodes={});
+    std::map<bsg10xTag, std::vector<sgNodeID_t>> get_tag_nodes(uint32_t min_nodes = 2,
+                                                               const std::vector<bool> &selected_nodes = {});
     std::vector<std::pair<sgNodeID_t , sgNodeID_t >> get_tag_neighbour_nodes(uint32_t min_shared,const std::vector<bool> & selected_nodes={});
 
     SequenceGraph & sg;
     LinkedReadsDatastore &datastore;
-    std::vector<std::vector<ReadMapper>> reads_in_node;
+    std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
 
 };

@@ -7,7 +7,7 @@
 
 #include <map>
 
-#include "sglib/mappers/ReadMapper.hpp"
+#include "sglib/mappers/ReadMapping.hpp"
 #include "sglib/factories/KMerIDXFactory.h"
 #include "sglib/readers/SequenceGraphReader.h"
 #include "sglib/SMR.h"
@@ -44,7 +44,7 @@ public:
 
     const SequenceGraph & sg;
     const PairedReadsDatastore & datastore;
-    std::vector<std::vector<ReadMapper>> reads_in_node;
+    std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
     //TODO: reading and writing this would simplify things??
     std::vector<bool> read_direction_in_node;//0-> fw, 1->rev;
@@ -61,14 +61,14 @@ public:
     PairedReadConnectivityDetail(){};
     PairedReadConnectivityDetail(const PairedReadMapper & prm, sgNodeID_t source, sgNodeID_t dest);
     PairedReadConnectivityDetail& operator+=(const PairedReadConnectivityDetail& rhs){
-        this->pairs_per_orientation[0] += rhs.pairs_per_orientation[0];
-        this->pairs_per_orientation[1] += rhs.pairs_per_orientation[1];
-        this->pairs_per_orientation[2] += rhs.pairs_per_orientation[2];
-        this->pairs_per_orientation[3] += rhs.pairs_per_orientation[3];
+        this->orientation_paircount[0] += rhs.orientation_paircount[0];
+        this->orientation_paircount[1] += rhs.orientation_paircount[1];
+        this->orientation_paircount[2] += rhs.orientation_paircount[2];
+        this->orientation_paircount[3] += rhs.orientation_paircount[3];
         return *this;
     }
 
-    uint64_t pairs_per_orientation[4]={0,0,0,0};
+    uint64_t orientation_paircount[4]={0,0,0,0};
 };
 
 #endif //BSG_PAIREDREADMAPPER_HPP

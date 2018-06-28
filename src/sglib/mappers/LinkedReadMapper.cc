@@ -20,7 +20,7 @@ void LinkedReadMapper::write(std::ofstream &output_file) {
     for (auto i=0;i<count;++i) {
         uint64_t mcount=reads_in_node[i].size();
         output_file.write((const char *) &mcount,sizeof(mcount));
-        output_file.write((const char *) reads_in_node[i].data(), sizeof(ReadMapper) * mcount);
+        output_file.write((const char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
     }
 }
 
@@ -35,7 +35,7 @@ void LinkedReadMapper::read(std::ifstream &input_file) {
         uint64_t mcount;
         input_file.read(( char *) &mcount,sizeof(mcount));
         reads_in_node[i].resize(mcount);
-        input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapper) * mcount);
+        input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
     }
 }
 
@@ -87,14 +87,14 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
      * Read mapping in parallel,
      */
     uint64_t thread_mapped_count[omp_get_max_threads()],thread_total_count[omp_get_max_threads()],thread_multimap_count[omp_get_max_threads()];
-    std::vector<ReadMapper> thread_mapping_results[omp_get_max_threads()];
+    std::vector<ReadMapping> thread_mapping_results[omp_get_max_threads()];
     sglib::OutputLog(sglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
 #pragma omp parallel
     {
         const int min_matches=1;
         std::vector<KmerIDX> readkmers;
         StreamKmerFactory skf(31);
-        ReadMapper mapping;
+        ReadMapping mapping;
         auto blrs=BufferedLRSequenceGetter(datastore,128*1024,260);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
         auto & mapped_count=thread_mapped_count[omp_get_thread_num()];
@@ -228,11 +228,11 @@ std::set<bsg10xTag> LinkedReadMapper::get_node_tags(sgNodeID_t n) {
     return tags;
 }
 
-std::map<bsg10xTag, std::vector<sgNodeID_t>> LinkedReadMapper::get_nodes_per_tag(uint32_t min_nodes,
-                                                                                           const std::vector<bool> &selected_nodes) {
+std::map<bsg10xTag, std::vector<sgNodeID_t>> LinkedReadMapper::get_tag_nodes(uint32_t min_nodes,
+                                                                             const std::vector<bool> &selected_nodes) {
     //Approach: node->tags->nodes (checks how many different tags join this node to every other node).
 
-    std::map<bsg10xTag, std::vector<sgNodeID_t>> nodes_per_tag;
+    std::map<bsg10xTag, std::vector<sgNodeID_t>> tag_nodes;
     bsg10xTag curr_tag=0,new_tag=0;
     std::set<sgNodeID_t> curr_nodes;
     sgNodeID_t curr_node;
@@ -245,9 +245,9 @@ std::map<bsg10xTag, std::vector<sgNodeID_t>> LinkedReadMapper::get_nodes_per_tag
         }
         else {
             if (curr_nodes.size()>=min_nodes and curr_tag>0){
-                nodes_per_tag[curr_tag].reserve(curr_nodes.size());
+                tag_nodes[curr_tag].reserve(curr_nodes.size());
                 for (auto &n:curr_nodes)
-                    nodes_per_tag[curr_tag].emplace_back(n);
+                    tag_nodes[curr_tag].emplace_back(n);
             }
             curr_tag=new_tag;
             curr_nodes.clear();
@@ -256,19 +256,19 @@ std::map<bsg10xTag, std::vector<sgNodeID_t>> LinkedReadMapper::get_nodes_per_tag
         }
     }
     if (curr_nodes.size()>=min_nodes and curr_tag>0){
-        nodes_per_tag[curr_tag].reserve(curr_nodes.size());
+        tag_nodes[curr_tag].reserve(curr_nodes.size());
         for (auto &n:curr_nodes)
-            nodes_per_tag[curr_tag].emplace_back(n);
+            tag_nodes[curr_tag].emplace_back(n);
     }
 
-    return nodes_per_tag;
+    return tag_nodes;
 }
 
 std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadMapper::get_tag_neighbour_nodes(uint32_t min_shared,
                                                                                            const std::vector<bool> &selected_nodes) {
     std::vector<std::pair<sgNodeID_t , sgNodeID_t >> tns;
 
-    auto nodes_in_tag=get_nodes_per_tag(2,selected_nodes);
+    auto nodes_in_tag= get_tag_nodes(2, selected_nodes);
 
     std::unordered_map<sgNodeID_t , std::vector<bsg10xTag>> tags_in_node;
     sglib::OutputLog()<<"There are "<<nodes_in_tag.size()<<" informative tags"<<std::endl;
