@@ -25,7 +25,7 @@ public:
     //Linkage creation methods (work on selected nodes)
     LinkageDiGraph make_topology_linkage(int radius);
     LinkageDiGraph make_paired_linkage(int min_reads);
-    LinkageDiGraph make_tag_linkage(int min_reads,float end_perc=.3);
+    LinkageDiGraph make_tag_linkage(int min_tags,float end_perc=.3);
 
     //Linkage filtering methods
     LinkageDiGraph filter_linkage_to_hspnp_duos( uint64_t min_size, float min_ci, float max_ci, const LinkageDiGraph & ldg);

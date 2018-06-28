@@ -96,7 +96,7 @@ int main(int argc, char * argv[]) {
                 /*auto topology_ldg=lu.make_topology_linkage(10);
                 topology_ldg.report_connectivity();
                 ws.sg.write_to_gfa("topology_links.gfa",{},{},{},topology_ldg.links);*/
-                LinkageDiGraph gldg(ws.sg);
+                //LinkageDiGraph gldg(ws.sg);
                 /*if (!ws.paired_read_mappers.empty()) {
                     auto pair_ldg = lu.make_paired_linkage(min_pairs);
                     pair_ldg.report_connectivity();
@@ -106,11 +106,10 @@ int main(int argc, char * argv[]) {
                     pair_ldg.report_connectivity();
                     ws.sg.write_to_gfa("pair_links_no_transitive.gfa", {}, {}, {}, pair_ldg.links);
                 }*/
-                sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
-                //HACK: eliminate nodes with N-N and try again.
                 auto pre_tag_ldg = lu.make_tag_linkage(min_shared_tags);
                 pre_tag_ldg.remove_transitive_links(10);
                 pre_tag_ldg.report_connectivity();
+                sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
                 uint64_t remNN=0;
                 for (auto n=1;n<ws.sg.nodes.size();++n){
                     if (lu.selected_nodes[n]){
