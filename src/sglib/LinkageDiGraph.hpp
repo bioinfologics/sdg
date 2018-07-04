@@ -28,6 +28,8 @@ public:
 
     std::vector<std::vector<sgNodeID_t>> get_all_lines(uint16_t min_nodes) const;
 
+    void dump_to_text(std::string filename);
+    void load_from_text(std::string filename);
 
     SequenceGraph & sg;
     std::vector<std::vector<Link>> links;

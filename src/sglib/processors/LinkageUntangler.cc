@@ -747,11 +747,14 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
     sglib::OutputLog()<<applied<<" solutions applied"<<std::endl;
 }
 
-void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg) {
+void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg, int max_lines) {
     sglib::OutputLog()<<"Starting linear region consolidation via skating with line tag collection..."<<std::endl;
     auto lines=ldg.get_all_lines(2);
-    //sglib::OutputLog()<<"USING ONLY 100 lines as a test"<<std::endl;
-    //lines.resize(100);
+    if (max_lines>0) {
+        sglib::OutputLog()<<"USING ONLY "<<max_lines<< " lines as a test"<<std::endl;
+        lines.resize(max_lines);
+    }
+
     sglib::OutputLog()<<"Creating tag sets for "<<lines.size()<<" linear regions"<<std::endl;
     //---------------------------------Step 1: get tagsets for lines.
     std::vector<std::set<bsg10xTag>> linetagsets;

@@ -27,14 +27,17 @@ int main(int argc, char * argv[]) {
     float tag_imbalance_ends=.1;
     int min_pairs=7;
     int min_shared_tags=10;
+    int dev_max_lines=0;
+    std::string dev_create_linkage,dev_skate_linkage;
     try
     {
-        cxxopts::Options options("bsg-untangler", "graph-based repeat resolution and haplotype separation");
+        cxxopts::Options options("bsg-untangler", "graph-based haplotype separation");
 
         options.add_options()
                 ("help", "Print help")
                 ("w,workspace", "input workspace", cxxopts::value<std::string>(workspace_file))
-                ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
+                ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
+        options.add_options("Heuristics")
                 ("p,paired_reads","paired read scaffolding (experimental)",cxxopts::value<bool>(paired_scaff))
                 ("l,unroll_loops", "unroll simple loops",cxxopts::value<bool>(unroll_loops))
                 ("e,pop_errors", "pop unsupported short-bubbles (as errors)",cxxopts::value<bool>(pop_errors))
@@ -51,6 +54,10 @@ int main(int argc, char * argv[]) {
                 ("min_shared_tags","minimum shared tags to evaluate tag-imbalanced connection",cxxopts::value<int>(min_shared_tags))
                 //("explore_homopolymers","explore_homopolymers (experimental)", cxxopts::value<bool>(explore_homopolymers))
                 ;
+        options.add_options("Development")
+                ("dev_create_linkage","Creates and simplifies linkage and dumps to file",cxxopts::value<std::string>(dev_create_linkage))
+                ("dev_skate_linkage","Loads linkage from file and skates",cxxopts::value<std::string>(dev_skate_linkage))
+                ("dev_max_lines","Limits lines to be skated on dev",cxxopts::value<int>(dev_max_lines));
 
 
 
@@ -59,7 +66,7 @@ int main(int argc, char * argv[]) {
 
         if (result.count("help"))
         {
-            std::cout << options.help({"","Heuristics"}) << std::endl;
+            std::cout << options.help({"","Heuristics","Development"}) << std::endl;
             exit(0);
         }
 
@@ -82,6 +89,41 @@ int main(int argc, char * argv[]) {
     ws.load_from_disk(workspace_file);
     ws.add_log_entry("bsg-untangler run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
+    if (!dev_create_linkage.empty()) {
+        LinkageUntangler lu(ws);
+        lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+        std::unordered_set<sgNodeID_t> selnodes;
+        for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
+        lu.report_node_selection();
+        auto pre_tag_ldg = lu.make_tag_linkage(min_shared_tags);
+        pre_tag_ldg.remove_transitive_links(10);
+        pre_tag_ldg.report_connectivity();
+        sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
+        uint64_t remNN=0;
+        for (auto n=1;n<ws.sg.nodes.size();++n){
+            if (lu.selected_nodes[n]){
+                if (pre_tag_ldg.get_fw_links(n).size()>1 and pre_tag_ldg.get_bw_links(n).size()>1) {
+                    lu.selected_nodes[n]=false;
+                    ++remNN;
+                }
+            }
+        }
+        sglib::OutputLog()<<"Re-trying tag connection after eliminating "<<remNN<<" N-N nodes"<<std::endl;
+        auto tag_ldg = lu.make_tag_linkage(min_shared_tags);
+        tag_ldg.remove_transitive_links(10);
+        tag_ldg.report_connectivity();
+        tag_ldg.dump_to_text(dev_create_linkage);
+        exit(0);
+    }
+    if (!dev_skate_linkage.empty()) {
+        LinkageUntangler lu(ws);
+        LinkageDiGraph tag_ldg(ws.sg);
+        tag_ldg.load_from_text(dev_skate_linkage);
+        tag_ldg.report_connectivity();
+        lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+        lu.expand_linear_regions_skating(tag_ldg,dev_max_lines);
+        exit(0);
+    }
     if (paired_scaff){
         if (!ws.linked_read_mappers.empty()) {
             for (auto round=1;round<11;++round) {

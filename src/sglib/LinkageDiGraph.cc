@@ -148,3 +148,22 @@ std::vector<std::vector<sgNodeID_t>> LinkageDiGraph::get_all_lines(uint16_t min_
     }
     return unitigs;
 }
+
+void LinkageDiGraph::dump_to_text(std::string filename) {
+    std::ofstream of(filename);
+    for (auto &lv:links) for (auto &l:lv){
+        if (llabs(l.source)<=llabs(l.dest)) of<<l.source<<" "<<l.dest<<" "<<l.dist<<std::endl;
+    }
+}
+
+void LinkageDiGraph::load_from_text(std::string filename) {
+    std::ifstream link_file(filename);
+    Link l(0,0,0);
+    while (true){
+        link_file>>l.source;
+        link_file>>l.dest;
+        link_file>>l.dist;
+        if (link_file.eof()) break;
+        add_link(l.source,l.dest,l.dist);
+    }
+}
