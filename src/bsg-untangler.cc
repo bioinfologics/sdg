@@ -93,14 +93,14 @@ int main(int argc, char * argv[]) {
         LinkageUntangler lu(ws);
         lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
         std::unordered_set<sgNodeID_t> selnodes;
-        for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
+        for (sgNodeID_t n=1;n<ws.getGraph().nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
         lu.report_node_selection();
         auto pre_tag_ldg = lu.make_tag_linkage(min_shared_tags);
         pre_tag_ldg.remove_transitive_links(10);
         pre_tag_ldg.report_connectivity();
         sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
         uint64_t remNN=0;
-        for (auto n=1;n<ws.sg.nodes.size();++n){
+        for (auto n=1;n<ws.getGraph().nodes.size();++n){
             if (lu.selected_nodes[n]){
                 if (pre_tag_ldg.get_fw_links(n).size()>1 and pre_tag_ldg.get_bw_links(n).size()>1) {
                     lu.selected_nodes[n]=false;
@@ -117,7 +117,7 @@ int main(int argc, char * argv[]) {
     }
     if (!dev_skate_linkage.empty()) {
         LinkageUntangler lu(ws);
-        LinkageDiGraph tag_ldg(ws.sg);
+        LinkageDiGraph tag_ldg(ws.getGraph());
         tag_ldg.load_from_text(dev_skate_linkage);
         tag_ldg.report_connectivity();
         lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
@@ -125,7 +125,7 @@ int main(int argc, char * argv[]) {
         exit(0);
     }
     if (paired_scaff){
-        if (!ws.linked_read_mappers.empty()) {
+        if (!ws.getLinkedReadMappers().empty()) {
             for (auto round=1;round<11;++round) {
                 sglib::OutputLog()<<"STARTING ROUND #"<<std::to_string(round)<<std::endl;
                 LinkageUntangler lu(ws);
@@ -133,7 +133,7 @@ int main(int argc, char * argv[]) {
                 else lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
 
                 std::unordered_set<sgNodeID_t> selnodes;
-                for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
+                for (sgNodeID_t n=1;n<ws.getGraph().nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
                 lu.report_node_selection();
                 /*auto topology_ldg=lu.make_topology_linkage(10);
                 topology_ldg.report_connectivity();
@@ -153,7 +153,7 @@ int main(int argc, char * argv[]) {
                 pre_tag_ldg.report_connectivity();
                 sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
                 uint64_t remNN=0;
-                for (auto n=1;n<ws.sg.nodes.size();++n){
+                for (auto n=1;n<ws.getGraph().nodes.size();++n){
                     if (lu.selected_nodes[n]){
                         if (pre_tag_ldg.get_fw_links(n).size()>1 and pre_tag_ldg.get_bw_links(n).size()>1) {
                             lu.selected_nodes[n]=false;
@@ -165,13 +165,13 @@ int main(int argc, char * argv[]) {
                 auto tag_ldg = lu.make_tag_linkage(min_shared_tags);
                 tag_ldg.remove_transitive_links(10);
                 tag_ldg.report_connectivity();
-                ws.sg.write_to_gfa(output_prefix + "_tag_nt_" + std::to_string(round) + ".gfa", {}, {}, selnodes, tag_ldg.links);
+                ws.getGraph().write_to_gfa(output_prefix + "_tag_nt_" + std::to_string(round) + ".gfa", {}, {}, selnodes, tag_ldg.links);
                 sglib::OutputLog() << "Simplifying linear paths" << std::endl;
                 lu.expand_linear_regions_skating(tag_ldg);
-                auto joined=ws.sg.join_all_unitigs();
-                ws.sg.write_to_gfa(output_prefix + "_after_expansion_" + std::to_string(round) + ".gfa", {}, {});
+                auto joined=ws.getGraph().join_all_unitigs();
+                ws.getGraph().write_to_gfa(output_prefix + "_after_expansion_" + std::to_string(round) + ".gfa", {}, {});
                 //sglib::OutputLog()<<"TODO: remap reads and re-start the whole thing..."<<std::endl;
-                ws.kci.reindex_graph();
+                ws.getKCI().reindex_graph();
                 ws.remap_all();
                 if (joined==0) break;
             }
@@ -257,6 +257,14 @@ int main(int argc, char * argv[]) {
 
         }
         if (!ws.getLongReadMappers().empty()) {
+            LinkageUntangler lu(ws);
+            if (select_hspnps) lu.select_nodes_by_HSPNPs(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+            else lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+
+            std::unordered_set<sgNodeID_t> selnodes;
+            for (sgNodeID_t n=1;n<ws.getGraph().nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
+            lu.report_node_selection();
+
             auto long_ldg = lu.make_longRead_linkage();
             long_ldg.report_connectivity();
             ws.getGraph().write_to_gfa("long_links.gfa", {}, {}, {}, long_ldg.links);

@@ -131,3 +131,44 @@ SequenceGraphPath &SequenceGraphPath::operator=(const SequenceGraphPath &other) 
 std::vector<Link> SequenceGraphPath::get_next_links() {
     return sg.get_fw_links(nodes.back());
 }
+
+size_t SequenceGraphPath::get_sequence_size_fast() {
+    size_t size=0;
+    //std::string s="";
+    sgNodeID_t pnode=0;
+    // just iterate over every node in path - contig names are converted to ids at construction
+    for (auto &n:nodes) {
+        std::string nseq;
+        size=sg.nodes[llabs(n)].sequence.size();
+        if (pnode !=0){
+            //find link between pnode' output (+pnode) and n's sink (-n)
+            auto l=sg.links[llabs(pnode)].begin();
+            for (;l!=sg.links[llabs(pnode)].end();++l)
+                if (l->source==pnode and l->dest==n) break;
+            if (l==sg.links[llabs(pnode)].end()) {
+                std::cout<<"can't find a link between "<<pnode<<" and "<<n<<std::endl;
+                throw std::runtime_error("path has no link");
+            } else {
+                size+=l->dist;
+            }
+        }
+        pnode=-n;
+    }
+    return size;
+}
+
+bool SequenceGraphPath::is_unitig() {
+    for (auto i=0;i<nodes.size();++i) {
+        auto fwl=sg.get_fw_links(nodes[i]);
+        auto bwl=sg.get_bw_links(nodes[i]);
+        if (i>0){
+            if (bwl.size()!=1) return false;
+            if (bwl[0].dest!=-nodes[i-1]) return false;
+        }
+        if (i<nodes.size()-1){
+            if (fwl.size()!=1) return false;
+            if (fwl[0].dest!=nodes[i+1]) return false;
+        }
+    }
+    return true;
+}

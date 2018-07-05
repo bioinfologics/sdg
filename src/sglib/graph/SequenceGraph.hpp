@@ -53,6 +53,15 @@ public:
      */
     sgNodeID_t add_node(Node n);
     void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
+
+    /**
+     *
+     * @param source
+     * @param dest
+     * @return
+     */
+    Link get_link(sgNodeID_t source, sgNodeID_t dest);
+
     /**
      * Get list of Links from a node
      * @param n Node to search links for
@@ -187,13 +196,14 @@ public:
      * Delete a link
      * @param source source
      * @param dest  destination
+     * Returns true if a link was removed, false otherwise
      */
-    void remove_link(sgNodeID_t source, sgNodeID_t dest);
+    bool remove_link(sgNodeID_t source, sgNodeID_t dest);
     //These two need to mark expanded edges, and transfer read maps and unique kmers for non-expanded, but just read map for expanded.
 
     void join_path(const SequenceGraphPath p, bool consume_nodes=true);
     // expand_path --> creates an edge with the consensus of a path, eliminates old nodes if only in path and unused edges
-    void join_all_unitigs();
+    uint32_t join_all_unitigs();
     std::vector<SequenceGraphPath> get_all_unitigs(uint16_t min_nodes);
     std::vector<SequenceSubGraph> get_all_tribbles(){};
 
@@ -211,7 +221,7 @@ public:
      * @param max_size
      * @return
      */
-    std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size);
+    std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes = 0);
     // simplify --> executes expand_path on every multi-sequence unitig
 
 
@@ -251,7 +261,7 @@ public:
      */
     Node& get_node(sgNodeID_t n) { return nodes[(n>0)?n:-n];}
 
-    std::vector<sgNodeID_t > find_canonical_repeats();
+//    std::vector<sgNodeID_t > find_canonical_repeats();
 
     bool is_loop(std::array<sgNodeID_t, 4> nodes);
 

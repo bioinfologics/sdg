@@ -180,11 +180,12 @@ add_library(bsg SHARED
             src/sglib/processors/FlowFollower.cc
             src/sglib/processors/PathExplorer.cpp
             src/sglib/processors/LinkageUntangler.cc
-        src/sglib/workspace/WorkSpace.cc
+            src/sglib/workspace/WorkSpace.cc
             src/sglib/SequenceThreader.cpp
             src/sglib/KmerCompressionIndex.cc
             src/sglib/SequenceGraphJournal.cc
             src/sglib/Scaffolder.cc
+            src/sglib/processors/GraphEditor.cc
         )
 
 add_dependencies(bsg minimap2)

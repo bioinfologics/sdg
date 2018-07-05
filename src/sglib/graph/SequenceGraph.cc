@@ -117,12 +117,15 @@ Link SequenceGraph::get_link(sgNodeID_t source, sgNodeID_t dest) {
     return Link(0,0,0);
 }
 
-void SequenceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
+bool SequenceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
     auto & slinks = links[(source > 0 ? source : -source)];
+    auto slinksLen = slinks.size();
     slinks.erase(std::remove(slinks.begin(), slinks.end(), Link(source,dest,0)), slinks.end());
     auto & dlinks = links[(dest > 0 ? dest : -dest)];
+    auto dlinksLen = dlinks.size();
     dlinks.erase(std::remove(dlinks.begin(), dlinks.end(), Link(dest,source,0)), dlinks.end());
-
+    if (slinks.size() != slinksLen or dlinks.size() != dlinksLen) return true;
+    return false;
 }
 
 std::vector<Link> SequenceGraph::get_fw_links(sgNodeID_t n) const {
@@ -644,98 +647,6 @@ void SequenceGraph::consume_nodes(const SequenceGraphPath &p, const std::set<sgN
         if (ext_neigh) continue;
         remove_node(n);
     }
-}
-
-void SequenceGraphPath::reverse(){
-    std::vector<sgNodeID_t> newn;
-    for (auto n=nodes.rbegin();n<nodes.rend();++n) newn.emplace_back(-*n);
-    //std::swap(nodes,newn);
-    nodes=newn;
-}
-
-bool SequenceGraphPath::is_canonical() {
-    auto rp=*this;
-    rp.reverse();
-    return this->get_sequence()<rp.get_sequence();
-}
-
-bool SequenceGraphPath::is_unitig() {
-    for (auto i=0;i<nodes.size();++i) {
-        auto fwl=sg.get_fw_links(nodes[i]);
-        auto bwl=sg.get_bw_links(nodes[i]);
-        if (i>0){
-            if (bwl.size()!=1) return false;
-            if (bwl[0].dest!=-nodes[i-1]) return false;
-        }
-        if (i<nodes.size()-1){
-            if (fwl.size()!=1) return false;
-            if (fwl[0].dest!=nodes[i+1]) return false;
-        }
-    }
-    return true;
-}
-
-const bool SequenceGraphPath::operator<(const SequenceGraphPath &other) {
-    for (auto i=0;i<nodes.size();++i){
-        if (other.nodes.size()<i) return true;
-        if (nodes[i]<other.nodes[i]) return true;
-        if (nodes[i]>other.nodes[i]) return false;
-    }
-    return false;
-}
-
-const bool SequenceGraphPath::operator==(const SequenceGraphPath &other) {
-    if (other.nodes.size()!=nodes.size()) return false;
-    for (auto i=0;i<nodes.size();++i){
-        if (nodes[i]!=other.nodes[i]) return false;
-    }
-    return true;
-}
-
-bool SequenceGraphPath::extend_if_coherent(SequenceGraphPath s) {
-//    int offset=-1;
-//    for (auto i=0;i<nodes.size();++i) {
-//        if (nodes[i] == s.nodes[0]) {
-//            offset = i;
-//            break;
-//        }
-//    }
-//    if (offset<=0) {
-//    if (offset<0) {
-//        offset=1;
-//        for (auto i=0;i<nodes.size();++i) {
-//            if (nodes[i] == s.nodes[0]) {
-//                offset = -i;
-//                break;
-//            }
-//        }
-//    }
-}
-
-std::vector<SequenceSubGraph> SequenceGraph::get_all_tribbles() {
-
-
-    for (sgNodeID_t n=1;n<nodes.size();++n) {
-        //Heuristic to find "tribbles"
-        // A --- B -- C -- H
-        //  \     \      /
-        //   \     E    /
-        //    \     \  /
-        //      F -- G
-        // A->[B-F]
-        // B->[C-E]
-        // C->H
-        // E->G
-        // F->G
-        // F->H
-        auto a_fw=get_fw_links(n);
-        if (a_fw.size()!=2) continue;
-        auto b_fw=get_fw_links(a_fw[0].dist);
-
-        sgNodeID_t A, B, C, D, E, F, G, H;
-    }
-
-
 }
 
 std::vector<nodeVisitor>

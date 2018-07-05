@@ -21,6 +21,7 @@ public:
 
     std::string get_fasta_header(bool use_oldnames = false) const;
     std::string get_sequence() const;
+    size_t get_sequence_size_fast();
     std::vector<Link> get_next_links();
     void reverse();
     bool is_canonical();
@@ -33,6 +34,7 @@ public:
         nodes.clear();
     };
 
+    bool is_unitig();
     std::vector<sgNodeID_t >& getNodes() {return nodes;}
     const std::vector<sgNodeID_t >& getNodes() const {return nodes;}
 

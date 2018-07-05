@@ -17,7 +17,7 @@ public:
         while (*s!='\0' and *s!='\n') {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
                     // Is fwd
@@ -43,7 +43,7 @@ public:
         while (*s!='\0' and *s!='\n') {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
                     // Is fwd
@@ -72,7 +72,7 @@ public:
         while (*s!='\0' and *s!='\n') {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
                     // Is fwd
@@ -102,7 +102,7 @@ public:
         while (*s!='\0' and *s!='\n') {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
                     if (kset.count(fkmer)==0) ++uncovered;
@@ -334,13 +334,14 @@ LinkageDiGraph LinkageUntangler::make_paired_linkage(int min_reads) {
 
 LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc) {
     SequenceGraph& sg(ws.getGraph());
+    std::vector<LinkedReadMapper>& linked_read_mappers(ws.getLinkedReadMappers());
     //STEP 1 - identify candidates by simple tag-sharing.
-    LinkageDiGraph ldg(ws.sg);
+    LinkageDiGraph ldg(sg);
 
     //Step 1 - tag neighbours.
 
     sglib::OutputLog()<<"Getting tag neighbours"<<std::endl;
-    auto pass_sharing=ws.linked_read_mappers[0].get_tag_neighbour_nodes(min_reads,selected_nodes);
+    auto pass_sharing=linked_read_mappers[0].get_tag_neighbour_nodes(min_reads,selected_nodes);
 
     sglib::OutputLog()<<"Node pairs with more than "<<min_reads<<" shared tags: "<<pass_sharing.size()<<std::endl;
 
@@ -561,9 +562,10 @@ LinkageDiGraph LinkageUntangler::make_longRead_linkage() {
 
 LinkageDiGraph LinkageUntangler::filter_linkage_to_hspnp_duos(uint64_t min_size, float min_ci, float max_ci,
                                                               const LinkageDiGraph &ldg_old) {
+    SequenceGraph& sg(ws.getGraph());
     std::unordered_map<sgNodeID_t,sgNodeID_t> node_to_parallel;
     //1- get all hspnps -> create a map of parallels
-    LinkageDiGraph ldg_new(ws.sg);
+    LinkageDiGraph ldg_new(sg);
     auto hspnps=get_HSPNPs(min_size,min_ci,max_ci);
     for (auto h:hspnps) {
         node_to_parallel[h.first]=h.second;
@@ -595,13 +597,14 @@ LinkageDiGraph LinkageUntangler::filter_linkage_to_hspnp_duos(uint64_t min_size,
 }
 
 void LinkageUntangler::expand_trivial_repeats(const LinkageDiGraph & ldg) {
+    SequenceGraph& sg(ws.getGraph());
     uint64_t aa=0,ab=0;
-    for (auto n=1;n<ws.sg.nodes.size();++n) {
-        if (ws.sg.nodes[n].status == sgNodeDeleted) continue;
+    for (auto n=1;n<sg.nodes.size();++n) {
+        if (sg.nodes[n].status == sgNodeDeleted) continue;
         //check node is 2-2
-        auto bwl=ws.sg.get_bw_links(n);
+        auto bwl=sg.get_bw_links(n);
         if (bwl.size()!=2) continue;
-        auto fwl=ws.sg.get_fw_links(n);
+        auto fwl=sg.get_fw_links(n);
         if (fwl.size()!=2) continue;
         auto p1=-bwl[0].dest;
         auto p2=-bwl[1].dest;
@@ -613,11 +616,11 @@ void LinkageUntangler::expand_trivial_repeats(const LinkageDiGraph & ldg) {
         auto p2ll=ldg.get_fw_links(p2);
         if (p2ll.size()!=1) continue;
         if (p1ll[0].dest==n1 and p2ll[0].dest==n2){
-            ws.sg.expand_node(n,{{p1},{p2}},{{n1},{n2}});
+            sg.expand_node(n,{{p1},{p2}},{{n1},{n2}});
             ++aa;
         }
         else if (p2ll[0].dest==n1 and p1ll[0].dest==n2) {
-            ws.sg.expand_node(n,{{p1},{p2}},{{n2},{n1}});
+            sg.expand_node(n,{{p1},{p2}},{{n2},{n1}});
             ++ab;
         }
         else continue;
@@ -626,6 +629,8 @@ void LinkageUntangler::expand_trivial_repeats(const LinkageDiGraph & ldg) {
 }
 
 void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
+    std::vector<LinkedReadsDatastore>& linked_read_datastores(ws.getLinkedReadDatastores());
+    std::vector<LinkedReadMapper>& linked_read_mappers(ws.getLinkedReadMappers());
     sglib::OutputLog()<<"Starting linear region expansion..."<<std::endl;
     //sglib::OutputLog()<<"Looking for \"lines\"..."<<std::endl;
     auto lines=ldg.get_all_lines(2);
@@ -636,7 +641,7 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
     //---------------------------------Step 1: get tagsets for lines.
     std::vector<std::set<bsg10xTag>> linetagsets;
     linetagsets.reserve(lines.size());
-    BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,100000,1000);
+    BufferedTagKmerizer btk(linked_read_datastores[0],31,100000,1000);
     for (auto l:lines){
         //sglib::OutputLog()<<"Analising line: ";
         //for (auto &ln:l) std::cout<<"seq"<<llabs(ln)<<", ";
@@ -645,8 +650,8 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
         std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
         for (auto &ln:l) {
             std::map<bsg10xTag ,uint32_t> ntagcounts;
-            for (auto rm:ws.linked_read_mappers[0].reads_in_node[llabs(ln)]){
-                auto tag=ws.linked_read_datastores[0].get_read_tag(rm.read_id);
+            for (auto rm:linked_read_mappers[0].reads_in_node[llabs(ln)]){
+                auto tag=linked_read_datastores[0].get_read_tag(rm.read_id);
                 ++ntagcounts[tag];
             }
             for (auto ntc:ntagcounts) {
@@ -658,9 +663,9 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
         std::set<bsg10xTag> lineTagSet;
         for (auto tc:tagcounts) {
             auto tag=tc.first;
-            auto reads=ws.linked_read_datastores[0].get_tag_reads(tc.first);
+            auto reads=linked_read_datastores[0].get_tag_reads(tc.first);
             std::set<sgNodeID_t> nodes;
-            for (auto r:reads) nodes.insert(ws.linked_read_mappers[0].read_to_node[r]);
+            for (auto r:reads) nodes.insert(linked_read_mappers[0].read_to_node[r]);
             tagtotals[tag].first=nodes.size()-nodes.count(0);
             tagtotals[tag].second=reads.size();
             if (tc.second.first>1 and reads.size()<3000) lineTagSet.insert(tc.first);
@@ -679,7 +684,7 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
             evaluated++;
             auto from = l[i];
             auto to = l[i + 1];
-            auto paths = ws.sg.find_all_paths_between(from, to, 400000, 20);
+            auto paths = ws.getGraph().find_all_paths_between(from, to, 400000, 20);
             if (paths.size()>0) found++;
             alternatives.back().emplace_back(paths);
             total_paths+=paths.size();
@@ -700,7 +705,7 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
     {
         KmerMapCounter km_count(31);
         KmerMapCreator km_create(31);
-        BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+        BufferedLRSequenceGetter blrsg(linked_read_datastores[0], 200000, 1000);
         std::unordered_map<uint64_t, uint32_t> kmercoverages;
         uint64_t done=0;
 #pragma omp for schedule(static, 100)
@@ -716,13 +721,13 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
 //            kmercoverages.reserve(t);
             for (auto &alts:alternatives[i]) {
                 for (auto &a:alts) {
-                    for (auto n:a.nodes) {
-                        km_create.create_all_kmers(ws.sg.nodes[llabs(n)].sequence.c_str(), kmercoverages);
+                    for (auto n:a.getNodes()) {
+                        km_create.create_all_kmers(ws.getGraph().nodes[llabs(n)].sequence.c_str(), kmercoverages);
                     }
                 }
             }
             for (auto &t:linetagsets[i]) {
-                for (auto rid:ws.linked_read_datastores[0].get_tag_reads(t)) {
+                for (auto rid:linked_read_datastores[0].get_tag_reads(t)) {
                     km_count.count_all_kmers(blrsg.get_read_sequence(rid), kmercoverages);
                 }
             }
@@ -746,8 +751,8 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
             bool too_many=false;
             for (auto j=0;j<alternatives[i][ia].size();++j){
                 uint64_t missed=0;
-                for (auto n:alternatives[i][ia][j].nodes) {
-                    for (auto x:kvc.count_all_kmers(ws.sg.nodes[llabs(n)].sequence.c_str())) {
+                for (auto n:alternatives[i][ia][j].getNodes()) {
+                    for (auto x:kvc.count_all_kmers(ws.getGraph().nodes[llabs(n)].sequence.c_str())) {
                         if (linekmercoverages[i][x] < 8) ++missed;//TODO: maybe ask for more than 1 read coverage?
                     }
                 }
@@ -764,7 +769,7 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
             }
             //std::cout<<"Solution for line "<<i<<" jump #"<<ia<<": "<<best<<" / "<<alternatives[i][ia].size() <<std::endl;
             if (best!=-1){
-                for (auto n:alternatives[i][ia][best].nodes) {
+                for (auto n:alternatives[i][ia][best].getNodes()) {
                     if (selected_nodes[llabs(n)]){
                         best=-1;
                         break;
@@ -778,10 +783,10 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
             }
             else {
                 ++solved;
-                sols.emplace_back(ws.sg);
-                sols.back().nodes.emplace_back(lines[i][ia]);
-                for (auto n:alternatives[i][ia][best].nodes) sols.back().nodes.emplace_back(n);
-                sols.back().nodes.emplace_back(lines[i][ia+1]);
+                sols.emplace_back(ws.getGraph());
+                sols.back().getNodes().emplace_back(lines[i][ia]);
+                for (auto n:alternatives[i][ia][best].getNodes()) sols.back().getNodes().emplace_back(n);
+                sols.back().getNodes().emplace_back(lines[i][ia+1]);
             }
         }
     }
@@ -795,6 +800,8 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
 }
 
 void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg, int max_lines) {
+    std::vector<LinkedReadsDatastore>& linked_read_datastores(ws.getLinkedReadDatastores());
+    std::vector<LinkedReadMapper>& linked_read_mappers(ws.getLinkedReadMappers());
     sglib::OutputLog()<<"Starting linear region consolidation via skating with line tag collection..."<<std::endl;
     auto lines=ldg.get_all_lines(2);
     if (max_lines>0) {
@@ -806,7 +813,7 @@ void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg,
     //---------------------------------Step 1: get tagsets for lines.
     std::vector<std::set<bsg10xTag>> linetagsets;
     linetagsets.reserve(lines.size());
-    BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,100000,1000);
+    BufferedTagKmerizer btk(linked_read_datastores[0],31,100000,1000);
     for (auto l:lines){
         //sglib::OutputLog()<<"Analising line: ";
         //for (auto &ln:l) std::cout<<"seq"<<llabs(ln)<<", ";
@@ -815,8 +822,8 @@ void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg,
         std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
         for (auto &ln:l) {
             std::map<bsg10xTag ,uint32_t> ntagcounts;
-            for (auto rm:ws.linked_read_mappers[0].reads_in_node[llabs(ln)]){
-                auto tag=ws.linked_read_datastores[0].get_read_tag(rm.read_id);
+            for (auto rm:linked_read_mappers[0].reads_in_node[llabs(ln)]){
+                auto tag=linked_read_datastores[0].get_read_tag(rm.read_id);
                 ++ntagcounts[tag];
             }
             for (auto ntc:ntagcounts) {
@@ -828,9 +835,9 @@ void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg,
         std::set<bsg10xTag> lineTagSet;
         for (auto tc:tagcounts) {
             auto tag=tc.first;
-            auto reads=ws.linked_read_datastores[0].get_tag_reads(tc.first);
+            auto reads=linked_read_datastores[0].get_tag_reads(tc.first);
             std::set<sgNodeID_t> nodes;
-            for (auto r:reads) nodes.insert(ws.linked_read_mappers[0].read_to_node[r]);
+            for (auto r:reads) nodes.insert(linked_read_mappers[0].read_to_node[r]);
             tagtotals[tag].first=nodes.size()-nodes.count(0);
             tagtotals[tag].second=reads.size();
             if (tc.second.first>1 and reads.size()<3000) lineTagSet.insert(tc.first);
@@ -846,13 +853,13 @@ void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg,
     std::vector<SequenceGraphPath> sols;
 #pragma omp parallel
     {
-        BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+        BufferedLRSequenceGetter blrsg(linked_read_datastores[0], 200000, 1000);
         std::vector<SequenceGraphPath> tsols;
         uint64_t donelines=0;
 #pragma omp for schedule(dynamic,1)
         for (auto i=0; i<lines.size(); ++i){
             //std::cout<<"Creating kmer set for line"<<i<<" from tags"<<std::endl;
-            auto ltkmers=ws.linked_read_datastores[0].get_tags_kmers(31,3,linetagsets[i],blrsg);
+            auto ltkmers=linked_read_datastores[0].get_tags_kmers(31,3,linetagsets[i],blrsg);
             //std::cout<<"Line kmer set has "<<ltkmers.size()<<" kmers"<<std::endl;
             UncoveredKmerCounter ukc(31,ltkmers);
             //std::cout<<"Evaluating paths for "<<lines[i].size()-1<<" junctions"<<std::endl;
@@ -874,7 +881,7 @@ void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg,
                             continue;
                         }
                         //std::cout<<" expanding fw from node "<<p.back()<<std::endl;
-                        for (auto fwl:ws.sg.get_fw_links(p.back())) {
+                        for (auto fwl:ws.getGraph().get_fw_links(p.back())) {
                             //std::cout<<"  considering fwl to "<<fwl.dest<<std::endl;
                             if (std::count(p.begin(),p.end(),fwl.dest)>0 or std::count(p.begin(),p.end(),-fwl.dest)>0){
                                 loop=true;
@@ -882,7 +889,7 @@ void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg,
                                 break;
                             }
 
-                            auto u=ukc.count_uncovered(ws.sg.nodes[llabs(fwl.dest)].sequence.c_str());
+                            auto u=ukc.count_uncovered(ws.getGraph().nodes[llabs(fwl.dest)].sequence.c_str());
                             //std::cout<<"  Uncovered kmers in "<<fwl.dest<<" ("<<ws.sg.nodes[llabs(fwl.dest)].sequence.size()<<" bp): "
                             //                                                                                                <<u<<std::endl;
                             if ( u == 0) {
@@ -907,7 +914,7 @@ void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg,
                     if (p.back()==to) ++complete;
                     else ++incomplete;
                 }
-                if (complete==1 and incomplete==0) tsols.emplace_back(SequenceGraphPath(ws.sg,skated_paths[0]));
+                if (complete==1 and incomplete==0) tsols.emplace_back(SequenceGraphPath(ws.getGraph(),skated_paths[0]));
                 //std::cout<<"Skating line #"<<i+1<<" junction #"<<j+1<<" produced "<<complete<<" complete paths and "<<incomplete<<" possibly incomplete paths"<<std::endl;
             }
             if (++donelines%100==0) std::cout<<"."<<std::flush;

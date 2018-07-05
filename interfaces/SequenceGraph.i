@@ -70,6 +70,7 @@ namespace std {
    %template(vectorLongReadMapping) std::vector<LongReadMapping>;
    %template(SGNodePair) std::pair<sgNodeID_t, sgNodeID_t>;
    %template(vectorSGNodePair) std::vector<std::pair<sgNodeID_t, sgNodeID_t>>;
+   %template(vectorvectorLink) std::vector<std::vector<Link>>;
 };
 
 

@@ -3,6 +3,7 @@
 //
 
 #include <sglib/logger/OutputLog.h>
+#include <fstream>
 #include "LinkageDiGraph.hpp"
 void LinkageDiGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d) {
     if (llabs(source)>=links.size()) links.resize(llabs(source)+1);
