@@ -59,9 +59,10 @@ public:
 };
 
 class Untangler {
+    WorkSpace &ws;
 public:
     explicit Untangler(WorkSpace & _ws): ws(_ws) {};
-
+    Untangler(Untangler &other) = delete;
     //Functions evaluating 10x tags linkage / coverage
     /**
      * @brief returns the percentage of reads in both ends of node covered by tags in tags
@@ -138,7 +139,6 @@ public:
                                           const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,
                                           const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & fndist);
 
-    WorkSpace &ws;
 };
 
 

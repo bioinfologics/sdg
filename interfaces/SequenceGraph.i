@@ -1,7 +1,10 @@
 %module bsg
+%ignore Backbone;
+%ignore PairedReadLinker;
 %{
 /* Includes the header in the wrapper code */
 #include <cstdint>
+#include <sstream>
 #include "sglib/types/KmerTypes.hpp"
 #include "sglib/types/GenericTypes.hpp"
 #include "sglib/graph/SequenceSubGraph.hpp"
@@ -18,6 +21,8 @@
 #include "sglib/mappers/PairedReadMapper.hpp"
 #include "sglib/mappers/threader/NodeMapper.h"
 #include "sglib/mappers/threader/MappingThreader.h"
+
+#include "sglib/processors/Untangler.hpp"
 %}
 
 %include "python_docs.i"
@@ -35,6 +40,7 @@
 %include "sglib/KmerCompressionIndex.hpp"
 %include "sglib/workspace/WorkSpace.hpp"
 
+%include "sglib/processors/Untangler.hpp"
 
 %include "sglib/datastores/LinkedReadsDatastore.hpp"
 %include "sglib/datastores/LongReadsDatastore.hpp"
@@ -50,6 +56,7 @@ namespace std {
    %template(vectorDouble) vector<double>;
    %template(vectorFloat) vector<float>;
    %template(vectorString) vector<string>;
+   %template(vectorLink) vector<Link>;
    %template(vectorSGNode) vector<sgNodeID_t>;
    //%template(vectorPath) vector<SequenceGraphPath>;
    %template(vectorNode) vector<Node>;
@@ -61,7 +68,26 @@ namespace std {
    %template(vectorReadPosSize) std::vector< ReadPosSize >;
    %template(vectorReadMapping) std::vector<ReadMapping>;
    %template(vectorLongReadMapping) std::vector<LongReadMapping>;
+   %template(SGNodePair) std::pair<sgNodeID_t, sgNodeID_t>;
+   %template(vectorSGNodePair) std::vector<std::pair<sgNodeID_t, sgNodeID_t>>;
 };
+
+
+%define __STR__()
+std::string __str__() {
+  std::ostringstream out;
+  out << *$self;
+  return out.str().c_str();
+}
+%enddef
+
+%extend Link{
+    __STR__();
+}
+
+%extend Node{
+    __STR__();
+}
 
 //TODO: Make sure this changes on new releases
 %pythoncode %{

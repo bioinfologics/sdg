@@ -126,6 +126,28 @@ LongReadMapper::~LongReadMapper() {
     mm_idx_destroy(graph_index);
 }
 
+bool LongReadMapper::link_is_valid(const LongReadMapping &fromMapping, const LongReadMapping &toMapping) {
+    // Check that the mappings are larger than 200bp
+    if (fromMapping.qEnd-fromMapping.qStart < 80 or toMapping.qEnd-toMapping.qStart < 80) {
+        return false;
+    }
+    // Check the query is not overlapped by more than 60%
+    if (toMapping.qStart <= fromMapping.qEnd) {
+        auto olpSize = std::max(fromMapping.qStart,toMapping.qStart) - std::min(fromMapping.qEnd,toMapping.qEnd);
+        if (olpSize > std::abs(fromMapping.qEnd - fromMapping.qStart)*.8 or olpSize > std::abs(toMapping.qEnd-toMapping.qStart)*.8) {
+            return false;
+        }
+    }
+
+    // Check that the score is over 90% on both ends
+//        if (fromMapping.score < std::abs(fromMapping.qEnd-fromMapping.qStart)*.9f or
+//            toMapping.score < std::abs(toMapping.qEnd - toMapping.qStart)*.9f) {
+//            return false;
+//        }
+
+    return true;
+}
+
 void LongReadMapper::read(std::string filename) {
     // Read the mappings from file
     sglib::OutputLog() << "Reading long read mappings" << std::endl;

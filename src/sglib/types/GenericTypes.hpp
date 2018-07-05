@@ -21,17 +21,29 @@ public:
     Node(std::string _seq, sgNodeStatus_t _status) : sequence(_seq), status(_status){};
     Node(std::string _seq) : sequence(_seq),status(sgNodeActive){};
     Node() = default;
-    std::string sequence;
-    sgNodeStatus_t status;
+    std::string sequence = "";
+    sgNodeStatus_t status = sgNodeActive;
     bool is_canonical();
     void make_rc();
+
+    friend std::ostream &operator<<(std::ostream &os, const Node &node) {
+        if (node.sequence.length() > 20) {
+            os << node.sequence.substr(0, 20) << " ... " << node.sequence.substr(node.sequence.length() - 20, 20);
+        } else {
+            os << node.sequence;
+        }
+        return os;
+    }
+
 };
 
 class Link{
 public:
+    Link(){};
     Link( sgNodeID_t _src, sgNodeID_t _dst, int32_t _dist) : source(_src), dest(_dst), dist(_dist) {};
-    sgNodeID_t source,dest;
-    int32_t dist;
+    sgNodeID_t source = 0;
+    sgNodeID_t dest = 0;
+    int32_t dist = 0;
 
     bool operator==( const  Link);
     bool operator<(const Link)const;
