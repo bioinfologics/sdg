@@ -222,20 +222,29 @@ std::vector<uint64_t> LinkedReadsDatastore::get_tag_reads(bsg10xTag tag) const {
 bsg10xTag LinkedReadsDatastore::get_read_tag(size_t readID) {
     return read_tag[(readID-1)/2];
 }
+std::vector<std::pair<bsg10xTag, uint32_t>> LinkedReadsDatastore::get_tag_readcount() {
+    std::vector<std::pair<bsg10xTag, uint32_t>> readcount;
+    auto curr_tag=read_tag[0];
+    uint32_t curr_count=0;
+    for (auto &t:read_tag){
+        if (t!=curr_tag){
+            if (curr_tag!=0) readcount.emplace_back(curr_tag,curr_count);
+            curr_count=0;
+            curr_tag=t;
+        }
+        ++curr_count;
+    }
+    if (curr_tag!=0) readcount.emplace_back(curr_tag,curr_count);
+    return readcount;
+}
+
 
 void LinkedReadsDatastore::dump_tag_occupancy_histogram(std::string filename) {
     std::ofstream tohf(filename);
     uint64_t oh[10001];
     for (auto &o:oh) o=0;
-    auto curr_tag=read_tag[0];
-    uint64_t curr_count=0;
-    for (auto &t:read_tag){
-        if (t!=curr_tag){
-            if (curr_tag!=0) ++oh[(curr_count>10000 ? 10000:curr_count)];
-            curr_count=0;
-            curr_tag=t;
-        }
-        ++curr_count;
+    for (auto &t:get_tag_readcount()){
+        ++oh[(t.second>10000 ? 10000:t.second)];
     }
     for (auto i=0;i<10001;++i)
         if (oh[i]) tohf<<i<<","<<oh[i]<<std::endl;
@@ -280,7 +289,7 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
     all_kmers.reserve(read_ids.size()*(readsize-k+1));
     for (auto rid:read_ids){
             skf.produce_all_kmers(blrsg.get_read_sequence(rid),all_kmers);
-     }
+    }
     std::sort(all_kmers.begin(),all_kmers.end());
     std::unordered_set<uint64_t> kset;
     auto ri=all_kmers.begin();
@@ -325,7 +334,7 @@ const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {
 
 void BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {
     auto read_ids=datastore.get_tag_reads(tag);
-    counts.reserve(counts.size()+read_ids.size()*(datastore.readsize-K+1));
+    //counts.reserve(counts.size()+read_ids.size()*(datastore.readsize-K+1));
     for (auto rid:read_ids){
         skf.produce_all_kmers(bprsg.get_read_sequence(rid),counts);
     }
@@ -334,7 +343,9 @@ void BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {
 std::unordered_set<uint64_t> BufferedTagKmerizer::get_tags_kmers(int min_tag_cov, std::set<bsg10xTag> tags) {
     counts.clear();
     for (auto t:tags) get_tag_kmers(t);
+    std::cout<<"Sorting "<<counts.size()<<" kmers..."<<std::endl;
     std::sort(counts.begin(),counts.end());
+    std::cout<<"...DONE"<<std::endl;
     uint64_t curr_k=UINT64_MAX;
     int curr_count=0;
     auto wi=counts.begin();

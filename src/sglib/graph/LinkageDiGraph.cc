@@ -27,19 +27,19 @@ void LinkageDiGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
 
 }
 
-std::vector<Link> LinkageDiGraph::get_fw_links( sgNodeID_t n){
+std::vector<Link> LinkageDiGraph::get_fw_links( sgNodeID_t n) const {
     std::vector<Link> r;
     if (llabs(n)>=links.size()) return r;
     for (auto &l:links[(n>0 ? n : -n)]) if (l.source==-n) r.emplace_back(l);
     return r;
 }
 
-std::vector<Link> LinkageDiGraph::get_bw_links(sgNodeID_t n) {
+std::vector<Link> LinkageDiGraph::get_bw_links(sgNodeID_t n) const {
     return get_fw_links (-n);
 }
 
 //returns a list of all fw nodes up to radius jumps away.
-std::set<sgNodeID_t> LinkageDiGraph::fw_reached_nodes(sgNodeID_t n, int radius) {
+std::set<sgNodeID_t> LinkageDiGraph::fw_reached_nodes(sgNodeID_t n, int radius) const {
     std::set<sgNodeID_t> reached,last={n};
     for (auto i=0;i<radius;++i) {
         std::set<sgNodeID_t> new_last;
@@ -119,4 +119,51 @@ void LinkageDiGraph::report_connectivity() {
     }
     sglib::OutputLog()<<"Connected node types:  1-1: "<<solved<<"  1-0: "<<solved_disconnected<<"  1-N: "<<solved_complex
                        <<"  N-N: "<<complex<<"  N-0: "<<complex_disconected<<std::endl;
+}
+
+
+std::vector<std::vector<sgNodeID_t>> LinkageDiGraph::get_all_lines(uint16_t min_nodes) const {
+    std::vector<std::vector<sgNodeID_t>> unitigs;
+    std::vector<bool> used(sg.nodes.size(),false);
+
+    for (auto n=1;n<sg.nodes.size();++n){
+        if (used[n] or sg.nodes[n].status==sgNodeDeleted) continue;
+        used[n]=true;
+        std::vector<sgNodeID_t> path={n};
+
+        //two passes: 0->fw, 1->bw, path is inverted twice, so still n is +
+        for (auto pass=0; pass<2; ++pass) {
+            //walk til a "non-unitig" junction
+            for (auto fn = get_fw_links(path.back()); fn.size() == 1; fn = get_fw_links(path.back())) {
+                if (fn[0].dest != n and fn[0].dest != -n and get_bw_links(fn[0].dest).size() == 1) {
+                    path.emplace_back(fn[0].dest);
+                    used[fn[0].dest > 0 ? fn[0].dest : -fn[0].dest] = true;
+                } else break;
+            }
+            std::vector<sgNodeID_t> rpath;
+            for (auto rn=path.rbegin();rn!=path.rend();++rn) rpath.emplace_back(-*rn);
+            path=rpath;
+        }
+        if (path.size()>=min_nodes) unitigs.push_back(path);
+    }
+    return unitigs;
+}
+
+void LinkageDiGraph::dump_to_text(std::string filename) {
+    std::ofstream of(filename);
+    for (auto &lv:links) for (auto &l:lv){
+        if (llabs(l.source)<=llabs(l.dest)) of<<l.source<<" "<<l.dest<<" "<<l.dist<<std::endl;
+    }
+}
+
+void LinkageDiGraph::load_from_text(std::string filename) {
+    std::ifstream link_file(filename);
+    Link l(0,0,0);
+    while (true){
+        link_file>>l.source;
+        link_file>>l.dest;
+        link_file>>l.dist;
+        if (link_file.eof()) break;
+        add_link(l.source,l.dest,l.dist);
+    }
 }

@@ -291,12 +291,12 @@ PairedReadConnectivityDetail::PairedReadConnectivityDetail(const PairedReadMappe
         }
         if (prm.read_to_node[r1]==us){
             if (prm.read_to_node[r2]==ud){
-                ++pairs_per_orientation[(prm.read_direction_in_node[r1]? 0:1)+(prm.read_direction_in_node[r2]? 0:2)];
+                ++orientation_paircount[(prm.read_direction_in_node[r1]? 0:1)+(prm.read_direction_in_node[r2]? 0:2)];
             }
         }
         else if (prm.read_to_node[r1]==ud) {
             if (prm.read_to_node[r2]==us) {
-                ++pairs_per_orientation[(prm.read_direction_in_node[r2] ? 0 : 1)+(prm.read_direction_in_node[r1] ? 0 : 2)];
+                ++orientation_paircount[(prm.read_direction_in_node[r2] ? 0 : 1)+(prm.read_direction_in_node[r1] ? 0 : 2)];
             }
 
         }

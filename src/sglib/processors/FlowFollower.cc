@@ -297,7 +297,7 @@ void FlowFollower::create_flows_fast() {
     for (auto &n:nodes)nv.push_back(n);
 #pragma omp parallel shared(fflows,rflows)
     {
-        BufferedTagKmerizer btk(linked_read_datastores[0],31,5000,200000,1000);
+        BufferedTagKmerizer btk(linked_read_datastores[0],31,200000,1000);
 #pragma omp for schedule(static,100)
         for (auto i=0;i<nv.size();++i){
             auto n=nv[i];

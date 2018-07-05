@@ -53,6 +53,7 @@ public:
     bsg10xTag get_read_tag(size_t readID);
     std::unordered_set<uint64_t> get_tags_kmers(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg);
     std::vector<uint64_t> get_tag_reads(bsg10xTag tag) const;
+    std::vector<std::pair<bsg10xTag, uint32_t>> get_tag_readcount();
     void dump_tag_occupancy_histogram(std::string filename);
     std::string filename; //if store is in single file bsg format these two are the same as the index file.
 
@@ -94,8 +95,8 @@ private:
 class BufferedTagKmerizer{
 
 public:
-    BufferedTagKmerizer(const LinkedReadsDatastore &_ds, char K, size_t _tagbufsize, size_t _bufsize, size_t _chunk_size):
-            K(K),bprsg(_ds,_bufsize,_chunk_size),tagbufsize(_tagbufsize),skf(K),datastore(_ds){counts.reserve(1000000);};
+    BufferedTagKmerizer(const LinkedReadsDatastore &_ds, char K, size_t _bufsize, size_t _chunk_size):
+            K(K),bprsg(_ds,_bufsize,_chunk_size),skf(K),datastore(_ds){counts.reserve(1000000);};
     std::unordered_set<uint64_t> get_tags_kmers(int min_tag_cov, std::set<bsg10xTag> tags);
     void get_tag_kmers(bsg10xTag tag);
 
@@ -137,9 +138,8 @@ private:
     const LinkedReadsDatastore & datastore;
     uint8_t K;
     BufferedLRSequenceGetter bprsg;
-    size_t tagbufsize;
-    std::list<struct tag_kmers_t> tag_kmers_buffer;
     StreamKmerFactory skf;
+
 private:
     std::vector<uint64_t> counts;
 };

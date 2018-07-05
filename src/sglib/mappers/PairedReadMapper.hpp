@@ -62,14 +62,14 @@ public:
     PairedReadConnectivityDetail(){};
     PairedReadConnectivityDetail(const PairedReadMapper & prm, sgNodeID_t source, sgNodeID_t dest);
     PairedReadConnectivityDetail& operator+=(const PairedReadConnectivityDetail& rhs){
-        this->pairs_per_orientation[0] += rhs.pairs_per_orientation[0];
-        this->pairs_per_orientation[1] += rhs.pairs_per_orientation[1];
-        this->pairs_per_orientation[2] += rhs.pairs_per_orientation[2];
-        this->pairs_per_orientation[3] += rhs.pairs_per_orientation[3];
+        this->orientation_paircount[0] += rhs.orientation_paircount[0];
+        this->orientation_paircount[1] += rhs.orientation_paircount[1];
+        this->orientation_paircount[2] += rhs.orientation_paircount[2];
+        this->orientation_paircount[3] += rhs.orientation_paircount[3];
         return *this;
     }
 
-    uint64_t pairs_per_orientation[4]={0,0,0,0};
+    uint64_t orientation_paircount[4]={0,0,0,0};
 };
 
 #endif //BSG_PAIREDREADMAPPER_HPP

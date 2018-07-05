@@ -27,14 +27,17 @@ int main(int argc, char * argv[]) {
     float tag_imbalance_ends=.1;
     int min_pairs=7;
     int min_shared_tags=10;
+    int dev_max_lines=0;
+    std::string dev_create_linkage,dev_skate_linkage;
     try
     {
-        cxxopts::Options options("bsg-untangler", "graph-based repeat resolution and haplotype separation");
+        cxxopts::Options options("bsg-untangler", "graph-based haplotype separation");
 
         options.add_options()
                 ("help", "Print help")
                 ("w,workspace", "input workspace", cxxopts::value<std::string>(workspace_file))
-                ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
+                ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
+        options.add_options("Heuristics")
                 ("p,paired_reads","paired read scaffolding (experimental)",cxxopts::value<bool>(paired_scaff))
                 ("l,unroll_loops", "unroll simple loops",cxxopts::value<bool>(unroll_loops))
                 ("e,pop_errors", "pop unsupported short-bubbles (as errors)",cxxopts::value<bool>(pop_errors))
@@ -51,6 +54,10 @@ int main(int argc, char * argv[]) {
                 ("min_shared_tags","minimum shared tags to evaluate tag-imbalanced connection",cxxopts::value<int>(min_shared_tags))
                 //("explore_homopolymers","explore_homopolymers (experimental)", cxxopts::value<bool>(explore_homopolymers))
                 ;
+        options.add_options("Development")
+                ("dev_create_linkage","Creates and simplifies linkage and dumps to file",cxxopts::value<std::string>(dev_create_linkage))
+                ("dev_skate_linkage","Loads linkage from file and skates",cxxopts::value<std::string>(dev_skate_linkage))
+                ("dev_max_lines","Limits lines to be skated on dev",cxxopts::value<int>(dev_max_lines));
 
 
 
@@ -59,7 +66,7 @@ int main(int argc, char * argv[]) {
 
         if (result.count("help"))
         {
-            std::cout << options.help({"","Heuristics"}) << std::endl;
+            std::cout << options.help({"","Heuristics","Development"}) << std::endl;
             exit(0);
         }
 
@@ -80,35 +87,147 @@ int main(int argc, char * argv[]) {
     WorkSpace ws;
     sglib::OutputLog()<<"Loading Workspace..."<<std::endl;
     ws.load_from_disk(workspace_file);
-    ws.getKCI().uniq_mode=50;
     ws.add_log_entry("bsg-untangler run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
-    if (paired_scaff){
+    if (!dev_create_linkage.empty()) {
         LinkageUntangler lu(ws);
-        if (select_hspnps) lu.select_nodes_by_HSPNPs(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
-        else lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
-
+        lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
         std::unordered_set<sgNodeID_t> selnodes;
-        for (sgNodeID_t n=1;n<ws.getGraph().nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
+        for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
         lu.report_node_selection();
-        auto topology_ldg=lu.make_topology_linkage(10);
-        topology_ldg.report_connectivity();
-        ws.getGraph().write_to_gfa("topology_links.gfa",{},{},{},topology_ldg.links);
-        LinkageDiGraph gldg(ws.getGraph());
-        if (!ws.getPairedReadMappers().empty()) {
-            auto pair_ldg = lu.make_paired_linkage(min_pairs);
-            pair_ldg.report_connectivity();
-            gldg.add_links(pair_ldg);
-            ws.getGraph().write_to_gfa("pair_links.gfa", {}, {}, {}, pair_ldg.links);
-            pair_ldg.remove_transitive_links(10);
-            pair_ldg.report_connectivity();
-            ws.getGraph().write_to_gfa("pair_links_no_transitive.gfa", {}, {}, {}, pair_ldg.links);
+        auto pre_tag_ldg = lu.make_tag_linkage(min_shared_tags);
+        pre_tag_ldg.remove_transitive_links(10);
+        pre_tag_ldg.report_connectivity();
+        sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
+        uint64_t remNN=0;
+        for (auto n=1;n<ws.sg.nodes.size();++n){
+            if (lu.selected_nodes[n]){
+                if (pre_tag_ldg.get_fw_links(n).size()>1 and pre_tag_ldg.get_bw_links(n).size()>1) {
+                    lu.selected_nodes[n]=false;
+                    ++remNN;
+                }
+            }
         }
-        if (!ws.getLinkedReadMappers().empty()) {
-            auto tag_ldg = lu.make_tag_linkage(min_shared_tags);
+        sglib::OutputLog()<<"Re-trying tag connection after eliminating "<<remNN<<" N-N nodes"<<std::endl;
+        auto tag_ldg = lu.make_tag_linkage(min_shared_tags);
+        tag_ldg.remove_transitive_links(10);
+        tag_ldg.report_connectivity();
+        tag_ldg.dump_to_text(dev_create_linkage);
+        exit(0);
+    }
+    if (!dev_skate_linkage.empty()) {
+        LinkageUntangler lu(ws);
+        LinkageDiGraph tag_ldg(ws.sg);
+        tag_ldg.load_from_text(dev_skate_linkage);
+        tag_ldg.report_connectivity();
+        lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+        lu.expand_linear_regions_skating(tag_ldg,dev_max_lines);
+        exit(0);
+    }
+    if (paired_scaff){
+        if (!ws.linked_read_mappers.empty()) {
+            for (auto round=1;round<11;++round) {
+                sglib::OutputLog()<<"STARTING ROUND #"<<std::to_string(round)<<std::endl;
+                LinkageUntangler lu(ws);
+                if (select_hspnps) lu.select_nodes_by_HSPNPs(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+                else lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+
+                std::unordered_set<sgNodeID_t> selnodes;
+                for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
+                lu.report_node_selection();
+                /*auto topology_ldg=lu.make_topology_linkage(10);
+                topology_ldg.report_connectivity();
+                ws.sg.write_to_gfa("topology_links.gfa",{},{},{},topology_ldg.links);*/
+                //LinkageDiGraph gldg(ws.sg);
+                /*if (!ws.paired_read_mappers.empty()) {
+                    auto pair_ldg = lu.make_paired_linkage(min_pairs);
+                    pair_ldg.report_connectivity();
+                    gldg.add_links(pair_ldg);
+                    ws.sg.write_to_gfa("pair_links.gfa", {}, {}, {}, pair_ldg.links);
+                    pair_ldg.remove_transitive_links(10);
+                    pair_ldg.report_connectivity();
+                    ws.sg.write_to_gfa("pair_links_no_transitive.gfa", {}, {}, {}, pair_ldg.links);
+                }*/
+                auto pre_tag_ldg = lu.make_tag_linkage(min_shared_tags);
+                pre_tag_ldg.remove_transitive_links(10);
+                pre_tag_ldg.report_connectivity();
+                sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
+                uint64_t remNN=0;
+                for (auto n=1;n<ws.sg.nodes.size();++n){
+                    if (lu.selected_nodes[n]){
+                        if (pre_tag_ldg.get_fw_links(n).size()>1 and pre_tag_ldg.get_bw_links(n).size()>1) {
+                            lu.selected_nodes[n]=false;
+                            ++remNN;
+                        }
+                    }
+                }
+                sglib::OutputLog()<<"Re-trying tag connection after eliminating "<<remNN<<" N-N nodes"<<std::endl;
+                auto tag_ldg = lu.make_tag_linkage(min_shared_tags);
+                tag_ldg.remove_transitive_links(10);
+                tag_ldg.report_connectivity();
+                ws.sg.write_to_gfa(output_prefix + "_tag_nt_" + std::to_string(round) + ".gfa", {}, {}, selnodes, tag_ldg.links);
+                sglib::OutputLog() << "Simplifying linear paths" << std::endl;
+                lu.expand_linear_regions_skating(tag_ldg);
+                auto joined=ws.sg.join_all_unitigs();
+                ws.sg.write_to_gfa(output_prefix + "_after_expansion_" + std::to_string(round) + ".gfa", {}, {});
+                //sglib::OutputLog()<<"TODO: remap reads and re-start the whole thing..."<<std::endl;
+                ws.kci.reindex_graph();
+                ws.remap_all();
+                if (joined==0) break;
+            }
+            /*
+            sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
+            //HACK: eliminate nodes with N-N and try again.
+            auto sel_orig=lu.selected_nodes;
+            uint64_t remNN=0;
+            for (auto n=1;n<ws.sg.nodes.size();++n){
+                if (lu.selected_nodes[n]){
+                    if (tag_ldg.get_fw_links(n).size()>1 and tag_ldg.get_bw_links(n).size()>1) {
+                        lu.selected_nodes[n]=false;
+                        ++remNN;
+                    }
+                }
+            }
+            sglib::OutputLog()<<"Re-trying tag connection after eliminating "<<remNN<<" N-N nodes"<<std::endl;
+            auto tag_ldg_noNN = lu.make_tag_linkage(min_shared_tags);
+            tag_ldg_noNN.report_connectivity();
+            tag_ldg_noNN.remove_transitive_links(10);
+            tag_ldg_noNN.report_connectivity();
+            ws.sg.write_to_gfa(output_prefix+"_tag_noNN_nt.gfa", {}, {}, selnodes, tag_ldg_noNN.links);
+            lu.selected_nodes=sel_orig;*/
+
+
+
+            /*exit(0);
+
             tag_ldg.report_connectivity();
             gldg.add_links(tag_ldg);
-            ws.getGraph().write_to_gfa("tag_links.gfa", {}, {}, {}, tag_ldg.links);
+            ws.sg.write_to_gfa("tag_links.gfa", {}, {}, {}, tag_ldg.links);
+            auto tag_hspnp_ldg=lu.filter_linkage_to_hspnp_duos(min_backbone_node_size,min_backbone_ci,max_backbone_ci,tag_ldg);
+            tag_hspnp_ldg.report_connectivity();
+            //ws.sg.write_to_gfa("tag_links_hspnps_coherent_selonly.gfa", {}, {},selnodes, tag_hspnp_ldg.links);
+            tag_hspnp_ldg.remove_transitive_links(10);
+            tag_hspnp_ldg.report_connectivity();
+            //ws.sg.write_to_gfa("tag_links_hspnps_coherent_selonly_no_transitive.gfa", {}, {}, selnodes, tag_hspnp_ldg.links);
+            lu.expand_trivial_repeats(tag_hspnp_ldg);
+            ws.sg.join_all_unitigs();
+            ws.sg.write_to_gfa("after_trivial_hspnp_expansion.gfa");//, {}, {},{}, tag_hspnp_ldg.links);
+            //TODO: remap reads!
+            ws.sg.create_index();
+            for (auto &m:ws.paired_read_mappers) {
+                sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
+                m.map_reads();
+                m.print_stats();
+                ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
+                sglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
+            }
+            for (auto &m:ws.linked_read_mappers) {
+                sglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
+                m.map_reads();
+                ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
+                sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
+            }
+
             tag_ldg.remove_transitive_links(10);
             tag_ldg.report_connectivity();
             ws.getGraph().write_to_gfa("tag_links_no_transitive.gfa", {}, {}, {}, tag_ldg.links);
@@ -133,7 +252,7 @@ int main(int argc, char * argv[]) {
             tag_ldg_noNN.report_connectivity();
             ws.getGraph().write_to_gfa("tag_links_noNN_no_transitive.gfa", {}, {}, {}, tag_ldg_noNN.links);
             ws.getGraph().write_to_gfa("tag_links_noNN_no_transitive_selected_only.gfa", {}, {}, selnodes, tag_ldg_noNN.links);
-            lu.selected_nodes=sel_orig;
+            lu.selected_nodes=sel_orig;*/
 
 
         }
@@ -146,7 +265,7 @@ int main(int argc, char * argv[]) {
             ws.getGraph().write_to_gfa("long_links_no_transitive.gfa", {}, {}, {}, long_ldg.links);
             ws.getGraph().write_to_gfa("long_links_no_transitive_selected_only.gfa", {}, {}, selnodes, long_ldg.links);
         }
-        gldg.report_connectivity();
+        /*gldg.report_connectivity();
         gldg.add_links(gldg);
         ws.getGraph().write_to_gfa("general_links.gfa", {}, {}, {}, gldg.links);
         gldg.remove_transitive_links(10);

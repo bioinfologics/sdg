@@ -518,6 +518,11 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::find_bubbles(uint32_t m
     return r;
 }
 
+/**
+ * @brief solves a single bubbly path, returns the paths for the 2 new nodes or empty paths if unsolved
+ * @param bp
+ * @return
+ */
 std::pair<SequenceGraphPath,SequenceGraphPath> Untangler::solve_bubbly_path(const SequenceSubGraph &bp, bool &no_tags) {
     auto linked_read_mappers(ws.getLinkedReadMappers());
     int min_tags=20; no_tags=false;
@@ -697,7 +702,7 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
             //now check for untagged (i.e. kmer coverage)
             if (tagkmers1.empty()){
                 std::cout<<"Generating tag kmers for current solution as this is the first walk-in situation"<<std::endl;
-                BufferedTagKmerizer btk(ws.getLinkedReadDatastores()[0],31,5000,200000,1000);
+                BufferedTagKmerizer btk(ws.getLinkedReadDatastores()[0],31,200000,1000);
                 std::set<bsg10xTag> exctags1,exctags2;
                 for (auto t:tags1) if (tags2.count(t)==0) exctags1.insert(t);
                 for (auto t:tags2) if (tags1.count(t)==0) exctags2.insert(t);
@@ -974,7 +979,13 @@ std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_nei
 
 
 
-
+/**
+ * @brief grabs all "long" haplotype-specific nodes, uses tags to find neighbours, uses imbalance to impute direction.
+ * @param min_size
+ * @param min_ci
+ * @param max_ci
+ * @return
+ */
 std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_size, float min_ci, float max_ci, float end_perc) {
     SequenceGraph& sg(ws.getGraph());
     std::vector<LinkedReadMapper>& linked_read_mappers(ws.getLinkedReadMappers());
@@ -1065,7 +1076,7 @@ std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_si
         }
     }
     tsg.write_to_gfa("tag_neighbours_imbdir.gfa");
-    BufferedTagKmerizer btk(linked_read_datastores[0],31,5000,200000,1000);
+    BufferedTagKmerizer btk(linked_read_datastores[0],31,200000,1000);
     uint64_t perf_ts=0;
     for (auto n=1;n<tsg.nodes.size();++n){
         auto b=n;
@@ -1254,7 +1265,7 @@ uint64_t Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float mi
     std::vector<std::pair<std::pair<sgNodeID_t,sgNodeID_t>,SequenceGraphPath>> final_sols;
 #pragma omp parallel
     {
-        BufferedTagKmerizer btk(linked_read_datastores[0],31,5000,200000,1000);
+        BufferedTagKmerizer btk(linked_read_datastores[0],31,200000,1000);
 #pragma omp for schedule(dynamic,10)
         for (auto idx = 0; idx < from_to.size(); ++idx) {
             auto &ft = from_to[idx];
@@ -1358,6 +1369,14 @@ std::vector<SequenceGraphPath> Untangler::get_all_tag_covered_paths(sgNodeID_t f
     return sol;
 }
 
+/**
+ * @brief returns the percentage of reads in both ends of node covered by tags in tags
+ * @param node
+ * @param tags
+ * @param end_perc
+ * @param end_size
+ * @return
+ */
 std::pair<float,float> Untangler::tag_read_percentage_at_ends(sgNodeID_t node, std::set<bsg10xTag> tags, float end_perc,
                                                               uint32_t end_size) {
     SequenceGraph& sg(ws.getGraph());
@@ -1473,38 +1492,33 @@ std::vector<Backbone> Untangler::create_backbones(uint64_t min_size, float min_c
     //check and remove simple linear transitive connections
 
     //check nodes with multiple incoherent transtitions (repeats)
-
-//    std::vector<bool> used(selected_nodes.size(),false);
-//    for (auto i1=0;i1<selected_nodes.size();++i1) {
-////        if (selected_nodes[i1]) continue;
-//        if (used[i1]) continue;
-//        auto n1 = selected_nodes[i1];
-//        backbones.emplace_back(ws,*this);
-//        used[n1]=true;
-//        std::vector<sgNodeID_t> last_added={i1};
-//        backbones.back().nodes.push_back(n1);
-//        while (not last_added.empty()){
-//            std::vector<sgNodeID_t> new_last_added;
-//            for (auto x:last_added){
-////                for (auto y:node_neighbours[x]){
-//                auto node_neighbours = fw_neighbours[x];
-//                node_neighbours.insert(node_neighbours.end(), bw_neighbours[x].begin(), bw_neighbours[x].end());
-////                for (auto y:node_neighbours[x]){
-//                for (auto y:node_neighbours){
-//                    if (not used[y]){
-//                        used[y]=true;
-//                        backbones.back().nodes.push_back(selected_nodes[y]);
-//                        new_last_added.push_back(y);
-//                    }
-//                }
-//            }
-//            last_added=new_last_added;
-//        }
-//        std::cout<<"new backbone: ";
-//        for (auto n:backbones.back().nodes) std::cout<<"seq"<<n<<", ";
-//        std::cout<<std::endl;
-//    }
-
+/*
+    std::vector<bool> used(selected_nodes.size(),false);
+    for (auto i1=0;i1<selected_nodes.size();++i1) {
+        if (selected_nodes[i1]) continue;
+        auto n1 = selected_nodes[i1];
+        backbones.emplace_back(ws,*this);
+        used[n1]=true;
+        std::vector<sgNodeID_t> last_added={i1};
+        backbones.back().nodes.push_back(n1);
+        while (not last_added.empty()){
+            std::vector<sgNodeID_t> new_last_added;
+            for (auto x:last_added){
+                for (auto y:node_neighbours[x]){
+                    if (not used[y]){
+                        used[y]=true;
+                        backbones.back().nodes.push_back(selected_nodes[y]);
+                        new_last_added.push_back(y);
+                    }
+                }
+            }
+            last_added=new_last_added;
+        }
+        std::cout<<"new backbone: ";
+        for (auto n:backbones.back().nodes) std::cout<<"seq"<<n<<", ";
+        std::cout<<std::endl;
+    }
+*/
     return backbones;
 
 }

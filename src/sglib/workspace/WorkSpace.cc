@@ -199,3 +199,30 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
     sglib::OutputLog()<< "Selected "<<tnodes<<" / "<<sg.nodes.size()<<" with a total "<<tbp<<"bp"<< std::endl;
     return nodes;
 }
+
+void WorkSpace::remap_all() {
+    sglib::OutputLog()<<"Mapping reads..."<<std::endl;
+    //auto pri=0;
+    sg.create_index();
+    for (auto &m:paired_read_mappers) {
+        sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
+        m.remap_all_reads();
+        m.print_stats();
+        sglib::OutputLog()<<"Computing size distribution..."<<std::endl;
+        //auto sdist=m.size_distribution();
+        //std::ofstream df("prdist_"+std::to_string(pri++)+".csv");
+        //for (auto i=0;i<sdist.size();i+=10){
+        //    uint64_t t=0;
+        //    for (auto j=i;j<i+10;++j) t+=sdist[j];
+        //    if (t>0) df<<i<<", "<<t<<std::endl;
+        //}
+        add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
+        sglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
+    }
+    for (auto &m:linked_read_mappers) {
+        sglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
+        m.remap_all_reads();
+        add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
+        sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
+    }
+}

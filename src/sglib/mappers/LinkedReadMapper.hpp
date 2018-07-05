@@ -62,6 +62,9 @@ public:
     void load_from_disk(std::string filename);*/
     void print_stats(){};
     std::set<bsg10xTag> get_node_tags(sgNodeID_t n);
+    std::map<bsg10xTag, std::vector<sgNodeID_t>> get_tag_nodes(uint32_t min_nodes = 2,
+                                                               const std::vector<bool> &selected_nodes = {});
+    std::vector<std::pair<sgNodeID_t , sgNodeID_t >> get_tag_neighbour_nodes(uint32_t min_shared,const std::vector<bool> & selected_nodes={});
 
     SequenceGraph & sg;
     LinkedReadsDatastore &datastore;

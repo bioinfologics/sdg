@@ -59,8 +59,8 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
     /*
      * Read mapping in parallel,
      */
-    std::vector<uint64_t> thread_mapped_count(omp_get_max_threads()),thread_total_count(omp_get_max_threads()),thread_multimap_count(omp_get_max_threads());
-    std::vector<std::vector<ReadMapping>> thread_mapping_results(omp_get_max_threads());
+    uint64_t thread_mapped_count[omp_get_max_threads()],thread_total_count[omp_get_max_threads()],thread_multimap_count[omp_get_max_threads()];
+    std::vector<ReadMapping> thread_mapping_results[omp_get_max_threads()];
     sglib::OutputLog(sglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
 #pragma omp parallel
     {
@@ -199,4 +199,76 @@ std::set<bsg10xTag> LinkedReadMapper::get_node_tags(sgNodeID_t n) {
         tags.insert(datastore.get_read_tag(rm.read_id));
     if (tags.count(0)>0) tags.erase(0);
     return tags;
+}
+
+std::map<bsg10xTag, std::vector<sgNodeID_t>> LinkedReadMapper::get_tag_nodes(uint32_t min_nodes,
+                                                                             const std::vector<bool> &selected_nodes) {
+    //Approach: node->tags->nodes (checks how many different tags join this node to every other node).
+
+    std::map<bsg10xTag, std::vector<sgNodeID_t>> tag_nodes;
+    bsg10xTag curr_tag=0,new_tag=0;
+    std::set<sgNodeID_t> curr_nodes;
+    sgNodeID_t curr_node;
+    for (size_t i=1;i<read_to_node.size();++i){
+        new_tag=datastore.get_read_tag(i);
+        curr_node=llabs(read_to_node[i]);
+        if (new_tag==curr_tag){
+           if (curr_node!=0 and (selected_nodes.empty() or selected_nodes[curr_node]))
+               curr_nodes.insert(curr_node);
+        }
+        else {
+            if (curr_nodes.size()>=min_nodes and curr_tag>0){
+                tag_nodes[curr_tag].reserve(curr_nodes.size());
+                for (auto &n:curr_nodes)
+                    tag_nodes[curr_tag].emplace_back(n);
+            }
+            curr_tag=new_tag;
+            curr_nodes.clear();
+            if (curr_node!=0 and (selected_nodes.empty() or selected_nodes[curr_node]))
+                curr_nodes.insert(curr_node);
+        }
+    }
+    if (curr_nodes.size()>=min_nodes and curr_tag>0){
+        tag_nodes[curr_tag].reserve(curr_nodes.size());
+        for (auto &n:curr_nodes)
+            tag_nodes[curr_tag].emplace_back(n);
+    }
+
+    return tag_nodes;
+}
+
+std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadMapper::get_tag_neighbour_nodes(uint32_t min_shared,
+                                                                                           const std::vector<bool> &selected_nodes) {
+    std::vector<std::pair<sgNodeID_t , sgNodeID_t >> tns;
+
+    auto nodes_in_tag= get_tag_nodes(2, selected_nodes);
+
+    std::unordered_map<sgNodeID_t , std::vector<bsg10xTag>> tags_in_node;
+    sglib::OutputLog()<<"There are "<<nodes_in_tag.size()<<" informative tags"<<std::endl;
+    for (auto &t:nodes_in_tag){
+        for (auto n:t.second) tags_in_node[n].push_back(t.first);
+    }
+
+    sglib::OutputLog()<<"all structures ready"<<std::endl;
+#pragma omp parallel firstprivate(tags_in_node,nodes_in_tag)
+    {
+        std::vector<uint32_t> shared_with(sg.nodes.size());
+        std::vector<std::pair<sgNodeID_t, sgNodeID_t >> tnsl;
+#pragma omp for schedule(static,100)
+        for (auto n = 1; n < sg.nodes.size(); ++n) {
+            if (!selected_nodes[n]) continue;
+            if (tags_in_node[n].size()<min_shared) continue;
+
+            bzero(shared_with.data(), sizeof(uint32_t) * shared_with.size()); //clearing with bzero is the fastest way?
+            for (auto t:tags_in_node[n])
+                for (auto n:nodes_in_tag[t]) ++shared_with[n];
+            for (auto i = n + 1; i < shared_with.size(); ++i) {
+                if (shared_with[i] >= min_shared) tnsl.emplace_back(n, i);
+            }
+
+        }
+#pragma omp critical
+        tns.insert(tns.end(),tnsl.begin(),tnsl.end());
+    }
+    return tns;
 }

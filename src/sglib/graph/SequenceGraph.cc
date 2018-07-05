@@ -110,6 +110,13 @@ void SequenceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d) {
     links[(dest > 0 ? dest : -dest)].emplace_back(l);
 }
 
+Link SequenceGraph::get_link(sgNodeID_t source, sgNodeID_t dest) {
+    for (auto l:links[(source > 0 ? source : -source)]) {
+        if (l.source==source,l.dest==dest) return l;
+    }
+    return Link(0,0,0);
+}
+
 void SequenceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
     auto & slinks = links[(source > 0 ? source : -source)];
     slinks.erase(std::remove(slinks.begin(), slinks.end(), Link(source,dest,0)), slinks.end());
@@ -598,10 +605,13 @@ std::vector<SequenceGraphPath> SequenceGraph::get_all_unitigs(uint16_t min_nodes
     return unitigs;
 }
 
-void SequenceGraph::join_all_unitigs() {
+uint32_t SequenceGraph::join_all_unitigs() {
+    uint32_t joined=0;
     for (auto p:get_all_unitigs(2)){
         join_path(p);
+        ++joined;
     }
+    return joined;
 }
 
 void SequenceGraph::join_path(SequenceGraphPath p, bool consume) {
@@ -636,39 +646,96 @@ void SequenceGraph::consume_nodes(const SequenceGraphPath &p, const std::set<sgN
     }
 }
 
-std::vector<sgNodeID_t > SequenceGraph::find_canonical_repeats() {
-    std::vector<sgNodeID_t > repeaty_nodes;
+void SequenceGraphPath::reverse(){
+    std::vector<sgNodeID_t> newn;
+    for (auto n=nodes.rbegin();n<nodes.rend();++n) newn.emplace_back(-*n);
+    //std::swap(nodes,newn);
+    nodes=newn;
+}
 
-    uint64_t count=0, l700=0,l2000=0,l4000=0,l10000=0,big=0,checked=0,solvable=0;
+bool SequenceGraphPath::is_canonical() {
+    auto rp=*this;
+    rp.reverse();
+    return this->get_sequence()<rp.get_sequence();
+}
 
-    for (sgNodeID_t n=1; n < nodes.size(); ++n) {
-        auto nfw_links = get_fw_links(n).size();
-        auto nbw_links = get_bw_links(n).size();
-        if ( nfw_links == nbw_links and nfw_links==2){
-            ++count;
-
-            if (nodes[n].sequence.size() < 700) ++l700;
-            else if (nodes[n].sequence.size() < 2000) ++l2000;
-            else if (nodes[n].sequence.size() < 4000) ++l4000;
-            else if (nodes[n].sequence.size() < 10000) ++l10000;
-            else ++big;
-
-            if (nodes[n].sequence.size() > 1000) {
-                // std::cout << "evaluating trivial repeat at " << n << "(" << sg.nodes[n].sequence.size() << "bp)" << std::endl;
-                repeaty_nodes.push_back(n);
-            }
+bool SequenceGraphPath::is_unitig() {
+    for (auto i=0;i<nodes.size();++i) {
+        auto fwl=sg.get_fw_links(nodes[i]);
+        auto bwl=sg.get_bw_links(nodes[i]);
+        if (i>0){
+            if (bwl.size()!=1) return false;
+            if (bwl[0].dest!=-nodes[i-1]) return false;
+        }
+        if (i<nodes.size()-1){
+            if (fwl.size()!=1) return false;
+            if (fwl[0].dest!=nodes[i+1]) return false;
         }
     }
+    return true;
+}
 
-    std::cout << "Candidates for canonical repeat expansion:                    " << count << std::endl;
-    std::cout << "Candidates for canonical repeat expansion <700bp:             " << l700 << std::endl;
-    std::cout << "Candidates for canonical repeat expansion >700bp & <2000bp:   " << l2000 << std::endl;
-    std::cout << "Candidates for canonical repeat expansion >2000bp & <4000bp:  " << l4000 << std::endl;
-    std::cout << "Candidates for canonical repeat expansion >4000bp & <10000bp: " << l10000 << std::endl;
-    std::cout << "Candidates for canonical repeat expansion >10000bp:           " << big << std::endl;
-    std::cout << "Trivially solvable canonical repeats:                         " << solvable << "/" << checked << std::endl;
+const bool SequenceGraphPath::operator<(const SequenceGraphPath &other) {
+    for (auto i=0;i<nodes.size();++i){
+        if (other.nodes.size()<i) return true;
+        if (nodes[i]<other.nodes[i]) return true;
+        if (nodes[i]>other.nodes[i]) return false;
+    }
+    return false;
+}
 
-    return repeaty_nodes;
+const bool SequenceGraphPath::operator==(const SequenceGraphPath &other) {
+    if (other.nodes.size()!=nodes.size()) return false;
+    for (auto i=0;i<nodes.size();++i){
+        if (nodes[i]!=other.nodes[i]) return false;
+    }
+    return true;
+}
+
+bool SequenceGraphPath::extend_if_coherent(SequenceGraphPath s) {
+//    int offset=-1;
+//    for (auto i=0;i<nodes.size();++i) {
+//        if (nodes[i] == s.nodes[0]) {
+//            offset = i;
+//            break;
+//        }
+//    }
+//    if (offset<=0) {
+//    if (offset<0) {
+//        offset=1;
+//        for (auto i=0;i<nodes.size();++i) {
+//            if (nodes[i] == s.nodes[0]) {
+//                offset = -i;
+//                break;
+//            }
+//        }
+//    }
+}
+
+std::vector<SequenceSubGraph> SequenceGraph::get_all_tribbles() {
+
+
+    for (sgNodeID_t n=1;n<nodes.size();++n) {
+        //Heuristic to find "tribbles"
+        // A --- B -- C -- H
+        //  \     \      /
+        //   \     E    /
+        //    \     \  /
+        //      F -- G
+        // A->[B-F]
+        // B->[C-E]
+        // C->H
+        // E->G
+        // F->G
+        // F->H
+        auto a_fw=get_fw_links(n);
+        if (a_fw.size()!=2) continue;
+        auto b_fw=get_fw_links(a_fw[0].dist);
+
+        sgNodeID_t A, B, C, D, E, F, G, H;
+    }
+
+
 }
 
 std::vector<nodeVisitor>
@@ -1038,18 +1105,18 @@ void SequenceGraph::print_bubbly_subgraph_stats(const std::vector<SequenceSubGra
 
 }
 
-std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size) {
+std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes) {
     std::vector<SequenceGraphPath> current_paths,next_paths,final_paths;
     for(auto &fl:get_fw_links(from)) current_paths.emplace_back(SequenceGraphPath(*this,{fl.dest}));
-    int rounds=20;
-    while (not current_paths.empty() and --rounds>0){
+    //int rounds=20;
+    while (not current_paths.empty() and --max_nodes>0){
         //std::cout<<"starting round of context expansion, current nodes:  ";
         //for (auto cn:current_nodes) std::cout<<cn.first<<"("<<cn.second<<")  ";
         //std::cout<<std::endl;
         next_paths.clear();
         for (auto &p:current_paths){
             //if node is a destination add it to final nodes
-            if (p.getNodes().back()==-to) std::cout<<"WARNING: found path to -TO node"<<std::endl;
+            if (p.getNodes().back()==-to) return {};//std::cout<<"WARNING: found path to -TO node"<<std::endl;
             if (p.getNodes().back()==to) {
                 final_paths.push_back(p);
                 final_paths.back().getNodes().pop_back();
@@ -1058,13 +1125,13 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
             else {
                 for (auto l:get_fw_links(p.getNodes().back())){
                     if (std::find(p.getNodes().begin(),p.getNodes().end(),l.dest)!=p.getNodes().end()) {
-                        std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
+                        //std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
                         return {};
                         //continue;
                     }
                     next_paths.push_back(p);
                     next_paths.back().getNodes().push_back(l.dest);
-                    if (next_paths.back().get_sequence().size()>max_size) next_paths.pop_back();
+                    if (next_paths.back().get_sequence_size_fast()>max_size) next_paths.pop_back();
                 }
             }
         }
