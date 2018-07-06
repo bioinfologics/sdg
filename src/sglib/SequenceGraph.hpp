@@ -48,7 +48,7 @@ class SequenceSubGraph;
 
 class SequenceGraph {
 public:
-    SequenceGraph(){};
+    SequenceGraph(){add_node(Node("",sgNodeStatus_t::sgNodeDeleted));};
 
     bool is_sane();
     //=== I/O functions ===
