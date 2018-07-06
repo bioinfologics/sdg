@@ -7,8 +7,8 @@
 #include <sstream>
 #include "sglib/types/KmerTypes.hpp"
 #include "sglib/types/GenericTypes.hpp"
-#include "sglib/graph/SequenceSubGraph.hpp"
 #include "sglib/graph/SequenceGraphPath.hpp"
+#include "sglib/graph/SequenceSubGraph.hpp"
 #include "sglib/graph/SequenceGraph.hpp"
 #include "sglib/readers/SequenceGraphReader.h"
 #include "sglib/KmerCompressionIndex.hpp"
@@ -33,8 +33,8 @@
 %include "std_unordered_set.i"
 %include "sglib/types/KmerTypes.hpp"
 %include "sglib/types/GenericTypes.hpp"
-%include "sglib/graph/SequenceSubGraph.hpp"
 %include "sglib/graph/SequenceGraphPath.hpp"
+%include "sglib/graph/SequenceSubGraph.hpp"
 %include "sglib/graph/SequenceGraph.hpp"
 %include "sglib/indexers/uniqueKmerIndex.hpp"
 %include "sglib/KmerCompressionIndex.hpp"
@@ -58,7 +58,6 @@ namespace std {
    %template(vectorString) vector<string>;
    %template(vectorLink) vector<Link>;
    %template(vectorSGNode) vector<sgNodeID_t>;
-   //%template(vectorPath) vector<SequenceGraphPath>;
    %template(vectorNode) vector<Node>;
    %template(vectorNodeVisitor) vector<nodeVisitor>;
    %template(vectorUINT16) vector<uint16_t >;
@@ -71,6 +70,9 @@ namespace std {
    %template(SGNodePair) std::pair<sgNodeID_t, sgNodeID_t>;
    %template(vectorSGNodePair) std::vector<std::pair<sgNodeID_t, sgNodeID_t>>;
    %template(vectorvectorLink) std::vector<std::vector<Link>>;
+   %ignore vector<SequenceGraphPath>::vector(size_type);
+   %ignore vector<SequenceGraphPath>::resize;
+   %template(vectorPath) vector<SequenceGraphPath>;
 };
 
 
