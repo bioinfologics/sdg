@@ -65,7 +65,7 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
         std::vector<KmerIDX> readkmers;
         StreamKmerFactory skf(31);
         ReadMapping mapping;
-        auto blrs=BufferedPairedSequenceGetter(datastore,128*1024,260);
+        auto blrs=BufferedPairedSequenceGetter(datastore,128*1024,2010);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
         auto & mapped_count=thread_mapped_count[omp_get_thread_num()];
         auto & total_count=thread_total_count[omp_get_thread_num()];
@@ -205,7 +205,7 @@ void PairedReadMapper::print_stats(){
         else if (read_to_node[r1+1]==0) ++single;
         else {
             ++both;
-            if (read_to_node[r1]==read_to_node[r1+1]) ++same;
+            if (abs(read_to_node[r1])==abs(read_to_node[r1+1])) ++same;
         }
     }
     sglib::OutputLog()<<"Mapped pairs from "<<datastore.filename<<": None: "<<none<<"  Single: "<<single<<"  Both: "<<both<<" ("<<same<<" same)"<<std::endl;

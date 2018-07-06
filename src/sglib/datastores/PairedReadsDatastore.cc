@@ -16,7 +16,8 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     sglib::OutputLog(sglib::LogLevels::INFO)<<"Creating Datastore from "<<read1_filename<<" | "<<read2_filename<<std::endl;
     auto fd1=fopen(read1_filename.c_str(),"r");
     auto fd2=fopen(read2_filename.c_str(),"r");
-    char readbuffer[1000];
+    char readbuffer[3000];
+    memset(readbuffer, 0, 3000);
     //first, build an index of tags and offsets
     sglib::OutputLog()<<"Reading chunks of "<<chunksize<<" pairs"<<std::endl;
     std::vector<PairedReadData> readdatav;
@@ -33,17 +34,17 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     output.write((const char *) &_size, sizeof(_size));//just to save the space!
     while (!feof(fd1) and !feof(fd2)) {
 
-        if (NULL == fgets(readbuffer, 999, fd1)) continue;
-        if (NULL == fgets(readbuffer, 999, fd1)) continue;
+        if (NULL == fgets(readbuffer, 2999, fd1)) continue;
+        if (NULL == fgets(readbuffer, 2999, fd1)) continue;
         currrent_read.seq1=std::string(readbuffer);
-        if (NULL == fgets(readbuffer, 999, fd1)) continue;
-        if (NULL == fgets(readbuffer, 999, fd1)) continue;
+        if (NULL == fgets(readbuffer, 2999, fd1)) continue;
+        if (NULL == fgets(readbuffer, 2999, fd1)) continue;
         if (currrent_read.seq1.back()=='\n') currrent_read.seq1.resize(currrent_read.seq1.size()-1);
-        if (NULL == fgets(readbuffer, 999, fd2)) continue;
-        if (NULL == fgets(readbuffer, 999, fd2)) continue;
+        if (NULL == fgets(readbuffer, 2999, fd2)) continue;
+        if (NULL == fgets(readbuffer, 2999, fd2)) continue;
         currrent_read.seq2=std::string(readbuffer);
-        if (NULL == fgets(readbuffer, 999, fd2)) continue;
-        if (NULL == fgets(readbuffer, 999, fd2)) continue;
+        if (NULL == fgets(readbuffer, 2999, fd2)) continue;
+        if (NULL == fgets(readbuffer, 2999, fd2)) continue;
         if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
         if (currrent_read.seq1.size()<_min_rs or currrent_read.seq2.size()<_min_rs) {
             ++discarded;
