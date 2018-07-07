@@ -80,18 +80,21 @@ uint64_t kmer_back_ovl(uint64_t kmer, uint8_t k){
 uint64_t kmer_fw_ovl(uint64_t kmer, uint8_t k){
     return  kmer%(((uint64_t) 1)<<((k-1)*2));
 }
-void GraphMaker::new_graph_from_kmerset_trivial(std::unordered_set<uint64_t> kmerset,uint8_t k) {
+void GraphMaker::new_graph_from_kmerset_trivial(const std::unordered_set<uint64_t> & kmerset,uint8_t k) {
     std::cout<<"Constructing Sequence Graph from "<<kmerset.size()<<" "<<std::to_string(k)<<"-mers"<<std::endl;
     std::set<std::pair<uint64_t,uint64_t>> unitig_ends;
     std::vector<std::pair<uint64_t,sgNodeID_t>> kmerovl_bw_nodes,kmerovl_fw_nodes;
-
+    std::unordered_set<uint64_t> used_kmers;
+    used_kmers.reserve(kmerset.size());
     //find unitig ends
     for (auto start_kmer:kmerset) {
+        if (used_kmers.count(start_kmer)) continue;
         //std::cout<<"processing kmer "<<start_kmer<<": "<<kmer_to_sequence(start_kmer,k)<<std::endl;
         //TODO: can be optimised not to walk the same path many times.
         //start with a kmer, walk fw till neiughbour count !=1
         auto curr_kmer=start_kmer;
         while (true) {
+            used_kmers.insert(curr_kmer);
             //first check there is only one kmer going fw
             uint64_t next;
             bool next_found=0;
@@ -115,11 +118,13 @@ void GraphMaker::new_graph_from_kmerset_trivial(std::unordered_set<uint64_t> kme
             }
 
             if (!next_found) break;
+            if (used_kmers.count(next))break;
             curr_kmer=next;
         }
         auto end_kmer=curr_kmer;
         curr_kmer=start_kmer;
         while (true) {
+            used_kmers.insert(curr_kmer);
             //first check there is only one kmer going fw
             uint64_t next;
             bool next_found=0;
@@ -143,6 +148,7 @@ void GraphMaker::new_graph_from_kmerset_trivial(std::unordered_set<uint64_t> kme
             }
 
             if (!next_found) break;
+            if (used_kmers.count(next))break;
             curr_kmer=next;
         }
         auto begin_kmer=curr_kmer;
@@ -176,17 +182,17 @@ void GraphMaker::new_graph_from_kmerset_trivial(std::unordered_set<uint64_t> kme
             }
         }
         sgNodeID_t nodeid=sg.add_node(Node(seq));
-        std::cout<<"Unitig sequence for node "<<nodeid<<": "<<seq<<std::endl;
+        //std::cout<<"Unitig sequence for node "<<nodeid<<": "<<seq<<std::endl;
         //insert bw overlap of begin kmer (check canonical rep)
         auto begin_ovl=kmer_back_ovl(uends.first,k);
         auto begin_ovl_can=kmer_cannonical(begin_ovl,k-1);
         if (begin_ovl==begin_ovl_can) {
             kmerovl_fw_nodes.push_back(std::make_pair(begin_ovl,nodeid));
-            std::cout<<"FW "<<kmer_to_sequence(begin_ovl,k-1)<<" "<<nodeid<<std::endl;
+            //std::cout<<"FW "<<kmer_to_sequence(begin_ovl,k-1)<<" "<<nodeid<<std::endl;
         }
         else {
             kmerovl_bw_nodes.push_back(std::make_pair(begin_ovl_can,nodeid));
-            std::cout<<"BW "<<kmer_to_sequence(begin_ovl_can,k-1)<<" "<<nodeid<<std::endl;
+            //std::cout<<"BW "<<kmer_to_sequence(begin_ovl_can,k-1)<<" "<<nodeid<<std::endl;
         }
 
         //insert fw overlap of end kmer (check canonical rep)
@@ -194,20 +200,20 @@ void GraphMaker::new_graph_from_kmerset_trivial(std::unordered_set<uint64_t> kme
         auto end_ovl_can=kmer_cannonical(end_ovl,k-1);
         if (end_ovl==end_ovl_can) {
             kmerovl_bw_nodes.push_back(std::make_pair(end_ovl,-nodeid));
-            std::cout<<"BW "<<kmer_to_sequence(end_ovl,k-1)<<" "<<-nodeid<<std::endl;
+            //std::cout<<"BW "<<kmer_to_sequence(end_ovl,k-1)<<" "<<-nodeid<<std::endl;
         }
         else {
             kmerovl_fw_nodes.push_back(std::make_pair(end_ovl_can,-nodeid));
-            std::cout<<"FW "<<kmer_to_sequence(end_ovl_can,k-1)<<" "<<-nodeid<<std::endl;
+            //std::cout<<"FW "<<kmer_to_sequence(end_ovl_can,k-1)<<" "<<-nodeid<<std::endl;
         }
     }
     std::cout<<"-----"<<std::endl;
     //sort ovl vectors
     std::sort(kmerovl_bw_nodes.begin(),kmerovl_bw_nodes.end());
     std::sort(kmerovl_fw_nodes.begin(),kmerovl_fw_nodes.end());
-    for (auto kbn:kmerovl_bw_nodes) std::cout<< "BW "<<kbn.first<<" "<<kbn.second<<std::endl;
+    //for (auto kbn:kmerovl_bw_nodes) std::cout<< "BW "<<kbn.first<<" "<<kbn.second<<std::endl;
 
-    for (auto kfn:kmerovl_fw_nodes) std::cout<< "FW "<<kfn.first<<" "<<kfn.second<<std::endl;
+    //for (auto kfn:kmerovl_fw_nodes) std::cout<< "FW "<<kfn.first<<" "<<kfn.second<<std::endl;
     //pair nodes in ovl vectors and create links between them (connect from bw to fw when kmers match)
     for (auto kbn:kmerovl_bw_nodes){
         for (auto kfn:kmerovl_fw_nodes){

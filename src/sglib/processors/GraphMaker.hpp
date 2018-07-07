@@ -27,7 +27,7 @@ public:
 class GraphMaker {
 public:
     GraphMaker(SequenceGraph & _sg): sg(_sg){};
-    void new_graph_from_kmerset_trivial(std::unordered_set<uint64_t> kmerset,uint8_t k);
+    void new_graph_from_kmerset_trivial(const std::unordered_set<uint64_t> & kmerset,uint8_t k);
 private:
     SequenceGraph & sg;
 };
