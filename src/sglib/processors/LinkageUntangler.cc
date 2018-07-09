@@ -4,6 +4,7 @@
 
 #include "LinkageUntangler.hpp"
 #include "GraphEditor.hpp"
+#include "GraphMaker.hpp"
 
 class KmerMapCreator : public  KMerFactory {
 public:
@@ -747,6 +748,104 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
     sglib::OutputLog()<<applied<<" solutions applied"<<std::endl;
 }
 
+void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & ldg, int max_lines, uint64_t min_nodes, uint64_t min_total_size){
+    sglib::OutputLog()<<"Starting linear region tag local assemblies..."<<std::endl;
+    auto lines=ldg.get_all_lines(min_nodes, min_total_size);
+    if (max_lines>0) {
+        sglib::OutputLog()<<"USING ONLY "<<max_lines<< " lines as a test"<<std::endl;
+        lines.resize(max_lines);
+        //to filter to specific node, keep only the line that has that node:
+        //auto old_lines=lines;
+        //lines.clear();
+        //for (auto l:lines) for (auto n:l) if (llabs(n)==TARGET_NODE_ID) lines.push_back(l);
+    }
+
+    sglib::OutputLog()<<"Creating tag sets for "<<lines.size()<<" linear regions"<<std::endl;
+    //---------------------------------Step 1: get tagsets for lines.
+    std::vector<std::set<bsg10xTag>> linetagsets;
+    linetagsets.reserve(lines.size());
+    BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,100000,1000);
+    for (auto l:lines){
+        std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
+        for (auto &ln:l) {
+            std::map<bsg10xTag ,uint32_t> ntagcounts;
+            for (auto rm:ws.linked_read_mappers[0].reads_in_node[llabs(ln)]){
+                auto tag=ws.linked_read_datastores[0].get_read_tag(rm.read_id);
+                ++ntagcounts[tag];
+            }
+            for (auto ntc:ntagcounts) {
+                ++tagcounts[ntc.first].first;
+                tagcounts[ntc.first].second+=ntc.second;
+            }
+        }
+        std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagtotals;
+        std::set<bsg10xTag> lineTagSet;
+        for (auto tc:tagcounts) {
+            auto tag=tc.first;
+            auto reads=ws.linked_read_datastores[0].get_tag_reads(tc.first);
+            std::set<sgNodeID_t> nodes;
+            for (auto r:reads) nodes.insert(ws.linked_read_mappers[0].read_to_node[r]);
+            tagtotals[tag].first=nodes.size()-nodes.count(0);
+            tagtotals[tag].second=reads.size();
+            if (tc.second.first>1 and reads.size()<3000) lineTagSet.insert(tc.first);
+        }
+        linetagsets.push_back(lineTagSet);
+        if (linetagsets.size()%100==0) std::cout<<"."<<std::flush;
+    }
+    std::cout<<std::endl;
+    uint64_t jc=0;
+    for (auto &l:lines) jc+=l.size()-1;
+
+    std::vector<SequenceGraphPath> sols;
+#pragma omp parallel
+    {
+        BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+        std::vector<SequenceGraphPath> tsols;
+        uint64_t donelines=0;
+#pragma omp for schedule(dynamic,1)
+        for (auto i=0; i<lines.size(); ++i){
+            auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(63, 4, linetagsets[i], blrsg);
+            std::cout << "creating DBG for line #" << i << std::endl;
+            SequenceGraph dbg;
+            GraphMaker gm(dbg);
+            gm.new_graph_from_kmerset_trivial128(ltkmers128, 63);
+            //dbg.write_to_gfa("local_dbg_" + std::to_string(i) + ".gfa");
+            //gruesome tip clipping:
+            std::cout << "Starting gruesome tip clipping" << std::endl;
+            std::set<sgNodeID_t> to_delete;
+            for (sgNodeID_t n = 1; n < dbg.nodes.size(); ++n) {
+                if (dbg.nodes[n].status == sgNodeDeleted) continue;
+                if (dbg.nodes[n].sequence.size() > 200) continue;
+                //std::cout<<"Evaluating seq"<<n<<": ";
+                auto fwl = dbg.get_fw_links(n);
+                auto bwl = dbg.get_bw_links(n);
+                //std::cout<<" fwl: "<<fwl.size()<<"  bwl: "<<bwl.size();
+                if (fwl.size() == 1 and bwl.size() == 0) {
+                    //std::cout<<"  bwl for "<<fwl[0].dest<<": "<<dbg.get_bw_links(fwl[0].dest).size();
+                    if (dbg.get_bw_links(fwl[0].dest).size() == 2) {
+                        to_delete.insert(n);
+                        //std::cout<<" D"<<std::endl;
+                    }
+                }
+                if (fwl.size() == 0 and bwl.size() == 1) {
+                    //std::cout<<"  fwl for "<<-bwl[0].dest<<": "<<dbg.get_fw_links(-bwl[0].dest).size();
+                    if (dbg.get_fw_links(-bwl[0].dest).size() == 2) {
+                        to_delete.insert(n);
+                        //std::cout<<" D"<<std::endl;
+                    }
+                }
+                //std::cout<<std::endl;
+            }
+            std::cout << "Nodes to delete: " << to_delete.size() << std::endl;
+            for (auto n:to_delete) dbg.remove_node(n);
+            auto utc = dbg.join_all_unitigs();
+            std::cout << "Joined unitigs: " << utc << std::endl;
+            dbg.write_to_gfa("local_dbg_" + std::to_string(i) + "_tipclipped.gfa");
+            if (++donelines%100==0) std::cout<<"."<<std::flush;
+        }
+    }
+}
+
 void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg, int max_lines) {
     sglib::OutputLog()<<"Starting linear region consolidation via skating with line tag collection..."<<std::endl;
     auto lines=ldg.get_all_lines(2);
@@ -806,7 +905,6 @@ void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg,
         for (auto i=0; i<lines.size(); ++i){
             //std::cout<<"Creating kmer set for line"<<i<<" from tags"<<std::endl;
             auto ltkmers=ws.linked_read_datastores[0].get_tags_kmers(31,3,linetagsets[i],blrsg);
-            //std::cout<<"Line kmer set has "<<ltkmers.size()<<" kmers"<<std::endl;
             UncoveredKmerCounter ukc(31,ltkmers);
             //std::cout<<"Evaluating paths for "<<lines[i].size()-1<<" junctions"<<std::endl;
             for (auto j=0;j<lines[i].size()-1;++j){

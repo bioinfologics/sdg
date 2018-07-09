@@ -26,7 +26,7 @@ public:
     void report_connectivity();
     void solve();
 
-    std::vector<std::vector<sgNodeID_t>> get_all_lines(uint16_t min_nodes) const;
+    std::vector<std::vector<sgNodeID_t>> get_all_lines(uint16_t min_nodes, uint64_t min_total_size=0) const;
 
     void dump_to_text(std::string filename);
     void load_from_text(std::string filename);

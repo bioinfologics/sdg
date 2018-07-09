@@ -122,7 +122,7 @@ void LinkageDiGraph::report_connectivity() {
 }
 
 
-std::vector<std::vector<sgNodeID_t>> LinkageDiGraph::get_all_lines(uint16_t min_nodes) const {
+std::vector<std::vector<sgNodeID_t>> LinkageDiGraph::get_all_lines(uint16_t min_nodes, uint64_t min_total_size) const {
     std::vector<std::vector<sgNodeID_t>> unitigs;
     std::vector<bool> used(sg.nodes.size(),false);
 
@@ -144,7 +144,11 @@ std::vector<std::vector<sgNodeID_t>> LinkageDiGraph::get_all_lines(uint16_t min_
             for (auto rn=path.rbegin();rn!=path.rend();++rn) rpath.emplace_back(-*rn);
             path=rpath;
         }
-        if (path.size()>=min_nodes) unitigs.push_back(path);
+        if (path.size()<min_nodes) continue;
+        uint64_t total_size=0;
+        for (auto n:path) total_size+=sg.nodes[llabs(n)].sequence.size();
+        if (total_size<min_total_size) continue;
+        unitigs.push_back(path);
     }
     return unitigs;
 }

@@ -28,7 +28,8 @@ int main(int argc, char * argv[]) {
     int min_pairs=7;
     int min_shared_tags=10;
     int dev_max_lines=0;
-    std::string dev_create_linkage,dev_skate_linkage;
+    uint64_t dev_min_nodes=2,dev_min_total_size=0;
+    std::string dev_create_linkage,dev_skate_linkage,dev_local_assembly_linkage;
     try
     {
         cxxopts::Options options("bsg-untangler", "graph-based haplotype separation");
@@ -57,7 +58,10 @@ int main(int argc, char * argv[]) {
         options.add_options("Development")
                 ("dev_create_linkage","Creates and simplifies linkage and dumps to file",cxxopts::value<std::string>(dev_create_linkage))
                 ("dev_skate_linkage","Loads linkage from file and skates",cxxopts::value<std::string>(dev_skate_linkage))
-                ("dev_max_lines","Limits lines to be skated on dev",cxxopts::value<int>(dev_max_lines));
+                ("dev_local_assembly_linkage","Loads linkage from file and creates local assemblies",cxxopts::value<std::string>(dev_local_assembly_linkage))
+                ("dev_max_lines","Limits lines to be skated on dev",cxxopts::value<int>(dev_max_lines))
+                ("dev_min_nodes","Limits lines to be locally assembled on dev to at least min_nodes",cxxopts::value<uint64_t>(dev_min_nodes))
+                ("dev_min_total_size","Limits lines to be locally assembled on dev to at least min_total_size",cxxopts::value<uint64_t>(dev_min_total_size));
 
 
 
@@ -122,6 +126,18 @@ int main(int argc, char * argv[]) {
         tag_ldg.report_connectivity();
         lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
         lu.expand_linear_regions_skating(tag_ldg,dev_max_lines);
+        exit(0);
+    }
+    if (!dev_local_assembly_linkage.empty()) {
+        sglib::OutputLog()<<"STARTING DEVEL LOCAL ASSEMBLY RUN"<<std::endl;
+        LinkageUntangler lu(ws);
+        LinkageDiGraph tag_ldg(ws.sg);
+        sglib::OutputLog()<<"Loading linkage from text"<<std::endl;
+        tag_ldg.load_from_text(dev_local_assembly_linkage);
+        sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
+        tag_ldg.report_connectivity();
+        sglib::OutputLog()<<"Calling local assembly..."<<std::endl;
+        lu.linear_regions_tag_local_assembly(tag_ldg,dev_max_lines,dev_min_nodes,dev_min_total_size);
         exit(0);
     }
     if (paired_scaff){
