@@ -833,6 +833,7 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
                         //std::cout<<" D"<<std::endl;
                     }
                 }
+                if (fwl.size() == 0 and bwl.size()==0) to_delete.insert(n);
                 //std::cout<<std::endl;
             }
             std::cout << "Nodes to delete: " << to_delete.size() << std::endl;
@@ -840,6 +841,12 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
             auto utc = dbg.join_all_unitigs();
             std::cout << "Joined unitigs: " << utc << std::endl;
             dbg.write_to_gfa("local_dbg_" + std::to_string(i) + "_tipclipped.gfa");
+            std::ofstream anchf("local_dbg_" + std::to_string(i) + "_anchors.fasta");
+            for (auto n:lines[i]){
+                anchf<<">seq"<<llabs(n)<<std::endl;
+                anchf<<ws.sg.nodes[llabs(n)].sequence<<std::endl;
+
+            }
             if (++donelines%100==0) std::cout<<"."<<std::flush;
         }
     }
