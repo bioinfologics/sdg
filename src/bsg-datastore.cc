@@ -14,7 +14,7 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<std::endl;
 
     if (argc <2){
-        std::cout<<"Please specify one of: make, update, view"<<std::endl;
+        std::cout<<"Please specify one of: make, update, view, compare"<<std::endl;
         exit(1);
     }
 
@@ -95,6 +95,56 @@ int main(int argc, char * argv[]) {
             exit(1);
         }
 
+
+
+    }
+    else if (0==strcmp(argv[1],"compare")) {
+        std::vector<std::string> filenames;
+        try {
+
+            cxxopts::Options options("bsg-datastore compare", "BSG compare linked reads datastores");
+
+            options.add_options()
+                    ("help", "Print help")
+                    ("d,datastore", "datastore name (multi)", cxxopts::value<std::vector<std::string>>(filenames));
+
+            auto newargc=argc-1;
+            auto newargv=&argv[1];
+            auto result=options.parse(newargc,newargv);
+            if (result.count("help")) {
+                std::cout << options.help({""}) << std::endl;
+                exit(0);
+            }
+
+            if (result.count("datastore")==0) {
+                throw cxxopts::OptionException(" please specify datastore file (s)");
+            }
+
+
+        } catch (const cxxopts::OptionException &e) {
+            std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
+                      << "Use option --help to check command line arguments." << std::endl;
+            exit(1);
+        }
+        std::unordered_map<bsg10xTag, std::vector<uint64_t>> tag_occupancy;
+        std::vector<LinkedReadsDatastore> datastores;
+        for (auto i=0;i<filenames.size();++i){
+            datastores.emplace_back(filenames[i]);
+            for (auto rc:datastores.back().get_tag_readcount()){
+                if (rc.second>5) {
+                    if (tag_occupancy.count(rc.first)==0) tag_occupancy[rc.first].resize(filenames.size());
+                    tag_occupancy[rc.first][i]=rc.second;
+                }
+            }
+        }
+        std::ofstream tof("tag_occupancies.csv");
+        for (auto tc:tag_occupancy){
+            tof<<tc.first;
+            for (auto c:tc.second) {
+                tof<<","<<c;
+            }
+            tof<<std::endl;
+        }
 
 
     }
