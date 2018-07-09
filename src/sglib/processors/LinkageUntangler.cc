@@ -748,7 +748,7 @@ void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
     sglib::OutputLog()<<applied<<" solutions applied"<<std::endl;
 }
 
-void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & ldg, int max_lines, uint64_t min_nodes, uint64_t min_total_size){
+void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & ldg, uint8_t k, int min_cvg, int max_lines, uint64_t min_nodes, uint64_t min_total_size){
     sglib::OutputLog()<<"Starting linear region tag local assemblies..."<<std::endl;
     auto lines=ldg.get_all_lines(min_nodes, min_total_size);
     if (max_lines>0) {
@@ -764,7 +764,6 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
     //---------------------------------Step 1: get tagsets for lines.
     std::vector<std::set<bsg10xTag>> linetagsets;
     linetagsets.reserve(lines.size());
-    BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,100000,1000);
     for (auto l:lines){
         std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
         for (auto &ln:l) {
@@ -804,11 +803,11 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
         uint64_t donelines=0;
 #pragma omp for schedule(dynamic,1)
         for (auto i=0; i<lines.size(); ++i){
-            auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(63, 4, linetagsets[i], blrsg);
+            auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(k, min_cvg, linetagsets[i], blrsg);
             std::cout << "creating DBG for line #" << i << std::endl;
             SequenceGraph dbg;
             GraphMaker gm(dbg);
-            gm.new_graph_from_kmerset_trivial128(ltkmers128, 63);
+            gm.new_graph_from_kmerset_trivial128(ltkmers128, k);
             //dbg.write_to_gfa("local_dbg_" + std::to_string(i) + ".gfa");
             //gruesome tip clipping:
             std::cout << "Starting gruesome tip clipping" << std::endl;

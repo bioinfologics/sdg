@@ -28,6 +28,8 @@ int main(int argc, char * argv[]) {
     int min_pairs=7;
     int min_shared_tags=10;
     int dev_max_lines=0;
+    uint8_t dev_local_k=63;
+    int dev_local_min_cvg=3;
     uint64_t dev_min_nodes=2,dev_min_total_size=0;
     std::string dev_create_linkage,dev_skate_linkage,dev_local_assembly_linkage;
     try
@@ -61,7 +63,9 @@ int main(int argc, char * argv[]) {
                 ("dev_local_assembly_linkage","Loads linkage from file and creates local assemblies",cxxopts::value<std::string>(dev_local_assembly_linkage))
                 ("dev_max_lines","Limits lines to be skated on dev",cxxopts::value<int>(dev_max_lines))
                 ("dev_min_nodes","Limits lines to be locally assembled on dev to at least min_nodes",cxxopts::value<uint64_t>(dev_min_nodes))
-                ("dev_min_total_size","Limits lines to be locally assembled on dev to at least min_total_size",cxxopts::value<uint64_t>(dev_min_total_size));
+                ("dev_min_total_size","Limits lines to be locally assembled on dev to at least min_total_size",cxxopts::value<uint64_t>(dev_min_total_size))
+                ("dev_local_k","k value for local assembly",cxxopts::value<uint8_t>(dev_local_k))
+                ("dev_local_min_cvg","minimum coverga for local assemblies",cxxopts::value<int>(dev_local_min_cvg));
 
 
 
@@ -137,7 +141,7 @@ int main(int argc, char * argv[]) {
         sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
         tag_ldg.report_connectivity();
         sglib::OutputLog()<<"Calling local assembly..."<<std::endl;
-        lu.linear_regions_tag_local_assembly(tag_ldg,dev_max_lines,dev_min_nodes,dev_min_total_size);
+        lu.linear_regions_tag_local_assembly(tag_ldg, dev_local_k, dev_local_min_cvg, dev_max_lines,dev_min_nodes,dev_min_total_size);
         exit(0);
     }
     if (paired_scaff){
