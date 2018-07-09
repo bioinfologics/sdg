@@ -302,6 +302,58 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
     return std::move(kset);
 }
 
+std::unordered_set<__uint128_t> LinkedReadsDatastore::get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg) {
+    class StreamKmerFactory128 : public  KMerFactory128 {
+    public:
+        explicit StreamKmerFactory128(uint8_t k) : KMerFactory128(k){}
+        inline void produce_all_kmers(const char * seq, std::vector<__uint128_t> &mers){
+            // TODO: Adjust for when K is larger than what fits in __uint128_t!
+            last_unknown=0;
+            fkmer=0;
+            rkmer=0;
+            auto s=seq;
+            while (*s!='\0' and *s!='\n') {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        mers.emplace_back(fkmer);
+                    } else {
+                        // Is bwd
+                        mers.emplace_back(rkmer);
+                    }
+                }
+                ++s;
+            }
+        }
+    };
+    StreamKmerFactory128 skf(k);
+
+    //reserve space by counting reads first, save only the integer, do not merge just count and insert in the set
+    std::vector<__uint128_t> all_kmers;
+    std::vector<__uint128_t> read_ids;
+    for (auto t:tags) {
+        auto reads=get_tag_reads(t);
+        read_ids.insert(read_ids.end(),reads.begin(),reads.end());
+    }
+    all_kmers.reserve(read_ids.size()*(readsize-k+1));
+    for (auto rid:read_ids){
+        skf.produce_all_kmers(blrsg.get_read_sequence(rid),all_kmers);
+    }
+    std::sort(all_kmers.begin(),all_kmers.end());
+    std::unordered_set<__uint128_t> kset;
+    auto ri=all_kmers.begin();
+    auto nri=all_kmers.begin();
+    while (ri<all_kmers.end()){
+        while (nri<all_kmers.end() and *nri==*ri) ++nri;
+        if (nri-ri>=min_tag_cov) kset.insert(*ri);
+        ri=nri;
+    }
+    return std::move(kset);
+}
+
 const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {
         size_t read_offset_in_file=datastore.readpos_offset+(datastore.readsize+1)*(readID-1);
         if (read_offset_in_file<buffer_offset or read_offset_in_file+chunk_size>buffer_offset+bufsize) {

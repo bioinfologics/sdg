@@ -55,6 +55,50 @@ private:
     char b2r[255]{4};
 };
 
+class KMerFactory128 {
+public:
+    const uint8_t K;
+    int64_t last_unknown{};
+    __uint128_t fkmer{};
+    __uint128_t rkmer{};
+
+    inline void fillKBuf(const char b, const __uint128_t p, __uint128_t &rkmer, __uint128_t &fkmer, int64_t &last) {
+        if (unlikely(b2f[b] == 4)) {
+            last = 0;
+            fkmer = ((fkmer << 2) + 0) & KMER_MASK;
+            rkmer = (rkmer >> 2) + (((__uint128_t) 3) << KMER_FIRSTOFFSET);
+        } else {
+            fkmer = ((fkmer << 2) + b2f[b]) & KMER_MASK;
+            rkmer = (rkmer >> 2) + (((__uint128_t) b2r[b]) << KMER_FIRSTOFFSET);
+            ++last;
+        }
+    }
+
+protected:
+    explicit KMerFactory128(uint8_t k) : K(k), KMER_FIRSTOFFSET((__uint128_t) (K - 1) * 2),
+                                      KMER_MASK((((__uint128_t) 1) << (K * 2)) - 1) {
+        for (int i = 0; i < 255; i++) {
+            b2f[i] = 4;
+            b2r[i] = 4;
+        }
+        b2f['a'] = b2f['A'] = 0;
+        b2f['c'] = b2f['C'] = 1;
+        b2f['g'] = b2f['G'] = 2;
+        b2f['t'] = b2f['T'] = 3;
+
+        b2r['a'] = b2r['A'] = 3;
+        b2r['c'] = b2r['C'] = 2;
+        b2r['g'] = b2r['G'] = 1;
+        b2r['t'] = b2r['T'] = 0;
+    }
+
+private:
+    const __uint128_t KMER_MASK;
+    const __uint128_t KMER_FIRSTOFFSET;
+    char b2f[255]{4};
+    char b2r[255]{4};
+};
+
 
 class StringKMerFactory : protected KMerFactory {
 public:
@@ -73,6 +117,46 @@ public:
 
     // TODO: Adjust for when K is larger than what fits in uint64_t!
     const bool create_kmers(std::vector<uint64_t> &mers) {
+        uint64_t p(0);
+        while (p < s.size()) {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(s[p], p, fkmer, rkmer, last_unknown);
+            p++;
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(fkmer);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(rkmer);
+                }
+            }
+        }
+        return false;
+    }
+
+private:
+    std::string & s;
+};
+
+class StringKMerFactory128 : protected KMerFactory128 {
+public:
+    explicit StringKMerFactory128(std::string & s, uint8_t k) : KMerFactory128(k),s(s) {
+        fkmer=0;
+        rkmer=0;
+        last_unknown=0;
+    }
+
+    ~StringKMerFactory128() {
+#pragma omp critical (KMerFactoryDestructor)
+        {
+            //std::cout << "Bases processed " << bases << "\n";
+        }
+    }
+
+    // TODO: Adjust for when K is larger than what fits in uint64_t!
+    const bool create_kmers(std::vector<__uint128_t> &mers) {
         uint64_t p(0);
         while (p < s.size()) {
             //fkmer: grows from the right (LSB)

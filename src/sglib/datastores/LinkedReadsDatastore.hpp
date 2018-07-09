@@ -31,6 +31,25 @@ struct LinkedReadData {
 };
 class BufferedLRSequenceGetter;
 
+/*namespace std {
+    inline template<> std::size_t hash (__int128 unsigned x)
+    {
+        // not a very good hash function, but I just want to get it working first!
+        return std::hash(((uint64_t) x));
+    }
+}*/
+
+namespace std {
+    //TODO: this hashing sucks, but it is needed
+    template <> struct hash<__int128 unsigned>
+    {
+        size_t operator()(const __int128 unsigned & x) const
+        {
+            return hash<uint64_t>()((uint64_t)x);
+        }
+    };
+}
+
 class LinkedReadsDatastore {
 public:
     LinkedReadsDatastore(){};
@@ -51,6 +70,7 @@ public:
     //inline std::string get_read_sequence(size_t readID){return get_read_sequence(readID,fd1,fd2);};
     bsg10xTag get_read_tag(size_t readID);
     std::unordered_set<uint64_t> get_tags_kmers(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg);
+    std::unordered_set<__uint128_t> get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg);
     std::vector<uint64_t> get_tag_reads(bsg10xTag tag) const;
     std::vector<std::pair<bsg10xTag, uint32_t>> get_tag_readcount();
     void dump_tag_occupancy_histogram(std::string filename);
