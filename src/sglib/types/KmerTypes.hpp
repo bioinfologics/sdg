@@ -16,7 +16,7 @@ struct KmerIDX {
     KmerIDX() : kmer(std::numeric_limits<unsigned long long int>::max()), contigID(0), count(0){}
     explicit KmerIDX(uint64_t kmer) : kmer(kmer), contigID(0), count(0) {}
 
-    KmerIDX(uint64_t _kmer, int32_t _contigID, uint32_t pos, uint8_t _count) : kmer(_kmer), contigID(_contigID),
+    KmerIDX(uint64_t _kmer, int32_t _contigID, uint32_t pos = 0, uint8_t _count = 0) : kmer(_kmer), contigID(_contigID),
                                                                                pos(pos), count(_count) {}
 
     const bool operator<(const KmerIDX& other) const {

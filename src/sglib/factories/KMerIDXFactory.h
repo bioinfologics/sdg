@@ -73,10 +73,10 @@ public:
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
                     // Is fwd
-                    mers.emplace_back(fkmer);
+                    mers.emplace_back(fkmer, seqID);
                 } else {
                     // Is bwd
-                    mers.emplace_back(rkmer);
+                    mers.emplace_back(rkmer, -seqID);
                 }
             }
             ++s;
