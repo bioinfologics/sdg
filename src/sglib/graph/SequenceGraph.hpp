@@ -40,7 +40,7 @@ public:
     //=== I/O functions ===
     void load_from_gfa(std::string filename);
     void write_to_gfa(std::string filename, const std::vector<std::vector<Link>> &arg_links={},
-                          const std::unordered_set<sgNodeID_t> &selected_nodes={}, const std::unordered_set<sgNodeID_t> &mark_red={},
+                          const std::vector<sgNodeID_t> &selected_nodes={}, const std::unordered_set<sgNodeID_t> &mark_red={},
                           const std::vector<double> &depths={});
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);

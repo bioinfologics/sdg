@@ -179,7 +179,7 @@ int main(int argc, char * argv[]) {
                 tag_ldg.remove_transitive_links(10);
                 tag_ldg.report_connectivity();
                 ws.getGraph().write_to_gfa(output_prefix + "_tag_nt_" + std::to_string(round) + ".gfa", tag_ldg.links,
-                                           selnodes);
+                                           std::vector<sgNodeID_t > (selnodes.begin(), selnodes.end()));
                 sglib::OutputLog() << "Simplifying linear paths" << std::endl;
                 lu.expand_linear_regions_skating(tag_ldg);
                 auto joined=ws.getGraph().join_all_unitigs();
@@ -285,7 +285,7 @@ int main(int argc, char * argv[]) {
             long_ldg.remove_transitive_links(10);
             long_ldg.report_connectivity();
             ws.getGraph().write_to_gfa("long_links_no_transitive.gfa", long_ldg.links);
-            ws.getGraph().write_to_gfa("long_links_no_transitive_selected_only.gfa", long_ldg.links, selnodes);
+            ws.getGraph().write_to_gfa("long_links_no_transitive_selected_only.gfa", long_ldg.links, std::vector<sgNodeID_t > (selnodes.begin(), selnodes.end()));
         }
         /*gldg.report_connectivity();
         gldg.add_links(gldg);

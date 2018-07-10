@@ -517,8 +517,9 @@ void SequenceGraph::load_from_gfa(std::string filename) {
 }
 
 void SequenceGraph::write_to_gfa(std::string filename, const std::vector<std::vector<Link>> &arg_links,
-                                 const std::unordered_set<sgNodeID_t> &selected_nodes, const std::unordered_set<sgNodeID_t> &mark_red,
+                                 const std::vector<sgNodeID_t> &selected_nodes, const std::unordered_set<sgNodeID_t> &mark_red,
                                  const std::vector<double> &depths) {
+    std::unordered_set<sgNodeID_t > output_nodes(selected_nodes.begin(), selected_nodes.end());
     std::string fasta_filename;
     //check the filename ends in .gfa
     if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
@@ -539,7 +540,7 @@ void SequenceGraph::write_to_gfa(std::string filename, const std::vector<std::ve
 
     for (sgNodeID_t i=1;i<nodes.size();++i){
         if (nodes[i].status==sgNodeDeleted) continue;
-        if (!selected_nodes.empty() and selected_nodes.count(i)==0 and selected_nodes.count(-i)==0) continue;
+        if (!output_nodes.empty() and output_nodes.count(i)==0 and output_nodes.count(-i)==0) continue;
         fastaf<<">seq"<<i<<std::endl<<nodes[i].sequence<<std::endl;
         gfaf<<"S\tseq"<<i<<"\t*\tLN:i:"<<nodes[i].sequence.size()<<"\tUR:Z:"<<fasta_filename
                 <<(mark_red.count(i)?"\tCL:Z:red":"")<<(depths.empty() or std::isnan(depths[i])?"":"\tDP:f:"+std::to_string(depths[i]))<<std::endl;
@@ -547,9 +548,9 @@ void SequenceGraph::write_to_gfa(std::string filename, const std::vector<std::ve
 
     for (auto &ls:(arg_links.size()>0? arg_links:links)){
         for (auto &l:ls)
-            if (l.source<=l.dest and (selected_nodes.empty() or
-                    selected_nodes.count(l.source)>0 or selected_nodes.count(-l.source)>0 or
-                            selected_nodes.count(l.dest)>0 or selected_nodes.count(-l.dest)>0)) {
+            if (l.source<=l.dest and (output_nodes.empty() or
+                    output_nodes.count(l.source)>0 or output_nodes.count(-l.source)>0 or
+                    output_nodes.count(l.dest)>0 or output_nodes.count(-l.dest)>0)) {
                 gfaf<<"L\t";
                 if (l.source>0) gfaf<<"seq"<<l.source<<"\t-\t";
                 else gfaf<<"seq"<<-l.source<<"\t+\t";
