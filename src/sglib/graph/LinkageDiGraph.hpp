@@ -8,6 +8,10 @@
 
 #include <sglib/graph/SequenceGraph.hpp>
 
+/**
+ * Contains a graph and links generated between nodes on that graph
+ * Each link is represented on each node it appears as -A,B on A and -B,A on B
+ */
 class LinkageDiGraph {
 public:
     LinkageDiGraph(SequenceGraph & _sg): sg(_sg){};

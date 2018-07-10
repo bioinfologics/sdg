@@ -9,6 +9,12 @@
 #include <sglib/workspace/WorkSpace.hpp>
 #include <sglib/graph/LinkageDiGraph.hpp>
 
+/**
+ * @brief Generates and manipulates links from 10x, paired and long reads
+ *
+ * Uses a workspace containing mapped reads and KCI indexes.
+ * Can select nodes which are to be used for linkage.
+ */
 class LinkageUntangler {
     WorkSpace &ws;
 public:

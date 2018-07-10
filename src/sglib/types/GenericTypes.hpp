@@ -16,6 +16,9 @@ typedef int32_t seqID_t; //first sequence is 0;
 
 enum sgNodeStatus_t {sgNodeActive, sgNodeDeleted};
 
+/**
+ * The Node contains the sequence of a node and its status {Active, Deleted}
+ */
 class Node{
 public:
     Node(std::string _seq, sgNodeStatus_t _status) : sequence(_seq), status(_status){};
@@ -37,6 +40,14 @@ public:
 
 };
 
+/**
+ * The Link represents a connection between one end of a sequence and the end of another sequence
+ *
+ * +AAAAAAAAA- connected to +BBBBBBBBBB-
+ *
+ * would be represented as the -A,B link. Links also contain a distance parameter in case of overlap the distance is
+ * negative and in case of "scaffolding" link the distance would be positive.
+ */
 class Link{
 public:
     Link(){};
@@ -55,6 +66,10 @@ public:
 
 };
 
+/**
+ * A node visitor contains the node ID, and distances in terms of NTs and Nodes from the starting node
+ * This class is used as a helper for the depth_ and breath_fist_search functions
+ */
 struct nodeVisitor {
     sgNodeID_t node = 0;
     unsigned int dist = 0;

@@ -131,10 +131,11 @@ public:
      * _complexity_ nodes, in particular, this function returns the nodes represented
      * by ****** in the following image:
      *
+     *\verbatim
      *            ^^^^^^^^^^^
      *           |           |
      *  ========---*********---========
-     *
+     *\endverbatim
      *  The number of elements in the outer (^^^^^) part of the loop is defined by "complexity"
      * @param complexity Maximum number of nodes in the loop complexity
      * @return IDs of all the nodes involved in loops
