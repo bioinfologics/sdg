@@ -198,3 +198,13 @@ void LongReadMapper::write(std::ofstream &ofs) {
     ofs.write(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
     sglib::OutputLog() << "Done!" << std::endl;
 }
+
+LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
+    if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceGraph"); }
+    if (&other == this) {
+        return *this;
+    }
+    mappings = other.mappings;
+    update_indexes_from_mappings();
+    return *this;
+}

@@ -23,6 +23,7 @@ class PairedReadConnectivityDetail; //Forward declaration
  */
 
 class PairedReadMapper {
+    const SequenceGraph & sg;
 public:
     PairedReadMapper(SequenceGraph &_sg, PairedReadsDatastore &_datastore) : sg(_sg),datastore(_datastore){
         reads_in_node.resize(sg.nodes.size());
@@ -41,9 +42,8 @@ public:
     void load_from_disk(std::string filename);*/
     void print_stats();
 
+    PairedReadMapper operator=(const PairedReadMapper &other);
 
-
-    const SequenceGraph & sg;
     const PairedReadsDatastore & datastore;
     std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process

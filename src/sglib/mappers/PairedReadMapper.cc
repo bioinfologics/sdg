@@ -89,7 +89,7 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                 //get all kmers from read
                 auto seq=blrs.get_read_sequence(readID);
                 readkmers.clear();
-                skf.produce_all_kmers(0, seq,readkmers);
+                skf.produce_all_kmers(readID, seq,readkmers);
                 if (readkmers.size()==0) {
                     ++nokmers;
                 }
@@ -104,7 +104,8 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                             if ((nk->second.node > 0 and rk.contigID > 0) or
                                 (nk->second.node < 0 and rk.contigID < 0))
                                 mapping.rev = false;
-                            else mapping.rev = true;
+                            else
+                                mapping.rev = true;
                             mapping.first_pos = nk->second.pos;
                             mapping.last_pos = nk->second.pos;
                             ++mapping.unique_matches;
@@ -249,7 +250,7 @@ std::vector<uint64_t> PairedReadMapper::size_distribution() {
             }
         }
     }
-    //std::cout<<"Read orientations:  FR: "<<frcount<<"  RF: "<<rfcount<<std::endl;
+    std::cout<<"Read orientations:  FR: "<<frcount<<"  RF: "<<rfcount<<std::endl;
     if (frcount>rfcount){
         return frdist;
     } else return rfdist;
@@ -263,6 +264,16 @@ void PairedReadMapper::populate_orientation() {
             read_direction_in_node[rm.read_id]=rm.rev;
         }
     }
+}
+
+PairedReadMapper PairedReadMapper::operator=(const PairedReadMapper &other) {
+    if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceGraph"); }
+    if (&other == this) {
+        return *this;
+    }
+    reads_in_node = other.reads_in_node;
+    read_to_node = other.read_to_node;
+    return *this;
 }
 
 PairedReadConnectivityDetail::PairedReadConnectivityDetail(const PairedReadMapper &prm, sgNodeID_t source,

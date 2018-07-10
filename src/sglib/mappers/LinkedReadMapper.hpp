@@ -46,6 +46,8 @@ class LinkedReadMapper {
         }
     };
 
+    const SequenceGraph & sg;
+
 public:
     LinkedReadMapper(SequenceGraph &_sg, LinkedReadsDatastore &_datastore) : sg(_sg),datastore(_datastore){
         reads_in_node.resize(sg.nodes.size());
@@ -54,6 +56,8 @@ public:
     void read(std::ifstream & input_file);
     void map_reads(std::unordered_set<uint64_t> const &  reads_to_remap={});
     void remap_all_reads();
+    LinkedReadMapper operator=(const LinkedReadMapper &other);
+
     //void map_read(uint64_t readID);
     void remove_obsolete_mappings();
     /*void remap_reads();
@@ -66,7 +70,6 @@ public:
                                                                const std::vector<bool> &selected_nodes = {});
     std::vector<std::pair<sgNodeID_t , sgNodeID_t >> get_tag_neighbour_nodes(uint32_t min_shared,const std::vector<bool> & selected_nodes={});
 
-    SequenceGraph & sg;
     LinkedReadsDatastore &datastore;
     std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process

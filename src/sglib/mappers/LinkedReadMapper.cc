@@ -272,3 +272,13 @@ std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadMapper::get_tag_neigh
     }
     return tns;
 }
+
+LinkedReadMapper LinkedReadMapper::operator=(const LinkedReadMapper &other) {
+    if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceGraph"); }
+    if (&other == this) {
+        return *this;
+    }
+    reads_in_node = other.reads_in_node;
+    read_to_node = other.read_to_node;
+    return *this;
+}

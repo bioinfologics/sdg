@@ -24,7 +24,7 @@ public:
 
     void remove_transitive_links(int radius);
     void report_connectivity();
-    void solve();
+    //void solve();
 
     std::vector<std::vector<sgNodeID_t>> get_all_lines(uint16_t min_nodes) const;
 

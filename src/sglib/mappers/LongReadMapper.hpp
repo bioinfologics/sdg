@@ -20,7 +20,7 @@
  * Long read mapping to the graph, this class manages storage and computation of the alignments.
  */
 class LongReadMapper {
-    SequenceGraph & sg;
+    const SequenceGraph & sg;
     mm_idx_t *graph_index = nullptr;
     mm_mapopt_t opt;
     uint8_t k=15;
@@ -42,6 +42,8 @@ public:
 
     LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k=15, uint8_t w=10);
     ~LongReadMapper();
+
+    LongReadMapper operator=(const LongReadMapper &other);
 
     void update_graph_index();
     LongReadsDatastore& getLongReadsDatastore() {return datastore;}

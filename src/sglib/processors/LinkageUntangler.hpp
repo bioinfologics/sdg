@@ -10,6 +10,7 @@
 #include <sglib/graph/LinkageDiGraph.hpp>
 
 class LinkageUntangler {
+    WorkSpace &ws;
 public:
 
     explicit LinkageUntangler(WorkSpace & _ws): ws(_ws) { clear_node_selection();};
@@ -20,7 +21,7 @@ public:
     void select_nodes_by_size_and_ci( uint64_t min_size, float min_ci, float max_ci);
     std::set<std::pair<sgNodeID_t, sgNodeID_t >> get_HSPNPs(uint64_t min_size, float min_ci, float max_ci);
     void select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, float max_ci);
-    void select_frontiers_by_size_and_ci();
+    //void select_frontiers_by_size_and_ci();
 
     //Linkage creation methods (work on selected nodes)
     LinkageDiGraph make_topology_linkage(int radius);
@@ -39,7 +40,6 @@ public:
     //Problem localisation methods
 
 
-    WorkSpace &ws;
     std::vector<bool> selected_nodes;
     std::vector<bool> frontier_nodes;
 };

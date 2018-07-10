@@ -125,6 +125,19 @@ int main(int argc, char * argv[]) {
         exit(0);
     }
     if (paired_scaff){
+        LinkageUntangler lu(ws);
+
+        if (select_hspnps) lu.select_nodes_by_HSPNPs(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+        else lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
+        auto pair_ldg = lu.make_paired_linkage(min_pairs);
+        pair_ldg.report_connectivity();
+        lu.report_node_selection();
+        ws.getGraph().write_to_gfa("pair_links.gfa", {}, {}, {}, pair_ldg.links);
+        lu.report_node_selection();
+        pair_ldg.remove_transitive_links(10);
+        pair_ldg.report_connectivity();
+        ws.getGraph().write_to_gfa("pair_links_no_transitive.gfa", {}, {}, {}, pair_ldg.links);
+        exit(0);
         if (!ws.getLinkedReadMappers().empty()) {
             for (auto round=1;round<11;++round) {
                 sglib::OutputLog()<<"STARTING ROUND #"<<std::to_string(round)<<std::endl;
