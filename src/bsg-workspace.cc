@@ -164,7 +164,7 @@ int main(int argc, char * argv[]) {
         std::cout << "Done ... " << std::endl;
         std::cout << "Dumping gfa workspace " << std::endl;
         if (not gfafilename.empty()){
-            w.getGraph().write_to_gfa(gfafilename+".gfa");
+            w.getGraph().write_to_gfa(gfafilename + ".gfa");
         }
         std::cout << "Done... " << std::endl;
         if (not nodeinfofilename.empty()){

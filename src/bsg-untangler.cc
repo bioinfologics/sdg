@@ -132,11 +132,11 @@ int main(int argc, char * argv[]) {
         auto pair_ldg = lu.make_paired_linkage(min_pairs);
         pair_ldg.report_connectivity();
         lu.report_node_selection();
-        ws.getGraph().write_to_gfa("pair_links.gfa", {}, {}, {}, pair_ldg.links);
+        ws.getGraph().write_to_gfa("pair_links.gfa", pair_ldg.links);
         lu.report_node_selection();
         pair_ldg.remove_transitive_links(10);
         pair_ldg.report_connectivity();
-        ws.getGraph().write_to_gfa("pair_links_no_transitive.gfa", {}, {}, {}, pair_ldg.links);
+        ws.getGraph().write_to_gfa("pair_links_no_transitive.gfa", pair_ldg.links);
         exit(0);
         if (!ws.getLinkedReadMappers().empty()) {
             for (auto round=1;round<11;++round) {
@@ -150,16 +150,16 @@ int main(int argc, char * argv[]) {
                 lu.report_node_selection();
                 /*auto topology_ldg=lu.make_topology_linkage(10);
                 topology_ldg.report_connectivity();
-                ws.sg.write_to_gfa("topology_links.gfa",{},{},{},topology_ldg.links);*/
+                ws.sg.write_to_gfa("topology_links.gfa",topology_ldg.links);*/
                 //LinkageDiGraph gldg(ws.sg);
                 /*if (!ws.paired_read_mappers.empty()) {
                     auto pair_ldg = lu.make_paired_linkage(min_pairs);
                     pair_ldg.report_connectivity();
                     gldg.add_links(pair_ldg);
-                    ws.sg.write_to_gfa("pair_links.gfa", {}, {}, {}, pair_ldg.links);
+                    ws.sg.write_to_gfa("pair_links.gfa", pair_ldg.links);
                     pair_ldg.remove_transitive_links(10);
                     pair_ldg.report_connectivity();
-                    ws.sg.write_to_gfa("pair_links_no_transitive.gfa", {}, {}, {}, pair_ldg.links);
+                    ws.sg.write_to_gfa("pair_links_no_transitive.gfa", pair_ldg.links);
                 }*/
                 auto pre_tag_ldg = lu.make_tag_linkage(min_shared_tags);
                 pre_tag_ldg.remove_transitive_links(10);
@@ -178,11 +178,12 @@ int main(int argc, char * argv[]) {
                 auto tag_ldg = lu.make_tag_linkage(min_shared_tags);
                 tag_ldg.remove_transitive_links(10);
                 tag_ldg.report_connectivity();
-                ws.getGraph().write_to_gfa(output_prefix + "_tag_nt_" + std::to_string(round) + ".gfa", {}, {}, selnodes, tag_ldg.links);
+                ws.getGraph().write_to_gfa(output_prefix + "_tag_nt_" + std::to_string(round) + ".gfa", tag_ldg.links,
+                                           selnodes);
                 sglib::OutputLog() << "Simplifying linear paths" << std::endl;
                 lu.expand_linear_regions_skating(tag_ldg);
                 auto joined=ws.getGraph().join_all_unitigs();
-                ws.getGraph().write_to_gfa(output_prefix + "_after_expansion_" + std::to_string(round) + ".gfa", {}, {});
+                ws.getGraph().write_to_gfa(output_prefix + "_after_expansion_" + std::to_string(round) + ".gfa");
                 //sglib::OutputLog()<<"TODO: remap reads and re-start the whole thing..."<<std::endl;
                 ws.getKCI().reindex_graph();
                 ws.remap_all();
@@ -206,7 +207,7 @@ int main(int argc, char * argv[]) {
             tag_ldg_noNN.report_connectivity();
             tag_ldg_noNN.remove_transitive_links(10);
             tag_ldg_noNN.report_connectivity();
-            ws.sg.write_to_gfa(output_prefix+"_tag_noNN_nt.gfa", {}, {}, selnodes, tag_ldg_noNN.links);
+            ws.sg.write_to_gfa(output_prefix+"_tag_noNN_nt.gfa", tag_ldg_noNN.links,selnodes);
             lu.selected_nodes=sel_orig;*/
 
 
@@ -215,16 +216,16 @@ int main(int argc, char * argv[]) {
 
             tag_ldg.report_connectivity();
             gldg.add_links(tag_ldg);
-            ws.sg.write_to_gfa("tag_links.gfa", {}, {}, {}, tag_ldg.links);
+            ws.sg.write_to_gfa("tag_links.gfa", tag_ldg.links);
             auto tag_hspnp_ldg=lu.filter_linkage_to_hspnp_duos(min_backbone_node_size,min_backbone_ci,max_backbone_ci,tag_ldg);
             tag_hspnp_ldg.report_connectivity();
-            //ws.sg.write_to_gfa("tag_links_hspnps_coherent_selonly.gfa", {}, {},selnodes, tag_hspnp_ldg.links);
+            //ws.sg.write_to_gfa("tag_links_hspnps_coherent_selonly.gfa", tag_hspnp_ldg.links, selnodes);
             tag_hspnp_ldg.remove_transitive_links(10);
             tag_hspnp_ldg.report_connectivity();
-            //ws.sg.write_to_gfa("tag_links_hspnps_coherent_selonly_no_transitive.gfa", {}, {}, selnodes, tag_hspnp_ldg.links);
+            //ws.sg.write_to_gfa("tag_links_hspnps_coherent_selonly_no_transitive.gfa", tag_hspnp_ldg.links, selnodes);
             lu.expand_trivial_repeats(tag_hspnp_ldg);
             ws.sg.join_all_unitigs();
-            ws.sg.write_to_gfa("after_trivial_hspnp_expansion.gfa");//, {}, {},{}, tag_hspnp_ldg.links);
+            ws.sg.write_to_gfa("after_trivial_hspnp_expansion.gfa");//, tag_hspnp_ldg.links);
             //TODO: remap reads!
             ws.sg.create_index();
             for (auto &m:ws.paired_read_mappers) {
@@ -243,8 +244,8 @@ int main(int argc, char * argv[]) {
 
             tag_ldg.remove_transitive_links(10);
             tag_ldg.report_connectivity();
-            ws.getGraph().write_to_gfa("tag_links_no_transitive.gfa", {}, {}, {}, tag_ldg.links);
-            ws.getGraph().write_to_gfa("tag_links_no_transitive_selected_only.gfa", {}, {}, selnodes, tag_ldg.links);
+            ws.getGraph().write_to_gfa("tag_links_no_transitive.gfa", tag_ldg.links);
+            ws.getGraph().write_to_gfa("tag_links_no_transitive_selected_only.gfa", tag_ldg.links, selnodes);
             //HACK: eliminate nodes with N-N and try again.
             auto sel_orig=lu.selected_nodes;
             uint64_t remNN=0;
@@ -260,11 +261,11 @@ int main(int argc, char * argv[]) {
             auto tag_ldg_noNN = lu.make_tag_linkage(min_shared_tags);
             tag_ldg_noNN.report_connectivity();
             //gldg.add_links(tag_ldg);
-            ws.getGraph().write_to_gfa("tag_links_noNN.gfa", {}, {}, {}, tag_ldg_noNN.links);
+            ws.getGraph().write_to_gfa("tag_links_noNN.gfa", tag_ldg_noNN.links);
             tag_ldg_noNN.remove_transitive_links(10);
             tag_ldg_noNN.report_connectivity();
-            ws.getGraph().write_to_gfa("tag_links_noNN_no_transitive.gfa", {}, {}, {}, tag_ldg_noNN.links);
-            ws.getGraph().write_to_gfa("tag_links_noNN_no_transitive_selected_only.gfa", {}, {}, selnodes, tag_ldg_noNN.links);
+            ws.getGraph().write_to_gfa("tag_links_noNN_no_transitive.gfa", tag_ldg_noNN.links);
+            ws.getGraph().write_to_gfa("tag_links_noNN_no_transitive_selected_only.gfa", tag_ldg_noNN.links, selnodes);
             lu.selected_nodes=sel_orig;*/
 
 
@@ -280,22 +281,22 @@ int main(int argc, char * argv[]) {
 
             auto long_ldg = lu.make_longRead_linkage();
             long_ldg.report_connectivity();
-            ws.getGraph().write_to_gfa("long_links.gfa", {}, {}, {}, long_ldg.links);
+            ws.getGraph().write_to_gfa("long_links.gfa", long_ldg.links);
             long_ldg.remove_transitive_links(10);
             long_ldg.report_connectivity();
-            ws.getGraph().write_to_gfa("long_links_no_transitive.gfa", {}, {}, {}, long_ldg.links);
-            ws.getGraph().write_to_gfa("long_links_no_transitive_selected_only.gfa", {}, {}, selnodes, long_ldg.links);
+            ws.getGraph().write_to_gfa("long_links_no_transitive.gfa", long_ldg.links);
+            ws.getGraph().write_to_gfa("long_links_no_transitive_selected_only.gfa", long_ldg.links, selnodes);
         }
         /*gldg.report_connectivity();
         gldg.add_links(gldg);
-        ws.getGraph().write_to_gfa("general_links.gfa", {}, {}, {}, gldg.links);
+        ws.getGraph().write_to_gfa("general_links.gfa", gldg.links);
         gldg.remove_transitive_links(10);
         gldg.report_connectivity();
-        ws.getGraph().write_to_gfa("general_links_no_transitive.gfa", {}, {}, {}, gldg.links);
+        ws.getGraph().write_to_gfa("general_links_no_transitive.gfa", gldg.links);
         //PairedReadLinker prl(ws,u);
         //prl.generate_links_size_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci,5);
         //prl.generate_links_hspnp();
-        //ws.sg.write_to_gfa("prl_hspnp_links.gfa",{},{},{},prl.links);
+        //ws.sg.write_to_gfa("prl_hspnp_links.gfa", prl.links);
         //std::cout<<"calling remove_transitive_links"<<std::endl;
         //prl.remove_transitive_links();
         //std::cout<<"remove_transitive_links finished"<<std::endl;
@@ -337,7 +338,7 @@ int main(int argc, char * argv[]) {
             return 1;
         }
         ws.getGraph().join_all_unitigs();
-        ws.getGraph().write_to_gfa(output_prefix+"_repeat_solved.gfa");
+        ws.getGraph().write_to_gfa(output_prefix + "_repeat_solved.gfa");
         ws.getKCI().reindex_graph();
         for (auto &m:ws.getLinkedReadMappers()) {
             m.remap_all_reads();
@@ -347,7 +348,7 @@ int main(int argc, char * argv[]) {
         Untangler u(ws);
         u.solve_bubbly_paths();
         ws.getGraph().join_all_unitigs();
-        ws.getGraph().write_to_gfa(output_prefix+"_bubbly_solved.gfa");
+        ws.getGraph().write_to_gfa(output_prefix + "_bubbly_solved.gfa");
         ws.getKCI().reindex_graph();
         for (auto &m:ws.getLinkedReadMappers()) {
             m.remap_all_reads();

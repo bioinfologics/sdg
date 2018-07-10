@@ -516,8 +516,9 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     sglib::OutputLog(sglib::LogLevels::INFO) << nodes.size() - 1 << " nodes after connecting with " << lcount << " links." << std::endl;
 }
 
-void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<sgNodeID_t> & mark_red, const std::vector<double> & depths,
-                                 const std::unordered_set<sgNodeID_t> & selected_nodes, const std::vector<std::vector<Link>> & arg_links){
+void SequenceGraph::write_to_gfa(std::string filename, const std::vector<std::vector<Link>> &arg_links,
+                                 const std::unordered_set<sgNodeID_t> &selected_nodes, const std::unordered_set<sgNodeID_t> &mark_red,
+                                 const std::vector<double> &depths) {
     std::string fasta_filename;
     //check the filename ends in .gfa
     if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
