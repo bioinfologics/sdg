@@ -303,7 +303,7 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
     return std::move(kset);
 }
 
-std::unordered_set<__uint128_t> LinkedReadsDatastore::get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg) {
+std::unordered_set<__uint128_t> LinkedReadsDatastore::get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg, bool count_tag_cvg) {
     class StreamKmerFactory128 : public  KMerFactory128 {
     public:
         explicit StreamKmerFactory128(uint8_t k) : KMerFactory128(k){}
@@ -340,8 +340,19 @@ std::unordered_set<__uint128_t> LinkedReadsDatastore::get_tags_kmers128(int k, i
         read_ids.insert(read_ids.end(),reads.begin(),reads.end());
     }
     all_kmers.reserve(read_ids.size()*(readsize-k+1));
-    for (auto rid:read_ids){
-        skf.produce_all_kmers(blrsg.get_read_sequence(rid),all_kmers);
+    if (count_tag_cvg) {
+        for (auto t:tags) {
+            auto tag_first_idx=all_kmers.size();
+            for (auto rid:get_tag_reads(t)) {
+                skf.produce_all_kmers(blrsg.get_read_sequence(rid), all_kmers);
+            }
+            std::sort(all_kmers.begin()+tag_first_idx,all_kmers.end());
+            all_kmers.erase(std::unique(all_kmers.begin()+tag_first_idx,all_kmers.end()),all_kmers.end());
+        }
+    } else {
+        for (auto rid:read_ids) {
+            skf.produce_all_kmers(blrsg.get_read_sequence(rid), all_kmers);
+        }
     }
     std::sort(all_kmers.begin(),all_kmers.end());
     std::unordered_set<__uint128_t> kset;

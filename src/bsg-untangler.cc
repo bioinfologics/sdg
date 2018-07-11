@@ -141,7 +141,7 @@ int main(int argc, char * argv[]) {
         sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
         tag_ldg.report_connectivity();
         sglib::OutputLog()<<"Calling local assembly..."<<std::endl;
-        lu.linear_regions_tag_local_assembly(tag_ldg, dev_local_k, dev_local_min_cvg, dev_max_lines,dev_min_nodes,dev_min_total_size);
+        lu.linear_regions_tag_local_assembly(tag_ldg, dev_local_k, dev_local_min_cvg, dev_max_lines,dev_min_nodes,dev_min_total_size,true);
         exit(0);
     }
     if (paired_scaff){
