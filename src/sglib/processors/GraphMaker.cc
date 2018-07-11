@@ -300,7 +300,7 @@ namespace std {
 }
 
 void GraphMaker::new_graph_from_kmerset_trivial128(const std::unordered_set<__uint128_t> & kmerset,uint8_t k) {
-    std::cout<<"Constructing Sequence Graph from "<<kmerset.size()<<" "<<std::to_string(k)<<"-mers"<<std::endl;
+    //std::cout<<"Constructing Sequence Graph from "<<kmerset.size()<<" "<<std::to_string(k)<<"-mers"<<std::endl;
     std::set<std::pair<__uint128_t,__uint128_t>> unitig_ends;
     std::vector<std::pair<__uint128_t,sgNodeID_t>> kmerovl_bw_nodes,kmerovl_fw_nodes;
     std::unordered_set<__uint128_t> used_kmers;
@@ -377,7 +377,7 @@ void GraphMaker::new_graph_from_kmerset_trivial128(const std::unordered_set<__ui
         }
 
     }
-    std::cout<<"there will be "<<unitig_ends.size()<<" unitigs in the graph"<<std::endl;
+    //std::cout<<"there will be "<<unitig_ends.size()<<" unitigs in the graph"<<std::endl;
     //add each unitig to graph, and its ends to the ovl vector
     char bases[4]={'A','C','G','T'};
     for (auto uends:unitig_ends){
