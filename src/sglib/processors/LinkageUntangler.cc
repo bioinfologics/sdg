@@ -794,7 +794,7 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
     std::cout<<std::endl;
     uint64_t jc=0;
     for (auto &l:lines) jc+=l.size()-1;
-
+    std::ofstream patch_unitigs("local_unitigs_to_patch.fasta");
     std::vector<SequenceGraphPath> sols;
 #pragma omp parallel
     {
@@ -803,14 +803,14 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
         uint64_t donelines=0;
 #pragma omp for schedule(dynamic,1)
         for (auto i=0; i<lines.size(); ++i){
-            auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(k, min_cvg, linetagsets[i], blrsg);
-            std::cout << "creating DBG for line #" << i << std::endl;
+            auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(k, min_cvg, linetagsets[i], blrsg, count_tag_cvg);
+            //std::cout << "creating DBG for line #" << i << std::endl;
             SequenceGraph dbg;
             GraphMaker gm(dbg);
             gm.new_graph_from_kmerset_trivial128(ltkmers128, k);
             //dbg.write_to_gfa("local_dbg_" + std::to_string(i) + ".gfa");
             //gruesome tip clipping:
-            std::cout << "Starting gruesome tip clipping" << std::endl;
+            //std::cout << "Starting gruesome tip clipping" << std::endl;
             std::set<sgNodeID_t> to_delete;
             for (sgNodeID_t n = 1; n < dbg.nodes.size(); ++n) {
                 if (dbg.nodes[n].status == sgNodeDeleted) continue;
@@ -836,17 +836,26 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
                 if (fwl.size() == 0 and bwl.size()==0) to_delete.insert(n);
                 //std::cout<<std::endl;
             }
-            std::cout << "Nodes to delete: " << to_delete.size() << std::endl;
+            //std::cout << "Nodes to delete: " << to_delete.size() << std::endl;
             for (auto n:to_delete) dbg.remove_node(n);
             auto utc = dbg.join_all_unitigs();
-            std::cout << "Joined unitigs: " << utc << std::endl;
-            dbg.write_to_gfa("local_dbg_" + std::to_string(i) + "_tipclipped.gfa");
-            std::ofstream anchf("local_dbg_" + std::to_string(i) + "_anchors.fasta");
-            for (auto n:lines[i]){
-                anchf<<">seq"<<llabs(n)<<std::endl;
-                anchf<<ws.sg.nodes[llabs(n)].sequence<<std::endl;
-
+#pragma omp critical
+            {
+                for (auto n = 0; n < dbg.nodes.size(); ++n) {
+                    if (dbg.nodes[n].sequence.size() > 2000) {
+                        patch_unitigs << ">local_dbg_" << i << "_node_" << n << std::endl << dbg.nodes[n].sequence
+                                      << std::endl;
+                    }
+                }
             }
+//            std::cout << "Joined unitigs: " << utc << std::endl;
+//            dbg.write_to_gfa("local_dbg_" + std::to_string(i) + "_tipclipped.gfa");
+//            std::ofstream anchf("local_dbg_" + std::to_string(i) + "_anchors.fasta");
+//            for (auto n:lines[i]){
+//                anchf<<">seq"<<llabs(n)<<std::endl;
+//                anchf<<ws.sg.nodes[llabs(n)].sequence<<std::endl;
+//
+//            }
             if (++donelines%100==0) std::cout<<"."<<std::flush;
         }
     }
