@@ -263,6 +263,7 @@ add_executable(seq-sorter EXCLUDE_FROM_ALL
 
 target_link_libraries(bsg-workspace sequence_graph)
 target_link_libraries(bsg-datastore sequence_graph)
+target_link_libraries(bsg-kmerspectra sequence_graph)
 target_link_libraries(bsg-mapper sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-flowmaker sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})

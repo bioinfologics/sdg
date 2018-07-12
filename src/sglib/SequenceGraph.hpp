@@ -64,6 +64,7 @@ public:
     Link get_link( sgNodeID_t source, sgNodeID_t dest);
     std::vector<Link> get_fw_links( sgNodeID_t n);
     inline std::vector<Link> get_bw_links( sgNodeID_t n){ return get_fw_links (-n); };
+    size_t count_active_nodes();
 
     /*
      * Connected components, (TODO) optionally breaking up in repeats, nodes that class as repeats will be returned on their own

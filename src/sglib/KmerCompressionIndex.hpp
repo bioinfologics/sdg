@@ -7,8 +7,45 @@
 
 #include <sglib/factories/KMerCountFactory.h>
 #include <sglib/readers/SequenceGraphReader.h>
+#include <sglib/datastores/PairedReadsDatastore.hpp>
 #include "SMR.h"
 #include "SequenceGraph.hpp"
+class CStringKMerFactory : protected KMerFactory {
+public:
+    explicit CStringKMerFactory(uint8_t k) : KMerFactory(k) {};
+
+
+
+    ~CStringKMerFactory() {
+#pragma omp critical (KMerFactoryDestructor)
+        {
+            //std::cout << "Bases processed " << bases << "\n";
+        }
+    }
+
+    // TODO: Adjust for when K is larger than what fits in uint64_t!
+    const void create_kmercounts(std::vector<KmerCount> &mers, const char * s) {
+        fkmer=0;
+        rkmer=0;
+        last_unknown=0;
+        uint64_t p(0);
+        while (s[p]!='\0') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(s[p], p, fkmer, rkmer, last_unknown);
+            p++;
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(fkmer,1);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(rkmer,1);
+                }
+            }
+        }
+    }
+};
 
 class KmerCompressionIndex {
 public:
@@ -22,6 +59,7 @@ public:
     void reindex_graph();
     void start_new_count();
     void add_counts_from_file(std::vector<std::string> filename);
+    void add_counts_from_datastore(const PairedReadsDatastore & ds);
 
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);

@@ -120,6 +120,14 @@ std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n){
     return r;
 }
 
+size_t SequenceGraph::count_active_nodes() {
+    size_t t=0;
+    for (auto &n: nodes){
+        if (n.status==sgNodeStatus_t::sgNodeActive) ++t;
+    }
+    return t;
+}
+
 bool Link::operator==(const Link a){
     if (a.source == this->source && a.dest == this->dest){
         return true;

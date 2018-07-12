@@ -61,6 +61,7 @@ int main(int argc, char * argv[]) {
     ws.add_log_entry("Workspace created with bsg-dbg");
     ws.add_log_entry("Origin datastore: "+pr_file);
     ws.paired_read_datastores.emplace_back(pr_file);
+    ws.paired_read_mappers.emplace_back(ws.sg,ws.paired_read_datastores.back());
     GraphMaker gm(ws.sg);
     //counting kmers...
     sglib::OutputLog()<<"Creating "<<k<<"-mer set from datastore..."<<std::endl;
@@ -68,7 +69,7 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog()<<"DONE! "<<kmers.size()<<" "<<k<<"-mers with coverage >="<<min_coverage<<std::endl;
     sglib::OutputLog()<<"Creating DBG..."<<std::endl;
     gm.new_graph_from_kmerset_trivial128(kmers,k);
-    sglib::OutputLog()<<"DONE! "<<ws.sg.nodes.size()-1<<" nodes in graph"<<std::endl;
+    sglib::OutputLog()<<"DONE! "<<ws.sg.count_active_nodes()<<" nodes in graph"<<std::endl;
 
     std::set<sgNodeID_t> to_delete;
     for (sgNodeID_t n = 1; n < ws.sg.nodes.size(); ++n) {
@@ -98,7 +99,12 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog() << "Tip nodes to delete: " << to_delete.size() << std::endl;
     for (auto n:to_delete) ws.sg.remove_node(n);
     auto utc = ws.sg.join_all_unitigs();
-    sglib::OutputLog()<<"DONE! "<<ws.sg.nodes.size()-1<<" nodes in graph"<<std::endl;
+    sglib::OutputLog()<<"DONE! "<<ws.sg.count_active_nodes()<<" nodes in graph"<<std::endl;
+    ws.kci.index_graph();
+    ws.kci.start_new_count();
+    ws.kci.add_counts_from_datastore(ws.paired_read_datastores.back());
+
     ws.sg.write_to_gfa(output_prefix+"_DBG.gfa");
+    ws.dump_to_disk(output_prefix+".bsgws");
 }
 

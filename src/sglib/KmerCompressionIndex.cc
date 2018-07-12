@@ -277,6 +277,65 @@ double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint
     return (((double) kcov)/kcount )/uniq_mode;
 }
 
+void KmerCompressionIndex::add_counts_from_datastore(const PairedReadsDatastore &ds) {
+    uint64_t present(0), absent(0), rp(0);
+    sglib::OutputLog(sglib::INFO)<<"Populating lookup map"<<std::endl;
+    std::unordered_map<uint64_t,uint64_t> kmer_map;
+    kmer_map.reserve(graph_kmers.size());
+    for (uint64_t i=0;i<graph_kmers.size();++i) kmer_map[graph_kmers[i].kmer]=i;
+    sglib::OutputLog(sglib::INFO)<<"Map populated, counting from datastore: " << ds.filename << std::endl;
+
+#pragma omp parallel
+    {
+        BufferedPairedSequenceGetter bpsg(ds,100000,1000);
+        uint64_t thread_present(0), thread_absent(0), thread_rp(0);
+        const size_t local_kmers_size = 2000000;
+        std::vector<uint64_t> found_kmers;
+        found_kmers.reserve(local_kmers_size);
+        std::vector<KmerCount> readkmers;
+        CStringKMerFactory cskf(31);
+        auto &arc = read_counts.back();
+#pragma omp for schedule(static,10000)
+        for (uint64_t rid = 1; rid <= ds.size(); ++rid) {
+            readkmers.clear();
+            cskf.create_kmercounts(readkmers, bpsg.get_read_sequence(rid));
+
+            for (auto &rk:readkmers) {
+                auto findk = kmer_map.find(rk.kmer);
+                if (kmer_map.end() != findk) {
+                    //++thread_counts[findk->second];
+                    found_kmers.emplace_back(findk->second);
+                    if (found_kmers.size() == local_kmers_size) {
+                        bool printstatus = false;
+#pragma omp critical(results_merge)
+                        {
+
+                            for (auto &x:found_kmers) if (arc[x] < UINT16_MAX) ++arc[x];
+                            if (rp / 1000000 != (rp + thread_rp) / 1000000) printstatus = true;
+                            rp += thread_rp;
+                            present += thread_present;
+                            absent += thread_absent;
+                        }
+                        found_kmers.clear();
+                        thread_absent = 0;
+                        thread_present = 0;
+                        thread_rp = 0;
+                        if (printstatus)
+                            sglib::OutputLog(sglib::INFO) << rp << " reads processed " << present << " / "
+                                                          << present + absent << " kmers found" << std::endl;
+                    }
+                    ++thread_present;
+                } else ++thread_absent;
+
+
+            }
+            ++thread_rp;
+        }
+    }
+    sglib::OutputLog(sglib::INFO) << rp << " reads processed " << present << " / " << present + absent
+                                  << " kmers found" << std::endl;
+}
+
 void KmerCompressionIndex::compute_all_nodes_kci(uint16_t max_graph_freq) {
     nodes_depth.resize(sg.nodes.size());
 #pragma omp parallel for shared(nodes_depth) schedule(static, 100)
