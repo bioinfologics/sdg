@@ -41,6 +41,7 @@ public:
     void load_index();
     uint64_t size()const {return _size;};
     std::string get_read_sequence(size_t readID);
+    std::unordered_set<__uint128_t> get_all_kmers128(int k, int min_tag_cov);
     std::string filename; //if store is in single file bsg format these two are the same as the index file.
 
     uint64_t readsize;

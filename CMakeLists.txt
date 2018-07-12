@@ -218,6 +218,11 @@ add_executable(bsg-untangler
         src/sglib/processors/TagWalker.cc src/sglib/processors/TagWalker.hpp
         src/sglib/processors/FlowFollower.cc src/sglib/processors/FlowFollower.hpp src/sglib/processors/LinkageUntangler.cc src/sglib/processors/LinkageUntangler.hpp src/sglib/processors/GraphEditor.cc src/sglib/processors/GraphEditor.hpp src/sglib/processors/GraphMaker.cc src/sglib/processors/GraphMaker.hpp)
 
+add_executable(bsg-dbg
+        src/bsg-dbg.cc
+        src/sglib/processors/GraphMaker.cc src/sglib/processors/GraphMaker.hpp
+        src/sglib/processors/GraphEditor.cc src/sglib/processors/GraphEditor.hpp)
+
 
 add_executable(bsg-flowmaker
         src/bsg-flowmaker.cc
@@ -261,6 +266,7 @@ target_link_libraries(bsg-datastore sequence_graph)
 target_link_libraries(bsg-mapper sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-flowmaker sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-dbg sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(test_graphmaker sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)

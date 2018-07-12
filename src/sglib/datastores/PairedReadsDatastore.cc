@@ -139,3 +139,62 @@ const char* BufferedPairedSequenceGetter::get_read_sequence(uint64_t readID) {
     }
     return buffer+(read_offset_in_file-buffer_offset);
 }
+
+namespace std {
+    //TODO: this hashing sucks, but it is needed
+    template <> struct hash<__int128 unsigned>
+    {
+        size_t operator()(const __int128 unsigned & x) const
+        {
+            return hash<uint64_t>()((uint64_t)x);
+        }
+    };
+}
+
+std::unordered_set<__uint128_t> PairedReadsDatastore::get_all_kmers128(int k, int min_tag_cov) {
+    class StreamKmerFactory128 : public  KMerFactory128 {
+    public:
+        explicit StreamKmerFactory128(uint8_t k) : KMerFactory128(k){}
+        inline void produce_all_kmers(const char * seq, std::vector<__uint128_t> &mers){
+            // TODO: Adjust for when K is larger than what fits in __uint128_t!
+            last_unknown=0;
+            fkmer=0;
+            rkmer=0;
+            auto s=seq;
+            while (*s!='\0' and *s!='\n') {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        mers.emplace_back(fkmer);
+                    } else {
+                        // Is bwd
+                        mers.emplace_back(rkmer);
+                    }
+                }
+                ++s;
+            }
+        }
+    };
+    StreamKmerFactory128 skf(k);
+
+    //reserve space by counting reads first, save only the integer, do not merge just count and insert in the set
+    std::vector<__uint128_t> all_kmers;
+    BufferedPairedSequenceGetter bprsg(*this,100000,1000);
+    for (auto rid=1;rid<=size();++rid) {
+        skf.produce_all_kmers(bprsg.get_read_sequence(rid), all_kmers);
+    }
+
+    std::sort(all_kmers.begin(),all_kmers.end());
+    std::unordered_set<__uint128_t> kset;
+    auto ri=all_kmers.begin();
+    auto nri=all_kmers.begin();
+    while (ri<all_kmers.end()){
+        while (nri<all_kmers.end() and *nri==*ri) ++nri;
+        if (nri-ri>=min_tag_cov) kset.insert(*ri);
+        ri=nri;
+    }
+    return std::move(kset);
+}
