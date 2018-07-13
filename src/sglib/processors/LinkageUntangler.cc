@@ -897,7 +897,7 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
                 auto prevn=ws.sg.nodes.size();
                 ge.patch_between(lines[i][li], lines[i][li + 1], matches[0]);
                 //std::cout<<" Patched!!!"<<std::endl;
-                if (ws.sg.nodes.size()==prevn) ++patched;
+                if (ws.sg.nodes.size()>prevn) ++patched;
                 else ++not_patched;
             }
 
