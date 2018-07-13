@@ -2,6 +2,7 @@
 // Created by Bernardo Clavijo (EI) on 25/06/2018.
 //
 
+#include <functional>
 #include "GraphEditor.hpp"
 
 bool GraphEditor::detach_path(SequenceGraphPath p, bool consume_tips) {
@@ -63,6 +64,41 @@ bool GraphEditor::detach_path(SequenceGraphPath p, bool consume_tips) {
             }
         }
     }
+}
+
+bool GraphEditor::patch_between(sgNodeID_t from, sgNodeID_t to, std::string patch) {
+    auto n1 = ws.sg.nodes[llabs(from)];
+    auto n2 = ws.sg.nodes[llabs(to)];
+    const size_t ENDS_SIZE=1000;
+    if (n1.sequence.size()>ENDS_SIZE) n1.sequence=n1.sequence.substr(n1.sequence.size()-ENDS_SIZE-1,ENDS_SIZE);
+    if (n2.sequence.size()>ENDS_SIZE) n2.sequence.resize(ENDS_SIZE);
+    if (from<0) n1.make_rc();
+    if (to<0) n2.make_rc();
+    auto p1=patch.find(n1.sequence);
+    auto p2=patch.find(n2.sequence);
+    if (p1>=patch.size() or p2>=patch.size()) {
+        n1.make_rc();
+        n2.make_rc();
+        from=-from;
+        to=-to;
+        p1=patch.find(n1.sequence);
+        p2=patch.find(n2.sequence);
+    }
+    if (p1>=patch.size() or p2>=patch.size() or p1>=p2) {
+        return false;
+    }
+    SequenceGraphPath sol(std::ref(ws.sg));
+    for (auto p:ws.sg.find_all_paths_between(from,to,p2-p1,30)){
+        auto pnp=patch.find(p.get_sequence());
+        if (pnp>p1 and pnp<p2) {
+            if (sol.nodes.empty()) sol.nodes=p.nodes;
+            else {
+                return false;
+            }
+        }
+    }
+    detach_path(sol,true);
+    return true;
 }
 
 void GraphEditor::join_path(SequenceGraphPath p, bool consume_nodes) {

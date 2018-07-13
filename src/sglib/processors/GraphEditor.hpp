@@ -13,7 +13,7 @@ public:
     GraphEditor (const WorkSpace &_ws):ws(_ws){};
 
     bool detach_path (SequenceGraphPath p,bool consume_tips=false); //returns true on success
-
+    bool patch_between (sgNodeID_t from, sgNodeID_t to, std::string);
 
     /**
      * @brief expands a node creating as many copies as needed, then, distributes input and output links as per bw and fw

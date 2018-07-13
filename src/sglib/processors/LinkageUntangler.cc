@@ -752,7 +752,7 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
     sglib::OutputLog()<<"Starting linear region tag local assemblies..."<<std::endl;
     auto lines=ldg.get_all_lines(min_nodes, min_total_size);
     if (max_lines>0) {
-        sglib::OutputLog()<<"USING ONLY "<<max_lines<< " lines as a test"<<std::endl;
+        sglib::OutputLog()<<"USING ONLY "<<max_lines<< " lines out of "<<lines.size()<<" as a test"<<std::endl;
         lines.resize(max_lines);
         //to filter to specific node, keep only the line that has that node:
         //auto old_lines=lines;
@@ -792,20 +792,22 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
         if (linetagsets.size()%100==0) std::cout<<"."<<std::flush;
     }
     std::cout<<std::endl;
-    uint64_t jc=0;
-    for (auto &l:lines) jc+=l.size()-1;
+
+    //-----Step 2: local assemblies
     std::ofstream patch_unitigs("local_unitigs_to_patch.fasta");
     std::vector<SequenceGraphPath> sols;
     std::atomic<uint64_t> found_transitions(0),not_found_transitions(0);
     sglib::OutputLog()<<"Performing local assembly for "<<lines.size()<<" linear regions"<<std::endl;
+    std::vector<std::string> local_unitigs;
 #pragma omp parallel
     {
         BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
         std::vector<SequenceGraphPath> tsols;
-        uint64_t donelines=0;
-#pragma omp for schedule(dynamic,1)
-        for (auto i=0; i<lines.size(); ++i){
-            auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(k, min_cvg, linetagsets[i], blrsg, count_tag_cvg);
+        uint64_t donelines = 0;
+#pragma omp for schedule(dynamic, 1)
+        for (auto i = 0; i < lines.size(); ++i) {
+            auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(k, min_cvg, linetagsets[i], blrsg,
+                                                                             count_tag_cvg);
             //std::cout << "creating DBG for line #" << i << std::endl;
             SequenceGraph dbg;
             GraphMaker gm(dbg);
@@ -835,7 +837,7 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
                         //std::cout<<" D"<<std::endl;
                     }
                 }
-                if (fwl.size() == 0 and bwl.size()==0) to_delete.insert(n);
+                if (fwl.size() == 0 and bwl.size() == 0) to_delete.insert(n);
                 //std::cout<<std::endl;
             }
             //std::cout << "Nodes to delete: " << to_delete.size() << std::endl;
@@ -843,14 +845,70 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
             auto utc = dbg.join_all_unitigs();
 #pragma omp critical
             {
-                std::vector<bool> found(lines[i].size());
+
 
                 for (auto n = 0; n < dbg.nodes.size(); ++n) {
                     if (dbg.nodes[n].sequence.size() > 2000) {
-                        patch_unitigs << ">local_dbg_" << i << "_node_" << n << std::endl << dbg.nodes[n].sequence
-                                      << std::endl;
+                        //patch_unitigs << ">local_dbg_" << i << "_node_" << n << std::endl << dbg.nodes[n].sequence
+                        //              << std::endl;
+                        local_unitigs.emplace_back(dbg.nodes[n].sequence);
                     }
+                }
+            }
+        }
+    }
+    sglib::OutputLog()<<"Local assemblies done!"<<std::endl;
+    //---------- Step 3: patching graph
+    sglib::OutputLog()<<"Expanding local unitigs to their RC"<<std::endl;
+    //first expand local unitigs into direct and rc
+    auto luc=local_unitigs.size();
+    local_unitigs.reserve(2*luc);
+    for (auto i=0;i<luc;++i){
+        Node n(local_unitigs[i]);
+        n.make_rc();
+        local_unitigs.emplace_back(n.sequence);
+    }
+    sglib::OutputLog()<<"Looking for transtitions to patch"<<std::endl;
+    GraphEditor ge(ws);
+    uint64_t patched=0,not_patched=0;
+    for (auto i = 0; i < lines.size(); ++i) {
+        //sglib::OutputLog()<<"Line #"<<i<<std::endl;
+        for (auto li=0; li<lines[i].size()-1; ++li) {
+            auto n1 = ws.sg.nodes[llabs(lines[i][li])];
+            auto n2 = ws.sg.nodes[llabs(lines[i][li + 1])];
+            const size_t ENDS_SIZE=1000;
+            if (n1.sequence.size()>ENDS_SIZE) n1.sequence=n1.sequence.substr(n1.sequence.size()-ENDS_SIZE-1,ENDS_SIZE);
+            if (n2.sequence.size()>ENDS_SIZE) n2.sequence.resize(ENDS_SIZE);
+            if (lines[i][li]<0) n1.make_rc();
+            if (lines[i][li+1]<0) n2.make_rc();
+            std::vector<std::string> matches;
+            for (auto &unitig:local_unitigs) {
+                auto n1pos = unitig.find(n1.sequence);
+                auto n2pos = unitig.find(n1.sequence);
+                if (n1pos < unitig.size() and n2pos < unitig.size()) {
+                    //std::cout << lines[i][li] << " and " << lines[i][li + 1] << " found on unitig " << n
+                    //          << std::endl;
+                    matches.emplace_back(unitig);
+                }
+            }
+            //TODO: collapse unitigs that are equivalent.
+            if (matches.size()==1) {
+                //std::cout<<" Patching between "<<lines[i][li]<<" and "<<lines[i][li+1]<<std::endl;
+                auto prevn=ws.sg.nodes.size();
+                ge.patch_between(lines[i][li], lines[i][li + 1], matches[0]);
+                //std::cout<<" Patched!!!"<<std::endl;
+                if (ws.sg.nodes.size()==prevn) ++patched;
+                else ++not_patched;
+            }
 
+        }
+    }
+    sglib::OutputLog()<<"Patches succesfully applied: "<<patched<<"   Patches not applied: "<<not_patched<<std::endl;
+    sglib::OutputLog()<<"Joining unitigs"<<std::endl;
+    auto ujc=ws.sg.join_all_unitigs();
+    sglib::OutputLog()<<"Unitigs joined after patching: "<<ujc<<std::endl;
+    /*for (auto i = 0; i < lines.size(); ++i) {
+                    std::vector<bool> found(lines[i].size());
                     for (auto li=0; li<lines[i].size()-1; ++li) {
                         auto n1=ws.sg.nodes[llabs(lines[i][li])];
                         auto n2=ws.sg.nodes[llabs(lines[i][li+1])];
@@ -902,7 +960,8 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
     std::cout<<std::endl;
     sglib::OutputLog()<<"Transitions found: "<<found_transitions<<" ("<<found_transitions*100/(found_transitions+not_found_transitions)<<"%)"<<std::endl;
     sglib::OutputLog()<<"Transitions NOT found: "<<not_found_transitions<<" ("<<not_found_transitions*100/(found_transitions+not_found_transitions)<<"%)"<<std::endl;
-    sglib::OutputLog()<<"Local assembly done!"<<std::endl;
+     */
+
 }
 
 void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg, int max_lines) {
