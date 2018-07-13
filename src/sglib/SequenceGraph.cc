@@ -979,7 +979,7 @@ const uint64_t SequenceSubGraph::total_size() const {
     return t;
 }
 
-std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes) {
+std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes, bool abort_on_loops) {
     std::vector<SequenceGraphPath> current_paths,next_paths,final_paths;
     for(auto &fl:get_fw_links(from)) current_paths.emplace_back(SequenceGraphPath(*this,{fl.dest}));
     //int rounds=20;
@@ -998,14 +998,14 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
                 //else get fw links, compute distances for each, and if not >max_dist add to nodes
             else {
                 for (auto l:get_fw_links(p.nodes.back())){
-                    if (std::find(p.nodes.begin(),p.nodes.end(),l.dest)!=p.nodes.end()) {
+                    if (abort_on_loops and std::find(p.nodes.begin(),p.nodes.end(),l.dest)!=p.nodes.end()) {
                         //std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
                         return {};
                         //continue;
                     }
                     next_paths.push_back(p);
                     next_paths.back().nodes.push_back(l.dest);
-                    if (next_paths.back().get_sequence_size_fast()>max_size) next_paths.pop_back();
+                    if (l.dest!=to and next_paths.back().get_sequence_size_fast()>max_size) next_paths.pop_back();
                 }
             }
         }
