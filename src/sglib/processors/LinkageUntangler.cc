@@ -797,7 +797,8 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
     std::vector<SequenceGraphPath> sols;
     std::atomic<uint64_t> found_transitions(0),not_found_transitions(0);
     sglib::OutputLog()<<"Performing local assembly for "<<lines.size()<<" linear regions"<<std::endl;
-    std::vector<std::string> local_unitigs;
+    std::vector<std::vector<std::string>> local_unitigs;
+    local_unitigs.resize(lines.size());
 #pragma omp parallel
     {
         BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
@@ -850,7 +851,7 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
                     if (dbg.nodes[n].sequence.size() > 2000) {
                         //patch_unitigs << ">local_dbg_" << i << "_node_" << n << std::endl << dbg.nodes[n].sequence
                         //              << std::endl;
-                        local_unitigs.emplace_back(dbg.nodes[n].sequence);
+                        local_unitigs[i].emplace_back(dbg.nodes[n].sequence);
                     }
                 }
             }
@@ -860,52 +861,82 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
     //---------- Step 3: patching graph
     sglib::OutputLog()<<"Expanding local unitigs to their RC"<<std::endl;
     //first expand local unitigs into direct and rc
-    auto luc=local_unitigs.size();
-    local_unitigs.reserve(2*luc);
-    for (auto i=0;i<luc;++i){
-        Node n(local_unitigs[i]);
-        n.make_rc();
-        local_unitigs.emplace_back(n.sequence);
-    }
-    sglib::OutputLog()<<"Looking for transtitions to patch"<<std::endl;
-    std::ofstream patchfile("local_patches.txt");
-    GraphEditor ge(ws);
-    uint64_t patched=0,not_patched=0;
-    for (auto i = 0; i < lines.size(); ++i) {
-        //sglib::OutputLog()<<"Line #"<<i<<std::endl;
-        for (auto li=0; li<lines[i].size()-1; ++li) {
-            auto n1 = ws.sg.nodes[llabs(lines[i][li])];
-            auto n2 = ws.sg.nodes[llabs(lines[i][li + 1])];
-            const size_t ENDS_SIZE=1000;
-            if (n1.sequence.size()>ENDS_SIZE) n1.sequence=n1.sequence.substr(n1.sequence.size()-ENDS_SIZE-1,ENDS_SIZE);
-            if (n2.sequence.size()>ENDS_SIZE) n2.sequence.resize(ENDS_SIZE);
-            if (lines[i][li]<0) n1.make_rc();
-            if (lines[i][li+1]<0) n2.make_rc();
-            std::vector<std::string> matches;
-            for (auto &unitig:local_unitigs) {
-                auto n1pos = unitig.find(n1.sequence);
-                auto n2pos = unitig.find(n2.sequence);
-                if (n1pos < unitig.size() and n2pos < unitig.size()) {
-                    //std::cout << lines[i][li] << " and " << lines[i][li + 1] << " found on unitig " << n
-                    //          << std::endl;
-                    matches.emplace_back(unitig.substr(n1pos,n2pos+2*ENDS_SIZE-n1pos));
-                }
-            }
-            //TODO: collapse unitigs that are equivalent.
-            if (matches.size()==1) {
-                //std::cout<<" Patching between "<<lines[i][li]<<" and "<<lines[i][li+1]<<std::endl;
-                auto prevn=ws.sg.nodes.size();
-                auto patch_code=ge.patch_between(lines[i][li], lines[i][li + 1], matches[0]);
-                patchfile<<">patch_"<<lines[i][li]<<"_"<<lines[i][li + 1]<<"_"<<(ws.sg.nodes.size()>prevn ? "APPLIED_":"FAILED_")
-                        <<patch_code<<std::endl<<matches[0]<<std::endl;
-                //std::cout<<" Patched!!!"<<std::endl;
-                if (ws.sg.nodes.size()>prevn) ++patched;
-                else ++not_patched;
-            }
 
+    for (auto &lu:local_unitigs) {
+        auto luc=lu.size();
+        lu.reserve(2*luc);
+        for (auto i = 0; i < luc; ++i) {
+            Node n(lu[i]);
+            n.make_rc();
+            lu.emplace_back(n.sequence);
         }
     }
-    sglib::OutputLog()<<"Patches succesfully applied: "<<patched<<"   Patches not applied: "<<not_patched<<std::endl;
+    sglib::OutputLog()<<"Looking for transtitions to patch"<<std::endl;
+    std::vector<std::pair<std::pair<sgNodeID_t , sgNodeID_t >, std::string>> patches;
+    GraphEditor ge(ws);
+#pragma omp parallel for
+        for (auto i = 0; i < lines.size(); ++i) {
+            //sglib::OutputLog()<<"Line #"<<i<<std::endl;
+            for (auto li = 0; li < lines[i].size() - 1; ++li) {
+                auto n1 = ws.sg.nodes[llabs(lines[i][li])];
+                auto n2 = ws.sg.nodes[llabs(lines[i][li + 1])];
+                const size_t ENDS_SIZE = 1000;
+                if (n1.sequence.size() > ENDS_SIZE)
+                    n1.sequence = n1.sequence.substr(n1.sequence.size() - ENDS_SIZE - 1, ENDS_SIZE);
+                if (n2.sequence.size() > ENDS_SIZE) n2.sequence.resize(ENDS_SIZE);
+                if (lines[i][li] < 0) n1.make_rc();
+                if (lines[i][li + 1] < 0) n2.make_rc();
+                std::vector<std::string> matches;
+                for (auto &unitig:local_unitigs[i]) {
+                    auto n1pos = unitig.find(n1.sequence);
+                    auto n2pos = unitig.find(n2.sequence);
+                    if (n1pos < unitig.size() and n2pos < unitig.size()) {
+                        //std::cout << lines[i][li] << " and " << lines[i][li + 1] << " found on unitig " << n
+                        //          << std::endl;
+                        matches.emplace_back(unitig.substr(n1pos, n2pos + 2 * ENDS_SIZE - n1pos));
+                    }
+                }
+                //TODO: collapse unitigs that are equivalent.
+                if (matches.size() == 1) {
+#pragma omp critical
+                    //patches.emplace_back(std::make_pair(lines[i][li],lines[i][li+1]),matches[0]);
+//                    //std::cout<<" Patching between "<<lines[i][li]<<" and "<<lines[i][li+1]<<std::endl;
+//                    auto prevn = ws.sg.nodes.size();
+                    auto patch_code = ge.patch_between(lines[i][li], lines[i][li + 1], matches[0]);
+////                    patchfile << ">patch_" << lines[i][li] << "_" << lines[i][li + 1] << "_"
+////                              << (ws.sg.nodes.size() > prevn ? "APPLIED_" : "FAILED_")
+////                              << patch_code << std::endl << matches[0] << std::endl;
+//                    //std::cout<<" Patched!!!"<<std::endl;
+//                    if (ws.sg.nodes.size() > prevn) ++patched;
+//                    else ++not_patched;
+                }
+
+            }
+        }
+/*    local_unitigs.clear();
+    sglib::OutputLog()<<"Generating patch paths for "<<patches.size()<<" patches"<<std::endl;
+    std::vector<SequenceGraphPath> path_patches;
+    path_patches.reserve(patches.size());
+#pragma omp parallel
+    {
+        GraphEditor ge(ws);
+#pragma omp for
+        for (auto i=0; i<patches.size();++i){
+            auto p=ge.get_patch_path_between(patches[i].first.first, patches[i].first.second, patches[i].second);
+            if (!p.nodes.empty()) {
+#pragma omp critical
+                path_patches.push_back(p);
+            }
+        }
+
+    }
+    sglib::OutputLog()<<"Attempting detach for "<<path_patches.size()<<" patch paths"<<std::endl;
+    uint64_t patched=0,not_patched=0;
+    GraphEditor ge(ws);
+    for (auto &p:path_patches) {
+        ge.detach_path(p,true);
+    }*/
+    //sglib::OutputLog()<<"Patches succesfully applied: "<<patched<<"   Patches not applied: "<<not_patched<<std::endl;
     sglib::OutputLog()<<"Joining unitigs"<<std::endl;
     auto ujc=ws.sg.join_all_unitigs();
     sglib::OutputLog()<<"Unitigs joined after patching: "<<ujc<<std::endl;
