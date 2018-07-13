@@ -66,7 +66,7 @@ bool GraphEditor::detach_path(SequenceGraphPath p, bool consume_tips) {
     }
 }
 
-bool GraphEditor::patch_between(sgNodeID_t from, sgNodeID_t to, std::string patch) {
+int GraphEditor::patch_between(sgNodeID_t from, sgNodeID_t to, std::string patch) {
     auto n1 = ws.sg.nodes[llabs(from)];
     auto n2 = ws.sg.nodes[llabs(to)];
     const size_t ENDS_SIZE=1000;
@@ -76,29 +76,29 @@ bool GraphEditor::patch_between(sgNodeID_t from, sgNodeID_t to, std::string patc
     if (to<0) n2.make_rc();
     auto p1=patch.find(n1.sequence);
     auto p2=patch.find(n2.sequence);
-    if (p1>=patch.size() or p2>=patch.size()) {
-        n1.make_rc();
-        n2.make_rc();
-        from=-from;
-        to=-to;
-        p1=patch.find(n1.sequence);
-        p2=patch.find(n2.sequence);
-    }
     if (p1>=patch.size() or p2>=patch.size() or p1>=p2) {
-        return false;
+        return 1;
     }
     SequenceGraphPath sol(std::ref(ws.sg));
-    for (auto p:ws.sg.find_all_paths_between(from,to,p2-p1,30)){
+    auto paths=ws.sg.find_all_paths_between(from,to,patch.size(),30, false);
+    //auto paths=ws.sg.find_all_paths_between(from,to,1000000,30);
+    if (paths.empty()) return 2;
+    for (auto p:paths){
         auto pnp=patch.find(p.get_sequence());
         if (pnp>p1 and pnp<p2) {
-            if (sol.nodes.empty()) sol.nodes=p.nodes;
+            if (sol.nodes.empty()) {
+                sol.nodes.emplace_back(from);
+                sol.nodes.insert(sol.nodes.end(),p.nodes.begin(),p.nodes.end());
+                sol.nodes.emplace_back(to);
+            }
             else {
-                return false;
+                return 3;
             }
         }
     }
-    detach_path(sol,true);
-    return true;
+    if (sol.nodes.empty()) return 4;
+    if (detach_path(sol,true)) return 0;
+    else return 5;
 }
 
 void GraphEditor::join_path(SequenceGraphPath p, bool consume_nodes) {

@@ -9,6 +9,7 @@
 #include <sglib/WorkSpace.hpp>
 #include <sglib/LinkageDiGraph.hpp>
 
+
 class LinkageUntangler {
 public:
 

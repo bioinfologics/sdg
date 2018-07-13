@@ -794,7 +794,6 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
     std::cout<<std::endl;
 
     //-----Step 2: local assemblies
-    std::ofstream patch_unitigs("local_unitigs_to_patch.fasta");
     std::vector<SequenceGraphPath> sols;
     std::atomic<uint64_t> found_transitions(0),not_found_transitions(0);
     sglib::OutputLog()<<"Performing local assembly for "<<lines.size()<<" linear regions"<<std::endl;
@@ -869,6 +868,7 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
         local_unitigs.emplace_back(n.sequence);
     }
     sglib::OutputLog()<<"Looking for transtitions to patch"<<std::endl;
+    std::ofstream patchfile("local_patches.txt");
     GraphEditor ge(ws);
     uint64_t patched=0,not_patched=0;
     for (auto i = 0; i < lines.size(); ++i) {
@@ -884,18 +884,20 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
             std::vector<std::string> matches;
             for (auto &unitig:local_unitigs) {
                 auto n1pos = unitig.find(n1.sequence);
-                auto n2pos = unitig.find(n1.sequence);
+                auto n2pos = unitig.find(n2.sequence);
                 if (n1pos < unitig.size() and n2pos < unitig.size()) {
                     //std::cout << lines[i][li] << " and " << lines[i][li + 1] << " found on unitig " << n
                     //          << std::endl;
-                    matches.emplace_back(unitig);
+                    matches.emplace_back(unitig.substr(n1pos,n2pos+2*ENDS_SIZE-n1pos));
                 }
             }
             //TODO: collapse unitigs that are equivalent.
             if (matches.size()==1) {
                 //std::cout<<" Patching between "<<lines[i][li]<<" and "<<lines[i][li+1]<<std::endl;
                 auto prevn=ws.sg.nodes.size();
-                ge.patch_between(lines[i][li], lines[i][li + 1], matches[0]);
+                auto patch_code=ge.patch_between(lines[i][li], lines[i][li + 1], matches[0]);
+                patchfile<<">patch_"<<lines[i][li]<<"_"<<lines[i][li + 1]<<"_"<<(ws.sg.nodes.size()>prevn ? "APPLIED_":"FAILED_")
+                        <<patch_code<<std::endl<<matches[0]<<std::endl;
                 //std::cout<<" Patched!!!"<<std::endl;
                 if (ws.sg.nodes.size()>prevn) ++patched;
                 else ++not_patched;
