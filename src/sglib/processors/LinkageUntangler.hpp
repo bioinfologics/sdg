@@ -27,7 +27,7 @@ public:
     LinkageDiGraph make_topology_linkage(int radius);
     LinkageDiGraph make_paired_linkage(int min_reads);
     LinkageDiGraph make_paired_linkage_pe(int min_reads);
-    LinkageDiGraph make_paired_linkage_by_kmer(int min_reads);
+    LinkageDiGraph make_paired_linkage_by_kmer(int min_reads, std::vector<size_t> libraries, bool r1rev, bool r2rev);
     LinkageDiGraph make_tag_linkage(int min_tags,float end_perc=.3);
 
     //Linkage filtering methods

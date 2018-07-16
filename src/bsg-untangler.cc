@@ -142,7 +142,7 @@ int main(int argc, char * argv[]) {
     if (paired_scaff){
         sglib::OutputLog()<<"Creating node linkage from kmers..."<<std::endl;
         LinkageUntangler lu(ws);
-        lu.make_paired_linkage_by_kmer(5);
+        lu.make_paired_linkage_by_kmer(5,{0},false,true);
         exit(0);
         Untangler u(ws);
         sglib::OutputLog()<<"Popping errors..."<<std::endl;
