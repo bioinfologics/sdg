@@ -386,6 +386,71 @@ LinkageDiGraph LinkageUntangler::make_paired_linkage_pe(int min_reads) {
     return ldg;
 }
 
+LinkageDiGraph LinkageUntangler::make_paired_linkage_by_kmer(int min_reads) {
+    LinkageDiGraph ldg(ws.sg);
+    std::cout<<"Creating paired linkage by kmer"<<std::endl;
+    ws.sg.create_index();
+    std::cout<<"Looking up reads"<<std::endl;
+    BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[0],1000000,1000);
+    CStringKMerFactory cskf(31);
+    std::vector<std::pair<uint64_t,bool>> readpairkmers;
+    std::vector<std::pair<uint64_t,bool>> read2kmers;
+    std::set<sgNodeID_t> kmernodes;
+    std::vector<std::pair<sgNodeID_t ,sgNodeID_t >> nodeproximity;
+    for (auto rid=1;rid<ws.paired_read_datastores[0].size();rid+=2) {
+        //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
+        //TODO: work our orientation properly
+        readpairkmers.clear();
+        kmernodes.clear();
+        //TODO: maybe use independent vectors to save space? not really much needed anyway even with large reads
+        cskf.create_kmers_direction(readpairkmers,bprsg.get_read_sequence(rid));
+        cskf.create_kmers_direction(read2kmers,bprsg.get_read_sequence(rid));
+        auto firstr2=readpairkmers.size();
+        cskf.create_kmers_direction(readpairkmers,bprsg.get_read_sequence(rid+1));
+        //now flip kmers in r2
+        for (auto i=firstr2;i<readpairkmers.size();++i) readpairkmers[i].second=not readpairkmers[i].second;
+
+        for (auto &rk:readpairkmers) {
+            auto kpos=ws.sg.kmer_to_graphposition.find(rk.first);
+            if (kpos==ws.sg.kmer_to_graphposition.end()) continue;
+            //now save node
+            //std::cout<<" saving kmer in node "<<(rk.second ? -kpos->second.node:kpos->second.node)<<std::endl;
+            kmernodes.insert(rk.second ? -kpos->second.node:kpos->second.node);
+        }
+        if (kmernodes.size()<2) continue;//read doesn't link nodes
+        for (auto &kn1:kmernodes){
+            for (auto &kn2:kmernodes){
+                if (llabs(kn1)<llabs(kn2)) nodeproximity.emplace_back(kn1,kn2);
+            }
+        }
+        //TODO: create linkage from -kn1 to kn2. (check node orientation first!!!!)
+
+    }
+    std::cout<<"Collecting proximity totals"<<std::endl;
+    std::ofstream ptotf("proximity_detail.csv");
+    std::sort(nodeproximity.begin(),nodeproximity.end());
+    std::pair<sgNodeID_t ,sgNodeID_t > curr_pair={0,0};
+    size_t curr_first=0;
+    size_t i;
+    for (i=0;i<nodeproximity.size();++i) {
+        if (nodeproximity[i] != curr_pair) {
+            auto c=i-curr_first;
+            if (c>=2) {
+                ptotf << -nodeproximity[i].first << ", " << nodeproximity[i].second << ", " << c << std::endl;
+            }
+            curr_first=i;
+            curr_pair=nodeproximity[i];
+
+        }
+    }
+    --i;
+    auto c=i-curr_first;
+    ptotf<< -nodeproximity[i].first<<", "<<nodeproximity[i].second<<", "<<c<<std::endl;
+    curr_first=i;
+    curr_pair=nodeproximity[i];
+    std::cout<<"Done!"<<std::endl;
+    return ldg;
+}
 
 LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc) {
 

@@ -45,7 +45,51 @@ public:
             }
         }
     }
+    const void create_kmers(std::vector<uint64_t> &mers, const char * s) {
+        fkmer=0;
+        rkmer=0;
+        last_unknown=0;
+        uint64_t p(0);
+        while (s[p]!='\0') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(s[p], p, fkmer, rkmer, last_unknown);
+            p++;
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(fkmer);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(rkmer);
+                }
+            }
+        }
+    }
+    const void create_kmers_direction(std::vector<std::pair<uint64_t,bool>> &mers, const char * s) {
+        fkmer=0;
+        rkmer=0;
+        last_unknown=0;
+        uint64_t p(0);
+        while (s[p]!='\0') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(s[p], p, fkmer, rkmer, last_unknown);
+            p++;
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(fkmer,false);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(rkmer,true);
+                }
+            }
+        }
+    }
 };
+
+
 
 class KmerCompressionIndex {
 public:
