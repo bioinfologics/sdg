@@ -816,11 +816,7 @@ void SequenceGraph::expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNod
             }
         }
     }
-
     //Create all extra copies of the node.
-
-
-    //node_copies.push_back(nodeID);
     for (auto in=0;in<new_links.size();++in){
         auto new_node=add_node(Node(nodes[llabs(nodeID)].sequence));
         for (auto l:new_links[in]) {

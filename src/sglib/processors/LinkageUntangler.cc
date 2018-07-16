@@ -549,7 +549,7 @@ LinkageDiGraph LinkageUntangler::filter_linkage_to_hspnp_duos(uint64_t min_size,
 }
 
 void LinkageUntangler::expand_trivial_repeats(const LinkageDiGraph & ldg) {
-    uint64_t aa=0,ab=0;
+    uint64_t aa=0,ab=0,unsolved=0;
     for (auto n=1;n<ws.sg.nodes.size();++n) {
         if (ws.sg.nodes[n].status == sgNodeDeleted) continue;
         //check node is 2-2
@@ -567,16 +567,16 @@ void LinkageUntangler::expand_trivial_repeats(const LinkageDiGraph & ldg) {
         auto p2ll=ldg.get_fw_links(p2);
         if (p2ll.size()!=1) continue;
         if (p1ll[0].dest==n1 and p2ll[0].dest==n2){
-            ws.sg.expand_node(n,{{p1},{p2}},{{n1},{n2}});
+            ws.sg.expand_node(n,{{-p1},{-p2}},{{n1},{n2}});
             ++aa;
         }
         else if (p2ll[0].dest==n1 and p1ll[0].dest==n2) {
-            ws.sg.expand_node(n,{{p1},{p2}},{{n2},{n1}});
+            ws.sg.expand_node(n,{{-p1},{-p2}},{{n2},{n1}});
             ++ab;
         }
-        else continue;
+        else ++unsolved;
     }
-    sglib::OutputLog()<<"Repeat expansion: AA:"<<aa<<"  AB:"<<ab<<std::endl;
+    sglib::OutputLog()<<"Repeat expansion: AA:"<<aa<<"  AB:"<<ab<<"  Unsolved:"<<ab<<std::endl;
 }
 
 void LinkageUntangler::expand_linear_regions(const LinkageDiGraph & ldg) {
