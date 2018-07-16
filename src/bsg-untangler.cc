@@ -140,7 +140,20 @@ int main(int argc, char * argv[]) {
         ws.sg.join_all_unitigs();
     }
     if (paired_scaff){
+        Untangler u(ws);
+        sglib::OutputLog()<<"Popping errors..."<<std::endl;
+        u.pop_errors_by_ci_and_paths(60,200);
+        //auto juc=ws.sg.join_all_unitigs();
+        //sglib::OutputLog()<<"Unitigs joined: "<<juc<<std::endl;
         //TODO: simple paired end repeat resolution, graph overlap expansion (alla arre), etc.
+        LinkageUntangler lu(ws);
+        lu.select_nodes_by_size_and_ci(1000,0,50);
+        lu.report_node_selection();
+        auto pld=lu.make_paired_linkage_pe(5);
+        ws.sg.write_to_gfa(output_prefix+"_linkage.gfa", {}, {}, {}, pld.links);
+        lu.expand_trivial_repeats(pld);
+        auto juc=ws.sg.join_all_unitigs();
+        sglib::OutputLog()<<"Unitigs joined: "<<juc<<std::endl;
 
     }
 
