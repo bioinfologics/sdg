@@ -867,13 +867,13 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
     return {};
 }
 
-void Untangler::pop_errors_by_ci_and_paths() {
+void Untangler::pop_errors_by_ci_and_paths(uint32_t min_size, uint32_t max_size) {
     sglib::OutputLog()<<"Popping errors..."<<std::endl;
-    auto bubbles=find_bubbles(200, 450);
+    auto bubbles=find_bubbles(min_size, max_size);
     sglib::OutputLog()<<"Analysing "<<bubbles.size()<<" small bubbles for coverage"<<std::endl;
     std::vector<sgNodeID_t> to_delete;
-    std::ofstream bubblesf("bubbles_detail.csv");
-    bubblesf<<"prev,b1,b2,next,ci_prev,ci1,ci2,ci_next"<<std::endl;
+    //std::ofstream bubblesf("bubbles_detail.csv");
+    //bubblesf<<"prev,b1,b2,next,ci_prev,ci1,ci2,ci_next"<<std::endl;
     for (auto bp:bubbles){
         auto ci1=ws.kci.compute_compression_for_node(bp.first,1);
         auto ci2=ws.kci.compute_compression_for_node(bp.second,1);
@@ -881,21 +881,21 @@ void Untangler::pop_errors_by_ci_and_paths() {
         auto next=ws.sg.get_fw_links(bp.first)[0].dest;
         auto cip=ws.kci.compute_compression_for_node(prev);
         auto cin=ws.kci.compute_compression_for_node(next);
-        bubblesf<<prev<<", "<<bp.first<<", "<<bp.second<<", "<<next<<", "<<cip<<", "<<ci1<<", "<<ci2<<", "<<cin<<std::endl;
-        if (cip<1.5 and cin<1.5) {
-            if (ci1 > .7 and ci2 < .1) {
-                std::cout << "node " << bp.second << " has only " << ci2 << " coverage and " << bp.first << " has "
-                          << ci1 << std::endl;
+        //bubblesf<<prev<<", "<<bp.first<<", "<<bp.second<<", "<<next<<", "<<cip<<", "<<ci1<<", "<<ci2<<", "<<cin<<std::endl;
+        if (cip<1.3 and cin<1.3) {
+            if (ci1 > .8 and ci2 < .3) {
+                //std::cout << "node " << bp.second << " has only " << ci2 << " coverage and " << bp.first << " has "
+                //          << ci1 << std::endl;
                 to_delete.push_back(llabs(bp.second));
             }
-            if (ci2 > .7 and ci1 < .1) {
-                std::cout << "node " << bp.first << " has only " << ci1 << " coverage and " << bp.second << " has "
-                          << ci2 << std::endl;
+            if (ci2 > .8 and ci1 < .3) {
+                //std::cout << "node " << bp.first << " has only " << ci1 << " coverage and " << bp.second << " has "
+                //          << ci2 << std::endl;
                 to_delete.push_back(llabs(bp.first));
             }
         }
     }
-    std::cout<<"Deleting "<<to_delete.size()<<" nodes as errors"<<std::endl;
+    //std::cout<<"Deleting "<<to_delete.size()<<" nodes as errors"<<std::endl;
     for (auto &pb:to_delete) ws.sg.remove_node(pb);
 }
 

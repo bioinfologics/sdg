@@ -121,7 +121,7 @@ int main(int argc, char * argv[]) {
     }
     if (pop_errors){
         Untangler u(ws);
-        u.pop_errors_by_ci_and_paths();
+        u.pop_errors_by_ci_and_paths(60,200);
         ws.sg.join_all_unitigs();
         ws.kci.reindex_graph();
         for (auto &m:ws.linked_read_mappers) {

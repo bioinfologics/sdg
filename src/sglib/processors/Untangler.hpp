@@ -74,7 +74,7 @@ public:
 
     //graph simplification (direct operations, no backbones)
     void unroll_simple_loops();
-    void pop_errors_by_ci_and_paths();
+    void pop_errors_by_ci_and_paths(uint32_t min_size, uint32_t max_size);
     uint64_t expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags=10);
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> solve_bubbly_paths();
     std::pair<SequenceGraphPath,SequenceGraphPath> solve_bubbly_path(const SequenceSubGraph & bp, bool & no_tags);
