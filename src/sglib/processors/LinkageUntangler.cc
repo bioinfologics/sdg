@@ -407,47 +407,56 @@ void add_readkmer_nodes(std::vector<sgNodeID_t> & kmernodes, std::vector<std::pa
 
 }
 
-LinkageDiGraph LinkageUntangler::make_paired_linkage_by_kmer(int min_reads, std::vector<size_t> libraries, bool r1rev, bool r2rev ) {
-    LinkageDiGraph ldg(ws.sg);
+std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> LinkageUntangler::shared_read_paths(int min_shared, std::vector<size_t> libraries, bool r1rev, bool r2rev ) {
+    std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> shared_paths;
     std::cout<<"Creating paired linkage by kmer"<<std::endl;
     ws.sg.create_index();
     std::cout<<"Looking up reads"<<std::endl;
-    BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[0],1000000,1000);
-    CStringKMerFactory cskf(31);
-    //std::vector<std::pair<uint64_t,bool>> readpairkmers;
-    std::vector<std::pair<uint64_t,bool>> read1kmers,read2kmers;
-    std::vector<sgNodeID_t> kmernodes;
     std::vector<std::pair<sgNodeID_t ,sgNodeID_t >> nodeproximity;
     //This actually works like a paired-read-to-path
-    for (auto rid=1;rid<ws.paired_read_datastores[0].size();rid+=2) {
-        //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
+    for (auto lib:libraries) {
+#pragma omp parallel
+        {
+            CStringKMerFactory cskf(31);
+            std::vector<std::pair<sgNodeID_t ,sgNodeID_t >> nodeproximity_thread;
+            std::vector<std::pair<uint64_t,bool>> read1kmers,read2kmers;
+            std::vector<sgNodeID_t> kmernodes;
+            BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, 1000);
+#pragma omp for
+            for (auto rid = 1; rid < ws.paired_read_datastores[lib].size(); rid += 2) {
+                //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
 
-        read1kmers.clear();
-        read2kmers.clear();
-        kmernodes.clear();
+                read1kmers.clear();
+                read2kmers.clear();
+                kmernodes.clear();
 
-        cskf.create_kmers_direction(read1kmers,bprsg.get_read_sequence(rid));
-        cskf.create_kmers_direction(read2kmers,bprsg.get_read_sequence(rid+1));
-        //first put the kmers from read 1 in there;
-        add_readkmer_nodes(kmernodes,read1kmers,ws.sg.kmer_to_graphposition,r1rev);
-        //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
-        add_readkmer_nodes(kmernodes,read2kmers,ws.sg.kmer_to_graphposition,r2rev);
-        //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
-        //TODO: A bit of a more clever connection thingy (i.e. off to errors and back?)
-
-        for (auto i=0;i<kmernodes.size();++i){
-            auto & kn1=kmernodes[i];
-            for (auto j=i+1;j<kmernodes.size();++j){
-                auto & kn2=kmernodes[j];
-                if (llabs(kn1)<llabs(kn2)) {
-                    nodeproximity.emplace_back(-kn1,kn2);
+                cskf.create_kmers_direction(read1kmers, bprsg.get_read_sequence(rid));
+                cskf.create_kmers_direction(read2kmers, bprsg.get_read_sequence(rid + 1));
+                //first put the kmers from read 1 in there;
+                add_readkmer_nodes(kmernodes, read1kmers, ws.sg.kmer_to_graphposition, r1rev);
+                //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
+                add_readkmer_nodes(kmernodes, read2kmers, ws.sg.kmer_to_graphposition, r2rev);
+                //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
+                //TODO: A bit of a more clever connection thingy (i.e. off to errors and back?)
+                for (auto i = 0; i < kmernodes.size(); ++i) {
+                    auto &kn1 = kmernodes[i];
+                    for (auto j = i + 1; j < kmernodes.size(); ++j) {
+                        auto &kn2 = kmernodes[j];
+                        if (llabs(kn1) < llabs(kn2)) {
+                            nodeproximity_thread.emplace_back(-kn1, kn2);
+                        } else {
+                            nodeproximity_thread.emplace_back(kn2, -kn1);
+                        }
+                    }
                 }
-                else {
-                    nodeproximity.emplace_back(kn2,-kn1);
-                }
+
+            }
+#pragma omp critical(collect_nodeproximity)
+            {
+               nodeproximity.insert(nodeproximity.end(),nodeproximity_thread.begin(),nodeproximity_thread.end());
+               nodeproximity_thread.clear();
             }
         }
-
     }
     std::cout<<"Collecting proximity totals"<<std::endl;
     std::ofstream ptotf("proximity_detail.csv");
@@ -459,7 +468,8 @@ LinkageDiGraph LinkageUntangler::make_paired_linkage_by_kmer(int min_reads, std:
         for (i = 0; i < nodeproximity.size(); ++i) {
             if (nodeproximity[i] != curr_pair) {
                 auto c = i - curr_first;
-                if (c >= 2) {
+                if (c >= min_shared) {
+                    shared_paths[curr_pair]=c;
                     ptotf << curr_pair.first << ", " << curr_pair.second << ", " << c << std::endl;
                 }
                 curr_first = i;
@@ -467,14 +477,24 @@ LinkageDiGraph LinkageUntangler::make_paired_linkage_by_kmer(int min_reads, std:
             }
         }
         auto c = i - curr_first;
-        ptotf << curr_pair.first << ", " << curr_pair.second << ", " << c << std::endl;
+        if (c >= min_shared) {
+            shared_paths[curr_pair]=c;
+            ptotf << curr_pair.first << ", " << curr_pair.second << ", " << c << std::endl;
+        }
     }
     std::cout<<"Done!"<<std::endl;
     //TODO: create linkage
+    return shared_paths;
+}
+
+LinkageDiGraph LinkageUntangler::make_paired_linkage_by_kmer(int min_shared, std::vector<size_t> libraries, bool r1rev, bool r2rev ) {
+    LinkageDiGraph ldg(ws.sg);
+    auto slp=shared_read_paths(min_shared,libraries,r1rev,r2rev);
+    //TODO: fill ldg;
     return ldg;
 }
 
-LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc) {
+LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_paths) {
 
     //STEP 1 - identify candidates by simple tag-sharing.
     LinkageDiGraph ldg(ws.sg);
@@ -487,24 +507,32 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, float end_perc)
     sglib::OutputLog()<<"Node pairs with more than "<<min_reads<<" shared tags: "<<pass_sharing.size()<<std::endl;
 
     //STEP 2 - confirm directionality
-
-    //2.a create link direction counts:
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
-    sglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
-    //use all libraries collect votes on each link
-    auto rmi=0;
-    for (auto &pm:ws.paired_read_mappers) {
-        for (auto i = 1; i < pm.read_to_node.size(); i += 2) {
-            sgNodeID_t n1 = pm.read_to_node[i];
-            sgNodeID_t n2 = pm.read_to_node[i + 1];
-            if (n1 == 0 or n2 == 0 or n1 == n2 or !selected_nodes[n1] or !selected_nodes[n2] ) continue;
-            if (pm.read_direction_in_node[i]) n1=-n1;
-            if (pm.read_direction_in_node[i+1]) n2=-n2;
-            if (llabs(n1) > llabs(n2)) std::swap(n1,n2);
-            ++lv[std::make_pair(n1, n2)];
-        }
-        ++rmi;
+    //2.a create link direction counts:
+    if (use_kmer_paths){
+        std::vector<size_t> libs;
+        for (auto i=0;i<ws.paired_read_mappers.size();++i)libs.push_back(i);
+        lv=shared_read_paths(1,libs,true,false);
+
     }
+    else {
+        sglib::OutputLog() << "collecting link votes across all paired libraries" << std::endl;
+        //use all libraries collect votes on each link
+        auto rmi = 0;
+        for (auto &pm:ws.paired_read_mappers) {
+            for (auto i = 1; i < pm.read_to_node.size(); i += 2) {
+                sgNodeID_t n1 = pm.read_to_node[i];
+                sgNodeID_t n2 = pm.read_to_node[i + 1];
+                if (n1 == 0 or n2 == 0 or n1 == n2 or !selected_nodes[n1] or !selected_nodes[n2]) continue;
+                if (pm.read_direction_in_node[i]) n1 = -n1;
+                if (pm.read_direction_in_node[i + 1]) n2 = -n2;
+                if (llabs(n1) > llabs(n2)) std::swap(n1, n2);
+                ++lv[std::make_pair(n1, n2)];
+            }
+            ++rmi;
+        }
+    }
+
     std::set<std::pair<sgNodeID_t ,sgNodeID_t >> used;
     for (auto p:pass_sharing) {
         auto bf=lv[std::make_pair(-p.first,p.second)];

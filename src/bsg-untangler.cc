@@ -35,6 +35,7 @@ int main(int argc, char * argv[]) {
     bool dev_local_patching=false;
     bool remap_reads=true;
     bool dump_gfa=false;
+    bool dev_linkage_paths=false;
     try
     {
         cxxopts::Options options("bsg-untangler", "graph-based haplotype separation");
@@ -64,6 +65,7 @@ int main(int argc, char * argv[]) {
 
         options.add_options("Development")
                 ("dev_create_linkage","Creates and simplifies linkage and dumps to file",cxxopts::value<std::string>(dev_create_linkage))
+                ("dev_linkage_paths", "tag linkage uses read pathing rather than simple mapping",cxxopts::value<bool>(dev_linkage_paths))
                 ("dev_skate_linkage","Loads linkage from file and skates",cxxopts::value<std::string>(dev_skate_linkage))
                 ("dev_local_assembly_linkage","Loads linkage from file and creates local assemblies",cxxopts::value<std::string>(dev_local_assembly_linkage))
                 ("dev_max_lines","Limits lines to be skated on dev",cxxopts::value<int>(dev_max_lines))
@@ -142,7 +144,7 @@ int main(int argc, char * argv[]) {
     if (paired_scaff){
         sglib::OutputLog()<<"Creating node linkage from kmers..."<<std::endl;
         LinkageUntangler lu(ws);
-        lu.make_paired_linkage_by_kmer(5,{0},false,true);
+        lu.make_paired_linkage_by_kmer(2,{0},false,true);
         exit(0);
         Untangler u(ws);
         sglib::OutputLog()<<"Popping errors..."<<std::endl;
@@ -168,7 +170,7 @@ int main(int argc, char * argv[]) {
         std::unordered_set<sgNodeID_t> selnodes;
         for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
         lu.report_node_selection();
-        auto pre_tag_ldg = lu.make_tag_linkage(min_shared_tags);
+        auto pre_tag_ldg = lu.make_tag_linkage(min_shared_tags,dev_linkage_paths);
         pre_tag_ldg.remove_transitive_links(10);
         pre_tag_ldg.report_connectivity();
         sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
@@ -182,7 +184,7 @@ int main(int argc, char * argv[]) {
             }
         }
         sglib::OutputLog()<<"Re-trying tag connection after eliminating "<<remNN<<" N-N nodes"<<std::endl;
-        auto tag_ldg = lu.make_tag_linkage(min_shared_tags);
+        auto tag_ldg = lu.make_tag_linkage(min_shared_tags,dev_linkage_paths);
         tag_ldg.remove_transitive_links(10);
         tag_ldg.report_connectivity();
         tag_ldg.dump_to_text(dev_create_linkage);
@@ -219,7 +221,7 @@ int main(int argc, char * argv[]) {
         std::unordered_set<sgNodeID_t> selnodes;
         for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
         lu.report_node_selection();
-        auto pre_tag_ldg = lu.make_tag_linkage(min_shared_tags);
+        auto pre_tag_ldg = lu.make_tag_linkage(min_shared_tags,dev_linkage_paths);
         pre_tag_ldg.remove_transitive_links(10);
         pre_tag_ldg.report_connectivity();
         sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
