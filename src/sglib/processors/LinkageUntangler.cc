@@ -1084,87 +1084,9 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const LinkageDiGraph & 
 
             }
         }
-/*    local_unitigs.clear();
-    sglib::OutputLog()<<"Generating patch paths for "<<patches.size()<<" patches"<<std::endl;
-    std::vector<SequenceGraphPath> path_patches;
-    path_patches.reserve(patches.size());
-#pragma omp parallel
-    {
-        GraphEditor ge(ws);
-#pragma omp for
-        for (auto i=0; i<patches.size();++i){
-            auto p=ge.get_patch_path_between(patches[i].first.first, patches[i].first.second, patches[i].second);
-            if (!p.nodes.empty()) {
-#pragma omp critical
-                path_patches.push_back(p);
-            }
-        }
-
-    }
-    sglib::OutputLog()<<"Attempting detach for "<<path_patches.size()<<" patch paths"<<std::endl;
-    uint64_t patched=0,not_patched=0;
-    GraphEditor ge(ws);
-    for (auto &p:path_patches) {
-        ge.detach_path(p,true);
-    }*/
-    //sglib::OutputLog()<<"Patches succesfully applied: "<<patched<<"   Patches not applied: "<<not_patched<<std::endl;
     sglib::OutputLog()<<"Joining unitigs"<<std::endl;
     auto ujc=ws.sg.join_all_unitigs();
     sglib::OutputLog()<<"Unitigs joined after patching: "<<ujc<<std::endl;
-    /*for (auto i = 0; i < lines.size(); ++i) {
-                    std::vector<bool> found(lines[i].size());
-                    for (auto li=0; li<lines[i].size()-1; ++li) {
-                        auto n1=ws.sg.nodes[llabs(lines[i][li])];
-                        auto n2=ws.sg.nodes[llabs(lines[i][li+1])];
-                        const size_t ENDS_SIZE=1000;
-                        if (n1.sequence.size()>ENDS_SIZE) n1.sequence=n1.sequence.substr(n1.sequence.size()-ENDS_SIZE-1,ENDS_SIZE);
-                        if (n2.sequence.size()>ENDS_SIZE) n2.sequence.resize(ENDS_SIZE);
-                        if (lines[i][li]<0) n1.make_rc();
-                        if (lines[i][li+1]<0) n2.make_rc();
-
-                        {
-                            auto n1pos = dbg.nodes[n].sequence.find(n1.sequence);
-                            auto n2pos = dbg.nodes[n].sequence.find(n1.sequence);
-                            if (n1pos < dbg.nodes[n].sequence.size() and n2pos < dbg.nodes[n].sequence.size()) {
-                                //std::cout << lines[i][li] << " and " << lines[i][li + 1] << " found on unitig " << n
-                                //          << std::endl;
-                                found[li]=true;
-                            }
-                        }
-                        {
-                            n1.make_rc();
-                            n2.make_rc();
-                            auto n1pos = dbg.nodes[n].sequence.find(n1.sequence);
-                            auto n2pos = dbg.nodes[n].sequence.find(n1.sequence);
-                            if (n1pos < dbg.nodes[n].sequence.size() and n2pos < dbg.nodes[n].sequence.size()) {
-                                //std::cout << lines[i][li] << " and " << lines[i][li + 1] << " found on unitig -" << n
-                                //          << std::endl;
-                                found[li]=true;
-                            }
-                        }
-
-                    }
-                }
-                for (auto f:found){
-                    if (f) ++found_transitions;
-                    else ++not_found_transitions;
-                }
-            }
-//            std::cout << "Joined unitigs: " << utc << std::endl;
-//            dbg.write_to_gfa("local_dbg_" + std::to_string(i) + "_tipclipped.gfa");
-//            std::ofstream anchf("local_dbg_" + std::to_string(i) + "_anchors.fasta");
-//            for (auto n:lines[i]){
-//                anchf<<">seq"<<llabs(n)<<std::endl;
-//                anchf<<ws.sg.nodes[llabs(n)].sequence<<std::endl;
-//
-//            }
-            if (++donelines%100==0) std::cout<<"."<<std::flush;
-        }
-    }
-    std::cout<<std::endl;
-    sglib::OutputLog()<<"Transitions found: "<<found_transitions<<" ("<<found_transitions*100/(found_transitions+not_found_transitions)<<"%)"<<std::endl;
-    sglib::OutputLog()<<"Transitions NOT found: "<<not_found_transitions<<" ("<<not_found_transitions*100/(found_transitions+not_found_transitions)<<"%)"<<std::endl;
-     */
 
 }
 
@@ -1295,4 +1217,62 @@ void LinkageUntangler::expand_linear_regions_skating(const LinkageDiGraph & ldg,
         if (ged.detach_path(s)) ++applied;
     }
     sglib::OutputLog()<<applied<<" solutions applied"<<std::endl;
+}
+
+void LinkageUntangler::fill_linkage_line(std::vector<sgNodeID_t> nodes) {
+    std::cout<<"Filling linkage for line:";
+    for (auto n:nodes) std::cout<<" "<<n;
+    std::cout<<std::endl;
+    std::cout<<"Creating a set with all the possibly local reads"<<std::endl;
+    //TODO: create the set, with both 10x and LMP/PE reads
+    std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
+    for (auto &ln:nodes) {
+        std::map<bsg10xTag ,uint32_t> ntagcounts;
+        for (auto rm:ws.linked_read_mappers[0].reads_in_node[llabs(ln)]){
+            auto tag=ws.linked_read_datastores[0].get_read_tag(rm.read_id);
+            if (tag==0) continue;
+            ++ntagcounts[tag];
+        }
+        for (auto ntc:ntagcounts) {
+            ++tagcounts[ntc.first].first;
+            tagcounts[ntc.first].second+=ntc.second;
+        }
+    }
+    std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagtotals;
+    std::set<bsg10xTag> lineTagSet;
+    for (auto tc:tagcounts) {
+        auto tag=tc.first;
+        auto reads=ws.linked_read_datastores[0].get_tag_reads(tc.first);
+        std::set<sgNodeID_t> nodes;
+        for (auto r:reads) nodes.insert(ws.linked_read_mappers[0].read_to_node[r]);
+        tagtotals[tag].first=nodes.size()-nodes.count(0);
+        tagtotals[tag].second=reads.size();
+        if (tc.second.first>1 and reads.size()<3000) lineTagSet.insert(tc.first);
+    }
+    std::cout<<"Creating an uncleaned DBG"<<std::endl;
+    BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+    auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(63, 3, lineTagSet, blrsg, true);
+    //std::cout << "creating DBG for line #" << i << std::endl;
+    SequenceGraph dbg;
+    GraphMaker gm(dbg);
+    gm.new_graph_from_kmerset_trivial128(ltkmers128, 63);
+    std::ofstream anchf("local_dbg_" + std::to_string(nodes[0]) + "_anchors.fasta");
+    for (auto n:nodes){
+        anchf<<">seq"<<llabs(n)<<std::endl;
+        anchf<<ws.sg.nodes[llabs(n)].sequence<<std::endl;
+
+    }
+    dbg.write_to_gfa("local_dbg_"+std::to_string(nodes[0])+"_uncleaned.gfa");
+    gm.tip_clipping(200);
+    gm.remove_small_unconnected(500);
+    dbg.write_to_gfa("local_dbg_"+std::to_string(nodes[0])+".gfa");
+
+    std::cout<<"Analising junctions, one by one"<<std::endl;
+    for (auto i=0;i<nodes.size()-1;++i){
+        std::cout<<"Tring to joing "<<nodes[i]<<" (-) -> (+) "<<nodes[i+1]<<std::endl;
+    }
+    /*
+
+    linetagsets.push_back(lineTagSet);
+    if (linetagsets.size()%100==0) std::cout<<"."<<std::flush;*/
 }

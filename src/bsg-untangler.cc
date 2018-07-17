@@ -208,9 +208,13 @@ int main(int argc, char * argv[]) {
         sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
         tag_ldg.report_connectivity();
         sglib::OutputLog()<<"Calling local assembly..."<<std::endl;
-        lu.linear_regions_tag_local_assembly(tag_ldg, dev_local_k, dev_local_min_cvg, dev_max_lines,dev_min_nodes,dev_min_total_size,true);
-        ws.sg.write_to_gfa(output_prefix+"_local_patched.gfa");
-        ws.dump_to_disk(output_prefix+"_local_patched.bsgws");
+//        lu.linear_regions_tag_local_assembly(tag_ldg, dev_local_k, dev_local_min_cvg, dev_max_lines,dev_min_nodes,dev_min_total_size,true);
+//        ws.sg.write_to_gfa(output_prefix+"_local_patched.gfa");
+//        ws.dump_to_disk(output_prefix+"_local_patched.bsgws");
+        auto lines=tag_ldg.get_all_lines(dev_min_nodes);
+        if (dev_max_lines) lines.resize(dev_max_lines);
+        for (auto l:lines)
+            lu.fill_linkage_line(l);
         exit(0);
     }
     if (dev_local_patching) {

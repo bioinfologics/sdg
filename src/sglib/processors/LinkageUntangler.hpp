@@ -39,8 +39,9 @@ public:
     void expand_linear_regions(const LinkageDiGraph &);
     void expand_linear_regions_skating(const LinkageDiGraph &, int max_lines=0);
     void linear_regions_tag_local_assembly(const LinkageDiGraph & ldg, uint8_t k, int min_cvg, int max_lines, uint64_t min_nodes, uint64_t min_total_size, bool count_tag_cvg=false);
-    //Problem localisation methods
 
+    //Problem localisation methods
+    void fill_linkage_line(std::vector<sgNodeID_t> nodes);
 
     WorkSpace &ws;
     std::vector<bool> selected_nodes;
