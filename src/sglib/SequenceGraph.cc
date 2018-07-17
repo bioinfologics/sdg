@@ -648,7 +648,7 @@ std::vector<SequenceGraphPath> SequenceGraph::get_all_unitigs(uint16_t min_nodes
         for (auto pass=0; pass<2; ++pass) {
             //walk til a "non-unitig" junction
             for (auto fn = get_fw_links(path.nodes.back()); fn.size() == 1; fn = get_fw_links(path.nodes.back())) {
-                if (fn[0].dest != n and fn[0].dest != -n and get_bw_links(fn[0].dest).size() == 1) {
+                if (!used[llabs(fn[0].dest)] and get_bw_links(fn[0].dest).size() == 1) {
                     path.nodes.emplace_back(fn[0].dest);
                     used[fn[0].dest > 0 ? fn[0].dest : -fn[0].dest] = true;
                 } else break;
