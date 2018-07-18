@@ -4,6 +4,7 @@
 #include <sglib/processors/Untangler.hpp>
 #include <sglib/processors/FlowFollower.hpp>
 #include <sglib/processors/LinkageUntangler.hpp>
+#include <sglib/processors/LocalHaplotypeAssembler.hpp>
 #include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"
 
@@ -213,8 +214,10 @@ int main(int argc, char * argv[]) {
 //        ws.dump_to_disk(output_prefix+"_local_patched.bsgws");
         auto lines=tag_ldg.get_all_lines(dev_min_nodes);
         if (dev_max_lines) lines.resize(dev_max_lines);
-        for (auto l:lines)
-            lu.fill_linkage_line(l);
+        for (auto l:lines) {
+            LocalHaplotypeAssembler lha(ws,l);
+            lha.assemble(63,5,false);
+        }
         exit(0);
     }
     if (dev_local_patching) {

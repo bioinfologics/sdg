@@ -1240,15 +1240,18 @@ void LinkageUntangler::fill_linkage_line(std::vector<sgNodeID_t> nodes) {
     }
     std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagtotals;
     std::set<bsg10xTag> lineTagSet;
+    uint64_t total_reads=0;
     for (auto tc:tagcounts) {
         auto tag=tc.first;
         auto reads=ws.linked_read_datastores[0].get_tag_reads(tc.first);
+        total_reads+=reads.size();
         std::set<sgNodeID_t> nodes;
         for (auto r:reads) nodes.insert(ws.linked_read_mappers[0].read_to_node[r]);
         tagtotals[tag].first=nodes.size()-nodes.count(0);
         tagtotals[tag].second=reads.size();
         if (tc.second.first>1 and reads.size()<3000) lineTagSet.insert(tc.first);
     }
+    std::cout<<"Local tag reads: "<<total_reads<<std::endl;
     std::cout<<"Creating an uncleaned DBG"<<std::endl;
     BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
     auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(63, 3, lineTagSet, blrsg, true);

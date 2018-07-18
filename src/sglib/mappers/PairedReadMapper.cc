@@ -335,3 +335,15 @@ PairedReadConnectivityDetail::PairedReadConnectivityDetail(const PairedReadMappe
     }
 
 }
+
+std::vector<uint64_t> PairedReadMapper::get_node_readpairs_ids(sgNodeID_t nodeID) {
+    std::vector<uint64_t> rpin;
+    nodeID=llabs(nodeID);
+    rpin.reserve(reads_in_node[nodeID].size()*2);
+    for (auto &rm:reads_in_node[nodeID]){
+        rpin.emplace_back(rm.read_id);
+        auto other=(rm.read_id%2==1 ? rm.read_id+1:rm.read_id-1);
+        if (read_to_node[other]!=nodeID) rpin.emplace_back(other); //only add the other side if it is not in the node.
+    }
+    return rpin;
+}
