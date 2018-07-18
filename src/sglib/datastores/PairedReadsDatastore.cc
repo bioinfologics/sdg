@@ -112,6 +112,7 @@ void PairedReadsDatastore::load_index(){
     fread( &readsize,sizeof(readsize),1,fd);
     fread( &_size,sizeof(_size),1,fd);
     readpos_offset=ftell(fd);
+    sglib::OutputLog()<<"LinkedReadsDatastore open: "<<filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
 }
 
 void PairedReadsDatastore::write(std::ofstream &output_file) {

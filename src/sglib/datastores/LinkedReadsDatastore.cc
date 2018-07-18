@@ -192,7 +192,7 @@ void LinkedReadsDatastore::load_index(std::string _filename){
     fread(&s,sizeof(s),1,fd); read_tag.resize(s);
     fread(read_tag.data(),sizeof(read_tag[0]),read_tag.size(),fd);
     readpos_offset=ftell(fd);
-    sglib::OutputLog()<<"LinkedReadsDatastore open: "<<_filename<<"  max read length: "<<readsize<<std::endl;
+    sglib::OutputLog()<<"LinkedReadsDatastore open: "<<_filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
 }
 
 void LinkedReadsDatastore::write(std::ofstream &output_file) {
