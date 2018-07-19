@@ -216,7 +216,8 @@ int main(int argc, char * argv[]) {
         if (dev_max_lines) lines.resize(dev_max_lines);
         uint64_t li=0;
         for (auto l:lines) {
-            LocalHaplotypeAssembler lha(ws,l);
+            LocalHaplotypeAssembler lha(ws);
+            lha.init_from_backbone(l);
             //lha.assemble(63,5,false);
             lha.write_problem("local_hap_problem_"+std::to_string(++li));
             lha.write_full("local_hap_full_"+std::to_string(li));

@@ -79,6 +79,7 @@ public:
     void write_selection(std::ofstream & output_file, const std::set<bsg10xTag> & tagSet);
     void read(std::ifstream & input_file);
     void load_index(std::string _filename);
+    void load_from_stream(std::string _filename, std::ifstream & input_file);
     //void read_index(std::ifstream & input_file);
 
     size_t size(){return read_tag.size()*2-2;};

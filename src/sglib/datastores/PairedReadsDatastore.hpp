@@ -40,6 +40,7 @@ public:
     void write_selection(std::ofstream &output_file, std::vector<uint64_t> read_ids);
     void read(std::ifstream & input_file);
     void load_index();
+    void load_from_stream(std::string filename,std::ifstream & input_file);
     uint64_t size()const {return _size;};
     std::string get_read_sequence(size_t readID);
     std::unordered_set<__uint128_t> get_all_kmers128(int k, int min_tag_cov);

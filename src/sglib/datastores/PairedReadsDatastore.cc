@@ -115,6 +115,18 @@ void PairedReadsDatastore::load_index(){
     sglib::OutputLog()<<"LinkedReadsDatastore open: "<<filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
 }
 
+void PairedReadsDatastore::load_from_stream(std::string _filename,std::ifstream & input_file){
+    uint64_t s;
+    filename=_filename;
+    fd=fopen(filename.c_str(),"r");
+    input_file.read( (char *) &readsize,sizeof(readsize));
+    input_file.read( (char *) &_size,sizeof(_size));
+    readpos_offset=input_file.tellg();
+    fseek(fd,readpos_offset,SEEK_SET);
+    input_file.seekg(_size*(readsize+1),std::ios_base::cur);
+    sglib::OutputLog()<<"LinkedReadsDatastore open: "<<_filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
+}
+
 void PairedReadsDatastore::write(std::ofstream &output_file) {
     //read filename
     uint64_t s=filename.size();
@@ -123,9 +135,6 @@ void PairedReadsDatastore::write(std::ofstream &output_file) {
 }
 
 void PairedReadsDatastore::write_selection(std::ofstream &output_file, std::vector<uint64_t> read_ids) {
-//    std::cout<<"Trying to write read selection: ";
-//    for (auto i=0;i<read_ids.size();++i) std::cout<<" "<<read_ids[i];
-//    std::cout<<std::endl;
     for (auto i=0;i<read_ids.size()-1;i+=2){
         if (read_ids[i]+1!=read_ids[i+1]) {
             sglib::OutputLog()<<"ERROR: paired read selection not paired!"<<std::endl;

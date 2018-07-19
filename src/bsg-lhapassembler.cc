@@ -61,19 +61,26 @@ int main(int argc, char * argv[]) {
 
     //======= WORKSPACE LOAD AND CHECKS ======
     WorkSpace ws;
+    LocalHaplotypeAssembler lha(ws);
 
-    sglib::OutputLog()<<"Loading Workspace..."<<std::endl;
-    ws.load_from_disk(workspace_file);
-    if (!ws.sg.is_sane()) {
-        sglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
-        return 1;
+    if (!workspace_file.empty()) {
+        sglib::OutputLog() << "Loading Workspace..." << std::endl;
+        ws.load_from_disk(workspace_file);
+        if (!ws.sg.is_sane()) {
+            sglib::OutputLog() << "ERROR: sg.is_sane() = false" << std::endl;
+            return 1;
+        }
+
+        //TODO: other checks? reads mapped to valid nodes and such?
+
+        sglib::OutputLog() << "Loading Workspace DONE" << std::endl;
+        lha.init_from_file(problem_file);
+    }
+    else {
+        lha.init_from_full_file(problem_file);
     }
 
-    //TODO: other checks? reads mapped to valid nodes and such?
 
-    sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
-
-    LocalHaplotypeAssembler lha(ws,problem_file);
     lha.assemble(k,min_cvg,false);
 
     return 0;

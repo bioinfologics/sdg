@@ -219,6 +219,20 @@ void LinkedReadsDatastore::load_index(std::string _filename){
     sglib::OutputLog()<<"LinkedReadsDatastore open: "<<_filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
 }
 
+void LinkedReadsDatastore::load_from_stream(std::string _filename,std::ifstream & input_file){
+    uint64_t s;
+    filename=_filename;
+    fd=fopen(filename.c_str(),"r");
+    input_file.read( (char *) &readsize,sizeof(readsize));
+    input_file.read( (char *) &s,sizeof(s));
+    read_tag.resize(s);
+    input_file.read( (char *) read_tag.data(),sizeof(read_tag[0])*s);
+    readpos_offset=input_file.tellg();
+    fseek(fd,readpos_offset,SEEK_SET);
+    input_file.seekg(2*s*(readsize+1),std::ios_base::cur);
+    sglib::OutputLog()<<"LinkedReadsDatastore open: "<<_filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
+}
+
 void LinkedReadsDatastore::write(std::ofstream &output_file) {
     //read filename
     uint64_t s=filename.size();
@@ -242,7 +256,7 @@ void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std
     std::cout << "writing vector of " << readtags.size() << " tags" << std::endl;
     uint64_t rts = readtags.size();
     output_file.write((const char *) &rts, sizeof(rts));
-    output_file.write((const char *) read_tag.data(), sizeof(bsg10xTag) * readtags.size());
+    output_file.write((const char *) readtags.data(), sizeof(bsg10xTag) * readtags.size());
 
     //now for each read in each included tag, just copy the readsize+1 sequence into the file.
     std::cout << "transfering read data" << std::endl;
