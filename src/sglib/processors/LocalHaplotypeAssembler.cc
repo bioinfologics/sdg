@@ -94,10 +94,32 @@ void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov){
 }
 
 void LocalHaplotypeAssembler::write_problem(std::string prefix) {
-    std::ofstream(prefix+".bsglha");
+    std::ofstream output_file(prefix+".bsglhap");
+    uint64_t count;
+
     //write down backbone;
+    std::cout<<"writing backbone"<<std::endl;
+    count=backbone.size();
+    output_file.write((char *)&count,sizeof(count));
+    output_file.write((char *)backbone.data(),count*sizeof(backbone[0]));
+
     //write down 10x tags;
+    std::cout<<"writing tags"<<std::endl;
+    count=tagSet.size();
+    output_file.write((char *)&count,sizeof(count));
+    for (auto &t:tagSet) output_file.write((char *)&t,sizeof(t));
+
     //write down paired read ids;
+    std::cout<<"writing pair reads"<<std::endl;
+    count=paired_reads.size();
+    output_file.write((char *)&count,sizeof(count));
+    for (auto &p:paired_reads){
+        output_file.write((char *)&p.first,sizeof(p.first));
+        count=p.second.size();
+        output_file.write((char *)&count,sizeof(count));
+        output_file.write((char *)p.second.data(),count*sizeof(p.second[0]));
+    }
+
 }
 
 void LocalHaplotypeAssembler::write_full(std::string prefix, bool keep_full_sg=false) {

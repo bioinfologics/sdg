@@ -208,15 +208,17 @@ int main(int argc, char * argv[]) {
         tag_ldg.load_from_text(dev_local_assembly_linkage);
         sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
         tag_ldg.report_connectivity();
-        sglib::OutputLog()<<"Calling local assembly..."<<std::endl;
+        sglib::OutputLog()<<"Creating local assembly problems..."<<std::endl;
 //        lu.linear_regions_tag_local_assembly(tag_ldg, dev_local_k, dev_local_min_cvg, dev_max_lines,dev_min_nodes,dev_min_total_size,true);
 //        ws.sg.write_to_gfa(output_prefix+"_local_patched.gfa");
 //        ws.dump_to_disk(output_prefix+"_local_patched.bsgws");
         auto lines=tag_ldg.get_all_lines(dev_min_nodes);
         if (dev_max_lines) lines.resize(dev_max_lines);
+        uint64_t li=0;
         for (auto l:lines) {
             LocalHaplotypeAssembler lha(ws,l);
-            lha.assemble(63,5,false);
+            //lha.assemble(63,5,false);
+            lha.write_problem("local_hap_problem_"+std::to_string(++li));
         }
         exit(0);
     }
