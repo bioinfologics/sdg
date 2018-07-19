@@ -137,7 +137,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     char buffer[2 * readsize + 2];
     //read a bit from each file
     for (auto i=0;i<chunkfiles.size();++i) chunkfiles[i].read((char *)&next_tags[i],sizeof(bsg10xTag));
-    read_tag.resize(1);
+    read_tag.clear();
     while(openfiles){
         bsg10xTag mintag=UINT32_MAX;
         //find the minimum tag
