@@ -33,6 +33,7 @@ public:
 
     WorkSpace & ws;
     std::vector<sgNodeID_t > backbone;
+    std::vector<Node > backbone_nodes;
     std::set<bsg10xTag> tagSet;
     std::vector<std::pair<uint16_t , std::vector<uint64_t>>> paired_reads;
 

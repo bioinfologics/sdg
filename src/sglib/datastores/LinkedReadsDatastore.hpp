@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <sglib/factories/KMerFactory.h>
 
+
 typedef uint32_t bsg10xTag;
 enum LinkedReadsFormat {UCDavis,raw,seq};
 struct LinkedReadData {
@@ -31,6 +32,7 @@ struct LinkedReadData {
 };
 class BufferedLRSequenceGetter;
 
+std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16);
 /*namespace std {
     inline template<> std::size_t hash (__int128 unsigned x)
     {
@@ -50,6 +52,19 @@ namespace std {
     };
 }
 
+
+/**
+ * LinkedReadsDatastore is a file with reads and 10xTags.
+ * Reads are stored sorted by tag, to optimise access when performing tag-based analyses
+ * The binary file contains the following data:
+ *
+ * uint64_t readsize;
+ * uint64_t read_tag.size()=pairs; (tag 0 is for pair (1,2) and 1 for (2,3), etc)
+ * bsg10xTag[pairs] contents of rhe read_tag vector, a tag for each read pair.
+ * read sequences: as \0 terminated characters, using 2*readsize+2 for each pair
+ *
+ *
+ */
 class LinkedReadsDatastore {
 public:
     LinkedReadsDatastore(){};
@@ -61,6 +76,7 @@ public:
     };
     void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250,size_t chunksize=10000000);
     void write(std::ofstream & output_file);
+    void write_selection(std::ofstream & output_file, const std::set<bsg10xTag> & tagSet);
     void read(std::ifstream & input_file);
     void load_index(std::string _filename);
     //void read_index(std::ifstream & input_file);

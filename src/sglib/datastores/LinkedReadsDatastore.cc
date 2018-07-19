@@ -8,6 +8,30 @@
 #include <cstring>
 #include "LinkedReadsDatastore.hpp"
 
+
+std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16) {
+    std::string seq;
+    seq.reserve(k);
+    for (int shift = (k - 1) * 2; shift >= 0; shift -= 2) {
+//std::cout<<"kmer: "
+        switch ((tag >> shift) % 4) {
+            case 0:
+                seq.push_back('A');
+                break;
+            case 1:
+                seq.push_back('C');
+                break;
+            case 2:
+                seq.push_back('G');
+                break;
+            case 3:
+                seq.push_back('T');
+                break;
+        }
+    }
+    return seq;
+}
+
 void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int _rs, size_t chunksize) {
 
     //std::cout<<"Memory used by every read's entry:"<< sizeof(LinkedRead)<<std::endl;
@@ -200,6 +224,39 @@ void LinkedReadsDatastore::write(std::ofstream &output_file) {
     uint64_t s=filename.size();
     output_file.write((char *) &s,sizeof(s));
     output_file.write((char *)filename.data(),filename.size());
+}
+
+void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std::set<bsg10xTag> &tagSet) {
+    //write readsize
+    output_file.write((char *) &readsize, sizeof(readsize));
+    //create a vector of read tags (including each tag as many times as reads it contains).
+    std::cout << "creating vector of tags" << std::endl;
+    std::vector<bsg10xTag> readtags;
+    //readtags.push_back(0);
+    for (auto trc:get_tag_readcount()) {
+        if (tagSet.count(trc.first)) readtags.resize(readtags.size() + trc.second, trc.first);
+    }
+    //readtags.push_back(0);
+
+    // write tag count and tags.
+    std::cout << "writing vector of " << readtags.size() << " tags" << std::endl;
+    uint64_t rts = readtags.size();
+    output_file.write((const char *) &rts, sizeof(rts));
+    output_file.write((const char *) read_tag.data(), sizeof(bsg10xTag) * readtags.size());
+
+    //now for each read in each included tag, just copy the readsize+1 sequence into the file.
+    std::cout << "transfering read data" << std::endl;
+    uint64_t totaldata = 0;
+    for (auto t:tagSet) {
+        for (auto n = std::lower_bound(read_tag.begin(), read_tag.end(), t) - read_tag.begin(); read_tag[n] == t; ++n) {
+            auto s = get_read_sequence(n * 2 + 1);
+            output_file.write(s.c_str(), readsize + 1);
+            s = get_read_sequence(n * 2 + 2);
+            output_file.write(s.c_str(), readsize + 1);
+            totaldata += 2 * readsize + 2;
+        }
+    }
+    std::cout << totaldata << "transferred" << std::endl;
 }
 
 std::string LinkedReadsDatastore::get_read_sequence(size_t readID) {

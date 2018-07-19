@@ -10,6 +10,8 @@ LocalHaplotypeAssembler::LocalHaplotypeAssembler(WorkSpace &_ws, std::vector<sgN
     std::cout<<"Backbone nodes:";
     for (auto n:backbone) std::cout<<" "<<n;
     std::cout<<std::endl;
+    for (auto n:backbone) backbone_nodes.emplace_back(ws.sg.nodes[llabs(n)].sequence);
+
     std::cout<<"Filling Candidate Tag Set..."<<std::endl;
     //Get tag reads in the nodes, and how many nodes with reads counts.
     std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
@@ -46,8 +48,43 @@ LocalHaplotypeAssembler::LocalHaplotypeAssembler(WorkSpace &_ws, std::vector<sgN
             auto nreads=ws.paired_read_mappers[prl].get_node_readpairs_ids(ln);
             paired_reads.back().second.insert(paired_reads.back().second.end(),nreads.begin(),nreads.end());
         }
-        std::cout<<paired_reads.back().second.size()<<" reads from "<<ws.paired_read_datastores[prl].filename<<std::endl;
+        if (paired_reads.back().second.empty()) paired_reads.pop_back();
+        else std::cout<<paired_reads.back().second.size()<<" reads from "<<ws.paired_read_datastores[prl].filename<<std::endl;
     }
+    std::cout<<"LocalHaplotypeAssembler created!"<<std::endl;
+
+}
+
+LocalHaplotypeAssembler::LocalHaplotypeAssembler(WorkSpace &_ws, std::string problem_file): ws(_ws) {
+    std::cout<<"Loading LocalHaplotypeAssembler problem from file: "<<problem_file<<std::endl;
+
+    std::ifstream input_file(problem_file);
+    uint64_t count;
+
+    //load backbone;
+    input_file.read((char *)&count,sizeof(count));
+    backbone.resize(count);
+    input_file.read((char *)backbone.data(),count*sizeof(backbone[0]));
+    for (auto n:backbone) backbone_nodes.emplace_back(ws.sg.nodes[llabs(n)].sequence);
+
+    //load 10x tags;
+    input_file.read((char *)&count,sizeof(count));
+    bsg10xTag t;
+    while (count--) {
+        input_file.read((char *) &t, sizeof(t));
+        tagSet.insert(t);
+    }
+
+    //load paired read ids;
+    input_file.read((char *)&count,sizeof(count));
+    paired_reads.resize(count);
+    for (auto &p:paired_reads){
+        input_file.read((char *)&p.first,sizeof(p.first));
+        input_file.read((char *)&count,sizeof(count));
+        p.second.resize(count);
+        input_file.read((char *)p.second.data(),count*sizeof(p.second[0]));
+    }
+
     std::cout<<"LocalHaplotypeAssembler created!"<<std::endl;
 
 }
@@ -98,19 +135,16 @@ void LocalHaplotypeAssembler::write_problem(std::string prefix) {
     uint64_t count;
 
     //write down backbone;
-    std::cout<<"writing backbone"<<std::endl;
     count=backbone.size();
     output_file.write((char *)&count,sizeof(count));
     output_file.write((char *)backbone.data(),count*sizeof(backbone[0]));
 
     //write down 10x tags;
-    std::cout<<"writing tags"<<std::endl;
     count=tagSet.size();
     output_file.write((char *)&count,sizeof(count));
     for (auto &t:tagSet) output_file.write((char *)&t,sizeof(t));
 
     //write down paired read ids;
-    std::cout<<"writing pair reads"<<std::endl;
     count=paired_reads.size();
     output_file.write((char *)&count,sizeof(count));
     for (auto &p:paired_reads){
@@ -123,16 +157,38 @@ void LocalHaplotypeAssembler::write_problem(std::string prefix) {
 }
 
 void LocalHaplotypeAssembler::write_full(std::string prefix, bool keep_full_sg=false) {
-    //create a slimmed down bsgws
-    std::set<sgNodeID_t> keep_nodes;
-    for (auto n:backbone) keep_nodes.insert(llabs(n));
-    WorkSpace sdws;
-    for (auto n=1;n<ws.sg.nodes.size();++n) {
-        if (keep_nodes.count(n)) sdws.sg.nodes.push_back(ws.sg.nodes[n]);
-        else sdws.sg.nodes.emplace_back("",sgNodeDeleted);
+    std::ofstream output_file(prefix+".bsglhapf");
+    uint64_t count;
+    //write down backbone;
+    count=backbone.size();
+    output_file.write((char *)&count,sizeof(count));
+    output_file.write((char *)backbone.data(),count*sizeof(backbone[0]));
+    //write  backbone node's sequences
+    std::cout<<"writing backbone sequences"<<std::endl;
+    count=backbone.size();
+    output_file.write((char *)&count,sizeof(count));
+    for (auto n:backbone_nodes){
+        count=n.sequence.size();
+        output_file.write((char *)&count,sizeof(count));
+        output_file.write(n.sequence.c_str(),count);
+    }
+    //write down 10x tags;
+    std::cout<<"writing tags"<<std::endl;
+    count=tagSet.size();
+    output_file.write((char *)&count,sizeof(count));
+    for (auto &t:tagSet) output_file.write((char *)&t,sizeof(t));
+
+    //write the condensation of the 10x workspace
+    std::cout<<"writing linked reads"<<std::endl;
+    ws.linked_read_datastores[0].write_selection(output_file,tagSet);
+    //write the condensation of the paired reads workspace.
+    std::cout<<"writing paired reads"<<std::endl;
+    count=paired_reads.size();
+    output_file.write((char *)&count,sizeof(count));
+    for (auto &p:paired_reads){
+        ws.paired_read_datastores[p.first].write_selection(output_file,p.second);
     }
 
     //TODO: datastore:write_subdatastore_file
 
-    std::ofstream(prefix+".bsglha");
 }

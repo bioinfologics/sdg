@@ -37,6 +37,7 @@ public:
     };
     void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250, size_t chunksize=10000000);
     void write(std::ofstream & output_file);
+    void write_selection(std::ofstream &output_file, std::vector<uint64_t> read_ids);
     void read(std::ifstream & input_file);
     void load_index();
     uint64_t size()const {return _size;};

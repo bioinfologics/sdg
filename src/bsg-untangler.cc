@@ -219,6 +219,7 @@ int main(int argc, char * argv[]) {
             LocalHaplotypeAssembler lha(ws,l);
             //lha.assemble(63,5,false);
             lha.write_problem("local_hap_problem_"+std::to_string(++li));
+            lha.write_full("local_hap_full_"+std::to_string(li));
         }
         exit(0);
     }
