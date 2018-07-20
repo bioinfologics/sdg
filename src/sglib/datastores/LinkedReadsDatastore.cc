@@ -150,7 +150,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     //TODO: save space first for the tag index!!!
     std::ofstream output(output_filename.c_str());
     output.write((const char *) &readsize,sizeof(readsize));
-    read_tag.resize(pairs+1);
+    read_tag.resize(pairs);
     sglib::OutputLog() << "leaving space for " <<pairs<<" read_tag entries"<< std::endl;
     uint64_t rts=read_tag.size();
     output.write((const char *) &rts, sizeof(rts));
