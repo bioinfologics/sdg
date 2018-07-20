@@ -194,7 +194,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     for (auto &c:chunkfiles) c.close();
     for (auto i=0;i<chunkfiles.size();++i) ::unlink(("sorted_chunk_"+std::to_string(i)+".data").c_str());
     //DONE!
-    sglib::OutputLog(sglib::LogLevels::INFO)<<"Datastore with "<<(read_tag.size()-1)*2<<" reads, "<<tagged_reads<<" reads with tags"<<std::endl; //and "<<reads_in_tag.size()<<"tags"<<std::endl;
+    sglib::OutputLog(sglib::LogLevels::INFO)<<"Datastore with "<<(read_tag.size())*2<<" reads, "<<tagged_reads<<" reads with tags"<<std::endl; //and "<<reads_in_tag.size()<<"tags"<<std::endl;
     filename=output_filename;
     fd=fopen(filename.c_str(),"r");
 }
