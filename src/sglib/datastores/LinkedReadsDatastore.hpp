@@ -82,7 +82,7 @@ public:
     void load_from_stream(std::string _filename, std::ifstream & input_file);
     //void read_index(std::ifstream & input_file);
 
-    size_t size(){return read_tag.size()*2-2;};
+    size_t size(){return read_tag.size()*2;};
     std::string get_read_sequence(size_t readID);
     //inline std::string get_read_sequence(size_t readID){return get_read_sequence(readID,fd1,fd2);};
     bsg10xTag get_read_tag(size_t readID);
