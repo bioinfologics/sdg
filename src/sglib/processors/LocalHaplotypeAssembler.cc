@@ -107,6 +107,7 @@ void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, std::st
 //        dbg.write_to_gfa(output_prefix + "_uncleaned.gfa");
     gm.tip_clipping(200);
     gm.remove_small_unconnected(500);
+    path_all_reads();
     assembly.write_to_gfa(output_prefix + ".gfa");
     //std::cout<<"Analising junctions, one by one"<<std::endl;
     //for (auto i=0;i<backbone.size()-1;++i){
@@ -115,7 +116,86 @@ void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, std::st
 
 }
 
+void add_readkmer_nodes_lha(std::vector<sgNodeID_t> & kmernodes, std::vector<std::pair<uint64_t,bool>> & readkmers, std::unordered_map<uint64_t, graphPosition> & index, bool rev){
+    //TODO allow for a minimum of kmers to count the hit?
+    if (not rev) {
+        for (auto rki=readkmers.begin();rki<readkmers.end();++rki) {
+            auto kp=index.find(rki->first);
+            if (kp==index.end()) continue; //kmer not found
+            auto node=(rki->second ? -kp->second.node:kp->second.node);
+            if (kmernodes.empty() or kmernodes.back()!=node) kmernodes.emplace_back(node);
+        }
+    }
+    else {
+        for (auto rki=readkmers.rbegin();rki<readkmers.rend();++rki) {
+            auto kp=index.find(rki->first);
+            if (kp==index.end()) continue; //kmer not found
+            auto node=(rki->second ? kp->second.node:-kp->second.node);
+            if (kmernodes.empty() or kmernodes.back()!=node) kmernodes.emplace_back(node);
+        }
+    }
+
+}
+
 void LocalHaplotypeAssembler::path_all_reads() {
+
+    assembly.create_index();
+
+    //now populate the linked read paths first
+
+    CStringKMerFactory cskf(31);
+    std::vector<std::pair<sgNodeID_t ,sgNodeID_t >> nodeproximity_thread;
+    std::vector<std::pair<uint64_t,bool>> read1kmers,read2kmers;
+    std::vector<sgNodeID_t> kmernodes;
+
+    //BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, 1000);
+    BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0],100000,1000);
+
+    for (auto t:tagSet) {
+        for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
+            //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
+            if (rid%2!=1) continue;
+
+            read1kmers.clear();
+            read2kmers.clear();
+            kmernodes.clear();
+
+            cskf.create_kmers_direction(read1kmers, blrsg.get_read_sequence(rid));
+            cskf.create_kmers_direction(read2kmers, blrsg.get_read_sequence(rid + 1));
+            //first put the kmers from read 1 in there;
+            add_readkmer_nodes_lha(kmernodes, read1kmers, assembly.kmer_to_graphposition, false);
+            //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
+            add_readkmer_nodes_lha(kmernodes, read2kmers, assembly.kmer_to_graphposition, true);
+            //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
+
+            linkedread_paths.emplace_back(kmernodes);
+        }
+    }
+    sglib::OutputLog()<<linkedread_paths.size()<<" linked-reads paths created!"<<std::endl;
+
+    //now do the same for each paired library
+    for (auto lpr:paired_reads) {
+        BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lpr.first],100000,1000);
+        for (auto rid : lpr.second) {
+            //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
+            if (rid%2!=1) continue;
+
+            read1kmers.clear();
+            read2kmers.clear();
+            kmernodes.clear();
+
+            cskf.create_kmers_direction(read1kmers, bprsg.get_read_sequence(rid));
+            cskf.create_kmers_direction(read2kmers, bprsg.get_read_sequence(rid + 1));
+            //first put the kmers from read 1 in there;
+            add_readkmer_nodes_lha(kmernodes, read1kmers, assembly.kmer_to_graphposition, false);
+            //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
+            add_readkmer_nodes_lha(kmernodes, read2kmers, assembly.kmer_to_graphposition, true);
+            //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
+
+            pairedread_paths.emplace_back(kmernodes);
+        }
+    }
+    sglib::OutputLog()<<pairedread_paths.size()<<" paired-reads paths created!"<<std::endl;
 
 }
 

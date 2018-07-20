@@ -39,6 +39,8 @@ public:
     std::vector<std::pair<uint16_t , std::vector<uint64_t>>> paired_reads;
 
     SequenceGraph assembly;
+    std::vector<std::vector<sgNodeID_t>> linkedread_paths;
+    std::vector<std::vector<sgNodeID_t>> pairedread_paths;
 
 
 };
