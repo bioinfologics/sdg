@@ -90,44 +90,32 @@ void LocalHaplotypeAssembler::init_from_file(std::string problem_file) {
 
 }
 
-void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov){
+void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, std::string output_prefix){
+    if (output_prefix.empty()) output_prefix="local_dbg_" + std::to_string(backbone[0]);
     std::cout<<"Creating an uncleaned DBG"<<std::endl;
     //std::cout << "creating DBG for line #" << i << std::endl;
-    std::ofstream anchf("local_dbg_" + std::to_string(backbone[0]) + "_anchors.fasta");
+    std::ofstream anchf(output_prefix + "_anchors.fasta");
     for (auto n=0;n<backbone.size();++n){
         anchf<<">seq"<<llabs(backbone[n])<<std::endl;
         anchf<<backbone_nodes[n].sequence<<std::endl;
 
     }
-    {
-        BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
-        auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(k, min_cov, tagSet, blrsg, tag_cov);
-        SequenceGraph dbg;
-        GraphMaker gm(dbg);
-        gm.new_graph_from_kmerset_trivial128(ltkmers128, k);
-        dbg.write_to_gfa("local_dbg_" + std::to_string(backbone[0]) + "_uncleaned.gfa");
-        gm.tip_clipping(200);
-        gm.remove_small_unconnected(500);
-        dbg.write_to_gfa("local_dbg_" + std::to_string(backbone[0]) + ".gfa");
-    }
-    {
-        std::unordered_set<__uint128_t> allpr_kmers;
-        for (auto pr:paired_reads) {
-            auto lkmers128 = ws.paired_read_datastores[pr.first].get_reads_kmers128(k, 1, pr.second);
-            allpr_kmers.insert(lkmers128.begin(),lkmers128.end());
-        }
-        SequenceGraph dbg;
-        GraphMaker gm(dbg);
-        gm.new_graph_from_kmerset_trivial128(allpr_kmers, k);
-        dbg.write_to_gfa("local_dbg_" + std::to_string(backbone[0]) + "_pr_uncleaned.gfa");
-        gm.tip_clipping(200);
-        gm.remove_small_unconnected(500);
-        dbg.write_to_gfa("local_dbg_" + std::to_string(backbone[0]) + "_pr.gfa");
-    }
-    std::cout<<"Analising junctions, one by one"<<std::endl;
-    for (auto i=0;i<backbone.size()-1;++i){
-        std::cout<<"Tring to joing "<<backbone[i]<<" (-) -> (+) "<<backbone[i+1]<<std::endl;
-    }
+    BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+    auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(k, min_cov, tagSet, blrsg, tag_cov);
+    GraphMaker gm(assembly);
+    gm.new_graph_from_kmerset_trivial128(ltkmers128, k);
+//        dbg.write_to_gfa(output_prefix + "_uncleaned.gfa");
+    gm.tip_clipping(200);
+    gm.remove_small_unconnected(500);
+    assembly.write_to_gfa(output_prefix + ".gfa");
+    //std::cout<<"Analising junctions, one by one"<<std::endl;
+    //for (auto i=0;i<backbone.size()-1;++i){
+    //    std::cout<<"Tring to joing "<<backbone[i]<<" (-) -> (+) "<<backbone[i+1]<<std::endl;
+    //}
+
+}
+
+void LocalHaplotypeAssembler::path_all_reads() {
 
 }
 

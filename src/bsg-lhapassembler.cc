@@ -81,7 +81,7 @@ int main(int argc, char * argv[]) {
     }
 
 
-    lha.assemble(k,min_cvg,false);
+    lha.assemble(k,min_cvg,false,output_prefix);
 
     return 0;
 }
