@@ -90,6 +90,85 @@ void LocalHaplotypeAssembler::init_from_file(std::string problem_file) {
 
 }
 
+uint64_t LocalHaplotypeAssembler::expand_canonical_repeats() {
+    std::vector<std::pair<sgNodeID_t ,std::pair<std::vector<std::vector<sgNodeID_t>>,std::vector<std::vector<sgNodeID_t>>>>> to_expand;
+    for (auto n=0;n<assembly.nodes.size();++n){
+        if (assembly.nodes[n].status==sgNodeDeleted) continue;
+        auto bwl=assembly.get_bw_links(n);
+        auto fwl=assembly.get_fw_links(n);
+        if (bwl.size()!=2 or fwl.size()!=2) continue;
+        std::set<sgNodeID_t> nset;
+        nset.insert(n);
+        nset.insert(llabs(bwl[0].dest));
+        nset.insert(llabs(bwl[1].dest));
+        nset.insert(llabs(fwl[0].dest));
+        nset.insert(llabs(fwl[1].dest));
+        if (nset.size()<5) continue;
+        int v00=0,v11=0,v01=0,v10=0;
+        for (auto p:linkedread_paths){
+            if (p.size()<2) continue;
+            //std::cout<<"analising path";
+            int pb0=0,pb1=0,pn=0,pf0=0,pf1=0;
+            for (auto &nip:p) {
+                //std::cout<<" "<<nip;
+                if (nip==-bwl[0].dest) pb0=1;
+                else if (nip==bwl[0].dest) pb0=-1;
+                else if (nip==-bwl[1].dest) pb1=1;
+                else if (nip==bwl[1].dest) pb1=-1;
+                else if (nip==n) pn=1;
+                else if (nip==-n) pn=-1;
+                else if (nip==fwl[0].dest) pf0=1;
+                else if (nip==-fwl[0].dest) pf0=-1;
+                else if (nip==fwl[1].dest) pf1=1;
+                else if (nip==-fwl[1].dest) pf1=-1;
+            }
+            //std::cout<<std::endl;
+            if (pb0==pf0 and pb0!=0 and pb1==0 and pf1==0) ++v00;
+            if (pb0==pf1 and pb0!=0 and pb1==0 and pf0==0) ++v01;
+            if (pb1==pf0 and pb1!=0 and pb0==0 and pf1==0) ++v10;
+            if (pb1==pf1 and pb1!=0 and pb0==0 and pf0==0) ++v11;
+            //if (pn!=0) std::cout<<"path with p, node votes "<<pb0<<" "<<pb1<<" "<<pn<<" "<<pf0<<" "<<pf1<<std::endl;
+        }
+        int lv00=0,lv11=0,lv01=0,lv10=0;
+        for (auto p:pairedread_paths){
+            if (p.size()<2) continue;
+            //std::cout<<"analising path";
+            int pb0=0,pb1=0,pn=0,pf0=0,pf1=0;
+            for (auto &nip:p) {
+                //std::cout<<" "<<nip;
+                if (nip==-bwl[0].dest) pb0=1;
+                else if (nip==bwl[0].dest) pb0=-1;
+                else if (nip==-bwl[1].dest) pb1=1;
+                else if (nip==bwl[1].dest) pb1=-1;
+                else if (nip==n) pn=1;
+                else if (nip==-n) pn=-1;
+                else if (nip==fwl[0].dest) pf0=1;
+                else if (nip==-fwl[0].dest) pf0=-1;
+                else if (nip==fwl[1].dest) pf1=1;
+                else if (nip==-fwl[1].dest) pf1=-1;
+            }
+            //std::cout<<std::endl;
+            if (pb0==pf0 and pb0!=0 and pb1==0 and pf1==0) ++lv00;
+            if (pb0==pf1 and pb0!=0 and pb1==0 and pf0==0) ++lv01;
+            if (pb1==pf0 and pb1!=0 and pb0==0 and pf1==0) ++lv10;
+            if (pb1==pf1 and pb1!=0 and pb0==0 and pf0==0) ++lv11;
+            //if (pn!=0) std::cout<<"path with p, node votes "<<pb0<<" "<<pb1<<" "<<pn<<" "<<pf0<<" "<<pf1<<std::endl;
+        }
+        //std::cout<<"Repeat at node "<<n<<"( "<<assembly.nodes[n].sequence.size()<<"bp ), votes: "
+        //          <<v00<<" "<<v11<<" "<<v10<<" "<<v01<<"  ("<<lv00<<" "<<lv11<<" "<<lv10<<" "<<lv01<<")"<<std::endl;
+        if (v00>10 and v11>10 and std::min(v00,v11)>10*std::max(v10,v01)) {
+            //std::cout<<"solved AA!"<<std::endl;
+            to_expand.push_back(std::make_pair(n,std::make_pair(std::vector<std::vector<sgNodeID_t>>({{bwl[0].dest},{bwl[1].dest}}),std::vector<std::vector<sgNodeID_t>>({{fwl[0].dest},{fwl[1].dest}}))));
+        }
+        if (v01>10 and v10>10 and std::min(v01,v10)>10*std::max(v00,v11)) {
+            //std::cout<<"solved AB!"<<std::endl;
+            to_expand.push_back(std::make_pair(n,std::make_pair(std::vector<std::vector<sgNodeID_t>>({{bwl[0].dest},{bwl[1].dest}}),std::vector<std::vector<sgNodeID_t>>({{fwl[1].dest},{fwl[0].dest}}))));
+        }
+    }
+    for (auto r:to_expand) assembly.expand_node(r.first,r.second.first,r.second.second);
+    return to_expand.size();
+}
+
 void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, std::string output_prefix){
     if (output_prefix.empty()) output_prefix="local_dbg_" + std::to_string(backbone[0]);
     std::cout<<"Creating an uncleaned DBG"<<std::endl;
@@ -106,8 +185,14 @@ void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, std::st
     gm.new_graph_from_kmerset_trivial128(ltkmers128, k);
 //        dbg.write_to_gfa(output_prefix + "_uncleaned.gfa");
     gm.tip_clipping(200);
+
     gm.remove_small_unconnected(500);
     path_all_reads();
+    assembly.write_to_gfa(output_prefix + "pre_repex.gfa");
+    while(expand_canonical_repeats()>0) {
+        assembly.join_all_unitigs();
+        path_all_reads();
+    }
     assembly.write_to_gfa(output_prefix + ".gfa");
     //std::cout<<"Analising junctions, one by one"<<std::endl;
     //for (auto i=0;i<backbone.size()-1;++i){
@@ -138,7 +223,8 @@ void add_readkmer_nodes_lha(std::vector<sgNodeID_t> & kmernodes, std::vector<std
 }
 
 void LocalHaplotypeAssembler::path_all_reads() {
-
+    linkedread_paths.clear();
+    pairedread_paths.clear();
     assembly.create_index();
 
     //now populate the linked read paths first
@@ -187,9 +273,9 @@ void LocalHaplotypeAssembler::path_all_reads() {
             cskf.create_kmers_direction(read1kmers, bprsg.get_read_sequence(rid));
             cskf.create_kmers_direction(read2kmers, bprsg.get_read_sequence(rid + 1));
             //first put the kmers from read 1 in there;
-            add_readkmer_nodes_lha(kmernodes, read1kmers, assembly.kmer_to_graphposition, false);
+            add_readkmer_nodes_lha(kmernodes, read1kmers, assembly.kmer_to_graphposition, true);
             //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
-            add_readkmer_nodes_lha(kmernodes, read2kmers, assembly.kmer_to_graphposition, true);
+            add_readkmer_nodes_lha(kmernodes, read2kmers, assembly.kmer_to_graphposition, false);
             //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
 
             pairedread_paths.emplace_back(kmernodes);
