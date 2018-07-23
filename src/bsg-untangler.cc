@@ -37,6 +37,7 @@ int main(int argc, char * argv[]) {
     bool remap_reads=true;
     bool dump_gfa=false;
     bool dev_linkage_paths=false;
+    std::string dev_linkage_stats;
     try
     {
         cxxopts::Options options("bsg-untangler", "graph-based haplotype separation");
@@ -69,6 +70,7 @@ int main(int argc, char * argv[]) {
                 ("dev_linkage_paths", "tag linkage uses read pathing rather than simple mapping",cxxopts::value<bool>(dev_linkage_paths))
                 ("dev_skate_linkage","Loads linkage from file and skates",cxxopts::value<std::string>(dev_skate_linkage))
                 ("dev_local_assembly_linkage","Loads linkage from file and creates local assemblies",cxxopts::value<std::string>(dev_local_assembly_linkage))
+                ("dev_linkage_stats","Loads linkage from file and computes local assemblies stats",cxxopts::value<std::string>(dev_linkage_stats))
                 ("dev_max_lines","Limits lines to be skated on dev",cxxopts::value<int>(dev_max_lines))
                 ("dev_min_nodes","Limits lines to be locally assembled on dev to at least min_nodes",cxxopts::value<uint64_t>(dev_min_nodes))
                 ("dev_min_total_size","Limits lines to be locally assembled on dev to at least min_total_size",cxxopts::value<uint64_t>(dev_min_total_size))
@@ -215,13 +217,57 @@ int main(int argc, char * argv[]) {
         auto lines=tag_ldg.get_all_lines(dev_min_nodes);
         if (dev_max_lines) lines.resize(dev_max_lines);
         uint64_t li=0;
+        LinkageUntangler lu2(ws);
         for (auto l:lines) {
             LocalHaplotypeAssembler lha(ws);
             lha.init_from_backbone(l);
+            for (auto ln:l) lu2.selected_nodes[llabs(ln)]=true;
             //lha.assemble(63,5,false);
             lha.write_problem("local_hap_problem_"+std::to_string(++li));
             lha.write_full("local_hap_full_"+std::to_string(li));
         }
+        sglib::OutputLog()<<"---NODES CONNECTED ON GLOBAL PROBLEM: "<<std::endl;
+        for (auto n=1;n<ws.sg.nodes.size();++n) {
+            if (tag_ldg.get_fw_links(n).size()>0 or tag_ldg.get_bw_links(n).size()>0) lu.selected_nodes[n]=true;
+        }
+        lu.report_node_selection();
+        sglib::OutputLog()<<"Bubbles in the linkage digraph: "<<tag_ldg.find_bubbles(0,10000000).size()<<std::endl;
+        sglib::OutputLog()<<"---NODES USED ON LOCAL PROBLEMS ("<<lines.size()<<" lines): "<<std::endl;
+        lu2.report_node_selection();
+        exit(0);
+    }
+    if (!dev_linkage_stats.empty()) {
+        sglib::OutputLog()<<"STARTING DEVEL LOCAL ASSEMBLY RUN"<<std::endl;
+        LinkageUntangler lu(ws);
+        LinkageDiGraph tag_ldg(ws.sg);
+        sglib::OutputLog()<<"Loading linkage from text"<<std::endl;
+        tag_ldg.load_from_text(dev_linkage_stats);
+        sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
+        tag_ldg.report_connectivity();
+        sglib::OutputLog()<<"Creating local assembly problems..."<<std::endl;
+//        lu.linear_regions_tag_local_assembly(tag_ldg, dev_local_k, dev_local_min_cvg, dev_max_lines,dev_min_nodes,dev_min_total_size,true);
+//        ws.sg.write_to_gfa(output_prefix+"_local_patched.gfa");
+//        ws.dump_to_disk(output_prefix+"_local_patched.bsgws");
+        auto lines=tag_ldg.get_all_lines(dev_min_nodes);
+        if (dev_max_lines) lines.resize(dev_max_lines);
+        uint64_t li=0;
+        LinkageUntangler lu2(ws);
+        for (auto l:lines) {
+            //LocalHaplotypeAssembler lha(ws);
+            //lha.init_from_backbone(l);
+            for (auto ln:l) lu2.selected_nodes[llabs(ln)]=true;
+            //lha.assemble(63,5,false);
+            //lha.write_problem("local_hap_problem_"+std::to_string(++li));
+            //lha.write_full("local_hap_full_"+std::to_string(li));
+        }
+        sglib::OutputLog()<<"---NODES CONNECTED ON GLOBAL PROBLEM: "<<std::endl;
+        for (auto n=1;n<ws.sg.nodes.size();++n) {
+            if (tag_ldg.get_fw_links(n).size()>0 or tag_ldg.get_bw_links(n).size()>0) lu.selected_nodes[n]=true;
+        }
+        lu.report_node_selection();
+        sglib::OutputLog()<<"Bubbles in the linkage digraph: "<<tag_ldg.find_bubbles(0,10000000).size()<<std::endl;
+        sglib::OutputLog()<<"---NODES USED ON LOCAL PROBLEMS ("<<lines.size()<<" lines): "<<std::endl;
+        lu2.report_node_selection();
         exit(0);
     }
     if (dev_local_patching) {

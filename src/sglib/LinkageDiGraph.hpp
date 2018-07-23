@@ -27,6 +27,7 @@ public:
     void solve();
 
     std::vector<std::vector<sgNodeID_t>> get_all_lines(uint16_t min_nodes, uint64_t min_total_size=0) const;
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> find_bubbles(uint32_t min_size,uint32_t max_size) ;
 
     void dump_to_text(std::string filename);
     void load_from_text(std::string filename);

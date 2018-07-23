@@ -171,3 +171,40 @@ void LinkageDiGraph::load_from_text(std::string filename) {
         add_link(l.source,l.dest,l.dist);
     }
 }
+
+std::vector<std::pair<sgNodeID_t,sgNodeID_t>> LinkageDiGraph::find_bubbles(uint32_t min_size,uint32_t max_size) {
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> r;
+    std::vector<bool> used(sg.nodes.size(),false);
+    sgNodeID_t n1,n2;
+    size_t s1,s2;
+    for (n1=1;n1<sg.nodes.size();++n1){
+        if (used[n1]) continue;
+        //get "topologically correct" bubble: prev -> [n1 | n2] -> next
+        s1=sg.nodes[n1].sequence.size();
+        if (s1<min_size or s1>max_size) continue;
+
+        auto fwl=get_fw_links(n1);
+        if (fwl.size()!=1) continue;
+        auto bwl=get_bw_links(n1);
+        if (bwl.size()!=1) continue;
+        auto next=fwl[0].dest;
+        auto prev=bwl[0].dest;
+        auto parln=get_bw_links(next);
+        if (parln.size()!=2) continue;
+        auto parlp=get_fw_links(-prev);
+        if (parlp.size()!=2) continue;
+
+        if (parlp[0].dest!=n1) n2=parlp[0].dest;
+        else n2=parlp[1].dest;
+
+        if (n2!=-parln[0].dest and n2!=-parln[1].dest) continue;
+        s2=sg.nodes[llabs(n2)].sequence.size();
+        if (s2<min_size or s2>max_size) continue;
+
+        used[n1]=true;
+        used[llabs(n2)]=true;
+        r.emplace_back(n1,n2);
+
+    }
+    return r;
+}
