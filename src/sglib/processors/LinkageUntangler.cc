@@ -502,6 +502,8 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_p
     //Step 1 - tag neighbours.
 
     sglib::OutputLog()<<"Getting tag neighbours"<<std::endl;
+    auto selcount=std::count(selected_nodes.begin(),selected_nodes.end(),true);
+    sglib::OutputLog()<<"All possible node pairs: "<<selcount*(selcount-1)/2<<std::endl;
     auto pass_sharing=ws.linked_read_mappers[0].get_tag_neighbour_nodes(min_reads,selected_nodes);
 
     sglib::OutputLog()<<"Node pairs with more than "<<min_reads<<" shared tags: "<<pass_sharing.size()<<std::endl;
@@ -532,33 +534,41 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_p
             ++rmi;
         }
     }
-
+    uint64_t undirected_passing_total=0, oposing_directions=0;
     std::set<std::pair<sgNodeID_t ,sgNodeID_t >> used;
+    std::ofstream orient_file("paired_orientations.csv");
+    std::ofstream orient_file_nopass("paired_orientations_unused.csv");
     for (auto p:pass_sharing) {
         auto bf=lv[std::make_pair(-p.first,p.second)];
         auto bb=lv[std::make_pair(-p.first,-p.second)];
         auto ff=lv[std::make_pair(p.first,p.second)];
         auto fb=lv[std::make_pair(p.first,-p.second)];
         auto total=bf+bb+ff+fb;
+        if (total<3) continue;
+        ++undirected_passing_total;
+        orient_file<<bf<<","<<bb<<","<<ff<<","<<fb<<""<<std::endl;
         float bfp=((float) bf)/total;
         float bbp=((float) bb)/total;
         float ffp=((float) ff)/total;
         float fbp=((float) fb)/total;
-        if (bf>=3 and bfp>=.75) {
+        if (bfp>=.75) {
             ldg.add_link(-p.first,p.second,0);
             used.insert(p);
         }
-        else if (bb>=3 and bbp>=.75) {
+        else if (bbp>=.75) {
             ldg.add_link(-p.first,-p.second,0);
             used.insert(p);
         }
-        else if (ff>=3 and ffp>=.75) {
+        else if (ffp>=.75) {
             ldg.add_link(p.first,p.second,0);
             used.insert(p);
         }
-        else if (fb>=3 and fbp>=.75) {
+        else if (fbp>=.75) {
             ldg.add_link(p.first,-p.second,0);
             used.insert(p);
+        } else {
+            orient_file_nopass<<bf<<","<<bb<<","<<ff<<","<<fb<<""<<std::endl;
+            if ((bf==0 and fb==0) or (ff==0 and bb==0)) ++oposing_directions;
         }
         /*std::cout<<"Evaluating connection between "<<p.first<<" and "<<p.second<<": "
                 <<lv[std::make_pair(-p.first,p.second)]<<" "
@@ -566,7 +576,10 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_p
                 <<lv[std::make_pair(p.first,p.second)]<<" "
                 <<lv[std::make_pair(p.first,-p.second)]<<std::endl;*/
     }
-
+    sglib::OutputLog()<<"Node pairs with shared tags >= "<<min_reads<<"  and undirected paired links >= 3: "<<undirected_passing_total<<std::endl;
+    sglib::OutputLog()<<"Connections passing both thresholds and directionality test: "<<used.size()<<"( "
+                      <<(undirected_passing_total-used.size())*100.0/undirected_passing_total<<"% not passing directional condition)"<<std::endl;
+    sglib::OutputLog()<<"Connections with opoosing directions only: "<<oposing_directions<<" ( "<<oposing_directions*100.0/undirected_passing_total<<"% )"<<std::endl;
     //STEP 3 - Looking at disconnected ends on 1-0 and N-0 nodes
     std::vector<sgNodeID_t> one_end_only;
     uint64_t disc=0,ldisc=0,single=0,lsingle=0,both=0,lboth=0;

@@ -188,8 +188,48 @@ int main(int argc, char * argv[]) {
         }
         sglib::OutputLog()<<"Re-trying tag connection after eliminating "<<remNN<<" N-N nodes"<<std::endl;
         auto tag_ldg = lu.make_tag_linkage(min_shared_tags,dev_linkage_paths);
+        //maybe keep the full linkage to help the evaluation on simplification?
+        auto full_tag_ldg=tag_ldg;
+        tag_ldg.remove_transitive_links(10);
+
+        tag_ldg.report_connectivity();
+        std::cout<<"Experimental: linearize bubbles"<<std::endl;
+        std::vector<sgNodeID_t> to_remove;
+        auto all_paired_linkage = lu.make_paired_linkage(2);
+        uint64_t b12=0,b21=0, amb=0, none=0,ab12=0,ab21=0;
+        for (auto bubble:tag_ldg.find_bubbles(0,20000)) {
+            //if (full_tag_ldg.are_connected(tag_ldg.get_bw_links(bubble.first)[0].dest,tag_ldg.get_fw_links(bubble.first)[0].dest))
+            //    to_remove.emplace_back(llabs(bubble.first));
+            bool c12=all_paired_linkage.are_connected(-bubble.first,bubble.second);
+            bool c21=all_paired_linkage.are_connected(-bubble.second,bubble.first);
+            bool i1=all_paired_linkage.are_connected(-bubble.second,-bubble.first);
+            bool i2=all_paired_linkage.are_connected(bubble.second,bubble.first);
+            if (i1 or i2) {
+                ++amb;
+                if (c12 and !c21 ) ++ab12;
+                else if (!c12 and c21 ) ++ab21;
+                continue;
+            }
+            else if (c12 and !c21 ) {
+                tag_ldg.add_link(-bubble.first,bubble.second,0);
+                ++b12;
+            }
+            else if (!c12 and c21 ) {
+                tag_ldg.add_link(-bubble.first,bubble.second,0);
+                ++b21;
+            }
+            else {
+                ++none;
+            }
+
+        }
+        std::cout<<"Bubbles with possible reconnection: 1-2: "<<b12<<"  2-1:"<<b21<<" ambiguous order: "<<amb<<"( 1-2: "<<ab12<<" 2-1: "<<ab21<<" ) no connection:"<<none<<std::endl;
         tag_ldg.remove_transitive_links(10);
         tag_ldg.report_connectivity();
+        std::cout<<"TODO: clip tips, can this be done??"<<std::endl;
+        std::cout<<"TODO: evaluate 'complex nodes' that have a linear transitivity"<<std::endl;
+        std::cout<<"TODO: maybe even try local assemblies to simplify complex connections?"<<std::endl;
+        ws.sg.write_to_gfa(output_prefix+"_linkage.gfa", {}, {}, selnodes, tag_ldg.links);
         tag_ldg.dump_to_text(dev_create_linkage);
         exit(0);
     }

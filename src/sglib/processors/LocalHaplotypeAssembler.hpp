@@ -30,6 +30,7 @@ public:
     void path_all_reads(); //creates a path for every read, both 10x and LMP
     uint64_t expand_canonical_repeats();
     uint64_t pop_short_bubbles(); //uses short paths to pop bubbles
+    uint64_t unroll_short_loops();
     void assemble(int k, int min_cov, bool tag_cov, std::string output_prefix="");
 
     void patch_graph_in_workspace();

@@ -5,6 +5,21 @@
 #include "LocalHaplotypeAssembler.hpp"
 #include "GraphMaker.hpp"
 
+void print_seq_kmer_location(const char * seq, std::unordered_map<uint64_t, graphPosition> & index){
+    std::cout<<"Kmer to node analysis for "<<seq<<std::endl;
+    std::vector<std::pair<uint64_t,bool>> readkmers;
+    CStringKMerFactory cskf(31);
+    cskf.create_kmers_direction(readkmers,seq);
+    for (auto rki=readkmers.begin();rki<readkmers.end();++rki) {
+        auto kp=index.find(rki->first);
+        if (kp==index.end()) {std::cout <<" *";continue;} //kmer not found
+        auto node=(rki->second ? -kp->second.node:kp->second.node);
+        std::cout<<" "<<node;
+    }
+    std::cout<<std::endl;
+
+}
+
 void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backbone) {
     backbone=_backbone;
     std::cout<<"Creating a LocalHaplotypeAssembler instance from backbone"<<std::endl;
@@ -169,6 +184,57 @@ uint64_t LocalHaplotypeAssembler::expand_canonical_repeats() {
     return to_expand.size();
 }
 
+uint64_t LocalHaplotypeAssembler::unroll_short_loops() {
+    for (auto n = 0; n < assembly.nodes.size(); ++n) {
+        if (assembly.nodes[n].status == sgNodeDeleted) continue;
+        auto bwl = assembly.get_bw_links(n);
+        auto fwl = assembly.get_fw_links(n);
+        if (bwl.size() != 2 or fwl.size() != 2) continue;
+        sgNodeID_t prev, next, loop;
+        if (bwl[0].dest == -fwl[0].dest) {
+            prev = -bwl[1].dest;
+            loop = fwl[0].dest;
+            next = fwl[1].dest;
+        } else if (bwl[0].dest == -fwl[1].dest) {
+            prev = -bwl[1].dest;
+            loop = fwl[1].dest;
+            next = fwl[0].dest;
+        } else if (bwl[1].dest == -fwl[0].dest) {
+            prev = -bwl[0].dest;
+            loop = fwl[0].dest;
+            next = fwl[1].dest;
+        } else if (bwl[1].dest == -fwl[1].dest) {
+            prev = -bwl[0].dest;
+            loop = fwl[1].dest;
+            next = fwl[0].dest;
+        } else continue;
+        if (assembly.get_fw_links(loop).size() != 1 or assembly.get_bw_links(loop).size() != 1) continue;
+        std::cout << "Loop detected on " << prev << " " << n << " " << loop << " " << n << " " << next << std::endl;
+        int64_t rid = -1;
+        for (auto &p:linkedread_paths) {
+            rid += 2;
+            if (p.size() < 3) continue;
+            bool sprev=false,snext=false;
+            for (auto &pp:p) {
+                if (llabs(pp) == llabs(prev)) sprev = true;
+                if (llabs(pp) == llabs(next)) snext = true;
+                if(snext and sprev)
+                {
+                    for (auto &ppp:p) std::cout << ppp << " ";
+                    std::cout << std::endl;
+                    //print_seq_kmer_location(ws.linked_read_datastores[0].get_read_sequence(rid).c_str(),
+                    //                        assembly.kmer_to_graphposition);
+                    //print_seq_kmer_location(ws.linked_read_datastores[0].get_read_sequence(rid + 1).c_str(),
+                    //                        assembly.kmer_to_graphposition);
+
+
+                    continue;
+                }
+            }
+        }
+    }
+}
+
 void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, std::string output_prefix){
     if (output_prefix.empty()) output_prefix="local_dbg_" + std::to_string(backbone[0]);
     std::cout<<"Creating an uncleaned DBG"<<std::endl;
@@ -193,6 +259,7 @@ void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, std::st
         assembly.join_all_unitigs();
         path_all_reads();
     }
+    unroll_short_loops();
     assembly.write_to_gfa(output_prefix + ".gfa");
     //std::cout<<"Analising junctions, one by one"<<std::endl;
     //for (auto i=0;i<backbone.size()-1;++i){
@@ -221,6 +288,8 @@ void add_readkmer_nodes_lha(std::vector<sgNodeID_t> & kmernodes, std::vector<std
     }
 
 }
+
+
 
 void LocalHaplotypeAssembler::path_all_reads() {
     linkedread_paths.clear();
