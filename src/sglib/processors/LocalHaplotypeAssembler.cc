@@ -237,7 +237,7 @@ uint64_t LocalHaplotypeAssembler::unroll_short_loops() {
 
 void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, bool simplify, std::string output_prefix){
     //if (output_prefix.empty()) output_prefix="local_dbg_" + std::to_string(backbone[0]);
-    std::cout<<"Creating an uncleaned DBG"<<std::endl;
+    //std::cout<<"Creating an uncleaned DBG"<<std::endl;
     //std::cout << "creating DBG for line #" << i << std::endl;
 
     BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
@@ -470,7 +470,6 @@ void LocalHaplotypeAssembler::write_gfa(std::string filename) {
 }
 
 void LocalHaplotypeAssembler::construct_patches() {
-    std::cout<<"constructing patches"<<std::endl;
     std::vector<Node > all_nodes;
     for (auto &n:assembly.nodes) {
         if (n.sequence.size()<1000) continue;
@@ -478,7 +477,6 @@ void LocalHaplotypeAssembler::construct_patches() {
         all_nodes.emplace_back(n);
         all_nodes.back().make_rc();
     }
-    std::cout<<"patches will be produced from "<<all_nodes.size()<<" unitigs"<<std::endl;
     //std::vector<std::pair<std::pair<sgNodeID_t , sgNodeID_t >, std::string>> patches;
     for (auto li = 0; li < backbone.size() - 1; ++li) {
         auto n1 = backbone_nodes[li];
@@ -510,7 +508,7 @@ void LocalHaplotypeAssembler::construct_patches() {
 void LocalHaplotypeAssembler::write_patches(std::string filename) {
     std::ofstream patchf(filename);
     for (auto &p:patches) {
-        patchf << ">patch_" << p.first.first << "_" << p.first.second << std::endl;
+        patchf << ">patch_" << -p.first.first << "_" << p.first.second << std::endl;
         patchf << p.second << std::endl;
 
     }
