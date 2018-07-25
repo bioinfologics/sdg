@@ -26,6 +26,8 @@ public:
     void report_connectivity();
     void solve();
 
+    bool are_connected(sgNodeID_t n1, sgNodeID_t n2);
+
     std::vector<std::vector<sgNodeID_t>> get_all_lines(uint16_t min_nodes, uint64_t min_total_size=0) const;
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> find_bubbles(uint32_t min_size,uint32_t max_size) ;
 

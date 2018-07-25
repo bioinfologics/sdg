@@ -208,3 +208,8 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> LinkageDiGraph::find_bubbles(uint3
     }
     return r;
 }
+
+bool LinkageDiGraph::are_connected(sgNodeID_t n1, sgNodeID_t n2) {
+    for (auto &l:links[llabs(n1)]) if (l.source==n1 and l.dest==n2) return true;
+    return false;
+}
