@@ -257,14 +257,28 @@ int main(int argc, char * argv[]) {
         auto lines=tag_ldg.get_all_lines(dev_min_nodes);
         if (dev_max_lines) lines.resize(dev_max_lines);
         uint64_t li=0;
+        uint64_t i=0;
         LinkageUntangler lu2(ws);
         for (auto l:lines) {
+            ++i;
+            std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
             LocalHaplotypeAssembler lha(ws);
             lha.init_from_backbone(l);
             for (auto ln:l) lu2.selected_nodes[llabs(ln)]=true;
             //lha.assemble(63,5,false);
-            lha.write_problem("local_hap_problem_"+std::to_string(++li));
-            lha.write_full("local_hap_full_"+std::to_string(li));
+            //lha.write_problem("local_hap_problem_"+std::to_string(++li));
+            //lha.write_full("local_hap_full_"+std::to_string(li));
+            lha.assemble(63,5,false);
+            lha.write_anchors("local_"+std::to_string(i)+"_anchors.fasta");
+            lha.write_gfa("local_"+std::to_string(i)+".gfa");
+            lha.construct_patches();
+            lha.write_patches("local_"+std::to_string(i)+"_patches.fasta");
+            for (auto &p:lha.patches) {
+
+            }
+            std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
+            std::cout << "Local assembly done in " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() <<" seconds, produced "<<lha.patches.size()<<" patches"<<std::endl;
+
         }
         sglib::OutputLog()<<"---NODES CONNECTED ON GLOBAL PROBLEM: "<<std::endl;
         for (auto n=1;n<ws.sg.nodes.size();++n) {

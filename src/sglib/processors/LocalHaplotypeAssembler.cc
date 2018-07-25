@@ -22,13 +22,13 @@ void print_seq_kmer_location(const char * seq, std::unordered_map<uint64_t, grap
 
 void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backbone) {
     backbone=_backbone;
-    std::cout<<"Creating a LocalHaplotypeAssembler instance from backbone"<<std::endl;
-    std::cout<<"Backbone nodes:";
-    for (auto n:backbone) std::cout<<" "<<n;
-    std::cout<<std::endl;
+    //std::cout<<"Creating a LocalHaplotypeAssembler instance from backbone"<<std::endl;
+    //std::cout<<"Backbone nodes:";
+    //for (auto n:backbone) std::cout<<" "<<n;
+    //std::cout<<std::endl;
     for (auto n:backbone) backbone_nodes.emplace_back(ws.sg.nodes[llabs(n)].sequence);
 
-    std::cout<<"Filling Candidate Tag Set..."<<std::endl;
+    //std::cout<<"Filling Candidate Tag Set..."<<std::endl;
     //Get tag reads in the nodes, and how many nodes with reads counts.
     std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
     for (auto &ln:backbone) {
@@ -56,8 +56,8 @@ void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backb
             total_reads+=tag_total_reads;
         }
     }
-    std::cout<<"Local tags: "<<tagSet.size()<<" reads: "<<total_reads<<std::endl;
-    std::cout<<"Creating set of relevant paired reads..."<<std::endl;
+    //std::cout<<"Local tags: "<<tagSet.size()<<" reads: "<<total_reads<<std::endl;
+    //std::cout<<"Creating set of relevant paired reads..."<<std::endl;
     for (auto prl=0;prl<ws.paired_read_mappers.size();++prl) {
         paired_reads.emplace_back(std::make_pair(prl,std::vector<uint64_t>()));
         for (auto &ln:backbone) {
@@ -65,9 +65,9 @@ void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backb
             paired_reads.back().second.insert(paired_reads.back().second.end(),nreads.begin(),nreads.end());
         }
         if (paired_reads.back().second.empty()) paired_reads.pop_back();
-        else std::cout<<paired_reads.back().second.size()<<" reads from "<<ws.paired_read_datastores[prl].filename<<std::endl;
+        //else std::cout<<paired_reads.back().second.size()<<" reads from "<<ws.paired_read_datastores[prl].filename<<std::endl;
     }
-    std::cout<<"LocalHaplotypeAssembler created!"<<std::endl;
+    //std::cout<<"LocalHaplotypeAssembler created!"<<std::endl;
 
 }
 
@@ -209,7 +209,7 @@ uint64_t LocalHaplotypeAssembler::unroll_short_loops() {
             next = fwl[0].dest;
         } else continue;
         if (assembly.get_fw_links(loop).size() != 1 or assembly.get_bw_links(loop).size() != 1) continue;
-        std::cout << "Loop detected on " << prev << " " << n << " " << loop << " " << n << " " << next << std::endl;
+        //std::cout << "Loop detected on " << prev << " " << n << " " << loop << " " << n << " " << next << std::endl;
         int64_t rid = -1;
         for (auto &p:linkedread_paths) {
             rid += 2;
@@ -235,32 +235,27 @@ uint64_t LocalHaplotypeAssembler::unroll_short_loops() {
     }
 }
 
-void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, std::string output_prefix){
-    if (output_prefix.empty()) output_prefix="local_dbg_" + std::to_string(backbone[0]);
+void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, bool simplify, std::string output_prefix){
+    //if (output_prefix.empty()) output_prefix="local_dbg_" + std::to_string(backbone[0]);
     std::cout<<"Creating an uncleaned DBG"<<std::endl;
     //std::cout << "creating DBG for line #" << i << std::endl;
-    std::ofstream anchf(output_prefix + "_anchors.fasta");
-    for (auto n=0;n<backbone.size();++n){
-        anchf<<">seq"<<llabs(backbone[n])<<std::endl;
-        anchf<<backbone_nodes[n].sequence<<std::endl;
 
-    }
     BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
     auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(k, min_cov, tagSet, blrsg, tag_cov);
     GraphMaker gm(assembly);
     gm.new_graph_from_kmerset_trivial128(ltkmers128, k);
 //        dbg.write_to_gfa(output_prefix + "_uncleaned.gfa");
     gm.tip_clipping(200);
-
-    gm.remove_small_unconnected(500);
-    path_all_reads();
-    assembly.write_to_gfa(output_prefix + "pre_repex.gfa");
-    while(expand_canonical_repeats()>0) {
-        assembly.join_all_unitigs();
+    if (simplify) {
+        gm.remove_small_unconnected(500);
         path_all_reads();
+        if (!output_prefix.empty()) assembly.write_to_gfa(output_prefix + "pre_repex.gfa");
+        while (expand_canonical_repeats() > 0) {
+            assembly.join_all_unitigs();
+            path_all_reads();
+        }
+        unroll_short_loops();
     }
-    unroll_short_loops();
-    assembly.write_to_gfa(output_prefix + ".gfa");
     //std::cout<<"Analising junctions, one by one"<<std::endl;
     //for (auto i=0;i<backbone.size()-1;++i){
     //    std::cout<<"Tring to joing "<<backbone[i]<<" (-) -> (+) "<<backbone[i+1]<<std::endl;
@@ -459,4 +454,64 @@ void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
 
     std::cout<<"LocalHaplotypeAssembler created!"<<std::endl;
 
+}
+
+void LocalHaplotypeAssembler::write_anchors(std::string filename) {
+    std::ofstream anchf(filename);
+    for (auto n = 0; n < backbone.size(); ++n) {
+        anchf << ">seq" << llabs(backbone[n]) << std::endl;
+        anchf << backbone_nodes[n].sequence << std::endl;
+
+    }
+}
+
+void LocalHaplotypeAssembler::write_gfa(std::string filename) {
+    assembly.write_to_gfa(filename);
+}
+
+void LocalHaplotypeAssembler::construct_patches() {
+    std::cout<<"constructing patches"<<std::endl;
+    std::vector<Node > all_nodes;
+    for (auto &n:assembly.nodes) {
+        if (n.sequence.size()<1000) continue;
+        all_nodes.emplace_back(n);
+        all_nodes.emplace_back(n);
+        all_nodes.back().make_rc();
+    }
+    std::cout<<"patches will be produced from "<<all_nodes.size()<<" unitigs"<<std::endl;
+    //std::vector<std::pair<std::pair<sgNodeID_t , sgNodeID_t >, std::string>> patches;
+    for (auto li = 0; li < backbone.size() - 1; ++li) {
+        auto n1 = backbone_nodes[li];
+        auto n2 = backbone_nodes[li+1];
+        const size_t ENDS_SIZE = 200;
+        if (backbone[li] < 0) n1.make_rc();
+        if (backbone[li + 1] < 0) n2.make_rc();
+        if (n1.sequence.size() > ENDS_SIZE)
+            n1.sequence = n1.sequence.substr(n1.sequence.size() - ENDS_SIZE - 1, ENDS_SIZE);
+        if (n2.sequence.size() > ENDS_SIZE) n2.sequence.resize(ENDS_SIZE);
+        std::vector<std::string> matches;
+        for (auto &unitig:all_nodes) {
+            auto n1pos = unitig.sequence.find(n1.sequence);
+            auto n2pos = unitig.sequence.find(n2.sequence);
+            if (n1pos < n2pos and n2pos < unitig.sequence.size()) {
+                //std::cout << lines[i][li] << " and " << lines[i][li + 1] << " found on unitig " << n
+                //          << std::endl;
+                matches.emplace_back(unitig.sequence.substr(n1pos, n2pos + 2 * ENDS_SIZE - n1pos));
+            }
+        }
+        //TODO: collapse unitigs that are equivalent.
+        if (matches.size() == 1) {
+            patches.emplace_back(std::make_pair(backbone[li], backbone[li + 1]), matches[0]);
+
+        }
+    }
+}
+
+void LocalHaplotypeAssembler::write_patches(std::string filename) {
+    std::ofstream patchf(filename);
+    for (auto &p:patches) {
+        patchf << ">patch_" << p.first.first << "_" << p.first.second << std::endl;
+        patchf << p.second << std::endl;
+
+    }
 }
