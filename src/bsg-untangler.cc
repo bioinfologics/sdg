@@ -5,6 +5,7 @@
 #include <sglib/processors/FlowFollower.hpp>
 #include <sglib/processors/LinkageUntangler.hpp>
 #include <sglib/processors/LocalHaplotypeAssembler.hpp>
+#include <sglib/processors/GraphEditor.hpp>
 #include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"
 
@@ -400,6 +401,26 @@ int main(int argc, char * argv[]) {
         }
         exit(0);
     }
+
+    if (!patch_workspace.empty()) {
+        sglib::OutputLog() << "Patching workspace!!!" << std::endl;
+        GraphEditor ge(ws);
+        uint64_t patch_results[6]={0,0,0,0,0,0};
+        for (auto p:patches) {
+            auto r=ge.patch_between(-p.first.first,p.first.second,p.second);
+            ++patch_results[r];
+        }
+        sglib::OutputLog() << "Patches with no anchor ends:         "<< patch_results[1] <<std::endl;
+        sglib::OutputLog() << "Patches with incorrect anchor order: "<< patch_results[3] <<std::endl;
+        sglib::OutputLog() << "Patches with no SG paths:            "<< patch_results[2] <<std::endl;
+        sglib::OutputLog() << "Patches with no matching SG paths:   "<< patch_results[4] <<std::endl;
+        sglib::OutputLog() << "Patches with failed expansion:       "<< patch_results[5] <<std::endl;
+        sglib::OutputLog() << "Patches correctly applied:           "<< patch_results[0] <<std::endl;
+        auto juc=ws.sg.join_all_unitigs();
+        sglib::OutputLog() << juc << " unitigs joined after patching"<<std::endl;
+        ws.sg.write_to_gfa(patch_workspace);
+    }
+
 
     ws.kci.reindex_graph();
     if (dump_gfa) ws.sg.write_to_gfa(output_prefix+".gfa");

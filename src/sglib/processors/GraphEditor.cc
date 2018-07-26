@@ -103,11 +103,11 @@ SequenceGraphPath GraphEditor::get_patch_path_between(sgNodeID_t from, sgNodeID_
 int GraphEditor::patch_between(sgNodeID_t from, sgNodeID_t to, std::string patch) {
     auto n1 = ws.sg.nodes[llabs(from)];
     auto n2 = ws.sg.nodes[llabs(to)];
-    const size_t ENDS_SIZE=1000;
-    if (n1.sequence.size()>ENDS_SIZE) n1.sequence=n1.sequence.substr(n1.sequence.size()-ENDS_SIZE-1,ENDS_SIZE);
-    if (n2.sequence.size()>ENDS_SIZE) n2.sequence.resize(ENDS_SIZE);
+    const size_t ENDS_SIZE=200;
     if (from<0) n1.make_rc();
     if (to<0) n2.make_rc();
+    if (n1.sequence.size()>ENDS_SIZE) n1.sequence=n1.sequence.substr(n1.sequence.size()-ENDS_SIZE-1,ENDS_SIZE);
+    if (n2.sequence.size()>ENDS_SIZE) n2.sequence.resize(ENDS_SIZE);
     auto p1=patch.find(n1.sequence);
     auto p2=patch.find(n2.sequence);
     if (p1>=patch.size() or p2>=patch.size() or p1>=p2) {
