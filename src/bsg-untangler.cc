@@ -32,7 +32,7 @@ int main(int argc, char * argv[]) {
     uint8_t dev_local_k=63;
     int dev_local_min_cvg=7;
     uint64_t dev_min_nodes=2,dev_min_total_size=0;
-    std::string dev_create_linkage,dev_skate_linkage,dev_local_assembly_linkage;
+    std::string create_linkage,dev_skate_linkage,make_patches, load_patches, patch_backbones, patch_workspace,load_linkage;
     bool dev_local_patching=false;
     bool remap_reads=true;
     bool dump_gfa=false;
@@ -65,18 +65,23 @@ int main(int argc, char * argv[]) {
                 ("tag_imbalance_ends","percentage of node to use as tag-imbalanced end",cxxopts::value<float>(tag_imbalance_ends))
                 ("min_shared_tags","minimum shared tags to evaluate tag-imbalanced connection",cxxopts::value<int>(min_shared_tags));
 
-        options.add_options("Development")
-                ("dev_create_linkage","Creates and simplifies linkage and dumps to file",cxxopts::value<std::string>(dev_create_linkage))
+        options.add_options("Linkage untangling")
+                ("create_linkage","Creates and simplifies linkage and dumps to file",cxxopts::value<std::string>(create_linkage))
+                ("load_linkage","Linkage file to load",cxxopts::value<std::string>(load_linkage))
+                ("make_patches","Creates patches from local assemblies",cxxopts::value<std::string>(make_patches))
+                ("load_patches","Load patches form file",cxxopts::value<std::string>(load_patches))
+                ("patch_backbones","Patches backbones and outputs stitched sequences",cxxopts::value<std::string>(patch_backbones))
+                ("patch_workspace","Patches  the workspace graph and outputs a gfa",cxxopts::value<std::string>(patch_workspace))
+                ("full_local_patching","run a whole round of linked lines and local patching, with a final remap", cxxopts::value<bool>(dev_local_patching))
+
                 ("dev_linkage_paths", "tag linkage uses read pathing rather than simple mapping",cxxopts::value<bool>(dev_linkage_paths))
-                ("dev_skate_linkage","Loads linkage from file and skates",cxxopts::value<std::string>(dev_skate_linkage))
-                ("dev_local_assembly_linkage","Loads linkage from file and creates local assemblies",cxxopts::value<std::string>(dev_local_assembly_linkage))
+                //("dev_skate_linkage","Loads linkage from file and skates",cxxopts::value<std::string>(dev_skate_linkage))
                 ("dev_linkage_stats","Loads linkage from file and computes local assemblies stats",cxxopts::value<std::string>(dev_linkage_stats))
                 ("dev_max_lines","Limits lines to be skated on dev",cxxopts::value<int>(dev_max_lines))
                 ("dev_min_nodes","Limits lines to be locally assembled on dev to at least min_nodes",cxxopts::value<uint64_t>(dev_min_nodes))
                 ("dev_min_total_size","Limits lines to be locally assembled on dev to at least min_total_size",cxxopts::value<uint64_t>(dev_min_total_size))
                 ("dev_local_k","k value for local assembly",cxxopts::value<uint8_t>(dev_local_k))
-                ("dev_local_min_cvg","minimum coverga for local assemblies",cxxopts::value<int>(dev_local_min_cvg))
-                ("dev_local_patching","run a whole round of linked lines and local patching, with a final remap", cxxopts::value<bool>(dev_local_patching));
+                ("dev_local_min_cvg","minimum coverga for local assemblies",cxxopts::value<int>(dev_local_min_cvg));
 
 
 
@@ -167,7 +172,7 @@ int main(int argc, char * argv[]) {
     }
 
     //======= DEVELOPMENT FUNCTIONS ======
-    if (!dev_create_linkage.empty()) {
+    if (!create_linkage.empty()) {
         LinkageUntangler lu(ws);
         lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
         std::unordered_set<sgNodeID_t> selnodes;
@@ -230,24 +235,15 @@ int main(int argc, char * argv[]) {
         std::cout<<"TODO: evaluate 'complex nodes' that have a linear transitivity"<<std::endl;
         std::cout<<"TODO: maybe even try local assemblies to simplify complex connections?"<<std::endl;
         ws.sg.write_to_gfa(output_prefix+"_linkage.gfa", {}, {}, selnodes, tag_ldg.links);
-        tag_ldg.dump_to_text(dev_create_linkage);
+        tag_ldg.dump_to_text(create_linkage);
         exit(0);
     }
-    if (!dev_skate_linkage.empty()) {
-        LinkageUntangler lu(ws);
-        LinkageDiGraph tag_ldg(ws.sg);
-        tag_ldg.load_from_text(dev_skate_linkage);
-        tag_ldg.report_connectivity();
-        lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
-        lu.expand_linear_regions_skating(tag_ldg,dev_max_lines);
-        exit(0);
+    LinkageDiGraph tag_ldg(ws.sg);
+    if (!load_linkage.empty()){
+        tag_ldg.load_from_text(load_linkage);
     }
-    if (!dev_local_assembly_linkage.empty()) {
-        sglib::OutputLog()<<"STARTING DEVEL LOCAL ASSEMBLY RUN"<<std::endl;
-        LinkageUntangler lu(ws);
-        LinkageDiGraph tag_ldg(ws.sg);
-        sglib::OutputLog()<<"Loading linkage from text"<<std::endl;
-        tag_ldg.load_from_text(dev_local_assembly_linkage);
+    std::vector<std::pair<std::pair<sgNodeID_t ,sgNodeID_t>,std::string>> patches;
+    if (!make_patches.empty()) {
         sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
         tag_ldg.report_connectivity();
         sglib::OutputLog()<<"Creating local assembly problems..."<<std::endl;
@@ -258,7 +254,6 @@ int main(int argc, char * argv[]) {
         }
         uint64_t li=0;
         uint64_t i=0;
-        std::vector<std::pair<std::pair<sgNodeID_t ,sgNodeID_t>,std::string>> patches;
         sglib::OutputLog()<<"Solving "<<lines.size()<<" local assembly problems..."<<std::endl;
 #pragma omp parallel for schedule(dynamic,10)
         for (auto li=0;li<lines.size();++li) {
@@ -280,36 +275,40 @@ int main(int argc, char * argv[]) {
         }
 
         sglib::OutputLog()<<patches.size()<<" patches found"<<std::endl;
-        std::ofstream patchf("all_patches.txt");
+        std::ofstream patchf(make_patches);
         for (auto &p:patches){
             patchf << ">patch_" << -p.first.first << "_" << p.first.second << std::endl;
             patchf << p.second << std::endl;
         }
         exit(0);
     }
+    if (!load_patches.empty()){
+        std::ifstream pf(load_patches);
+        auto i=0;
+        while (!pf.eof()){
+            std::string l;
+            pf>>l;
+            if (l.empty()) break;
+            l=l.substr(7,l.size());
+            auto l2=l.substr(l.find('_')+1,l.size());
+            sgNodeID_t n1=atol(l.c_str());
+            sgNodeID_t n2=atol(l2.c_str());
+            std::string seq;
+            pf>>seq;
+            patches.emplace_back(std::make_pair(n1,n2),seq);
+        }
+    }
+
     if (!dev_linkage_stats.empty()) {
-        sglib::OutputLog()<<"STARTING DEVEL LOCAL ASSEMBLY RUN"<<std::endl;
         LinkageUntangler lu(ws);
-        LinkageDiGraph tag_ldg(ws.sg);
-        sglib::OutputLog()<<"Loading linkage from text"<<std::endl;
-        tag_ldg.load_from_text(dev_linkage_stats);
         sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
         tag_ldg.report_connectivity();
-        sglib::OutputLog()<<"Creating local assembly problems..."<<std::endl;
-//        lu.linear_regions_tag_local_assembly(tag_ldg, dev_local_k, dev_local_min_cvg, dev_max_lines,dev_min_nodes,dev_min_total_size,true);
-//        ws.sg.write_to_gfa(output_prefix+"_local_patched.gfa");
-//        ws.dump_to_disk(output_prefix+"_local_patched.bsgws");
         auto lines=tag_ldg.get_all_lines(dev_min_nodes);
         if (dev_max_lines) lines.resize(dev_max_lines);
         uint64_t li=0;
         LinkageUntangler lu2(ws);
         for (auto l:lines) {
-            //LocalHaplotypeAssembler lha(ws);
-            //lha.init_from_backbone(l);
             for (auto ln:l) lu2.selected_nodes[llabs(ln)]=true;
-            //lha.assemble(63,5,false);
-            //lha.write_problem("local_hap_problem_"+std::to_string(++li));
-            //lha.write_full("local_hap_full_"+std::to_string(li));
         }
         sglib::OutputLog()<<"---NODES CONNECTED ON GLOBAL PROBLEM: "<<std::endl;
         for (auto n=1;n<ws.sg.nodes.size();++n) {
@@ -321,6 +320,8 @@ int main(int argc, char * argv[]) {
         lu2.report_node_selection();
         exit(0);
     }
+
+
     if (dev_local_patching) {
         LinkageUntangler lu(ws);
         ws.kci.reindex_graph();
@@ -348,6 +349,56 @@ int main(int argc, char * argv[]) {
         tag_ldg.report_connectivity();
         ws.sg.write_to_gfa(output_prefix+"_linkage.gfa", {}, {}, selnodes, tag_ldg.links);
         lu.linear_regions_tag_local_assembly(tag_ldg, dev_local_k, dev_local_min_cvg, dev_max_lines,dev_min_nodes,dev_min_total_size,true);
+    }
+
+    if (!patch_backbones.empty()) {
+        std::ofstream patched_backbones_file(patch_backbones);
+        sglib::OutputLog() << "Analysing connectivity" << std::endl;
+        tag_ldg.report_connectivity();
+        sglib::OutputLog() << "Creating local assembly problems..." << std::endl;
+        auto lines = tag_ldg.get_all_lines(dev_min_nodes);
+        if (dev_max_lines) {
+            sglib::OutputLog() << "dev_max_lines set, solving only " << dev_max_lines << " / " << lines.size()
+                               << std::endl;
+            lines.resize(dev_max_lines);
+        }
+        uint64_t li = 0;
+        uint64_t i = 0;
+        std::map<std::pair<sgNodeID_t, sgNodeID_t>, std::string> patchmap;
+        for (auto p:patches) patchmap[p.first]=p.second;
+        sglib::OutputLog() << "Patching in " << lines.size() << " local assembly problems from " << patches.size() << " patches..." << std::endl;
+        int endsize=200;
+        for (auto li = 0; li < lines.size(); ++li) {
+            auto &l = lines[li];
+            std::string name=">"+std::to_string(l[0]);
+            auto n=ws.sg.nodes[llabs(l[0])];
+            if (l[0]<0)n.make_rc();
+            std::string seq=n.sequence;
+            for (auto ni=0;ni<l.size()-1;++ni){
+                //for each transition, either put the patch, or start a new sequence
+                if (patchmap.count(std::make_pair(-l[ni],l[ni+1]))==0){
+                    //patch not found
+                    patched_backbones_file<<name<<std::endl<<seq<<std::endl;
+                    name=">"+std::to_string(l[ni+1]);
+                    n=ws.sg.nodes[llabs(l[ni+1])];
+                    if (l[ni+1]<0)n.make_rc();
+                    seq=n.sequence;
+                } else {
+
+                    //patch found
+                    //create/add patch substring
+                    std::string p=patchmap[std::make_pair(-l[ni],l[ni+1])];
+                    seq+=p.substr(endsize+1,p.size()-endsize*3-1);
+                    //add next node
+                    name+="_"+std::to_string(l[ni+1]);
+                    n=ws.sg.nodes[llabs(l[ni+1])];
+                    if (l[ni+1]<0)n.make_rc();
+                    seq+=n.sequence;
+                }
+            }
+            patched_backbones_file<<name<<std::endl<<seq<<std::endl;
+        }
+        exit(0);
     }
 
     ws.kci.reindex_graph();

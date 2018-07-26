@@ -510,6 +510,5 @@ void LocalHaplotypeAssembler::write_patches(std::string filename) {
     for (auto &p:patches) {
         patchf << ">patch_" << -p.first.first << "_" << p.first.second << std::endl;
         patchf << p.second << std::endl;
-
     }
 }
