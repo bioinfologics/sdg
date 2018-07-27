@@ -38,6 +38,7 @@ int main(int argc, char * argv[]) {
     bool remap_reads=true;
     bool dump_gfa=false;
     bool dev_linkage_paths=false;
+    bool dev_test_make_patches=false;
     std::string dev_linkage_stats;
     try
     {
@@ -75,6 +76,7 @@ int main(int argc, char * argv[]) {
                 ("patch_workspace","Patches  the workspace graph and outputs a gfa",cxxopts::value<std::string>(patch_workspace))
                 ("full_local_patching","run a whole round of linked lines and local patching, with a final remap", cxxopts::value<bool>(dev_local_patching))
 
+                ("dev_test_make_patches","Test different ways to creates patches from local assemblies",cxxopts::value<bool>(dev_test_make_patches))
                 ("dev_linkage_paths", "tag linkage uses read pathing rather than simple mapping",cxxopts::value<bool>(dev_linkage_paths))
                 //("dev_skate_linkage","Loads linkage from file and skates",cxxopts::value<std::string>(dev_skate_linkage))
                 ("dev_linkage_stats","Loads linkage from file and computes local assemblies stats",cxxopts::value<std::string>(dev_linkage_stats))
@@ -280,6 +282,45 @@ int main(int argc, char * argv[]) {
         for (auto &p:patches){
             patchf << ">patch_" << -p.first.first << "_" << p.first.second << std::endl;
             patchf << p.second << std::endl;
+        }
+        exit(0);
+    }
+    if (dev_test_make_patches) {
+        sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
+        tag_ldg.report_connectivity();
+        sglib::OutputLog()<<"Creating local assembly problems..."<<std::endl;
+        auto lines=tag_ldg.get_all_lines(dev_min_nodes);
+        if (dev_max_lines) {
+            sglib::OutputLog()<<"dev_max_lines set, solving only "<<dev_max_lines<<" / "<<lines.size()<<std::endl;
+            lines.resize(dev_max_lines);
+        }
+        uint64_t li=0;
+        uint64_t i=0;
+        sglib::OutputLog()<<"Testing make_patches alternatives on "<<lines.size()<<" local assembly problems..."<<std::endl;
+        for (auto li=0;li<lines.size();++li) {
+            for (auto pass=0;pass<2;++pass) {
+                auto &l = lines[li];
+                LocalHaplotypeAssembler lha(ws);
+                lha.init_from_backbone(l);
+                std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+                if (0==pass) {
+                    std::cout << "Alternative #0: 63-mer and no simplification" << std::endl;
+                    lha.assemble(63, 5, false, false);
+                    lha.construct_patches();
+                }
+                else if (1==pass) {
+                    std::cout << "Alternative #1: 63-mer and built-in simplification" << std::endl;
+                    lha.assemble(63, 5, false, true);
+                    lha.construct_patches();
+                }
+                std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+                if (0==pass) lha.write_anchors("local_"+std::to_string(li)+"_anchors.fasta");
+                lha.write_gfa("local_"+std::to_string(li)+"_alt_"+std::to_string(pass)+".gfa");
+                lha.write_full("local_"+std::to_string(li)+"_problem");
+                std::cout << "Local assembly #" << li << " from " << l.size() << " anchors done in "
+                                   << 1.0 * std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()/1000
+                                   << " seconds, produced " << lha.patches.size() << " patches" << std::endl;
+            }
         }
         exit(0);
     }

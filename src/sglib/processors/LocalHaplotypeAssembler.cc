@@ -105,6 +105,31 @@ void LocalHaplotypeAssembler::init_from_file(std::string problem_file) {
 
 }
 
+uint64_t LocalHaplotypeAssembler::expand_canonical_repeats_direct(int max_rep_size) {
+    //A simpler canonical repeat expander: first look for the repeats, then find reads that contain them, then use only those
+    std::cout<<"starting repeat expansion by direct read matching";
+    //Find the repeat nodes
+    std::vector<std::pair<sgNodeID_t, Node>> repeats;
+    for (auto n=1;n<assembly.nodes.size();++n) {
+        if (assembly.nodes[n].status==sgNodeDeleted or assembly.nodes[n].sequence.size()>max_rep_size) continue;
+        auto bwl=assembly.get_bw_links(n);
+        auto fwl=assembly.get_fw_links(n);
+        if (bwl.size()!=2 or fwl.size()!=2) continue;
+        std::set<sgNodeID_t> nset;
+        nset.insert(n);
+        nset.insert(llabs(bwl[0].dest));
+        nset.insert(llabs(bwl[1].dest));
+        nset.insert(llabs(fwl[0].dest));
+        nset.insert(llabs(fwl[1].dest));
+        if (nset.size()<5) continue;
+        repeats.emplace_back(n,assembly.nodes[n]);
+    }
+    std::cout<<"There are "<<repeats.size()<<" repeats to analyse"<<std::endl;
+    //TODO: create strings for direct and rc versions of the repeat, and of all 4 possible resolutions, create a structure that holds those.
+
+    //For every single read: look
+}
+
 uint64_t LocalHaplotypeAssembler::expand_canonical_repeats() {
     std::vector<std::pair<sgNodeID_t ,std::pair<std::vector<std::vector<sgNodeID_t>>,std::vector<std::vector<sgNodeID_t>>>>> to_expand;
     for (auto n=0;n<assembly.nodes.size();++n){
@@ -236,32 +261,25 @@ uint64_t LocalHaplotypeAssembler::unroll_short_loops() {
 }
 
 void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, bool simplify, std::string output_prefix){
-    //if (output_prefix.empty()) output_prefix="local_dbg_" + std::to_string(backbone[0]);
-    //std::cout<<"Creating an uncleaned DBG"<<std::endl;
-    //std::cout << "creating DBG for line #" << i << std::endl;
-
     BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
     auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(k, min_cov, tagSet, blrsg, tag_cov);
     GraphMaker gm(assembly);
     gm.new_graph_from_kmerset_trivial128(ltkmers128, k);
-//        dbg.write_to_gfa(output_prefix + "_uncleaned.gfa");
     gm.tip_clipping(200);
     if (simplify) {
         gm.remove_small_unconnected(500);
-        path_all_reads();
+        //path_all_reads();
+        path_linked_reads();
         if (!output_prefix.empty()) assembly.write_to_gfa(output_prefix + "pre_repex.gfa");
         while (expand_canonical_repeats() > 0) {
             assembly.join_all_unitigs();
-            path_all_reads();
+            //path_all_reads();
+            path_linked_reads();
         }
-        unroll_short_loops();
+        //unroll_short_loops();
     }
-    //std::cout<<"Analising junctions, one by one"<<std::endl;
-    //for (auto i=0;i<backbone.size()-1;++i){
-    //    std::cout<<"Tring to joing "<<backbone[i]<<" (-) -> (+) "<<backbone[i+1]<<std::endl;
-    //}
-
 }
+
 
 void add_readkmer_nodes_lha(std::vector<sgNodeID_t> & kmernodes, std::vector<std::pair<uint64_t,bool>> & readkmers, std::unordered_map<uint64_t, graphPosition> & index, bool rev){
     //TODO allow for a minimum of kmers to count the hit?
@@ -285,11 +303,49 @@ void add_readkmer_nodes_lha(std::vector<sgNodeID_t> & kmernodes, std::vector<std
 }
 
 
+void LocalHaplotypeAssembler::path_linked_reads() {
+    linkedread_paths.clear();
+    assembly.create_index();
+    linkedread_paths.reserve(1000000);//TODO: do this better!!!!
+    //now populate the linked read paths first
+
+    CStringKMerFactory cskf(31);
+    std::vector<std::pair<sgNodeID_t ,sgNodeID_t >> nodeproximity_thread;
+    std::vector<std::pair<uint64_t,bool>> read1kmers,read2kmers;
+    std::vector<sgNodeID_t> kmernodes;
+
+    //BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, 1000);
+    BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0],100000,1000);
+    for (auto t:tagSet) {
+        for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
+            //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
+            if (rid%2!=1) continue;
+
+            read1kmers.clear();
+            read2kmers.clear();
+            kmernodes.clear();
+
+            cskf.create_kmers_direction(read1kmers, blrsg.get_read_sequence(rid));
+            cskf.create_kmers_direction(read2kmers, blrsg.get_read_sequence(rid + 1));
+            //first put the kmers from read 1 in there;
+            add_readkmer_nodes_lha(kmernodes, read1kmers, assembly.kmer_to_graphposition, false);
+            //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
+            add_readkmer_nodes_lha(kmernodes, read2kmers, assembly.kmer_to_graphposition, true);
+            //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
+
+            linkedread_paths.emplace_back(kmernodes);
+        }
+    }
+    sglib::OutputLog()<<linkedread_paths.size()<<" linked-reads paths created!"<<std::endl;
+
+}
 
 void LocalHaplotypeAssembler::path_all_reads() {
     linkedread_paths.clear();
     pairedread_paths.clear();
     assembly.create_index();
+    linkedread_paths.reserve(1000000);//TODO: do this better!!!!
+    pairedread_paths.reserve(1000000);//TODO: do this better!!!!
 
     //now populate the linked read paths first
 
@@ -300,7 +356,6 @@ void LocalHaplotypeAssembler::path_all_reads() {
 
     //BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, 1000);
     BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0],100000,1000);
-
     for (auto t:tagSet) {
         for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
             //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
@@ -500,7 +555,6 @@ void LocalHaplotypeAssembler::construct_patches() {
         //TODO: collapse unitigs that are equivalent.
         if (matches.size() == 1) {
             patches.emplace_back(std::make_pair(backbone[li], backbone[li + 1]), matches[0]);
-
         }
     }
 }

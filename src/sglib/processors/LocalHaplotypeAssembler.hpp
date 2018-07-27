@@ -28,7 +28,9 @@ public:
 
     //TODO: and yes, also perform the assembly ;)
     void path_all_reads(); //creates a path for every read, both 10x and LMP
+    void path_linked_reads();
     uint64_t expand_canonical_repeats();
+    uint64_t expand_canonical_repeats_direct(int max_rep_size);
     uint64_t pop_short_bubbles(); //uses short paths to pop bubbles
     uint64_t unroll_short_loops();
     void assemble(int k, int min_cov, bool tag_cov, bool simplify=true, std::string output_prefix="");
