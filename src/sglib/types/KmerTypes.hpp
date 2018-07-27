@@ -128,4 +128,26 @@ struct graphPosition{
     uint32_t pos;
 };
 
+struct kmerPos {
+    kmerPos(uint64_t kmer, uint32_t contigID, int32_t offset) : kmer(kmer),
+                                                                    contigID(contigID),offset(offset) {}
+
+    uint64_t kmer = 0;
+    uint32_t contigID = 0;
+    int32_t offset = 0;
+
+    friend class byKmerContigOffset;
+
+    struct byKmerContigOffset {
+        bool operator()(const kmerPos &a, const kmerPos &b) {
+            auto a_off(std::abs(a.offset));
+            auto b_off(std::abs(b.offset));
+//            return std::tie(a.kmer, a.contigID) < std::tie(b.kmer, b.contigID);
+            return std::tie(a.kmer, a.contigID, a_off) < std::tie(b.kmer, b.contigID, b_off);
+        }
+    };
+
+    inline bool operator<(uint32_t const &rhs) const { return kmer < rhs; }
+};
+
 #endif //BSG_KMERTYPES_HPP

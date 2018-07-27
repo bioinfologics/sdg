@@ -65,6 +65,16 @@ public:
     }
 
 };
+namespace std {
+    template <>
+    struct hash<Link> {
+        size_t operator()(const Link& l) const {
+            std::tuple<sgNodeID_t , sgNodeID_t , int32_t > tp (l.source,l.dest,l.dist);
+            sglib::hash<std::tuple<sgNodeID_t , sgNodeID_t , int32_t>> h;
+            return h (tp);
+        }
+    };
+}
 
 /**
  * A node visitor contains the node ID, and distances in terms of NTs and Nodes from the starting node

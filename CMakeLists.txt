@@ -74,25 +74,6 @@ else()
     add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
 endif()
 
-include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
-
-ExternalProject_Add(minimap2
-        PREFIX minimap2
-        DOWNLOAD_DIR tmp/minimap2/download
-        DOWNLOAD_COMMAND wget https://github.com/lh3/minimap2/archive/v2.10.tar.gz && tar xf v2.10.tar.gz
-        UPDATE_COMMAND ""
-        SOURCE_DIR tmp/minimap2/download/minimap2-2.10
-        BUILD_IN_SOURCE 1
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND make CFLAGS=-fPIC libminimap2.a
-        INSTALL_COMMAND ""
-        )
-ExternalProject_Get_Property(minimap2 SOURCE_DIR)
-message(STATUS "Source directory of minimap2 ${SOURCE_DIR}")
-set(MM2_LIBRARY_DIR ${SOURCE_DIR})
-
-include_directories(${SOURCE_DIR})
-
 ## Compiler flags
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -w -Wno-deprecated -std=c++11")
 
@@ -125,8 +106,6 @@ if (BZIP2_FOUND)
     include_directories(${BZIP2_INCLUDE_DIRS})
     set(DEPENDENCY_LIBS ${DEPENDENCY_LIBS} ${BZIP2_LIBRARIES})
 endif()
-
-set(DEPENDENCY_LIBS ${DEPENDENCY_LIBS} ${MM2_LIBRARY_DIR}/libminimap2.a)
 
 # check if Doxygen is installed
 IF(BUILD_DOC)
@@ -188,7 +167,6 @@ add_library(bsg SHARED
             src/sglib/processors/GraphEditor.cc
         )
 
-add_dependencies(bsg minimap2)
 target_link_libraries(bsg ${DEPENDENCY_LIBS})
 
 if (BUILD_COV)
@@ -264,7 +242,7 @@ target_link_libraries(bsg-kmerspectra bsg)
 target_link_libraries(seq-sorter bsg)
 target_link_libraries(gfa-align bsg ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(seq-thread bsg)
-target_link_libraries(map-lr bsg ${CMAKE_THREAD_LIBS_INIT} ${MM2_LIBRARY_DIR}/libminimap2.a)
+target_link_libraries(map-lr bsg ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(lr-datastore bsg ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract bsg)
 target_link_libraries(gfa-set bsg)
@@ -305,15 +283,16 @@ IF(BUILD_PYTHON_INTERFACE)
     FIND_PACKAGE(SWIG)
     INCLUDE(${SWIG_USE_FILE})
 
-    FIND_PACKAGE(PythonInterp)
-    FIND_PACKAGE(PythonLibs)
+    FIND_PACKAGE(PythonInterp 3)
+    FIND_PACKAGE(PythonLibs 3)
+
     INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
 
     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
     add_custom_command (
             OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
-            COMMAND ${PYTHON2_EXECUTABLE} ${CMAKE_SOURCE_DIR}/doxy2swig.py
+            COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/doxy2swig.py
             --quiet ${CMAKE_BINARY_DIR}/docs/xml/index.xml
             ${CMAKE_BINARY_DIR}/python_docs.i
             COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
@@ -325,7 +304,8 @@ IF(BUILD_PYTHON_INTERFACE)
 
     SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES CPLUSPLUS ON)
     SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES SWIG_FLAGS "")
-    SWIG_ADD_LIBRARY(bsg DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i LANGUAGE python SOURCES
+    set_property(SOURCE interfaces/SequenceGraph.i PROPERTY DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
+    SWIG_ADD_LIBRARY(bsg LANGUAGE python SOURCES
             interfaces/SequenceGraph.i
             )
     SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} bsg "")

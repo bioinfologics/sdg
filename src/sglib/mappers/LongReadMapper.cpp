@@ -9,7 +9,8 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
 #pragma omp parallel
     {
-        mm_tbuf_t *buf = mm_tbuf_init();
+        ASMKMerFactory skf(17);
+        std::vector<kmerPos > read_kmers;
 #pragma omp for
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
             if (!((readIDs.size()>0 and readIDs.count(readID)>0) or (readIDs.empty() and read_to_mappings[readID].empty())))
@@ -18,33 +19,88 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
             std::string read_seq(datastore.get_read_sequence(readID));
             std::string read_name(std::to_string(readID));
             int read_len(static_cast<int>(read_seq.length()));
-            int n_regs0;
-            mm_reg1_t *regs0 = mm_map(graph_index, read_len, read_seq.data(), &n_regs0, buf, &opt, read_name.data());
 
-            if (n_regs0<=1) {
-                for (int j = 0; j < n_regs0; j++) {
-                    auto node = regs0[j].rid + 1;
-                    LongReadMapping mapping = createMapping(readID, regs0, j, node);
-                    thread_mappings[omp_get_thread_num()].emplace_back(mapping);
+            int window_size = 500;
+            int window_slide = window_size/4;
+
+            std::cout << "Processing Read ID " << readID << " " << read_seq.size() << std::endl;
+            std::map<uint32_t , uint32_t > node_score;
+            //===== Create a vector of nodes for every k-mer in the read.
+            read_kmers.clear();
+            skf.create_kmers(read_seq, 0, read_kmers); //XXX: Ns will produce "deletion-windows"
+            std::cout<<"creating the vector of vectors of node matches... SLOOOOOOW"<<std::endl;
+            std::vector<std::vector<uint32_t>> node_matches(read_kmers.size());
+            for (auto i=0;i<read_kmers.size();++i){
+                auto first = std::lower_bound(assembly_kmers.begin(), assembly_kmers.end(), read_kmers[i].kmer);
+                for (auto it = first; it != assembly_kmers.end() && it->kmer == read_kmers[i].kmer; ++it) {
+                    node_matches[i].emplace_back(it->contigID);
+                    ++node_score[it->contigID];
                 }
             }
-            if (n_regs0 > 1) {
-                for (int j = 0; j < n_regs0 - 1; ++j) {
-                    auto fromNode = regs0[j].rid+1;
-                    auto toNode =   regs0[j+1].rid+1;
-                    LongReadMapping fromMapping = createMapping(readID, regs0, j, fromNode);
-                    LongReadMapping toMapping = createMapping(readID, regs0, j+1, toNode);
+            std::cout<<"DONE!"<<std::endl;
 
-                    if (link_is_valid(fromMapping, toMapping)) {
-                        thread_mappings[omp_get_thread_num()].emplace_back(fromMapping);
-                        thread_mappings[omp_get_thread_num()].emplace_back(toMapping);
-                    }
-                }
+
+
+            //===== Rank nodes by how many kmer-hits they have on the read, choose the top N
+            std::cout<<"Ranking nodes"<<std::endl;
+            std::vector<std::pair<uint32_t , uint32_t>> score_node;
+            for (auto &ns:node_score){
+                score_node.emplace_back(ns.second,ns.first);
             }
-            for (int i = 0; i<n_regs0;i++) free(regs0[i].p);
-            free(regs0);
+            std::sort(score_node.rbegin(),score_node.rend());
+            if (score_node.size()>100) score_node.resize(100);
+            std::cout<<"DONE"<<std::endl;
+
+
+            //===== For every window (sliding by win_size/2) save total of kmers in every node of the top N
+            std::cout<<"Collecting votes for the winner nodes"<<std::endl;
+            std::ofstream readout("read" + std::to_string(readID/2) + ".csv");
+            readout<<"window#";
+            for (auto n:score_node) readout<<",ctg"<<n.second;
+            readout<<std::endl;
+
+            //auto num_windows((read_kmers.size()-window_size)/overlap + 1);
+
+            for (int w_i = 0; w_i * window_slide + window_size < read_kmers.size(); ++w_i) {
+                std::map<uint32_t,uint32_t> win_node_score;
+                auto win_start(w_i * window_slide);
+                auto win_end(w_i * window_slide + window_size);
+
+                for (int wp_i = win_start; wp_i < win_end and wp_i < read_kmers.size(); wp_i++) {
+                    for (auto matchnode:node_matches[wp_i]) ++win_node_score[matchnode];
+                }
+                std::cout << "Window " << w_i+1 << " " << win_start << " to " << win_end << std::endl;
+                readout<<w_i;
+                for (auto n:score_node) readout<<","<<win_node_score[n.second];
+                readout<<std::endl;
+            }
+            std::cout<<"DONE"<<std::endl;
+
+//            if (n_regs0<=1) {
+//                for (int j = 0; j < n_regs0; j++) {
+//                    auto node = regs0[j].rid + 1;
+//                    LongReadMapping mapping = createMapping(readID, regs0, j, node);
+//                    thread_mappings[omp_get_thread_num()].emplace_back(mapping);
+//                }
+//            }
+//            if (n_regs0 > 1) {
+//                for (int j = 0; j < n_regs0 - 1; ++j) {
+//                    auto fromNode = regs0[j].rid+1;
+//                    auto toNode =   regs0[j+1].rid+1;
+//                    LongReadMapping fromMapping = createMapping(readID, regs0, j, fromNode);
+//                    LongReadMapping toMapping = createMapping(readID, regs0, j+1, toNode);
+//
+//                    if (link_is_valid(fromMapping, toMapping)) {
+//                        thread_mappings[omp_get_thread_num()].emplace_back(fromMapping);
+//                        thread_mappings[omp_get_thread_num()].emplace_back(toMapping);
+//                    }
+//                }
+//            }
+//            for (int i = 0; i<n_regs0;i++) free(regs0[i].p);
+//            free(regs0);
         }
-        mm_tbuf_destroy(buf);
+//        mm_tbuf_destroy(buf);
+
     }
     for (int thread = 0; thread<omp_get_max_threads(); thread++) {
         mappings.reserve(thread_mappings.size());
@@ -56,38 +112,6 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
     update_indexes_from_mappings();
 }
 
-LongReadMapping LongReadMapper::createMapping(uint32_t readID, const mm_reg1_t *regs0, int j, long long int node) const {
-    LongReadMapping mapping;
-    mapping.node = node * ((regs0[j].rev == 0) ? 1 : -1);
-    mapping.nStart = regs0[j].rs;
-    mapping.nEnd = regs0[j].re;
-    mapping.qStart = regs0[j].qs;
-    mapping.qEnd = regs0[j].qe;
-    mapping.read_id = readID;
-    mapping.score = regs0[j].score;
-    return mapping;
-}
-
-void LongReadMapper::printMatch(const mm_idx_t *mi, std::ofstream &matchOutput, uint32_t readID,
-                                const std::string &read_name, int read_len, const mm_reg1_t *regs0, int j) {
-    matchOutput << readID
-                << "\t" << read_name
-                << "\t" << read_len
-                << "\t" << j + 1
-                << "\t" << regs0[j].rid
-                << "\t" << mi->seq[regs0[j].rid].name
-                << "\t" << mi->seq[regs0[j].rid].len
-                << "\t" << regs0[j].rs
-                << "\t" << regs0[j].re
-                << "\t" << regs0[j].qs
-                << "\t" << regs0[j].qe
-                << "\t" << "+-"[regs0[j].rev]
-                << "\t" << regs0[j].mlen
-                << "\t" << regs0[j].blen
-                << "\t" << regs0[j].mapq
-                << "\n";
-}
-
 void LongReadMapper::update_indexes_from_mappings() {
     for (std::vector<LongReadMapping>::const_iterator mappingItr = mappings.cbegin(); mappingItr != mappings.cend(); ++mappingItr) {
         auto index = (unsigned long)std::distance(mappings.cbegin(), mappingItr);
@@ -96,57 +120,32 @@ void LongReadMapper::update_indexes_from_mappings() {
     }
 }
 
-LongReadMapper::LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k, uint8_t w)
-        : sg(sg), k(k), w(((w == 0) ? (uint8_t)(k * 0.66f) : w) ), datastore(ds) {
+LongReadMapper::LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k)
+        : sg(sg), k(k), datastore(ds) {
     mappings_in_node.resize(sg.nodes.size());
     read_to_mappings.resize(datastore.size());
-
-    mm_mapopt_init(&opt);
-    opt.flag |= MM_F_CIGAR;
 }
 
 void LongReadMapper::update_graph_index() {
-    std::vector<std::string> names(sg.nodes.size());
-    std::vector<const char *> pt_names(sg.nodes.size());
-    std::vector<const char *> seqs(sg.nodes.size());
-    for (std::vector<std::string>::size_type i = 1; i < seqs.size(); i++) {
-        names[i] = std::to_string(i);
-        pt_names[i] = names[i].data();
-        seqs[i] = sg.nodes[i].sequence.data();
-    }
-    if (graph_index != nullptr) {
-        mm_idx_destroy(graph_index);
-        graph_index = nullptr;
-    }
-    graph_index = mm_idx_str(w, k, 0, 14, static_cast<int>(seqs.size()-1), &seqs[1], &pt_names[1]);
-    mm_mapopt_update(&opt, graph_index);
-}
+    assembly_kmers.reserve(110000000);
 
-LongReadMapper::~LongReadMapper() {
-    mm_idx_destroy(graph_index);
-}
+    ASMKMerFactory skf(17);
+    std::vector<kmerPos > contig_kmers;
 
-bool LongReadMapper::link_is_valid(const LongReadMapping &fromMapping, const LongReadMapping &toMapping) {
-    // Check that the mappings are larger than 200bp
-    if (fromMapping.qEnd-fromMapping.qStart < 80 or toMapping.qEnd-toMapping.qStart < 80) {
-        return false;
-    }
-    // Check the query is not overlapped by more than 60%
-    if (toMapping.qStart <= fromMapping.qEnd) {
-        auto olpSize = std::max(fromMapping.qStart,toMapping.qStart) - std::min(fromMapping.qEnd,toMapping.qEnd);
-        if (olpSize > std::abs(fromMapping.qEnd - fromMapping.qStart)*.8 or olpSize > std::abs(toMapping.qEnd-toMapping.qStart)*.8) {
-            return false;
+    for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
+        if (sg.nodes[n].sequence.size() >= k) {
+            contig_kmers.clear();
+            skf.create_kmers(sg.nodes[n].sequence, n, contig_kmers);
+            for (const auto &kmer:contig_kmers) {
+                assembly_kmers.emplace_back(kmer.kmer, kmer.contigID, kmer.offset);
+            }
         }
     }
+    std::sort(assembly_kmers.begin(),assembly_kmers.end(), kmerPos::byKmerContigOffset());
 
-    // Check that the score is over 90% on both ends
-//        if (fromMapping.score < std::abs(fromMapping.qEnd-fromMapping.qStart)*.9f or
-//            toMapping.score < std::abs(toMapping.qEnd - toMapping.qStart)*.9f) {
-//            return false;
-//        }
-
-    return true;
 }
+
+LongReadMapper::~LongReadMapper() {}
 
 void LongReadMapper::read(std::string filename) {
     // Read the mappings from file
@@ -154,7 +153,6 @@ void LongReadMapper::read(std::string filename) {
     std::ifstream inf(filename, std::ios_base::binary);
     auto mapSize(mappings.size());
     inf.read(reinterpret_cast<char *>(&k), sizeof(k));
-    inf.read(reinterpret_cast<char *>(&w), sizeof(w));
     inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
     mappings.reserve(mapSize);
     inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
@@ -167,7 +165,6 @@ void LongReadMapper::read(std::string filename) {
 void LongReadMapper::read(std::ifstream &inf) {
     auto mapSize(mappings.size());
     inf.read(reinterpret_cast<char *>(&k), sizeof(k));
-    inf.read(reinterpret_cast<char *>(&w), sizeof(w));
     inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
     mappings.resize(mapSize);
     inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
@@ -183,7 +180,6 @@ void LongReadMapper::write(std::string filename) {
     std::ofstream outf(filename, std::ios_base::binary);
     auto mapSize(mappings.size());
     outf.write(reinterpret_cast<const char *>(&k), sizeof(k));
-    outf.write(reinterpret_cast<const char *>(&w), sizeof(w));
     outf.write(reinterpret_cast<const char *>(&mapSize), sizeof(mapSize));
     outf.write(reinterpret_cast<const char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
     sglib::OutputLog() << "Done!" << std::endl;
@@ -192,7 +188,6 @@ void LongReadMapper::write(std::string filename) {
 void LongReadMapper::write(std::ofstream &ofs) {
     auto mapSize(mappings.size());
     ofs.write(reinterpret_cast<char *>(&k), sizeof(k));
-    ofs.write(reinterpret_cast<char *>(&w), sizeof(w));
     ofs.write(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
     mappings.reserve(mapSize);
     ofs.write(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));

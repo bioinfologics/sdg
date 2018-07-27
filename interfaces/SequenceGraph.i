@@ -20,10 +20,12 @@
 #include "sglib/mappers/LinkedReadMapper.hpp"
 #include "sglib/mappers/LongReadMapper.hpp"
 #include "sglib/mappers/PairedReadMapper.hpp"
+#include "sglib/datastores/PairedReadsDatastore.hpp"
 #include "sglib/mappers/threader/NodeMapper.h"
 #include "sglib/mappers/threader/MappingThreader.h"
 
 #include "sglib/processors/Untangler.hpp"
+#include "sglib/processors/PathExplorer.h"
 #include "sglib/graph/LinkageDiGraph.hpp"
 #include "sglib/processors/LinkageUntangler.hpp"
 
@@ -48,6 +50,7 @@
 %include "sglib/workspace/WorkSpace.hpp"
 
 %include "sglib/processors/Untangler.hpp"
+%include "sglib/processors/PathExplorer.h"
 
 %include "sglib/datastores/LinkedReadsDatastore.hpp"
 %include "sglib/datastores/LongReadsDatastore.hpp"
@@ -86,6 +89,8 @@ namespace std {
    %ignore vector<LongReadMapper>::resize;
    %template(vectorLongReadMapper) vector<LongReadMapper>;
 
+
+
    %ignore vector<LinkedReadMapper>::vector(size_type);
    %ignore vector<LinkedReadMapper>::resize;
    %template(vectorLinkedReadMapper) vector<LinkedReadMapper>;
@@ -94,14 +99,20 @@ namespace std {
    %ignore vector<PairedReadMapper>::resize;
    %template(vectorPairedReadMapper) vector<PairedReadMapper>;
 
+   %ignore vector<PairedReadsDatastore>::vector(size_type);
+   %ignore vector<PairedReadsDatastore>::resize;
+   %template(vectorPairedReadsDatastore) vector<PairedReadsDatastore>;
+
    %template(SGNodePair) pair<sgNodeID_t, sgNodeID_t>;
    %template(vectorSGNodePair) vector<pair<sgNodeID_t, sgNodeID_t>>;
-   %template(vectorvectorLink) vector<vector<Link>>;
+   %template(vectorvectorLink) vector<std::vector<Link>>;
 
    %ignore vector<SequenceGraphPath>::vector(size_type);
    %ignore vector<SequenceGraphPath>::resize;
    %template(vectorPath) vector<SequenceGraphPath>;
 };
+
+%feature("python:tp_hash") Link "std::hash<Link>";
 
 %define __STR__()
 std::string __str__() {

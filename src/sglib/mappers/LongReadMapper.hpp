@@ -11,20 +11,46 @@
 #include <sglib/readers/FileReader.h>
 #include <sglib/readers/SequenceGraphReader.h>
 #include <sglib/SMR.h>
-#include <sglib/factories/StrandedMinSketchFactory.h>
 #include <sglib/datastores/LongReadsDatastore.hpp>
 #include <sglib/types/MappingTypes.hpp>
-#include <minimap.h>
 
 /**
  * Long read mapping to the graph, this class manages storage and computation of the alignments.
  */
 class LongReadMapper {
+    class ASMKMerFactory : protected KMerFactory {
+    public:
+        explicit ASMKMerFactory(uint8_t k) : KMerFactory(k) {}
+
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        const bool create_kmers(const std::string &s, const sgNodeID_t &n, std::vector<kmerPos> &mers) {
+            fkmer=0;
+            rkmer=0;
+            last_unknown=0;
+            uint64_t p(0);
+            mers.reserve(s.size());
+            while (p < s.size()) {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                fillKBuf(s[p], fkmer, rkmer, last_unknown);
+                p++;
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        mers.emplace_back(fkmer, n, p);
+                    } else {
+                        // Is bwd
+                        mers.emplace_back(rkmer, n, p*-1 );
+                    }
+                }
+            }
+            return false;
+        }
+    };
+
     const SequenceGraph & sg;
-    mm_idx_t *graph_index = nullptr;
-    mm_mapopt_t opt;
+
     uint8_t k=15;
-    uint8_t w=10;
 
     /**
      * Stores an index of the mappings of a node to all the mappings where it appears.
@@ -33,14 +59,10 @@ class LongReadMapper {
     std::vector< std::vector < std::vector<LongReadMapping>::size_type > > mappings_in_node;        /// Mappings matching node
 
     void update_indexes_from_mappings();
-    LongReadMapping createMapping(uint32_t readID, const mm_reg1_t *regs0, int j, long long int node) const;
-    void printMatch(const mm_idx_t *mi, std::ofstream &matchOutput, uint32_t readID, const std::string &read_name,
-                    int read_len, const mm_reg1_t *regs0, int j);
 
-    bool link_is_valid(const LongReadMapping& fromMapping, const LongReadMapping& toMapping);
 public:
 
-    LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k=15, uint8_t w=10);
+    LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k=15);
     ~LongReadMapper();
 
     LongReadMapper operator=(const LongReadMapper &other);
@@ -59,6 +81,8 @@ public:
 
     void write(std::ofstream &ofs);
 
+
+    std::vector<kmerPos> assembly_kmers;
 
 
     LongReadsDatastore datastore;
