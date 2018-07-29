@@ -39,7 +39,7 @@ public:
     void write_gfa(std::string filename);
     void write_anchors(std::string filename);
     void write_patches(std::string filename);
-
+    std::vector<std::pair<std::string, std::string>> compute_metrics();
 
 
     WorkSpace & ws;

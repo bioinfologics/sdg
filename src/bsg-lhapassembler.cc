@@ -16,7 +16,7 @@ int main(int argc, char * argv[]) {
 
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
 
-    std::string workspace_file,problem_file,output_prefix;
+    std::string workspace_file,problem_file,output_prefix,benchmark_filename;
 
     uint8_t k=63;
     int min_cvg=5;
@@ -34,6 +34,8 @@ int main(int argc, char * argv[]) {
                 ("k,kmer_size","k for local assembly",cxxopts::value<uint8_t>(k))
                 ("c,min_cvg","minimum coverga for local assemblies",cxxopts::value<int>(min_cvg));
 
+        options.add_options("Development options")
+                ("dev_benchmark","file with a benchmark definition and problem list",cxxopts::value<std::string>(benchmark_filename));
 
         auto result(options.parse(argc, argv));
 
@@ -43,7 +45,7 @@ int main(int argc, char * argv[]) {
             exit(0);
         }
 
-        if (result.count("p")!=1 or result.count("o")!=1) {
+        if ((result.count("p")!=1 and result.count("dev_benchmarck")) or result.count("o")!=1) {
             throw cxxopts::OptionException(" please specify input problem and output prefix");
         }
 
@@ -58,6 +60,61 @@ int main(int argc, char * argv[]) {
 
     std::cout<<std::endl;
 
+
+    //======= BENCHMARK MODE
+    std::vector<std::pair<std::string,std::string>> filenames;
+    if (!benchmark_filename.empty()){
+        std::ifstream benchfile(benchmark_filename);
+        while (!benchfile.eof()){
+            std::string group,pfile;
+            benchfile>>group;
+            benchfile>>pfile;
+            if (group.empty() or pfile.empty()) break;
+            filenames.emplace_back(group, pfile);
+        }
+
+        //read all filenames, run each one with all alternatives and record their result stats: n50, anchors fully resolved, patches created and time spent.
+        sglib::OutputLog()<<"=== RUNNING BENCHMARK ON "<<filenames.size()<<" PROBLEMS FROM FILE ==="<<std::endl;
+        std::ofstream stats_file(output_prefix+"_benchmark_stats.csv");
+        std::vector<std::string> pass_names={"Unclean","Clean"};
+        for (auto li=0;li<filenames.size();++li) {
+            std::vector<std::pair<std::string, std::string>> metrics[pass_names.size()];
+            for (auto pass = 0; pass < pass_names.size(); ++pass) {
+                //auto &l = lines[li];
+                WorkSpace ws;
+                LocalHaplotypeAssembler lha(ws);
+                lha.init_from_full_file(filenames[li].second);
+                if (pass==0) lha.write_anchors(output_prefix+"_p"+std::to_string(li)+"_anchors.fasta");
+                std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+                sglib::OutputLog() << "Running \""+pass_names[pass]+"\" on "+filenames[li].second<<std::endl;
+                //=== Definition of the passes!!!!
+                if (0 == pass) {
+                    lha.assemble(63, 5, false, false);
+                } else if (1 == pass) {
+                    lha.assemble(63, 5, false, true);
+                }
+                //=== ENDS
+                std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+                metrics[pass] = lha.compute_metrics();
+                metrics[pass].emplace_back("Runtime", std::to_string(
+                        1.0 * std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() / 1000));
+                lha.write_gfa(output_prefix+"_p"+std::to_string(li)+"_"+pass_names[pass]+".gfa");
+            }
+            if (li==0) {
+                stats_file<<"Filename";
+                for (auto pass = 0; pass < pass_names.size(); ++pass)
+                    for (auto m:metrics[pass]) stats_file<<","<<pass_names[pass]<<"_"<<m.first;
+                stats_file<<std::endl;
+            }
+            stats_file<<filenames[li].second;
+            for (auto pass = 0; pass < pass_names.size(); ++pass)
+                for (auto m:metrics[pass]) stats_file<<","<<m.second;
+            stats_file<<std::endl;
+
+        }
+        //output all the stats in a graph format (maybe gnuplot or something like that? /3ds?
+        exit(0);
+    }
 
     //======= WORKSPACE LOAD AND CHECKS ======
     WorkSpace ws;

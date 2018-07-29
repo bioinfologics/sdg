@@ -471,7 +471,6 @@ void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
     backbone.resize(count);
     input_file.read((char *)backbone.data(),count*sizeof(backbone[0]));
     //write  backbone node's sequences
-    std::cout<<"reading backbone sequences"<<std::endl;
     uint64_t bcount;
     input_file.read((char *)&bcount,sizeof(bcount));
     for (auto n=0;n<bcount;++n){
@@ -482,7 +481,6 @@ void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
         backbone_nodes.emplace_back(seq);
     }
     //write down 10x tags;
-    std::cout<<"writing tags"<<std::endl;
     input_file.read((char *)&count,sizeof(count));
     for (auto n=0;n<count;++n) {
         bsg10xTag t;
@@ -491,12 +489,10 @@ void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
     }
 
     //write the condensation of the 10x workspace
-    std::cout<<"writing linked reads"<<std::endl;
     ws.linked_read_datastores.emplace_back();
     ws.linked_read_datastores[0].load_from_stream(full_file,input_file);
     //ws.linked_read_datastores[0].write_selection(output_file,tagSet);
     //write the condensation of the paired reads workspace.
-    std::cout<<"writing paired reads"<<std::endl;
     input_file.read((char *)&count,sizeof(count));
     for (auto n=0;n<count;++n){
         ws.paired_read_datastores.emplace_back();
@@ -506,9 +502,6 @@ void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
         for(uint64_t i=0;i<ws.paired_read_datastores.back().size();++i) read_ids.emplace_back(i);
         paired_reads.emplace_back(std::make_pair(n,read_ids));
     }
-
-    std::cout<<"LocalHaplotypeAssembler created!"<<std::endl;
-
 }
 
 void LocalHaplotypeAssembler::write_anchors(std::string filename) {
@@ -565,4 +558,32 @@ void LocalHaplotypeAssembler::write_patches(std::string filename) {
         patchf << ">patch_" << -p.first.first << "_" << p.first.second << std::endl;
         patchf << p.second << std::endl;
     }
+}
+
+std::vector<std::pair<std::string, std::string>> LocalHaplotypeAssembler::compute_metrics() {
+    std::vector<std::pair<std::string, std::string>> metrics;
+    construct_patches();
+    metrics.emplace_back("Patches",std::to_string(patches.size()));
+    metrics.emplace_back("Patches%",std::to_string(100.0*patches.size()/(backbone_nodes.size()-1)));
+    int found_bb=0;
+    for (auto bbn:backbone_nodes){
+        auto bbnr=bbn;
+        bbnr.make_rc();
+
+        for (auto &n:assembly.nodes) {
+            if (n.sequence.size() < bbn.sequence.size()) continue;
+            if (n.sequence.find(bbn.sequence) < n.sequence.size() or n.sequence.find(bbnr.sequence) < n.sequence.size()) {
+                ++found_bb;
+                break;
+            }
+        }
+    }
+    metrics.emplace_back("InitialAnchors",std::to_string(backbone_nodes.size()));
+    metrics.emplace_back("FullAnchors",std::to_string(found_bb));
+    metrics.emplace_back("FullAnchors%",std::to_string(100.0*found_bb/backbone_nodes.size()));
+    metrics.emplace_back("Unitigs",std::to_string(assembly.count_active_nodes()));
+    //metrics.emplace_back("N50",std::to_string(assembly.computeNXX(50)));
+    //metrics.emplace_back("Full_anchors",std::to_string(patches.size()));
+
+    return metrics;
 }
