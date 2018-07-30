@@ -30,6 +30,8 @@ public:
     void read(std::ifstream & input_file);
     void map_reads(std::unordered_set<uint64_t> const &  reads_to_remap={});
     void remap_all_reads();
+    void map_reads63(std::unordered_set<uint64_t> const &  reads_to_remap={});
+    void remap_all_reads63();
     void map_read(uint64_t readID);
     void remove_obsolete_mappings();
     std::vector<uint64_t> size_distribution();

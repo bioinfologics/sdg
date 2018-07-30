@@ -89,6 +89,41 @@ public:
     }
 };
 
+class CStringKMerFactory128 : protected KMerFactory128 {
+public:
+    explicit CStringKMerFactory128(uint8_t k) : KMerFactory128(k) {};
+
+
+
+    ~CStringKMerFactory128() {
+#pragma omp critical (KMerFactoryDestructor)
+        {
+            //std::cout << "Bases processed " << bases << "\n";
+        }
+    }
+
+    const void create_kmers_direction(std::vector<std::pair<__uint128_t,bool>> &mers, const char * s) {
+        fkmer=0;
+        rkmer=0;
+        last_unknown=0;
+        uint64_t p(0);
+        while (s[p]!='\0') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(s[p], p, fkmer, rkmer, last_unknown);
+            p++;
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(fkmer,false);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(rkmer,true);
+                }
+            }
+        }
+    }
+};
 
 
 class KmerCompressionIndex {

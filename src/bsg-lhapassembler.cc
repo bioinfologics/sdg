@@ -92,7 +92,14 @@ int main(int argc, char * argv[]) {
                     lha.assemble(63, 5, false, false);
                 } else if (1 == pass) {
                     lha.assemble(63, 5, false, false);
-                    lha.assembly.create_index();
+                    lha.assembly.create_63mer_index();
+                    lha.path_linked_reads_informative_singles();
+                    lha.expand_canonical_repeats();
+                    lha.assembly.join_all_unitigs();
+                    lha.assembly.create_63mer_index();
+                    lha.path_linked_reads_informative_singles();
+                    lha.expand_canonical_repeats();
+                    lha.assembly.join_all_unitigs();
                     //lha.expand_canonical_repeats_direct(140);
 //                    lha.path_linked_reads_informative_singles();
 //                    lha.path_paired_reads_informative_singles();
@@ -106,13 +113,12 @@ int main(int argc, char * argv[]) {
 //                    }
 //                    std::cout<<"Index has "<<pos<<" positive nodes and "<<neg<<" negatives"<<std::endl;
 //                    std::cout<<"Index has "<<ppos<<" positive positions and "<<pneg<<" negatives"<<std::endl;
-//                    std::ofstream pathsf(output_prefix+"_p"+std::to_string(li)+"_paths.txt");
-//                    for (auto &p:lha.linkedread_paths){
-//                        for (auto n:p) pathsf<<" "<<n;
-//                        pathsf<<std::endl;
-//                    }
-//                    lha.expand_canonical_repeats();
-//                    lha.assembly.join_all_unitigs();
+                    std::ofstream pathsf(output_prefix+"_p"+std::to_string(li)+"_paths.txt");
+                    for (auto &p:lha.linkedread_paths){
+                        for (auto n:p) pathsf<<" "<<n;
+                        pathsf<<std::endl;
+                    }
+
 
                 }
                 //=== ENDS

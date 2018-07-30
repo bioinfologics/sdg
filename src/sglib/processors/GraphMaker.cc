@@ -288,6 +288,8 @@ __uint128_t kmer_fw_ovl128(__uint128_t kmer, uint8_t k){
     return  kmer%(((__uint128_t) 1)<<((k-1)*2));
 }
 
+#ifndef __hash128
+#define __hash128
 namespace std {
     //TODO: this hashing sucks, but it is needed
     template <> struct hash<__int128 unsigned>
@@ -298,6 +300,7 @@ namespace std {
         }
     };
 }
+#endif
 
 void GraphMaker::new_graph_from_kmerset_trivial128(const std::unordered_set<__uint128_t> & kmerset,uint8_t k) {
     //std::cout<<"Constructing Sequence Graph from "<<kmerset.size()<<" "<<std::to_string(k)<<"-mers"<<std::endl;

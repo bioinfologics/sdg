@@ -16,6 +16,20 @@
 
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
 
+#ifndef __hash128
+#define __hash128
+namespace std {
+    //TODO: this hashing sucks, but it is needed
+    template <> struct hash<__int128 unsigned>
+    {
+        size_t operator()(const __int128 unsigned & x) const
+        {
+            return hash<uint64_t>()((uint64_t)x);
+        }
+    };
+}
+#endif
+
 enum sgNodeStatus_t {sgNodeActive,sgNodeDeleted};
 struct graphPosition{
     sgNodeID_t node;
@@ -103,6 +117,7 @@ public:
     // simplify --> executes expand_path on every multi-sequence unitig
     std::vector<SequenceSubGraph> get_all_tribbles();
     void create_index();
+    void create_63mer_index();
     void clear_index();
 
     // tip_clip -> eliminates tips.
@@ -118,6 +133,7 @@ public:
 
     //=== internal variables ===
     std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;
+    std::unordered_map<__uint128_t, graphPosition> k63mer_to_graphposition;
     std::vector<Node> nodes;
     std::vector<std::vector<Link>> links;
     std::string filename,fasta_filename;

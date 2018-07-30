@@ -9,6 +9,7 @@ int main(int argc, char * argv[]) {
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
     std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
     std::cout << "Executed command:"<<std::endl;
+    bool use63mers=false;
     for (auto i=0;i<argc;i++) std::cout<<argv[i]<<" ";
     std::cout<<std::endl<<std::endl;
 
@@ -21,7 +22,8 @@ int main(int argc, char * argv[]) {
         options.add_options()
                 ("help", "Print help")
                 ("w,workspace", "input workspace", cxxopts::value<std::string>(workspace_file))
-                ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
+                ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
+                ("use_63-mers", "mapping based on 63-mers", cxxopts::value<bool>(use63mers));
 
 
 
@@ -54,10 +56,12 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     sglib::OutputLog()<<"Mapping reads..."<<std::endl;
     auto pri=0;
-    ws.sg.create_index();
+    if (!use63mers) ws.sg.create_index();
+    else ws.sg.create_63mer_index();
     for (auto &m:ws.paired_read_mappers) {
         sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
-        m.remap_all_reads();
+        if (!use63mers) m.remap_all_reads();
+        else m.remap_all_reads63();
         m.print_stats();
         sglib::OutputLog()<<"Computing size distribution..."<<std::endl;
         auto sdist=m.size_distribution();
@@ -72,7 +76,8 @@ int main(int argc, char * argv[]) {
     }
     for (auto &m:ws.linked_read_mappers) {
         sglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
-        m.remap_all_reads();
+        if (!use63mers) m.remap_all_reads();
+        else m.remap_all_reads63();
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
         sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }

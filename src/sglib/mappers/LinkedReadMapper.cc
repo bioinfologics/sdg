@@ -70,6 +70,35 @@ public:
     }
 };
 
+class StreamKmerFactory128 : public  KMerFactory128 {
+public:
+    explicit StreamKmerFactory128(uint8_t k) : KMerFactory128(k){}
+    inline void produce_all_kmers(const char * seq, std::vector<KmerIDX128> &mers){
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        last_unknown=0;
+        fkmer=0;
+        rkmer=0;
+        auto s=seq;
+        while (*s!='\0' and *s!='\n') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(fkmer);
+                    mers.back().contigID=1;
+                } else {
+                    // Is bwd
+                    mers.emplace_back(rkmer);
+                    mers.back().contigID=-1;
+                }
+            }
+            ++s;
+        }
+    }
+};
+
 void LinkedReadMapper::remap_all_reads() {
     for (auto &rtn:read_to_node) rtn=0;
     for (auto &rin:reads_in_node) rin.clear();
@@ -124,6 +153,116 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                 for (auto &rk:readkmers) {
                     auto nk = sg.kmer_to_graphposition.find(rk.kmer);
                     if (sg.kmer_to_graphposition.end()!=nk) {
+                        //get the node just as node
+                        sgNodeID_t nknode = llabs(nk->second.node);
+                        //TODO: sort out the sign/orientation representation
+                        if (mapping.node == 0) {
+                            mapping.node = nknode;
+                            if ((nk->second.node > 0 and rk.contigID > 0) or
+                                (nk->second.node < 0 and rk.contigID < 0))
+                                mapping.rev = false;
+                            else mapping.rev = true;
+                            mapping.first_pos = nk->second.pos;
+                            mapping.last_pos = nk->second.pos;
+                            ++mapping.unique_matches;
+                        } else {
+                            if (mapping.node != nknode) {
+                                mapping.node = 0;
+                                ++multimap_count;
+                                break; //exit -> multi-mapping read! TODO: allow mapping to consecutive nodes
+                            } else {
+                                mapping.last_pos = nk->second.pos;
+                                ++mapping.unique_matches;
+                            }
+                        }
+                    }
+                }
+                if (mapping.node != 0 and mapping.unique_matches >= min_matches) {
+                    //optimisation: just save the mapping in a thread private collection for now, have a single thread putting from that into de structure at the end
+                    private_results.push_back(mapping);
+                    ++mapped_count;
+                }
+            }
+            auto tc = ++total_count;
+            if (tc % 10000000 == 0) sglib::OutputLog()<< mapped_count << " / " << tc <<" ("<<multimap_count<<" multi-mapped)"<< std::endl;
+        }
+    }
+    for (auto & tres:thread_mapping_results){
+        //sglib::OutputLog(sglib::LogLevels::DEBUG)<<"mixing in "<<tres.size()<<" thread specific results"<<std::endl;
+        for (auto &rm:tres){
+            read_to_node[rm.read_id] = rm.node;
+            reads_in_node[rm.node].emplace_back(rm);
+        }
+        tres.clear();
+        tres.shrink_to_fit();
+    }
+    uint64_t mapped_count=0,total_count=0,multimap_count=0;
+    for (auto i=0;i<omp_get_max_threads();++i){
+        mapped_count+=thread_mapped_count[i];
+        total_count+=thread_total_count[i];
+        multimap_count+=thread_multimap_count[i];
+    }
+    sglib::OutputLog(sglib::LogLevels::INFO)<<"Reads mapped: "<<mapped_count<<" / "<<total_count<<" ("<<multimap_count<<" multi-mapped)"<<std::endl;
+#pragma omp parallel for
+    for (sgNodeID_t n=1;n<reads_in_node.size();++n){
+        std::sort(reads_in_node[n].begin(),reads_in_node[n].end());
+    }
+}
+
+void LinkedReadMapper::remap_all_reads63() {
+    for (auto &rtn:read_to_node) rtn=0;
+    for (auto &rin:reads_in_node) rin.clear();
+    map_reads63();
+}
+
+void LinkedReadMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_remap) {
+    const int k = 63;
+    reads_in_node.resize(sg.nodes.size());
+    read_to_node.resize(datastore.size()+1);
+    if (not reads_to_remap.empty())
+        sglib::OutputLog()<<reads_to_remap.size()<<" selected reads / "<<read_to_node.size()-1<<" total"<<std::endl;
+
+    /*
+     * Read mapping in parallel,
+     */
+    uint64_t thread_mapped_count[omp_get_max_threads()],thread_total_count[omp_get_max_threads()],thread_multimap_count[omp_get_max_threads()];
+    std::vector<ReadMapping> thread_mapping_results[omp_get_max_threads()];
+    sglib::OutputLog(sglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
+#pragma omp parallel
+    {
+        const int min_matches=1;
+        std::vector<KmerIDX128> readkmers;
+        StreamKmerFactory128 skf(63);
+        ReadMapping mapping;
+        auto blrs=BufferedLRSequenceGetter(datastore,128*1024,260);
+        auto & private_results=thread_mapping_results[omp_get_thread_num()];
+        auto & mapped_count=thread_mapped_count[omp_get_thread_num()];
+        auto & total_count=thread_total_count[omp_get_thread_num()];
+        auto & multimap_count=thread_multimap_count[omp_get_thread_num()];
+        mapped_count=0;
+        total_count=0;
+        multimap_count=0;
+        bool c ;
+        //std::cout<<omp_get_thread_num()<<std::endl;
+#pragma omp for
+        for (uint64_t readID=1;readID<read_to_node.size();++readID) {
+            mapping.read_id = readID;
+            //this enables partial read re-mapping by setting read_to_node to 0
+            if ((reads_to_remap.size()>0 and reads_to_remap.count(mapping.read_id)>0) or (reads_to_remap.empty() and 0==read_to_node[mapping.read_id])) {
+                mapping.node = 0;
+                mapping.unique_matches = 0;
+                mapping.first_pos = 0;
+                mapping.last_pos = 0;
+                mapping.rev = false;
+                mapping.unique_matches = 0;
+                //get all kmers from read
+                auto seq=blrs.get_read_sequence(readID);
+                readkmers.clear();
+                skf.produce_all_kmers(seq,readkmers);
+
+                for (auto &rk:readkmers) {
+                    auto nk = sg.k63mer_to_graphposition.find(rk.kmer);
+                    if (sg.k63mer_to_graphposition.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation

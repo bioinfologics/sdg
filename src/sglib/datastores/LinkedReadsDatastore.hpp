@@ -41,6 +41,8 @@ std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16);
     }
 }*/
 
+#ifndef __hash128
+#define __hash128
 namespace std {
     //TODO: this hashing sucks, but it is needed
     template <> struct hash<__int128 unsigned>
@@ -51,6 +53,7 @@ namespace std {
         }
     };
 }
+#endif
 
 
 /**
