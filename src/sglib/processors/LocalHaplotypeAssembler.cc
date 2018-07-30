@@ -115,6 +115,7 @@ uint64_t LocalHaplotypeAssembler::expand_canonical_repeats_direct(int max_rep_si
         auto bwl=assembly.get_bw_links(n);
         auto fwl=assembly.get_fw_links(n);
         if (bwl.size()!=2 or fwl.size()!=2) continue;
+        //TODO: removing this may even solve some small loops.
         std::set<sgNodeID_t> nset;
         nset.insert(n);
         nset.insert(llabs(bwl[0].dest));
@@ -126,8 +127,70 @@ uint64_t LocalHaplotypeAssembler::expand_canonical_repeats_direct(int max_rep_si
     }
     std::cout<<"There are "<<repeats.size()<<" repeats to analyse"<<std::endl;
     //TODO: create strings for direct and rc versions of the repeat, and of all 4 possible resolutions, create a structure that holds those.
-
+    std::vector<std::pair<sgNodeID_t, std::array<std::string,8>>> repeat_posibilities;
+    for (auto &r:repeats) {
+        //find the previous nucleotides
+        auto bwl = assembly.get_bw_links(r.first);
+        auto pn1 = assembly.nodes[llabs(bwl[0].dest)];
+        if (bwl[0].dest > 0) pn1.make_rc();
+        auto pb1 = pn1.sequence[pn1.sequence.size() + bwl[0].dist - 1];//XXX: assumes negative distance.
+        auto pn2 = assembly.nodes[llabs(bwl[1].dest)];
+        if (bwl[1].dest > 0) pn2.make_rc();
+        auto pb2 = pn2.sequence[pn2.sequence.size() + bwl[1].dist - 1];//XXX: assumes negative distance.
+        //find the next nucleotides
+        auto fwl=assembly.get_fw_links(r.first);
+        auto nn1=assembly.nodes[llabs(fwl[0].dest)];
+        if (fwl[0].dest<0) nn1.make_rc();
+        auto nb1=nn1.sequence[-fwl[0].dist];//XXX: assumes negative distance.
+        auto nn2=assembly.nodes[llabs(fwl[1].dest)];
+        if (fwl[1].dest<0) nn2.make_rc();
+        auto nb2=nn2.sequence[-fwl[1].dist];//XXX: assumes negative distance.
+        std::string saa,sab,sba,sbb;
+        saa.push_back(pb1);
+        saa+=r.second.sequence;
+        saa.push_back(nb1);
+        sab.push_back(pb1);
+        sab+=r.second.sequence;
+        sab.push_back(nb2);
+        sba.push_back(pb2);
+        sba+=r.second.sequence;
+        sba.push_back(nb1);
+        sbb.push_back(pb2);
+        sbb+=r.second.sequence;
+        sbb.push_back(nb2);
+        auto saaN=Node(saa);
+        saaN.make_rc();
+        auto saar=saaN.sequence;
+        auto sabN=Node(sab);
+        sabN.make_rc();
+        auto sabr=sabN.sequence;
+        auto sbaN=Node(sba);
+        sbaN.make_rc();
+        auto sbar=sbaN.sequence;
+        auto sbbN=Node(sbb);
+        sbbN.make_rc();
+        auto sbbr=sbbN.sequence;
+        std::array<std::string,8> rp={saa,sab,sba,sbb,saar,sabr,sbar,sbbr};
+        repeat_posibilities.emplace_back(std::make_pair(r.first,rp));
+    }
+    std::cout<<"Collecting votes..."<<std::endl;
+    std::vector<uint64_t[4]> rvotes(repeat_posibilities.size());
     //For every single read: look
+    for (auto t:tagSet) {
+        for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
+            auto rseq=ws.linked_read_datastores[0].get_read_sequence(rid);
+            for (auto i=0;i<repeat_posibilities.size();++i){
+                for (auto p=0;p<8;++p) {
+                    if (rseq.find(repeat_posibilities[i].second[p])<rseq.size()) ++rvotes[i][p%4];
+                }
+            }
+        }
+    }
+    std::cout<<"Votes: "<<std::endl;
+    for (auto i=0;i<repeat_posibilities.size();++i) {
+        std::cout<<"Repead on node "<<repeat_posibilities[i].first<<" "<<rvotes[i][0]<<" "<<rvotes[i][1]<<" "<<rvotes[i][2]<<" "<<rvotes[i][3]<<std::endl;
+    }
+
 }
 
 uint64_t LocalHaplotypeAssembler::expand_canonical_repeats() {

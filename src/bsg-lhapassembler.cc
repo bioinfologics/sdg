@@ -91,7 +91,8 @@ int main(int argc, char * argv[]) {
                 if (0 == pass) {
                     lha.assemble(63, 5, false, false);
                 } else if (1 == pass) {
-                    lha.assemble(63, 5, false, true);
+                    lha.assemble(63, 5, false, false);
+                    lha.expand_canonical_repeats_direct(140);
                 }
                 //=== ENDS
                 std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
