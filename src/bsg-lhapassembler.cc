@@ -92,7 +92,28 @@ int main(int argc, char * argv[]) {
                     lha.assemble(63, 5, false, false);
                 } else if (1 == pass) {
                     lha.assemble(63, 5, false, false);
-                    lha.expand_canonical_repeats_direct(140);
+                    lha.assembly.create_index();
+                    //lha.expand_canonical_repeats_direct(140);
+//                    lha.path_linked_reads_informative_singles();
+//                    lha.path_paired_reads_informative_singles();
+//                    uint64_t pos=0,neg=0;
+//                    uint64_t ppos=0,pneg=0;
+//                    for (auto kp:lha.assembly.kmer_to_graphposition) {
+//                        if (kp.second.node>0) pos++;
+//                        else neg++;
+//                        if (kp.second.pos>0) ppos++;
+//                        else pneg++;
+//                    }
+//                    std::cout<<"Index has "<<pos<<" positive nodes and "<<neg<<" negatives"<<std::endl;
+//                    std::cout<<"Index has "<<ppos<<" positive positions and "<<pneg<<" negatives"<<std::endl;
+//                    std::ofstream pathsf(output_prefix+"_p"+std::to_string(li)+"_paths.txt");
+//                    for (auto &p:lha.linkedread_paths){
+//                        for (auto n:p) pathsf<<" "<<n;
+//                        pathsf<<std::endl;
+//                    }
+//                    lha.expand_canonical_repeats();
+//                    lha.assembly.join_all_unitigs();
+
                 }
                 //=== ENDS
                 std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();

@@ -208,6 +208,7 @@ uint64_t LocalHaplotypeAssembler::expand_canonical_repeats() {
         nset.insert(llabs(fwl[1].dest));
         if (nset.size()<5) continue;
         int v00=0,v11=0,v01=0,v10=0;
+
         for (auto p:linkedread_paths){
             if (p.size()<2) continue;
             //std::cout<<"analising path";
@@ -259,11 +260,11 @@ uint64_t LocalHaplotypeAssembler::expand_canonical_repeats() {
         }
         //std::cout<<"Repeat at node "<<n<<"( "<<assembly.nodes[n].sequence.size()<<"bp ), votes: "
         //          <<v00<<" "<<v11<<" "<<v10<<" "<<v01<<"  ("<<lv00<<" "<<lv11<<" "<<lv10<<" "<<lv01<<")"<<std::endl;
-        if (v00>10 and v11>10 and std::min(v00,v11)>10*std::max(v10,v01)) {
+        if (v00>10 and v11>10 and std::min(v00,v11)>2.5*std::max(v10,v01)) {
             //std::cout<<"solved AA!"<<std::endl;
             to_expand.push_back(std::make_pair(n,std::make_pair(std::vector<std::vector<sgNodeID_t>>({{bwl[0].dest},{bwl[1].dest}}),std::vector<std::vector<sgNodeID_t>>({{fwl[0].dest},{fwl[1].dest}}))));
         }
-        if (v01>10 and v10>10 and std::min(v01,v10)>10*std::max(v00,v11)) {
+        if (v01>10 and v10>10 and std::min(v01,v10)>2.5*std::max(v00,v11)) {
             //std::cout<<"solved AB!"<<std::endl;
             to_expand.push_back(std::make_pair(n,std::make_pair(std::vector<std::vector<sgNodeID_t>>({{bwl[0].dest},{bwl[1].dest}}),std::vector<std::vector<sgNodeID_t>>({{fwl[1].dest},{fwl[0].dest}}))));
         }
@@ -332,11 +333,13 @@ void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, bool si
     if (simplify) {
         gm.remove_small_unconnected(500);
         //path_all_reads();
+        assembly.create_index();
         path_linked_reads();
         if (!output_prefix.empty()) assembly.write_to_gfa(output_prefix + "pre_repex.gfa");
         while (expand_canonical_repeats() > 0) {
             assembly.join_all_unitigs();
             //path_all_reads();
+            assembly.create_index();
             path_linked_reads();
         }
         //unroll_short_loops();
@@ -368,7 +371,6 @@ void add_readkmer_nodes_lha(std::vector<sgNodeID_t> & kmernodes, std::vector<std
 
 void LocalHaplotypeAssembler::path_linked_reads() {
     linkedread_paths.clear();
-    assembly.create_index();
     linkedread_paths.reserve(1000000);//TODO: do this better!!!!
     //now populate the linked read paths first
 
@@ -403,10 +405,78 @@ void LocalHaplotypeAssembler::path_linked_reads() {
 
 }
 
+
+void LocalHaplotypeAssembler::path_linked_reads_informative_singles() {
+    linkedread_paths.clear();
+    linkedread_paths.reserve(1000000);//TODO: do this better!!!!
+    //now populate the linked read paths first
+
+    CStringKMerFactory cskf(31);
+    std::vector<std::pair<sgNodeID_t ,sgNodeID_t >> nodeproximity_thread;
+    std::vector<std::pair<uint64_t,bool>> readkmers;
+    std::vector<sgNodeID_t> kmernodes;
+    //std::ofstream crf("chimeric_linkedreads.fasta");
+    //BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, 1000);
+    BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0],100000,1000);
+    for (auto t:tagSet) {
+//        auto chim=0;
+        for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
+            readkmers.clear();
+            kmernodes.clear();
+
+            cskf.create_kmers_direction(readkmers, blrsg.get_read_sequence(rid));
+
+            add_readkmer_nodes_lha(kmernodes, readkmers, assembly.kmer_to_graphposition, false);
+            if (kmernodes.size()>1) linkedread_paths.emplace_back(kmernodes);
+//            if (kmernodes.size()==2 and kmernodes[0]==-kmernodes[1]) { //TODO quantify this by tag,
+//                //std::cout<<"Read #"<<rid<<" has incoherent mapping kmernodes[0]==-32152 and kmernodes[1]==32152"<<std::endl;
+//                //print_seq_kmer_location(blrsg.get_read_sequence(rid),assembly.kmer_to_graphposition);
+//                crf<<">read_"<<rid<<"_tag_"<< t <<"_"<<llabs(kmernodes[0])<<std::endl<<blrsg.get_read_sequence(rid)<<std::endl;
+//                ++chim;
+//            }
+        }
+        //std::cout<<t<<","<<chim<<","<<ws.linked_read_datastores[0].get_tag_reads(t).size()<<","<<100.0*chim/ws.linked_read_datastores[0].get_tag_reads(t).size()<<std::endl;
+    }
+    sglib::OutputLog()<<linkedread_paths.size()<<" informative single read paths created!"<<std::endl;
+}
+
+void LocalHaplotypeAssembler::path_paired_reads_informative_singles() {
+    pairedread_paths.clear();
+    pairedread_paths.reserve(1000000);//TODO: do this better!!!!
+    //now populate the linked read paths first
+
+    CStringKMerFactory cskf(31);
+    std::vector<std::pair<sgNodeID_t ,sgNodeID_t >> nodeproximity_thread;
+    std::vector<std::pair<uint64_t,bool>> readkmers;
+    std::vector<sgNodeID_t> kmernodes;
+    //std::ofstream crf("chimeric_pairedreads.fasta");
+    //BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, 1000);
+    for (auto lpr:paired_reads) {
+//        auto chim=0;
+        BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lpr.first],100000,1000);
+        for (auto rid : lpr.second) {
+            readkmers.clear();
+            kmernodes.clear();
+
+            cskf.create_kmers_direction(readkmers, bprsg.get_read_sequence(rid));
+
+            add_readkmer_nodes_lha(kmernodes, readkmers, assembly.kmer_to_graphposition, false);
+            if (kmernodes.size()>1) pairedread_paths.emplace_back(kmernodes);
+//            if (kmernodes.size()==2 and kmernodes[0]==-kmernodes[1]) { //TODO quantify this by tag, then try to understand WTF is going on here. maybe tags from another haplotype?
+//                //std::cout<<"Read #"<<rid<<" has incoherent mapping kmernodes[0]==-32152 and kmernodes[1]==32152"<<std::endl;
+//                //print_seq_kmer_location(blrsg.get_read_sequence(rid),assembly.kmer_to_graphposition);
+//                crf<<">read_"<<rid<<std::endl<<bprsg.get_read_sequence(rid)<<std::endl;
+//                ++chim;
+//            }
+        }
+//        std::cout<<lpr.first<<","<<chim<<","<<lpr.second.size()<<","<<100.0*chim/lpr.second.size()<<std::endl;
+    }
+    sglib::OutputLog()<<pairedread_paths.size()<<" informative single read paths created!"<<std::endl;
+}
+
 void LocalHaplotypeAssembler::path_all_reads() {
     linkedread_paths.clear();
     pairedread_paths.clear();
-    assembly.create_index();
     linkedread_paths.reserve(1000000);//TODO: do this better!!!!
     pairedread_paths.reserve(1000000);//TODO: do this better!!!!
 
