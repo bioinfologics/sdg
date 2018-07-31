@@ -674,6 +674,7 @@ void LocalHaplotypeAssembler::write_gfa(std::string filename) {
 }
 
 void LocalHaplotypeAssembler::construct_patches() {
+    patches.clear();
     std::vector<Node > all_nodes;
     for (auto &n:assembly.nodes) {
         if (n.sequence.size()<1000) continue;

@@ -40,6 +40,8 @@ int main(int argc, char * argv[]) {
     bool dev_linkage_paths=false;
     bool dev_test_make_patches=false;
     std::string dev_linkage_stats;
+    int dev_dump_local_problems_from=-1;
+    int dev_dump_local_problems_to=-1;
     try
     {
         cxxopts::Options options("bsg-untangler", "graph-based haplotype separation");
@@ -57,7 +59,7 @@ int main(int argc, char * argv[]) {
                 ("max_backbone_ci","minimum ci of nodes to use in backbones",cxxopts::value<float>(max_backbone_ci))
                 ("select_hspnp","select only Haplotype Specific Parallel Node Pairs to base scaffolding", cxxopts::value<bool>(select_hspnps));
 
-        options.add_options("Untangling functions")
+        options.add_options("Untangling")
                 ("p,paired_reads","paired read scaffolding (experimental)",cxxopts::value<bool>(paired_scaff))
                 ("l,unroll_loops", "unroll simple loops",cxxopts::value<bool>(unroll_loops))
                 ("e,pop_errors", "pop unsupported short-bubbles (as errors)",cxxopts::value<bool>(pop_errors))
@@ -74,9 +76,9 @@ int main(int argc, char * argv[]) {
                 ("load_patches","Load patches form file",cxxopts::value<std::string>(load_patches))
                 ("patch_backbones","Patches backbones and outputs stitched sequences",cxxopts::value<std::string>(patch_backbones))
                 ("patch_workspace","Patches  the workspace graph and outputs a gfa",cxxopts::value<std::string>(patch_workspace))
-                ("full_local_patching","run a whole round of linked lines and local patching, with a final remap", cxxopts::value<bool>(dev_local_patching))
+                ("full_local_patching","run a whole round of linked lines and local patching, with a final remap", cxxopts::value<bool>(dev_local_patching));
+        options.add_options("Development")
 
-                ("dev_test_make_patches","Test different ways to creates patches from local assemblies",cxxopts::value<bool>(dev_test_make_patches))
                 ("dev_linkage_paths", "tag linkage uses read pathing rather than simple mapping",cxxopts::value<bool>(dev_linkage_paths))
                 //("dev_skate_linkage","Loads linkage from file and skates",cxxopts::value<std::string>(dev_skate_linkage))
                 ("dev_linkage_stats","Loads linkage from file and computes local assemblies stats",cxxopts::value<std::string>(dev_linkage_stats))
@@ -84,7 +86,9 @@ int main(int argc, char * argv[]) {
                 ("dev_min_nodes","Limits lines to be locally assembled on dev to at least min_nodes",cxxopts::value<uint64_t>(dev_min_nodes))
                 ("dev_min_total_size","Limits lines to be locally assembled on dev to at least min_total_size",cxxopts::value<uint64_t>(dev_min_total_size))
                 ("dev_local_k","k value for local assembly",cxxopts::value<uint8_t>(dev_local_k))
-                ("dev_local_min_cvg","minimum coverga for local assemblies",cxxopts::value<int>(dev_local_min_cvg));
+                ("dev_local_min_cvg","minimum coverga for local assemblies",cxxopts::value<int>(dev_local_min_cvg))
+                ("dev_dump_local_problems_from","dumps local problems from",cxxopts::value<int>(dev_dump_local_problems_from))
+                ("dev_dump_local_problems_to","dumps local problems from",cxxopts::value<int>(dev_dump_local_problems_to));
 
 
 
@@ -151,27 +155,6 @@ int main(int argc, char * argv[]) {
         Untangler u(ws);
         u.solve_bubbly_paths();
         ws.sg.join_all_unitigs();
-    }
-    if (paired_scaff){
-        sglib::OutputLog()<<"Creating node linkage from kmers..."<<std::endl;
-        LinkageUntangler lu(ws);
-        lu.make_paired_linkage_by_kmer(2,{0},false,true);
-        exit(0);
-        Untangler u(ws);
-        sglib::OutputLog()<<"Popping errors..."<<std::endl;
-        u.pop_errors_by_ci_and_paths(60,200);
-        //auto juc=ws.sg.join_all_unitigs();
-        //sglib::OutputLog()<<"Unitigs joined: "<<juc<<std::endl;
-        //TODO: simple paired end repeat resolution, graph overlap expansion (alla arre), etc.
-
-        lu.select_nodes_by_size_and_ci(1000,0,50);
-        lu.report_node_selection();
-        auto pld=lu.make_paired_linkage_pe(5);
-        ws.sg.write_to_gfa(output_prefix+"_linkage.gfa", {}, {}, {}, pld.links);
-        lu.expand_trivial_repeats(pld);
-        auto juc=ws.sg.join_all_unitigs();
-        sglib::OutputLog()<<"Unitigs joined: "<<juc<<std::endl;
-
     }
 
     //======= DEVELOPMENT FUNCTIONS ======
@@ -241,10 +224,33 @@ int main(int argc, char * argv[]) {
         tag_ldg.dump_to_text(create_linkage);
         exit(0);
     }
+
     LinkageDiGraph tag_ldg(ws.sg);
     if (!load_linkage.empty()){
         tag_ldg.load_from_text(load_linkage);
     }
+
+    if (dev_dump_local_problems_from>-1 and dev_dump_local_problems_from<dev_dump_local_problems_to){
+        sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
+        tag_ldg.report_connectivity();
+        sglib::OutputLog()<<"Creating local assembly problems..."<<std::endl;
+        auto lines=tag_ldg.get_all_lines(dev_min_nodes);
+        if (dev_max_lines) {
+            sglib::OutputLog()<<"dev_max_lines set, solving only "<<dev_max_lines<<" / "<<lines.size()<<std::endl;
+            lines.resize(dev_max_lines);
+        }
+        uint64_t li=0;
+        uint64_t i=0;
+        sglib::OutputLog()<<"Dumping from "<< dev_dump_local_problems_from <<" to "<< dev_dump_local_problems_to << " of " <<lines.size()<<" local assembly problems..."<<std::endl;
+        for (auto li=dev_dump_local_problems_from;li<lines.size() and li<=dev_dump_local_problems_to;++li) {
+            auto &l = lines[li];
+            LocalHaplotypeAssembler lha(ws);
+            lha.init_from_backbone(l);
+            lha.write_full(output_prefix + "_local_" + std::to_string(li) + ".bsglhapf");
+        }
+        exit(0);
+    }
+
     std::vector<std::pair<std::pair<sgNodeID_t ,sgNodeID_t>,std::string>> patches;
     if (!make_patches.empty()) {
         sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
@@ -285,45 +291,7 @@ int main(int argc, char * argv[]) {
         }
         exit(0);
     }
-    if (dev_test_make_patches) {
-        sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
-        tag_ldg.report_connectivity();
-        sglib::OutputLog()<<"Creating local assembly problems..."<<std::endl;
-        auto lines=tag_ldg.get_all_lines(dev_min_nodes);
-        if (dev_max_lines) {
-            sglib::OutputLog()<<"dev_max_lines set, solving only "<<dev_max_lines<<" / "<<lines.size()<<std::endl;
-            lines.resize(dev_max_lines);
-        }
-        uint64_t li=0;
-        uint64_t i=0;
-        sglib::OutputLog()<<"Testing make_patches alternatives on "<<lines.size()<<" local assembly problems..."<<std::endl;
-        for (auto li=0;li<lines.size();++li) {
-            for (auto pass=0;pass<2;++pass) {
-                auto &l = lines[li];
-                LocalHaplotypeAssembler lha(ws);
-                lha.init_from_backbone(l);
-                std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-                if (0==pass) {
-                    std::cout << "Alternative #0: 63-mer and no simplification" << std::endl;
-                    lha.assemble(63, 5, false, false);
-                    lha.construct_patches();
-                }
-                else if (1==pass) {
-                    std::cout << "Alternative #1: 63-mer and built-in simplification" << std::endl;
-                    lha.assemble(63, 5, false, true);
-                    lha.construct_patches();
-                }
-                std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-                if (0==pass) lha.write_anchors("local_"+std::to_string(li)+"_anchors.fasta");
-                lha.write_gfa("local_"+std::to_string(li)+"_alt_"+std::to_string(pass)+".gfa");
-                lha.write_full("local_"+std::to_string(li)+"_problem");
-                std::cout << "Local assembly #" << li << " from " << l.size() << " anchors done in "
-                                   << 1.0 * std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()/1000
-                                   << " seconds, produced " << lha.patches.size() << " patches" << std::endl;
-            }
-        }
-        exit(0);
-    }
+
     if (!load_patches.empty()){
         std::ifstream pf(load_patches);
         auto i=0;

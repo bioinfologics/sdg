@@ -20,6 +20,7 @@ int main(int argc, char * argv[]) {
 
     uint8_t k=63;
     int min_cvg=5;
+    bool use_tag_cvg=false;
     try
     {
         cxxopts::Options options("bsg-lhapassembler", "Local Haplotype(specific) Assembler");
@@ -30,18 +31,19 @@ int main(int argc, char * argv[]) {
                 ("p,problem", "problem file", cxxopts::value<std::string>(problem_file))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
 
-        options.add_options("Assembly options")
+        options.add_options("Assembly")
                 ("k,kmer_size","k for local assembly",cxxopts::value<uint8_t>(k))
-                ("c,min_cvg","minimum coverga for local assemblies",cxxopts::value<int>(min_cvg));
+                ("c,min_cvg","minimum coverage for dbg kmers",cxxopts::value<int>(min_cvg))
+                ("use_tag_cvg","use tag coverage for dbg kmer",cxxopts::value<bool>(use_tag_cvg));
 
-        options.add_options("Development options")
+        options.add_options("Development")
                 ("dev_benchmark","file with a benchmark definition and problem list",cxxopts::value<std::string>(benchmark_filename));
 
         auto result(options.parse(argc, argv));
 
         if (result.count("help"))
         {
-            std::cout << options.help({"","Backbone (unique anchors linkage)","Untangling functions","Development"}) << std::endl;
+            std::cout << options.help({"","Assembly","Development"}) << std::endl;
             exit(0);
         }
 
@@ -91,7 +93,7 @@ int main(int argc, char * argv[]) {
                 if (0 == pass) {
                     lha.assemble(63, 5, false, false);
                 } else if (1 == pass) {
-                    lha.assemble(63, 5, false, false);
+                    lha.assemble(63, 3, true, false);
                     lha.assembly.create_63mer_index();
                     lha.path_linked_reads_informative_singles();
                     lha.expand_canonical_repeats();
@@ -166,7 +168,19 @@ int main(int argc, char * argv[]) {
     }
 
 
-    lha.assemble(k,min_cvg,false,true,output_prefix);
+    lha.assemble(63, min_cvg, use_tag_cvg, false);
+    lha.assembly.create_63mer_index();
+    lha.path_linked_reads_informative_singles();
+    lha.expand_canonical_repeats();
+    lha.assembly.join_all_unitigs();
+    lha.assembly.create_63mer_index();
+    lha.path_linked_reads_informative_singles();
+    lha.expand_canonical_repeats();
+    lha.assembly.join_all_unitigs();
+    lha.write_anchors(output_prefix+"_anchors.fasta");
+    lha.write_gfa(output_prefix+"_final.gfa");
+    lha.construct_patches();
+    lha.write_patches(output_prefix+"_patches.fasta");
 
     return 0;
 }
