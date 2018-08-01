@@ -37,7 +37,7 @@ public:
     //general operations
 
     void remap_all();
-
+    void remap_all63();
     //Projected operations with info from the graph
 
     std::vector<sgNodeID_t>

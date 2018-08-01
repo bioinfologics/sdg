@@ -191,3 +191,21 @@ void WorkSpace::remap_all() {
         sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }
 }
+
+void WorkSpace::remap_all63() {
+    sglib::OutputLog()<<"Mapping reads..."<<std::endl;
+    sg.create_63mer_index();
+    for (auto &m:paired_read_mappers) {
+        sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
+        m.remap_all_reads63();
+        m.print_stats();
+        add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
+        sglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
+    }
+    for (auto &m:linked_read_mappers) {
+        sglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
+        m.remap_all_reads63();
+        add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
+        sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
+    }
+}

@@ -349,6 +349,7 @@ void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, bool si
 }
 
 
+
 void add_readkmer_nodes_lha(std::vector<sgNodeID_t> & kmernodes, std::vector<std::pair<uint64_t,bool>> & readkmers, std::unordered_map<uint64_t, graphPosition> & index, bool rev){
     //TODO allow for a minimum of kmers to count the hit?
     if (not rev) {
