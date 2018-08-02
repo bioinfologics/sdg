@@ -178,19 +178,23 @@ void LinkageUntangler::report_node_selection() {
 void LinkageUntangler::select_nodes_by_size_and_ci( uint64_t min_size, float min_ci, float max_ci) {
     std::vector<sgNodeID_t> nodes;
     sglib::OutputLog()<<"LU selecting nodes by size and ci: size >= " << min_size << " bp  |  " << min_ci << "<= CI <=" << max_ci <<std::endl;
+    uint64_t deleted=0,small=0,cifail=0,selected=0;
 #pragma omp parallel
     {
-#pragma omp for schedule(static, 100)
+#pragma omp for schedule(static, 100) reduction(+:deleted,small,cifail,selected)
         for (auto n=1;n<ws.sg.nodes.size();++n) {
-            if (ws.sg.nodes[n].status==sgNodeDeleted) continue;
-            if (ws.sg.nodes[n].sequence.size() < min_size) continue;
+            if (ws.sg.nodes[n].status==sgNodeDeleted) { ++deleted; continue; }
+            if (ws.sg.nodes[n].sequence.size() < min_size) { ++small; continue; }
             auto ci = ws.kci.compute_compression_for_node(n, 1);
-            if (std::isnan(ci) or ci < min_ci or ci > max_ci) continue;
+            if (std::isnan(ci) or ci < min_ci or ci > max_ci) { ++cifail; continue;}
             #pragma omp critical(collect_selected_nodes)
             selected_nodes[n]=true;
+            ++selected;
         }
 
     }
+    sglib::OutputLog()<<deleted<<" deleted, "<<small<<" small, "<<cifail<<" wrong CI and "<<selected<<" selected nodes."<<std::endl;
+
 }
 
 std::set<std::pair<sgNodeID_t, sgNodeID_t >> LinkageUntangler::get_HSPNPs(uint64_t min_size, float min_ci,
