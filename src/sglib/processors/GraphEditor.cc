@@ -42,11 +42,15 @@ bool GraphEditor::detach_path(SequenceGraphPath p, bool consume_tips) {
     sgNodeID_t new_node=ws.sg.add_node(Node(pmid.get_sequence()));
     //TODO: migrate connection from the src node to the first middle node into the new node
     auto old_link=ws.sg.get_link(-p.nodes[0],p.nodes[1]);
-    ws.sg.remove_link(-p.nodes[0],p.nodes[1]);
+    //ws.sg.remove_link(-p.nodes[0],p.nodes[1]);
+    auto old_fw_links=ws.sg.get_fw_links(src);
+    for (auto fwl:old_fw_links) ws.sg.remove_link(fwl.source,fwl.dest);
     ws.sg.add_link(-src,new_node,old_link.dist);
     //TODO: migrate connection from the last middle node to the dest node into the new node
     old_link=ws.sg.get_link(-p.nodes[p.nodes.size()-2],p.nodes[p.nodes.size()-1]);
-    ws.sg.remove_link(-p.nodes[p.nodes.size()-2],p.nodes[p.nodes.size()-1]);
+    //ws.sg.remove_link(-p.nodes[p.nodes.size()-2],p.nodes[p.nodes.size()-1]);
+    auto old_bw_links=ws.sg.get_bw_links(dest);
+    for (auto bwl:old_bw_links) ws.sg.remove_link(bwl.source,bwl.dest);
     ws.sg.add_link(-new_node,dest,old_link.dist);
     //TODO: delete nodes from the original path while there is any of them with a disconnecte end.
     bool mod=true;
@@ -64,6 +68,7 @@ bool GraphEditor::detach_path(SequenceGraphPath p, bool consume_tips) {
             }
         }
     }
+    return true;
 }
 
 SequenceGraphPath GraphEditor::get_patch_path_between(sgNodeID_t from, sgNodeID_t to, std::string patch) {
@@ -118,6 +123,7 @@ int GraphEditor::patch_between(sgNodeID_t from, sgNodeID_t to, std::string patch
     //auto paths=ws.sg.find_all_paths_between(from,to,1000000,30);
     if (paths.empty()) return 2;
     for (auto p:paths){
+        //TODO: if a patch is {} it means direct connection, this is failing to do that!
         auto pnp=patch.find(p.get_sequence());
         if (pnp>p1 and pnp<p2) {
             if (sol.nodes.empty()) {
