@@ -461,7 +461,7 @@ int main(int argc, char * argv[]) {
             }
             ws.sg.write_to_gfa(output_prefix+"fulllocal_cycle_"+std::to_string(cycle)+".gfa");
             //reindex KCI
-            ws.kci.index_graph();
+            ws.kci.reindex_graph();
             //remap reads (k63)
             ws.remap_all63();
             //dump workspace and graph
