@@ -125,7 +125,7 @@ int GraphEditor::patch_between(sgNodeID_t from, sgNodeID_t to, std::string patch
     for (auto p:paths){
         //TODO: if a patch is {} it means direct connection, this is failing to do that!
         auto pnp=patch.find(p.get_sequence());
-        if (pnp>p1 and pnp<p2) {
+        if (p.nodes.size()==0 or (pnp>p1 and pnp<p2)) {
             if (sol.nodes.empty()) {
                 sol.nodes.emplace_back(from);
                 sol.nodes.insert(sol.nodes.end(),p.nodes.begin(),p.nodes.end());
