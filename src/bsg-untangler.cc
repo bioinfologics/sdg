@@ -341,8 +341,9 @@ int main(int argc, char * argv[]) {
 
 
     if (dev_local_patching) {
-        for (int cycle=0;cycle<10;++cycle) {
-            if (cycle<6) min_backbone_node_size=1000;
+        for (int cycle=0;cycle<8;++cycle) {
+            if (cycle==0 or cycle==1 or cycle==6 or cycle==7) min_backbone_node_size=1000;
+            else if (cycle==2 or cycle==3) min_backbone_node_size=500;
             else min_backbone_node_size=2000;
             int min_coverage;
             if (cycle%2==0) min_coverage=7;
