@@ -292,7 +292,7 @@ IF(BUILD_PYTHON_INTERFACE)
 
     add_custom_command (
             OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
-            COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/doxy2swig.py
+            COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py
             --quiet ${CMAKE_BINARY_DIR}/docs/xml/index.xml
             ${CMAKE_BINARY_DIR}/python_docs.i
             COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
