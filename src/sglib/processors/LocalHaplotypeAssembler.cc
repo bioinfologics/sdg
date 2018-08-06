@@ -745,3 +745,43 @@ std::vector<std::pair<std::string, std::string>> LocalHaplotypeAssembler::comput
 
     return metrics;
 }
+
+void LocalHaplotypeAssembler::problem_analysis(std::string prefix) {
+    //std::ofstream logfile(prefix+"_analysis.log");
+
+    write_anchors(prefix+"_anchors.fasta");
+
+    //====== 1) Dump read files ===
+    std::ofstream lr_r1file(prefix+"_lr_R1.fasta");
+    std::ofstream lr_r2file(prefix+"_lr_R2.fasta");
+
+    for (auto t:tagSet) {
+//        auto chim=0;
+        for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
+            if (rid%2==0) continue;
+            lr_r1file<<">"<<t<<"_"<<rid<<""<<std::endl<<ws.linked_read_datastores[0].get_read_sequence(rid)<<std::endl;
+            lr_r2file<<">"<<t<<"_"<<rid<<""<<std::endl<<ws.linked_read_datastores[0].get_read_sequence(rid+1)<<std::endl;
+        }
+    }
+    auto lmplib=0;
+    for (auto lpr:paired_reads) {
+        ++lmplib;
+        std::ofstream lmp_r1file(prefix+"_lmp"+std::to_string(lmplib)+"_R1.fasta");
+        std::ofstream lmp_r2file(prefix+"_lmp"+std::to_string(lmplib)+"_R2.fasta");
+        BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lpr.first],100000,1000);
+        for (auto rid : lpr.second) {
+            //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
+            if (rid%2!=1) continue;
+            lmp_r1file<<">"<<rid<<""<<std::endl<<bprsg.get_read_sequence(rid)<<std::endl;
+            lmp_r2file<<">"<<rid<<""<<std::endl<<bprsg.get_read_sequence(rid+1)<<std::endl;
+        }
+    }
+
+    //====== 2) Trivial 31-mer graph
+    BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+    auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers(31, 5, tagSet, blrsg);
+    GraphMaker gm(assembly);
+    gm.new_graph_from_kmerset_trivial(ltkmers128, 31);
+    write_gfa(prefix+"_31-mer_DBG.gfa");
+
+}

@@ -43,6 +43,8 @@ public:
     void write_patches(std::string filename);
     std::vector<std::pair<std::string, std::string>> compute_metrics();
 
+    void problem_analysis(std::string prefix);
+
     WorkSpace & ws;
     std::vector<sgNodeID_t > backbone;
     std::vector<Node > backbone_nodes;

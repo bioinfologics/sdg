@@ -551,10 +551,19 @@ int main(int argc, char * argv[]) {
     if (!patch_workspace.empty()) {
         sglib::OutputLog() << "Patching workspace!!!" << std::endl;
         GraphEditor ge(ws);
+        std::ofstream pstatsf(output_prefix+"_patching_stats.csv");
+        pstatsf<<"from,to,size,code,fromfw_before,fromfw_after,tobw_before,tobw_after"<<std::endl;
         uint64_t patch_results[6]={0,0,0,0,0,0};
         for (auto p:patches) {
+            auto fromfw_before=ws.sg.get_fw_links(-p.first.first).size();
+            auto tobw_before=ws.sg.get_bw_links(p.first.second).size();
             auto r=ge.patch_between(-p.first.first,p.first.second,p.second);
+            auto fromfw_after=ws.sg.get_fw_links(-p.first.first).size();
+            auto tobw_after=ws.sg.get_bw_links(p.first.second).size();
             ++patch_results[r];
+            //TODO: check the collection of unitigs has changed.
+            pstatsf<<-p.first.first<<","<<p.first.second<<","<<p.second.size()<<","<<r<<","<<fromfw_before<<","<<fromfw_after<<","<<tobw_before<<","<<tobw_after<<std::endl;
+
         }
         sglib::OutputLog() << "Patches with no anchor ends:         "<< patch_results[1] <<std::endl;
         sglib::OutputLog() << "Patches with incorrect anchor order: "<< patch_results[3] <<std::endl;

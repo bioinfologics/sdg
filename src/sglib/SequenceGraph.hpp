@@ -146,6 +146,7 @@ public:
 class SequenceGraphPath {
 public:
     std::vector<sgNodeID_t> nodes;
+    bool operator==(const SequenceGraphPath & other) const { return this->nodes==other.nodes; };
     SequenceGraphPath (const SequenceGraphPath& other): sg(other.sg),nodes(other.nodes){};
     SequenceGraphPath& operator=(const SequenceGraphPath& other){nodes=other.nodes;return *this;};
     explicit SequenceGraphPath(SequenceGraph & _sg, std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};

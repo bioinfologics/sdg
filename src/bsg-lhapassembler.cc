@@ -16,7 +16,7 @@ int main(int argc, char * argv[]) {
 
     sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
 
-    std::string workspace_file,problem_file,output_prefix,benchmark_filename;
+    std::string workspace_file,problem_file,output_prefix,benchmark_filename,problem_analysis;
 
     uint8_t k=63;
     int min_cvg=5;
@@ -37,7 +37,8 @@ int main(int argc, char * argv[]) {
                 ("use_tag_cvg","use tag coverage for dbg kmer",cxxopts::value<bool>(use_tag_cvg));
 
         options.add_options("Development")
-                ("dev_benchmark","file with a benchmark definition and problem list",cxxopts::value<std::string>(benchmark_filename));
+                ("dev_benchmark","file with a benchmark definition and problem list",cxxopts::value<std::string>(benchmark_filename))
+                ("dev_problem_analysis","run a LOT of problem analysis... really for debugging, and dump with this prefix",cxxopts::value<std::string>(problem_analysis));
 
         auto result(options.parse(argc, argv));
 
@@ -166,7 +167,10 @@ int main(int argc, char * argv[]) {
     else {
         lha.init_from_full_file(problem_file);
     }
-
+    if (!problem_analysis.empty()) {
+        lha.problem_analysis(problem_analysis);
+        exit(0);
+    }
     //TODO: try different coverage cutoffs and keep the patches from all of them
     lha.assemble(63, min_cvg, use_tag_cvg, false);
     lha.assembly.create_63mer_index();
