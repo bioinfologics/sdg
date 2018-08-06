@@ -27,6 +27,11 @@ void LinkageDiGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
 
 }
 
+void LinkageDiGraph::disconnect_node(sgNodeID_t node) {
+    for (auto fwl:get_fw_links(node)) remove_link(fwl.source,fwl.dest);
+    for (auto bwl:get_bw_links(node)) remove_link(bwl.source,bwl.dest);
+}
+
 std::vector<Link> LinkageDiGraph::get_fw_links( sgNodeID_t n) const {
     std::vector<Link> r;
     if (llabs(n)>=links.size()) return r;

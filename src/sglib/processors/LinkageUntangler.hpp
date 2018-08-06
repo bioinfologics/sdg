@@ -31,6 +31,8 @@ public:
     LinkageDiGraph make_paired_linkage_by_kmer(int min_shared, std::vector<size_t> libraries, bool r1rev, bool r2rev);
     LinkageDiGraph make_tag_linkage(int min_tags, bool use_kmer_paths=false);
 
+    LinkageDiGraph make_and_simplify_linkage(int min_shared_tags);
+
     //Linkage filtering methods
     LinkageDiGraph filter_linkage_to_hspnp_duos( uint64_t min_size, float min_ci, float max_ci, const LinkageDiGraph & ldg);
 

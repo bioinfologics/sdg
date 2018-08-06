@@ -1296,3 +1296,81 @@ void LinkageUntangler::fill_linkage_line(std::vector<sgNodeID_t> nodes) {
     linetagsets.push_back(lineTagSet);
     if (linetagsets.size()%100==0) std::cout<<"."<<std::flush;*/
 }
+
+LinkageDiGraph LinkageUntangler::make_and_simplify_linkage(int min_shared_tags) {
+    LinkageDiGraph tag_ldg(ws.sg);
+    std::unordered_set<sgNodeID_t> selnodes;
+    for (sgNodeID_t n = 1; n < ws.sg.nodes.size(); ++n) if (selected_nodes[n]) selnodes.insert(n);
+    auto pre_tag_ldg = make_tag_linkage(min_shared_tags, false);
+    pre_tag_ldg.remove_transitive_links(10);
+    sglib::OutputLog() << "Eliminating N-N nodes..." << std::endl;
+    uint64_t remNN = 0;
+    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
+        if (selected_nodes[n]) {
+            if (pre_tag_ldg.get_fw_links(n).size() > 1 and pre_tag_ldg.get_bw_links(n).size() > 1) {
+                selected_nodes[n] = false;
+                ++remNN;
+            }
+        }
+    }
+    sglib::OutputLog() << "Re-trying tag connection after eliminating " << remNN << " N-N nodes"
+                       << std::endl;
+    tag_ldg.links = make_tag_linkage(min_shared_tags, false).links;
+    //maybe keep the full linkage to help the evaluation on simplification?
+    auto full_tag_ldg = tag_ldg;
+    tag_ldg.remove_transitive_links(10);
+
+    //tag_ldg.report_connectivity();
+    std::cout << "Experimental: pop small transitive bubbles" << std::endl;
+    std::vector<sgNodeID_t> to_remove;
+    uint64_t untransitive=0;
+    for (auto bubble:tag_ldg.find_bubbles(0, 4000)) {
+        if (full_tag_ldg.are_connected(tag_ldg.get_bw_links(bubble.first)[0].dest,tag_ldg.get_fw_links(bubble.first)[0].dest)){
+            if (ws.sg.nodes[llabs(bubble.first)].sequence.size()<ws.sg.nodes[llabs(bubble.second)].sequence.size())
+                to_remove.emplace_back(llabs(bubble.first));
+            else
+                to_remove.emplace_back(llabs(bubble.second));
+        }
+        else ++untransitive;
+    }
+    std::cout << to_remove.size() << " transitive bubbles will be smaller-side popped " << untransitive << " non-transitive bubbles will remain"<< std::endl;
+    for (auto tbs:to_remove){
+        tag_ldg.disconnect_node(tbs);
+    }
+    /*
+    std::cout << "Experimental: linearize bubbles" << std::endl;
+    std::vector<sgNodeID_t> to_remove;
+    auto all_paired_linkage = make_paired_linkage(2);
+    uint64_t b12 = 0, b21 = 0, amb = 0, none = 0, ab12 = 0, ab21 = 0;
+    for (auto bubble:tag_ldg.find_bubbles(0, 20000)) {
+        //if (full_tag_ldg.are_connected(tag_ldg.get_bw_links(bubble.first)[0].dest,tag_ldg.get_fw_links(bubble.first)[0].dest))
+        //    to_remove.emplace_back(llabs(bubble.first));
+        bool c12 = all_paired_linkage.are_connected(-bubble.first, bubble.second);
+        bool c21 = all_paired_linkage.are_connected(-bubble.second, bubble.first);
+        bool i1 = all_paired_linkage.are_connected(-bubble.second, -bubble.first);
+        bool i2 = all_paired_linkage.are_connected(bubble.second, bubble.first);
+        if (i1 or i2) {
+            ++amb;
+            if (c12 and !c21) ++ab12;
+            else if (!c12 and c21) ++ab21;
+            continue;
+        } else if (c12 and !c21) {
+            tag_ldg.add_link(-bubble.first, bubble.second, 0);
+            ++b12;
+        } else if (!c12 and c21) {
+            tag_ldg.add_link(-bubble.first, bubble.second, 0);
+            ++b21;
+        } else {
+            ++none;
+        }
+
+    }
+    std::cout << "Bubbles with possible reconnection: 1-2: " << b12 << "  2-1:" << b21
+              << " ambiguous order: " << amb << "( 1-2: " << ab12 << " 2-1: " << ab21 << " ) no connection:"
+              << none << std::endl;
+              */
+    tag_ldg.remove_transitive_links(10);
+    tag_ldg.report_connectivity();
+    return tag_ldg;
+
+}

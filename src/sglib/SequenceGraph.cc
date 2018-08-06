@@ -512,7 +512,7 @@ void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<
 
 
     //load all sequences from fasta file if they're not canonical, flip and remember they're flipped
-    std::cout<<"Writing sequences to "<<fasta_filename<<std::endl;
+    //std::cout<<"Writing sequences to "<<fasta_filename<<std::endl;
 
     for (sgNodeID_t i=1;i<nodes.size();++i){
         if (nodes[i].status==sgNodeDeleted) continue;
@@ -1010,7 +1010,7 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
     return final_paths;
 }
 
-void SequenceGraph::create_index() {
+void SequenceGraph::create_index(bool verbose) {
     kmer_to_graphposition.clear();
     class kmerPosFactory : protected KMerFactory {
     public:
@@ -1057,7 +1057,7 @@ void SequenceGraph::create_index() {
         uint64_t bases;
     };
 
-    sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
     const int k = 31;
     uint64_t total_k=0;
     std::vector<std::pair<uint64_t,graphPosition>> kidxv;
@@ -1073,10 +1073,10 @@ void SequenceGraph::create_index() {
             kcf.next_element(kidxv);
         }
     }
-    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
-    sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
-    std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
-    sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
+    if (verbose) std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
+    if (verbose) sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
     auto wi=kidxv.begin();
     auto ri=kidxv.begin();
     auto nri=kidxv.begin();
@@ -1090,12 +1090,12 @@ void SequenceGraph::create_index() {
     }
 
     kidxv.resize(wi-kidxv.begin());
-    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
     kmer_to_graphposition.insert(kidxv.begin(),kidxv.end());
-    sglib::OutputLog(sglib::INFO)<<"map ready"<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO)<<"map ready"<<std::endl;
 }
 
-void SequenceGraph::create_63mer_index() {
+void SequenceGraph::create_63mer_index(bool verbose) {
     k63mer_to_graphposition.clear();
     class kmerPosFactory128 : protected KMerFactory128 {
     public:
@@ -1158,10 +1158,10 @@ void SequenceGraph::create_63mer_index() {
             kcf.next_element(kidxv);
         }
     }
-    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
-    sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
     std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<__uint128_t,graphPosition> & a, const std::pair<__uint128_t,graphPosition> & b){return a.first<b.first;});
-    sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
     auto wi=kidxv.begin();
     auto ri=kidxv.begin();
     auto nri=kidxv.begin();
@@ -1175,7 +1175,7 @@ void SequenceGraph::create_63mer_index() {
     }
 
     kidxv.resize(wi-kidxv.begin());
-    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
     k63mer_to_graphposition.insert(kidxv.begin(),kidxv.end());
-    sglib::OutputLog(sglib::INFO)<<"map ready"<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO)<<"map ready"<<std::endl;
 }

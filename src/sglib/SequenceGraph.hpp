@@ -116,8 +116,8 @@ public:
     std::vector<SequenceGraphPath> get_all_unitigs(uint16_t min_nodes);
     // simplify --> executes expand_path on every multi-sequence unitig
     std::vector<SequenceSubGraph> get_all_tribbles();
-    void create_index();
-    void create_63mer_index();
+    void create_index(bool verbose=true);
+    void create_63mer_index(bool verbose=true);
     void clear_index();
 
     // tip_clip -> eliminates tips.

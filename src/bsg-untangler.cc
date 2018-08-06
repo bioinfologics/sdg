@@ -42,6 +42,7 @@ int main(int argc, char * argv[]) {
     std::string dev_linkage_stats;
     int dev_dump_local_problems_from=-1;
     int dev_dump_local_problems_to=-1;
+    bool dev_test_assembly_and_patching=false;
     try
     {
         cxxopts::Options options("bsg-untangler", "graph-based haplotype separation");
@@ -78,7 +79,7 @@ int main(int argc, char * argv[]) {
                 ("patch_workspace","Patches  the workspace graph and outputs a gfa",cxxopts::value<std::string>(patch_workspace))
                 ("full_local_patching","run a whole round of linked lines and local patching, with a final remap", cxxopts::value<bool>(dev_local_patching));
         options.add_options("Development")
-
+                ("dev_test_assembly_and_patching", "solves 1/25 of the local assemblies, applies the patches and dumps detailed output",cxxopts::value<bool>(dev_test_assembly_and_patching))
                 ("dev_linkage_paths", "tag linkage uses read pathing rather than simple mapping",cxxopts::value<bool>(dev_linkage_paths))
                 //("dev_skate_linkage","Loads linkage from file and skates",cxxopts::value<std::string>(dev_skate_linkage))
                 ("dev_linkage_stats","Loads linkage from file and computes local assemblies stats",cxxopts::value<std::string>(dev_linkage_stats))
@@ -158,74 +159,17 @@ int main(int argc, char * argv[]) {
     }
 
     //======= DEVELOPMENT FUNCTIONS ======
+    LinkageDiGraph tag_ldg(ws.sg);
+
     if (!create_linkage.empty()) {
         LinkageUntangler lu(ws);
         lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
-        std::unordered_set<sgNodeID_t> selnodes;
-        for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
-        lu.report_node_selection();
-        auto pre_tag_ldg = lu.make_tag_linkage(min_shared_tags,dev_linkage_paths);
-        pre_tag_ldg.remove_transitive_links(10);
-        pre_tag_ldg.report_connectivity();
-        sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
-        uint64_t remNN=0;
-        for (auto n=1;n<ws.sg.nodes.size();++n){
-            if (lu.selected_nodes[n]){
-                if (pre_tag_ldg.get_fw_links(n).size()>1 and pre_tag_ldg.get_bw_links(n).size()>1) {
-                    lu.selected_nodes[n]=false;
-                    ++remNN;
-                }
-            }
-        }
-        sglib::OutputLog()<<"Re-trying tag connection after eliminating "<<remNN<<" N-N nodes"<<std::endl;
-        auto tag_ldg = lu.make_tag_linkage(min_shared_tags,dev_linkage_paths);
-        //maybe keep the full linkage to help the evaluation on simplification?
-        auto full_tag_ldg=tag_ldg;
-        tag_ldg.remove_transitive_links(10);
-
-        tag_ldg.report_connectivity();
-        std::cout<<"Experimental: linearize bubbles"<<std::endl;
-        std::vector<sgNodeID_t> to_remove;
-        auto all_paired_linkage = lu.make_paired_linkage(2);
-        uint64_t b12=0,b21=0, amb=0, none=0,ab12=0,ab21=0;
-        for (auto bubble:tag_ldg.find_bubbles(0,20000)) {
-            //if (full_tag_ldg.are_connected(tag_ldg.get_bw_links(bubble.first)[0].dest,tag_ldg.get_fw_links(bubble.first)[0].dest))
-            //    to_remove.emplace_back(llabs(bubble.first));
-            bool c12=all_paired_linkage.are_connected(-bubble.first,bubble.second);
-            bool c21=all_paired_linkage.are_connected(-bubble.second,bubble.first);
-            bool i1=all_paired_linkage.are_connected(-bubble.second,-bubble.first);
-            bool i2=all_paired_linkage.are_connected(bubble.second,bubble.first);
-            if (i1 or i2) {
-                ++amb;
-                if (c12 and !c21 ) ++ab12;
-                else if (!c12 and c21 ) ++ab21;
-                continue;
-            }
-            else if (c12 and !c21 ) {
-                tag_ldg.add_link(-bubble.first,bubble.second,0);
-                ++b12;
-            }
-            else if (!c12 and c21 ) {
-                tag_ldg.add_link(-bubble.first,bubble.second,0);
-                ++b21;
-            }
-            else {
-                ++none;
-            }
-
-        }
-        std::cout<<"Bubbles with possible reconnection: 1-2: "<<b12<<"  2-1:"<<b21<<" ambiguous order: "<<amb<<"( 1-2: "<<ab12<<" 2-1: "<<ab21<<" ) no connection:"<<none<<std::endl;
-        tag_ldg.remove_transitive_links(10);
-        tag_ldg.report_connectivity();
-        std::cout<<"TODO: clip tips, can this be done??"<<std::endl;
-        std::cout<<"TODO: evaluate 'complex nodes' that have a linear transitivity"<<std::endl;
-        std::cout<<"TODO: maybe even try local assemblies to simplify complex connections?"<<std::endl;
-        ws.sg.write_to_gfa(output_prefix+"_linkage.gfa", {}, {}, selnodes, tag_ldg.links);
+        tag_ldg.links=lu.make_and_simplify_linkage(min_shared_tags).links;
+        //ws.sg.write_to_gfa(output_prefix+"_linkage.gfa", {}, {}, selnodes, tag_ldg.links);
         tag_ldg.dump_to_text(create_linkage);
         exit(0);
     }
 
-    LinkageDiGraph tag_ldg(ws.sg);
     if (!load_linkage.empty()){
         tag_ldg.load_from_text(load_linkage);
     }
@@ -352,62 +296,7 @@ int main(int argc, char * argv[]) {
                 //=================now linkage
                 LinkageUntangler lu(ws);
                 lu.select_nodes_by_size_and_ci(min_backbone_node_size, min_backbone_ci, max_backbone_ci);
-                std::unordered_set<sgNodeID_t> selnodes;
-                for (sgNodeID_t n = 1; n < ws.sg.nodes.size(); ++n) if (lu.selected_nodes[n]) selnodes.insert(n);
-                lu.report_node_selection();
-                auto pre_tag_ldg = lu.make_tag_linkage(min_shared_tags, dev_linkage_paths);
-                pre_tag_ldg.remove_transitive_links(10);
-                pre_tag_ldg.report_connectivity();
-                sglib::OutputLog() << "Eliminating N-N nodes..." << std::endl;
-                uint64_t remNN = 0;
-                for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
-                    if (lu.selected_nodes[n]) {
-                        if (pre_tag_ldg.get_fw_links(n).size() > 1 and pre_tag_ldg.get_bw_links(n).size() > 1) {
-                            lu.selected_nodes[n] = false;
-                            ++remNN;
-                        }
-                    }
-                }
-                sglib::OutputLog() << "Re-trying tag connection after eliminating " << remNN << " N-N nodes"
-                                   << std::endl;
-                tag_ldg.links = lu.make_tag_linkage(min_shared_tags, dev_linkage_paths).links;
-                //maybe keep the full linkage to help the evaluation on simplification?
-                auto full_tag_ldg = tag_ldg;
-                tag_ldg.remove_transitive_links(10);
-
-                tag_ldg.report_connectivity();
-                std::cout << "Experimental: linearize bubbles" << std::endl;
-                std::vector<sgNodeID_t> to_remove;
-                auto all_paired_linkage = lu.make_paired_linkage(2);
-                uint64_t b12 = 0, b21 = 0, amb = 0, none = 0, ab12 = 0, ab21 = 0;
-                for (auto bubble:tag_ldg.find_bubbles(0, 20000)) {
-                    //if (full_tag_ldg.are_connected(tag_ldg.get_bw_links(bubble.first)[0].dest,tag_ldg.get_fw_links(bubble.first)[0].dest))
-                    //    to_remove.emplace_back(llabs(bubble.first));
-                    bool c12 = all_paired_linkage.are_connected(-bubble.first, bubble.second);
-                    bool c21 = all_paired_linkage.are_connected(-bubble.second, bubble.first);
-                    bool i1 = all_paired_linkage.are_connected(-bubble.second, -bubble.first);
-                    bool i2 = all_paired_linkage.are_connected(bubble.second, bubble.first);
-                    if (i1 or i2) {
-                        ++amb;
-                        if (c12 and !c21) ++ab12;
-                        else if (!c12 and c21) ++ab21;
-                        continue;
-                    } else if (c12 and !c21) {
-                        tag_ldg.add_link(-bubble.first, bubble.second, 0);
-                        ++b12;
-                    } else if (!c12 and c21) {
-                        tag_ldg.add_link(-bubble.first, bubble.second, 0);
-                        ++b21;
-                    } else {
-                        ++none;
-                    }
-
-                }
-                std::cout << "Bubbles with possible reconnection: 1-2: " << b12 << "  2-1:" << b21
-                          << " ambiguous order: " << amb << "( 1-2: " << ab12 << " 2-1: " << ab21 << " ) no connection:"
-                          << none << std::endl;
-                tag_ldg.remove_transitive_links(10);
-                tag_ldg.report_connectivity();
+                tag_ldg.links=lu.make_and_simplify_linkage(min_shared_tags).links;
             }
             //now create patches
             {
@@ -469,34 +358,83 @@ int main(int argc, char * argv[]) {
             ws.dump_to_disk(output_prefix+"fulllocal_cycle_"+std::to_string(cycle)+".bsgws");
 
         }
-        /*
+    }
+
+    if (dev_test_assembly_and_patching) {
+        //=================now linkage
         LinkageUntangler lu(ws);
-        ws.kci.reindex_graph();
-        if (select_hspnps) lu.select_nodes_by_HSPNPs(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
-        else lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
-        std::unordered_set<sgNodeID_t> selnodes;
-        for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) if (lu.selected_nodes[n]) selnodes.insert(n);
-        lu.report_node_selection();
-        auto pre_tag_ldg = lu.make_tag_linkage(min_shared_tags,dev_linkage_paths);
-        pre_tag_ldg.remove_transitive_links(10);
-        pre_tag_ldg.report_connectivity();
-        sglib::OutputLog()<<"Eliminating N-N nodes..."<<std::endl;
-        uint64_t remNN=0;
-        for (auto n=1;n<ws.sg.nodes.size();++n){
-            if (lu.selected_nodes[n]){
-                if (pre_tag_ldg.get_fw_links(n).size()>1 and pre_tag_ldg.get_bw_links(n).size()>1) {
-                    lu.selected_nodes[n]=false;
-                    ++remNN;
-                }
+        lu.select_nodes_by_size_and_ci(min_backbone_node_size, min_backbone_ci, max_backbone_ci);
+        tag_ldg.links=lu.make_and_simplify_linkage(min_shared_tags).links;
+        //TODO:dump linkage maybe?
+        patches.clear();
+        auto lines = tag_ldg.get_all_lines(dev_min_nodes);
+        sglib::OutputLog() << "Solving 1/25 of " << lines.size() << " local assembly problems..." << std::endl;
+        uint64_t all_patches=0,assembled_patches=0;
+#pragma omp parallel for schedule(dynamic, 10) reduction(+:all_patches,assembled_patches)
+        for (auto li = 0; li < lines.size(); li+=25) {
+            auto &l = lines[li];
+            std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+            LocalHaplotypeAssembler lha(ws);
+            lha.init_from_backbone(l);
+            lha.assemble(63, dev_local_min_cvg, false, false);
+            lha.assembly.create_63mer_index(false);
+            lha.path_linked_reads_informative_singles();
+            lha.expand_canonical_repeats();
+            lha.assembly.join_all_unitigs();
+            lha.assembly.create_63mer_index(false);
+            lha.path_linked_reads_informative_singles();
+            lha.expand_canonical_repeats();
+            lha.assembly.join_all_unitigs();
+            lha.construct_patches();
+            all_patches+=l.size()-1;
+            assembled_patches+=lha.patches.size();
+            lha.write_full(output_prefix+"_local_"+std::to_string(li));
+            lha.write_gfa(output_prefix+"_local_"+std::to_string(li)+".gfa");
+            lha.write_anchors(output_prefix+"_local_"+std::to_string(li)+"_anchors.fasta");
+            lha.write_patches(output_prefix+"_local_"+std::to_string(li)+"_patches.fasta");
+            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+#pragma omp critical(patch_collection)
+            {
+                patches.insert(patches.end(), lha.patches.begin(), lha.patches.end());
+                sglib::OutputLog() << "Local assembly #" << li << " from " << l.size() << " anchors done in "
+                                   << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count()
+                                   << " seconds, produced " << lha.patches.size() << " patches" << std::endl;
             }
         }
-        sglib::OutputLog()<<"Re-trying tag connection after eliminating "<<remNN<<" N-N nodes"<<std::endl;
-        auto tag_ldg = lu.make_tag_linkage(min_shared_tags);
-        tag_ldg.remove_transitive_links(10);
-        tag_ldg.report_connectivity();
-        ws.sg.write_to_gfa(output_prefix+"_linkage.gfa", {}, {}, selnodes, tag_ldg.links);
-        lu.linear_regions_tag_local_assembly(tag_ldg, dev_local_k, dev_local_min_cvg, dev_max_lines,dev_min_nodes,dev_min_total_size,true);*/
+        sglib::OutputLog() << "Local assembly produced "<<assembled_patches<<" / "<<all_patches<<" patches"<<std::endl;
+        //now apply patches
+        {
+            sglib::OutputLog() << "Patching workspace!!!" << std::endl;
+            GraphEditor ge(ws);
+            std::ofstream pstatsf(output_prefix+"_patching_stats.csv");
+            pstatsf<<"from,to,size,code,fromfw_before,fromfw_after,tobw_before,tobw_after"<<std::endl;
+            uint64_t patch_results[6]={0,0,0,0,0,0};
+            for (auto p:patches) {
+                auto fromfw_before=ws.sg.get_fw_links(p.first.first).size();
+                auto tobw_before=ws.sg.get_bw_links(p.first.second).size();
+                auto r=ge.patch_between(p.first.first,p.first.second,p.second);
+                auto fromfw_after=ws.sg.get_fw_links(p.first.first).size();
+                auto tobw_after=ws.sg.get_bw_links(p.first.second).size();
+                ++patch_results[r];
+                //TODO: check the collection of unitigs has changed.
+                pstatsf<<-p.first.first<<","<<p.first.second<<","<<p.second.size()<<","<<r<<","<<fromfw_before<<","<<fromfw_after<<","<<tobw_before<<","<<tobw_after<<std::endl;
+
+            }
+            sglib::OutputLog() << "Patches with no anchor ends:         "<< patch_results[1] <<std::endl;
+            sglib::OutputLog() << "Patches with incorrect anchor order: "<< patch_results[3] <<std::endl;
+            sglib::OutputLog() << "Patches with no SG paths:            "<< patch_results[2] <<std::endl;
+            sglib::OutputLog() << "Patches with no matching SG paths:   "<< patch_results[4] <<std::endl;
+            sglib::OutputLog() << "Patches with failed expansion:       "<< patch_results[5] <<std::endl;
+            sglib::OutputLog() << "Patches correctly applied:           "<< patch_results[0] <<std::endl;
+            ws.sg.write_to_gfa(output_prefix+"_patched_notjoined.gfa");
+            auto juc=ws.sg.join_all_unitigs();
+            sglib::OutputLog() << juc << " unitigs joined after patching"<<std::endl;
+            //ws.sg.write_to_gfa(patch_workspace);
+        }
+        ws.sg.write_to_gfa(output_prefix+"_patched.gfa");
+        exit(0);
     }
+
 
     if (!patch_backbones.empty()) {
         std::ofstream patched_backbones_file(patch_backbones);
