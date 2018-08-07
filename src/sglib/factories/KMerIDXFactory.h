@@ -8,6 +8,7 @@
 #include <vector>
 #include <limits>
 #include <tuple>
+#include <cmath>
 #include "sglib/factories/KMerFactory.h"
 struct KMerIDXFactoryParams {
     uint8_t k;
@@ -56,6 +57,24 @@ struct KmerIDX {
             return std::tie(a.contigID, a.pos) < std::tie(b.contigID,b.pos);
         }
     };
+
+    friend class ltKmer;
+    struct ltKmer {
+        bool operator()(const KmerIDX &a, const uint64_t &b_kmer) const {
+            return a.kmer < b_kmer;
+        }
+    };
+
+    friend class byKmerContigOffset;
+    struct byKmerContigOffset {
+        bool operator()(const KmerIDX &a, const KmerIDX &b) {
+            auto a_pos(std::abs(a.pos));
+            auto b_pos(std::abs(b.pos));
+//            return std::tie(a.kmer, a.contigID) < std::tie(b.kmer, b.contigID);
+            return std::tie(a.kmer, a.contigID, a_pos) < std::tie(b.kmer, b.contigID, b_pos);
+        }
+    };
+
 
     uint64_t kmer;
     int32_t contigID;

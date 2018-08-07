@@ -27,6 +27,7 @@ endif (APPLE)
 
 
 project (bsg)
+OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" ON)
 
 # Get the remote url
 execute_process(
@@ -168,11 +169,13 @@ add_library(sequence_graph SHARED
         src/sglib/datastores/LinkedReadsDatastore.hpp
         src/sglib/datastores/PairedReadsDatastore.cc
         src/sglib/datastores/PairedReadsDatastore.hpp
+        src/sglib/datastores/LongReadsDatastore.cpp
         src/sglib/mappers/ReadMapping.hpp
         src/sglib/mappers/LinkedReadMapper.cc
         src/sglib/mappers/LinkedReadMapper.hpp
         src/sglib/mappers/PairedReadMapper.cc
         src/sglib/mappers/PairedReadMapper.hpp
+        src/sglib/mappers/LongReadMapper.cpp
         src/sglib/datastores/PathsDatastore.cc
         src/sglib/datastores/PathsDatastore.hpp
         src/sglib/WorkSpace.cc
@@ -186,6 +189,8 @@ add_executable(bsg-datastore
         src/bsg-datastore.cc
         src/sglib/datastores/LinkedReadsDatastore.hpp
         src/sglib/datastores/LinkedReadsDatastore.cc
+        src/sglib/datastores/LongReadsDatastore.cpp
+        src/sglib/datastores/PairedReadsDatastore.cc
         src/sglib/logger/OutputLog.h
         src/sglib/logger/OutputLog.cc)
 
@@ -253,6 +258,8 @@ add_executable(test_graphmaker EXCLUDE_FROM_ALL
         src/sglib/processors/GraphMaker.cc
         src/sglib/processors/GraphMaker.hpp)
 
+add_executable(test_mapper
+        src/test_mapper.cc)
 
 
 ## add executables and respective sources
@@ -290,3 +297,4 @@ target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(test_mapper sequence_graph)
