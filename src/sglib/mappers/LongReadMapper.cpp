@@ -21,6 +21,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
         std::vector<std::pair<bool, uint64_t>> read_kmers;
         std::ofstream mapping_output( "mappings" + std::to_string(omp_get_thread_num()) + ".tsv");
         mapping_output << "query\tnodes\tscores" << std::endl;
+        auto & private_results=thread_mappings[omp_get_thread_num()];
 
 #pragma omp for
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
@@ -151,6 +152,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                     if (winners[wp].first != 0 and winners[wp].first != last_winner) {
                         std::cout << "," << ((winners[wp].second>0)?"":"-") << sg.oldnames[winners[wp].first/2];
                         last_winner = winners[wp].first;
+                        private_results.emplace_back(winners[wp], readID, 0, 0, 0, 0); //TODO: Use the correct positions!
                     }
                 }
                 wp=rp;
@@ -174,7 +176,7 @@ void LongReadMapper::update_indexes_from_mappings() {
     for (std::vector<LongReadMapping>::const_iterator mappingItr = mappings.cbegin(); mappingItr != mappings.cend(); ++mappingItr) {
         auto index = (unsigned long)std::distance(mappings.cbegin(), mappingItr);
         read_to_mappings[mappingItr->read_id].push_back(index);
-        mappings_in_node[std::abs(mappingItr->node)].push_back(index);
+        reads_in_node[std::abs(mappingItr->node)].push_back(mappingItr->read_id);
     }
 }
 
@@ -183,7 +185,7 @@ LongReadMapper::LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_
 
     update_graph_index();
 
-    mappings_in_node.resize(sg.nodes.size());
+    reads_in_node.resize(sg.nodes.size());
     read_to_mappings.resize(datastore.size());
 }
 

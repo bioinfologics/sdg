@@ -20,7 +20,8 @@
  */
 struct LongReadMapping {
     LongReadMapping() {}
-
+    LongReadMapping(sgNodeID_t node, uint32_t read_id, int32_t nStart, int32_t nEnd, int32_t qStart, int32_t qEnd) :
+    node(node), read_id(read_id), nStart(nStart), nEnd(nEnd), qStart(qStart), qEnd(qEnd) {}
     bool operator==(const LongReadMapping &other) const {
         return std::tie(node,read_id,nStart,nEnd,qStart,qEnd)
                == std::tie(other.node,other.read_id,other.nStart,other.nEnd,other.qStart,other.qEnd);
@@ -88,7 +89,7 @@ class LongReadMapper {
      * Stores an index of the mappings of a node to all the mappings where it appears.
      * This index can be queried to get information about all reads that map to a node.
      */
-    std::vector< std::vector < std::vector<LongReadMapping>::size_type > > mappings_in_node;        /// Mappings matching node
+    std::vector< std::vector < std::vector<LongReadMapping>::size_type > > reads_in_node;        /// Reads matching node
 
     void update_indexes_from_mappings();
 
