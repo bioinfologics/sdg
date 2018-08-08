@@ -71,75 +71,67 @@ bool GraphEditor::detach_path(SequenceGraphPath p, bool consume_tips) {
     return true;
 }
 
-SequenceGraphPath GraphEditor::get_patch_path_between(sgNodeID_t from, sgNodeID_t to, std::string patch) {
-    auto n1 = ws.sg.nodes[llabs(from)];
-    auto n2 = ws.sg.nodes[llabs(to)];
-    const size_t ENDS_SIZE=1000;
-    if (n1.sequence.size()>ENDS_SIZE) n1.sequence=n1.sequence.substr(n1.sequence.size()-ENDS_SIZE-1,ENDS_SIZE);
-    if (n2.sequence.size()>ENDS_SIZE) n2.sequence.resize(ENDS_SIZE);
-    if (from<0) n1.make_rc();
-    if (to<0) n2.make_rc();
-    auto p1=patch.find(n1.sequence);
-    auto p2=patch.find(n2.sequence);
+SequenceGraphPath GraphEditor::find_longest_path_from(sgNodeID_t node, std::string seq) {
+    SequenceGraphPath p(ws.sg);
+    auto n1 = ws.sg.nodes[llabs(node)];
+    const size_t ENDS_SIZE=200;
+    if (node<0) n1.make_rc();
+    if (n1.sequence.size()>ENDS_SIZE) n1.sequence=n1.sequence.substr(n1.sequence.size()-ENDS_SIZE,ENDS_SIZE);
 
-    SequenceGraphPath sol(std::ref(ws.sg));
-    if (p1>=patch.size() or p2>=patch.size() or p1>=p2) {
-        return sol;
-    }
-    auto paths=ws.sg.find_all_paths_between(from,to,patch.size(),30, false);
-    //auto paths=ws.sg.find_all_paths_between(from,to,1000000,30);
-    for (auto p:paths){
-        auto pnp=patch.find(p.get_sequence());
-        if (pnp>p1 and pnp<p2) {
-            if (sol.nodes.empty()) {
-                sol.nodes.emplace_back(from);
-                sol.nodes.insert(sol.nodes.end(),p.nodes.begin(),p.nodes.end());
-                sol.nodes.emplace_back(to);
-            }
-            else {
-                sol.nodes.clear();
-                break;
+    //Find the end point of the current node in the patch sequence
+    auto p1=seq.find(n1.sequence);
+    if (p1>=seq.size()) return p;
+    //std::cout<<"Found "<<n1.sequence.size()<<" bp of starting node at position "<<p1<<" in the patch"<<std::endl;
+    auto last_end=p1+n1.sequence.size();
+    //std::cout<<"last_end is now "<<last_end<<std::endl;
+    //std::cout<<"n1 seq:    "<<n1.sequence<<std::endl;
+    //std::cout<<"patch seq: "<<seq<<std::endl;
+    p.nodes.emplace_back(node);
+
+    while (last_end<seq.size()) {
+        sgNodeID_t next=0;
+        uint64_t next_start;
+        //For every fw connection:
+        for (auto fwl:ws.sg.get_fw_links(p.nodes.back())) {
+            //Find the start position on the patch (use the connection distance)
+            next_start=last_end+fwl.dist;
+            //If the neighbour sequence and the patch sequence are the same till one of the two finishes: add neighbour as possible way forward.
+            auto nn=ws.sg.nodes[llabs(fwl.dest)];
+            if (fwl.dest<0) nn.make_rc();
+            auto s=seq.c_str()+next_start;
+            auto ns=nn.sequence.c_str();
+            //std::cout<<"Evaluating possible next node: "<<fwl.dest<<" distance is "<< fwl.dist<<" which makes next_start="<<next_start<<std::endl;
+            //std::cout<<"Node seq:  "<<ns<<std::endl;
+            //std::cout<<"Patch seq: "<<s<<std::endl;
+            while (*s!='\0' and *ns!='\0' and *s==*ns) {++s;++ns;};
+            if (*s=='\0' or *ns=='\0') {
+                if (next==0) next=fwl.dest;
+                else {
+                    next=0;
+                    break;
+                }
             }
         }
+        if (next==0) break;
+        else {
+            last_end=next_start+ws.sg.nodes[llabs(next)].sequence.size();
+            p.nodes.emplace_back(next);
+        }
     }
-    return sol;
+    //return path
+    return p;
 }
 
 int GraphEditor::patch_between(sgNodeID_t from, sgNodeID_t to, std::string patch) {
-    auto n1 = ws.sg.nodes[llabs(from)];
-    auto n2 = ws.sg.nodes[llabs(to)];
-    const size_t ENDS_SIZE=200;
-    if (from<0) n1.make_rc();
-    if (to<0) n2.make_rc();
-    if (n1.sequence.size()>ENDS_SIZE) n1.sequence=n1.sequence.substr(n1.sequence.size()-ENDS_SIZE-1,ENDS_SIZE);
-    if (n2.sequence.size()>ENDS_SIZE) n2.sequence.resize(ENDS_SIZE);
-    auto p1=patch.find(n1.sequence);
-    auto p2=patch.find(n2.sequence);
-    if (p1>=patch.size() or p2>=patch.size() or p1>=p2) {
-        return 1;
-    }
-    SequenceGraphPath sol(std::ref(ws.sg));
-    auto paths=ws.sg.find_all_paths_between(from,to,patch.size(),30);
-    //auto paths=ws.sg.find_all_paths_between(from,to,1000000,30);
-    if (paths.empty()) return 2;
-    for (auto p:paths){
-        //TODO: if a patch is {} it means direct connection, this is failing to do that!
-        auto pnp=patch.find(p.get_sequence());
-        if (p.nodes.size()==0 or (pnp>p1 and pnp<p2)) {
-            if (sol.nodes.empty()) {
-                sol.nodes.emplace_back(from);
-                sol.nodes.insert(sol.nodes.end(),p.nodes.begin(),p.nodes.end());
-                sol.nodes.emplace_back(to);
-            }
-            else {
-                return 3;
-            }
-        }
-    }
-    if (sol.nodes.empty()) return 4;
-    if (detach_path(sol,true)) return 0;
+    auto p=find_longest_path_from(from,patch);
+    //std::cout<<"trying to patch between "<<from<<" and "<< to<<", longest patch:";
+    //for (auto n:p.nodes) std::cout<<" "<<n;
+    //std::cout<<std::endl;
+    if (p.nodes.empty()) return 1;
+    if (p.nodes.back()!=to) return 2;
+    if (detach_path(p,true)) return 0;
     else return 5;
-}
+};
 
 void GraphEditor::join_path(SequenceGraphPath p, bool consume_nodes) {
     std::set<sgNodeID_t> pnodes;

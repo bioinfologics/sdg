@@ -340,9 +340,7 @@ int main(int argc, char * argv[]) {
                     ++patch_results[r];
                 }
                 sglib::OutputLog() << "Patches with no anchor ends:         "<< patch_results[1] <<std::endl;
-                sglib::OutputLog() << "Patches with incorrect anchor order: "<< patch_results[3] <<std::endl;
                 sglib::OutputLog() << "Patches with no SG paths:            "<< patch_results[2] <<std::endl;
-                sglib::OutputLog() << "Patches with no matching SG paths:   "<< patch_results[4] <<std::endl;
                 sglib::OutputLog() << "Patches with failed expansion:       "<< patch_results[5] <<std::endl;
                 sglib::OutputLog() << "Patches correctly applied:           "<< patch_results[0] <<std::endl;
                 auto juc=ws.sg.join_all_unitigs();
@@ -418,12 +416,9 @@ int main(int argc, char * argv[]) {
                 ++patch_results[r];
                 //TODO: check the collection of unitigs has changed.
                 pstatsf<<-p.first.first<<","<<p.first.second<<","<<p.second.size()<<","<<r<<","<<fromfw_before<<","<<fromfw_after<<","<<tobw_before<<","<<tobw_after<<std::endl;
-
             }
             sglib::OutputLog() << "Patches with no anchor ends:         "<< patch_results[1] <<std::endl;
-            sglib::OutputLog() << "Patches with incorrect anchor order: "<< patch_results[3] <<std::endl;
             sglib::OutputLog() << "Patches with no SG paths:            "<< patch_results[2] <<std::endl;
-            sglib::OutputLog() << "Patches with no matching SG paths:   "<< patch_results[4] <<std::endl;
             sglib::OutputLog() << "Patches with failed expansion:       "<< patch_results[5] <<std::endl;
             sglib::OutputLog() << "Patches correctly applied:           "<< patch_results[0] <<std::endl;
             ws.sg.write_to_gfa(output_prefix+"_patched_notjoined.gfa");
@@ -504,9 +499,7 @@ int main(int argc, char * argv[]) {
 
         }
         sglib::OutputLog() << "Patches with no anchor ends:         "<< patch_results[1] <<std::endl;
-        sglib::OutputLog() << "Patches with incorrect anchor order: "<< patch_results[3] <<std::endl;
         sglib::OutputLog() << "Patches with no SG paths:            "<< patch_results[2] <<std::endl;
-        sglib::OutputLog() << "Patches with no matching SG paths:   "<< patch_results[4] <<std::endl;
         sglib::OutputLog() << "Patches with failed expansion:       "<< patch_results[5] <<std::endl;
         sglib::OutputLog() << "Patches correctly applied:           "<< patch_results[0] <<std::endl;
         auto juc=ws.sg.join_all_unitigs();

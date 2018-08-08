@@ -244,7 +244,7 @@ void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std
     //write readsize
     output_file.write((char *) &readsize, sizeof(readsize));
     //create a vector of read tags (including each tag as many times as reads it contains).
-    std::cout << "creating vector of tags" << std::endl;
+    //std::cout << "creating vector of tags" << std::endl;
     std::vector<bsg10xTag> readtags;
     //readtags.push_back(0);
     for (auto trc:get_tag_readcount()) {

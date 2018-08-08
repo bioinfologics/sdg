@@ -1142,7 +1142,7 @@ void SequenceGraph::create_63mer_index(bool verbose) {
         uint64_t bases;
     };
 
-    sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
     const int k = 63;
     uint64_t total_k=0;
     std::vector<std::pair<__uint128_t,graphPosition>> kidxv;

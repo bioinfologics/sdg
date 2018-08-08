@@ -461,7 +461,7 @@ void LocalHaplotypeAssembler::path_linked_reads_informative_singles() {
         }
         //std::cout<<t<<","<<chim<<","<<ws.linked_read_datastores[0].get_tag_reads(t).size()<<","<<100.0*chim/ws.linked_read_datastores[0].get_tag_reads(t).size()<<std::endl;
     }
-    sglib::OutputLog()<<linkedread_paths.size()<<" informative single read paths created!"<<std::endl;
+    //sglib::OutputLog()<<linkedread_paths.size()<<" informative single read paths created!"<<std::endl;
 }
 
 void LocalHaplotypeAssembler::path_paired_reads_informative_singles() {
