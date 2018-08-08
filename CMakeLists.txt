@@ -27,7 +27,6 @@ endif (APPLE)
 
 
 project (bsg)
-OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" ON)
 
 # Get the remote url
 execute_process(
@@ -258,9 +257,6 @@ add_executable(test_graphmaker EXCLUDE_FROM_ALL
         src/sglib/processors/GraphMaker.cc
         src/sglib/processors/GraphMaker.hpp)
 
-add_executable(test_mapper
-        src/test_mapper.cc)
-
 
 ## add executables and respective sources
 add_executable(gfa-qc EXCLUDE_FROM_ALL
@@ -297,4 +293,3 @@ target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(test_mapper sequence_graph)
