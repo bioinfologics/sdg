@@ -285,13 +285,11 @@ int main(int argc, char * argv[]) {
 
 
     if (dev_local_patching) {
-        for (int cycle=0;cycle<8;++cycle) {
-            if (cycle==0 or cycle==1 or cycle==6 or cycle==7) min_backbone_node_size=1000;
-            else if (cycle==2 or cycle==3) min_backbone_node_size=500;
-            else min_backbone_node_size=2000;
-            int min_coverage;
-            if (cycle%2==0) min_coverage=7;
-            else min_coverage=5;
+        int min_sizes[6]={750,1000,1500,750,1000,1500};
+        int min_coverages[6]={7,7,7,5,5,5};
+        for (int cycle=0;cycle<6;++cycle) {
+            min_backbone_node_size=min_sizes[cycle];
+            int min_coverage=min_coverages[cycle];
             {
                 //=================now linkage
                 LinkageUntangler lu(ws);
@@ -310,11 +308,11 @@ int main(int argc, char * argv[]) {
                     LocalHaplotypeAssembler lha(ws);
                     lha.init_from_backbone(l);
                     lha.assemble(63, min_coverage, false, false);
-                    lha.assembly.create_63mer_index();
+                    lha.assembly.create_63mer_index(false);
                     lha.path_linked_reads_informative_singles();
                     lha.expand_canonical_repeats();
                     lha.assembly.join_all_unitigs();
-                    lha.assembly.create_63mer_index();
+                    lha.assembly.create_63mer_index(false);
                     lha.path_linked_reads_informative_singles();
                     lha.expand_canonical_repeats();
                     lha.assembly.join_all_unitigs();
