@@ -129,7 +129,8 @@ int main(int argc, char * argv[]) {
 
     ws.add_log_entry("bsg-untangler run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
-
+    if (remap_reads) sglib::OutputLog()<<"This run WILL remap reads at the end"<<std::endl;
+    else sglib::OutputLog()<<"This run will NOT remap reads at the end"<<std::endl;
     //======= FUNCTIONS FOR REAL-LIFE USE ======
 
     if (unroll_loops){
@@ -215,11 +216,11 @@ int main(int argc, char * argv[]) {
             LocalHaplotypeAssembler lha(ws);
             lha.init_from_backbone(l);
             lha.assemble(63, 7, false, false);
-            lha.assembly.create_63mer_index();
+            lha.assembly.create_63mer_index(false);
             lha.path_linked_reads_informative_singles();
             lha.expand_canonical_repeats();
             lha.assembly.join_all_unitigs();
-            lha.assembly.create_63mer_index();
+            lha.assembly.create_63mer_index(false);
             lha.path_linked_reads_informative_singles();
             lha.expand_canonical_repeats();
             lha.assembly.join_all_unitigs();
