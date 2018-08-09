@@ -289,7 +289,7 @@ int main(int argc, char * argv[]) {
                 }
             }
         }
-        out.dump_to_disk(output);
+        out.dump_to_disk(output+".bsgws");
     }
     else {
         std::cout<<"Please specify one of: make, log, status, dump, copy_mapped"<<std::endl;
