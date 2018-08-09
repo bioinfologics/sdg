@@ -227,6 +227,7 @@ int main(int argc, char * argv[]) {
         for (int i = 0; i < base.paired_read_datastores.size(); ++i) {
             base_datastores.insert(base.paired_read_datastores[i].filename);
             if (lr_filter.empty() or lr_filter.count(i) == 0) {
+                sglib::OutputLog()<< "Adding " << merge.paired_read_datastores[i].filename << std::endl;
                 out.paired_read_datastores.push_back(base.paired_read_datastores[i]);
                 out.paired_read_mappers.push_back(base.paired_read_mappers[i]);
             }
@@ -235,6 +236,7 @@ int main(int argc, char * argv[]) {
         for (int i = 0; i < base.linked_read_datastores.size(); ++i) {
             base_datastores.insert(base.linked_read_datastores[i].filename);
             if (lr_filter.empty() or lr_filter.count(i) == 0) {
+                sglib::OutputLog()<< "Adding " << base.linked_read_datastores[i].filename << std::endl;
                 out.linked_read_datastores.push_back(base.linked_read_datastores[i]);
                 out.linked_read_mappers.push_back(base.linked_read_mappers[i]);
             }
@@ -243,6 +245,7 @@ int main(int argc, char * argv[]) {
         for (int i = 0; i < base.long_read_datastores.size(); ++i) {
             base_datastores.insert(base.long_read_datastores[i].filename);
             if (lr_filter.empty() or lr_filter.count(i) == 0) {
+                sglib::OutputLog()<< "Adding " << base.long_read_datastores[i].filename << std::endl;
                 out.long_read_datastores.push_back(base.long_read_datastores[i]);
                 out.long_read_mappers.push_back(base.long_read_mappers[i]);
             }
@@ -251,18 +254,21 @@ int main(int argc, char * argv[]) {
         if (base.sg == merge.sg or force) {
             for (int i = 0; i < merge.paired_read_datastores.size(); ++i) {
                 if (base_datastores.find(merge.paired_read_datastores[i].filename) == base_datastores.end()) {
+                    sglib::OutputLog()<< "Adding " << merge.paired_read_datastores[i].filename << std::endl;
                     out.paired_read_datastores.push_back(merge.paired_read_datastores[i]);
                     out.paired_read_mappers.push_back(merge.paired_read_mappers[i]);
                 }
             }
             for (int i = 0; i < merge.linked_read_datastores.size(); ++i) {
                 if (base_datastores.find(merge.linked_read_datastores[i].filename) == base_datastores.end()) {
+                    sglib::OutputLog()<< "Adding " << merge.linked_read_datastores[i].filename << std::endl;
                     out.linked_read_datastores.push_back(merge.linked_read_datastores[i]);
                     out.linked_read_mappers.push_back(merge.linked_read_mappers[i]);
                 }
             }
             for (int i = 0; i < merge.long_read_datastores.size(); ++i) {
                 if (base_datastores.find(merge.long_read_datastores[i].filename) == base_datastores.end()) {
+                    sglib::OutputLog()<< "Adding " << merge.long_read_datastores[i].filename << std::endl;
                     out.long_read_datastores.push_back(merge.long_read_datastores[i]);
                     out.long_read_mappers.push_back(merge.long_read_mappers[i]);
                 }
@@ -272,18 +278,21 @@ int main(int argc, char * argv[]) {
                                << std::endl;
             for (int i = 0; i < merge.paired_read_datastores.size(); ++i) {
                 if (base_datastores.find(merge.paired_read_datastores[i].filename) == base_datastores.end()) {
+                    sglib::OutputLog()<< "Adding " << merge.paired_read_datastores[i].filename << " without mappings" << std::endl;
                     out.paired_read_datastores.push_back(merge.paired_read_datastores[i]);
                     out.paired_read_mappers.emplace_back(merge.sg,merge.paired_read_datastores[i]);
                 }
             }
             for (int i = 0; i < merge.linked_read_datastores.size(); ++i) {
                 if (base_datastores.find(merge.linked_read_datastores[i].filename) == base_datastores.end()) {
+                    sglib::OutputLog()<< "Adding " << merge.linked_read_datastores[i].filename << " without mappings" << std::endl;
                     out.linked_read_datastores.push_back(merge.linked_read_datastores[i]);
                     out.linked_read_mappers.emplace_back(merge.sg,merge.linked_read_datastores[i]);
                 }
             }
             for (int i = 0; i < merge.long_read_datastores.size(); ++i) {
                 if (base_datastores.find(merge.long_read_datastores[i].filename) == base_datastores.end()) {
+                    sglib::OutputLog()<< "Adding " << merge.long_read_datastores[i].filename << " without mappings" << std::endl;
                     out.long_read_datastores.push_back(merge.long_read_datastores[i]);
                     out.long_read_mappers.emplace_back(merge.sg,merge.long_read_datastores[i]);
                 }

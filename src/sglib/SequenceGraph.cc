@@ -489,9 +489,9 @@ void SequenceGraph::load_from_gfa(std::string filename) {
         }
     }
     if (dist_egt0 > lcount*0.5f) {
-        std::cout << "Warning: The loaded graph contains " << dist_egt0 << " non-overlapping links out of " << lcount << std::endl;
+        sglib::OutputLog() << "Warning: The loaded graph contains " << dist_egt0 << " non-overlapping links out of " << lcount << std::endl;
     }
-    std::cout<<nodes.size()-1<<" nodes after connecting with "<<lcount<<" links"<<std::endl;
+    sglib::OutputLog() <<nodes.size()-1<<" nodes after connecting with "<<lcount<<" links"<<std::endl;
 }
 
 void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<sgNodeID_t> & mark_red, const std::vector<double> & depths,

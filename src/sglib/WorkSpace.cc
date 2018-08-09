@@ -84,7 +84,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     if (log_only) return;
     //read element type, then use that element's read
     sg.read(wsfile);
-    std::cout<<"Loaded graph with "<<sg.nodes.size()-1<<" nodes" <<std::endl;
+    sglib::OutputLog() <<"Loaded graph with "<<sg.nodes.size()-1<<" nodes" <<std::endl;
     kci.read(wsfile);
     //todo: read all datastores and mappers!!!
 //    if (format>1) {
