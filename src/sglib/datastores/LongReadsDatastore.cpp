@@ -41,7 +41,6 @@ void LongReadsDatastore::load_index(std::string &file) {
 
 uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, std::string long_read_file) {
     // open the file
-    read_to_fileRecord.reserve(100000);
     uint32_t numRecords(0);
     int infile = ::open(long_read_file.c_str(), O_RDONLY);
     if (!infile) {
@@ -54,14 +53,16 @@ uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, std::string l
         std::getline(fastq_ifstream, seq);
         if (!seq.empty()) {
             uint32_t size = seq.size();
+            auto offset = outf.tellp();
             outf.write((char*)&size, sizeof(size));
-            read_to_fileRecord.push_back(ReadPosSize(outf.tellp(),size));
+            read_to_fileRecord.emplace_back(offset,size);
             outf.write((char*)seq.c_str(), size);
         }
         std::getline(fastq_ifstream, p);
         std::getline(fastq_ifstream, qual);
         ++numRecords;
     }
+    read_to_fileRecord.pop_back();
     return static_cast<uint32_t>(read_to_fileRecord.size());
 }
 
@@ -123,6 +124,7 @@ LongReadsDatastore::LongReadsDatastore(std::string long_read_file, std::string o
     ofs.write((char*) &nReads, sizeof(nReads));     // Dump # of reads
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
     ofs.flush();                                    // Make sure everything has been written
+    sglib::OutputLog(sglib::LogLevels::INFO)<<"Built datastore with "<<size()-1<<" reads"<<std::endl;
     lr_sequence_fd = ::open(output_file.c_str(), O_RDONLY);
     if (lr_sequence_fd == -1) {
         perror("fstat");
