@@ -36,7 +36,7 @@ void LongReadsDatastore::load_index(std::string &file) {
 
     this->mapped_readfile = ::mmap(NULL, length + offset - pa_offset, PROT_READ,
                                    MAP_PRIVATE, lr_sequence_fd, pa_offset);
-    sglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()<<std::endl;
+    sglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()-1<<std::endl;
 }
 
 uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, std::string long_read_file) {

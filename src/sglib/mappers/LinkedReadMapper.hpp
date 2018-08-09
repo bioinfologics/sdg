@@ -23,6 +23,16 @@ public:
     LinkedReadMapper(SequenceGraph &_sg, LinkedReadsDatastore &_datastore) : sg(_sg),datastore(_datastore){
         reads_in_node.resize(sg.nodes.size());
     };
+
+    LinkedReadMapper& operator=(const LinkedReadMapper &o) {
+        if (this == &o) return *this;
+
+        reads_in_node = o.reads_in_node;
+        read_to_node = o.read_to_node;
+
+        return *this;
+    }
+
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
     void map_reads(std::unordered_set<uint64_t> const &  reads_to_remap={});

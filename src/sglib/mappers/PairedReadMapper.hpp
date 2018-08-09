@@ -26,6 +26,17 @@ public:
     PairedReadMapper(SequenceGraph &_sg, PairedReadsDatastore &_datastore) : sg(_sg),datastore(_datastore){
         reads_in_node.resize(sg.nodes.size());
     };
+    PairedReadMapper& operator=(const PairedReadMapper &o) {
+        if (this == &o) return *this;
+
+        reads_in_node = o.reads_in_node;
+        read_to_node = o.read_to_node;
+        rfdist = o.rfdist;
+        frdist = o.frdist;
+        read_direction_in_node = o.read_direction_in_node;
+
+        return *this;
+    }
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
     void map_reads(std::unordered_set<uint64_t> const &  reads_to_remap={});

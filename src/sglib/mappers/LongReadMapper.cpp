@@ -24,7 +24,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 
         auto & private_results=thread_mappings[omp_get_thread_num()];
 
-#pragma omp for
+#pragma omp for schedule(static,10)
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
             if (!((readIDs.size()>0 and readIDs.count(readID)>0) or (readIDs.empty() and read_to_mappings[readID].empty())))
                 continue;
@@ -34,6 +34,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 
             const auto &line(datastore.get_read_sequence(readID));
             if ( line.size()< 4*window_size) continue;
+            sglib::OutputLog() << "Processing read " << readID << " " << line.size() << std::endl;
             std::map<uint32_t , uint32_t > node_score;
             //===== Create a vector of nodes for every k-mer in the read.
             read_kmers.clear();

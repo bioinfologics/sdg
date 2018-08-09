@@ -134,6 +134,18 @@ public:
     KmerCompressionIndex(SequenceGraph &_sg):sg(_sg){
         max_mem = 0;
     };
+
+    KmerCompressionIndex& operator=(const KmerCompressionIndex &o) {
+        if (this != &o) {
+            sg = o.sg;
+            graph_kmers = o.graph_kmers;
+            nodes_depth = o.nodes_depth;
+            read_counts = o.read_counts;
+            uniq_mode = o.uniq_mode;
+        }
+        return *this;
+    }
+
     void index_graph();
     void reindex_graph();
     void start_new_count();

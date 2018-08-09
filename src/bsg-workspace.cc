@@ -178,8 +178,121 @@ int main(int argc, char * argv[]) {
         }
 
     }
+    else if (0==strcmp(argv[1],"copy_mapped")) {
+        std::vector<int> lr_datastores,pr_datastores,Lr_datastores;
+        std::string output="";
+        std::string base_filename="",merge_filename="";
+        bool force(false);
+        try {
+            cxxopts::Options options("bsg-kmerspectra make", "BSG make workspace");
+
+            options.add_options()
+                    ("help", "Print help")
+                    ("w,workspace_base", "base workspace", cxxopts::value<std::string>(base_filename))
+                    ("m,workspace_merge", "merge workspace", cxxopts::value<std::string>(merge_filename))
+                    ("p,paired_reads", "paired reads datastore", cxxopts::value<std::vector<int>>(pr_datastores))
+                    ("l,linked_reads", "linked reads datastore", cxxopts::value<std::vector<int>>(lr_datastores))
+                    ("L,long_reads", "long reads datastore", cxxopts::value<std::vector<int>>(Lr_datastores))
+                    ("f,force", "force copy of datastores", cxxopts::value<bool>(force))
+                    ("o,output", "output file", cxxopts::value<std::string>(output));
+            auto newargc=argc-1;
+            auto newargv=&argv[1];
+            auto result=options.parse(newargc,newargv);
+            if (result.count("help")) {
+                std::cout << options.help({""}) << std::endl;
+                exit(0);
+            }
+
+            if (output=="" or base_filename=="" or merge_filename == "") {
+                throw cxxopts::OptionException(" please specify a base workspace, a merge workspace and output prefix");
+            }
+
+        } catch (const cxxopts::OptionException &e) {
+            std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
+                      << "Use option --help to check command line arguments." << std::endl;
+            exit(1);
+        }
+
+        WorkSpace base,merge,out;
+        base.load_from_disk(base_filename);
+        merge.load_from_disk(merge_filename);
+        out.kci = base.kci;
+        out.sg = base.sg;
+        std::set<int> lr_filter(lr_datastores.begin(), lr_datastores.end());
+        std::set<int> pr_filter(pr_datastores.begin(), pr_datastores.end());
+        std::set<int> Lr_filter(Lr_datastores.begin(), Lr_datastores.end());
+
+        // TODO: Only insert non-repeated datastores (check names of the files)
+        std::unordered_set<std::string> base_datastores;
+        for (int i = 0; i < base.paired_read_datastores.size(); ++i) {
+            base_datastores.insert(base.paired_read_datastores[i].filename);
+            if (lr_filter.empty() or lr_filter.count(i) != 0) {
+                out.paired_read_datastores.push_back(base.paired_read_datastores[i]);
+                out.paired_read_mappers.push_back(base.paired_read_mappers[i]);
+            }
+        }
+
+        for (int i = 0; i < base.linked_read_datastores.size(); ++i) {
+            base_datastores.insert(base.linked_read_datastores[i].filename);
+            if (lr_filter.empty() or lr_filter.count(i) != 0) {
+                out.linked_read_datastores.push_back(base.linked_read_datastores[i]);
+                out.linked_read_mappers.push_back(base.linked_read_mappers[i]);
+            }
+        }
+
+        for (int i = 0; i < base.long_read_datastores.size(); ++i) {
+            base_datastores.insert(base.long_read_datastores[i].filename);
+            if (lr_filter.empty() or lr_filter.count(i) != 0) {
+                out.long_read_datastores.push_back(base.long_read_datastores[i]);
+                out.long_read_mappers.push_back(base.long_read_mappers[i]);
+            }
+        }
+
+        if (base.sg == merge.sg or force) {
+            for (int i = 0; i < merge.paired_read_datastores.size(); ++i) {
+                if (base_datastores.find(merge.paired_read_datastores[i].filename) != base_datastores.end()) {
+                    out.paired_read_datastores.push_back(merge.paired_read_datastores[i]);
+                    out.paired_read_mappers.push_back(merge.paired_read_mappers[i]);
+                }
+            }
+            for (int i = 0; i < merge.linked_read_datastores.size(); ++i) {
+                if (base_datastores.find(merge.linked_read_datastores[i].filename) != base_datastores.end()) {
+                    out.linked_read_datastores.push_back(merge.linked_read_datastores[i]);
+                    out.linked_read_mappers.push_back(merge.linked_read_mappers[i]);
+                }
+            }
+            for (int i = 0; i < merge.long_read_datastores.size(); ++i) {
+                if (base_datastores.find(merge.long_read_datastores[i].filename) != base_datastores.end()) {
+                    out.long_read_datastores.push_back(merge.long_read_datastores[i]);
+                    out.long_read_mappers.push_back(merge.long_read_mappers[i]);
+                }
+            }
+        } else {
+            sglib::OutputLog() << "The graphs in the base and merge datastores are different, not merging mappers"
+                               << std::endl;
+            for (int i = 0; i < merge.paired_read_datastores.size(); ++i) {
+                if (base_datastores.find(merge.paired_read_datastores[i].filename) != base_datastores.end()) {
+                    out.paired_read_datastores.push_back(merge.paired_read_datastores[i]);
+                    out.paired_read_mappers.emplace_back(merge.sg,merge.paired_read_datastores[i]);
+                }
+            }
+            for (int i = 0; i < merge.linked_read_datastores.size(); ++i) {
+                if (base_datastores.find(merge.linked_read_datastores[i].filename) != base_datastores.end()) {
+                    out.linked_read_datastores.push_back(merge.linked_read_datastores[i]);
+                    out.linked_read_mappers.emplace_back(merge.sg,merge.linked_read_datastores[i]);
+                }
+            }
+            for (int i = 0; i < merge.long_read_datastores.size(); ++i) {
+                if (base_datastores.find(merge.long_read_datastores[i].filename) != base_datastores.end()) {
+                    out.long_read_datastores.push_back(merge.long_read_datastores[i]);
+                    out.long_read_mappers.emplace_back(merge.sg,merge.long_read_datastores[i]);
+                }
+            }
+        }
+        out.dump_to_disk(output);
+    }
     else {
-        std::cout<<"Please specify one of: make, log, status, dump"<<std::endl;
+        std::cout<<"Please specify one of: make, log, status, dump, copy_mapped"<<std::endl;
     }
 }
 
