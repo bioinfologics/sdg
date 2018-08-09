@@ -34,8 +34,8 @@ class LongReadsDatastore {
     off_t offset = 0;
     size_t file_size = 0;
     off_t page_size = static_cast<off_t>(sysconf(_SC_PAGESIZE));
-    int long_read_fd = 0;
-    std::string long_read_file;
+    int lr_sequence_fd = 0;
+    std::string file_containing_long_read_sequence;
 
     void read_rtfr(std::ifstream &ifs);
     void write_rtfr(std::ofstream &output_file);
@@ -67,8 +67,11 @@ public:
     void write(std::ofstream &output_file);
 
     size_t size() const { return read_to_fileRecord.size(); }
-    std::string get_read_sequence(size_t readID);
+    std::string get_read_sequence(size_t readID) const;
 
+    void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids) const;
+
+    void load_from_stream(std::string file_name, std::ifstream &input_file);
     std::string filename;
 };
 

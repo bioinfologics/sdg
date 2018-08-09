@@ -103,6 +103,7 @@ public:
     void update_graph_index();
     LongReadsDatastore& getLongReadsDatastore() {return datastore;}
 
+    std::vector<uint64_t> get_node_read_ids(sgNodeID_t nodeID) const ;
 
     void map_reads(std::unordered_set<uint32_t> readIDs = {});
 

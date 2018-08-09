@@ -9,18 +9,19 @@
 #include <omp.h>
 #include <parallel/algorithm>
 #include <sglib/logger/OutputLog.h>
+#include <atomic>
 
 #endif
 
 void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
+    if (assembly_kmers.empty()) update_graph_index();
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
-
+    std::atomic<uint32_t > num_reads_done(0);
 #pragma omp parallel
     {
         StringKMerFactory skf(k);
         std::vector<std::pair<bool, uint64_t>> read_kmers;
-        std::ofstream mapping_output( "mappings" + std::to_string(omp_get_thread_num()) + ".tsv");
-        mapping_output << "query\tnodes\tscores" << std::endl;
+
         auto & private_results=thread_mappings[omp_get_thread_num()];
 
 #pragma omp for
@@ -33,12 +34,10 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 
             const auto &line(datastore.get_read_sequence(readID));
             if ( line.size()< 4*window_size) continue;
-            sglib::OutputLog() << "Processing read " << readID << " " << line.size() << std::endl;
             std::map<uint32_t , uint32_t > node_score;
             //===== Create a vector of nodes for every k-mer in the read.
             read_kmers.clear();
             skf.create_kmers(line, read_kmers); //XXX: Ns will produce "deletion-windows"
-            sglib::OutputLog() <<"Generating node matches... SLOOOOOOW"<<std::endl;
             std::vector<std::vector<std::pair<uint32_t, bool>>> node_matches(read_kmers.size());
             for (auto i=0;i<read_kmers.size();++i){
                 auto first = std::lower_bound(assembly_kmers.begin(), assembly_kmers.end(), read_kmers[i].second, KmerIDX::ltKmer());
@@ -48,29 +47,21 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                     ++node_score[it->contigID];
                 }
             }
-            sglib::OutputLog()<<"DONE"<<std::endl;
 
 
 
             //===== Rank nodes by how many kmer-hits they have on the read, choose the top N
-            sglib::OutputLog()<<"Scoring nodes"<<std::endl;
             std::vector<std::pair<uint32_t , uint32_t>> score_node;
             for (auto &ns:node_score){
                 score_node.emplace_back(ns.second, ns.first);
             }
             std::sort(score_node.rbegin(),score_node.rend());
 
-            if (score_node.size()>max_num_score_nodes){
-                sglib::OutputLog() << "This read contains kmers from " << score_node.size() << " nodes, limiting to " << max_num_score_nodes << std::endl;
+            if (score_node.size()>max_num_score_nodes) {
                 score_node.resize(max_num_score_nodes);
-            } else {
-                sglib::OutputLog() << "This read contains kmers from " << score_node.size() << " nodes" << std::endl;
             }
-            sglib::OutputLog()<<"DONE"<<std::endl;
-
 
             //===== For every window (sliding by win_size/2) save total of kmers in every node of the top N
-            sglib::OutputLog()<<"Collecting votes"<<std::endl;
 //        if (print_csv) {
 //            std::ofstream readout("read" + std::to_string(i / 2) + ".csv");
 //            readout << "window#";
@@ -78,7 +69,6 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 //            readout << std::endl;
 //        }
 
-            mapping_output << readID << "\t";
             std::vector< std::pair<uint32_t, float> > winners;
             for (int wp_i = 0 , w_i = 0; wp_i < read_kmers.size(); ++w_i) {
                 std::map<uint32_t,float> win_node_score;
@@ -125,22 +115,10 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 //                readout << std::endl;
 //            }
             }
-            sglib::OutputLog()<<"DONE"<<std::endl;
-            mapping_output<<( (winners[0].second>=0) ? "" : "-" )<< ( (winners[0].first == 0 ) ? "0": sg.oldnames[(winners[0].first)/2]);
-            for (int i = 1; i < winners.size(); ++i) {
-                mapping_output<<","<<( (winners[i].second>=0) ? "" : "-" )<< ( (winners[i].first == 0 ) ? "0": sg.oldnames[(winners[i].first)/2]);
-            }
-            mapping_output << "\t";
-            mapping_output<<winners[0].second;
-            for (int i = 1; i < winners.size(); ++i) {
-                mapping_output<< ","<<winners[i].second;
-            }
-
+            num_reads_done++;
             int rp(0),wp(0),last_winner(0);
-            sglib::OutputLog() << "Path " << readID << " ";
             while(winners[rp].first==0){rp++;} // Find first non zero
             wp=rp;
-            if (rp < winners.size()) std::cout << sg.oldnames[winners[wp].first/2];
             last_winner=winners[wp].first;
             wp++;
             rp++;
@@ -150,16 +128,18 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 }
                 if (rp-wp > 1) {
                     if (winners[wp].first != 0 and winners[wp].first != last_winner) {
-                        std::cout << "," << ((winners[wp].second>0)?"":"-") << sg.oldnames[winners[wp].first/2];
                         last_winner = winners[wp].first;
-                        private_results.emplace_back(winners[wp], readID, 0, 0, 0, 0); //TODO: Use the correct positions!
+                        private_results.emplace_back(winners[wp].first, readID, 0, 0, 0, 0); //TODO: Use the correct positions!
                     }
                 }
                 wp=rp;
             }
-            std::cout << std::endl;
-
-            mapping_output << std::endl;
+#pragma omp critical (lrmap_progress)
+            {
+                if (num_reads_done%1000 == 0) {
+                    sglib::OutputLog() << num_reads_done << " / " << datastore.size() << " reads mapped" << std::endl;
+                }
+            }
         }
     }
     for (int thread = 0; thread<omp_get_max_threads(); thread++) {
@@ -182,8 +162,6 @@ void LongReadMapper::update_indexes_from_mappings() {
 
 LongReadMapper::LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k)
         : sg(sg), k(k), datastore(ds) {
-
-    update_graph_index();
 
     reads_in_node.resize(sg.nodes.size());
     read_to_mappings.resize(datastore.size());
@@ -270,4 +248,15 @@ LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
     mappings = other.mappings;
     update_indexes_from_mappings();
     return *this;
+}
+
+std::vector<uint64_t> LongReadMapper::get_node_read_ids(sgNodeID_t nodeID) const {
+    std::vector<uint64_t> rpin;
+    nodeID=llabs(nodeID);
+    rpin.reserve(reads_in_node[nodeID].size());
+    for (auto &rm:reads_in_node[nodeID]){
+        rpin.emplace_back(rm);
+    }
+    std::sort(rpin.begin(),rpin.end());
+    return rpin;
 }

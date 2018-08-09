@@ -48,6 +48,7 @@ public:
     std::vector<Node > backbone_nodes;
     std::set<bsg10xTag> tagSet;
     std::vector<std::pair<uint16_t , std::vector<uint64_t>>> paired_reads;
+    std::vector<std::pair<uint16_t , std::vector<uint64_t>>> long_reads;
     std::vector<std::pair<std::pair<sgNodeID_t ,sgNodeID_t>,std::string>> patches;
 
     SequenceGraph assembly;
