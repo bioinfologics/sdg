@@ -7,14 +7,22 @@
 
 void LongReadsDatastore::load_index(std::string &file) {
     filename = file;
+
     std::ifstream ifs(file, std::ios_base::binary);
-    std::getline(ifs, file_containing_long_read_sequence, '\0');
-    lr_sequence_fd = ::open(file_containing_long_read_sequence.c_str(), O_RDONLY);
+
+    uint64_t nReads(0);
+    std::streampos fPos;
+
+    ifs.read((char*)&nReads, sizeof(nReads));
+    ifs.read((char*)&fPos, sizeof(fPos));
+    ifs.seekg(fPos);
+    read_rtfr(ifs);
+
+    lr_sequence_fd = ::open(filename.c_str(), O_RDONLY);
     if (lr_sequence_fd == -1) {
         perror("fstat");
         exit(EXIT_FAILURE);
     }
-    read_rtfr(ifs);
 
     struct stat sb;
 
@@ -31,7 +39,7 @@ void LongReadsDatastore::load_index(std::string &file) {
     sglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()<<std::endl;
 }
 
-uint32_t LongReadsDatastore::build_from_fastq(std::string long_read_file) {
+uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, std::string long_read_file) {
     // open the file
     read_to_fileRecord.reserve(100000);
     uint32_t numRecords(0);
@@ -39,39 +47,21 @@ uint32_t LongReadsDatastore::build_from_fastq(std::string long_read_file) {
     if (!infile) {
         return 0;
     }
-    // read each record
-    char *buffer;
-    int rc;
-    rc = posix_memalign((void **) &buffer, page_size, page_size);
-    if (0 != rc) {
-        return 0;
+    std::ifstream fastq_ifstream(long_read_file);
+    std::string name,seq,p,qual;
+    while(fastq_ifstream.good()) {
+        std::getline(fastq_ifstream, name);
+        std::getline(fastq_ifstream, seq);
+        if (!seq.empty()) {
+            uint32_t size = seq.size();
+            outf.write((char*)&size, sizeof(size));
+            read_to_fileRecord.push_back(ReadPosSize(outf.tellp(),size));
+            outf.write((char*)seq.c_str(), size);
+        }
+        std::getline(fastq_ifstream, p);
+        std::getline(fastq_ifstream, qual);
+        ++numRecords;
     }
-
-    //res.reserve(100000);
-    ssize_t sz=0, sz_read=1;
-    uint32_t eolCounter = 0;
-    uint32_t readSize = 0;
-    off_t filePos = 0;
-    while (sz_read > 0
-           && (sz_read = ::read(infile, buffer, page_size)) > 0) {
-        size_t ptr = 0;
-        do {
-            if (buffer[ptr] == '\n'){
-                eolCounter++;
-                auto modEol(eolCounter % 4);
-                if (modEol == 1) {
-                    read_to_fileRecord.push_back(ReadPosSize(filePos,0));
-                    readSize=0;
-                } else if (modEol == 2) {
-                    read_to_fileRecord.back().record_size = readSize;
-                }
-            }
-            ++readSize;
-            ++filePos;
-            ++ptr;
-        } while (ptr < sz_read);
-    }
-    free(buffer);
     return static_cast<uint32_t>(read_to_fileRecord.size());
 }
 
@@ -114,17 +104,26 @@ std::string LongReadsDatastore::get_read_sequence(size_t readID) const {
 }
 
 LongReadsDatastore::LongReadsDatastore(std::string filename) {
+
     load_index(filename);
 }
 
 LongReadsDatastore::LongReadsDatastore(std::string long_read_file, std::string output_file) {
     filename = output_file;
-    build_from_fastq(long_read_file);
-    std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
-    ofs.write(long_read_file.data(), long_read_file.size()+1);
-    write_rtfr(ofs);
 
-    lr_sequence_fd = ::open(long_read_file.c_str(), O_RDONLY);
+    uint64_t nReads(0);
+    std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
+    std::streampos fPos;
+    ofs.write((char*) &nReads, sizeof(nReads));
+    ofs.write((char*) &fPos, sizeof(fPos));
+    nReads = build_from_fastq(ofs, long_read_file); // Build read_to_fileRecord
+    fPos = ofs.tellp();                             // Write position after reads
+    write_rtfr(ofs);                                // Dump rtfr
+    ofs.seekp(0);                                   // Go to top and dump # reads and position of index
+    ofs.write((char*) &nReads, sizeof(nReads));     // Dump # of reads
+    ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
+    ofs.flush();                                    // Make sure everything has been written
+    lr_sequence_fd = ::open(output_file.c_str(), O_RDONLY);
     if (lr_sequence_fd == -1) {
         perror("fstat");
         exit(EXIT_FAILURE);
