@@ -226,7 +226,7 @@ int main(int argc, char * argv[]) {
         std::unordered_set<std::string> base_datastores;
         for (int i = 0; i < base.paired_read_datastores.size(); ++i) {
             base_datastores.insert(base.paired_read_datastores[i].filename);
-            if (lr_filter.empty() or lr_filter.count(i) != 0) {
+            if (lr_filter.empty() or lr_filter.count(i) == 0) {
                 out.paired_read_datastores.push_back(base.paired_read_datastores[i]);
                 out.paired_read_mappers.push_back(base.paired_read_mappers[i]);
             }
@@ -234,7 +234,7 @@ int main(int argc, char * argv[]) {
 
         for (int i = 0; i < base.linked_read_datastores.size(); ++i) {
             base_datastores.insert(base.linked_read_datastores[i].filename);
-            if (lr_filter.empty() or lr_filter.count(i) != 0) {
+            if (lr_filter.empty() or lr_filter.count(i) == 0) {
                 out.linked_read_datastores.push_back(base.linked_read_datastores[i]);
                 out.linked_read_mappers.push_back(base.linked_read_mappers[i]);
             }
@@ -242,7 +242,7 @@ int main(int argc, char * argv[]) {
 
         for (int i = 0; i < base.long_read_datastores.size(); ++i) {
             base_datastores.insert(base.long_read_datastores[i].filename);
-            if (lr_filter.empty() or lr_filter.count(i) != 0) {
+            if (lr_filter.empty() or lr_filter.count(i) == 0) {
                 out.long_read_datastores.push_back(base.long_read_datastores[i]);
                 out.long_read_mappers.push_back(base.long_read_mappers[i]);
             }
@@ -250,19 +250,19 @@ int main(int argc, char * argv[]) {
 
         if (base.sg == merge.sg or force) {
             for (int i = 0; i < merge.paired_read_datastores.size(); ++i) {
-                if (base_datastores.find(merge.paired_read_datastores[i].filename) != base_datastores.end()) {
+                if (base_datastores.find(merge.paired_read_datastores[i].filename) == base_datastores.end()) {
                     out.paired_read_datastores.push_back(merge.paired_read_datastores[i]);
                     out.paired_read_mappers.push_back(merge.paired_read_mappers[i]);
                 }
             }
             for (int i = 0; i < merge.linked_read_datastores.size(); ++i) {
-                if (base_datastores.find(merge.linked_read_datastores[i].filename) != base_datastores.end()) {
+                if (base_datastores.find(merge.linked_read_datastores[i].filename) == base_datastores.end()) {
                     out.linked_read_datastores.push_back(merge.linked_read_datastores[i]);
                     out.linked_read_mappers.push_back(merge.linked_read_mappers[i]);
                 }
             }
             for (int i = 0; i < merge.long_read_datastores.size(); ++i) {
-                if (base_datastores.find(merge.long_read_datastores[i].filename) != base_datastores.end()) {
+                if (base_datastores.find(merge.long_read_datastores[i].filename) == base_datastores.end()) {
                     out.long_read_datastores.push_back(merge.long_read_datastores[i]);
                     out.long_read_mappers.push_back(merge.long_read_mappers[i]);
                 }
@@ -271,19 +271,19 @@ int main(int argc, char * argv[]) {
             sglib::OutputLog() << "The graphs in the base and merge datastores are different, not merging mappers"
                                << std::endl;
             for (int i = 0; i < merge.paired_read_datastores.size(); ++i) {
-                if (base_datastores.find(merge.paired_read_datastores[i].filename) != base_datastores.end()) {
+                if (base_datastores.find(merge.paired_read_datastores[i].filename) == base_datastores.end()) {
                     out.paired_read_datastores.push_back(merge.paired_read_datastores[i]);
                     out.paired_read_mappers.emplace_back(merge.sg,merge.paired_read_datastores[i]);
                 }
             }
             for (int i = 0; i < merge.linked_read_datastores.size(); ++i) {
-                if (base_datastores.find(merge.linked_read_datastores[i].filename) != base_datastores.end()) {
+                if (base_datastores.find(merge.linked_read_datastores[i].filename) == base_datastores.end()) {
                     out.linked_read_datastores.push_back(merge.linked_read_datastores[i]);
                     out.linked_read_mappers.emplace_back(merge.sg,merge.linked_read_datastores[i]);
                 }
             }
             for (int i = 0; i < merge.long_read_datastores.size(); ++i) {
-                if (base_datastores.find(merge.long_read_datastores[i].filename) != base_datastores.end()) {
+                if (base_datastores.find(merge.long_read_datastores[i].filename) == base_datastores.end()) {
                     out.long_read_datastores.push_back(merge.long_read_datastores[i]);
                     out.long_read_mappers.emplace_back(merge.sg,merge.long_read_datastores[i]);
                 }
