@@ -269,7 +269,7 @@ int main(int argc, char * argv[]) {
         for (auto &s:full_patched_backbones){
             patchbf << ">fpb_" <<++fpbi << std::endl << s << std::endl;
         }
-        std::ofstream patchbpf(make_patches+"_lbackbone_parts.fasta");
+        std::ofstream patchbpf(make_patches+"_backbone_parts.fasta");
         fpbi=0;
         for (auto &bbp:patched_backbone_parts){
             ++fpbi;
