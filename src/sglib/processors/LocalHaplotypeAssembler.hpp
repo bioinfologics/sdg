@@ -37,6 +37,9 @@ public:
     uint64_t unroll_short_loops();
     void assemble(int k, int min_cov, bool tag_cov, bool simplify=true, std::string output_prefix="");
     void construct_patches();
+    //TODO: construct_extensions
+    //TODO: void construct_patched_backbone(bool single_scaffold=true, bool extend_ends=true, bool extend_internals=true);
+
     void write_gfa(std::string filename);
     void write_anchors(std::string filename);
     void write_patches(std::string filename);
