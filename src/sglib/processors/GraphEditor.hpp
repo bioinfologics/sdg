@@ -15,6 +15,8 @@ public:
     bool detach_path (SequenceGraphPath p,bool consume_tips=false); //returns true on success
     int patch_between (sgNodeID_t from, sgNodeID_t to, std::string);
     SequenceGraphPath find_longest_path_from(sgNodeID_t node, std::string seq);
+    void remove_small_components(int max_nodes, int max_size, int max_total);
+
     /**
      * @brief expands a node creating as many copies as needed, then, distributes input and output links as per bw and fw
      * @param nodeID

@@ -158,3 +158,21 @@ void GraphEditor::join_path(SequenceGraphPath p, bool consume_nodes) {
         }
     }
 }
+
+void GraphEditor::remove_small_components(int max_nodes, int max_size, int max_total) {
+    std::vector<sgNodeID_t> to_remove;
+    for (auto c:ws.sg.connected_components(0,0,0)){
+        if (c.size()>max_nodes) continue;
+        uint64_t total=0;
+        for (auto n:c) {
+            if (ws.sg.nodes[llabs(n)].sequence.size()>max_size) total+=max_total;
+            total+=ws.sg.nodes[llabs(n)].sequence.size();
+        }
+        if (total>max_size) continue;
+        else to_remove.insert(to_remove.end(),c.begin(),c.end());
+    }
+    uint64_t tbp=0;
+    for (auto n:to_remove) tbp+=ws.sg.nodes[llabs(n)].sequence.size();
+    std::cout<<"There are "<<to_remove.size()<<" nodes and "<<tbp<<"bp in small unconnected components"<<std::endl;
+    for (auto n:to_remove) ws.sg.remove_node(llabs(n));
+}

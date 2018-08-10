@@ -308,6 +308,7 @@ std::vector<std::vector<sgNodeID_t>> SequenceGraph::connected_components(int max
     //TODO: first find all repeats, add them as independent components and mark them as used.
     size_t max_component = 0;
     for (sgNodeID_t start_node=1;start_node<nodes.size();++start_node){
+        if (nodes[start_node].status==sgNodeDeleted) continue;
         if (false==used[start_node]){
             used[start_node]=true;
             //if start node is repeat, just add a single-node component

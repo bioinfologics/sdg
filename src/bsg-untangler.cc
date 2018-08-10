@@ -43,6 +43,7 @@ int main(int argc, char * argv[]) {
     int dev_dump_local_problems_from=-1;
     int dev_dump_local_problems_to=-1;
     bool dev_test_assembly_and_patching=false;
+    bool small_component_cleanup=false;
     try
     {
         cxxopts::Options options("bsg-untangler", "graph-based haplotype separation");
@@ -65,6 +66,7 @@ int main(int argc, char * argv[]) {
                 ("l,unroll_loops", "unroll simple loops",cxxopts::value<bool>(unroll_loops))
                 ("e,pop_errors", "pop unsupported short-bubbles (as errors)",cxxopts::value<bool>(pop_errors))
                 ("r,repeat_expansion","run tag-based repeat expansion", cxxopts::value<bool>(repeat_expansion))
+                ("c,small_component_cleanup","remove small unconnected components",cxxopts::value<bool>(small_component_cleanup))
                 ("b,bubbly_paths","run bubbly paths phasing", cxxopts::value<bool>(bubbly_paths))
                 ("min_pairs","minimum number of pairs to connect two nodes",cxxopts::value<int>(min_pairs))
                 ("tag_imbalance_ends","percentage of node to use as tag-imbalanced end",cxxopts::value<float>(tag_imbalance_ends))
@@ -505,7 +507,10 @@ int main(int argc, char * argv[]) {
         sglib::OutputLog() << juc << " unitigs joined after patching"<<std::endl;
         ws.sg.write_to_gfa(patch_workspace);
     }
-
+    if (small_component_cleanup) {
+        GraphEditor ge(ws);
+        ge.remove_small_components(20,1000,3000);
+    }
 
     ws.kci.reindex_graph();
     if (dump_gfa) ws.sg.write_to_gfa(output_prefix+".gfa");
