@@ -168,8 +168,16 @@ int main(int argc, char * argv[]) {
         LinkageUntangler lu(ws);
         lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
         tag_ldg.links=lu.make_and_simplify_linkage(min_shared_tags).links;
-        //ws.sg.write_to_gfa(output_prefix+"_linkage.gfa", {}, {}, selnodes, tag_ldg.links);
         tag_ldg.dump_to_text(create_linkage);
+        ws.sg.write_to_gfa(output_prefix+"_linkage.gfa", {}, {}, tag_ldg.get_connected_nodes(), tag_ldg.links);
+        auto lines=tag_ldg.get_all_lines(dev_min_nodes);
+        std::ofstream linesf(output_prefix+"_linkage_lines.txt");
+        for (auto l:lines){
+            for (auto n:l) linesf<<n<<",";
+            linesf<<std::endl;
+            for (auto n:l) linesf<<"seq"<<llabs(n)<<",";
+            linesf<<std::endl;
+        }
         exit(0);
     }
 
@@ -197,9 +205,10 @@ int main(int argc, char * argv[]) {
         }
         exit(0);
     }
-
     std::vector<std::pair<std::pair<sgNodeID_t ,sgNodeID_t>,std::string>> patches;
     if (!make_patches.empty()) {
+        std::vector<std::string> full_patched_backbones;
+        std::vector<std::vector<std::string>> patched_backbone_parts;
         sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
         tag_ldg.report_connectivity();
         sglib::OutputLog()<<"Creating local assembly problems..."<<std::endl;
@@ -236,6 +245,17 @@ int main(int argc, char * argv[]) {
                                    << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count()
                                    << " seconds, produced " << lha.patches.size() << " patches" << std::endl;
             }
+            lha.construct_patched_backbone();
+#pragma omp critical(backbone_collection1)
+            {
+                full_patched_backbones.insert(full_patched_backbones.end(),lha.patched_backbone.begin(),lha.patched_backbone.end());
+            }
+            lha.construct_patched_backbone(false);
+#pragma omp critical(backbone_collection2)
+            {
+                patched_backbone_parts.push_back(lha.patched_backbone);
+            }
+
         }
 
         sglib::OutputLog()<<patches.size()<<" patches found"<<std::endl;
@@ -243,6 +263,18 @@ int main(int argc, char * argv[]) {
         for (auto &p:patches){
             patchf << ">patch_" << -p.first.first << "_" << p.first.second << std::endl;
             patchf << p.second << std::endl;
+        }
+        std::ofstream patchbf(make_patches+"_fullbackbones.fasta");
+        uint64_t fpbi=0;
+        for (auto &s:full_patched_backbones){
+            patchbf << ">fpb_" <<++fpbi << std::endl << s << std::endl;
+        }
+        std::ofstream patchbpf(make_patches+"_lbackbone_parts.fasta");
+        fpbi=0;
+        for (auto &bbp:patched_backbone_parts){
+            ++fpbi;
+            auto p=0;
+            for (auto s:bbp) patchbpf << ">fpb_" << fpbi << "_" << ++p << std::endl << s << std::endl;
         }
         exit(0);
     }
@@ -391,6 +423,8 @@ int main(int argc, char * argv[]) {
             lha.write_gfa(output_prefix+"_local_"+std::to_string(li)+".gfa");
             lha.write_anchors(output_prefix+"_local_"+std::to_string(li)+"_anchors.fasta");
             lha.write_patches(output_prefix+"_local_"+std::to_string(li)+"_patches.fasta");
+            lha.construct_patched_backbone();
+            lha.write_patched_backbone(output_prefix+"_local_"+std::to_string(li)+"_patchedbackbone.fasta");
             std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 #pragma omp critical(patch_collection)
             {

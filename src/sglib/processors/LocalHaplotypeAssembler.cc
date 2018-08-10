@@ -675,10 +675,11 @@ void LocalHaplotypeAssembler::write_gfa(std::string filename) {
 }
 
 void LocalHaplotypeAssembler::construct_patches() {
+    const size_t ENDS_SIZE = 200;
     patches.clear();
     std::vector<Node > all_nodes;
     for (auto &n:assembly.nodes) {
-        if (n.sequence.size()<1000) continue;
+        if (n.sequence.size()<ENDS_SIZE*2) continue;
         all_nodes.emplace_back(n);
         all_nodes.emplace_back(n);
         all_nodes.back().make_rc();
@@ -687,7 +688,7 @@ void LocalHaplotypeAssembler::construct_patches() {
     for (auto li = 0; li < backbone.size() - 1; ++li) {
         auto n1 = backbone_nodes[li];
         auto n2 = backbone_nodes[li+1];
-        const size_t ENDS_SIZE = 200;
+
         if (backbone[li] < 0) n1.make_rc();
         if (backbone[li + 1] < 0) n2.make_rc();
         if (n1.sequence.size() > ENDS_SIZE)
@@ -715,6 +716,115 @@ void LocalHaplotypeAssembler::write_patches(std::string filename) {
     for (auto &p:patches) {
         patchf << ">patch_" << -p.first.first << "_" << p.first.second << std::endl;
         patchf << p.second << std::endl;
+    }
+}
+
+void LocalHaplotypeAssembler::write_patched_backbone(std::string filename) {
+    std::ofstream patchf(filename);
+    int i=0;
+    for (auto &p:patched_backbone) {
+        ++i;
+        patchf << ">bb_" << backbone.front() << "_" << backbone.back() << "_" << i << std::endl;
+        patchf << p << std::endl;
+    }
+}
+
+void LocalHaplotypeAssembler::construct_patched_backbone(bool single_scaffold, bool extend_ends,
+                                                         bool extend_internals) {
+    const int ENDS_SIZE = 200;
+    patched_backbone.clear();
+    std::vector<std::string> start_seq,end_seq;
+    //for each anchor, in proper orientation, construct the start and end sequences.
+    for (auto bn=0;bn<backbone_nodes.size();++bn){
+        auto n = backbone_nodes[bn];
+        if (backbone[bn] < 0) n.make_rc();
+
+        start_seq.emplace_back(n.sequence.substr(n.sequence.size() - ENDS_SIZE , ENDS_SIZE));
+        end_seq.emplace_back(n.sequence.substr(0,ENDS_SIZE));
+    }
+
+    std::vector<std::string> all_nodes;
+    //create a collection of all sequences and their reverses, for every node in the assembly >ENDS_SIZE
+    for (auto &n:assembly.nodes) {
+        if (n.sequence.size()<ENDS_SIZE*2) continue;
+        all_nodes.emplace_back(n.sequence);
+        auto n2=n;
+        n2.make_rc();
+        all_nodes.emplace_back(n2.sequence);
+    }
+
+    //now do the processing
+
+    bool last_linked=0;
+    std::string seq="";
+    for (auto bn=0;bn<backbone_nodes.size();++bn) {
+        {
+            std::string start_matching_seq = "";
+            size_t start_p;
+            for (auto &s:all_nodes) {
+                auto p = s.find(start_seq[bn]);
+                if (p < s.size()) {
+                    if (!start_matching_seq.empty()) {
+                        patched_backbone.clear();
+                        return;
+                    }
+                    start_matching_seq = s;
+                    start_p = p;
+                }
+            }
+            if (!last_linked and !start_matching_seq.empty()) {
+                if ((bn == 0 and extend_ends) or (bn != 0 and extend_internals)) {
+                    seq += start_matching_seq.substr(0, start_p);
+                }
+            }
+        }
+        //add node's sequence to seq
+        {
+            auto n=backbone_nodes[bn];
+            if (backbone[bn]<0) n.make_rc();
+            seq+=n.sequence;
+        }
+
+        {
+            //look for bn's end_sequence
+            std::string end_matching_seq = "";
+            size_t end_p;
+            for (auto &s:all_nodes) {
+                auto p = s.find(end_seq[bn]);
+                if (p < s.size()) {
+                    if (!end_matching_seq.empty()) {
+                        patched_backbone.clear();
+                        return;
+                    }
+                    end_matching_seq = s;
+                    end_p = p;
+                }
+            }
+            last_linked=false;
+            if (bn < backbone_nodes.size() - 1) {
+                //check if next's node start_seq is on same contig, higher position
+                auto np=end_matching_seq.find(start_seq[bn+1]);
+                if (np<end_matching_seq.size() and np>end_p) {
+                    //true -> add "patch" sequence to seq; last_linked=true
+                    seq+=end_matching_seq.substr(end_p+ENDS_SIZE,np-end_p-ENDS_SIZE);
+                    last_linked=true;
+                }
+
+            }
+            if (!last_linked) {
+                if ((bn == backbone_nodes.size() - 1 and extend_ends) or
+                    (bn != backbone_nodes.size() - 1 and extend_internals)) {
+                    if (!end_matching_seq.empty()) seq+=end_matching_seq.substr(end_p+ENDS_SIZE);
+
+                }
+                if (!single_scaffold or bn == backbone_nodes.size() - 1) {
+                    patched_backbone.emplace_back(seq);
+                    seq = "";
+                } else {
+                    seq += "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN";
+                }
+            }
+        }
     }
 }
 

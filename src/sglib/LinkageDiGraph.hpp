@@ -21,7 +21,7 @@ public:
     std::vector<Link> get_fw_links( sgNodeID_t n) const;
     std::vector<Link> get_bw_links( sgNodeID_t n) const;
     std::set<sgNodeID_t> fw_reached_nodes(sgNodeID_t n, int radius) const;
-
+    std::unordered_set<sgNodeID_t>  get_connected_nodes() const;
 
     void remove_transitive_links(int radius);
     void report_connectivity();

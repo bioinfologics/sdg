@@ -185,6 +185,10 @@ int main(int argc, char * argv[]) {
     lha.write_gfa(output_prefix+"_final.gfa");
     lha.construct_patches();
     lha.write_patches(output_prefix+"_patches.fasta");
+    lha.construct_patched_backbone();
+    lha.write_patched_backbone(output_prefix+"_patchedbackbone.fasta");
+    lha.construct_patched_backbone(false);
+    lha.write_patched_backbone(output_prefix+"_patchedbackbone_multi.fasta");
 
     return 0;
 }

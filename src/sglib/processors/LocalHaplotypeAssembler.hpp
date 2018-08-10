@@ -38,11 +38,12 @@ public:
     void assemble(int k, int min_cov, bool tag_cov, bool simplify=true, std::string output_prefix="");
     void construct_patches();
     //TODO: construct_extensions
-    //TODO: void construct_patched_backbone(bool single_scaffold=true, bool extend_ends=true, bool extend_internals=true);
+    void construct_patched_backbone(bool single_scaffold=true, bool extend_ends=true, bool extend_internals=true);
 
     void write_gfa(std::string filename);
     void write_anchors(std::string filename);
     void write_patches(std::string filename);
+    void write_patched_backbone(std::string filename);
     std::vector<std::pair<std::string, std::string>> compute_metrics();
 
     void problem_analysis(std::string prefix);
@@ -53,6 +54,7 @@ public:
     std::set<bsg10xTag> tagSet;
     std::vector<std::pair<uint16_t , std::vector<uint64_t>>> paired_reads;
     std::vector<std::pair<std::pair<sgNodeID_t ,sgNodeID_t>,std::string>> patches;
+    std::vector<std::string> patched_backbone;
 
     SequenceGraph assembly;
     std::vector<std::vector<sgNodeID_t>> linkedread_paths;

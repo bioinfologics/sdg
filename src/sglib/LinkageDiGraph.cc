@@ -158,6 +158,12 @@ std::vector<std::vector<sgNodeID_t>> LinkageDiGraph::get_all_lines(uint16_t min_
     return unitigs;
 }
 
+std::unordered_set<sgNodeID_t> LinkageDiGraph::get_connected_nodes() const {
+    std::unordered_set<sgNodeID_t> r;
+    for (auto n=1;n<links.size();++n) if (!links[n].empty()) r.insert(n);
+    return std::move(r);
+}
+
 void LinkageDiGraph::dump_to_text(std::string filename) {
     std::ofstream of(filename);
     for (auto &lv:links) for (auto &l:lv){
