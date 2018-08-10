@@ -37,7 +37,6 @@ public:
     uint64_t unroll_short_loops();
     void assemble(int k, int min_cov, bool tag_cov, bool simplify=true, std::string output_prefix="");
     void construct_patches();
-    void patch_graph_in_workspace();
     void write_gfa(std::string filename);
     void write_anchors(std::string filename);
     void write_patches(std::string filename);
