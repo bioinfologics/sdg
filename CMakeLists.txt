@@ -279,6 +279,9 @@ add_executable(kc_comp EXCLUDE_FROM_ALL
 add_executable(seq-sorter EXCLUDE_FROM_ALL
                src/seq-sorter.cpp)
 
+add_executable(test_workspace
+        src/test_workspace.cc)
+
 target_link_libraries(bsg-workspace sequence_graph)
 target_link_libraries(bsg-datastore sequence_graph)
 target_link_libraries(bsg-kmerspectra sequence_graph)
@@ -293,3 +296,4 @@ target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(seq-sorter sequence_graph)
 target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(test_workspace sequence_graph)

@@ -23,7 +23,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
         std::vector<std::pair<bool, uint64_t>> read_kmers;
 
         auto & private_results=thread_mappings[omp_get_thread_num()];
-
+        std::vector<std::vector<std::pair<uint32_t, bool>>> node_matches;
 #pragma omp for schedule(static,10)
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
             if (!((readIDs.size()>0 and readIDs.count(readID)>0) or (readIDs.empty() and read_to_mappings[readID].empty())))
@@ -32,14 +32,15 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
             bool print_csv(false);
             bool print_window(false);
 
-            const auto &line(datastore.get_read_sequence(readID));
+            const auto line(datastore.get_read_sequence(readID));
             if ( line.size()< 4*window_size) continue;
             sglib::OutputLog() << "Processing read " << readID << " " << line.size() << std::endl;
             std::map<uint32_t , uint32_t > node_score;
             //===== Create a vector of nodes for every k-mer in the read.
             read_kmers.clear();
             skf.create_kmers(line, read_kmers); //XXX: Ns will produce "deletion-windows"
-            std::vector<std::vector<std::pair<uint32_t, bool>>> node_matches(read_kmers.size());
+            node_matches.clear();
+            node_matches.resize(read_kmers.size());
             for (auto i=0;i<read_kmers.size();++i){
                 auto first = std::lower_bound(assembly_kmers.begin(), assembly_kmers.end(), read_kmers[i].second, KmerIDX::ltKmer());
                 for (auto it = first; it != assembly_kmers.end() && it->kmer == read_kmers[i].second; ++it) {
