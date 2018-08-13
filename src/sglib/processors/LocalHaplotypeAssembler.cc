@@ -733,14 +733,14 @@ void LocalHaplotypeAssembler::construct_patched_backbone(bool single_scaffold, b
                                                          bool extend_internals) {
     const int ENDS_SIZE = 200;
     patched_backbone.clear();
-    std::vector<std::string> start_seq,end_seq;
+    std::vector<std::string> start_seq,end_seq,anchor_seq;
     //for each anchor, in proper orientation, construct the start and end sequences.
     for (auto bn=0;bn<backbone_nodes.size();++bn){
         auto n = backbone_nodes[bn];
         if (backbone[bn] < 0) n.make_rc();
-
-        start_seq.emplace_back(n.sequence.substr(n.sequence.size() - ENDS_SIZE , ENDS_SIZE));
-        end_seq.emplace_back(n.sequence.substr(0,ENDS_SIZE));
+        anchor_seq.emplace_back(n.sequence);
+        start_seq.emplace_back(n.sequence.substr(0,ENDS_SIZE));
+        end_seq.emplace_back(n.sequence.substr(n.sequence.size() - ENDS_SIZE , ENDS_SIZE));
     }
 
     std::vector<std::string> all_nodes;
@@ -757,8 +757,11 @@ void LocalHaplotypeAssembler::construct_patched_backbone(bool single_scaffold, b
 
     bool last_linked=0;
     std::string seq="";
+    //std::cout<<std::endl;
     for (auto bn=0;bn<backbone_nodes.size();++bn) {
+
         {
+            //find the start of this anchor
             std::string start_matching_seq = "";
             size_t start_p;
             for (auto &s:all_nodes) {
@@ -770,19 +773,23 @@ void LocalHaplotypeAssembler::construct_patched_backbone(bool single_scaffold, b
                     }
                     start_matching_seq = s;
                     start_p = p;
+                    //std::cout<<"Start of anchor #"<<bn<<" ("<<backbone[bn]<<") found on pos "<<start_p<<" of unititg"<<std::endl;
                 }
             }
+            //if (start_matching_seq.empty()) std::cout<<"Start of anchor #"<<bn<<" ("<<backbone[bn]<<") NOT FOUND"<<std::endl;
+            //pre-fill with previous sequence if asked for (i.e. pre-extension)
             if (!last_linked and !start_matching_seq.empty()) {
                 if ((bn == 0 and extend_ends) or (bn != 0 and extend_internals)) {
+                    //std::cout<<"pre-extending..."<<std::endl;
                     seq += start_matching_seq.substr(0, start_p);
                 }
             }
         }
+
         //add node's sequence to seq
         {
-            auto n=backbone_nodes[bn];
-            if (backbone[bn]<0) n.make_rc();
-            seq+=n.sequence;
+            //std::cout<<"anchor #"<<bn<<" ("<<backbone[bn]<<") added to sequence"<<std::endl;
+            seq+=anchor_seq[bn];
         }
 
         {
@@ -797,34 +804,49 @@ void LocalHaplotypeAssembler::construct_patched_backbone(bool single_scaffold, b
                         return;
                     }
                     end_matching_seq = s;
-                    end_p = p;
+                    end_p = p+ENDS_SIZE;//THIS IS SO IF POINTS AFTER THE MATCH
+                    //std::cout<<"End of anchor #"<<bn<<" ("<<backbone[bn]<<") found on pos "<<end_p<<" of unititg"<<std::endl;
                 }
             }
+            //if (end_matching_seq.empty()) std::cout<<"End of anchor #"<<bn<<" ("<<backbone[bn]<<") NOT FOUND"<<std::endl;
             last_linked=false;
             if (bn < backbone_nodes.size() - 1) {
                 //check if next's node start_seq is on same contig, higher position
                 auto np=end_matching_seq.find(start_seq[bn+1]);
-                if (np<end_matching_seq.size() and np>end_p) {
-                    //true -> add "patch" sequence to seq; last_linked=true
-                    seq+=end_matching_seq.substr(end_p+ENDS_SIZE,np-end_p-ENDS_SIZE);
+                if (np<end_matching_seq.size()){
+                    //std::cout<<"Start of next anchor #"<<bn+1<<" ("<<backbone[bn+1]<<") found on pos "<<np<<" of this anchor's end unititg, last_linked=true!"<<std::endl;
                     last_linked=true;
+                    if (np>end_p) {
+                        //true -> add "patch" sequence to seq; last_linked=true
+                        seq += end_matching_seq.substr(end_p, np - end_p);
+                        //std::cout<<"patch added!!!!"<<std::endl;
+                    } else {
+                        seq=seq.substr(0,seq.size()-(np-end_p));//TODO:test this one!!!!
+                        //std::cout<<"overlap removed!!!!"<<std::endl;
+                    }
                 }
-
+                //else std::cout<<"Start of next anchor #"<<bn+1<<" ("<<backbone[bn+1]<<") NOT FOUND on this anchor's end unititg"<<std::endl;
             }
             if (!last_linked) {
                 if ((bn == backbone_nodes.size() - 1 and extend_ends) or
                     (bn != backbone_nodes.size() - 1 and extend_internals)) {
-                    if (!end_matching_seq.empty()) seq+=end_matching_seq.substr(end_p+ENDS_SIZE);
-
+                    if (!end_matching_seq.empty()) {
+                        //std::cout<<"Not last_linked, extending FW"<<std::endl;
+                        seq+=end_matching_seq.substr(end_p);
+                    }
                 }
                 if (!single_scaffold or bn == backbone_nodes.size() - 1) {
+                    //std::cout<<"End of sequence, adding to collection"<<std::endl;
                     patched_backbone.emplace_back(seq);
                     seq = "";
                 } else {
+                    //std::cout<<"can't link fw but single scaffold mode, adding Ns"<<std::endl;
                     seq += "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN";
                 }
             }
         }
+        //std::cout<<std::endl;
+
     }
 }
 
