@@ -20,7 +20,7 @@ int main(int argc, char * argv[]) {
     std::cout << "Num linked mappers " << ws_original.linked_read_mappers.size() << std::endl;
     std::cout << "Num long mappers " << ws_original.long_read_mappers.size() << std::endl;
 
-    const auto &lrm=ws_original.long_read_mappers[0];
+    auto &lrm=ws_original.long_read_mappers[0];
     lrm.update_graph_index();
 
     uint64_t current_k=lrm.assembly_kmers.begin()->kmer;

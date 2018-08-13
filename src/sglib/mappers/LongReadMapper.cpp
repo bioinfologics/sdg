@@ -192,13 +192,15 @@ void LongReadMapper::update_graph_index() {
     std::sort(assembly_kmers.begin(),assembly_kmers.end(), kmerPos::byKmerContigOffset());
 #endif
 
+
+    int max_kmer_repeat(200);
     auto witr = assembly_kmers.begin();
     auto ritr = witr;
     bool insert(true);
     int count(0);
     for (; ritr != assembly_kmers.end();) {
         auto bitr = ritr;
-        while (bitr->kmer == ritr->kmer and count < 20 and ritr != assembly_kmers.end()) {
+        while (bitr->kmer == ritr->kmer and count < max_kmer_repeat and ritr != assembly_kmers.end()) {
             count++;
             ++ritr;
         }
