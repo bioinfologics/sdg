@@ -6,6 +6,11 @@
 #include <fstream>
 #include <sstream>
 #include <set>
+
+#ifdef _OPENMP
+#include <parallel/algorithm>
+#endif
+
 #include <math.h>
 #include <sglib/logger/OutputLog.h>
 #include "SequenceGraph.hpp"
@@ -1075,7 +1080,11 @@ void SequenceGraph::create_index() {
     }
     sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
     sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
+#ifdef _OPENMP
+    __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
+#else
     std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
+#endif
     sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
     auto wi=kidxv.begin();
     auto ri=kidxv.begin();
@@ -1160,7 +1169,11 @@ void SequenceGraph::create_63mer_index() {
     }
     sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
     sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
+#ifdef _OPENMP
+    __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const std::pair<__uint128_t,graphPosition> & a, const std::pair<__uint128_t,graphPosition> & b){return a.first<b.first;});
+#else
     std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<__uint128_t,graphPosition> & a, const std::pair<__uint128_t,graphPosition> & b){return a.first<b.first;});
+#endif
     sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
     auto wi=kidxv.begin();
     auto ri=kidxv.begin();
