@@ -13,6 +13,52 @@
 
 #endif
 
+void LongReadMapper::update_graph_index() {
+    assembly_kmers.reserve(110000000);
+
+    sglib::OutputLog() << "Updating lr mapping index" << std::endl;
+    StringKMerFactory skf(k);
+    std::vector<std::pair<bool,uint64_t > > contig_kmers;
+
+    for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
+        if (sg.nodes[n].sequence.size() >= k) {
+            contig_kmers.clear();
+            skf.create_kmers(sg.nodes[n].sequence, contig_kmers);
+            int k_i(0);
+            for (const auto &kmer:contig_kmers) {
+                assembly_kmers.emplace_back(kmer.second, n, kmer.first ? k_i+1 : -(k_i+1));
+                k_i++;
+            }
+        }
+    }
+#ifdef _OPENMP
+    __gnu_parallel::sort(assembly_kmers.begin(),assembly_kmers.end(), kmerPos::byKmerContigOffset());
+#else
+    std::sort(assembly_kmers.begin(),assembly_kmers.end(), kmerPos::byKmerContigOffset());
+#endif
+
+    int max_kmer_repeat(200);
+    sglib::OutputLog() << "Filtering kmers appearing less than " << max_kmer_repeat << " from " << assembly_kmers.size() << " initial kmers" << std::endl;
+    auto witr = assembly_kmers.begin();
+    auto ritr = witr;
+    for (; ritr != assembly_kmers.end();) {
+        auto bitr = ritr;
+        while (bitr->kmer == ritr->kmer and ritr != assembly_kmers.end()) {
+            ++ritr;
+        }
+        if (ritr-bitr < max_kmer_repeat) {
+            while (bitr != ritr) {
+                *witr = *bitr;
+                ++witr;++bitr;
+            }
+        }
+    }
+    assembly_kmers.resize(witr-assembly_kmers.begin());
+
+    sglib::OutputLog() << "Kmers for mapping " << assembly_kmers.size() << std::endl;
+    sglib::OutputLog() << "DONE" << std::endl;
+}
+
 void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
     if (assembly_kmers.empty()) update_graph_index();
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
@@ -23,29 +69,41 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
         std::vector<std::pair<bool, uint64_t>> read_kmers;
 
         auto & private_results=thread_mappings[omp_get_thread_num()];
+        BufferedSequenceGetter sequenceGetter(datastore);
         std::vector<std::vector<std::pair<uint32_t, bool>>> node_matches;
-#pragma omp for schedule(static,10)
+#pragma omp for
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
-            if (!((readIDs.size()>0 and readIDs.count(readID)>0) or (readIDs.empty() and read_to_mappings[readID].empty())))
+            if ((!readIDs.empty() and readIDs.count(readID)==0 /*Read not in selected set*/)
+                or
+                (readIDs.empty() and !read_to_mappings[readID].empty()/*No selection and read is mapped*/)) {
                 continue;
-
-            bool print_csv(false);
+            }
             bool print_window(false);
 
-            const auto line(datastore.get_read_sequence(readID));
-            if ( line.size()< 4*window_size) continue;
-            sglib::OutputLog() << "Processing read " << readID << " " << line.size() << std::endl;
+            const auto query_sequence(sequenceGetter.get_read_sequence(readID));
+            if ( query_sequence.size()< 4*window_size) {
+                continue;
+            }
+
             std::map<uint32_t , uint32_t > node_score;
             //===== Create a vector of nodes for every k-mer in the read.
             read_kmers.clear();
-            skf.create_kmers(line, read_kmers); //XXX: Ns will produce "deletion-windows"
-            node_matches.clear();
-            node_matches.resize(read_kmers.size());
+            skf.create_kmers(query_sequence, read_kmers); //XXX: Ns will produce "deletion-windows"
+
+            if (node_matches.size() < read_kmers.size()) {
+                node_matches.resize(read_kmers.size());
+            }
+
             for (auto i=0;i<read_kmers.size();++i){
-                auto first = std::lower_bound(assembly_kmers.begin(), assembly_kmers.end(), read_kmers[i].second, KmerIDX::ltKmer());
+                node_matches[i].clear();
+                auto first = std::lower_bound(assembly_kmers.begin(), assembly_kmers.end(), read_kmers[i].second);
                 for (auto it = first; it != assembly_kmers.end() && it->kmer == read_kmers[i].second; ++it) {
-                    if (read_kmers[i].first != std::signbit(it->pos)) node_matches[i].emplace_back(it->contigID, true);
-                    else node_matches[i].emplace_back(it->contigID, false);
+                    if (read_kmers[i].first != std::signbit(it->pos)){
+                        node_matches[i].emplace_back(it->contigID, true);
+                    }
+                    else {
+                        node_matches[i].emplace_back(it->contigID, false);
+                    }
                     ++node_score[it->contigID];
                 }
             }
@@ -64,10 +122,11 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
             }
 
             //===== For every window (sliding by win_size/2) save total of kmers in every node of the top N
+//            bool print_csv(false);
+//            std::ofstream readout("read" + std::to_string(readID+1) + ".csv");
 //        if (print_csv) {
-//            std::ofstream readout("read" + std::to_string(i / 2) + ".csv");
 //            readout << "window#";
-//            for (auto n:score_node) readout << "," << node_names[(n.second) / 2];
+//            for (auto n:score_node) readout << "," << "seq" <<n.second;
 //            readout << std::endl;
 //        }
 
@@ -110,14 +169,18 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 if (print_window) sglib::OutputLog() << " lt_minkmers " << lt_minkmers << " spread " << spread_bellow_min << std::endl;
 
                 winners.emplace_back(winner);
-//            if (print_csv) {
-//                for (auto n:score_node) {
-//                    readout << "," << win_node_score[n.second];
+//                if (print_csv) {
+//                    for (auto n:score_node) {
+//                        readout << "," << win_node_score[n.second];
+//                    }
+//                    readout << std::endl;
 //                }
-//                readout << std::endl;
-//            }
             }
             num_reads_done++;
+
+            if (winners.empty()) {
+                continue;
+            }
             int rp(0),wp(0),last_winner(0);
             while(winners[rp].first==0){rp++;} // Find first non zero
             wp=rp;
@@ -136,13 +199,13 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 }
                 wp=rp;
             }
-#pragma omp critical (lrmap_progress)
-            {
                 if (num_reads_done%1000 == 0) {
+#pragma omp critical (lrmap_progress)
+                    {
                     sglib::OutputLog() << num_reads_done << " / " << datastore.size() << " reads mapped" << std::endl;
+                    }
                 }
             }
-        }
     }
     for (int thread = 0; thread<omp_get_max_threads(); thread++) {
         mappings.reserve(thread_mappings.size());
@@ -167,58 +230,6 @@ LongReadMapper::LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_
 
     reads_in_node.resize(sg.nodes.size());
     read_to_mappings.resize(datastore.size());
-}
-
-void LongReadMapper::update_graph_index() {
-    assembly_kmers.reserve(110000000);
-
-    StringKMerFactory skf(k);
-    std::vector<std::pair<bool,uint64_t > > contig_kmers;
-
-    for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
-        if (sg.nodes[n].sequence.size() >= k) {
-            contig_kmers.clear();
-            skf.create_kmers(sg.nodes[n].sequence, contig_kmers);
-            int k_i(0);
-            for (const auto &kmer:contig_kmers) {
-                assembly_kmers.emplace_back(kmer.second, n, k_i, 1);
-                k_i++;
-            }
-        }
-    }
-#ifdef _OPENMP
-    __gnu_parallel::sort(assembly_kmers.begin(),assembly_kmers.end(), KmerIDX::byKmerContigOffset());
-#else
-    std::sort(assembly_kmers.begin(),assembly_kmers.end(), kmerPos::byKmerContigOffset());
-#endif
-
-
-    int max_kmer_repeat(200);
-    auto witr = assembly_kmers.begin();
-    auto ritr = witr;
-    bool insert(true);
-    int count(0);
-    for (; ritr != assembly_kmers.end();) {
-        auto bitr = ritr;
-        while (bitr->kmer == ritr->kmer and count < max_kmer_repeat and ritr != assembly_kmers.end()) {
-            count++;
-            ++ritr;
-        }
-        while (bitr->kmer == ritr->kmer and ritr != assembly_kmers.end()) {
-            ++ritr;
-            insert = false;
-        }
-        if (insert) {
-            while (bitr != ritr) {
-                *witr = *bitr;
-                ++witr;++bitr;
-            }
-        }
-        insert = true;
-        count = 0;
-    }
-    std::cout << std::distance(assembly_kmers.begin(), witr) << "\n";
-    assembly_kmers.resize(witr-assembly_kmers.begin());
 }
 
 LongReadMapper::~LongReadMapper() {}

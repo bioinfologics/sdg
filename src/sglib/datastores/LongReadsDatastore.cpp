@@ -18,24 +18,6 @@ void LongReadsDatastore::load_index(std::string &file) {
     ifs.seekg(fPos);
     read_rtfr(ifs);
 
-    lr_sequence_fd = ::open(filename.c_str(), O_RDONLY);
-    if (lr_sequence_fd == -1) {
-        perror("fstat");
-        exit(EXIT_FAILURE);
-    }
-
-    struct stat sb;
-
-    if (fstat(lr_sequence_fd, &sb) == -1) {         /* To obtain file size */
-        perror("fstat");
-        exit(EXIT_FAILURE);
-    }
-
-    auto length = sb.st_size - offset;
-    off_t pa_offset = offset & (~(page_size-1));
-
-    this->mapped_readfile = ::mmap(NULL, length + offset - pa_offset, PROT_READ,
-                                   MAP_PRIVATE, lr_sequence_fd, pa_offset);
     sglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()-1<<std::endl;
 }
 
@@ -95,15 +77,6 @@ void LongReadsDatastore::write(std::ofstream &output_file) {
     output_file.write((char *)filename.data(),s*sizeof(filename[0]));
 }
 
-std::string LongReadsDatastore::get_read_sequence(size_t readID) const {
-    // Calculate the number of pages to mmap
-    auto fileOffset = read_to_fileRecord[readID].offset+1;
-    auto recordSize = read_to_fileRecord[readID].record_size;
-    // Copy out the part where the sequence by
-    std::string result((char*)mapped_readfile+fileOffset, recordSize);
-    return result;
-}
-
 LongReadsDatastore::LongReadsDatastore(std::string filename) {
 
     load_index(filename);
@@ -130,33 +103,7 @@ LongReadsDatastore::LongReadsDatastore(std::string long_read_file, std::string o
         perror("fstat");
         exit(EXIT_FAILURE);
     }
-    struct stat sb;
 
-    if (fstat(lr_sequence_fd, &sb) == -1) {         /* To obtain file size */
-        perror("fstat");
-        exit(EXIT_FAILURE);
-    }
-
-    auto length = sb.st_size - offset;
-    off_t pa_offset = offset & (~(page_size-1));
-
-    this->mapped_readfile = ::mmap(NULL, length + offset - pa_offset, PROT_READ,
-                                   MAP_PRIVATE, lr_sequence_fd, pa_offset);
-
-}
-
-void LongReadsDatastore::write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids) const {
-    uint32_t size(this->file_containing_long_read_sequence.size());
-
-
-    size = read_ids.size();
-    output_file.write((char *) &size, sizeof(size)); // How many reads we will write in the file
-    for (auto i=0;i<read_ids.size();i++) {
-        std::string seq(get_read_sequence(read_ids[i]));
-        size=seq.size();
-        output_file.write((char *) &size,sizeof(size)); // Read length
-        output_file.write(seq.data(),seq.size());       // Read sequence
-    }
 }
 
 void LongReadsDatastore::load_from_stream(std::string file_name, std::ifstream &input_file) {
@@ -181,18 +128,26 @@ void LongReadsDatastore::load_from_stream(std::string file_name, std::ifstream &
         input_file.read(&seq[0], readSize);
         read_to_fileRecord[i].record_size=readSize;
     }
+}
 
-    struct stat sb;
+void BufferedSequenceGetter::write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids) {
+    unsigned long size(read_ids.size());
 
-    if (fstat(lr_sequence_fd, &sb) == -1) {         /* To obtain file size */
-        perror("fstat");
-        exit(EXIT_FAILURE);
+    output_file.write((char *) &size, sizeof(size)); // How many reads we will write in the file
+    for (auto i=0;i<read_ids.size();i++) {
+        std::string seq(get_read_sequence(read_ids[i]));
+        size=seq.size();
+        output_file.write((char *) &size,sizeof(size)); // Read length
+        output_file.write(seq.data(),seq.size());       // Read sequence
     }
+}
 
-    auto length = sb.st_size - offset;
-    off_t pa_offset = offset & (~(page_size-1));
-
-    this->mapped_readfile = ::mmap(NULL, length + offset - pa_offset, PROT_READ,
-                                   MAP_PRIVATE, lr_sequence_fd, pa_offset);
-
+std::string BufferedSequenceGetter::get_read_sequence(uint64_t readID) {
+    off_t read_offset_in_file=datastore.read_to_fileRecord[readID].offset;
+    if (read_offset_in_file<buffer_offset or read_offset_in_file+datastore.read_to_fileRecord[readID].record_size>buffer_offset+bufsize) {
+        buffer_offset=read_offset_in_file;
+        lseek(fd,read_offset_in_file,SEEK_SET);
+        read(fd,buffer,bufsize);
+    }
+    return std::string(buffer+(read_offset_in_file),buffer+(read_offset_in_file+datastore.read_to_fileRecord[readID].record_size));
 }

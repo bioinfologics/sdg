@@ -16,11 +16,12 @@
 #include <cstring>
 
 #include <sys/stat.h>
+#include <limits>
 struct ReadPosSize {
     off_t offset = 0;
     uint32_t record_size = 0;
 
-    ReadPosSize() {}
+    ReadPosSize() = default;
     ReadPosSize(off_t offset, uint32_t record_size) : offset(offset), record_size(record_size) {}
 
     bool operator==(const ReadPosSize &other) const {
@@ -29,11 +30,6 @@ struct ReadPosSize {
 };
 
 class LongReadsDatastore {
-
-    void *mapped_readfile = 0;
-    off_t offset = 0;
-    size_t file_size = 0;
-    off_t page_size = static_cast<off_t>(sysconf(_SC_PAGESIZE));
     int lr_sequence_fd = 0;
     std::string file_containing_long_read_sequence;
 
@@ -44,15 +40,14 @@ class LongReadsDatastore {
 
 public:
     std::vector< ReadPosSize > read_to_fileRecord{ReadPosSize(0,0)};
-    LongReadsDatastore(){};
     /**
      * Initialize from already created index
      * @param filename
      *
      * Initialises the memory mapping of the reads file
      */
-    LongReadsDatastore(std::string filename);
-
+    explicit LongReadsDatastore(std::string filename);
+    LongReadsDatastore() = default;
     /**
      * Initialize from long_read_file then store the index
      * @param long_read_file
@@ -67,13 +62,40 @@ public:
     void write(std::ofstream &output_file);
 
     size_t size() const { return read_to_fileRecord.size(); }
-    std::string get_read_sequence(size_t readID) const;
-
-    void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids) const;
 
     void load_from_stream(std::string file_name, std::ifstream &input_file);
     std::string filename;
 };
 
+// Check if this needs to be page size aware
+class BufferedSequenceGetter{
+public:
+    BufferedSequenceGetter(const LongReadsDatastore &_ds, size_t _bufsize = 1024*1024*30, size_t _chunk_size = 1024*1024*4):
+            datastore(_ds),bufsize(_bufsize),chunk_size(_chunk_size){
+        fd=open(datastore.filename.c_str(),O_RDONLY);
+        if (fd == -1) {
+            std::string msg("Cannot open file " + datastore.filename);
+            perror(msg.c_str());
+            exit(EXIT_FAILURE);
+        }
+
+        buffer=(char *)malloc(bufsize);
+    }
+    std::string get_read_sequence(uint64_t readID);
+
+    ~BufferedSequenceGetter(){
+        free(buffer);
+        close(fd);
+    }
+
+    void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids);
+
+private:
+    const LongReadsDatastore &datastore;
+    char * buffer;
+    size_t bufsize,chunk_size;
+    off_t buffer_offset = std::numeric_limits<off_t>::max();
+    int fd;
+};
 
 #endif //BSG_LONGREADSDATASTORE_HPP

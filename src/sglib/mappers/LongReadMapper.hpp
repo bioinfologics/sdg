@@ -116,7 +116,7 @@ public:
     void write(std::ofstream &ofs);
 
 
-    std::vector<KmerIDX> assembly_kmers;
+    std::vector<kmerPos> assembly_kmers;
 
 
     LongReadsDatastore datastore;
