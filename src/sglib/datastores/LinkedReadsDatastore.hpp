@@ -5,39 +5,103 @@
 #ifndef BSG_LINKEDREADSDATASTORE_HPP
 #define BSG_LINKEDREADSDATASTORE_HPP
 
-#include <sglib/PairedReadMapper.h>
+#include <cstdint>
+#include <iostream>
+#include <string>
+#include <unordered_set>
+#include <set>
+#include <vector>
 #include <cstddef>
+#include <list>
+#include <fcntl.h>
+#include <unistd.h>
+#include <algorithm>
+#include <sglib/factories/KMerFactory.h>
+
 
 typedef uint32_t bsg10xTag;
 enum LinkedReadsFormat {UCDavis,raw,seq};
-unsigned const group_size=30;
+struct LinkedReadData {
+    bsg10xTag tag;
+    std::string seq1,seq2;
+
+    inline bool operator<(const struct LinkedReadData &other) const{
+        if (tag<other.tag) return true;
+        return false;
+    }
+};
+class BufferedLRSequenceGetter;
+
+std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16);
+/*namespace std {
+    inline template<> std::size_t hash (__int128 unsigned x)
+    {
+        // not a very good hash function, but I just want to get it working first!
+        return std::hash(((uint64_t) x));
+    }
+}*/
+
+#ifndef __hash128
+#define __hash128
+namespace std {
+    //TODO: this hashing sucks, but it is needed
+    template <> struct hash<__int128 unsigned>
+    {
+        size_t operator()(const __int128 unsigned & x) const
+        {
+            return hash<uint64_t>()((uint64_t)x);
+        }
+    };
+}
+#endif
 
 
+/**
+ * LinkedReadsDatastore is a file with reads and 10xTags.
+ * Reads are stored sorted by tag, to optimise access when performing tag-based analyses
+ * The binary file contains the following data:
+ *
+ * uint64_t readsize;
+ * uint64_t read_tag.size()=pairs; (tag 0 is for pair (1,2) and 1 for (2,3), etc)
+ * bsg10xTag[pairs] contents of rhe read_tag vector, a tag for each read pair.
+ * read sequences: as \0 terminated characters, using 2*readsize+2 for each pair
+ *
+ *
+ */
 class LinkedReadsDatastore {
 public:
-    LinkedReadsDatastore(std::string read1_filename,std::string read2_filename,LinkedReadsFormat format){
-        build_from_fastq(read1_filename,read2_filename,format);
+    LinkedReadsDatastore(){};
+    LinkedReadsDatastore(std::string filename){
+        load_index(filename);
     };
-    void build_from_fastq(std::string read1_filename,std::string read2_filename,LinkedReadsFormat format);
-    size_t size(){return read_offset.size()-1;};
+    LinkedReadsDatastore(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250){
+        build_from_fastq(read1_filename,read2_filename,output_filename,format,readsize);
+    };
+    void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250,size_t chunksize=10000000);
+    void write(std::ofstream & output_file);
+    void write_selection(std::ofstream & output_file, const std::set<bsg10xTag> & tagSet);
+    void read(std::ifstream & input_file);
+    void load_index(std::string _filename);
+    void load_from_stream(std::string _filename, std::ifstream & input_file);
+    //void read_index(std::ifstream & input_file);
 
-    std::string get_read_sequence(size_t readID,FILE * file1, FILE * file2);
-    std::string get_read_sequence_fd(size_t readID,int fd1, int fd2);
-    void get_read_sequence_fd(size_t readID, int fd1, int fd2, char * dest);
-    inline std::string get_read_sequence(size_t readID){return get_read_sequence(readID,fd1,fd2);};
+    size_t size(){return read_tag.size()*2;};
+    std::string get_read_sequence(size_t readID);
+    //inline std::string get_read_sequence(size_t readID){return get_read_sequence(readID,fd1,fd2);};
     bsg10xTag get_read_tag(size_t readID);
-    void dump_index_to_disk(std::string filename);
-    void dump_full_store_to_disk(std::string filename);
-    void load_from_disk(std::string filename,std::string read1_filename="",std::string read2_filename="");
-    std::string filename1,filename2; //if store is in single file bsg format these two are the same as the index file.
+    std::unordered_set<uint64_t> get_tags_kmers(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg);
+    std::unordered_set<__uint128_t> get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg, bool count_tag_cvg=false);
+    std::vector<uint64_t> get_tag_reads(bsg10xTag tag) const;
+    std::vector<std::pair<bsg10xTag, uint32_t>> get_tag_readcount();
+    void dump_tag_occupancy_histogram(std::string filename);
+    std::string filename; //if store is in single file bsg format these two are the same as the index file.
 
-    std::vector<uint64_t> group_offset1;
-    std::vector<uint64_t> group_offset2;
-    std::vector<uint16_t> read_offset;
+    uint64_t readsize;
+    uint64_t readpos_offset;
 private:
     std::vector<uint32_t> read_tag;
-    FILE * fd1=NULL;
-    FILE * fd2=NULL;
+    FILE * fd=NULL;
+
     //TODO: read sequence cache (std::map with a limit of elements and use count)
 };
 
@@ -45,27 +109,72 @@ class BufferedLRSequenceGetter{
 public:
     BufferedLRSequenceGetter(const LinkedReadsDatastore &_ds, size_t _bufsize, size_t _chunk_size):
             datastore(_ds),bufsize(_bufsize),chunk_size(_chunk_size){
-        buffer1=(char *)malloc(bufsize);
-        buffer2=(char *)malloc(bufsize);
-        fd1=open(datastore.filename1.c_str(),O_RDONLY);
-        fd2=open(datastore.filename2.c_str(),O_RDONLY);
-        buffer1_offset=SIZE_MAX;
-        buffer1_offset=SIZE_MAX;
+        fd=open(datastore.filename.c_str(),O_RDONLY);
+        buffer=(char *)malloc(bufsize);
+        buffer_offset=SIZE_MAX;
     }
     const char * get_read_sequence(uint64_t readID);
     ~BufferedLRSequenceGetter(){
-        free(buffer1);
-        free(buffer2);
-        close(fd1);
-        close(fd2);
+        free(buffer);
+        close(fd);
     }
 private:
     const LinkedReadsDatastore &datastore;
-    char * buffer1;
-    char * buffer2;
+    char * buffer;
     size_t bufsize,chunk_size;
-    size_t buffer1_offset,buffer2_offset;
-    int fd1,fd2;
+    size_t buffer_offset;
+    int fd;
+};
+
+/**
+ * @brief kmerises sets of tags, but saves the kmers of individual tags in a buffer to speed-up going through many nodes
+ *
+ * @todo add an option to only use tags with X+ reads.
+ */
+class BufferedTagKmerizer{
+
+public:
+    BufferedTagKmerizer(const LinkedReadsDatastore &_ds, char K, size_t _bufsize, size_t _chunk_size):
+            K(K),bprsg(_ds,_bufsize,_chunk_size),skf(K),datastore(_ds){counts.reserve(1000000);};
+    std::unordered_set<uint64_t> get_tags_kmers(int min_tag_cov, std::set<bsg10xTag> tags);
+    void get_tag_kmers(bsg10xTag tag);
+
+private:
+
+    class StreamKmerFactory : public  KMerFactory {
+    public:
+        explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
+        inline void produce_all_kmers(const char * seq, std::vector<uint64_t> &mers){
+            // TODO: Adjust for when K is larger than what fits in uint64_t!
+            last_unknown=0;
+            fkmer=0;
+            rkmer=0;
+            auto s=seq;
+            while (*s!='\0' and *s!='\n') {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        mers.emplace_back(fkmer);
+                    } else {
+                        // Is bwd
+                        mers.emplace_back(rkmer);
+                    }
+                }
+                ++s;
+            }
+        }
+    };
+
+    const LinkedReadsDatastore & datastore;
+    uint8_t K;
+    BufferedLRSequenceGetter bprsg;
+    StreamKmerFactory skf;
+
+private:
+    std::vector<uint64_t> counts;
 };
 
 #endif //BSG_LINKEDREADSDATASTORE_HPP

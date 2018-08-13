@@ -109,3 +109,4 @@ private:
     uint64_t bases;
 };
 #endif //SMR_KMERCOUNTFACTORY_H
+

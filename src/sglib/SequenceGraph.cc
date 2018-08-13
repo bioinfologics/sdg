@@ -7,12 +7,10 @@
 #include <fstream>
 #include <sstream>
 #include <set>
-#include "SequenceGraph.h"
-#include <sglib/mappers/LinkedReadMapper.hpp>
-#include <list>
-#include <queue>
-#include <stack>
-#include "sglib/readers/FileReader.h"
+#include <math.h>
+#include <sglib/logger/OutputLog.h>
+#include "SequenceGraph.hpp"
+#include "sglib/factories/KMerFactory.h"
 
 bool Node::is_canonical() {
     for (size_t i=0,j=sequence.size()-1;i<j;++i,--j){
@@ -64,6 +62,21 @@ void Node::make_rc() {
     std::swap(sequence,rseq);
 };
 
+bool SequenceGraph::is_sane() {
+    for (auto n=0;n<nodes.size();++n){
+        for (auto l:links[n]){
+            bool found=false;
+            for (auto &dl:links[llabs(l.dest)]) {
+                if (dl.dest == l.source and dl.source == l.dest){
+                    found=true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+    }
+}
+
 sgNodeID_t SequenceGraph::add_node(Node n) {
     nodes.emplace_back(n);
     links.emplace_back();
@@ -87,6 +100,13 @@ void SequenceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d) {
     links[(dest > 0 ? dest : -dest)].emplace_back(l);
 }
 
+Link SequenceGraph::get_link(sgNodeID_t source, sgNodeID_t dest) {
+    for (auto l:links[(source > 0 ? source : -source)]) {
+        if (l.source==source,l.dest==dest) return l;
+    }
+    return Link(0,0,0);
+}
+
 void SequenceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
     auto & slinks = links[(source > 0 ? source : -source)];
     slinks.erase(std::remove(slinks.begin(), slinks.end(), Link(source,dest,0)), slinks.end());
@@ -101,10 +121,13 @@ std::vector<Link> SequenceGraph::get_fw_links( sgNodeID_t n){
     return r;
 }
 
-std::vector<Link> SequenceGraph::get_bw_links(sgNodeID_t n) {
-    return get_fw_links (-n);
+size_t SequenceGraph::count_active_nodes() {
+    size_t t=0;
+    for (auto &n: nodes){
+        if (n.status==sgNodeStatus_t::sgNodeActive) ++t;
+    }
+    return t;
 }
-
 
 bool Link::operator==(const Link a){
     if (a.source == this->source && a.dest == this->dest){
@@ -286,6 +309,7 @@ std::vector<std::vector<sgNodeID_t>> SequenceGraph::connected_components(int max
     //TODO: first find all repeats, add them as independent components and mark them as used.
     size_t max_component = 0;
     for (sgNodeID_t start_node=1;start_node<nodes.size();++start_node){
+        if (nodes[start_node].status==sgNodeDeleted) continue;
         if (false==used[start_node]){
             used[start_node]=true;
             //if start node is repeat, just add a single-node component
@@ -319,6 +343,53 @@ std::vector<std::vector<sgNodeID_t>> SequenceGraph::connected_components(int max
     return components;
 }
 
+void SequenceGraph::write(std::ofstream & output_file) {
+    uint64_t count;
+    count=nodes.size();
+    output_file.write((char *) &count,sizeof(count));
+    for (auto &n:nodes){
+        output_file.write((char *) &n.status,sizeof(n.status));
+        count=n.sequence.size();
+        output_file.write((char *) &count,sizeof(count));
+        output_file.write((char *) n.sequence.data(),count);
+    }
+    count=links.size();
+    output_file.write((char *) &count,sizeof(count));
+    for (auto nl:links) {
+        uint64_t lcount=nl.size();
+        output_file.write((char *) &lcount,sizeof(lcount));
+        output_file.write((char *) nl.data(), sizeof(Link) * lcount);
+    }
+}
+
+void SequenceGraph::read(std::ifstream & input_file) {
+    uint64_t count;
+    input_file.read((char *) &count,sizeof(count));
+    nodes.clear();
+    nodes.reserve(count);
+    uint64_t active=0;
+    for (auto i=0;i<count;++i){
+        uint64_t seqsize;
+        std::string seq;
+        sgNodeStatus_t status;
+        input_file.read((char *) &status,sizeof(status));
+        input_file.read((char *) &seqsize,sizeof(seqsize));
+        seq.resize(seqsize);
+        input_file.read((char *) seq.data(),seqsize);
+        nodes.emplace_back(seq);
+        nodes.back().status=status;
+        if (nodes.back().status==sgNodeStatus_t::sgNodeActive) ++active;
+    }
+    input_file.read((char *) &count,sizeof(count));
+    links.resize(count);
+    for (auto &nl:links) {
+        uint64_t lcount;
+        input_file.read((char *) &lcount,sizeof(lcount));
+        nl.resize(lcount,{0,0,0});
+        input_file.read((char *) nl.data(), sizeof(Link) * lcount);
+    }
+}
+
 void SequenceGraph::load_from_gfa(std::string filename) {
     std::string line;
     this->filename=filename;
@@ -348,7 +419,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     oldnames.push_back("");
     nodes.clear();
     links.clear();
-    add_node(Node("")); //an empty node on 0, just to skip the space
+    add_node(Node("",sgNodeStatus_t::sgNodeDeleted)); //an empty deleted node on 0, just to skip the space
     sgNodeID_t nextid=1;
     uint64_t rcnodes=0;
     while(!fastaf.eof()){
@@ -425,7 +496,8 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     std::cout<<nodes.size()-1<<" nodes after connecting with "<<lcount<<" links"<<std::endl;
 }
 
-void SequenceGraph::write_to_gfa(std::string filename){
+void SequenceGraph::write_to_gfa(std::string filename, const std::unordered_set<sgNodeID_t> & mark_red, const std::vector<double> & depths,
+                                 const std::unordered_set<sgNodeID_t> & selected_nodes={}, const std::vector<std::vector<Link>> & arg_links){
     std::string fasta_filename;
     //check the filename ends in .gfa
     if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
@@ -442,17 +514,21 @@ void SequenceGraph::write_to_gfa(std::string filename){
 
 
     //load all sequences from fasta file if they're not canonical, flip and remember they're flipped
-    std::cout<<"Writing sequences to "<<fasta_filename<<std::endl;
+    //std::cout<<"Writing sequences to "<<fasta_filename<<std::endl;
 
     for (sgNodeID_t i=1;i<nodes.size();++i){
         if (nodes[i].status==sgNodeDeleted) continue;
+        if (!selected_nodes.empty() and selected_nodes.count(i)==0 and selected_nodes.count(-i)==0) continue;
         fastaf<<">seq"<<i<<std::endl<<nodes[i].sequence<<std::endl;
-        gfaf<<"S\tseq"<<i<<"\t*\tLN:i:"<<nodes[i].sequence.size()<<"\tUR:Z:"<<fasta_filename<<std::endl;
+        gfaf<<"S\tseq"<<i<<"\t*\tLN:i:"<<nodes[i].sequence.size()<<"\tUR:Z:"<<fasta_filename
+                <<(mark_red.count(i)?"\tCL:Z:red":"")<<(depths.empty() or isnan(depths[i])?"":"\tDP:f:"+std::to_string(depths[i]))<<std::endl;
     }
 
-    for (auto &ls:links){
+    for (auto &ls:(arg_links.size()>0? arg_links:links)){
         for (auto &l:ls)
-            if (l.source<=l.dest) {
+            if (l.source<=l.dest and (selected_nodes.empty() or
+                    selected_nodes.count(l.source)>0 or selected_nodes.count(-l.source)>0 or
+                            selected_nodes.count(l.dest)>0 or selected_nodes.count(-l.dest)>0)) {
                 gfaf<<"L\t";
                 if (l.source>0) gfaf<<"seq"<<l.source<<"\t-\t";
                 else gfaf<<"seq"<<-l.source<<"\t+\t";
@@ -497,11 +573,8 @@ std::string SequenceGraphPath::get_fasta_header() {
 }
 
 std::string SequenceGraphPath::get_sequence() {
-    std::cout << "get_sequence for a SequenceGraphPath with nodes = [" ;
-    for (auto &n:nodes) std::cout<<" "<<n;
-    std::cout<<" ]"<<std::endl;
-    std::string s = "";
-    sgNodeID_t pnode = 0;
+    std::string s="";
+    sgNodeID_t pnode=0;
     // just iterate over every node in path - contig names are converted to ids at construction
     for (auto &n:nodes) {
         std::string nseq;
@@ -536,10 +609,32 @@ std::string SequenceGraphPath::get_sequence() {
         s+=nseq;
         pnode=-n;
     }
-    std::cout<<"get sequence finished successfully for SequenceGraphPath with nodes = [" ;
-    for (auto &n:nodes) std::cout<<" "<<n;
-    std::cout<<" ]"<<std::endl;
     return s;
+}
+
+size_t SequenceGraphPath::get_sequence_size_fast() {
+    size_t size=0;
+    //std::string s="";
+    sgNodeID_t pnode=0;
+    // just iterate over every node in path - contig names are converted to ids at construction
+    for (auto &n:nodes) {
+        std::string nseq;
+        size=sg.nodes[llabs(n)].sequence.size();
+        if (pnode !=0){
+            //find link between pnode' output (+pnode) and n's sink (-n)
+            auto l=sg.links[llabs(pnode)].begin();
+            for (;l!=sg.links[llabs(pnode)].end();++l)
+                if (l->source==pnode and l->dest==n) break;
+            if (l==sg.links[llabs(pnode)].end()) {
+                std::cout<<"can't find a link between "<<pnode<<" and "<<n<<std::endl;
+                throw std::runtime_error("path has no link");
+            } else {
+                size+=l->dist;
+            }
+        }
+        pnode=-n;
+    }
+    return size;
 }
 
 std::vector<SequenceGraphPath> SequenceGraph::get_all_unitigs(uint16_t min_nodes) {
@@ -555,7 +650,7 @@ std::vector<SequenceGraphPath> SequenceGraph::get_all_unitigs(uint16_t min_nodes
         for (auto pass=0; pass<2; ++pass) {
             //walk til a "non-unitig" junction
             for (auto fn = get_fw_links(path.nodes.back()); fn.size() == 1; fn = get_fw_links(path.nodes.back())) {
-                if (fn[0].dest != n and fn[0].dest != -n and get_bw_links(fn[0].dest).size() == 1) {
+                if (!used[llabs(fn[0].dest)] and get_bw_links(fn[0].dest).size() == 1) {
                     path.nodes.emplace_back(fn[0].dest);
                     used[fn[0].dest > 0 ? fn[0].dest : -fn[0].dest] = true;
                 } else break;
@@ -567,16 +662,16 @@ std::vector<SequenceGraphPath> SequenceGraph::get_all_unitigs(uint16_t min_nodes
     return unitigs;
 }
 
-void SequenceGraph::join_all_unitigs() {
+uint32_t SequenceGraph::join_all_unitigs() {
+    uint32_t joined=0;
     for (auto p:get_all_unitigs(2)){
-        std::cout << "Unitig found: ";
-        for (auto n:p.nodes) std::cout<< n<< " ";
-        std::cout<<std::endl;
         join_path(p);
+        ++joined;
     }
+    return joined;
 }
 
-void SequenceGraph::join_path(SequenceGraphPath p, bool consume) {
+void SequenceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
     std::set<sgNodeID_t> pnodes;
     for (auto n:p.nodes) {
         pnodes.insert( n );
@@ -590,20 +685,15 @@ void SequenceGraph::join_path(SequenceGraphPath p, bool consume) {
     for (auto l:get_fw_links(p.nodes.back())) add_link(-new_node,l.dest,l.dist);
 
     //TODO: update read mappings
-    if (consume) {
-        consume_nodes(p, pnodes);
-    }
-
-}
-
-void SequenceGraph::consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes) {
-    for (auto n:p.nodes) {
-        //check if the node has neighbours not included in the path.
-        bool ext_neigh=false;
-        if (n!=p.nodes.back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
-        if (n!=p.nodes.front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest) == 0) ext_neigh=true;
-        if (ext_neigh) continue;
-        remove_node(n);
+    if (consume_nodes) {
+        for (auto n:p.nodes) {
+            //check if the node has neighbours not included in the path.
+            bool ext_neigh=false;
+            if (n!=p.nodes.back()) for (auto l:get_fw_links(n)) if (pnodes.count(l.dest)==0) ext_neigh=true;
+            if (n!=p.nodes.front()) for (auto l:get_bw_links(n)) if (pnodes.count(l.dest)==0) ext_neigh=true;
+            if (ext_neigh) continue;
+            remove_node(n);
+        }
     }
 }
 
@@ -619,6 +709,479 @@ bool SequenceGraphPath::is_canonical() {
     rp.reverse();
     return this->get_sequence()<rp.get_sequence();
 }
+
+bool SequenceGraphPath::is_unitig() {
+    for (auto i=0;i<nodes.size();++i) {
+        auto fwl=sg.get_fw_links(nodes[i]);
+        auto bwl=sg.get_bw_links(nodes[i]);
+        if (i>0){
+            if (bwl.size()!=1) return false;
+            if (bwl[0].dest!=-nodes[i-1]) return false;
+        }
+        if (i<nodes.size()-1){
+            if (fwl.size()!=1) return false;
+            if (fwl[0].dest!=nodes[i+1]) return false;
+        }
+    }
+    return true;
+}
+
+const bool SequenceGraphPath::operator<(const SequenceGraphPath &other) {
+    for (auto i=0;i<nodes.size();++i){
+        if (other.nodes.size()<i) return true;
+        if (nodes[i]<other.nodes[i]) return true;
+        if (nodes[i]>other.nodes[i]) return false;
+    }
+    return false;
+}
+
+const bool SequenceGraphPath::operator==(const SequenceGraphPath &other) {
+    if (other.nodes.size()!=nodes.size()) return false;
+    for (auto i=0;i<nodes.size();++i){
+        if (nodes[i]!=other.nodes[i]) return false;
+    }
+    return true;
+}
+
+bool SequenceGraphPath::extend_if_coherent(SequenceGraphPath s) {
+//    int offset=-1;
+//    for (auto i=0;i<nodes.size();++i) {
+//        if (nodes[i] == s.nodes[0]) {
+//            offset = i;
+//            break;
+//        }
+//    }
+//    if (offset<=0) {
+//    if (offset<0) {
+//        offset=1;
+//        for (auto i=0;i<nodes.size();++i) {
+//            if (nodes[i] == s.nodes[0]) {
+//                offset = -i;
+//                break;
+//            }
+//        }
+//    }
+}
+
+std::vector<SequenceSubGraph> SequenceGraph::get_all_tribbles() {
+
+
+    for (sgNodeID_t n=1;n<nodes.size();++n) {
+        //Heuristic to find "tribbles"
+        // A --- B -- C -- H
+        //  \     \      /
+        //   \     E    /
+        //    \     \  /
+        //      F -- G
+        // A->[B-F]
+        // B->[C-E]
+        // C->H
+        // E->G
+        // F->G
+        // F->H
+        auto a_fw=get_fw_links(n);
+        if (a_fw.size()!=2) continue;
+        auto b_fw=get_fw_links(a_fw[0].dist);
+
+        sgNodeID_t A, B, C, D, E, F, G, H;
+    }
+
+
+}
+
+
+void SequenceGraph::expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNodeID_t>> bw,
+                                std::vector<std::vector<sgNodeID_t>> fw) {
+    if (nodeID<0) {
+        //std::cout<<"WARNING: ERROR: expand_node only accepts positive nodes!"<<std::endl;
+        //return;
+        nodeID=-nodeID;
+        std::swap(bw,fw);
+        for (auto &x:bw) for (auto &xx:x) xx=-xx;
+        for (auto &x:fw) for (auto &xx:x) xx=-xx;
+    }
+    //TODO: check all inputs are included in bw and all outputs are included in fw, only once
+    auto orig_links=links[nodeID];
+    std::vector<std::vector<Link>> new_links;
+    new_links.resize(bw.size());
+    for (auto l:orig_links){
+        for (auto in=0;in<bw.size();++in){
+            if (l.source==nodeID and std::find(bw[in].begin(),bw[in].end(),l.dest)!=bw[in].end()) {
+                new_links[in].push_back(l);
+                break;
+            }
+        }
+        for (auto in=0;in<fw.size();++in){
+            if (l.source==-nodeID and std::find(fw[in].begin(),fw[in].end(),l.dest)!=fw[in].end()) {
+                new_links[in].push_back(l);
+                break;
+            }
+        }
+    }
+    //Create all extra copies of the node.
+    for (auto in=0;in<new_links.size();++in){
+        auto new_node=add_node(Node(nodes[llabs(nodeID)].sequence));
+        for (auto l:new_links[in]) {
+            add_link((l.source>0 ? new_node:-new_node),l.dest,l.dist);
+        }
+    }
+    remove_node(nodeID);
+
+}
+
+std::vector<std::pair<sgNodeID_t,int64_t>> SequenceGraph::get_distances_to(sgNodeID_t n,
+                                                                            std::set<sgNodeID_t> destinations,
+                                                                            int64_t max_dist) {
+    std::vector<std::pair<sgNodeID_t,int64_t>> current_nodes,next_nodes,final_nodes;
+    current_nodes.push_back({n,-nodes[llabs(n)].sequence.size()});
+    int rounds=20;
+    while (not current_nodes.empty() and --rounds>0){
+        //std::cout<<"starting round of context expansion, current nodes:  ";
+        //for (auto cn:current_nodes) std::cout<<cn.first<<"("<<cn.second<<")  ";
+        //std::cout<<std::endl;
+        next_nodes.clear();
+        for (auto nd:current_nodes){
+            //if node is a destination add it to final nodes
+            if (destinations.count(nd.first)>0 or destinations.count(-nd.first)>0){
+                final_nodes.push_back(nd);
+            }
+            //else get fw links, compute distances for each, and if not >max_dist add to nodes
+            else {
+                for (auto l:get_fw_links(nd.first)){
+                    int64_t dist=nd.second;
+                    dist+=nodes[llabs(nd.first)].sequence.size();
+                    dist+=l.dist;
+                    //std::cout<<"candidate next node "<<l.dest<<" at distance "<<dist<<std::endl;
+                    if (dist<=max_dist) next_nodes.push_back({l.dest,dist});
+                }
+            }
+        }
+        current_nodes=next_nodes;
+    }
+    return final_nodes;
+}
+
+std::vector<SequenceSubGraph> SequenceGraph::get_all_bubbly_subgraphs(uint32_t maxsubgraphs) {
+    std::vector<SequenceSubGraph> subgraphs;
+    std::vector<bool> used(nodes.size(),false);
+    /*
+     * the loop always keep the first and the last elements as c=2 collapsed nodes.
+     * it starts with a c=2 node, and goes thorugh all bubbles fw, then reverts the subgraph and repeats
+     */
+    SequenceSubGraph subgraph(*this);
+    for (auto n=1;n<nodes.size();++n){
+        if (used[n] or nodes[n].status==sgNodeDeleted) continue;
+        subgraph.nodes.clear();
+
+        subgraph.nodes.push_back(n);
+        bool circular=false;
+        //two passes: 0->fw, 1->bw, path is inverted twice, so still n is +
+        for (auto pass=0; pass<2; ++pass) {
+            //while there's a possible bubble fw.
+            for (auto fn = get_fw_links(subgraph.nodes.back()); fn.size() == 2; fn = get_fw_links(subgraph.nodes.back())) {
+                //if it is not a real bubble, get out.
+                if (get_bw_links(fn[0].dest).size()!=1 or get_bw_links(fn[0].dest).size()!=1) break;
+                auto fl1=get_fw_links(fn[0].dest);
+                if (fl1.size()!=1) break;
+                auto fl2=get_fw_links(fn[1].dest);
+                if (fl2.size()!=1) break;
+                if (fl2[0].dest!=fl1[0].dest) break;
+                auto next_end=fl2[0].dest;
+                //all conditions met, update subgraph
+                if (used[llabs(fn[0].dest)] or used[llabs(fn[1].dest)] or used[llabs(next_end)]) {
+                    circular=true;
+                    break;
+                }
+                subgraph.nodes.push_back(fn[0].dest);
+                subgraph.nodes.push_back(fn[1].dest);
+                subgraph.nodes.push_back(next_end);
+                used[llabs(fn[0].dest)]=true;
+                used[llabs(fn[1].dest)]=true;
+                used[llabs(next_end)]=true;
+                used[n]=true;
+            }
+            SequenceSubGraph new_subgraph(*this);
+            for (auto it=subgraph.nodes.rbegin();it<subgraph.nodes.rend();++it) new_subgraph.nodes.push_back(-*it);
+            std::swap(new_subgraph.nodes,subgraph.nodes);
+        }
+        if (subgraph.nodes.size()>6 and not circular) {
+            subgraphs.push_back(subgraph);
+            if (subgraphs.size()==maxsubgraphs) break;
+            //std::cout<<"Bubbly path found: ";
+            //for (auto &n:subgraph) std::cout<<"  "<<n<<" ("<<sg.nodes[(n>0?n:-n)].sequence.size()<<"bp)";
+            //std::cout<<std::endl;
+        }
+    }
+    return subgraphs;
+}
+
+void SequenceGraph::print_bubbly_subgraph_stats(const std::vector<SequenceSubGraph> &bubbly_paths) {
+    std::vector<uint64_t> solved_sizes,original_sizes;
+    sglib::OutputLog()<<bubbly_paths.size()<<" bubbly paths"<<std::endl;
+    auto &log_no_date=sglib::OutputLog(sglib::LogLevels::INFO,false);
+    uint64_t total_size=0,total_solved_size=0;
+    for (auto &bp:bubbly_paths){
+        total_size+=bp.total_size();
+        SequenceGraphPath p1(*this),p2(*this);
+        original_sizes.push_back(nodes[llabs(bp.nodes.front())].sequence.size());
+        original_sizes.push_back(nodes[llabs(bp.nodes.back())].sequence.size());
+        solved_sizes.push_back(nodes[llabs(bp.nodes.front())].sequence.size());
+        total_solved_size+=solved_sizes.back();
+        solved_sizes.push_back(nodes[llabs(bp.nodes.back())].sequence.size());
+        total_solved_size+=solved_sizes.back();
+        for (auto i=1; i<bp.nodes.size()-1; ++i){
+            original_sizes.push_back(nodes[llabs(bp.nodes[i])].sequence.size());
+            if (i%3==0){
+                p1.nodes.push_back(bp.nodes[i]);
+                p2.nodes.push_back(bp.nodes[i]);
+            } else if (i%3==1) p1.nodes.push_back(bp.nodes[i]);
+            else p2.nodes.push_back(bp.nodes[i]);
+        }
+        solved_sizes.push_back(p1.get_sequence().size());
+        total_solved_size+=solved_sizes.back();
+        solved_sizes.push_back(p2.get_sequence().size());
+        total_solved_size+=solved_sizes.back();
+    }
+    std::sort(solved_sizes.rbegin(),solved_sizes.rend());
+    std::sort(original_sizes.rbegin(),original_sizes.rend());
+    auto on20s=total_size*.2;
+    auto on50s=total_size*.5;
+    auto on80s=total_size*.8;
+    sglib::OutputLog() <<"Currently "<<original_sizes.size()<<" sequences with "<<total_size<<"bp, ";
+    uint64_t acc=0;
+    for (auto s:original_sizes){
+        if (acc<on20s and acc+s>on20s) log_no_date<<"N20: "<<s<<"  ";
+        if (acc<on50s and acc+s>on50s) log_no_date<<"N50: "<<s<<"  ";
+        if (acc<on80s and acc+s>on80s) log_no_date<<"N80: "<<s<<"  ";
+        acc+=s;
+    }
+    log_no_date<<std::endl;
+    auto sn20s=total_solved_size*.2;
+    auto sn50s=total_solved_size*.5;
+    auto sn80s=total_solved_size*.8;
+    sglib::OutputLog()<<"Potentially "<<solved_sizes.size()<<" sequences with "<<total_solved_size<<"bp, ";
+    acc=0;
+    for (auto s:solved_sizes){
+        if (acc<sn20s and acc+s>sn20s) log_no_date<<"N20: "<<s<<"  ";
+        if (acc<sn50s and acc+s>sn50s) log_no_date<<"N50: "<<s<<"  ";
+        if (acc<sn80s and acc+s>sn80s) log_no_date<<"N80: "<<s<<"  ";
+        acc+=s;
+    }
+    log_no_date<<std::endl;
+
+}
+
+const uint64_t SequenceSubGraph::total_size() const {
+    uint64_t t=0;
+    for (auto &n:nodes) t+=sg.nodes[llabs(n)].sequence.size();
+    return t;
+}
+
+std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes, bool abort_on_loops) {
+    std::vector<SequenceGraphPath> current_paths,next_paths,final_paths;
+    for(auto &fl:get_fw_links(from)) current_paths.emplace_back(SequenceGraphPath(*this,{fl.dest}));
+    //int rounds=20;
+    while (not current_paths.empty() and --max_nodes>0){
+        //std::cout<<"starting round of context expansion, current nodes:  ";
+        //for (auto cn:current_nodes) std::cout<<cn.first<<"("<<cn.second<<")  ";
+        //std::cout<<std::endl;
+        next_paths.clear();
+        for (auto &p:current_paths){
+            //if node is a destination add it to final nodes
+            if (p.nodes.back()==-to) return {};//std::cout<<"WARNING: found path to -TO node"<<std::endl;
+            if (p.nodes.back()==to) {
+                final_paths.push_back(p);
+                final_paths.back().nodes.pop_back();
+            }
+                //else get fw links, compute distances for each, and if not >max_dist add to nodes
+            else {
+                for (auto l:get_fw_links(p.nodes.back())){
+                    if (abort_on_loops and std::find(p.nodes.begin(),p.nodes.end(),l.dest)!=p.nodes.end()) {
+                        //std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
+                        return {};
+                        //continue;
+                    }
+                    next_paths.push_back(p);
+                    next_paths.back().nodes.push_back(l.dest);
+                    if (l.dest!=to and next_paths.back().get_sequence_size_fast()>max_size) next_paths.pop_back();
+                }
+            }
+        }
+        current_paths=next_paths;
+    }
+    return final_paths;
+}
+
+void SequenceGraph::create_index(bool verbose) {
+    kmer_to_graphposition.clear();
+    class kmerPosFactory : protected KMerFactory {
+    public:
+        explicit kmerPosFactory(uint8_t k) : KMerFactory(k) {}
+
+        ~kmerPosFactory() {
+        }
+        void setFileRecord(FastaRecord &rec) {
+            currentRecord = rec;
+            fkmer=0;
+            rkmer=0;
+            last_unknown=0;
+        }
+
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        const bool next_element(std::vector<std::pair<uint64_t,graphPosition>> &mers) {
+            uint64_t p(0);
+            graphPosition pos;
+            while (p < currentRecord.seq.size()) {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                bases++;
+                fillKBuf(currentRecord.seq[p], p, fkmer, rkmer, last_unknown);
+                p++;
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        pos.node=currentRecord.id;
+                        pos.pos=p;
+                        mers.emplace_back(fkmer, pos);
+                    } else {
+                        // Is bwd
+                        pos.node=-currentRecord.id;
+                        pos.pos=p;
+                        mers.emplace_back(rkmer, pos);
+                    }
+                }
+            }
+            return false;
+        }
+
+    private:
+        FastaRecord currentRecord;
+        uint64_t bases;
+    };
+
+    if (verbose) sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
+    const int k = 31;
+    uint64_t total_k=0;
+    std::vector<std::pair<uint64_t,graphPosition>> kidxv;
+    for (auto &n:nodes) if (n.sequence.size()>=k) total_k+=n.sequence.size()+1-k;
+    kidxv.reserve(total_k);
+    FastaRecord r;
+    kmerPosFactory kcf({k});
+    for (sgNodeID_t n=1;n<nodes.size();++n){
+        if (nodes[n].sequence.size()>=k){
+            r.id=n;
+            r.seq=nodes[n].sequence;
+            kcf.setFileRecord(r);
+            kcf.next_element(kidxv);
+        }
+    }
+    if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
+    if (verbose) std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
+    if (verbose) sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
+    auto wi=kidxv.begin();
+    auto ri=kidxv.begin();
+    auto nri=kidxv.begin();
+    while (ri<kidxv.end()){
+        while (nri!=kidxv.end() and nri->first==ri->first) ++nri;
+        if (nri-ri==1) {
+            *wi=*ri;
+            ++wi;
+        }
+        ri=nri;
+    }
+
+    kidxv.resize(wi-kidxv.begin());
+    if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
+    kmer_to_graphposition.insert(kidxv.begin(),kidxv.end());
+    if (verbose) sglib::OutputLog(sglib::INFO)<<"map ready"<<std::endl;
+}
+
+void SequenceGraph::create_63mer_index(bool verbose) {
+    k63mer_to_graphposition.clear();
+    class kmerPosFactory128 : protected KMerFactory128 {
+    public:
+        explicit kmerPosFactory128(uint8_t k) : KMerFactory128(k) {}
+
+        ~kmerPosFactory128() {
+        }
+        void setFileRecord(FastaRecord &rec) {
+            currentRecord = rec;
+            fkmer=0;
+            rkmer=0;
+            last_unknown=0;
+        }
+
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        const bool next_element(std::vector<std::pair<__uint128_t,graphPosition>> &mers) {
+            uint64_t p(0);
+            graphPosition pos;
+            while (p < currentRecord.seq.size()) {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                bases++;
+                fillKBuf(currentRecord.seq[p], p, fkmer, rkmer, last_unknown);
+                p++;
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        pos.node=currentRecord.id;
+                        pos.pos=p;
+                        mers.emplace_back(fkmer, pos);
+                    } else {
+                        // Is bwd
+                        pos.node=-currentRecord.id;
+                        pos.pos=p;
+                        mers.emplace_back(rkmer, pos);
+                    }
+                }
+            }
+            return false;
+        }
+
+    private:
+        FastaRecord currentRecord;
+        uint64_t bases;
+    };
+
+    if (verbose) sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
+    const int k = 63;
+    uint64_t total_k=0;
+    std::vector<std::pair<__uint128_t,graphPosition>> kidxv;
+    for (auto &n:nodes) if (n.sequence.size()>=k) total_k+=n.sequence.size()+1-k;
+    kidxv.reserve(total_k);
+    FastaRecord r;
+    kmerPosFactory128 kcf({k});
+    for (sgNodeID_t n=1;n<nodes.size();++n){
+        if (nodes[n].sequence.size()>=k){
+            r.id=n;
+            r.seq=nodes[n].sequence;
+            kcf.setFileRecord(r);
+            kcf.next_element(kidxv);
+        }
+    }
+    if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
+    std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<__uint128_t,graphPosition> & a, const std::pair<__uint128_t,graphPosition> & b){return a.first<b.first;});
+    if (verbose) sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
+    auto wi=kidxv.begin();
+    auto ri=kidxv.begin();
+    auto nri=kidxv.begin();
+    while (ri<kidxv.end()){
+        while (nri!=kidxv.end() and nri->first==ri->first) ++nri;
+        if (nri-ri==1) {
+            *wi=*ri;
+            ++wi;
+        }
+        ri=nri;
+    }
+
+    kidxv.resize(wi-kidxv.begin());
+    if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
+    k63mer_to_graphposition.insert(kidxv.begin(),kidxv.end());
+    if (verbose) sglib::OutputLog(sglib::INFO)<<"map ready"<<std::endl;
+}
+
 
 std::vector<sgNodeID_t > SequenceGraph::find_canonical_repeats() {
     std::vector<sgNodeID_t > repeaty_nodes;

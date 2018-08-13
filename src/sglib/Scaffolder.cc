@@ -4,9 +4,8 @@
 
 #include "Scaffolder.hpp"
 
-void Scaffolder::pop_unsupported_shortbubbles() {
+void Scaffolder::pop_unsupported_shortbubbles(uint64_t max_length) {
     std::cout<<"popping unsupported bubbles!"<<std::endl;
-    uint64_t max_length=1000;
     //find short nodes with parallel nodes short like them
     for (sgNodeID_t n=1; n<sg.nodes.size(); ++n) {
         if (sg.nodes[n].sequence.size()>max_length) continue;
@@ -123,69 +122,8 @@ void Scaffolder::find_canonical_repeats(){
     std::cout<<"Trivially solvable canonical repeats:                         "<<solvable<<"/"<<checked<<std::endl;
 }
 
-std::vector<SequenceSubGraph> Scaffolder::get_all_bubbly_subgraphs(uint32_t maxsubgraphs) {
-    std::vector<SequenceSubGraph> subgraphs;
-    std::vector<bool> used(sg.nodes.size(),false);
-    const double min_c1=0.75,max_c1=1.25,min_c2=1.5,max_c2=2.5;
-    /*
-     * the loop always keep the first and the last elements as c=2 collapsed nodes.
-     * it starts with a c=2 node, and goes thorugh all bubbles fw, then reverts the subgraph and repeats
-     */
-    SequenceSubGraph subgraph(sg);
-    for (auto n=1;n<sg.nodes.size();++n){
-        if (used[n] or sg.nodes[n].status==sgNodeDeleted) continue;
-        auto frontkci=kci.compute_compression_for_node(n);
-        if (frontkci>max_c2 or frontkci<min_c2) continue;
-        used[n]=true;
-        subgraph.nodes.clear();
-
-        subgraph.nodes.push_back(n);
-
-        //two passes: 0->fw, 1->bw, path is inverted twice, so still n is +
-        for (auto pass=0; pass<2; ++pass) {
-            //while there's a possible bubble fw.
-            for (auto fn = sg.get_fw_links(subgraph.nodes.back()); fn.size() == 2; fn = sg.get_fw_links(subgraph.nodes.back())) {
-                //if it is not a real bubble, get out.
-                if (sg.get_bw_links(fn[0].dest).size()!=1 or sg.get_bw_links(fn[0].dest).size()!=1) break;
-                auto fl1=sg.get_fw_links(fn[0].dest);
-                if (fl1.size()!=1) break;
-                auto fl2=sg.get_fw_links(fn[1].dest);
-                if (fl2.size()!=1) break;
-                if (fl2[0].dest!=fl1[0].dest) break;
-
-                auto p1kci=kci.compute_compression_for_node(fn[0].dest);
-                if (p1kci<min_c1 or p1kci>max_c1) break;
-                auto p2kci=kci.compute_compression_for_node(fn[1].dest);
-                if (p2kci<min_c1 or p2kci>max_c1) break;
-
-                auto next_end=fl2[0].dest;
-                auto next_end_kci=kci.compute_compression_for_node(next_end);
-                if (next_end_kci<min_c2 or next_end_kci>max_c2) break;
-
-                //all conditions met, update subgraph
-                subgraph.nodes.push_back(fn[0].dest);
-                subgraph.nodes.push_back(fn[1].dest);
-                subgraph.nodes.push_back(next_end);
-                used[(next_end>0?next_end:-next_end)]=true;
-
-            }
-            SequenceSubGraph new_subgraph(sg);
-            for (auto it=subgraph.nodes.rbegin();it<subgraph.nodes.rend();++it) new_subgraph.nodes.push_back(-*it);
-            std::swap(new_subgraph.nodes,subgraph.nodes);
-        }
-        if (subgraph.nodes.size()>6) {
-            subgraphs.push_back(subgraph);
-            if (subgraphs.size()==maxsubgraphs) break;
-            //std::cout<<"Bubbly path found: ";
-            //for (auto &n:subgraph) std::cout<<"  "<<n<<" ("<<sg.nodes[(n>0?n:-n)].sequence.size()<<"bp)";
-            //std::cout<<std::endl;
-        }
-    }
-    return subgraphs;
-}
-
 void Scaffolder::expand_bubbly_subgraphs() {
-    std::cout<<"Finding bubbly subgraphs"<<std::endl;
+    /*std::cout<<"Finding bubbly subgraphs"<<std::endl;
     auto bubbly_subgraphs=get_all_bubbly_subgraphs();
     std::cout<<"Expanding bubbly subgraphs"<<std::endl;
     for (auto i=1;i<rmappers[0].read_to_tag.size();++i){
@@ -240,7 +178,7 @@ void Scaffolder::expand_bubbly_subgraphs() {
 
         //expand the bubles using sg.join_path
 
-    }
+    }*/
 }
 
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Scaffolder::get_all_haplotype_pairs(uint32_t maxpairs) {
@@ -254,10 +192,9 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Scaffolder::get_all_haplotype_pair
      */
     std::pair<sgNodeID_t,sgNodeID_t> hap={0,0};
     for (auto n=1;n<sg.nodes.size();++n){
-        if (used[n] or sg.nodes[n].status==sgNodeDeleted) continue;
+        if (sg.nodes[n].status==sgNodeDeleted) continue;
         auto frontkci=kci.compute_compression_for_node(n);
         if (frontkci>max_c2 or frontkci<min_c2) continue;
-        used[n]=true;
         auto m=n;
         //two passes: 0->fw, 1->bw,
         for (auto pass=0; pass<2; ++pass,m=-m) {
@@ -279,11 +216,15 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Scaffolder::get_all_haplotype_pair
             if (h1kc > max_c1 or h1kc < min_c1) continue;
             auto ekc = kci.compute_compression_for_node(hap0f[0].dest);
             if (ekc > max_c2 or ekc < min_c2) continue;
+            if (used[(hap.first>0?hap.first:-hap.first)] or used[(hap.second>0?hap.second:-hap.second)]){
+                if (not used[(hap.second>0?hap.second:-hap.second)] or not used[(hap.second>0?hap.second:-hap.second)])
+                    std::cout<<"WARNING: unusual use pattern on HSPNP"<<std::endl;
+                continue;
+            }
             hps.push_back(hap);
             if (hps.size()%100==0) std::cout<<hps.size()<<" haplotype pairs found"<<std::endl;
             used[(hap.first>0?hap.first:-hap.first)]=true;
             used[(hap.second>0?hap.second:-hap.second)]=true;
-            used[(hap0f[0].dest>0?hap0f[0].dest:-hap0f[0].dest)]=true;
         }
     }
     return hps;
