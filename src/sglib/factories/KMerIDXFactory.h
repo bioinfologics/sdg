@@ -156,7 +156,7 @@ public:
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
             bases++;
-            fillKBuf(currentRecord.seq[p], fkmer, rkmer, last_unknown);
+            fillKBuf(currentRecord.seq[p], p, fkmer, rkmer, last_unknown);
             p++;
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
@@ -189,7 +189,7 @@ public:
         while (*s!='\0' and *s!='\n') {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(*s, fkmer, rkmer, last_unknown);
+            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
                     // Is fwd

@@ -141,9 +141,10 @@ IF(BUILD_DOC)
                       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                       COMMENT "Generating API documentation with Doxygen"
                       VERBATIM)
-else (DOXYGEN_FOUND)
-    message("Doxygen need to be installed to generate the doxygen documentation")
-endif (DOXYGEN_FOUND)
+    else (DOXYGEN_FOUND)
+        message("Doxygen need to be installed to generate the doxygen documentation")
+    endif (DOXYGEN_FOUND)
+ENDIF(BUILD_DOC)
 
 if(BUILD_TESTING)
     add_subdirectory("tests/googletest")
@@ -318,8 +319,6 @@ install(TARGETS
         seq-sorter
         gfa-pairscaff
         gfa-align
-        phaser
-        map-lr
         runBasicTests
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib

@@ -126,6 +126,8 @@ public:
     // tip_clip -> eliminates tips.
 
 
+    std::vector<sgNodeID_t> depth_first_search(const sgNodeID_t seed, unsigned int size_limit = 0, unsigned int edge_limit = 0, std::set<sgNodeID_t> tabu = {});
+
     //void explode_node( sgNodeID_t node, uint16_t k);
     //void explode_all_nodes ();
     //void collapse_identical_nodes ();

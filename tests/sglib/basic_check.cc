@@ -6,7 +6,7 @@
 #include <sglib/readers/FileReader.h>
 #include <sglib/readers/SequenceGraphReader.h>
 #include <sglib/factories/KMerIDXFactory.h>
-#include <sglib/SequenceGraph.h>
+#include <sglib/SequenceGraph.hpp>
 
 TEST(basic_check, test_smr_from_fasta){
     SMR<KmerIDX,

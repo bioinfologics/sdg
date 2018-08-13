@@ -40,66 +40,6 @@ void PairedReadMapper::read(std::ifstream &input_file) {
     populate_orientation();
 }
 
-
-
-class StreamKmerFactory : public  KMerFactory {
-public:
-    explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
-    inline void produce_all_kmers(const char * seq, std::vector<KmerIDX> &mers){
-        // TODO: Adjust for when K is larger than what fits in uint64_t!
-        last_unknown=0;
-        fkmer=0;
-        rkmer=0;
-        auto s=seq;
-        while (*s!='\0' and *s!='\n') {
-            //fkmer: grows from the right (LSB)
-            //rkmer: grows from the left (MSB)
-            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
-            if (last_unknown >= K) {
-                if (fkmer <= rkmer) {
-                    // Is fwd
-                    mers.emplace_back(fkmer);
-                    mers.back().contigID=1;
-                } else {
-                    // Is bwd
-                    mers.emplace_back(rkmer);
-                    mers.back().contigID=-1;
-                }
-            }
-            ++s;
-        }
-    }
-};
-
-class StreamKmerFactory128 : public  KMerFactory128 {
-public:
-    explicit StreamKmerFactory128(uint8_t k) : KMerFactory128(k){}
-    inline void produce_all_kmers(const char * seq, std::vector<KmerIDX128> &mers){
-        // TODO: Adjust for when K is larger than what fits in uint64_t!
-        last_unknown=0;
-        fkmer=0;
-        rkmer=0;
-        auto s=seq;
-        while (*s!='\0' and *s!='\n') {
-            //fkmer: grows from the right (LSB)
-            //rkmer: grows from the left (MSB)
-            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
-            if (last_unknown >= K) {
-                if (fkmer <= rkmer) {
-                    // Is fwd
-                    mers.emplace_back(fkmer);
-                    mers.back().contigID=1;
-                } else {
-                    // Is bwd
-                    mers.emplace_back(rkmer);
-                    mers.back().contigID=-1;
-                }
-            }
-            ++s;
-        }
-    }
-};
-
 void PairedReadMapper::remap_all_reads() {
     for (auto &rtn:read_to_node) rtn=0;
     for (auto &rin:reads_in_node) rin.clear();

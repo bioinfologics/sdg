@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <set>
+#include <stack>
 #include <math.h>
 #include <sglib/logger/OutputLog.h>
 #include "SequenceGraph.hpp"
@@ -1216,25 +1217,6 @@ std::vector<sgNodeID_t > SequenceGraph::find_canonical_repeats() {
     std::cout << "Trivially solvable canonical repeats:                         " << solvable << "/" << checked << std::endl;
 
     return repeaty_nodes;
-}
-
-std::vector<sgNodeID_t>
-SequenceGraph::breath_first_search(std::vector<sgNodeID_t> &nodes, unsigned int size_limit) {
-    std::queue<sgNodeID_t> to_visit(std::deque<sgNodeID_t>(nodes.begin(),nodes.end()));
-    std::set<sgNodeID_t> visited;
-    std::unordered_map<sgNodeID_t, sgNodeID_t > meta;
-
-    while (!to_visit.empty() and visited.size() < size_limit) {
-        const auto activeNode(to_visit.front());
-        to_visit.pop();
-        for (const auto &neighboor: get_fw_links(activeNode)) {
-            if (visited.find(neighboor.dest) == visited.end()) {
-                to_visit.push(neighboor.dest);
-                visited.insert(neighboor.dest);
-            }
-        }
-    }
-    return std::vector<sgNodeID_t>(visited.begin(), visited.end());
 }
 
 std::vector<sgNodeID_t>

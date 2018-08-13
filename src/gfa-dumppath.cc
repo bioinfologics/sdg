@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include "cxxopts.hpp"
-#include "sglib/SequenceGraph.h"
+#include "sglib/SequenceGraph.hpp"
 
 
 int main(int argc, char * argv[]) {

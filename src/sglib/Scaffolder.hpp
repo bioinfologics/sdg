@@ -7,7 +7,7 @@
 
 #include <sglib/mappers/LinkedReadMapper.hpp>
 #include "SequenceGraph.hpp"
-#include "PairedReadMapper.hpp"
+#include "mappers/PairedReadMapper.hpp"
 #include "KmerCompressionIndex.hpp"
 
 class Scaffolder {

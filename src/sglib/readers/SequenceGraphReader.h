@@ -5,7 +5,7 @@
 #ifndef SG_SEQUENCEGRAPHREADER_H
 #define SG_SEQUENCEGRAPHREADER_H
 
-#include <sglib/SequenceGraph.h>
+#include <sglib/SequenceGraph.hpp>
 #include "Common.h"
 
 /*

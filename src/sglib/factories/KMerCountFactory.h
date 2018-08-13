@@ -89,7 +89,7 @@ public:
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
             bases++;
-            fillKBuf(currentRecord.seq[p], fkmer, rkmer, last_unknown);
+            fillKBuf(currentRecord.seq[p], 0, fkmer, rkmer, last_unknown);
             p++;
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
