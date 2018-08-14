@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <set>
+#include <stack>
 
 #ifdef _OPENMP
 #include <parallel/algorithm>
@@ -313,6 +314,7 @@ std::vector<std::vector<sgNodeID_t>> SequenceGraph::connected_components(int max
     //TODO: first find all repeats, add them as independent components and mark them as used.
     size_t max_component = 0;
     for (sgNodeID_t start_node=1;start_node<nodes.size();++start_node){
+        if (nodes[start_node].status==sgNodeDeleted) continue;
         if (false==used[start_node]){
             used[start_node]=true;
             //if start node is repeat, just add a single-node component
@@ -1015,7 +1017,7 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
     return final_paths;
 }
 
-void SequenceGraph::create_index() {
+void SequenceGraph::create_index(bool verbose) {
     kmer_to_graphposition.clear();
     class kmerPosFactory : protected KMerFactory {
     public:
@@ -1062,7 +1064,7 @@ void SequenceGraph::create_index() {
         uint64_t bases;
     };
 
-    sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
     const int k = 31;
     uint64_t total_k=0;
     std::vector<std::pair<uint64_t,graphPosition>> kidxv;
@@ -1078,14 +1080,14 @@ void SequenceGraph::create_index() {
             kcf.next_element(kidxv);
         }
     }
-    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
-    sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
 #ifdef _OPENMP
     __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
 #else
     std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
 #endif
-    sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
     auto wi=kidxv.begin();
     auto ri=kidxv.begin();
     auto nri=kidxv.begin();
@@ -1099,12 +1101,12 @@ void SequenceGraph::create_index() {
     }
 
     kidxv.resize(wi-kidxv.begin());
-    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
     kmer_to_graphposition.insert(kidxv.begin(),kidxv.end());
-    sglib::OutputLog(sglib::INFO)<<"map ready"<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO)<<"map ready"<<std::endl;
 }
 
-void SequenceGraph::create_63mer_index() {
+void SequenceGraph::create_63mer_index(bool verbose) {
     k63mer_to_graphposition.clear();
     class kmerPosFactory128 : protected KMerFactory128 {
     public:
@@ -1151,7 +1153,7 @@ void SequenceGraph::create_63mer_index() {
         uint64_t bases;
     };
 
-    sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
     const int k = 63;
     uint64_t total_k=0;
     std::vector<std::pair<__uint128_t,graphPosition>> kidxv;
@@ -1167,14 +1169,14 @@ void SequenceGraph::create_63mer_index() {
             kcf.next_element(kidxv);
         }
     }
-    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
-    sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
 #ifdef _OPENMP
     __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const std::pair<__uint128_t,graphPosition> & a, const std::pair<__uint128_t,graphPosition> & b){return a.first<b.first;});
 #else
     std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<__uint128_t,graphPosition> & a, const std::pair<__uint128_t,graphPosition> & b){return a.first<b.first;});
 #endif
-    sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
     auto wi=kidxv.begin();
     auto ri=kidxv.begin();
     auto nri=kidxv.begin();
@@ -1188,7 +1190,71 @@ void SequenceGraph::create_63mer_index() {
     }
 
     kidxv.resize(wi-kidxv.begin());
-    sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" unique kmers in index, creating map"<<std::endl;
     k63mer_to_graphposition.insert(kidxv.begin(),kidxv.end());
-    sglib::OutputLog(sglib::INFO)<<"map ready"<<std::endl;
+    if (verbose) sglib::OutputLog(sglib::INFO)<<"map ready"<<std::endl;
+}
+
+
+std::vector<sgNodeID_t > SequenceGraph::find_canonical_repeats() {
+    std::vector<sgNodeID_t > repeaty_nodes;
+
+    uint64_t count=0, l700=0,l2000=0,l4000=0,l10000=0,big=0,checked=0,solvable=0;
+
+    for (sgNodeID_t n=1; n < nodes.size(); ++n) {
+        auto nfw_links = get_fw_links(n).size();
+        auto nbw_links = get_bw_links(n).size();
+        if ( nfw_links == nbw_links and nfw_links==2){
+            ++count;
+
+            if (nodes[n].sequence.size() < 700) ++l700;
+            else if (nodes[n].sequence.size() < 2000) ++l2000;
+            else if (nodes[n].sequence.size() < 4000) ++l4000;
+            else if (nodes[n].sequence.size() < 10000) ++l10000;
+            else ++big;
+
+            if (nodes[n].sequence.size() > 1000) {
+                // std::cout << "evaluating trivial repeat at " << n << "(" << sg.nodes[n].sequence.size() << "bp)" << std::endl;
+                repeaty_nodes.push_back(n);
+            }
+        }
+    }
+
+    std::cout << "Candidates for canonical repeat expansion:                    " << count << std::endl;
+    std::cout << "Candidates for canonical repeat expansion <700bp:             " << l700 << std::endl;
+    std::cout << "Candidates for canonical repeat expansion >700bp & <2000bp:   " << l2000 << std::endl;
+    std::cout << "Candidates for canonical repeat expansion >2000bp & <4000bp:  " << l4000 << std::endl;
+    std::cout << "Candidates for canonical repeat expansion >4000bp & <10000bp: " << l10000 << std::endl;
+    std::cout << "Candidates for canonical repeat expansion >10000bp:           " << big << std::endl;
+    std::cout << "Trivially solvable canonical repeats:                         " << solvable << "/" << checked << std::endl;
+
+    return repeaty_nodes;
+}
+
+std::vector<sgNodeID_t>
+SequenceGraph::depth_first_search(const sgNodeID_t seed, unsigned int size_limit, unsigned int edge_limit, std::set<sgNodeID_t> tabu) {
+    // Create a stack with the nodes and the path length
+    struct visitor {
+        sgNodeID_t node;
+        uint dist;
+        uint path_length;
+        visitor(sgNodeID_t n, uint d, uint p) : node(n), dist(d), path_length(p) {}
+    };
+    std::stack<visitor> to_visit;
+    to_visit.emplace(seed,0,0);
+    std::set<sgNodeID_t > visited(tabu);
+    while (!to_visit.empty()) {
+        const auto activeNode(to_visit.top());
+        to_visit.pop();
+        if (visited.find(activeNode.node) == visited.end() and
+                (activeNode.path_length < edge_limit or edge_limit==0) and
+                (activeNode.dist < size_limit or size_limit==0) )
+        {
+            visited.emplace(activeNode.node);
+            for (const auto &l: get_fw_links(activeNode.node)) {
+                to_visit.emplace(l.dest,activeNode.dist+nodes[l.dest>0?l.dest:-l.dest].sequence.length(),activeNode.path_length+1);
+            }
+        }
+    }
+    return std::vector<sgNodeID_t>(visited.begin(), visited.end());
 }
