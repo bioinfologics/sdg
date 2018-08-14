@@ -18,6 +18,11 @@ int omp_get_thread_num(){return 0;}
 void LinkedReadMapper::write(std::ofstream &output_file) {
     //read-to-node
     uint64_t count=read_to_node.size();
+    output_file.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    output_file.write((char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(LinkedMap_FT);
+    output_file.write((char *) &type, sizeof(type));
+
     output_file.write((const char *) &count,sizeof(count));
     output_file.write((const char *) read_to_node.data(),sizeof(sgNodeID_t)*count);
     //mappings
@@ -32,6 +37,29 @@ void LinkedReadMapper::write(std::ofstream &output_file) {
 
 void LinkedReadMapper::read(std::ifstream &input_file) {
     uint64_t count;
+
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    BSG_FILETYPE type;
+    input_file.read((char *) &magic, sizeof(magic));
+    input_file.read((char *) &version, sizeof(version));
+    input_file.read((char *) &type, sizeof(type));
+
+    if (magic != BSG_MAGIC) {
+        std::cerr << "This file seems to be corrupted" << std::endl;
+        throw "This file appears to be corrupted";
+    }
+
+    if (version < min_compat) {
+        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
+        throw "Incompatible version";
+    }
+
+    if (type != LinkedMap_FT) {
+        std::cerr << "This file is not compatible with this type" << std::endl;
+        throw "Incompatible file type";
+    }
+
     input_file.read(( char *) &count,sizeof(count));
     read_to_node.resize(count);
     input_file.read(( char *) read_to_node.data(),sizeof(sgNodeID_t)*count);

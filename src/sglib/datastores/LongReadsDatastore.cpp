@@ -8,15 +8,37 @@
 void LongReadsDatastore::load_index(std::string &file) {
     filename = file;
 
-    std::ifstream ifs(file, std::ios_base::binary);
+    std::ifstream input_file(file, std::ios_base::binary);
 
     uint64_t nReads(0);
     std::streampos fPos;
 
-    ifs.read((char*)&nReads, sizeof(nReads));
-    ifs.read((char*)&fPos, sizeof(fPos));
-    ifs.seekg(fPos);
-    read_rtfr(ifs);
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    BSG_FILETYPE type;
+    input_file.read((char *) &magic, sizeof(magic));
+    input_file.read((char *) &version, sizeof(version));
+    input_file.read((char *) &type, sizeof(type));
+
+    if (magic != BSG_MAGIC) {
+        std::cerr << "This file seems to be corrupted" << std::endl;
+        throw "This file appears to be corrupted";
+    }
+
+    if (version < min_compat) {
+        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
+        throw "Incompatible version";
+    }
+
+    if (type != LongDS_FT) {
+        std::cerr << "This file is not compatible with this type" << std::endl;
+        throw "Incompatible file type";
+    }
+
+    input_file.read((char*)&nReads, sizeof(nReads));
+    input_file.read((char*)&fPos, sizeof(fPos));
+    input_file.seekg(fPos);
+    read_rtfr(input_file);
 
     sglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()-1<<std::endl;
 }
@@ -78,7 +100,6 @@ void LongReadsDatastore::write(std::ofstream &output_file) {
 }
 
 LongReadsDatastore::LongReadsDatastore(std::string filename) {
-
     load_index(filename);
 }
 
@@ -88,6 +109,11 @@ LongReadsDatastore::LongReadsDatastore(std::string long_read_file, std::string o
     uint64_t nReads(0);
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
     std::streampos fPos;
+    ofs.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    ofs.write((const char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(LongDS_FT);
+    ofs.write((char *) &type, sizeof(type));
+
     ofs.write((char*) &nReads, sizeof(nReads));
     ofs.write((char*) &fPos, sizeof(fPos));
     nReads = build_from_fastq(ofs, long_read_file); // Build read_to_fileRecord
@@ -115,6 +141,28 @@ void LongReadsDatastore::load_from_stream(std::string file_name, std::ifstream &
         exit(EXIT_FAILURE);
     }
 
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    BSG_FILETYPE type;
+    input_file.read((char *) &magic, sizeof(magic));
+    input_file.read((char *) &version, sizeof(version));
+    input_file.read((char *) &type, sizeof(type));
+
+    if (magic != BSG_MAGIC) {
+        std::cerr << "This file seems to be corrupted" << std::endl;
+        throw "This file appears to be corrupted";
+    }
+
+    if (version < min_compat) {
+        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
+        throw "Incompatible version";
+    }
+
+    if (type != LongDS_FT) {
+        std::cerr << "This file is not compatible with this type" << std::endl;
+        throw "Incompatible file type";
+    }
+
     // Equivalente de read_rtfr
     size_t numReads(0);
     input_file.read((char *) numReads, sizeof(numReads));
@@ -132,6 +180,11 @@ void LongReadsDatastore::load_from_stream(std::string file_name, std::ifstream &
 
 void BufferedSequenceGetter::write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids) {
     unsigned long size(read_ids.size());
+
+    output_file.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    output_file.write((const char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(LongDS_FT);
+    output_file.write((char *) &type, sizeof(type));
 
     output_file.write((char *) &size, sizeof(size)); // How many reads we will write in the file
     for (auto i=0;i<read_ids.size();i++) {

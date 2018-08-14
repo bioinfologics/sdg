@@ -117,6 +117,9 @@ public:
     std::vector<bool> read_direction_in_node;//0-> fw, 1->rev;
     std::vector<uint64_t> rfdist;
     std::vector<uint64_t> frdist;
+
+    static const bsgVersion_t min_compat = 0x0001;
+
 };
 
 /**

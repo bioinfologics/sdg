@@ -12,6 +12,11 @@
 void PairedReadMapper::write(std::ofstream &output_file) {
     //read-to-node
     uint64_t count=read_to_node.size();
+    output_file.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    output_file.write((char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(PairedMap_FT);
+    output_file.write((char *) &type, sizeof(type));
+
     output_file.write((const char *) &count,sizeof(count));
     output_file.write((const char *) read_to_node.data(),sizeof(sgNodeID_t)*count);
     //mappings
@@ -26,6 +31,28 @@ void PairedReadMapper::write(std::ofstream &output_file) {
 
 void PairedReadMapper::read(std::ifstream &input_file) {
     uint64_t count;
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    BSG_FILETYPE type;
+    input_file.read((char *) &magic, sizeof(magic));
+    input_file.read((char *) &version, sizeof(version));
+    input_file.read((char *) &type, sizeof(type));
+
+    if (magic != BSG_MAGIC) {
+        std::cerr << "This file seems to be corrupted" << std::endl;
+        throw "This file appears to be corrupted";
+    }
+
+    if (version < min_compat) {
+        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
+        throw "Incompatible version";
+    }
+
+    if (type != PairedMap_FT) {
+        std::cerr << "This file is not compatible with this type" << std::endl;
+        throw "Incompatible file type";
+    }
+
     input_file.read(( char *) &count,sizeof(count));
     read_to_node.resize(count);
     input_file.read(( char *) read_to_node.data(),sizeof(sgNodeID_t)*count);
@@ -284,13 +311,6 @@ void PairedReadMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_
 // * @todo add distribution computing on the fly
 // * @todo support other kind of indexes and variable k-mer size
 // */
-//void PairedReadMapper::map_reads(std::string filename1, std::string filename2, prmReadType read_type, uint64_t max_mem) {
-//    read1filename=std::move(filename1);
-//    read2filename=std::move(filename2);
-//    readType=read_type;
-//    memlimit=max_mem;
-//    remap_reads();
-//}
 
 void PairedReadMapper::remove_obsolete_mappings(){
     uint64_t nodes=0,reads=0;

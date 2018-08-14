@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include <algorithm>
 #include <sglib/factories/KMerFactory.h>
-#include "sglib/versioning.hpp"
+#include "sglib/Version.hpp"
 
 
 struct PairedReadData {

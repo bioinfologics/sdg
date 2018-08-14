@@ -61,7 +61,8 @@ public:
     std::vector<std::vector<sgNodeID_t>> linkedread_paths;
     std::vector<std::vector<sgNodeID_t>> pairedread_paths;
 
-
+    static const bsgVersion_t min_compat_problem = 0x0001;
+    static const bsgVersion_t min_compat_full_problem = 0x0001;
 };
 
 

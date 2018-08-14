@@ -114,6 +114,7 @@ public:
     std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
 
+    static const bsgVersion_t min_compat = 0x0001;
 };
 
 

@@ -14,6 +14,10 @@ void WorkSpace::dump_to_disk(std::string filename) {
     //dump log
     uint64_t count;
     count=log.size();
+    of.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    of.write((char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(WS_FT);
+    of.write((char *) &type, sizeof(type));
     of.write((char *) &count,sizeof(count));
     for (auto &l:log){
         of.write((char *) &l.timestamp,sizeof(l.timestamp));
@@ -69,6 +73,28 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     log.clear();
     std::string version,text;
     std::time_t timestamp;
+    bsgMagic_t magic;
+    bsgVersion_t bsgversion;
+    BSG_FILETYPE type;
+    wsfile.read((char *) &magic, sizeof(magic));
+    wsfile.read((char *) &bsgversion, sizeof(bsgversion));
+    wsfile.read((char *) &type, sizeof(type));
+
+    if (magic != BSG_MAGIC) {
+        std::cerr << "This file seems to be corrupted" << std::endl;
+        throw "This file appears to be corrupted";
+    }
+
+    if (bsgversion < min_compat) {
+        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
+        throw "Incompatible version";
+    }
+
+    if (type != KCI_FT) {
+        std::cerr << "This file is not compatible with this type" << std::endl;
+        throw "Incompatible file type";
+    }
+
     wsfile.read((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
         uint64_t ssize;

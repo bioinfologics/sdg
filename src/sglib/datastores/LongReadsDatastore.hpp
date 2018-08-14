@@ -17,6 +17,8 @@
 
 #include <sys/stat.h>
 #include <limits>
+#include <sglib/Version.hpp>
+
 struct ReadPosSize {
     off_t offset = 0;
     uint32_t record_size = 0;
@@ -65,6 +67,7 @@ public:
 
     void load_from_stream(std::string file_name, std::ifstream &input_file);
     std::string filename;
+    static const bsgVersion_t min_compat = 0x0001;
 };
 
 // Check if this needs to be page size aware

@@ -30,6 +30,8 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
 
     output.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
     output.write((const char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(PairedDS_FT);
+    output.write((char *) &type, sizeof(type));
 
     output.write((const char *) &readsize,sizeof(readsize));
     auto size_pos=output.tellp();
@@ -114,8 +116,10 @@ void PairedReadsDatastore::load_index(){
     fd=fopen(filename.c_str(),"r");
     bsgMagic_t magic;
     bsgVersion_t version;
+    BSG_FILETYPE type;
     fread((char *) &magic, sizeof(magic),1,fd);
     fread((char *) &version, sizeof(version),1,fd);
+    fread((char *) &type, sizeof(type),1,fd);
 
     if (magic != BSG_MAGIC) {
         std::cerr << "This file seems to be corrupted" << std::endl;
@@ -125,6 +129,11 @@ void PairedReadsDatastore::load_index(){
     if (version < min_compat) {
         std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
         throw "Incompatible version";
+    }
+
+    if (type != PairedDS_FT) {
+        std::cerr << "The file type is incompatible with this reader" << std::endl;
+        throw "Incompatible file type";
     }
 
     fread( &readsize,sizeof(readsize),1,fd);
@@ -139,8 +148,10 @@ void PairedReadsDatastore::load_from_stream(std::string _filename,std::ifstream 
     fd=fopen(filename.c_str(),"r");
     bsgMagic_t magic;
     bsgVersion_t version;
+    BSG_FILETYPE type;
     input_file.read((char *) &magic, sizeof(magic));
     input_file.read((char *) &version, sizeof(version));
+    input_file.read((char *) &type, sizeof(type));
 
     if (magic != BSG_MAGIC) {
         std::cerr << "This file seems to be corrupted" << std::endl;
@@ -150,6 +161,11 @@ void PairedReadsDatastore::load_from_stream(std::string _filename,std::ifstream 
     if (version < min_compat) {
         std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
         throw "Incompatible version";
+    }
+
+    if (type != PairedDS_FT) {
+        std::cerr << "This file is not compatible with this type" << std::endl;
+        throw "Incompatible file type";
     }
 
     input_file.read( (char *) &readsize,sizeof(readsize));
@@ -176,6 +192,8 @@ void PairedReadsDatastore::write_selection(std::ofstream &output_file, std::vect
     }
     output_file.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
     output_file.write((const char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(PairedDS_FT);
+    output_file.write((char *) &type, sizeof(type));
 
     output_file.write((char *) &readsize,sizeof(readsize));
     uint64_t rids_size=read_ids.size();

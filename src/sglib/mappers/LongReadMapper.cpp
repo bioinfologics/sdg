@@ -237,12 +237,34 @@ LongReadMapper::~LongReadMapper() {}
 void LongReadMapper::read(std::string filename) {
     // Read the mappings from file
     sglib::OutputLog() << "Reading long read mappings" << std::endl;
-    std::ifstream inf(filename, std::ios_base::binary);
+    std::ifstream input_file(filename, std::ios_base::binary);
     auto mapSize(mappings.size());
-    inf.read(reinterpret_cast<char *>(&k), sizeof(k));
-    inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    BSG_FILETYPE type;
+    input_file.read((char *) &magic, sizeof(magic));
+    input_file.read((char *) &version, sizeof(version));
+    input_file.read((char *) &type, sizeof(type));
+
+    if (magic != BSG_MAGIC) {
+        std::cerr << "This file seems to be corrupted" << std::endl;
+        throw "This file appears to be corrupted";
+    }
+
+    if (version < min_compat) {
+        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
+        throw "Incompatible version";
+    }
+
+    if (type != LongMap_FT) {
+        std::cerr << "This file is not compatible with this type" << std::endl;
+        throw "Incompatible file type";
+    }
+
+    input_file.read(reinterpret_cast<char *>(&k), sizeof(k));
+    input_file.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
     mappings.reserve(mapSize);
-    inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+    input_file.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
 
     sglib::OutputLog() << "Updating read mapping indexes!" << std::endl;
     update_indexes_from_mappings();
@@ -251,6 +273,21 @@ void LongReadMapper::read(std::string filename) {
 
 void LongReadMapper::read(std::ifstream &inf) {
     auto mapSize(mappings.size());
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    inf.read((char *) &magic, sizeof(magic));
+    inf.read((char *) &version, sizeof(version));
+
+    if (magic != BSG_MAGIC) {
+        std::cerr << "This file seems to be corrupted" << std::endl;
+        throw "This file appears to be corrupted";
+    }
+
+    if (version < min_compat) {
+        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
+        throw "Incompatible version";
+    }
+
     inf.read(reinterpret_cast<char *>(&k), sizeof(k));
     inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
     mappings.resize(mapSize);
@@ -264,20 +301,29 @@ void LongReadMapper::read(std::ifstream &inf) {
 void LongReadMapper::write(std::string filename) {
     // Write mappings to file
     sglib::OutputLog() << "Dumping long read mappings" << std::endl;
-    std::ofstream outf(filename, std::ios_base::binary);
+    std::ofstream output_file(filename, std::ios_base::binary);
     auto mapSize(mappings.size());
-    outf.write(reinterpret_cast<const char *>(&k), sizeof(k));
-    outf.write(reinterpret_cast<const char *>(&mapSize), sizeof(mapSize));
-    outf.write(reinterpret_cast<const char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+    output_file.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    output_file.write((char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(LongMap_FT);
+    output_file.write((char *) &type, sizeof(type));
+    output_file.write(reinterpret_cast<const char *>(&k), sizeof(k));
+    output_file.write(reinterpret_cast<const char *>(&mapSize), sizeof(mapSize));
+    output_file.write(reinterpret_cast<const char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
     sglib::OutputLog() << "Done!" << std::endl;
 }
 
-void LongReadMapper::write(std::ofstream &ofs) {
+void LongReadMapper::write(std::ofstream &output_file) {
     auto mapSize(mappings.size());
-    ofs.write(reinterpret_cast<char *>(&k), sizeof(k));
-    ofs.write(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
+    output_file.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    output_file.write((char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(LongMap_FT);
+    output_file.write((char *) &type, sizeof(type));
+
+    output_file.write(reinterpret_cast<char *>(&k), sizeof(k));
+    output_file.write(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
     mappings.reserve(mapSize);
-    ofs.write(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+    output_file.write(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
     sglib::OutputLog() << "Done!" << std::endl;
 }
 

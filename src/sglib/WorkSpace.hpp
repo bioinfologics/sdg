@@ -58,6 +58,8 @@ public:
     std::vector<PathsDatastore> path_datastores;
     KmerCompressionIndex kci;
     std::string verbose_log="";
+
+    static const bsgVersion_t min_compat = 0x0001;
 };
 
 

@@ -75,6 +75,28 @@ void KmerCompressionIndex::reindex_graph(){
 
 void KmerCompressionIndex::read(std::ifstream &input_file) {
     uint64_t kcount;
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    BSG_FILETYPE type;
+    input_file.read((char *) &magic, sizeof(magic));
+    input_file.read((char *) &version, sizeof(version));
+    input_file.read((char *) &type, sizeof(type));
+
+    if (magic != BSG_MAGIC) {
+        std::cerr << "This file seems to be corrupted" << std::endl;
+        throw "This file appears to be corrupted";
+    }
+
+    if (version < min_compat) {
+        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
+        throw "Incompatible version";
+    }
+
+    if (type != KCI_FT) {
+        std::cerr << "This file is not compatible with this type" << std::endl;
+        throw "Incompatible file type";
+    }
+
     input_file.read(( char *) &kcount,sizeof(kcount));
     graph_kmers.resize(kcount);
     input_file.read(( char *) graph_kmers.data(),sizeof(KmerCount)*kcount);
@@ -95,8 +117,13 @@ void KmerCompressionIndex::load_from_disk(std::string filename) {
     read(inf);
 
 }
+
 void KmerCompressionIndex::write(std::ofstream &output_file) {
     uint64_t kcount=graph_kmers.size();
+    output_file.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    output_file.write((const char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(KCI_FT);
+    output_file.write((char *) &type, sizeof(type));
     output_file.write((const char *) &kcount,sizeof(kcount));
     output_file.write((const char *) graph_kmers.data(),sizeof(KmerCount)*kcount);
     uint64_t ccount=read_counts.size();
@@ -105,6 +132,7 @@ void KmerCompressionIndex::write(std::ofstream &output_file) {
         output_file.write((const char *) read_counts[i].data(), sizeof(uint16_t) * kcount);
     }
 }
+
 void KmerCompressionIndex::save_to_disk(std::string filename) {
     std::ofstream of(filename);
     write(of);
@@ -184,8 +212,6 @@ void KmerCompressionIndex::add_counts_from_file(std::vector<std::string> filenam
                                       << " kmers found" << std::endl;
     }
 }
-
-
 
 void KmerCompressionIndex::compute_compression_stats() {
     //compute mean, median and mode, as of now, only use the first read count

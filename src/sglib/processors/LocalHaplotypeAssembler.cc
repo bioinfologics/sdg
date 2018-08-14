@@ -84,6 +84,27 @@ void LocalHaplotypeAssembler::init_from_file(std::string problem_file) {
 
     std::ifstream input_file(problem_file);
     uint64_t count;
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    BSG_FILETYPE type;
+    input_file.read((char *) &magic, sizeof(magic));
+    input_file.read((char *) &version, sizeof(version));
+    input_file.read((char *) &type, sizeof(type));
+
+    if (magic != BSG_MAGIC) {
+        std::cerr << "This file seems to be corrupted" << std::endl;
+        throw "This file appears to be corrupted";
+    }
+
+    if (version < min_compat_problem) {
+        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
+        throw "Incompatible version";
+    }
+
+    if (type != HLAP_FT) {
+        std::cerr << "This file is not compatible with this type" << std::endl;
+        throw "Incompatible file type";
+    }
 
     //load backbone;
     input_file.read((char *)&count,sizeof(count));
@@ -356,8 +377,6 @@ void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, bool si
     }
 }
 
-
-
 void add_readkmer_nodes_lha(std::vector<sgNodeID_t> & kmernodes, std::vector<std::pair<uint64_t,bool>> & readkmers, std::unordered_map<uint64_t, graphPosition> & index, bool rev){
     //TODO allow for a minimum of kmers to count the hit?
     if (not rev) {
@@ -400,7 +419,6 @@ void add_readkmer_nodes_lha128(std::vector<sgNodeID_t> & kmernodes, std::vector<
 
 }
 
-
 void LocalHaplotypeAssembler::path_linked_reads() {
     linkedread_paths.clear();
     linkedread_paths.reserve(1000000);//TODO: do this better!!!!
@@ -436,7 +454,6 @@ void LocalHaplotypeAssembler::path_linked_reads() {
     sglib::OutputLog()<<linkedread_paths.size()<<" linked-reads paths created!"<<std::endl;
 
 }
-
 
 void LocalHaplotypeAssembler::path_linked_reads_informative_singles() {
     linkedread_paths.clear();
@@ -572,6 +589,10 @@ void LocalHaplotypeAssembler::path_all_reads() {
 void LocalHaplotypeAssembler::write_problem(std::string prefix) {
     std::ofstream output_file(prefix+".bsglhap");
     uint64_t count;
+    output_file.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    output_file.write((const char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(HLAP_FT);
+    output_file.write((char *) &type, sizeof(type));
 
     //write down backbone;
     count=backbone.size();
@@ -597,9 +618,15 @@ void LocalHaplotypeAssembler::write_problem(std::string prefix) {
 
 void LocalHaplotypeAssembler::write_full(std::string prefix) {
     std::ofstream output_file(prefix+".bsglhapf");
+
     uint64_t count;
     //write down backbone;
     count=backbone.size();
+    output_file.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    output_file.write((const char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(HLAF_FT);
+    output_file.write((char *) &type, sizeof(type));
+
     output_file.write((char *)&count,sizeof(count));
     output_file.write((char *)backbone.data(),count*sizeof(backbone[0]));
     //write  backbone node's sequences
@@ -632,12 +659,34 @@ void LocalHaplotypeAssembler::write_full(std::string prefix) {
     }
 }
 
-
 void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
     std::cout<<"Loading LocalHaplotypeAssembler problem from file: "<<full_file<<std::endl;
 
     std::ifstream input_file(full_file);
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    BSG_FILETYPE type;
+    input_file.read((char *) &magic, sizeof(magic));
+    input_file.read((char *) &version, sizeof(version));
+    input_file.read((char *) &type, sizeof(type));
+
+    if (magic != BSG_MAGIC) {
+        std::cerr << "This file seems to be corrupted" << std::endl;
+        throw "This file appears to be corrupted";
+    }
+
+    if (version < min_compat_full_problem) {
+        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
+        throw "Incompatible version";
+    }
+
+    if (type != HLAF_FT) {
+        std::cerr << "This file is not compatible with this type" << std::endl;
+        throw "Incompatible file type";
+    }
+
     uint64_t count;
+
     //load backbone;
     input_file.read((char *)&count,sizeof(count));
     backbone.resize(count);

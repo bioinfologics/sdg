@@ -149,6 +149,12 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     sglib::OutputLog() << "performing merge from disk" << std::endl;
     //TODO: save space first for the tag index!!!
     std::ofstream output(output_filename.c_str());
+
+    output.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    output.write((const char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(LinkedDS_FT);
+    output.write((char *) &type, sizeof(type));
+
     output.write((const char *) &readsize,sizeof(readsize));
     read_tag.resize(pairs);
     sglib::OutputLog() << "leaving space for " <<pairs<<" read_tag entries"<< std::endl;
@@ -212,6 +218,28 @@ void LinkedReadsDatastore::load_index(std::string _filename){
     uint64_t s;
     filename=_filename;
     fd=fopen(filename.c_str(),"r");
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    BSG_FILETYPE type;
+    fread((char *) &magic, sizeof(magic),1,fd);
+    fread((char *) &version, sizeof(version),1,fd);
+    fread((char *) &type, sizeof(type),1,fd);
+
+    if (magic != BSG_MAGIC) {
+        std::cerr << "This file seems to be corrupted" << std::endl;
+        throw "This file appears to be corrupted";
+    }
+
+    if (version < min_compat) {
+        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
+        throw "Incompatible version";
+    }
+
+    if (type != LinkedDS_FT) {
+        std::cerr << "The file type is incompatible with this reader" << std::endl;
+        throw "Incompatible file type";
+    }
+
     fread( &readsize,sizeof(readsize),1,fd);
     fread(&s,sizeof(s),1,fd); read_tag.resize(s);
     fread(read_tag.data(),sizeof(read_tag[0]),read_tag.size(),fd);
@@ -223,6 +251,28 @@ void LinkedReadsDatastore::load_from_stream(std::string _filename,std::ifstream 
     uint64_t s;
     filename=_filename;
     fd=fopen(filename.c_str(),"r");
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    BSG_FILETYPE type;
+    fread((char *) &magic, sizeof(magic),1,fd);
+    fread((char *) &version, sizeof(version),1,fd);
+    fread((char *) &type, sizeof(type),1,fd);
+
+    if (magic != BSG_MAGIC) {
+        std::cerr << "This file seems to be corrupted" << std::endl;
+        throw "This file appears to be corrupted";
+    }
+
+    if (version < min_compat) {
+        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
+        throw "Incompatible version";
+    }
+
+    if (type != LinkedDS_FT) {
+        std::cerr << "The file type is incompatible with this reader" << std::endl;
+        throw "Incompatible file type";
+    }
+
     input_file.read( (char *) &readsize,sizeof(readsize));
     input_file.read( (char *) &s,sizeof(s));
     read_tag.resize(s);
@@ -242,6 +292,11 @@ void LinkedReadsDatastore::write(std::ofstream &output_file) {
 
 void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std::set<bsg10xTag> &tagSet) {
     //write readsize
+    output_file.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    output_file.write((const char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(LinkedDS_FT);
+    output_file.write((char *) &type, sizeof(type));
+
     output_file.write((char *) &readsize, sizeof(readsize));
     //create a vector of read tags (including each tag as many times as reads it contains).
     //std::cout << "creating vector of tags" << std::endl;
@@ -307,7 +362,6 @@ std::vector<std::pair<bsg10xTag, uint32_t>> LinkedReadsDatastore::get_tag_readco
     if (curr_tag!=0) readcount.emplace_back(curr_tag,curr_count);
     return readcount;
 }
-
 
 void LinkedReadsDatastore::dump_tag_occupancy_histogram(std::string filename) {
     std::ofstream tohf(filename);
@@ -444,26 +498,6 @@ const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {
         }
         return buffer+(read_offset_in_file-buffer_offset);
 }
-
-//std::unordered_set<uint64_t>& BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {
-//
-//    auto bki=std::find(tag_kmers_buffer.begin(),tag_kmers_buffer.end(),tag);
-//    if (bki!=tag_kmers_buffer.end()){
-//        tag_kmers_buffer.splice( tag_kmers_buffer.end(), tag_kmers_buffer, bki );
-//    }
-//    else {
-//        tag_kmers_buffer.emplace_back();
-//        bki=tag_kmers_buffer.end();--bki;
-//        bki->tag=tag;
-//        auto read_ids=datastore.get_tag_reads(tag);
-//        bki->kmers.reserve(read_ids.size()*(datastore.readsize-K+1));
-//        for (auto rid:read_ids){
-//            skf.produce_all_kmers(bprsg.get_read_sequence(rid),bki->kmers);
-//        }
-//        if (tag_kmers_buffer.size()>tagbufsize) tag_kmers_buffer.pop_front();
-//    }
-//    return bki->kmers;
-//}
 
 void BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {
     auto read_ids=datastore.get_tag_reads(tag);

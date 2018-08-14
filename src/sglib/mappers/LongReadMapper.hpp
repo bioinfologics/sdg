@@ -113,7 +113,7 @@ public:
 
     void write(std::string filename);
 
-    void write(std::ofstream &ofs);
+    void write(std::ofstream &output_file);
 
 
     std::vector<kmerPos> assembly_kmers;
@@ -130,6 +130,9 @@ public:
      * This index can be used to query all the nodes that map to a single read.
      */
     std::vector< std::vector < std::vector<LongReadMapping>::size_type > > read_to_mappings;    /// Nodes in the read, 0 or empty = unmapped
+
+    static const bsgVersion_t min_compat = 0x0001;
+
 };
 
 
