@@ -149,5 +149,5 @@ std::string BufferedSequenceGetter::get_read_sequence(uint64_t readID) {
         lseek(fd,read_offset_in_file,SEEK_SET);
         read(fd,buffer,bufsize);
     }
-    return std::string(buffer+(read_offset_in_file),buffer+(read_offset_in_file+datastore.read_to_fileRecord[readID].record_size));
+    return std::string(buffer+(read_offset_in_file-buffer_offset),buffer+(read_offset_in_file-buffer_offset+datastore.read_to_fileRecord[readID].record_size));
 }
