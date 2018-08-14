@@ -11,7 +11,7 @@ typedef uint16_t bsgMagic_t;
 static const bsgMagic_t BSG_MAGIC = 0x0B56;
 static const bsgVersion_t BSG_VN = 0x0001;
 
-enum BSG_FILETYPE{
+enum BSG_FILETYPE : uint16_t{
     WS_FT,
     KCI_FT,
     PairedDS_FT,
