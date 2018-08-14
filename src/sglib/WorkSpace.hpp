@@ -10,6 +10,8 @@
 #include <sglib/mappers/LinkedReadMapper.hpp>
 #include <sglib/datastores/PairedReadsDatastore.hpp>
 #include <sglib/mappers/PairedReadMapper.hpp>
+#include <sglib/datastores/LongReadsDatastore.hpp>
+#include <sglib/mappers/LongReadMapper.hpp>
 #include <sglib/datastores/PathsDatastore.hpp>
 #include "SequenceGraph.hpp"
 #include "KmerCompressionIndex.hpp"
@@ -51,6 +53,8 @@ public:
     std::vector<PairedReadMapper> paired_read_mappers;
     std::vector<LinkedReadsDatastore> linked_read_datastores;
     std::vector<LinkedReadMapper> linked_read_mappers;
+    std::vector<LongReadsDatastore> long_read_datastores;
+    std::vector<LongReadMapper> long_read_mappers;
     std::vector<PathsDatastore> path_datastores;
     KmerCompressionIndex kci;
     std::string verbose_log="";

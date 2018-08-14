@@ -56,8 +56,10 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     sglib::OutputLog()<<"Mapping reads..."<<std::endl;
     auto pri=0;
-    if (!use63mers) ws.sg.create_index();
-    else ws.sg.create_63mer_index();
+    if (!ws.paired_read_datastores.empty() or !ws.linked_read_datastores.empty()) {
+        if (!use63mers) ws.sg.create_index();
+        else ws.sg.create_63mer_index();
+    }
     for (auto &m:ws.paired_read_mappers) {
         sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         if (!use63mers) m.remap_all_reads();
@@ -80,6 +82,13 @@ int main(int argc, char * argv[]) {
         else m.remap_all_reads63();
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
         sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
+    }
+    for (auto &m:ws.long_read_mappers) {
+        sglib::OutputLog()<<"Mapping long reads library..."<<std::endl;
+        m.update_graph_index();
+        m.map_reads();
+        ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
+        sglib::OutputLog()<<"Mapping long reads DONE."<<std::endl;
     }
     ws.path_datastores.clear();
     ws.add_log_entry("path_datastores cleared");

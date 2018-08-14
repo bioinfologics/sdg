@@ -67,6 +67,14 @@ void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backb
         if (paired_reads.back().second.empty()) paired_reads.pop_back();
         //else std::cout<<paired_reads.back().second.size()<<" reads from "<<ws.paired_read_datastores[prl].filename<<std::endl;
     }
+    for (auto lrl = 0; ws.long_read_mappers.size(); ++lrl) {
+        long_reads.emplace_back(std::make_pair(lrl, std::vector<uint64_t>()));
+        for (auto &ln:backbone) {
+            auto nreads = ws.long_read_mappers[lrl].get_node_read_ids(ln);
+            long_reads.back().second.insert(long_reads.back().second.end(), nreads.begin(), nreads.end());
+        }
+        if (long_reads.back().second.empty()) long_reads.pop_back();
+    }
     //std::cout<<"LocalHaplotypeAssembler created!"<<std::endl;
 
 }
@@ -615,6 +623,13 @@ void LocalHaplotypeAssembler::write_full(std::string prefix) {
     for (auto &p:paired_reads){
         ws.paired_read_datastores[p.first].write_selection(output_file,p.second);
     }
+
+    count = long_reads.size();
+    output_file.write((char *)&count,sizeof(count));
+    for (auto &l:long_reads){
+        BufferedSequenceGetter sequenceGetter(ws.long_read_datastores[l.first]);
+        sequenceGetter.write_selection(output_file,l.second);
+    }
 }
 
 
@@ -658,6 +673,17 @@ void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
         read_ids.reserve(ws.paired_read_datastores.back().size());
         for(uint64_t i=0;i<ws.paired_read_datastores.back().size();++i) read_ids.emplace_back(i);
         paired_reads.emplace_back(std::make_pair(n,read_ids));
+    }
+
+
+    input_file.read((char *)&count,sizeof(count));
+    for (auto n=0;n<count;++n){
+        ws.long_read_datastores.emplace_back();
+        ws.long_read_datastores.back().load_from_stream(full_file,input_file);
+        std::vector<uint64_t> read_ids;
+        read_ids.reserve(ws.long_read_datastores.back().size());
+        for(uint64_t i=0;i<ws.long_read_datastores.back().size();++i) read_ids.emplace_back(i);
+        long_reads.emplace_back(std::make_pair(n,read_ids));
     }
 }
 

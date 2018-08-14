@@ -39,6 +39,9 @@ class Node{
 public:
     Node(std::string _seq, sgNodeStatus_t _st) : sequence(_seq),status(_st){};
     Node(std::string _seq) : sequence(_seq),status(sgNodeActive){};
+    bool operator==(const Node &o) const {
+        return std::tie(status,sequence) == std::tie(o.status,o.sequence);
+    }
     std::string sequence;
     sgNodeStatus_t status;
     bool is_canonical();
@@ -66,7 +69,9 @@ class SequenceSubGraph;
 class SequenceGraph {
 public:
     SequenceGraph(){add_node(Node("",sgNodeStatus_t::sgNodeDeleted));};
-
+    bool operator==(const SequenceGraph &o) const {
+        return nodes == o.nodes;
+    }
     bool is_sane();
     //=== I/O functions ===
     void load_from_gfa(std::string filename);
