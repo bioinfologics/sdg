@@ -28,6 +28,9 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     uint64_t pairs=0,discarded=0,truncated=0;
     std::ofstream output(output_filename.c_str());
 
+    output.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    output.write((const char *) &BSG_VN, sizeof(BSG_VN));
+
     output.write((const char *) &readsize,sizeof(readsize));
     auto size_pos=output.tellp();
     output.write((const char *) &_size, sizeof(_size));//just to save the space!
@@ -109,6 +112,21 @@ void PairedReadsDatastore::read(std::ifstream &input_file) {
 
 void PairedReadsDatastore::load_index(){
     fd=fopen(filename.c_str(),"r");
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    fread((char *) &magic, sizeof(magic),1,fd);
+    fread((char *) &version, sizeof(version),1,fd);
+
+    if (magic != BSG_MAGIC) {
+        std::cerr << "This file seems to be corrupted" << std::endl;
+        throw "This file appears to be corrupted";
+    }
+
+    if (version < min_compat) {
+        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
+        throw "Incompatible version";
+    }
+
     fread( &readsize,sizeof(readsize),1,fd);
     fread( &_size,sizeof(_size),1,fd);
     readpos_offset=ftell(fd);
@@ -119,6 +137,21 @@ void PairedReadsDatastore::load_from_stream(std::string _filename,std::ifstream 
     uint64_t s;
     filename=_filename;
     fd=fopen(filename.c_str(),"r");
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    input_file.read((char *) &magic, sizeof(magic));
+    input_file.read((char *) &version, sizeof(version));
+
+    if (magic != BSG_MAGIC) {
+        std::cerr << "This file seems to be corrupted" << std::endl;
+        throw "This file appears to be corrupted";
+    }
+
+    if (version < min_compat) {
+        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
+        throw "Incompatible version";
+    }
+
     input_file.read( (char *) &readsize,sizeof(readsize));
     input_file.read( (char *) &_size,sizeof(_size));
     readpos_offset=input_file.tellg();
@@ -141,6 +174,9 @@ void PairedReadsDatastore::write_selection(std::ofstream &output_file, std::vect
             return;//exit if not properly paired
         }
     }
+    output_file.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    output_file.write((const char *) &BSG_VN, sizeof(BSG_VN));
+
     output_file.write((char *) &readsize,sizeof(readsize));
     uint64_t rids_size=read_ids.size();
     output_file.write((char *) &rids_size,sizeof(rids_size));
