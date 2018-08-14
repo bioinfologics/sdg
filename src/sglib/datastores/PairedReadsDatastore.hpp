@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <algorithm>
 #include <sglib/factories/KMerFactory.h>
+#include "sglib/versioning.hpp"
 
 
 struct PairedReadData {
@@ -53,6 +54,7 @@ private:
     //TODO: save size
     uint64_t _size;
     FILE * fd=NULL;
+    static const bsgVersion_t min_compat = 0x0001;
 
     //TODO: read sequence cache (std::map with a limit of elements and use count)
 };
