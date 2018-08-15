@@ -79,7 +79,7 @@ public:
         if (fd == -1) {
             std::string msg("Cannot open file " + datastore.filename);
             perror(msg.c_str());
-            exit(EXIT_FAILURE);
+            throw std::runtime_error("Cannot open " + datastore.filename);
         }
 
         buffer=(char *)malloc(bufsize);

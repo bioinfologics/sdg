@@ -246,17 +246,17 @@ void LongReadMapper::read(std::string filename) {
 
     if (magic != BSG_MAGIC) {
         std::cerr << "This file seems to be corrupted" << std::endl;
-        throw "This file appears to be corrupted";
+        throw std::runtime_error("This file appears to be corrupted");
     }
 
     if (version < min_compat) {
         std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw "Incompatible version";
+        throw std::runtime_error("Incompatible version");
     }
 
     if (type != LongMap_FT) {
         std::cerr << "This file is not compatible with this type" << std::endl;
-        throw "Incompatible file type";
+        throw std::runtime_error("Incompatible file type");
     }
 
     input_file.read(reinterpret_cast<char *>(&k), sizeof(k));
@@ -273,17 +273,23 @@ void LongReadMapper::read(std::ifstream &inf) {
     auto mapSize(mappings.size());
     bsgMagic_t magic;
     bsgVersion_t version;
+    BSG_FILETYPE type;
     inf.read((char *) &magic, sizeof(magic));
     inf.read((char *) &version, sizeof(version));
-
+    inf.read((char *) &type, sizeof(type));
     if (magic != BSG_MAGIC) {
         std::cerr << "This file seems to be corrupted" << std::endl;
-        throw "This file appears to be corrupted";
+        throw std::runtime_error("This file appears to be corrupted");
     }
 
     if (version < min_compat) {
         std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw "Incompatible version";
+        throw std::runtime_error("Incompatible version");
+    }
+
+    if (type != LongMap_FT) {
+        std::cerr << "This file is not compatible with the reader" << std::endl;
+        throw std::runtime_error("Incompatible file type");
     }
 
     inf.read(reinterpret_cast<char *>(&k), sizeof(k));

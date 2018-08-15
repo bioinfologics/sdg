@@ -22,17 +22,17 @@ void LongReadsDatastore::load_index(std::string &file) {
 
     if (magic != BSG_MAGIC) {
         std::cerr << "This file seems to be corrupted" << std::endl;
-        throw "This file appears to be corrupted";
+        throw std::runtime_error("This file appears to be corrupted");
     }
 
     if (version < min_compat) {
         std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw "Incompatible version";
+        throw std::runtime_error("Incompatible version");
     }
 
     if (type != LongDS_FT) {
         std::cerr << "This file is not compatible with this type" << std::endl;
-        throw "Incompatible file type";
+        throw std::runtime_error("Incompatible file type");
     }
 
     input_file.read((char*)&nReads, sizeof(nReads));
@@ -127,7 +127,7 @@ LongReadsDatastore::LongReadsDatastore(std::string long_read_file, std::string o
     lr_sequence_fd = ::open(output_file.c_str(), O_RDONLY);
     if (lr_sequence_fd == -1) {
         perror("fstat");
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("Cannot open "+output_file);
     }
 
 }
@@ -138,7 +138,7 @@ void LongReadsDatastore::load_from_stream(std::string file_name, std::ifstream &
     lr_sequence_fd = ::open(file_containing_long_read_sequence.c_str(), O_RDONLY);
     if (lr_sequence_fd == -1) {
         perror("fstat");
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("Cannot open " + file_containing_long_read_sequence);
     }
 
     bsgMagic_t magic;
@@ -150,17 +150,17 @@ void LongReadsDatastore::load_from_stream(std::string file_name, std::ifstream &
 
     if (magic != BSG_MAGIC) {
         std::cerr << "This file seems to be corrupted" << std::endl;
-        throw "This file appears to be corrupted";
+        throw std::runtime_error("This file appears to be corrupted");
     }
 
     if (version < min_compat) {
         std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw "Incompatible version";
+        throw std::runtime_error("Incompatible version");
     }
 
     if (type != LongDS_FT) {
         std::cerr << "This file is not compatible with this type" << std::endl;
-        throw "Incompatible file type";
+        throw std::runtime_error("Incompatible file type");
     }
 
     // Equivalente de read_rtfr
