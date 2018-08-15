@@ -100,7 +100,7 @@ struct nodeVisitor {
     }
 };
 
-#ifndef _LIBCPP_HAS_NO_INT128
+#ifndef __clang__
 namespace std {
     //TODO: this hashing sucks, but it is needed
     template <> struct hash<__int128 unsigned>
