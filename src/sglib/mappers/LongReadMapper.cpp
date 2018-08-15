@@ -62,7 +62,7 @@ void LongReadMapper::update_graph_index() {
 void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
     if (assembly_kmers.empty()) update_graph_index();
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
-    std::atomic<uint32_t > num_reads_done(0);
+    std::atomic<uint32_t> total_mapped(0);
 #pragma omp parallel
     {
         StringKMerFactory skf(k);
@@ -176,7 +176,6 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 //                    readout << std::endl;
 //                }
             }
-            num_reads_done++;
 
             if (winners.empty()) {
                 continue;
@@ -199,13 +198,12 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 }
                 wp=rp;
             }
-                if (num_reads_done%1000 == 0) {
-#pragma omp critical (lrmap_progress)
-                    {
-                    sglib::OutputLog() << num_reads_done << " / " << datastore.size() << " reads mapped" << std::endl;
-                    }
-                }
+
+            if (readID%1000 == 0) {
+                total_mapped += 1000;
+                sglib::OutputLog() << total_mapped << " / " << datastore.size() << " reads mapped" << std::endl;
             }
+        }
     }
     for (int thread = 0; thread<omp_get_max_threads(); thread++) {
         mappings.reserve(thread_mappings.size());
