@@ -9,14 +9,15 @@
 #include <fstream>
 #include <iostream>
 #include <fcntl.h>
-#include "Common.h"
+#include <sglib/readers/Common.h>
+#include <sglib/logger/OutputLog.h>
 #include "kseq.hpp"
 
 struct FastxReaderParams {
     uint32_t min_length;
 };
 
-struct FastaRecord{
+struct FastaRecord {
     int32_t id;
     std::string name,seq;
 };
@@ -33,13 +34,18 @@ public:
      * Relative or absolute path to the file that is going to be read.
      */
     explicit FastaReader(FastxReaderParams params, const std::string &filepath) : params(params), numRecords(0) {
-        std::cout << "Opening: " << filepath << "\n";
+        sglib::OutputLog(sglib::LogLevels::INFO) << "Opening: " << filepath << "\n";
         gz_file = gzopen(filepath.c_str(), "r");
-        if (gz_file == Z_NULL) {
-            std::cout << "Error opening FASTA " << filepath << ": " << std::strerror(errno) << std::endl;
+        if (gz_file == Z_NULL || gz_file == NULL) {
+            sglib::OutputLog(sglib::LogLevels::WARN) << "Error opening FASTA " << filepath << ": " << std::strerror(errno) << std::endl;
             exit(1);
         }
         ks = new kstream<gzFile, FunctorZlib>(gz_file, gzr);
+    }
+
+    ~FastaReader() {
+        delete ks;
+        gzclose(gz_file);
     }
 
     /**
@@ -54,7 +60,7 @@ public:
     bool next_record(FileRecord& rec) {
         int l;
         do {
-            l=(ks->readFasta(seq));
+            l=(ks -> readFasta(seq));
             std::swap(rec.seq, seq.seq);
             std::swap(rec.name, seq.name);
             rec.id = numRecords;
@@ -73,7 +79,7 @@ private:
     kstream<gzFile, FunctorZlib> *ks;
     kstream<BZFILE, FunctorBZlib2> *bzKS;
     kseq seq;
-    uint32_t numRecords=0;
+    uint32_t numRecords = 0;
     gzFile gz_file;
     BZFILE * bz_File{};
     int fq_File{};

@@ -4,14 +4,7 @@
 
 #include <cmath>
 #include <sglib/mappers/LongReadMapper.hpp>
-
-#ifdef _OPENMP
-#include <omp.h>
-#include <parallel/algorithm>
-#include <sglib/logger/OutputLog.h>
-#include <atomic>
-
-#endif
+#include <sglib/utilities/omp_safe.hpp>
 
 void LongReadMapper::update_graph_index() {
     assembly_kmers.reserve(110000000);

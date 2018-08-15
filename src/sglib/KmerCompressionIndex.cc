@@ -5,6 +5,8 @@
 
 #include "KmerCompressionIndex.hpp"
 #include <atomic>
+#include <sstream>
+#include <sglib/readers/FileReader.h>
 
 
 void KmerCompressionIndex::index_graph(){
@@ -54,6 +56,8 @@ void KmerCompressionIndex::reindex_graph(){
     FastaRecord r;
     KmerCountFactory<FastaRecord>kcf({k});
     for (sgNodeID_t n=1;n<sg.nodes.size();++n){
+        if (n%10000 == 0) sglib::OutputLog(sglib::INFO) << "Node id: " << n << "/" << sg.nodes.size() << std::endl;
+
         if (sg.nodes[n].sequence.size()>=k){
             r.id=n;
             r.seq=sg.nodes[n].sequence;
@@ -258,7 +262,7 @@ void KmerCompressionIndex::dump_histogram(std::string filename) {
     for (auto i=0;i<1000;++i) kchf<<i<<","<<covuniq[i]<<std::endl;
 }
 
-double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint16_t max_graph_freq) {
+double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint16_t max_graph_freq, uint16_t dataset) {
     const int k=31;
     auto n=_node>0 ? _node:-_node;
     auto & node=sg.nodes[n];
@@ -296,7 +300,7 @@ double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint
         auto nk = std::lower_bound(graph_kmers.begin(), graph_kmers.end(), KmerCount(kmer,0));
         if (nk!=graph_kmers.end() and nk->kmer == kmer and nk->count<=max_graph_freq) {
             kcount+=nk->count;
-            kcov+=read_counts[0][nk-graph_kmers.begin()];
+            kcov+=read_counts[dataset][nk-graph_kmers.begin()];
         }
     }
 
@@ -367,5 +371,34 @@ void KmerCompressionIndex::compute_all_nodes_kci(uint16_t max_graph_freq) {
 #pragma omp parallel for shared(nodes_depth) schedule(static, 100)
     for (auto n=1;n<sg.nodes.size();++n) {
         nodes_depth[n]=compute_compression_for_node(n, max_graph_freq);
+    }
+}
+
+void KmerCompressionIndex::compute_kci_profiles(std::string filename) {
+    // vector to store vector of zero counts
+    std::ofstream of(filename+"_kci.csv");
+
+
+//    for (sgNodeID_t n: node_whitelist){
+        // if para chequear que el nodo esta en el grafo
+#pragma omp parallel for schedule(static, 20)
+    for (auto n=1; n<sg.nodes.size(); ++n){
+        if (sg.nodes[n].status == sgNodeDeleted) continue;
+        std::stringstream ss;
+        ss << "seq" << n <<" | ";
+        // TODO: complete this to throw a warning when accessing a deleted node
+        for (auto var=0; var < read_counts.size(); ++var) {
+            auto zero_count = 0;
+            auto read_coverage = compute_node_coverage_profile(sg.nodes[n].sequence, var);
+            for (auto c: read_coverage[0]) {
+                // TODO: Corregir este threhold
+                if (c < 3){
+                    zero_count++;
+                }
+            }
+            ss << zero_count << ",";
+        }
+#pragma omp critical
+        of << ss.str() << std::endl;
     }
 }

@@ -6,10 +6,15 @@
 #define BSG_LINKAGEUNTANGLER_HPP
 
 
-#include <sglib/WorkSpace.hpp>
-#include <sglib/LinkageDiGraph.hpp>
+#include <sglib/workspace/WorkSpace.hpp>
+#include <sglib/graph/LinkageDiGraph.hpp>
 
-
+/**
+ * @brief Generates and manipulates links from 10x, paired and long reads
+ *
+ * Uses a workspace containing mapped reads and KCI indexes.
+ * Can select nodes which are to be used for linkage.
+ */
 class LinkageUntangler {
 public:
 
@@ -27,6 +32,8 @@ public:
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> shared_read_paths(int min_shared, std::vector<size_t> libraries, bool r1rev, bool r2rev);
     LinkageDiGraph make_topology_linkage(int radius);
     LinkageDiGraph make_paired_linkage(int min_reads);
+    LinkageDiGraph make_tag_linkage(int min_tags,float end_perc=.3);
+    LinkageDiGraph make_longRead_linkage();
     LinkageDiGraph make_paired_linkage_pe(int min_reads);
     LinkageDiGraph make_paired_linkage_by_kmer(int min_shared, std::vector<size_t> libraries, bool r1rev, bool r2rev);
     LinkageDiGraph make_tag_linkage(int min_tags, bool use_kmer_paths=false);

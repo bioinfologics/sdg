@@ -6,14 +6,12 @@
 #include <cassert>
 #include <atomic>
 
-#ifdef _OPENMP
-#include <omp.h>
-#include <parallel/algorithm>
-#else
-int omp_get_max_threads(){return 1;}
-int omp_get_thread_num(){return 0;}
-#endif
+
 #include "LinkedReadMapper.hpp"
+#include "sglib/SMR.h"
+#include "sglib/factories/KMerIDXFactory.h"
+#include "sglib/readers/SequenceGraphReader.h"
+#include <sglib/utilities/omp_safe.hpp>
 
 void LinkedReadMapper::write(std::ofstream &output_file) {
     //read-to-node
@@ -411,4 +409,14 @@ std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadMapper::get_tag_neigh
         tns.insert(tns.end(),tnsl.begin(),tnsl.end());
     }
     return tns;
+}
+
+LinkedReadMapper LinkedReadMapper::operator=(const LinkedReadMapper &other) {
+    if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceGraph"); }
+    if (&other == this) {
+        return *this;
+    }
+    reads_in_node = other.reads_in_node;
+    read_to_node = other.read_to_node;
+    return *this;
 }

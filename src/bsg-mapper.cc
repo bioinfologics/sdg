@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/WorkSpace.hpp>
+#include <sglib/workspace/WorkSpace.hpp>
 #include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"
 
@@ -83,14 +83,14 @@ int main(int argc, char * argv[]) {
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
         sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }
-    for (auto &m:ws.long_read_mappers) {
-        sglib::OutputLog()<<"Mapping long reads library..."<<std::endl;
+    for (auto &m: ws.getLongReadMappers()) {
+        sglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
         m.update_graph_index();
         m.map_reads();
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
-        sglib::OutputLog()<<"Mapping long reads DONE."<<std::endl;
+        sglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
     }
-    ws.path_datastores.clear();
+    ws.getPathsDatastore().clear();
     ws.add_log_entry("path_datastores cleared");
     ws.add_log_entry("bsg-mapper run finished");
     ws.dump_to_disk(output_prefix+".bsgws");

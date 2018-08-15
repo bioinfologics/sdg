@@ -5,6 +5,7 @@
 #ifndef BSG_LINKEDREADSDATASTORE_HPP
 #define BSG_LINKEDREADSDATASTORE_HPP
 
+#include <sglib/PairedReadMapper.h>
 #include <cstdint>
 #include <iostream>
 #include <string>
@@ -21,7 +22,7 @@
 
 
 typedef uint32_t bsg10xTag;
-enum LinkedReadsFormat {UCDavis,raw,seq};
+enum class LinkedReadsFormat {UCDavis,raw,seq};
 struct LinkedReadData {
     bsg10xTag tag;
     std::string seq1,seq2;
@@ -143,6 +144,12 @@ public:
 
 private:
 
+    struct tag_kmers_t {
+        bsg10xTag tag;
+        std::unordered_set<uint64_t> kmers;
+        const bool operator==(const bsg10xTag & other_tag){return tag==other_tag;};
+    };
+
     class StreamKmerFactory : public  KMerFactory {
     public:
         explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
@@ -155,7 +162,7 @@ private:
             while (*s!='\0' and *s!='\n') {
                 //fkmer: grows from the right (LSB)
                 //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                fillKBuf(*s, fkmer, rkmer, last_unknown);
                 if (last_unknown >= K) {
                     if (fkmer <= rkmer) {
                         // Is fwd

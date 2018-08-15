@@ -7,11 +7,9 @@
 
 #include <map>
 
-#include "sglib/mappers/ReadMapping.hpp"
-#include "sglib/factories/KMerIDXFactory.h"
-#include "sglib/readers/SequenceGraphReader.h"
-#include "sglib/SMR.h"
+#include "sglib/graph/SequenceGraph.hpp"
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
+#include <sglib/types/MappingTypes.hpp>
 
 /**
  * @brief A mapper for linked reads from a LinkedReadsDatastore.
@@ -31,7 +29,7 @@ class LinkedReadMapper {
             while (*s!='\0' and *s!='\n') {
                 //fkmer: grows from the right (LSB)
                 //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                fillKBuf(*s, fkmer, rkmer, last_unknown);
                 if (last_unknown >= K) {
                     if (fkmer <= rkmer) {
                         // Is fwd
@@ -60,7 +58,7 @@ class LinkedReadMapper {
             while (*s!='\0' and *s!='\n') {
                 //fkmer: grows from the right (LSB)
                 //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                fillKBuf(*s, fkmer, rkmer, last_unknown);
                 if (last_unknown >= K) {
                     if (fkmer <= rkmer) {
                         // Is fwd
@@ -81,20 +79,13 @@ public:
     LinkedReadMapper(SequenceGraph &_sg, LinkedReadsDatastore &_datastore) : sg(_sg),datastore(_datastore){
         reads_in_node.resize(sg.nodes.size());
     };
-
-    LinkedReadMapper& operator=(const LinkedReadMapper &o) {
-        if (this == &o) return *this;
-
-        reads_in_node = o.reads_in_node;
-        read_to_node = o.read_to_node;
-
-        return *this;
-    }
-
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
     void map_reads(std::unordered_set<uint64_t> const &  reads_to_remap={});
     void remap_all_reads();
+    LinkedReadMapper operator=(const LinkedReadMapper &other);
+
+    //void map_read(uint64_t readID);
     void map_reads63(std::unordered_set<uint64_t> const &  reads_to_remap={});
     void remap_all_reads63();
     void map_read(uint64_t readID);

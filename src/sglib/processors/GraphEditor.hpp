@@ -6,11 +6,11 @@
 #define BSG_GRAPHEDITOR_HPP
 
 
-#include <sglib/WorkSpace.hpp>
+#include <sglib/workspace/WorkSpace.hpp>
 
 class GraphEditor {
 public:
-    GraphEditor (const WorkSpace &_ws):ws(_ws){};
+    GraphEditor (WorkSpace &_ws):ws(_ws){};
 
     bool detach_path (SequenceGraphPath p,bool consume_tips=false); //returns true on success
     int patch_between (sgNodeID_t from, sgNodeID_t to, std::string);
@@ -29,7 +29,7 @@ public:
 
     void join_path(SequenceGraphPath p,bool consume_nodes=false);
 
-    const WorkSpace & ws;
+    WorkSpace & ws;
     std::set<sgNodeID_t> edited_nodes;
     std::set<sgNodeID_t> new_nodes;
 

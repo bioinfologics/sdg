@@ -5,21 +5,6 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
 
-
-IF (MY_COMPILER_OPTION STREQUAL "Intel")
-    FIND_PROGRAM(ICPC_PROGRAM icpc ...)
-    IF(ICPC_PROGRAM)
-        MESSAGE(STATUS "** Compiling with Intel settings **")
-        IF(ENV{CXX})
-            MESSAGE(WARNING "Overwriting CXX envvar")
-        ENDIF()
-        SET(ENV{CXX} "${ICPC_PROGRAM}")
-        SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -w")
-        SET(CMAKE_CXX_FLAGS_DEBUG "-g")
-    ELSE()
-        MESSAGE(FATAL_ERROR "Intel compiler not found")
-    ENDIF()
-ENDIF ()
 if (POLICY CMP0048)
     cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
@@ -32,7 +17,8 @@ endif (APPLE)
 PROJECT (bsg)
 ENABLE_TESTING()
 OPTION(BUILD_TESTING "Build tests." ON)
-OPTION(BUILD_DOC "Build documentation" OFF)
+OPTION(BUILD_DOC "Build documentation" ON)
+OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" OFF)
 OPTION(BUILD_COV "Build coverage" OFF)
 
 # Get the remote url
@@ -91,7 +77,7 @@ endif()
 ## Compiler flags
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -w -Wno-deprecated -std=c++11")
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -fno-omit-frame-pointer")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -fno-omit-frame-pointer -fsanitize=address -ftemplate-backtrace-limit=0 -Wall")
 
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO"${CMAKE_CXX_FLAGS_DEBUG} -O3 -g -fno-omit-frame-pointer")
 
@@ -106,9 +92,6 @@ if(OPENMP_FOUND)
 endif()
 
 add_definitions(${CMAKE_CXX_FLAGS})
-
-## To move the bins to the final location
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin")
 
 find_package(ZLIB REQUIRED)
 if (ZLIB_FOUND)
@@ -136,87 +119,77 @@ IF(BUILD_DOC)
         configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
         message("Doxygen build started")
 
-    add_custom_target(doc_doxygen
-                      COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                      COMMENT "Generating API documentation with Doxygen"
-                      VERBATIM)
+        # note the option ALL which allows to build the docs together with the application
+        add_custom_target(doc_doxygen ALL
+                          COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+                          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                          COMMENT "Generating API documentation with Doxygen"
+                          VERBATIM)
     else (DOXYGEN_FOUND)
         message("Doxygen need to be installed to generate the doxygen documentation")
     endif (DOXYGEN_FOUND)
-ENDIF(BUILD_DOC)
-
+ENDIF()
 
 ## Include directories
 include_directories("src/")
-include_directories("deps/cxxopts/include")
+include_directories("deps/cxxopts/")
 include_directories("deps/kseqcpp/")
 ## Set sources variables
 
 ## Libraries
-add_library(sequence_graph SHARED
-        src/sglib/SMR.h
-        src/sglib/readers/Common.h
-        src/sglib/readers/FileReader.h
-        src/sglib/readers/SequenceGraphReader.h
-        src/sglib/factories/ContigBlockFactory.h
-        src/sglib/factories/ContigLink.h
-        src/sglib/factories/KMerFactory.h
-        src/sglib/factories/KMerIDXFactory.h
-        src/sglib/SequenceGraph.hpp
-        src/sglib/SequenceGraph.cc
-        src/sglib/filesystem/check_or_create_directory.cc
-        src/sglib/filesystem/check_or_create_directory.h
-        src/sglib/KmerCompressionIndex.cc
-        src/sglib/KmerCompressionIndex.hpp
-        src/sglib/logger/OutputLog.h
-        src/sglib/logger/OutputLog.cc
-        src/sglib/datastores/LinkedReadsDatastore.cc
-        src/sglib/datastores/LinkedReadsDatastore.hpp
-        src/sglib/datastores/PairedReadsDatastore.cc
-        src/sglib/datastores/PairedReadsDatastore.hpp
-        src/sglib/datastores/LongReadsDatastore.cpp
-        src/sglib/mappers/ReadMapping.hpp
-        src/sglib/mappers/LinkedReadMapper.cc
-        src/sglib/mappers/LinkedReadMapper.hpp
-        src/sglib/mappers/PairedReadMapper.cc
-        src/sglib/mappers/PairedReadMapper.hpp
-        src/sglib/mappers/LongReadMapper.cpp
-        src/sglib/datastores/PathsDatastore.cc
-        src/sglib/datastores/PathsDatastore.hpp
-        src/sglib/WorkSpace.cc
-        src/sglib/WorkSpace.hpp
-        src/sglib/LinkageDiGraph.cc
-        src/sglib/LinkageDiGraph.hpp)
+add_library(bsg SHARED
+            src/sglib/graph/SequenceGraph.cc
+            src/sglib/graph/SequenceSubGraph.cpp
+            src/sglib/graph/SequenceGraphPath.cpp
+            src/sglib/graph/LinkageDiGraph.cc
+            src/sglib/filesystem/helpers.cc
+            src/sglib/logger/OutputLog.cc
+            src/sglib/datastores/PairedReadsDatastore.cc
+            src/sglib/datastores/LinkedReadsDatastore.cc
+            src/sglib/datastores/PathsDatastore.cc
+            src/sglib/datastores/LongReadsDatastore.cpp
+            src/sglib/mappers/LongReadMapper.cpp
+            src/sglib/mappers/SingleReadMapper.cpp
+            src/sglib/mappers/threader/NodeMapper.cpp
+            src/sglib/mappers/threader/MappingThreader.cpp
+            src/sglib/mappers/LinkedReadMapper.cc
+            src/sglib/mappers/PairedReadMapper.cc
+            src/sglib/processors/Untangler.cc
+            src/sglib/processors/TagWalker.cc
+            src/sglib/processors/FlowFollower.cc
+            src/sglib/processors/PathExplorer.cpp
+            src/sglib/processors/LinkageUntangler.cc
+            src/sglib/workspace/WorkSpace.cc
+            src/sglib/SequenceThreader.cpp
+            src/sglib/KmerCompressionIndex.cc
+            src/sglib/SequenceGraphJournal.cc
+            src/sglib/Scaffolder.cc
+            src/sglib/processors/GraphEditor.cc
+        )
 
-target_link_libraries(sequence_graph ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+target_link_libraries(bsg ${DEPENDENCY_LIBS})
+
+if (BUILD_COV)
+    set_target_properties(bsg PROPERTIES
+                      COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
+                      LINK_FLAGS    "--coverage")
+endif()
 
 add_executable(bsg-datastore
         src/bsg-datastore.cc
-        src/sglib/datastores/LinkedReadsDatastore.hpp
-        src/sglib/datastores/LinkedReadsDatastore.cc
-        src/sglib/datastores/LongReadsDatastore.cpp
-        src/sglib/datastores/PairedReadsDatastore.cc
-        src/sglib/logger/OutputLog.h
-        src/sglib/logger/OutputLog.cc)
+        )
 
 add_executable(bsg-kmerspectra
         src/bsg-kmerspectra.cc
-        src/sglib/SequenceGraph.hpp
-        src/sglib/SequenceGraph.cc
-        src/sglib/filesystem/check_or_create_directory.h
-        src/sglib/filesystem/check_or_create_directory.cc
-        src/sglib/KmerCompressionIndex.hpp
-        src/sglib/KmerCompressionIndex.cc
-        src/sglib/logger/OutputLog.h
-        src/sglib/logger/OutputLog.cc
         )
-target_link_libraries(bsg-kmerspectra ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
 
 add_executable(bsg-workspace
         src/bsg-workspace.cc
         )
-target_link_libraries(bsg-kmerspectra ${ZLIB_LIBRARIES} ${BZIP2_LIBRARIES})
+
+add_executable(gfa-exploregraph
+        src/gfa-exploregraph.cc
+        )
 
 add_executable(bsg-mapper
         src/bsg-mapper.cc
@@ -224,67 +197,32 @@ add_executable(bsg-mapper
 
 add_executable(bsg-untangler
         src/bsg-untangler.cc
-        src/sglib/processors/Untangler.hpp
-        src/sglib/processors/Untangler.cc
-        src/sglib/processors/TagWalker.cc src/sglib/processors/TagWalker.hpp
-        src/sglib/processors/FlowFollower.cc src/sglib/processors/FlowFollower.hpp
-        src/sglib/processors/LinkageUntangler.cc src/sglib/processors/LinkageUntangler.hpp
-        src/sglib/processors/GraphEditor.cc src/sglib/processors/GraphEditor.hpp
-        src/sglib/processors/GraphMaker.cc src/sglib/processors/GraphMaker.hpp
-        src/sglib/processors/LocalHaplotypeAssembler.cc src/sglib/processors/LocalHaplotypeAssembler.hpp)
-
-add_executable(bsg-lhapassembler
-        src/bsg-lhapassembler.cc
-        src/sglib/processors/Untangler.hpp
-        src/sglib/processors/Untangler.cc
-        src/sglib/processors/TagWalker.cc src/sglib/processors/TagWalker.hpp
-        src/sglib/processors/FlowFollower.cc src/sglib/processors/FlowFollower.hpp
-        src/sglib/processors/LinkageUntangler.cc src/sglib/processors/LinkageUntangler.hpp
-        src/sglib/processors/GraphEditor.cc src/sglib/processors/GraphEditor.hpp
-        src/sglib/processors/GraphMaker.cc src/sglib/processors/GraphMaker.hpp
-        src/sglib/processors/LocalHaplotypeAssembler.cc src/sglib/processors/LocalHaplotypeAssembler.hpp)
-
-add_executable(bsg-dbg
-        src/bsg-dbg.cc
-        src/sglib/processors/GraphMaker.cc src/sglib/processors/GraphMaker.hpp
-        src/sglib/processors/GraphEditor.cc src/sglib/processors/GraphEditor.hpp)
-
+        )
 
 add_executable(bsg-flowmaker
         src/bsg-flowmaker.cc
-        src/sglib/processors/Untangler.hpp
-        src/sglib/processors/Untangler.cc
-        src/sglib/processors/TagWalker.cc
-        src/sglib/processors/TagWalker.hpp
-        src/sglib/processors/FlowFollower.cc
-        src/sglib/processors/FlowFollower.hpp)
+        )
 
-add_executable(test_graphmaker EXCLUDE_FROM_ALL
-        src/test_graphmaker.cc
-        src/sglib/processors/GraphMaker.cc
-        src/sglib/processors/GraphMaker.hpp)
+add_executable(bsg-lhapassembler
+        src/bsg-lhapassembler.cc
+        )
 
-
+add_executable(bsg-flowmaker
+        src/bsg-flowmaker.cc
+        )
 ## add executables and respective sources
-add_executable(gfa-qc EXCLUDE_FROM_ALL
-        src/gfa-qc.cc)
 
-## add executables and respective sources
-add_executable(gfa-dumppath EXCLUDE_FROM_ALL
-        src/gfa-dumppath.cc)
-
-## add executables and respective sources
-add_executable(gfa-pairscaff EXCLUDE_FROM_ALL
-        src/gfa-pairscaff.cc)
-
-add_executable(gfa-align EXCLUDE_FROM_ALL
+add_executable(gfa-align
                src/gfa-align.cc)
 
-add_executable(kc_comp EXCLUDE_FROM_ALL
-               src/comp_kc.cc)
-
-add_executable(seq-sorter EXCLUDE_FROM_ALL
+add_executable(seq-sorter
                src/seq-sorter.cpp)
+
+add_executable(map-lr
+               src/map-lr.cc)
+
+add_executable(gfa-extract
+        src/gfa-extract.cc)
 
 target_link_libraries(bsg-workspace sequence_graph)
 target_link_libraries(bsg-datastore sequence_graph)
@@ -293,10 +231,65 @@ target_link_libraries(bsg-mapper sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-flowmaker sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-lhapassembler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-dbg sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(test_graphmaker sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-dumppath sequence_graph)
 target_link_libraries(gfa-qc sequence_graph)
-target_link_libraries(seq-sorter sequence_graph)
-target_link_libraries(gfa-pairscaff sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(gfa-align sequence_graph ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(gfa-extract sequence_graph)
+
+IF(BUILD_TESTING)
+    add_executable(runBasicTests tests/sglib/basic_check.cc)
+    IF(BUILD_COV)
+        set_target_properties(runBasicTests PROPERTIES
+                          COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
+                          LINK_FLAGS    "--coverage")
+    ENDIF()
+    target_link_libraries(runBasicTests gtest gtest_main sequence_graph)
+    add_test(basicTests runBasicTests)
+ENDIF()
+
+install(TARGETS
+        bsg-workspace
+        bsg-datastore
+        bsg-kmerspectra
+        bsg-mapper
+        bsg-flowmaker
+        bsg-untangler
+        bsg-lhapassembler
+        runBasicTests
+        RUNTIME DESTINATION bin
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib/static)
+install(DIRECTORY src/sglib
+        DESTINATION include)
+
+IF(BUILD_PYTHON_INTERFACE)
+    FIND_PACKAGE(SWIG)
+    INCLUDE(${SWIG_USE_FILE})
+
+    FIND_PACKAGE(PythonInterp 3)
+    FIND_PACKAGE(PythonLibs 3)
+
+    INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+
+    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+
+    add_custom_command (
+    OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
+    COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py
+    --quiet ${CMAKE_BINARY_DIR}/docs/xml/index.xml
+    ${CMAKE_BINARY_DIR}/python_docs.i
+    COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
+    DEPENDS doc_doxygen
+    VERBATIM)
+
+    add_custom_target(doxy2swig DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
+    SET(CMAKE_SWIG_FLAGS "")
+
+    SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES CPLUSPLUS ON)
+    SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES SWIG_FLAGS "")
+    set_property(SOURCE interfaces/SequenceGraph.i PROPERTY DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
+    SWIG_ADD_LIBRARY(bsg LANGUAGE python SOURCES
+    interfaces/SequenceGraph.i
+    )
+    SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} bsg "")
+    add_dependencies(_bsg doxy2swig)
+ENDIF()

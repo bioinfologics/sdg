@@ -9,7 +9,8 @@
 #include <sglib/readers/SequenceGraphReader.h>
 #include <sglib/datastores/PairedReadsDatastore.hpp>
 #include "SMR.h"
-#include "SequenceGraph.hpp"
+#include "sglib/graph/SequenceGraph.hpp"
+
 class CStringKMerFactory : protected KMerFactory {
 public:
     explicit CStringKMerFactory(uint8_t k) : KMerFactory(k) {};
@@ -159,9 +160,13 @@ public:
     void compute_compression_stats();
     void compute_all_nodes_kci(uint16_t max_graph_freq=10);
 
+    void compute_kci_profiles(std::string filename);
+
+    std::vector<std::vector<uint16_t>> compute_node_coverage_profile(std::string node_sequence, int read_set_index);
+
     void dump_histogram(std::string filename);
 
-    double compute_compression_for_node(sgNodeID_t node, uint16_t max_graph_freq=10);
+    double compute_compression_for_node(sgNodeID_t node, uint16_t max_graph_freq=10, uint16_t dataset=0);
     SequenceGraph & sg;
     std::vector<KmerCount> graph_kmers;
     std::vector<double> nodes_depth;

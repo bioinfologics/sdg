@@ -2,6 +2,8 @@
 // Created by Bernardo Clavijo (EI) on 19/03/2018.
 //
 
+#include <fstream>
+#include <sglib/graph/SequenceGraphPath.hpp>
 #include "PathsDatastore.hpp"
 
 void PathsDatastore::write(std::ofstream &output_file) {
@@ -14,9 +16,9 @@ void PathsDatastore::write(std::ofstream &output_file) {
 
     output_file.write((char *)&count,sizeof(count));
     for (auto &p:paths){
-        count=p.nodes.size();
+        count=p.getNodes().size();
         output_file.write((char *)&count,sizeof(count));
-        output_file.write((char *)p.nodes.data(),count*sizeof(p.nodes[0]));
+        output_file.write((char *)p.getNodes().data(),count*sizeof(p.getNodes()[0]));
     }
     count=origin.size();
     output_file.write((char *)&count,sizeof(count));
@@ -54,8 +56,8 @@ void PathsDatastore::read(std::ifstream &input_file) {
     paths.resize(count,p);
     for (auto &p:paths){
         input_file.read((char *)&count,sizeof(count));
-        p.nodes.resize(count);
-        input_file.read((char *)p.nodes.data(),count*sizeof(p.nodes[0]));
+        p.getNodes().resize(count);
+        input_file.read((char *)p.getNodes().data(),count*sizeof(p.getNodes()[0]));
     }
     input_file.read((char *)&count,sizeof(count));
     origin.resize(count);

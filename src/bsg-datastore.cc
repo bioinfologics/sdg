@@ -30,7 +30,7 @@ int main(int argc, char * argv[]) {
                     ("1,read1", "input reads, left", cxxopts::value<std::string>(read1))
                     ("2,read2", "input reads, right", cxxopts::value<std::string>(read2))
                     ("L,long_reads", "input reads, long", cxxopts::value<std::string>(long_reads))
-                    ("t,read_type", "One of: paired,10x", cxxopts::value<std::string>(read_type))
+                    ("t,read_type", "One of: paired,10x,long", cxxopts::value<std::string>(read_type))
                     ("l,min_read_size", "min size for each read, discards both if one is smaller (default 0)", cxxopts::value<uint16_t>(min_readsize))
                     ("s,max_read_size", "max size for short reads, truncates if longer (default 150)", cxxopts::value<uint16_t>(max_readsize))
                     ("o,output", "output file", cxxopts::value<std::string>(output));
@@ -45,15 +45,16 @@ int main(int argc, char * argv[]) {
             if (read_type == "") {
                 throw cxxopts::OptionException(" please specify an input type");
             }
-            if ( (read_type == "paired" or read_type == "10x") and (read1 == "" or read2 == "" )) {
-                throw cxxopts::OptionException(" please specify the path to R1 and R2");
+            if (long_reads == "" and (read1 == "" or read2 == "" )) {
+                throw cxxopts::OptionException(" please specify the paired read files");
             }
             if (read_type == "long" and long_reads == "") {
-                throw cxxopts::OptionException(" please specify the long reads file");
+                throw cxxopts::OptionException(" please specify the long read files");
             }
             if (output == "") {
                 throw cxxopts::OptionException(" please specify an output prefix");
             }
+
 
         } catch (const cxxopts::OptionException &e) {
             std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
@@ -71,11 +72,9 @@ int main(int argc, char * argv[]) {
             PairedReadsDatastore ds(read1, read2, output+".prseq",min_readsize,max_readsize);
             //ds.dump_index_to_disk(output+".lrIdx");
         }
-
         else if (read_type == "long") {
             LongReadsDatastore ds(long_reads, output+".Lrseq");
         }
-
         else {
             std::cout << "read_type '" << read_type << "' is not supported (yet?)" << std::endl;
         }

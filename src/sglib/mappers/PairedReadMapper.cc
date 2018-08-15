@@ -1,14 +1,13 @@
 //
 // Created by Bernardo Clavijo (EI) on 03/11/2017.
 //
-#include <iostream>
 #include <iomanip>
 #include <cassert>
 #include <atomic>
-#include <omp.h>
+#include <sglib/utilities/omp_safe.hpp>
+#include <fstream>
+#include <iostream>
 #include "PairedReadMapper.hpp"
-#include <parallel/algorithm>
-
 void PairedReadMapper::write(std::ofstream &output_file) {
     //read-to-node
     uint64_t count=read_to_node.size();
@@ -93,7 +92,7 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
         std::vector<KmerIDX> readkmers;
         StreamKmerFactory skf(31);
         ReadMapping mapping;
-        auto blrs=BufferedPairedSequenceGetter(datastore,128*1024,260);
+        auto blrs=BufferedPairedSequenceGetter(datastore,128*1024,2010);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
         auto & mapped_count=thread_mapped_count[omp_get_thread_num()];
         auto & total_count=thread_total_count[omp_get_thread_num()];
@@ -117,7 +116,7 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                 //get all kmers from read
                 auto seq=blrs.get_read_sequence(readID);
                 readkmers.clear();
-                skf.produce_all_kmers(seq,readkmers);
+                skf.produce_all_kmers(readID, seq,readkmers);
                 if (readkmers.size()==0) {
                     ++nokmers;
                 }
@@ -132,7 +131,8 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                             if ((nk->second.node > 0 and rk.contigID > 0) or
                                 (nk->second.node < 0 and rk.contigID < 0))
                                 mapping.rev = false;
-                            else mapping.rev = true;
+                            else
+                                mapping.rev = true;
                             mapping.first_pos = nk->second.pos;
                             mapping.last_pos = nk->second.pos;
                             ++mapping.unique_matches;
@@ -329,7 +329,7 @@ void PairedReadMapper::remove_obsolete_mappings(){
             ++reads;
         }
     }
-    std::cout << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
+    sglib::OutputLog(sglib::INFO, false) << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
 }
 
 void PairedReadMapper::print_stats(){
@@ -342,7 +342,7 @@ void PairedReadMapper::print_stats(){
         else if (read_to_node[r1+1]==0) ++single;
         else {
             ++both;
-            if (read_to_node[r1]==read_to_node[r1+1]) ++same;
+            if (abs(read_to_node[r1])==abs(read_to_node[r1+1])) ++same;
         }
     }
     sglib::OutputLog()<<"Mapped pairs from "<<datastore.filename<<": None: "<<none<<"  Single: "<<single<<"  Both: "<<both<<" ("<<same<<" same)"<<std::endl;
@@ -386,7 +386,7 @@ std::vector<uint64_t> PairedReadMapper::size_distribution() {
             }
         }
     }
-    //std::cout<<"Read orientations:  FR: "<<frcount<<"  RF: "<<rfcount<<std::endl;
+    std::cout<<"Read orientations:  FR: "<<frcount<<"  RF: "<<rfcount<<std::endl;
     if (frcount>rfcount){
         return frdist;
     } else return rfdist;
@@ -400,6 +400,16 @@ void PairedReadMapper::populate_orientation() {
             read_direction_in_node[rm.read_id]=rm.rev;
         }
     }
+}
+
+PairedReadMapper PairedReadMapper::operator=(const PairedReadMapper &other) {
+    if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceGraph"); }
+    if (&other == this) {
+        return *this;
+    }
+    reads_in_node = other.reads_in_node;
+    read_to_node = other.read_to_node;
+    return *this;
 }
 
 PairedReadConnectivityDetail::PairedReadConnectivityDetail(const PairedReadMapper &prm, sgNodeID_t source,

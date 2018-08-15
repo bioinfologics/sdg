@@ -9,7 +9,9 @@
 #include <limits>
 #include <tuple>
 #include <cmath>
-#include "sglib/factories/KMerFactory.h"
+#include <sglib/factories/KMerFactory.h>
+#include <sglib/types/KmerTypes.hpp>
+
 struct KMerIDXFactoryParams {
     uint8_t k;
 };
@@ -32,153 +34,13 @@ struct kmerPos {
     inline bool operator<(const uint32_t &km) const {return kmer < km;}
 };
 
-struct KmerIDX {
-
-    KmerIDX() : kmer(std::numeric_limits<unsigned long long int>::max()), contigID(0), count(0){}
-    explicit KmerIDX(uint64_t kmer) : kmer(kmer), contigID(0), count(0) {}
-
-    KmerIDX(uint64_t _kmer, int32_t _contigID, uint32_t pos, uint8_t _count) : kmer(_kmer), contigID(_contigID),
-                                                                               pos(pos), count(_count) { std::cout << contigID << "," << pos << std::endl; }
-
-    const bool operator<(const KmerIDX& other) const {
-        return kmer<other.kmer;
-    }
-
-    const bool operator>(const KmerIDX &other) const {
-        return kmer>other.kmer;
-    }
-
-    const bool operator==(const KmerIDX &other) const {
-        return kmer==other.kmer;
-    }
-    void merge(const KmerIDX &other) {
-        count += other.count;
-    }
-
-    KmerIDX max() {
-        return {};
-    }
-
-    friend std::ostream& operator<<(std::ostream& os, const KmerIDX& kmer) {
-        os << kmer.contigID << "\t" << kmer.pos;
-        return os;
-    }
-
-    friend std::istream& operator>>(std::istream& is, const KmerIDX& kmer) {
-        is.read((char*)&kmer, sizeof(kmer));
-        return is;
-    }
-
-    friend class byCtgPos;
-    struct byCtgPos {
-        bool operator()(const KmerIDX &a, const KmerIDX &b) {
-            return std::tie(a.contigID, a.pos) < std::tie(b.contigID,b.pos);
-        }
-    };
-
-    friend class ltKmer;
-    struct ltKmer {
-        bool operator()(const KmerIDX &a, const uint64_t &b_kmer) const {
-            return a.kmer < b_kmer;
-        }
-    };
-
-    friend class byKmerContigOffset;
-    struct byKmerContigOffset {
-        bool operator()(const KmerIDX &a, const KmerIDX &b) {
-            auto a_pos(std::abs(a.pos));
-            auto b_pos(std::abs(b.pos));
-//            return std::tie(a.kmer, a.contigID) < std::tie(b.kmer, b.contigID);
-            return std::tie(a.kmer, a.contigID, a_pos) < std::tie(b.kmer, b.contigID, b_pos);
-        }
-    };
-
-
-    uint64_t kmer;
-    int32_t contigID;
-    uint32_t pos;
-    uint8_t count;
-};
-
-struct KmerIDX128 {
-
-    KmerIDX128() : kmer(std::numeric_limits<unsigned long long int>::max()), contigID(0), count(0){}
-    explicit KmerIDX128(__uint128_t kmer) : kmer(kmer), contigID(0), count(0) {}
-
-    KmerIDX128(__uint128_t _kmer, int32_t _contigID, uint32_t pos, uint8_t _count) : kmer(_kmer), contigID(_contigID),
-                                                                               pos(pos), count(_count) {}
-
-    const bool operator<(const KmerIDX& other) const {
-        return kmer<other.kmer;
-    }
-
-    const bool operator>(const KmerIDX &other) const {
-        return kmer>other.kmer;
-    }
-
-    const bool operator==(const KmerIDX &other) const {
-        return kmer==other.kmer;
-    }
-    void merge(const KmerIDX &other) {
-        count += other.count;
-    }
-
-    KmerIDX max() {
-        return {};
-    }
-
-    friend std::ostream& operator<<(std::ostream& os, const KmerIDX128& kmer) {
-        os << kmer.contigID << "\t" << kmer.pos;
-        return os;
-    }
-
-    friend std::istream& operator>>(std::istream& is, const KmerIDX128& kmer) {
-        is.read((char*)&kmer, sizeof(kmer));
-        return is;
-    }
-
-    friend class byCtgPos;
-    struct byCtgPos {
-        bool operator()(const KmerIDX128 &a, const KmerIDX128 &b) {
-            return std::tie(a.contigID, a.pos) < std::tie(b.contigID,b.pos);
-        }
-    };
-
-    __uint128_t kmer;
-    int32_t contigID;
-    uint32_t pos;
-    uint8_t count;
-};
-
-namespace std {
-    template <>
-    struct hash<KmerIDX128> {
-        size_t operator()(const KmerIDX128& k) const {
-            return (uint64_t) k.kmer;
-        }
-    };
-}
-
-namespace std {
-    template <>
-    struct hash<KmerIDX> {
-        size_t operator()(const KmerIDX& k) const {
-            return k.kmer;
-        }
-    };
-}
-
 template<typename FileRecord>
 class kmerIDXFactory : protected KMerFactory {
 public:
     explicit kmerIDXFactory(KMerIDXFactoryParams params) : KMerFactory(params.k) {}
 
-    ~kmerIDXFactory() {
-#pragma omp critical (KMerFactoryDestructor)
-        {
-            //std::cout << "Bases processed " << bases << "\n";
-        }
-    }
+    ~kmerIDXFactory() {}
+
     void setFileRecord(FileRecord &rec) {
         currentRecord = rec;
         fkmer=0;
@@ -193,7 +55,7 @@ public:
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
             bases++;
-            fillKBuf(currentRecord.seq[p], p, fkmer, rkmer, last_unknown);
+            fillKBuf(currentRecord.seq[p], fkmer, rkmer, last_unknown);
             p++;
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
@@ -226,14 +88,14 @@ public:
         while (*s!='\0' and *s!='\n') {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
                     // Is fwd
-                    mers.emplace_back(fkmer);
+                    mers.emplace_back(fkmer, seqID);
                 } else {
                     // Is bwd
-                    mers.emplace_back(rkmer);
+                    mers.emplace_back(rkmer, -seqID);
                 }
             }
             ++s;
