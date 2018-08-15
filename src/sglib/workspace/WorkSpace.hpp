@@ -14,7 +14,7 @@
 #include <sglib/mappers/LongReadMapper.hpp>
 #include <sglib/datastores/PathsDatastore.hpp>
 #include "sglib/graph/SequenceGraph.hpp"
-#include "sglib/KmerCompressionIndex.hpp"
+#include "sglib/processors/KmerCompressionIndex.hpp"
 
 class LogEntry{
 public:

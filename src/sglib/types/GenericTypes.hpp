@@ -24,6 +24,9 @@ public:
     Node(std::string _seq, sgNodeStatus_t _status) : sequence(_seq), status(_status){};
     Node(std::string _seq) : sequence(_seq),status(sgNodeActive){};
     Node() = default;
+    bool operator==(const Node &o) const {
+        return std::tie(status,sequence) == std::tie(o.status,o.sequence);
+    }
     std::string sequence = "";
     sgNodeStatus_t status = sgNodeActive;
     bool is_canonical();
@@ -96,5 +99,18 @@ struct nodeVisitor {
         return os;
     }
 };
+
+#ifndef _LIBCPP_HAS_NO_INT128
+namespace std {
+    //TODO: this hashing sucks, but it is needed
+    template <> struct hash<__int128 unsigned>
+    {
+        size_t operator()(const __int128 unsigned & x) const
+        {
+            return hash<uint64_t>()((uint64_t)x);
+        }
+    };
+}
+#endif
 
 #endif //BSG_GENERICTYPES_HPP

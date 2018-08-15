@@ -7,6 +7,7 @@
 #include <strings.h>
 #include <cstring>
 #include "PairedReadsDatastore.hpp"
+#include <sglib/types/GenericTypes.hpp>
 
 void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int _min_rs, int _rs, size_t chunksize) {
 
@@ -229,17 +230,6 @@ const char* BufferedPairedSequenceGetter::get_read_sequence(uint64_t readID) {
     return buffer+(read_offset_in_file-buffer_offset);
 }
 
-namespace std {
-    //TODO: this hashing sucks, but it is needed
-    template <> struct hash<__int128 unsigned>
-    {
-        size_t operator()(const __int128 unsigned & x) const
-        {
-            return hash<uint64_t>()((uint64_t)x);
-        }
-    };
-}
-
 std::unordered_set<__uint128_t> PairedReadsDatastore::get_all_kmers128(int k, int min_tag_cov) {
     class StreamKmerFactory128 : public  KMerFactory128 {
     public:
@@ -253,7 +243,7 @@ std::unordered_set<__uint128_t> PairedReadsDatastore::get_all_kmers128(int k, in
             while (*s!='\0' and *s!='\n') {
                 //fkmer: grows from the right (LSB)
                 //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                fillKBuf(*s, fkmer, rkmer, last_unknown);
                 if (last_unknown >= K) {
                     if (fkmer <= rkmer) {
                         // Is fwd
@@ -301,7 +291,7 @@ std::unordered_set<__uint128_t> PairedReadsDatastore::get_reads_kmers128(int k, 
             while (*s!='\0' and *s!='\n') {
                 //fkmer: grows from the right (LSB)
                 //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                fillKBuf(*s, fkmer, rkmer, last_unknown);
                 if (last_unknown >= K) {
                     if (fkmer <= rkmer) {
                         // Is fwd

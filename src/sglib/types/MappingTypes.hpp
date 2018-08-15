@@ -58,6 +58,8 @@ namespace std {
  */
 struct LongReadMapping {
     LongReadMapping() {}
+    LongReadMapping(sgNodeID_t nodeID, uint32_t readID, int32_t nstart = 0, int32_t nend = 0, int32_t qstart = 0, int32_t qend = 0, int32_t score = 0) :
+    node(nodeID), read_id(readID), nStart(nstart), nEnd(nend), qStart(qstart), qEnd(qend), score(score) {}
 
     bool operator==(const LongReadMapping &other) const {
         return std::tie(node,read_id,nStart,nEnd,qStart,qEnd)

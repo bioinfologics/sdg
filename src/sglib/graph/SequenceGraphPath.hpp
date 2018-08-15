@@ -10,7 +10,6 @@
 
 class SequenceGraph;
 class SequenceGraphPath {
-    std::vector<sgNodeID_t> nodes;
 public:
     explicit SequenceGraphPath(SequenceGraph & _sg, const std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
     explicit SequenceGraphPath(const SequenceGraph &_sg, const std::vector<sgNodeID_t> _nodes={}) : sg(_sg), nodes(_nodes) {};
@@ -37,6 +36,8 @@ public:
     bool is_unitig();
     std::vector<sgNodeID_t >& getNodes() {return nodes;}
     const std::vector<sgNodeID_t >& getNodes() const {return nodes;}
+
+    std::vector<sgNodeID_t> nodes;
 
 private:
     const SequenceGraph& sg;

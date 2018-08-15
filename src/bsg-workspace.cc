@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/KmerCompressionIndex.hpp>
+#include <sglib/processors/KmerCompressionIndex.hpp>
 #include <sglib/workspace/WorkSpace.hpp>
 #include "cxxopts.hpp"
 

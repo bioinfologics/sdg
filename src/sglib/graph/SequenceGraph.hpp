@@ -32,9 +32,21 @@ class SequenceSubGraph;
  *      - Nodes are saved in canonical form.
  */
 class SequenceGraph {
-    void consume_nodes(const SequenceGraphPath &p, const std::set<sgNodeID_t> &pnodes);
-
 public:
+    //=== internal variables ===
+
+    std::vector<Node> nodes;    /// Contains the actual nodes from the graph, nodes are generally accesed using its IDs on to this structure.
+    std::vector<std::vector<Link>> links;   /// List of all links, links are stored in their canonical from (-1 -> 2)
+    std::string filename,fasta_filename;    /// Name of the files containing the graph and the fasta.
+    std::vector<std::string> oldnames;      /// Mapping structure IDs to input names
+    std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids; /// Mapping structure from input names -> IDs
+    std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;  /// Indexing structure saves a unique kmer -> graphPosition
+    std::unordered_map<__uint128_t, graphPosition> k63mer_to_graphposition; /// Indexing structure saves a unique 63mer -> graphPosition
+
+    bool operator==(const SequenceGraph &o) const {
+        return nodes == o.nodes;
+    }
+
     SequenceGraph(){};
     SequenceGraph(const SequenceGraph &sg) = delete; // Avoid implicit generation of the copy constructor.
     //=== I/O functions ===
@@ -217,37 +229,6 @@ public:
     void print_bubbly_subgraph_stats(const std::vector<SequenceSubGraph> &bubbly_paths);
 
     /**
-     *
-     * @param from
-     * @param to
-     * @param max_size
-     * @return
-     */
-    std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes = 0);
-    // simplify --> executes expand_path on every multi-sequence unitig
-
-
-    // tip_clip -> eliminates tips.
-
-
-    //void explode_node( sgNodeID_t node, uint16_t k);
-    //void explode_all_nodes ();
-    //void collapse_identical_nodes ();
-
-    //later
-    //project spectra and use for flow
-
-
-    //=== internal variables ===
-
-    std::vector<Node> nodes;    /// Contains the actual nodes from the graph, nodes are generally accesed using its IDs on to this structure.
-    std::vector<std::vector<Link>> links;   /// List of all links, links are stored in their canonical from (-1 -> 2)
-    std::string filename,fasta_filename;    /// Name of the files containing the graph and the fasta.
-    std::vector<std::string> oldnames;      /// Mapping structure IDs to input names
-    std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids; /// Mapping structure from input names -> IDs
-    std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;  /// Indexing structure saves a unique kmer -> graphPosition
-
-    /**
      * From a list of names get a list of node IDs from the graph
      * @param _oldnames String containing old names
      * @return
@@ -298,7 +279,16 @@ public:
      * Function to index the graph
      * Stores the result in the local kmer_to_graphposition object
      */
-    void create_index();
-};
+    void create_index(bool verbose=true);
+
+    /**
+     * Function to index the graph
+     * Stores the result in the local kmer_to_graphposition object
+     */
+    void create_63mer_index(bool verbose=true);
+
+
+    size_t count_active_nodes();
+    std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes=20, bool abort_on_loops=true);};
 
 #endif //SG_SEQUENCEGRAPH_HPP

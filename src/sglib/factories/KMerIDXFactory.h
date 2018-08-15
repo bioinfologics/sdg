@@ -15,24 +15,6 @@
 struct KMerIDXFactoryParams {
     uint8_t k;
 };
-struct kmerPos {
-    kmerPos() = default;
-    kmerPos(uint64_t kmer, uint32_t contigID, int32_t pos):kmer(kmer),contigID(contigID),pos(pos) {}
-    uint64_t  kmer = 0;
-    int32_t contigID = 0;
-    int32_t pos = 0;
-
-    friend class byKmerContigOffset;
-    struct byKmerContigOffset {
-        bool operator()(const kmerPos &a, const kmerPos &b) {
-            auto a_pos(std::abs(a.pos));
-            auto b_pos(std::abs(b.pos));
-//            return std::tie(a.kmer, a.contigID) < std::tie(b.kmer, b.contigID);
-            return std::tie(a.kmer, a.contigID, a_pos) < std::tie(b.kmer, b.contigID, b_pos);
-        }
-    };
-    inline bool operator<(const uint32_t &km) const {return kmer < km;}
-};
 
 template<typename FileRecord>
 class kmerIDXFactory : protected KMerFactory {

@@ -72,6 +72,69 @@ namespace std {
 
 
 /**
+ * This type support k > 31
+ */
+struct KmerIDX128 {
+
+    KmerIDX128() : kmer(std::numeric_limits<unsigned long long int>::max()), contigID(0), count(0){}
+    explicit KmerIDX128(__uint128_t kmer) : kmer(kmer), contigID(0), count(0) {}
+
+    KmerIDX128(__uint128_t _kmer, int32_t _contigID, uint32_t pos, uint8_t _count) : kmer(_kmer), contigID(_contigID),
+                                                                                     pos(pos), count(_count) {}
+
+    const bool operator<(const KmerIDX& other) const {
+        return kmer<other.kmer;
+    }
+
+    const bool operator>(const KmerIDX &other) const {
+        return kmer>other.kmer;
+    }
+
+    const bool operator==(const KmerIDX &other) const {
+        return kmer==other.kmer;
+    }
+    void merge(const KmerIDX &other) {
+        count += other.count;
+    }
+
+    KmerIDX max() {
+        return {};
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const KmerIDX128& kmer) {
+        os << kmer.contigID << "\t" << kmer.pos;
+        return os;
+    }
+
+    friend std::istream& operator>>(std::istream& is, const KmerIDX128& kmer) {
+        is.read((char*)&kmer, sizeof(kmer));
+        return is;
+    }
+
+    friend class byCtgPos;
+    struct byCtgPos {
+        bool operator()(const KmerIDX128 &a, const KmerIDX128 &b) {
+            return std::tie(a.contigID, a.pos) < std::tie(b.contigID,b.pos);
+        }
+    };
+
+    __uint128_t kmer;
+    int32_t contigID;
+    uint32_t pos;
+    uint8_t count;
+};
+
+namespace std {
+    template <>
+    struct hash<KmerIDX128> {
+        size_t operator()(const KmerIDX128& k) const {
+            return (uint64_t) k.kmer;
+        }
+    };
+}
+
+
+/**
  * Stores a signed node,position pair, where the node encodes the direction
  * The sign on the Node translates to: as seen in node sequence (+) and reverse complement of node sequence(-)
  */
@@ -129,6 +192,7 @@ struct graphPosition{
 };
 
 struct kmerPos {
+    kmerPos() = default;
     kmerPos(uint64_t kmer, uint32_t contigID, int32_t offset) : kmer(kmer),
                                                                     contigID(contigID),offset(offset) {}
 

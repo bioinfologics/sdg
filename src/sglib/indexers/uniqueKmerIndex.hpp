@@ -12,7 +12,7 @@
 #include <sglib/readers/SequenceGraphReader.h>
 #include <sglib/readers/FileReader.h>
 #include <sglib/SMR.h>
-#include <sglib/PairedReadMapper.h>
+#include <sglib/mappers/PairedReadMapper.hpp>
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
 #include <sglib/types/KmerTypes.hpp>
 

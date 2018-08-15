@@ -116,7 +116,7 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                 //get all kmers from read
                 auto seq=blrs.get_read_sequence(readID);
                 readkmers.clear();
-                skf.produce_all_kmers(readID, seq,readkmers);
+                skf.produce_all_kmers(seq,readkmers);
                 if (readkmers.size()==0) {
                     ++nokmers;
                 }

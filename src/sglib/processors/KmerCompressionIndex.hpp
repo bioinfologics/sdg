@@ -8,7 +8,7 @@
 #include <sglib/factories/KMerCountFactory.h>
 #include <sglib/readers/SequenceGraphReader.h>
 #include <sglib/datastores/PairedReadsDatastore.hpp>
-#include "SMR.h"
+#include "sglib/SMR.h"
 #include "sglib/graph/SequenceGraph.hpp"
 
 class CStringKMerFactory : protected KMerFactory {
@@ -33,7 +33,7 @@ public:
         while (s[p]!='\0') {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(s[p], p, fkmer, rkmer, last_unknown);
+            fillKBuf(s[p], fkmer, rkmer, last_unknown);
             p++;
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
@@ -54,7 +54,7 @@ public:
         while (s[p]!='\0') {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(s[p], p, fkmer, rkmer, last_unknown);
+            fillKBuf(s[p], fkmer, rkmer, last_unknown);
             p++;
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
@@ -75,7 +75,7 @@ public:
         while (s[p]!='\0') {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(s[p], p, fkmer, rkmer, last_unknown);
+            fillKBuf(s[p], fkmer, rkmer, last_unknown);
             p++;
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
@@ -111,7 +111,7 @@ public:
         while (s[p]!='\0') {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(s[p], p, fkmer, rkmer, last_unknown);
+            fillKBuf(s[p], fkmer, rkmer, last_unknown);
             p++;
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {

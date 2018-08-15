@@ -137,7 +137,7 @@ include_directories("deps/kseqcpp/")
 ## Set sources variables
 
 ## Libraries
-add_library(bsg SHARED
+add_library(sequence_graph SHARED
             src/sglib/graph/SequenceGraph.cc
             src/sglib/graph/SequenceSubGraph.cpp
             src/sglib/graph/SequenceGraphPath.cpp
@@ -149,7 +149,6 @@ add_library(bsg SHARED
             src/sglib/datastores/PathsDatastore.cc
             src/sglib/datastores/LongReadsDatastore.cpp
             src/sglib/mappers/LongReadMapper.cpp
-            src/sglib/mappers/SingleReadMapper.cpp
             src/sglib/mappers/threader/NodeMapper.cpp
             src/sglib/mappers/threader/MappingThreader.cpp
             src/sglib/mappers/LinkedReadMapper.cc
@@ -160,14 +159,13 @@ add_library(bsg SHARED
             src/sglib/processors/PathExplorer.cpp
             src/sglib/processors/LinkageUntangler.cc
             src/sglib/workspace/WorkSpace.cc
-            src/sglib/SequenceThreader.cpp
-            src/sglib/KmerCompressionIndex.cc
-            src/sglib/SequenceGraphJournal.cc
-            src/sglib/Scaffolder.cc
+        src/sglib/processors/KmerCompressionIndex.cc
             src/sglib/processors/GraphEditor.cc
+            src/sglib/processors/GraphMaker.cc
+            src/sglib/processors/LocalHaplotypeAssembler.cc
         )
 
-target_link_libraries(bsg ${DEPENDENCY_LIBS})
+target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
 
 if (BUILD_COV)
     set_target_properties(bsg PROPERTIES
@@ -187,10 +185,6 @@ add_executable(bsg-workspace
         src/bsg-workspace.cc
         )
 
-add_executable(gfa-exploregraph
-        src/gfa-exploregraph.cc
-        )
-
 add_executable(bsg-mapper
         src/bsg-mapper.cc
         )
@@ -207,19 +201,7 @@ add_executable(bsg-lhapassembler
         src/bsg-lhapassembler.cc
         )
 
-add_executable(bsg-flowmaker
-        src/bsg-flowmaker.cc
-        )
 ## add executables and respective sources
-
-add_executable(gfa-align
-               src/gfa-align.cc)
-
-add_executable(seq-sorter
-               src/seq-sorter.cpp)
-
-add_executable(map-lr
-               src/map-lr.cc)
 
 add_executable(gfa-extract
         src/gfa-extract.cc)
@@ -231,20 +213,18 @@ target_link_libraries(bsg-mapper sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-flowmaker sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-lhapassembler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(gfa-dumppath sequence_graph)
-target_link_libraries(gfa-qc sequence_graph)
 target_link_libraries(gfa-extract sequence_graph)
 
-IF(BUILD_TESTING)
-    add_executable(runBasicTests tests/sglib/basic_check.cc)
-    IF(BUILD_COV)
-        set_target_properties(runBasicTests PROPERTIES
-                          COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
-                          LINK_FLAGS    "--coverage")
-    ENDIF()
-    target_link_libraries(runBasicTests gtest gtest_main sequence_graph)
-    add_test(basicTests runBasicTests)
-ENDIF()
+#IF(BUILD_TESTING)
+#    add_executable(runBasicTests tests/sglib/basic_check.cc)
+#    IF(BUILD_COV)
+#        set_target_properties(runBasicTests PROPERTIES
+#                          COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
+#                          LINK_FLAGS    "--coverage")
+#    ENDIF()
+#    target_link_libraries(runBasicTests gtest gtest_main sequence_graph)
+#    add_test(basicTests runBasicTests)
+#ENDIF()
 
 install(TARGETS
         bsg-workspace
@@ -254,7 +234,7 @@ install(TARGETS
         bsg-flowmaker
         bsg-untangler
         bsg-lhapassembler
-        runBasicTests
+#        runBasicTests
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib/static)

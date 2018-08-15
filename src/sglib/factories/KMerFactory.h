@@ -18,7 +18,7 @@ public:
     uint64_t fkmer{};
     uint64_t rkmer{};
 
-    inline void fillKBuf(const char b, const uint64_t p, uint64_t &rkmer, uint64_t &fkmer, int64_t &last) {
+    inline void fillKBuf(const char b, uint64_t &rkmer, uint64_t &fkmer, int64_t &last) {
         if (unlikely(b2f[b] == 4)) {
             last = 0;
             fkmer = ((fkmer << 2) + 0) & KMER_MASK;
@@ -62,7 +62,7 @@ public:
     __uint128_t fkmer{};
     __uint128_t rkmer{};
 
-    inline void fillKBuf(const char b, const __uint128_t p, __uint128_t &rkmer, __uint128_t &fkmer, int64_t &last) {
+    inline void fillKBuf(const char b, __uint128_t &rkmer, __uint128_t &fkmer, int64_t &last) {
         if (unlikely(b2f[b] == 4)) {
             last = 0;
             fkmer = ((fkmer << 2) + 0) & KMER_MASK;
@@ -116,7 +116,7 @@ public:
         while (p < s.size()) {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(s[p], p, fkmer, rkmer, last_unknown);
+            fillKBuf(s[p], fkmer, rkmer, last_unknown);
             p++;
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
@@ -156,7 +156,7 @@ public:
         while (p < s.size()) {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(s[p], p, fkmer, rkmer, last_unknown);
+            fillKBuf(s[p], fkmer, rkmer, last_unknown);
             p++;
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {

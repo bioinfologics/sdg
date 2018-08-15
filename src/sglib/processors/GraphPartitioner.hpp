@@ -8,7 +8,7 @@
 
 #include "SequenceGraph.hpp"
 #include "PairedReadMapper.h"
-#include "KmerCompressionIndex.hpp"
+#include "sglib/processors/KmerCompressionIndex.hpp"
 
 
 class GraphPartitioner {

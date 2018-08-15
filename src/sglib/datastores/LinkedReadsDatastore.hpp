@@ -5,7 +5,7 @@
 #ifndef BSG_LINKEDREADSDATASTORE_HPP
 #define BSG_LINKEDREADSDATASTORE_HPP
 
-#include <sglib/PairedReadMapper.h>
+#include <sglib/mappers/PairedReadMapper.hpp>
 #include <cstdint>
 #include <iostream>
 #include <string>
@@ -42,20 +42,6 @@ std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16);
         return std::hash(((uint64_t) x));
     }
 }*/
-
-#ifndef __hash128
-#define __hash128
-namespace std {
-    //TODO: this hashing sucks, but it is needed
-    template <> struct hash<__int128 unsigned>
-    {
-        size_t operator()(const __int128 unsigned & x) const
-        {
-            return hash<uint64_t>()((uint64_t)x);
-        }
-    };
-}
-#endif
 
 
 /**

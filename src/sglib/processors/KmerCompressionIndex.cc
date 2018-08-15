@@ -374,6 +374,44 @@ void KmerCompressionIndex::compute_all_nodes_kci(uint16_t max_graph_freq) {
     }
 }
 
+std::vector<std::vector<uint16_t>>
+KmerCompressionIndex::compute_node_coverage_profile(std::string node_sequence, int read_set_index) {
+    // takes a node and returns the kci vector for the node
+    const int k=31;
+//    std::cout << "Number of kmers in sequence: " << node_sequence.size()-k+1 << std::endl;
+
+    std::vector<uint64_t> nkmers;
+    StringKMerFactory skf(node_sequence,k);
+    skf.create_kmers(nkmers);
+    std::vector<uint16_t> reads_kmer_profile;
+    std::vector<uint16_t> unique_kmer_profile;
+    std::vector<uint16_t> graph_kmer_profile;
+
+    uint16_t max_graph_freq = 1;
+    for (auto &kmer: nkmers){
+        auto nk = std::lower_bound(graph_kmers.begin(), graph_kmers.end(), KmerCount(kmer,0));
+
+        if (nk!=graph_kmers.end() and nk->kmer == kmer) {
+            reads_kmer_profile.push_back(read_counts[read_set_index][nk-graph_kmers.begin()]);
+
+        } else {
+            reads_kmer_profile.push_back(0);
+        }
+        if (nk!=graph_kmers.end() and nk->kmer == kmer and nk->count <= max_graph_freq){
+            unique_kmer_profile.push_back(nk->count);
+        } else {
+            unique_kmer_profile.push_back(0);
+        }
+        if (nk!=graph_kmers.end() and nk->kmer == kmer){
+            graph_kmer_profile.push_back(nk->count);
+        } else {
+            graph_kmer_profile.push_back(0);
+        }
+    }
+//    std::cout << "Tamanio" << reads_kmer_profile.size() <<std::endl;
+    return {reads_kmer_profile, unique_kmer_profile, graph_kmer_profile};
+}
+
 void KmerCompressionIndex::compute_kci_profiles(std::string filename) {
     // vector to store vector of zero counts
     std::ofstream of(filename+"_kci.csv");
