@@ -119,7 +119,7 @@ LongReadsDatastore::LongReadsDatastore(std::string long_read_file, std::string o
     nReads = build_from_fastq(ofs, long_read_file); // Build read_to_fileRecord
     fPos = ofs.tellp();                             // Write position after reads
     write_rtfr(ofs);                                // Dump rtfr
-    ofs.seekp(0);                                   // Go to top and dump # reads and position of index
+    ofs.seekp(sizeof(BSG_MAGIC)+sizeof(BSG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
     ofs.write((char*) &nReads, sizeof(nReads));     // Dump # of reads
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
     ofs.flush();                                    // Make sure everything has been written

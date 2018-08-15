@@ -190,7 +190,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
         }
     }
     //go back to the beginning of the file and write the read_tag part again
-    output.seekp(sizeof(readsize));
+    output.seekp(sizeof(BSG_MAGIC)+sizeof(BSG_VN)+sizeof(type)+sizeof(readsize));
     sglib::OutputLog() << "writing down " <<pairs<<" read_tag entries"<< std::endl;
     rts=read_tag.size();
     output.write((const char *) &rts, sizeof(rts));
