@@ -222,7 +222,6 @@ int main(int argc, char * argv[]) {
         std::set<int> pr_filter(pr_datastores.begin(), pr_datastores.end());
         std::set<int> Lr_filter(Lr_datastores.begin(), Lr_datastores.end());
 
-        // TODO: Only insert non-repeated datastores (check names of the files)
         std::unordered_set<std::string> base_datastores;
         for (int i = 0; i < base.paired_read_datastores.size(); ++i) {
             base_datastores.insert(base.paired_read_datastores[i].filename);
