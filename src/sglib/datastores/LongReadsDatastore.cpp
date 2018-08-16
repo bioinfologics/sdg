@@ -5,6 +5,8 @@
 #include <sglib/logger/OutputLog.h>
 #include "LongReadsDatastore.hpp"
 
+const bsgVersion_t LongReadsDatastore::min_compat = 0x0001;
+
 void LongReadsDatastore::load_index(std::string &file) {
     filename = file;
 

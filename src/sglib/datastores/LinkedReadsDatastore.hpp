@@ -5,6 +5,7 @@
 #ifndef BSG_LINKEDREADSDATASTORE_HPP
 #define BSG_LINKEDREADSDATASTORE_HPP
 
+#include <sglib/mappers/PairedReadMapper.hpp>
 #include <cstdint>
 #include <iostream>
 #include <string>
@@ -21,7 +22,7 @@
 
 
 typedef uint32_t bsg10xTag;
-enum LinkedReadsFormat {UCDavis,raw,seq};
+enum class LinkedReadsFormat {UCDavis,raw,seq};
 struct LinkedReadData {
     bsg10xTag tag;
     std::string seq1,seq2;
@@ -41,20 +42,6 @@ std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16);
         return std::hash(((uint64_t) x));
     }
 }*/
-
-#ifndef __hash128
-#define __hash128
-namespace std {
-    //TODO: this hashing sucks, but it is needed
-    template <> struct hash<__int128 unsigned>
-    {
-        size_t operator()(const __int128 unsigned & x) const
-        {
-            return hash<uint64_t>()((uint64_t)x);
-        }
-    };
-}
-#endif
 
 
 /**
@@ -102,7 +89,7 @@ public:
 private:
     std::vector<uint32_t> read_tag;
     FILE * fd=NULL;
-    static const bsgVersion_t min_compat = 0x0001;
+    static const bsgVersion_t min_compat;
 
     //TODO: read sequence cache (std::map with a limit of elements and use count)
 };
@@ -143,6 +130,12 @@ public:
 
 private:
 
+    struct tag_kmers_t {
+        bsg10xTag tag;
+        std::unordered_set<uint64_t> kmers;
+        const bool operator==(const bsg10xTag & other_tag){return tag==other_tag;};
+    };
+
     class StreamKmerFactory : public  KMerFactory {
     public:
         explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
@@ -155,7 +148,7 @@ private:
             while (*s!='\0' and *s!='\n') {
                 //fkmer: grows from the right (LSB)
                 //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                fillKBuf(*s, fkmer, rkmer, last_unknown);
                 if (last_unknown >= K) {
                     if (fkmer <= rkmer) {
                         // Is fwd

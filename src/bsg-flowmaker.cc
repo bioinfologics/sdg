@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/WorkSpace.hpp>
+#include <sglib/workspace/WorkSpace.hpp>
 #include <sglib/processors/Untangler.hpp>
 #include <sglib/processors/FlowFollower.hpp>
 #include "sglib/logger/OutputLog.h"
@@ -68,7 +68,7 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog()<<"Loading Workspace..."<<std::endl;
     ws.load_from_disk(workspace_file);
     //ws.sg.write_to_gfa("initial_graph.gfa",{},{},{});
-    ws.linked_read_datastores[0].dump_tag_occupancy_histogram("tag_occupancy.csv");
+    ws.getLinkedReadDatastores()[0].dump_tag_occupancy_histogram("tag_occupancy.csv");
     ws.add_log_entry("bsg-flowmaker run started");
     sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     //ws.kci.reindex_graph();
@@ -132,7 +132,7 @@ int main(int argc, char * argv[]) {
                                  select_min_ci,select_max_ci));
         //ff.create_flows();
         ff.create_flows_fast();
-        ws.add_log_entry(std::to_string(ws.path_datastores.back().paths.size())+"flows stored in new paths datastore #"+std::to_string(ws.path_datastores.size()-1));
+        ws.add_log_entry(std::to_string(ws.getPathsDatastore().back().paths.size())+"flows stored in new paths datastore #"+std::to_string(ws.getPathsDatastore().size()-1));
 //    }
     sglib::OutputLog()<<"Dumping final Workspace..."<<std::endl;
     ws.dump_to_disk(output_prefix+"_final.bsgws");

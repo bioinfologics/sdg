@@ -6,8 +6,9 @@
 #define BSG_PAIREDREADMAPPER_HPP
 
 #include <map>
+#include <fstream>
 
-#include "sglib/mappers/ReadMapping.hpp"
+#include "sglib/types/MappingTypes.hpp"
 #include "sglib/factories/KMerIDXFactory.h"
 #include "sglib/readers/SequenceGraphReader.h"
 #include "sglib/SMR.h"
@@ -34,7 +35,7 @@ class PairedReadMapper {
             while (*s!='\0' and *s!='\n') {
                 //fkmer: grows from the right (LSB)
                 //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                fillKBuf(*s, fkmer, rkmer, last_unknown);
                 if (last_unknown >= K) {
                     if (fkmer <= rkmer) {
                         // Is fwd
@@ -63,7 +64,7 @@ class PairedReadMapper {
             while (*s!='\0' and *s!='\n') {
                 //fkmer: grows from the right (LSB)
                 //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                fillKBuf(*s, fkmer, rkmer, last_unknown);
                 if (last_unknown >= K) {
                     if (fkmer <= rkmer) {
                         // Is fwd
@@ -84,28 +85,19 @@ public:
     PairedReadMapper(SequenceGraph &_sg, PairedReadsDatastore &_datastore) : sg(_sg),datastore(_datastore){
         reads_in_node.resize(sg.nodes.size());
     };
-    PairedReadMapper& operator=(const PairedReadMapper &o) {
-        if (this == &o) return *this;
-
-        reads_in_node = o.reads_in_node;
-        read_to_node = o.read_to_node;
-        rfdist = o.rfdist;
-        frdist = o.frdist;
-        read_direction_in_node = o.read_direction_in_node;
-
-        return *this;
-    }
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
     void map_reads(std::unordered_set<uint64_t> const &  reads_to_remap={});
     void remap_all_reads();
     void map_reads63(std::unordered_set<uint64_t> const &  reads_to_remap={});
     void remap_all_reads63();
-    void map_read(uint64_t readID);
+
     void remove_obsolete_mappings();
     std::vector<uint64_t> size_distribution();
     void populate_orientation();
     void print_stats();
+
+    PairedReadMapper operator=(const PairedReadMapper &other);
 
     std::vector<uint64_t> get_node_readpairs_ids(sgNodeID_t);
 
@@ -118,7 +110,7 @@ public:
     std::vector<uint64_t> rfdist;
     std::vector<uint64_t> frdist;
 
-    static const bsgVersion_t min_compat = 0x0001;
+    static const bsgVersion_t min_compat;
 
 };
 

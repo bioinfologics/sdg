@@ -9,16 +9,7 @@
 #ifndef BSG_GRAPHMAKER_HPP
 #define BSG_GRAPHMAKER_HPP
 
-
-#include <sglib/SequenceGraph.hpp>
-namespace std {
-    inline std::size_t hash_value (const __uint128_t x)
-    {
-        // not a very good hash function, but I just want to get it working first!
-        return static_cast<std::size_t>(x);
-    }
-}
-
+#include <sglib/graph/SequenceGraph.hpp>
 /**
  * This kmer class can give possible neighbours FW and BW to help build a graph more easily.
  *
@@ -36,7 +27,7 @@ public:
     GraphMaker(SequenceGraph & _sg): sg(_sg){};
     void new_graph_from_kmerset_trivial(const std::unordered_set<uint64_t> & kmerset,uint8_t k);
     void new_graph_from_kmerset_trivial128(const std::unordered_set<__uint128_t> & kmerset,uint8_t k);
-    //Minimum cleanup options
+//    //Minimum cleanup options
     void tip_clipping(int tip_size);
     void remove_small_unconnected(int min_size);
 private:

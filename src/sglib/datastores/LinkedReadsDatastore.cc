@@ -8,8 +8,9 @@
 #include <cstring>
 #include "LinkedReadsDatastore.hpp"
 
+const bsgVersion_t LinkedReadsDatastore::min_compat = 0x0001;
 
-std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16) {
+std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k) {
     std::string seq;
     seq.reserve(k);
     for (int shift = (k - 1) * 2; shift >= 0; shift -= 2) {
@@ -387,7 +388,7 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
             while (*s!='\0' and *s!='\n') {
                 //fkmer: grows from the right (LSB)
                 //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                fillKBuf(*s, fkmer, rkmer, last_unknown);
                 if (last_unknown >= K) {
                     if (fkmer <= rkmer) {
                         // Is fwd
@@ -439,7 +440,7 @@ std::unordered_set<__uint128_t> LinkedReadsDatastore::get_tags_kmers128(int k, i
             while (*s!='\0' and *s!='\n') {
                 //fkmer: grows from the right (LSB)
                 //rkmer: grows from the left (MSB)
-                fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+                fillKBuf(*s, fkmer, rkmer, last_unknown);
                 if (last_unknown >= K) {
                     if (fkmer <= rkmer) {
                         // Is fwd

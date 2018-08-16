@@ -4,14 +4,12 @@
 
 #include <cmath>
 #include <sglib/mappers/LongReadMapper.hpp>
-
-#ifdef _OPENMP
-#include <omp.h>
-#include <parallel/algorithm>
 #include <sglib/logger/OutputLog.h>
+
+#include <sglib/utilities/omp_safe.hpp>
 #include <atomic>
 
-#endif
+const bsgVersion_t LongReadMapper::min_compat = 0x0001;
 
 void LongReadMapper::update_graph_index() {
     assembly_kmers.reserve(110000000);
@@ -62,7 +60,7 @@ void LongReadMapper::update_graph_index() {
 void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
     if (assembly_kmers.empty()) update_graph_index();
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
-    std::atomic<uint32_t> total_mapped(0);
+    std::atomic<uint32_t > num_reads_done(0);
 #pragma omp parallel
     {
         StringKMerFactory skf(k);
@@ -98,7 +96,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 node_matches[i].clear();
                 auto first = std::lower_bound(assembly_kmers.begin(), assembly_kmers.end(), read_kmers[i].second);
                 for (auto it = first; it != assembly_kmers.end() && it->kmer == read_kmers[i].second; ++it) {
-                    if (read_kmers[i].first != std::signbit(it->pos)){
+                    if (read_kmers[i].first != std::signbit(it->offset)){
                         node_matches[i].emplace_back(it->contigID, true);
                     }
                     else {
@@ -176,6 +174,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 //                    readout << std::endl;
 //                }
             }
+            num_reads_done++;
 
             if (winners.empty()) {
                 continue;
@@ -198,10 +197,11 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 }
                 wp=rp;
             }
-
-            if (readID%1000 == 0) {
-                total_mapped += 1000;
-                sglib::OutputLog() << total_mapped << " / " << datastore.size() << " reads mapped" << std::endl;
+            if (num_reads_done%1000 == 0) {
+#pragma omp critical (lrmap_progress)
+                {
+                    sglib::OutputLog() << num_reads_done << " / " << datastore.size() << " reads mapped" << std::endl;
+                }
             }
         }
     }
@@ -235,34 +235,12 @@ LongReadMapper::~LongReadMapper() {}
 void LongReadMapper::read(std::string filename) {
     // Read the mappings from file
     sglib::OutputLog() << "Reading long read mappings" << std::endl;
-    std::ifstream input_file(filename, std::ios_base::binary);
+    std::ifstream inf(filename, std::ios_base::binary);
     auto mapSize(mappings.size());
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
-    input_file.read((char *) &magic, sizeof(magic));
-    input_file.read((char *) &version, sizeof(version));
-    input_file.read((char *) &type, sizeof(type));
-
-    if (magic != BSG_MAGIC) {
-        std::cerr << "This file seems to be corrupted" << std::endl;
-        throw std::runtime_error("This file appears to be corrupted");
-    }
-
-    if (version < min_compat) {
-        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw std::runtime_error("Incompatible version");
-    }
-
-    if (type != LongMap_FT) {
-        std::cerr << "This file is not compatible with this type" << std::endl;
-        throw std::runtime_error("Incompatible file type");
-    }
-
-    input_file.read(reinterpret_cast<char *>(&k), sizeof(k));
-    input_file.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
+    inf.read(reinterpret_cast<char *>(&k), sizeof(k));
+    inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
     mappings.reserve(mapSize);
-    input_file.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+    inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
 
     sglib::OutputLog() << "Updating read mapping indexes!" << std::endl;
     update_indexes_from_mappings();
@@ -271,27 +249,6 @@ void LongReadMapper::read(std::string filename) {
 
 void LongReadMapper::read(std::ifstream &inf) {
     auto mapSize(mappings.size());
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
-    inf.read((char *) &magic, sizeof(magic));
-    inf.read((char *) &version, sizeof(version));
-    inf.read((char *) &type, sizeof(type));
-    if (magic != BSG_MAGIC) {
-        std::cerr << "This file seems to be corrupted" << std::endl;
-        throw std::runtime_error("This file appears to be corrupted");
-    }
-
-    if (version < min_compat) {
-        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw std::runtime_error("Incompatible version");
-    }
-
-    if (type != LongMap_FT) {
-        std::cerr << "This file is not compatible with the reader" << std::endl;
-        throw std::runtime_error("Incompatible file type");
-    }
-
     inf.read(reinterpret_cast<char *>(&k), sizeof(k));
     inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
     mappings.resize(mapSize);
@@ -305,29 +262,20 @@ void LongReadMapper::read(std::ifstream &inf) {
 void LongReadMapper::write(std::string filename) {
     // Write mappings to file
     sglib::OutputLog() << "Dumping long read mappings" << std::endl;
-    std::ofstream output_file(filename, std::ios_base::binary);
+    std::ofstream outf(filename, std::ios_base::binary);
     auto mapSize(mappings.size());
-    output_file.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    output_file.write((char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(LongMap_FT);
-    output_file.write((char *) &type, sizeof(type));
-    output_file.write(reinterpret_cast<const char *>(&k), sizeof(k));
-    output_file.write(reinterpret_cast<const char *>(&mapSize), sizeof(mapSize));
-    output_file.write(reinterpret_cast<const char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+    outf.write(reinterpret_cast<const char *>(&k), sizeof(k));
+    outf.write(reinterpret_cast<const char *>(&mapSize), sizeof(mapSize));
+    outf.write(reinterpret_cast<const char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
     sglib::OutputLog() << "Done!" << std::endl;
 }
 
-void LongReadMapper::write(std::ofstream &output_file) {
+void LongReadMapper::write(std::ofstream &ofs) {
     auto mapSize(mappings.size());
-    output_file.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    output_file.write((char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(LongMap_FT);
-    output_file.write((char *) &type, sizeof(type));
-
-    output_file.write(reinterpret_cast<char *>(&k), sizeof(k));
-    output_file.write(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
+    ofs.write(reinterpret_cast<char *>(&k), sizeof(k));
+    ofs.write(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
     mappings.reserve(mapSize);
-    output_file.write(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+    ofs.write(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
     sglib::OutputLog() << "Done!" << std::endl;
 }
 

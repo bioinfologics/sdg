@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/WorkSpace.hpp>
+#include <sglib/workspace/WorkSpace.hpp>
 #include <sglib/processors/LocalHaplotypeAssembler.hpp>
 #include "sglib/logger/OutputLog.h"
 #include "cxxopts.hpp"

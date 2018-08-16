@@ -5,7 +5,7 @@
 #ifndef BSG_FLOWFOLLOWER_HPP
 #define BSG_FLOWFOLLOWER_HPP
 
-#include <sglib/WorkSpace.hpp>
+#include <sglib/workspace/WorkSpace.hpp>
 
 class Flow {
 public:

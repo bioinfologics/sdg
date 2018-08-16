@@ -67,7 +67,7 @@ public:
 
     void load_from_stream(std::string file_name, std::ifstream &input_file);
     std::string filename;
-    static const bsgVersion_t min_compat = 0x0001;
+    static const bsgVersion_t min_compat;
 };
 
 // Check if this needs to be page size aware

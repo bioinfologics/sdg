@@ -18,7 +18,7 @@ public:
         while (*s!='\0' and *s!='\n') {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
                     // Is fwd
@@ -44,7 +44,7 @@ public:
         while (*s!='\0' and *s!='\n') {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
                     // Is fwd
@@ -73,7 +73,7 @@ public:
         while (*s!='\0' and *s!='\n') {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
                     // Is fwd
@@ -103,7 +103,7 @@ public:
         while (*s!='\0' and *s!='\n') {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
-            fillKBuf(*s, 0, fkmer, rkmer, last_unknown);
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
                     if (kset.count(fkmer)==0) ++uncovered;
@@ -191,7 +191,6 @@ void LinkageUntangler::select_nodes_by_size_and_ci( uint64_t min_size, float min
             selected_nodes[n]=true;
             ++selected;
         }
-
     }
     sglib::OutputLog()<<deleted<<" deleted, "<<small<<" small, "<<cifail<<" wrong CI and "<<selected<<" selected nodes."<<std::endl;
 
@@ -698,6 +697,51 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_p
         }
     }
     sglib::OutputLog()<<"Links created (passing tag imbalance): "<<linked<<std::endl;*/
+    return ldg;
+}
+
+
+LinkageDiGraph LinkageUntangler::make_longRead_linkage() {
+    SequenceGraph& sg(ws.getGraph());
+    LinkageDiGraph ldg(sg);
+
+    // For each read link every node with every other coming forward in the correct direction,
+    // only using the canonical link direction (1,2) instead of (2,1)
+    std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
+    sglib::OutputLog()<<"collecting link votes across all long read libraries"<<std::endl;
+    //use all libraries collect votes on each link
+    auto rmi=0;
+    for (LongReadMapper &lm:ws.getLongReadMappers()) {
+        for (auto r = 0UL; r < lm.read_to_mappings.size(); r++) { // For all reads
+            for (auto i = 0UL; !lm.read_to_mappings[r].empty() && i < lm.read_to_mappings[r].size() - 1; i++) { // All "forward" mappings
+                for (auto j = i + 1; j < lm.read_to_mappings[r].size(); j++) {
+                    sgNodeID_t n1=lm.mappings[lm.read_to_mappings[r][i]].node;
+                    sgNodeID_t n2=lm.mappings[lm.read_to_mappings[r][j]].node;
+                    if (n1 == 0 or n2 == 0 or n1 == n2 or !selected_nodes[std::abs(n1)] or !selected_nodes[std::abs(n2)]) continue;
+                    n1=-n1;//get the output end
+                    if (llabs(n1) > llabs(n2)) std::swap(n1, n2);
+                    ++lv[std::make_pair(n1, n2)];
+                }
+            }
+        }
+        ++rmi;
+    }
+    sglib::OutputLog()<<"adding links"<<std::endl;
+    for (auto l:lv) {
+        if (l.second >= 5) {
+            //todo: size, appropriate linkage handling, etc
+            //todo: check alternative signs for same linkage
+            auto s = l.first.first;
+            auto d = l.first.second;
+            auto v1 = std::make_pair(-s, d);
+            auto v2 = std::make_pair(-s, -d);
+            auto v3 = std::make_pair(s, -d);
+            if (lv.count(v1) and lv[v1] > 5 * l.second) continue;
+            if (lv.count(v2) and lv[v2] > 5 * l.second) continue;
+            if (lv.count(v3) and lv[v3] > 5 * l.second) continue;
+            ldg.add_link(l.first.first, l.first.second, 0);
+        }
+    }
     return ldg;
 }
 

@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/KmerCompressionIndex.hpp>
+#include <sglib/processors/KmerCompressionIndex.hpp>
 #include "cxxopts.hpp"
 
 
@@ -139,7 +139,7 @@ int main(int argc, char * argv[]) {
         if (reindex) kci.reindex_graph();
         kci.compute_compression_stats();
         kci.compute_all_nodes_kci(maxfreq);
-        sg.write_to_gfa(output,{},kci.nodes_depth);
+        sg.write_to_gfa(output, {}, {}, {}, kci.nodes_depth);
     }
     else {
         std::cout<<"Please specify one of: make, stats, view"<<std::endl;
