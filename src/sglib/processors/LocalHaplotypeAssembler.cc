@@ -203,7 +203,7 @@ uint64_t LocalHaplotypeAssembler::expand_canonical_repeats_direct(int max_rep_si
         repeat_posibilities.emplace_back(std::make_pair(r.first,rp));
     }
     std::cout<<"Collecting votes..."<<std::endl;
-    std::vector<uint64_t[4]> rvotes(repeat_posibilities.size());
+    std::vector<std::array<uint64_t,4>> rvotes(repeat_posibilities.size());
     //For every single read: look
     for (auto t:tagSet) {
         for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
