@@ -137,7 +137,7 @@ include_directories("deps/kseqcpp/")
 ## Set sources variables
 
 ## Libraries
-add_library(sequence_graph SHARED
+add_library(bsg SHARED
             src/sglib/graph/SequenceGraph.cc
             src/sglib/graph/SequenceSubGraph.cpp
             src/sglib/graph/SequenceGraphPath.cpp
@@ -165,7 +165,7 @@ add_library(sequence_graph SHARED
             src/sglib/processors/LocalHaplotypeAssembler.cc
         )
 
-target_link_libraries(sequence_graph ${DEPENDENCY_LIBS})
+target_link_libraries(bsg ${DEPENDENCY_LIBS})
 
 if (BUILD_COV)
     set_target_properties(bsg PROPERTIES
@@ -206,14 +206,14 @@ add_executable(bsg-lhapassembler
 add_executable(gfa-extract
         src/gfa-extract.cc)
 
-target_link_libraries(bsg-workspace sequence_graph)
-target_link_libraries(bsg-datastore sequence_graph)
-target_link_libraries(bsg-kmerspectra sequence_graph)
-target_link_libraries(bsg-mapper sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-flowmaker sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-untangler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-lhapassembler sequence_graph ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(gfa-extract sequence_graph)
+target_link_libraries(bsg-workspace bsg)
+target_link_libraries(bsg-datastore bsg)
+target_link_libraries(bsg-kmerspectra bsg)
+target_link_libraries(bsg-mapper bsg ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-flowmaker bsg ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-untangler bsg ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-lhapassembler bsg ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(gfa-extract bsg)
 
 #IF(BUILD_TESTING)
 #    add_executable(runBasicTests tests/sglib/basic_check.cc)
@@ -222,7 +222,7 @@ target_link_libraries(gfa-extract sequence_graph)
 #                          COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
 #                          LINK_FLAGS    "--coverage")
 #    ENDIF()
-#    target_link_libraries(runBasicTests gtest gtest_main sequence_graph)
+#    target_link_libraries(runBasicTests gtest gtest_main bsg)
 #    add_test(basicTests runBasicTests)
 #ENDIF()
 
@@ -270,6 +270,6 @@ IF(BUILD_PYTHON_INTERFACE)
     SWIG_ADD_LIBRARY(bsg LANGUAGE python SOURCES
     interfaces/SequenceGraph.i
     )
-    SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} sequence_graph "")
+    SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} bsg "")
     add_dependencies(_bsg doxy2swig)
 ENDIF()
