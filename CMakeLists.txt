@@ -270,6 +270,6 @@ IF(BUILD_PYTHON_INTERFACE)
     SWIG_ADD_LIBRARY(bsg LANGUAGE python SOURCES
     interfaces/SequenceGraph.i
     )
-    SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} bsg "")
+    SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} sequence_graph "")
     add_dependencies(_bsg doxy2swig)
 ENDIF()

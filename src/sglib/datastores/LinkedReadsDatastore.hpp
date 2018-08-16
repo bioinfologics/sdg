@@ -89,7 +89,7 @@ public:
 private:
     std::vector<uint32_t> read_tag;
     FILE * fd=NULL;
-    static const bsgVersion_t min_compat = 0x0001;
+    static const bsgVersion_t min_compat;
 
     //TODO: read sequence cache (std::map with a limit of elements and use count)
 };

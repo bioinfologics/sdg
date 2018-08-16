@@ -61,7 +61,7 @@ public:
     KmerCompressionIndex kci;
     std::string verbose_log="";
 
-    static const bsgVersion_t min_compat = 0x0001;
+    static const bsgVersion_t min_compat;
     std::vector<LinkedReadMapper>& getLinkedReadMappers() {return linked_read_mappers;}
     std::vector<LinkedReadsDatastore>& getLinkedReadDatastores() {return linked_read_datastores;}
     std::vector<PairedReadMapper>& getPairedReadMappers() {return paired_read_mappers;}

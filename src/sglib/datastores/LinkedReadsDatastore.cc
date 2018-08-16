@@ -8,6 +8,7 @@
 #include <cstring>
 #include "LinkedReadsDatastore.hpp"
 
+const bsgVersion_t LinkedReadsDatastore::min_compat = 0x0001;
 
 std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k) {
     std::string seq;

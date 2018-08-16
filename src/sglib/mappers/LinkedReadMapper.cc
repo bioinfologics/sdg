@@ -13,6 +13,8 @@
 #include "sglib/readers/SequenceGraphReader.h"
 #include <sglib/utilities/omp_safe.hpp>
 
+const bsgVersion_t LinkedReadMapper::min_compat = 0x0001;
+
 void LinkedReadMapper::write(std::ofstream &output_file) {
     //read-to-node
     uint64_t count=read_to_node.size();

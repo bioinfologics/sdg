@@ -91,7 +91,7 @@ public:
     void remap_all_reads();
     void map_reads63(std::unordered_set<uint64_t> const &  reads_to_remap={});
     void remap_all_reads63();
-    void map_read(uint64_t readID);
+
     void remove_obsolete_mappings();
     std::vector<uint64_t> size_distribution();
     void populate_orientation();
@@ -110,7 +110,7 @@ public:
     std::vector<uint64_t> rfdist;
     std::vector<uint64_t> frdist;
 
-    static const bsgVersion_t min_compat = 0x0001;
+    static const bsgVersion_t min_compat;
 
 };
 

@@ -12,7 +12,7 @@
 #include "sglib/graph/SequenceSubGraph.hpp"
 #include "sglib/graph/SequenceGraph.hpp"
 #include "sglib/readers/SequenceGraphReader.h"
-#include "sglib/KmerCompressionIndex.hpp"
+#include "sglib/processors/KmerCompressionIndex.hpp"
 #include "sglib/workspace/WorkSpace.hpp"
 
 
@@ -21,6 +21,8 @@
 #include "sglib/mappers/LongReadMapper.hpp"
 #include "sglib/mappers/PairedReadMapper.hpp"
 #include "sglib/datastores/PairedReadsDatastore.hpp"
+#include "sglib/datastores/PathsDatastore.hpp"
+
 #include "sglib/mappers/threader/NodeMapper.h"
 #include "sglib/mappers/threader/MappingThreader.h"
 
@@ -46,7 +48,7 @@
 %include "sglib/graph/SequenceSubGraph.hpp"
 %include "sglib/graph/SequenceGraph.hpp"
 %include "sglib/indexers/uniqueKmerIndex.hpp"
-%include "sglib/KmerCompressionIndex.hpp"
+%include "sglib/processors/KmerCompressionIndex.hpp"
 %include "sglib/workspace/WorkSpace.hpp"
 
 %include "sglib/processors/Untangler.hpp"
@@ -55,6 +57,7 @@
 %include "sglib/datastores/LinkedReadsDatastore.hpp"
 %include "sglib/datastores/LongReadsDatastore.hpp"
 %include "sglib/datastores/PairedReadsDatastore.hpp"
+%include "sglib/datastores/PathsDatastore.hpp"
 %include "sglib/mappers/LongReadMapper.hpp"
 %include "sglib/mappers/LinkedReadMapper.hpp"
 %include "sglib/mappers/PairedReadMapper.hpp"
@@ -89,8 +92,6 @@ namespace std {
    %ignore vector<LongReadMapper>::resize;
    %template(vectorLongReadMapper) vector<LongReadMapper>;
 
-
-
    %ignore vector<LinkedReadMapper>::vector(size_type);
    %ignore vector<LinkedReadMapper>::resize;
    %template(vectorLinkedReadMapper) vector<LinkedReadMapper>;
@@ -102,6 +103,10 @@ namespace std {
    %ignore vector<PairedReadsDatastore>::vector(size_type);
    %ignore vector<PairedReadsDatastore>::resize;
    %template(vectorPairedReadsDatastore) vector<PairedReadsDatastore>;
+
+   %ignore vector<PathsDatastore>::vector(size_type);
+   %ignore vector<PathsDatastore>::resize;
+   %template(vectorPathsDatastore) vector<PathsDatastore>;
 
    %template(SGNodePair) pair<sgNodeID_t, sgNodeID_t>;
    %template(vectorSGNodePair) vector<pair<sgNodeID_t, sgNodeID_t>>;

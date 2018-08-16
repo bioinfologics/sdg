@@ -85,10 +85,10 @@ public:
     void remap_all_reads();
     LinkedReadMapper operator=(const LinkedReadMapper &other);
 
-    //void map_read(uint64_t readID);
+
     void map_reads63(std::unordered_set<uint64_t> const &  reads_to_remap={});
     void remap_all_reads63();
-    void map_read(uint64_t readID);
+
     void remove_obsolete_mappings();
     /*void remap_reads();
     uint64_t process_reads_from_file(uint8_t, uint16_t, std::unordered_map<uint64_t , graphPosition> &, std::string , uint64_t, bool tags=false, std::unordered_set<uint64_t> const & reads_to_remap={});
@@ -105,8 +105,6 @@ public:
     std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
 
-    static const bsgVersion_t min_compat = 0x0001;
+    static const bsgVersion_t min_compat;
 };
-
-
 #endif //BSG_LINKEDREADMAPPER_HPP

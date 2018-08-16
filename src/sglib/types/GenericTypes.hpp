@@ -100,6 +100,9 @@ struct nodeVisitor {
     }
 };
 
+#ifndef SWIG
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+/// \cond DO_NOT_DOCUMENT
 #ifndef __clang__
 namespace std {
     //TODO: this hashing sucks, but it is needed
@@ -112,5 +115,9 @@ namespace std {
     };
 }
 #endif
+/// \endcond
+#endif
+#endif
+
 
 #endif //BSG_GENERICTYPES_HPP

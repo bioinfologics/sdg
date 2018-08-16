@@ -26,13 +26,13 @@ public:
     void select_nodes_by_size_and_ci( uint64_t min_size, float min_ci, float max_ci);
     std::set<std::pair<sgNodeID_t, sgNodeID_t >> get_HSPNPs(uint64_t min_size, float min_ci, float max_ci);
     void select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, float max_ci);
-    void select_frontiers_by_size_and_ci();
+//    void select_frontiers_by_size_and_ci();
 
     //Linkage creation methods (work on selected nodes)
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> shared_read_paths(int min_shared, std::vector<size_t> libraries, bool r1rev, bool r2rev);
     LinkageDiGraph make_topology_linkage(int radius);
     LinkageDiGraph make_paired_linkage(int min_reads);
-    LinkageDiGraph make_tag_linkage(int min_tags,float end_perc=.3);
+    //LinkageDiGraph make_tag_linkage(int min_tags,float end_perc=.3);
     LinkageDiGraph make_longRead_linkage();
     LinkageDiGraph make_paired_linkage_pe(int min_reads);
     LinkageDiGraph make_paired_linkage_by_kmer(int min_shared, std::vector<size_t> libraries, bool r1rev, bool r2rev);

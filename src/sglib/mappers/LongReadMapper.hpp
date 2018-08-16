@@ -102,7 +102,7 @@ public:
      */
     std::vector< std::vector < std::vector<LongReadMapping>::size_type > > read_to_mappings;    /// Nodes in the read, 0 or empty = unmapped
 
-    static const bsgVersion_t min_compat = 0x0001;
+    static const bsgVersion_t min_compat;
 
 };
 

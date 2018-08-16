@@ -8,6 +8,9 @@
 #include <fstream>
 #include <iostream>
 #include "PairedReadMapper.hpp"
+
+const bsgVersion_t PairedReadMapper::min_compat = 0x0001;
+
 void PairedReadMapper::write(std::ofstream &output_file) {
     //read-to-node
     uint64_t count=read_to_node.size();

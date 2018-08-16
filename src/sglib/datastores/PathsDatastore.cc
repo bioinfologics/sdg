@@ -6,6 +6,8 @@
 #include <sglib/graph/SequenceGraphPath.hpp>
 #include "PathsDatastore.hpp"
 
+
+const bsgVersion_t PathsDatastore::min_compat = 0x0001;
 void PathsDatastore::write(std::ofstream &output_file) {
     uint64_t count;
     count=paths.size();
@@ -62,4 +64,14 @@ void PathsDatastore::read(std::ifstream &input_file) {
     input_file.read((char *)&count,sizeof(count));
     origin.resize(count);
     input_file.read((char *)origin.data(),count*sizeof(origin[0]));
+}
+
+PathsDatastore &PathsDatastore::operator=(const PathsDatastore &other) {
+    if (&sg != &other.sg) { throw ("Can only copy paths from the same SequenceGraph"); }
+    if (&other == this) {
+        return *this;
+    }
+    origin = other.origin;
+    paths = other.paths;
+    return *this;
 }

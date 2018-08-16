@@ -8,6 +8,7 @@
 #include <sstream>
 #include <sglib/readers/FileReader.h>
 
+const bsgVersion_t KmerCompressionIndex::min_compat = 0x0001;
 
 void KmerCompressionIndex::index_graph(){
     sglib::OutputLog(sglib::INFO) << "Indexing graph, Counting..."<<std::endl;

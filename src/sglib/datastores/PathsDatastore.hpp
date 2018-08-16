@@ -14,12 +14,14 @@
 class PathsDatastore {
 public:
     PathsDatastore(SequenceGraph & _sg):sg(_sg){};
+    PathsDatastore& operator=(const PathsDatastore &other);
+
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
     std::vector<sgNodeID_t> origin;
     std::vector<SequenceGraphPath> paths;
     SequenceGraph & sg;
-    static const bsgVersion_t min_compat = 0x0001;
+    static const bsgVersion_t min_compat;
 };
 
 

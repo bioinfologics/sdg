@@ -9,6 +9,8 @@
 #include <sglib/utilities/omp_safe.hpp>
 #include <atomic>
 
+const bsgVersion_t LongReadMapper::min_compat = 0x0001;
+
 void LongReadMapper::update_graph_index() {
     assembly_kmers.reserve(110000000);
 
