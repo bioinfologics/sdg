@@ -139,7 +139,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     for (auto i=0;i<count;++i) {
         paired_read_datastores.emplace_back();
         paired_read_datastores.back().read(wsfile);
-        paired_read_mappers.emplace_back(sg,paired_read_datastores[i]);
+        paired_read_mappers.emplace_back(sg,paired_read_datastores[i],uniqueKmerIndex, unique63merIndex);
         paired_read_mappers.back().read(wsfile);
     }
     wsfile.read((char *) &count,sizeof(count));
@@ -148,7 +148,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     for (auto i=0;i<count;++i) {
         linked_read_datastores.emplace_back();
         linked_read_datastores.back().read(wsfile);
-        linked_read_mappers.emplace_back(sg,linked_read_datastores[i]);
+        linked_read_mappers.emplace_back(sg,linked_read_datastores[i],uniqueKmerIndex, unique63merIndex);
         linked_read_mappers.back().read(wsfile);
     }
 
@@ -233,7 +233,7 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
 void WorkSpace::remap_all() {
     sglib::OutputLog()<<"Mapping reads..."<<std::endl;
     //auto pri=0;
-    sg.create_index();
+    create_index();
     for (auto &m:paired_read_mappers) {
         sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         m.remap_all_reads();
@@ -259,7 +259,7 @@ void WorkSpace::remap_all() {
 
 void WorkSpace::remap_all63() {
     sglib::OutputLog()<<"Mapping reads..."<<std::endl;
-    sg.create_63mer_index();
+    create_63mer_index();
     for (auto &m:paired_read_mappers) {
         sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         m.remap_all_reads63();

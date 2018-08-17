@@ -95,11 +95,11 @@ int main(int argc, char * argv[]) {
                     lha.assemble(63, 5, false, false);
                 } else if (1 == pass) {
                     lha.assemble(63, 7, false, false);
-                    lha.assembly.create_63mer_index();
+                    lha.create_63mer_index();
                     lha.path_linked_reads_informative_singles();
                     lha.expand_canonical_repeats();
                     lha.assembly.join_all_unitigs();
-                    lha.assembly.create_63mer_index();
+                    lha.create_63mer_index();
                     lha.path_linked_reads_informative_singles();
                     lha.expand_canonical_repeats();
                     lha.assembly.join_all_unitigs();
@@ -173,11 +173,11 @@ int main(int argc, char * argv[]) {
     }
     //TODO: try different coverage cutoffs and keep the patches from all of them
     lha.assemble(63, min_cvg, use_tag_cvg, false);
-    lha.assembly.create_63mer_index();
+    lha.create_63mer_index();
     lha.path_linked_reads_informative_singles();
     lha.expand_canonical_repeats();
     lha.assembly.join_all_unitigs();
-    lha.assembly.create_63mer_index();
+    lha.create_63mer_index();
     lha.path_linked_reads_informative_singles();
     lha.expand_canonical_repeats();
     lha.assembly.join_all_unitigs();

@@ -22,9 +22,9 @@ public:
     }
 
     // TODO: Adjust for when K is larger than what fits in uint64_t!
-    const bool next_element(std::vector<std::pair<uint64_t,graphPosition>> &mers) {
+    const bool next_element(std::vector<std::pair<uint64_t,graphStrandPos>> &mers) {
         uint64_t p(0);
-        graphPosition pos;
+        graphStrandPos pos;
         while (p < currentRecord.seq.size()) {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
@@ -67,9 +67,9 @@ public:
     }
 
     // TODO: Adjust for when K is larger than what fits in uint64_t!
-    const bool next_element(std::vector<std::pair<__uint128_t,graphPosition>> &mers) {
+    const bool next_element(std::vector<std::pair<__uint128_t,graphStrandPos>> &mers) {
         uint64_t p(0);
-        graphPosition pos;
+        graphStrandPos pos;
         while (p < currentRecord.seq.size()) {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)

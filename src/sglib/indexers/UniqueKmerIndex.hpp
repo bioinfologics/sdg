@@ -18,23 +18,17 @@
 #include <sglib/factories/KmerPosFactory.hpp>
 
 class UniqueKmerIndex {
+public:
     using Map = std::unordered_map<uint64_t, graphStrandPos>;
     using pair = std::pair<uint64_t, graphStrandPos>;
-
-    Map kmer_to_graphposition;
-    uint8_t k;
-    std::vector<uint64_t> unique_kmers_per_node;
-    std::vector<uint64_t> total_kmers_per_node;
-
-public:
     using const_iterator = std::unordered_map<uint64_t, graphStrandPos>::const_iterator;
     explicit UniqueKmerIndex(uint k) : k(k) {}
 
     UniqueKmerIndex(const SequenceGraph &sg, uint k) :
             k(k) { generate_index(sg, k); }
 
-    void generate_index(const SequenceGraph &sg, uint8_t k, bool verbose=true) {
-        std::vector<std::pair<uint64_t,graphPosition>> kidxv;
+    void generate_index(const SequenceGraph &sg, bool verbose=true) {
+        std::vector<pair> kidxv;
         uint64_t total_k { 0 };
         total_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
         for (sgNodeID_t node = 0; node < sg.nodes.size(); node++) {
@@ -59,7 +53,7 @@ public:
         if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
         if (verbose) sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
 #ifdef _OPENMP
-        __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
+        __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphStrandPos> & a, const std::pair<uint64_t,graphStrandPos> & b){return a.first<b.first;});
 #else
         std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
 #endif
@@ -196,26 +190,28 @@ public:
     bool operator==(const UniqueKmerIndex &other) const {
         return k == other.k && kmer_to_graphposition == other.kmer_to_graphposition && unique_kmers_per_node == other.unique_kmers_per_node && total_kmers_per_node == other.total_kmers_per_node;
     }
-};
 
-class Unique63merIndex {
-    using Map = std::unordered_map<__uint128_t, graphStrandPos>;
-    using pair = std::pair<__uint128_t, graphStrandPos>;
-
+    const Map& getMap() const {return kmer_to_graphposition; }
+private:
     Map kmer_to_graphposition;
     uint8_t k;
     std::vector<uint64_t> unique_kmers_per_node;
     std::vector<uint64_t> total_kmers_per_node;
 
+};
+
+class Unique63merIndex {
 public:
+    using Map = std::unordered_map<__uint128_t, graphStrandPos>;
+    using pair = std::pair<__uint128_t, graphStrandPos>;
     using const_iterator = Map::const_iterator;
     explicit Unique63merIndex() : k(63) {}
 
     Unique63merIndex(const SequenceGraph &sg) :
             k(63) { generate_index(sg, k); }
 
-    void generate_index(const SequenceGraph &sg, uint8_t k, bool verbose=true) {
-        std::vector<std::pair<__uint128_t,graphPosition>> kidxv;
+    void generate_index(const SequenceGraph &sg, bool verbose=true) {
+        std::vector<pair> kidxv;
         uint64_t total_k { 0 };
         total_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
         for (sgNodeID_t node = 0; node < sg.nodes.size(); node++) {
@@ -240,7 +236,7 @@ public:
         if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
         if (verbose) sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
 #ifdef _OPENMP
-        __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
+        __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphStrandPos> & a, const std::pair<uint64_t,graphStrandPos> & b){return a.first<b.first;});
 #else
         std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
 #endif
@@ -374,9 +370,18 @@ public:
         out.flush();
     }
 
+    const Map& getMap() const {return kmer_to_graphposition; }
+
     bool operator==(const Unique63merIndex &other) const {
         return k == other.k && kmer_to_graphposition == other.kmer_to_graphposition && unique_kmers_per_node == other.unique_kmers_per_node && total_kmers_per_node == other.total_kmers_per_node;
     }
+
+private:
+    Map kmer_to_graphposition;
+    uint8_t k;
+    std::vector<uint64_t> unique_kmers_per_node;
+    std::vector<uint64_t> total_kmers_per_node;
+
 };
 
 

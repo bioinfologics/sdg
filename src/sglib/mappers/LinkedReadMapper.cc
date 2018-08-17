@@ -125,8 +125,8 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                 skf.produce_all_kmers(seq,readkmers);
 
                 for (auto &rk:readkmers) {
-                    auto nk = sg.kmer_to_graphposition.find(rk.kmer);
-                    if (sg.kmer_to_graphposition.end()!=nk) {
+                    auto nk = kmer_to_graphposition.find(rk.kmer);
+                    if (kmer_to_graphposition.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation
@@ -235,8 +235,8 @@ void LinkedReadMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_
                 skf.produce_all_kmers(seq,readkmers);
 
                 for (auto &rk:readkmers) {
-                    auto nk = sg.k63mer_to_graphposition.find(rk.kmer);
-                    if (sg.k63mer_to_graphposition.end()!=nk) {
+                    auto nk = k63mer_to_graphposition.find(rk.kmer);
+                    if (k63mer_to_graphposition.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation

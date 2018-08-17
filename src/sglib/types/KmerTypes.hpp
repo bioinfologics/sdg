@@ -186,11 +186,6 @@ namespace std {
     };
 }
 
-struct graphPosition{
-    sgNodeID_t node;
-    uint32_t pos;
-};
-
 struct kmerPos {
     kmerPos() = default;
     kmerPos(uint64_t kmer, uint32_t contigID, int32_t offset) : kmer(kmer),

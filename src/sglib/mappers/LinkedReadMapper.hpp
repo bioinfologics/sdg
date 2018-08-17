@@ -10,6 +10,10 @@
 #include "sglib/graph/SequenceGraph.hpp"
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
 #include <sglib/types/MappingTypes.hpp>
+#include <sglib/indexers/UniqueKmerIndex.hpp>
+
+class UniqueKmerIndex;
+class Unique63merIndex;
 
 /**
  * @brief A mapper for linked reads from a LinkedReadsDatastore.
@@ -19,7 +23,12 @@
 class LinkedReadMapper {
 
 public:
-    LinkedReadMapper(SequenceGraph &_sg, LinkedReadsDatastore &_datastore) : sg(_sg),datastore(_datastore){
+    LinkedReadMapper(SequenceGraph &_sg, LinkedReadsDatastore &_datastore, const UniqueKmerIndex &uki, const Unique63merIndex &u63i) :
+    sg(_sg),
+    datastore(_datastore),
+    kmer_to_graphposition(uki),
+    k63mer_to_graphposition(u63i)
+    {
         reads_in_node.resize(sg.nodes.size());
     };
     void write(std::ofstream & output_file);
@@ -44,6 +53,8 @@ public:
     std::vector<std::pair<sgNodeID_t , sgNodeID_t >> get_tag_neighbour_nodes(uint32_t min_shared,const std::vector<bool> & selected_nodes={});
 
     SequenceGraph & sg;
+    const UniqueKmerIndex& kmer_to_graphposition;
+    const Unique63merIndex& k63mer_to_graphposition;
     LinkedReadsDatastore &datastore;
     std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process

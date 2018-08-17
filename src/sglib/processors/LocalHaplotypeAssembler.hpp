@@ -11,7 +11,11 @@
 class LocalHaplotypeAssembler {
 public:
     //Constructor from ws and backbone, creates lists of tags, read ids, anchor sequences and whatnot.
-    LocalHaplotypeAssembler(WorkSpace & _ws):ws(_ws){};
+    LocalHaplotypeAssembler(WorkSpace & _ws) :
+    ws(_ws),
+    uniqueKmerIndex(assembly,31),
+    unique63merIndex(assembly)
+    {};
     void init_from_backbone(std::vector<sgNodeID_t > _backbone);
 
     //TODO: Constructor from ws and problem file. Reads everything but the ws/graph from the file;
@@ -48,6 +52,9 @@ public:
 
     void problem_analysis(std::string prefix);
 
+    void create_index(bool verbose = true) { uniqueKmerIndex.generate_index(assembly, verbose); }
+    void create_63mer_index(bool verbose = true) { unique63merIndex.generate_index(assembly, verbose); }
+
     WorkSpace & ws;
     std::vector<sgNodeID_t > backbone;
     std::vector<Node > backbone_nodes;
@@ -58,6 +65,8 @@ public:
     std::vector<std::string> patched_backbone;
 
     SequenceGraph assembly;
+    UniqueKmerIndex uniqueKmerIndex;
+    Unique63merIndex unique63merIndex;
     std::vector<std::vector<sgNodeID_t>> linkedread_paths;
     std::vector<std::vector<sgNodeID_t>> pairedread_paths;
 

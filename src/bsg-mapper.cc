@@ -57,8 +57,8 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog()<<"Mapping reads..."<<std::endl;
     auto pri=0;
     if (!ws.paired_read_datastores.empty() or !ws.linked_read_datastores.empty()) {
-        if (!use63mers) ws.sg.create_index();
-        else ws.sg.create_63mer_index();
+        if (!use63mers) ws.create_index();
+        else ws.create_63mer_index();
     }
     for (auto &m:ws.paired_read_mappers) {
         sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;

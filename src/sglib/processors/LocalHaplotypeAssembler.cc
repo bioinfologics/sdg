@@ -5,7 +5,7 @@
 #include "LocalHaplotypeAssembler.hpp"
 #include "GraphMaker.hpp"
 
-void print_seq_kmer_location(const char * seq, std::unordered_map<uint64_t, graphPosition> & index){
+void print_seq_kmer_location(const char * seq, std::unordered_map<uint64_t, graphStrandPos> & index){
     std::cout<<"Kmer to node analysis for "<<seq<<std::endl;
     std::vector<std::pair<uint64_t,bool>> readkmers;
     CStringKMerFactory cskf(31);
@@ -364,20 +364,20 @@ void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, bool si
     if (simplify) {
         gm.remove_small_unconnected(500);
         //path_all_reads();
-        assembly.create_index();
+        uniqueKmerIndex.generate_index(assembly,31);
         path_linked_reads();
         if (!output_prefix.empty()) assembly.write_to_gfa(output_prefix + "pre_repex.gfa");
         while (expand_canonical_repeats() > 0) {
             assembly.join_all_unitigs();
             //path_all_reads();
-            assembly.create_index();
+            uniqueKmerIndex.generate_index(assembly,31);
             path_linked_reads();
         }
         //unroll_short_loops();
     }
 }
 
-void add_readkmer_nodes_lha(std::vector<sgNodeID_t> & kmernodes, std::vector<std::pair<uint64_t,bool>> & readkmers, std::unordered_map<uint64_t, graphPosition> & index, bool rev){
+void add_readkmer_nodes_lha(std::vector<sgNodeID_t> & kmernodes, std::vector<std::pair<uint64_t,bool>> & readkmers, const std::unordered_map<uint64_t, graphStrandPos> & index, bool rev){
     //TODO allow for a minimum of kmers to count the hit?
     if (not rev) {
         for (auto rki=readkmers.begin();rki<readkmers.end();++rki) {
@@ -398,7 +398,7 @@ void add_readkmer_nodes_lha(std::vector<sgNodeID_t> & kmernodes, std::vector<std
 
 }
 
-void add_readkmer_nodes_lha128(std::vector<sgNodeID_t> & kmernodes, std::vector<std::pair<__uint128_t,bool>> & readkmers, std::unordered_map<__uint128_t, graphPosition> & index, bool rev){
+void add_readkmer_nodes_lha128(std::vector<sgNodeID_t> & kmernodes, std::vector<std::pair<__uint128_t,bool>> & readkmers, const std::unordered_map<__uint128_t, graphStrandPos> & index, bool rev){
     //TODO allow for a minimum of kmers to count the hit?
     if (not rev) {
         for (auto rki=readkmers.begin();rki<readkmers.end();++rki) {
@@ -443,9 +443,9 @@ void LocalHaplotypeAssembler::path_linked_reads() {
             cskf.create_kmers_direction(read1kmers, blrsg.get_read_sequence(rid));
             cskf.create_kmers_direction(read2kmers, blrsg.get_read_sequence(rid + 1));
             //first put the kmers from read 1 in there;
-            add_readkmer_nodes_lha(kmernodes, read1kmers, assembly.kmer_to_graphposition, false);
+            add_readkmer_nodes_lha(kmernodes, read1kmers, uniqueKmerIndex.getMap(), false);
             //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
-            add_readkmer_nodes_lha(kmernodes, read2kmers, assembly.kmer_to_graphposition, true);
+            add_readkmer_nodes_lha(kmernodes, read2kmers, uniqueKmerIndex.getMap(), true);
             //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
 
             linkedread_paths.emplace_back(kmernodes);
@@ -475,7 +475,7 @@ void LocalHaplotypeAssembler::path_linked_reads_informative_singles() {
 
             cskf.create_kmers_direction(readkmers, blrsg.get_read_sequence(rid));
 
-            add_readkmer_nodes_lha128(kmernodes, readkmers, assembly.k63mer_to_graphposition, false);
+            add_readkmer_nodes_lha128(kmernodes, readkmers, unique63merIndex.getMap(), false);
             if (kmernodes.size()>1) linkedread_paths.emplace_back(kmernodes);
 //            if (kmernodes.size()==2 and kmernodes[0]==-kmernodes[1]) { //TODO quantify this by tag,
 //                //std::cout<<"Read #"<<rid<<" has incoherent mapping kmernodes[0]==-32152 and kmernodes[1]==32152"<<std::endl;
@@ -509,7 +509,7 @@ void LocalHaplotypeAssembler::path_paired_reads_informative_singles() {
 
             cskf.create_kmers_direction(readkmers, bprsg.get_read_sequence(rid));
 
-            add_readkmer_nodes_lha(kmernodes, readkmers, assembly.kmer_to_graphposition, false);
+            add_readkmer_nodes_lha(kmernodes, readkmers, uniqueKmerIndex.getMap(), false);
             if (kmernodes.size()>1) pairedread_paths.emplace_back(kmernodes);
 //            if (kmernodes.size()==2 and kmernodes[0]==-kmernodes[1]) { //TODO quantify this by tag, then try to understand WTF is going on here. maybe tags from another haplotype?
 //                //std::cout<<"Read #"<<rid<<" has incoherent mapping kmernodes[0]==-32152 and kmernodes[1]==32152"<<std::endl;
@@ -550,9 +550,9 @@ void LocalHaplotypeAssembler::path_all_reads() {
             cskf.create_kmers_direction(read1kmers, blrsg.get_read_sequence(rid));
             cskf.create_kmers_direction(read2kmers, blrsg.get_read_sequence(rid + 1));
             //first put the kmers from read 1 in there;
-            add_readkmer_nodes_lha(kmernodes, read1kmers, assembly.kmer_to_graphposition, false);
+            add_readkmer_nodes_lha(kmernodes, read1kmers, uniqueKmerIndex.getMap(), false);
             //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
-            add_readkmer_nodes_lha(kmernodes, read2kmers, assembly.kmer_to_graphposition, true);
+            add_readkmer_nodes_lha(kmernodes, read2kmers, uniqueKmerIndex.getMap(), true);
             //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
 
             linkedread_paths.emplace_back(kmernodes);
@@ -574,9 +574,9 @@ void LocalHaplotypeAssembler::path_all_reads() {
             cskf.create_kmers_direction(read1kmers, bprsg.get_read_sequence(rid));
             cskf.create_kmers_direction(read2kmers, bprsg.get_read_sequence(rid + 1));
             //first put the kmers from read 1 in there;
-            add_readkmer_nodes_lha(kmernodes, read1kmers, assembly.kmer_to_graphposition, true);
+            add_readkmer_nodes_lha(kmernodes, read1kmers, uniqueKmerIndex.getMap(), true);
             //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
-            add_readkmer_nodes_lha(kmernodes, read2kmers, assembly.kmer_to_graphposition, false);
+            add_readkmer_nodes_lha(kmernodes, read2kmers, uniqueKmerIndex.getMap(), false);
             //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
 
             pairedread_paths.emplace_back(kmernodes);
