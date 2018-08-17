@@ -53,9 +53,9 @@ public:
         if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
         if (verbose) sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
 #ifdef _OPENMP
-        __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphStrandPos> & a, const std::pair<uint64_t,graphStrandPos> & b){return a.first<b.first;});
+        __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const pair & a, const pair & b){return a.first<b.first;});
 #else
-        std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
+        std::sort(kidxv.begin(),kidxv.end(),[](const pair & a, const pair & b){return a.first<b.first;});
 #endif
 
         sglib::OutputLog(sglib::INFO) << "  Merging..." << std::endl;
@@ -236,9 +236,9 @@ public:
         if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
         if (verbose) sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
 #ifdef _OPENMP
-        __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphStrandPos> & a, const std::pair<uint64_t,graphStrandPos> & b){return a.first<b.first;});
+        __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const pair & a, const pair & b){return a.first<b.first;});
 #else
-        std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
+        std::sort(kidxv.begin(),kidxv.end(),[](const pair & a, const pair & b){return a.first<b.first;});
 #endif
 
         sglib::OutputLog(sglib::INFO) << "  Merging..." << std::endl;
