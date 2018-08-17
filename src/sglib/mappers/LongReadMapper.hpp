@@ -11,40 +11,12 @@
 #include <sglib/datastores/LongReadsDatastore.hpp>
 #include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/types/MappingTypes.hpp>
+#include <sglib/indexers/NKmerIndex.hpp>
 
 /**
  * Long read mapping to the graph, this class manages storage and computation of the alignments.
  */
 class LongReadMapper {
-    class StringKMerFactory : protected KMerFactory {
-    public:
-        explicit StringKMerFactory(uint8_t k) : KMerFactory(k) {}
-
-        // TODO: Adjust for when K is larger than what fits in uint64_t!
-        const bool create_kmers(const std::string &s, std::vector<std::pair<bool, uint64_t>> &mers) {
-            fkmer=0;
-            rkmer=0;
-            last_unknown=0;
-            uint64_t p(0);
-            mers.reserve(s.size());
-            while (p < s.size()) {
-                //fkmer: grows from the right (LSB)
-                //rkmer: grows from the left (MSB)
-                fillKBuf(s[p], fkmer, rkmer, last_unknown);
-                p++;
-                if (last_unknown >= K) {
-                    if (fkmer <= rkmer) {
-                        // Is fwd
-                        mers.emplace_back(true, fkmer);
-                    } else {
-                        // Is bwd
-                        mers.emplace_back(false, rkmer);
-                    }
-                }
-            }
-            return false;
-        }
-    };
 
     const SequenceGraph & sg;
 
@@ -62,6 +34,8 @@ class LongReadMapper {
      */
     std::vector< std::vector < std::vector<LongReadMapping>::size_type > > reads_in_node;        /// Reads matching node
 
+    NKmerIndex assembly_kmers;
+
     void update_indexes_from_mappings();
 
 public:
@@ -71,7 +45,6 @@ public:
 
     LongReadMapper operator=(const LongReadMapper &other);
 
-    void update_graph_index();
     LongReadsDatastore& getLongReadsDatastore() {return datastore;}
 
     std::vector<uint64_t> get_node_read_ids(sgNodeID_t nodeID) const ;
@@ -86,9 +59,7 @@ public:
 
     void write(std::ofstream &output_file);
 
-
-    std::vector<kmerPos> assembly_kmers;
-
+    void update_graph_index();
 
     LongReadsDatastore datastore;
     /**

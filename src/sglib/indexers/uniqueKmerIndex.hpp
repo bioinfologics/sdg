@@ -15,53 +15,9 @@
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
 #include <sglib/types/KmerTypes.hpp>
 #include <sglib/readers/FileReader.h>
+#include <sglib/factories/KmerPosFactory.hpp>
 
-class uniqueKmerIndex {
-    class kmerPosFactory : protected KMerFactory {
-    public:
-        explicit kmerPosFactory(uint8_t k) : KMerFactory(k) {}
-
-        ~kmerPosFactory() {
-        }
-        void setFileRecord(FastaRecord &rec) {
-            currentRecord = rec;
-            fkmer=0;
-            rkmer=0;
-            last_unknown=0;
-        }
-
-        // TODO: Adjust for when K is larger than what fits in uint64_t!
-        const bool next_element(std::vector<std::pair<uint64_t,graphPosition>> &mers) {
-            uint64_t p(0);
-            graphPosition pos;
-            while (p < currentRecord.seq.size()) {
-                //fkmer: grows from the right (LSB)
-                //rkmer: grows from the left (MSB)
-                bases++;
-                fillKBuf(currentRecord.seq[p], fkmer, rkmer, last_unknown);
-                p++;
-                if (last_unknown >= K) {
-                    if (fkmer <= rkmer) {
-                        // Is fwd
-                        pos.node=currentRecord.id;
-                        pos.pos=p;
-                        mers.emplace_back(fkmer, pos);
-                    } else {
-                        // Is bwd
-                        pos.node=-currentRecord.id;
-                        pos.pos=p;
-                        mers.emplace_back(rkmer, pos);
-                    }
-                }
-            }
-            return false;
-        }
-
-    private:
-        FastaRecord currentRecord;
-        uint64_t bases;
-    };
-
+class UniqueKmerIndex {
     using Map = std::unordered_map<uint64_t, graphStrandPos>;
     using pair = std::pair<uint64_t, graphStrandPos>;
 
@@ -72,9 +28,9 @@ class uniqueKmerIndex {
 
 public:
     using const_iterator = std::unordered_map<uint64_t, graphStrandPos>::const_iterator;
-    explicit uniqueKmerIndex(uint k) : k(k) {}
+    explicit UniqueKmerIndex(uint k) : k(k) {}
 
-    uniqueKmerIndex(const SequenceGraph &sg, uint k) :
+    UniqueKmerIndex(const SequenceGraph &sg, uint k) :
             k(k) { generate_index(sg, k); }
 
     void generate_index(const SequenceGraph &sg, uint8_t k, bool verbose=true) {
@@ -237,7 +193,7 @@ public:
         out.flush();
     }
 
-    bool operator==(const uniqueKmerIndex &other) const {
+    bool operator==(const UniqueKmerIndex &other) const {
         return k == other.k && kmer_to_graphposition == other.kmer_to_graphposition && unique_kmers_per_node == other.unique_kmers_per_node && total_kmers_per_node == other.total_kmers_per_node;
     }
 };

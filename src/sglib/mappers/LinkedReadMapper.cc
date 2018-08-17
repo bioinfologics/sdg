@@ -96,7 +96,7 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
     {
         const int min_matches=1;
         std::vector<KmerIDX> readkmers;
-        StreamKmerFactory skf(31);
+        StreamKmerIDXFactory skf(31);
         ReadMapping mapping;
         auto blrs=BufferedLRSequenceGetter(datastore,128*1024,260);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
@@ -206,7 +206,7 @@ void LinkedReadMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_
     {
         const int min_matches=1;
         std::vector<KmerIDX128> readkmers;
-        StreamKmerFactory128 skf(63);
+        StreamKmerIDXFactory128 skf(63);
         ReadMapping mapping;
         auto blrs=BufferedLRSequenceGetter(datastore,128*1024,260);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];

@@ -675,6 +675,8 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
     if (false/*not todo_pnps.empty()*/) {
         std::cout<<"Solution is incomplete, attempting PNP rescue for untagged nodes and sequencing errors"<<std::endl;
         std::set<std::pair<sgNodeID_t ,sgNodeID_t >> rescued;
+        StringKMerFactory kfa(31);
+        StringKMerFactory kfb(31);
         for (auto p:todo_pnps) {
             auto a1=intersection_size(node_tags[p.first],tags1);
             auto a2=intersection_size(node_tags[p.first],tags2);
@@ -703,11 +705,9 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
                 tagkmers1=btk.get_tags_kmers(6, exctags1);
                 tagkmers2=btk.get_tags_kmers(6, exctags2);
             }
-            StringKMerFactory kfa(ws.sg.nodes[llabs(p.first)].sequence,31);
-            StringKMerFactory kfb(ws.sg.nodes[llabs(p.second)].sequence,31);
             std::vector<uint64_t> ka,kb;
-            kfa.create_kmers(ka);
-            kfb.create_kmers(kb);
+            kfa.create_kmers(ws.sg.nodes[llabs(p.first)].sequence, ka);
+            kfb.create_kmers(ws.sg.nodes[llabs(p.second)].sequence, kb);
             uint64_t uncovered_a1=0,uncovered_a2=0,uncovered_b1=0,uncovered_b2=0;
             for (auto x:ka) {
                 if (tagkmers1.count(x)==0) ++uncovered_a1;
@@ -1271,12 +1271,12 @@ uint64_t Untangler::connect_neighbours_paths_to_same(uint64_t min_size, float mi
             for (auto t:ws.linked_read_mappers[0].get_node_tags(ft.second)) ntags.insert(t);
             auto neightagkmers = btk.get_tags_kmers(6, ntags);
             std::vector<SequenceGraphPath> sol;
+            StringKMerFactory skf(31);
             for (auto p:allpaths) {
                 auto pseq = p.get_sequence();
                 //TODO: this can be doen not with a factory but with a class that already counts how many are in the set
-                StringKMerFactory skf(pseq, 31);
                 std::vector<uint64_t> seqkmers;
-                skf.create_kmers(seqkmers);
+                skf.create_kmers(pseq,seqkmers);
                 uint64_t covered = 0, uncovered = 0;
                 for (auto x:seqkmers) {
                     if (neightagkmers.count(x) > 0) ++covered;
@@ -1328,12 +1328,12 @@ std::vector<SequenceGraphPath> Untangler::get_all_tag_covered_paths(sgNodeID_t f
               << to << std::endl;
     auto neightagkmers = btk.get_tags_kmers(6, tags);
     std::vector<SequenceGraphPath> sol;
+    StringKMerFactory skf(31);
     for (auto p:allpaths) {
         auto pseq = p.get_sequence();
         //TODO: this can be doen not with a factory but with a class that already counts how many are in the set
-        StringKMerFactory skf(pseq, 31);
         std::vector<uint64_t> seqkmers;
-        skf.create_kmers(seqkmers);
+        skf.create_kmers(pseq, seqkmers);
         uint64_t covered = 0, uncovered = 0;
         for (auto x:seqkmers) {
             if (neightagkmers.count(x) > 0) ++covered;

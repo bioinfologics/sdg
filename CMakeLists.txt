@@ -201,6 +201,10 @@ add_executable(bsg-lhapassembler
         src/bsg-lhapassembler.cc
         )
 
+add_executable(seq-thread
+        src/seq-thread.cpp
+        )
+
 ## add executables and respective sources
 
 add_executable(gfa-extract
@@ -214,6 +218,7 @@ target_link_libraries(bsg-flowmaker bsg ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-untangler bsg ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-lhapassembler bsg ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract bsg)
+target_link_libraries(seq-thread bsg)
 
 #IF(BUILD_TESTING)
 #    add_executable(runBasicTests tests/sglib/basic_check.cc)

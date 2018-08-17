@@ -291,10 +291,10 @@ double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint
     if (newsize<k) return ((double)0/0);
     auto s=node.sequence.substr(max_bw_ovlp,newsize);
     std::vector<uint64_t> nkmers;
-    StringKMerFactory skf(s,k);
+    StringKMerFactory skf(k);
 
 
-    skf.create_kmers(nkmers);
+    skf.create_kmers(s,nkmers);
 
     uint64_t kcount=0,kcov=0;
     for (auto &kmer : nkmers){
@@ -382,8 +382,8 @@ KmerCompressionIndex::compute_node_coverage_profile(std::string node_sequence, i
 //    std::cout << "Number of kmers in sequence: " << node_sequence.size()-k+1 << std::endl;
 
     std::vector<uint64_t> nkmers;
-    StringKMerFactory skf(node_sequence,k);
-    skf.create_kmers(nkmers);
+    StringKMerFactory skf(k);
+    skf.create_kmers(node_sequence,nkmers);
     std::vector<uint16_t> reads_kmer_profile;
     std::vector<uint16_t> unique_kmer_profile;
     std::vector<uint16_t> graph_kmer_profile;

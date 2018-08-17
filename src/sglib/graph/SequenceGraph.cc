@@ -21,6 +21,7 @@
 #include <sglib/logger/OutputLog.h>
 #include "SequenceGraphPath.hpp"
 #include <sglib/utilities/omp_safe.hpp>
+#include <sglib/factories/KmerPosFactory.hpp>
 
 bool Node::is_canonical() {
     for (size_t i=0,j=sequence.size()-1;i<j;++i,--j){
@@ -1110,51 +1111,8 @@ std::vector<sgNodeID_t> SequenceGraph::get_flanking_nodes(sgNodeID_t loopy_node)
 
 
 void SequenceGraph::create_index(bool verbose) {
+
     kmer_to_graphposition.clear();
-    class kmerPosFactory : protected KMerFactory {
-    public:
-        explicit kmerPosFactory(uint8_t k) : KMerFactory(k) {}
-
-        ~kmerPosFactory() {
-        }
-        void setFileRecord(FastaRecord &rec) {
-            currentRecord = rec;
-            fkmer=0;
-            rkmer=0;
-            last_unknown=0;
-        }
-
-        // TODO: Adjust for when K is larger than what fits in uint64_t!
-        const bool next_element(std::vector<std::pair<uint64_t,graphPosition>> &mers) {
-            uint64_t p(0);
-            graphPosition pos;
-            while (p < currentRecord.seq.size()) {
-                //fkmer: grows from the right (LSB)
-                //rkmer: grows from the left (MSB)
-                bases++;
-                fillKBuf(currentRecord.seq[p], fkmer, rkmer, last_unknown);
-                p++;
-                if (last_unknown >= K) {
-                    if (fkmer <= rkmer) {
-                        // Is fwd
-                        pos.node=currentRecord.id;
-                        pos.pos=p;
-                        mers.emplace_back(fkmer, pos);
-                    } else {
-                        // Is bwd
-                        pos.node=-currentRecord.id;
-                        pos.pos=p;
-                        mers.emplace_back(rkmer, pos);
-                    }
-                }
-            }
-            return false;
-        }
-
-    private:
-        FastaRecord currentRecord;
-        uint64_t bases;
-    };
 
     if (verbose) sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
     const int k = 31;
@@ -1200,50 +1158,6 @@ void SequenceGraph::create_index(bool verbose) {
 
 void SequenceGraph::create_63mer_index(bool verbose) {
     k63mer_to_graphposition.clear();
-    class kmerPosFactory128 : protected KMerFactory128 {
-    public:
-        explicit kmerPosFactory128(uint8_t k) : KMerFactory128(k) {}
-
-        ~kmerPosFactory128() {
-        }
-        void setFileRecord(FastaRecord &rec) {
-            currentRecord = rec;
-            fkmer=0;
-            rkmer=0;
-            last_unknown=0;
-        }
-
-        // TODO: Adjust for when K is larger than what fits in uint64_t!
-        const bool next_element(std::vector<std::pair<__uint128_t,graphPosition>> &mers) {
-            uint64_t p(0);
-            graphPosition pos;
-            while (p < currentRecord.seq.size()) {
-                //fkmer: grows from the right (LSB)
-                //rkmer: grows from the left (MSB)
-                bases++;
-                fillKBuf(currentRecord.seq[p], fkmer, rkmer, last_unknown);
-                p++;
-                if (last_unknown >= K) {
-                    if (fkmer <= rkmer) {
-                        // Is fwd
-                        pos.node=currentRecord.id;
-                        pos.pos=p;
-                        mers.emplace_back(fkmer, pos);
-                    } else {
-                        // Is bwd
-                        pos.node=-currentRecord.id;
-                        pos.pos=p;
-                        mers.emplace_back(rkmer, pos);
-                    }
-                }
-            }
-            return false;
-        }
-
-    private:
-        FastaRecord currentRecord;
-        uint64_t bases;
-    };
 
     if (verbose) sglib::OutputLog(sglib::INFO) << "Indexing graph..."<<std::endl;
     const int k = 63;

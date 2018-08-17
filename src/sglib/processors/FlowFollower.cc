@@ -139,12 +139,12 @@ std::vector<std::unordered_set<uint64_t>> FlowFollower::get_distinctive_kmers(st
 
     std::unordered_set<uint64_t> seen_kmers,shared_kmers;
     std::vector<std::unordered_set<uint64_t>> distinctive_kmers;
+    StringKMerFactory skf(31);
     for (auto n:nodes){
         distinctive_kmers.emplace_back();
-        StringKMerFactory skf(sg.nodes[llabs(n)].sequence,31);
         std::vector<uint64_t> nkmers;
         nkmers.reserve(sg.nodes[llabs(n)].sequence.size());
-        skf.create_kmers(nkmers);
+        skf.create_kmers(sg.nodes[llabs(n)].sequence,nkmers);
         for (auto x:nkmers) {
             if (seen_kmers.count(x) > 0) {
                 shared_kmers.insert(x);
@@ -181,12 +181,12 @@ std::vector<std::unordered_set<uint64_t>> FlowFollower::get_distinctive_kmers_tr
     //TODO: consider the case where both things are completely different!
     std::vector<std::vector<uint64_t>> node_kmers;
     std::map<uint64_t,uint16_t> kmer_counts;
+    StringKMerFactory skf(31);
     for (auto n:nodes){
         node_kmers.emplace_back();
         auto s=(n>0 ? sg.nodes[llabs(n)].sequence:DNArc(sg.nodes[llabs(n)].sequence));
-        StringKMerFactory skf(s,31);
         node_kmers.back().reserve(sg.nodes[llabs(n)].sequence.size());
-        skf.create_kmers(node_kmers.back());
+        skf.create_kmers(s,node_kmers.back());
         for (auto x:node_kmers.back()) {
             if (kmer_counts.count(x)==0) kmer_counts[x]=1;
             else ++kmer_counts[x];

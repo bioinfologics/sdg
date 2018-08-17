@@ -57,11 +57,10 @@ private:
     uint64_t bases;
 };
 
-
-class StreamKmerFactory : public  KMerFactory {
+class StreamKmerIDXFactory : public  KMerFactory {
 public:
-    explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
-    inline void produce_all_kmers(const int64_t seqID, const char * seq, std::vector<KmerIDX> &mers){
+    explicit StreamKmerIDXFactory(uint8_t k) : KMerFactory(k){}
+    inline void produce_all_kmers(const char * seq, std::vector<KmerIDX> &mers){
         // TODO: Adjust for when K is larger than what fits in uint64_t!
         last_unknown=0;
         fkmer=0;
@@ -74,10 +73,41 @@ public:
             if (last_unknown >= K) {
                 if (fkmer <= rkmer) {
                     // Is fwd
-                    mers.emplace_back(fkmer, seqID);
+                    mers.emplace_back(fkmer);
+                    mers.back().contigID=1;
                 } else {
                     // Is bwd
-                    mers.emplace_back(rkmer, -seqID);
+                    mers.emplace_back(rkmer);
+                    mers.back().contigID=-1;
+                }
+            }
+            ++s;
+        }
+    }
+};
+
+class StreamKmerIDXFactory128 : public  KMerFactory128 {
+public:
+    explicit StreamKmerIDXFactory128(uint8_t k) : KMerFactory128(k){}
+    inline void produce_all_kmers(const char * seq, std::vector<KmerIDX128> &mers){
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        last_unknown=0;
+        fkmer=0;
+        rkmer=0;
+        auto s=seq;
+        while (*s!='\0' and *s!='\n') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(fkmer);
+                    mers.back().contigID=1;
+                } else {
+                    // Is bwd
+                    mers.emplace_back(rkmer);
+                    mers.back().contigID=-1;
                 }
             }
             ++s;

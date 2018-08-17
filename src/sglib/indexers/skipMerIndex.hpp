@@ -5,78 +5,15 @@
 #ifndef BSG_SKIPMERINDEX_HPP
 #define BSG_SKIPMERINDEX_HPP
 
-
+#include <sglib/utilities/omp_safe.hpp>
 #include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/types/KmerTypes.hpp>
-#include <sglib/factories/SkipMerIndexFactory.hpp>
 #include <sglib/readers/FileReader.h>
 #include <sglib/readers/SequenceGraphReader.h>
 #include <cmath>
+#include <sglib/factories/SkipMerFactory.hpp>
 
 class SkipMerIndex {
-    class kmerPosFactory : protected SkipMerFactory {
-    public:
-        kmerPosFactory(uint8_t k, uint8_t m, uint8_t n) : SkipMerFactory(k, m, n) {}
-
-        void setFileRecord(FastaRecord &rec) {
-            currentRecord = rec;
-            for (auto ni=0; ni < N; ++ni) {
-                fkmer[ni] =0;
-                rkmer[ni] = 0;
-                last_unknown[ni] = 0;
-            }
-            fi=0;
-        }
-        // TODO: Adjust for when K is larger than what fits in uint64_t!
-        const bool next_element(std::vector<std::pair<uint64_t,graphPosition>> &mers){
-            for (auto ni=0; ni < N; ++ni) {
-                fkmer[ni] =0;
-                rkmer[ni] = 0;
-                last_unknown[ni] = 0;
-            }
-            fi=0;
-            uint64_t p(0);
-            graphPosition pos;
-            while (p < currentRecord.seq.size()) {
-                //fkmer: grows from the right (LSB)
-                //rkmer: grows from the left (MSB)
-                for (auto ni=0;ni<N;++ni) {
-                    cycle_pos[ni]++;
-                    if (cycle_pos[ni]==N)cycle_pos[ni]=0;
-                    if (cycle_pos[ni]<M) {
-                        fillKBuf(currentRecord.seq[p], fkmer[ni], rkmer[ni], last_unknown[ni]);
-                    }
-                    p++;
-                    //if we are at p, the skip-mer started at p-S is now done
-
-                    if (p < S-1) continue;
-
-                    if (p == S - 1) fi = 0;
-                    else {
-                        ++fi;
-                        if (fi == N) fi = 0;
-                    }
-                    if (unlikely(last_unknown[fi] + S > p)) continue;
-
-                    if (fkmer[fi] <= rkmer[fi]) {
-                        pos.node=currentRecord.id;
-                        pos.pos=p;
-                        mers.emplace_back(fkmer[fi],pos);
-                    } else {
-                        pos.node=-currentRecord.id;
-                        pos.pos=p;
-                        mers.emplace_back(rkmer[fi],pos);
-                    }
-
-                }
-            }
-            return false;
-        }
-
-    private:
-        FastaRecord currentRecord;
-        uint64_t bases;
-    };
 
     using Map = std::unordered_map<uint64_t, graphStrandPos>;
     using const_iterator = std::unordered_map<uint64_t, graphStrandPos>::const_iterator;
@@ -119,7 +56,7 @@ public:
         std::vector<std::pair<uint64_t,graphPosition>> kidxv;
         FastaRecord r;
         kidxv.reserve(total_k);
-        kmerPosFactory kf( k, m, n );
+        SkipmerIndexFactory kf( k, m, n );
         for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
             if (sg.nodes[n].sequence.size() >= k) {
                 r.id = n;
