@@ -12,7 +12,7 @@ void LongReadsDatastore::load_index(std::string &file) {
 
     std::ifstream input_file(file, std::ios_base::binary);
 
-    uint64_t nReads(0);
+    uint32_t nReads(0);
     std::streampos fPos;
 
     bsgMagic_t magic;
@@ -73,7 +73,7 @@ uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, std::string l
 }
 
 void LongReadsDatastore::read_rtfr(std::ifstream &ifs) {
-    uint64_t s;
+    uint32_t s;
     ifs.read((char *) &s, sizeof(s));
     read_to_fileRecord.resize(s);
     ifs.read((char *) read_to_fileRecord.data(), s*sizeof(read_to_fileRecord[0]));
@@ -81,7 +81,7 @@ void LongReadsDatastore::read_rtfr(std::ifstream &ifs) {
 
 void LongReadsDatastore::write_rtfr(std::ofstream &output_file) {
     //read filename
-    uint64_t s=read_to_fileRecord.size();
+    uint32_t s=read_to_fileRecord.size();
     output_file.write((char *) &s,sizeof(s));
     output_file.write((char *)read_to_fileRecord.data(),s*sizeof(read_to_fileRecord[0]));
 }
@@ -108,7 +108,7 @@ LongReadsDatastore::LongReadsDatastore(std::string filename) {
 LongReadsDatastore::LongReadsDatastore(std::string long_read_file, std::string output_file) {
     filename = output_file;
 
-    uint64_t nReads(0);
+    uint32_t nReads(0);
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
     std::streampos fPos;
     ofs.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
