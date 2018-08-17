@@ -10,13 +10,58 @@
 #include <iostream>
 #include <sglib/factories/KMerIDXFactory.h>
 #include <sglib/readers/SequenceGraphReader.h>
-#include <sglib/readers/FileReader.h>
-#include <sglib/SMR.h>
+#include <sglib/utilities/omp_safe.hpp>
 #include <sglib/mappers/PairedReadMapper.hpp>
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
 #include <sglib/types/KmerTypes.hpp>
+#include <sglib/readers/FileReader.h>
 
 class uniqueKmerIndex {
+    class kmerPosFactory : protected KMerFactory {
+    public:
+        explicit kmerPosFactory(uint8_t k) : KMerFactory(k) {}
+
+        ~kmerPosFactory() {
+        }
+        void setFileRecord(FastaRecord &rec) {
+            currentRecord = rec;
+            fkmer=0;
+            rkmer=0;
+            last_unknown=0;
+        }
+
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        const bool next_element(std::vector<std::pair<uint64_t,graphPosition>> &mers) {
+            uint64_t p(0);
+            graphPosition pos;
+            while (p < currentRecord.seq.size()) {
+                //fkmer: grows from the right (LSB)
+                //rkmer: grows from the left (MSB)
+                bases++;
+                fillKBuf(currentRecord.seq[p], fkmer, rkmer, last_unknown);
+                p++;
+                if (last_unknown >= K) {
+                    if (fkmer <= rkmer) {
+                        // Is fwd
+                        pos.node=currentRecord.id;
+                        pos.pos=p;
+                        mers.emplace_back(fkmer, pos);
+                    } else {
+                        // Is bwd
+                        pos.node=-currentRecord.id;
+                        pos.pos=p;
+                        mers.emplace_back(rkmer, pos);
+                    }
+                }
+            }
+            return false;
+        }
+
+    private:
+        FastaRecord currentRecord;
+        uint64_t bases;
+    };
+
     using Map = std::unordered_map<uint64_t, graphStrandPos>;
     using pair = std::pair<uint64_t, graphStrandPos>;
 
@@ -30,13 +75,10 @@ public:
     explicit uniqueKmerIndex(uint k) : k(k) {}
 
     uniqueKmerIndex(const SequenceGraph &sg, uint k) :
-            k(k)
-    {
-        generate_index(sg, k);
-    }
+            k(k) { generate_index(sg, k); }
 
-    void generate_index(const SequenceGraph &sg, uint8_t k) {
-        std::vector<KmerIDX> kidxv;
+    void generate_index(const SequenceGraph &sg, uint8_t k, bool verbose=true) {
+        std::vector<std::pair<uint64_t,graphPosition>> kidxv;
         uint64_t total_k { 0 };
         total_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
         for (sgNodeID_t node = 0; node < sg.nodes.size(); node++) {
@@ -49,7 +91,7 @@ public:
         }
         kidxv.reserve(total_k);
         FastaRecord r;
-        kmerIDXFactory<FastaRecord> kcf({k});
+        kmerPosFactory kcf({k});
         for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
             if (sg.nodes[n].sequence.size() >= k) {
                 r.id = n;
@@ -58,70 +100,40 @@ public:
                 kcf.next_element(kidxv);
             }
         }
-        sglib::OutputLog(sglib::INFO) << kidxv.size() << " kmers in total" << std::endl;
-        sglib::OutputLog(sglib::INFO) << "  Sorting..." << std::endl;
-        std::sort(kidxv.begin(), kidxv.end());
+        if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
+        if (verbose) sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
+#ifdef _OPENMP
+        __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
+#else
+        std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
+#endif
 
         sglib::OutputLog(sglib::INFO) << "  Merging..." << std::endl;
-        auto wi = kidxv.begin();
-        auto ri = kidxv.begin();
-        auto nri = kidxv.begin();
-        while (ri < kidxv.end()) {
-            //std::cout << "ri kmer: " << ri -> kmer << std::endl;
-            while (nri != kidxv.end() and nri -> kmer == ri -> kmer) {
-                //std::cout << "nri kmer: " << nri -> kmer << std::endl;
-                ++nri;
-            }
-            //std::cout << "kmer appears " << nri - ri << " time(s)" << std::endl;
-            if (nri - ri == 1) {
-                *wi = *ri;
+        if (verbose) sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
+        auto wi=kidxv.begin();
+        auto ri=kidxv.begin();
+        auto nri=kidxv.begin();
+        while (ri<kidxv.end()){
+            while (nri!=kidxv.end() and nri->first==ri->first) ++nri;
+            if (nri-ri==1) {
+                *wi=*ri;
                 ++wi;
             }
-            ri = nri;
+            ri=nri;
         }
         kidxv.resize(wi - kidxv.begin());
         sglib::OutputLog(sglib::INFO) << kidxv.size() << " unique kmers in index, creating map" << std::endl;
-        std::unordered_set<int32_t> seen_contigs;
+        std::unordered_set<sgNodeID_t > seen_contigs;
         seen_contigs.reserve(sg.nodes.size());
         unique_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
         for (auto &kidx :kidxv) {
-            kmer_to_graphposition[kidx.kmer] = { kidx.contigID, kidx.pos };
-            unique_kmers_per_node[std::abs(kidx.contigID)] += 1;
-            seen_contigs.insert((kidx.contigID > 0 ? kidx.contigID : -kidx.contigID));
+            kmer_to_graphposition[kidx.first] = { kidx.second.node, kidx.second.pos };
+            unique_kmers_per_node[std::abs(kidx.second.node)] += 1;
+            seen_contigs.insert(std::abs(kidx.second.node));
         }
         sglib::OutputLog(sglib::INFO) << seen_contigs.size() << " nodes with indexed kmers" <<std::endl;
     }
-/*
-    void generate_index(const SequenceGraph &sg, uint8_t k, uint64_t memlimit = 4) {
-        const std::string output_prefix("./");
 
-        this->k = k;
-
-        SMR<KmerIDX,
-        kmerIDXFactory<FastaRecord>,
-        GraphNodeReader<FastaRecord>,
-        FastaRecord,
-        GraphNodeReaderParams,
-        KMerIDXFactoryParams> kmerIDX_SMR({1, sg}, {k}, {memlimit*GB, 0, 1, output_prefix});
-
-        // Get the unique_kmers from the graph into a map
-        sglib::OutputLog() << "Indexing graph" << std::endl;
-        kmer_to_graphposition.clear();
-        std::unordered_set<int32_t> seen_contigs;
-        unique_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
-        total_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
-        auto idxes = kmerIDX_SMR.process_from_memory();
-        for (auto &kidx : idxes) {
-            kmer_to_graphposition[kidx.kmer] = {kidx.contigID, kidx.pos};
-            unique_kmers_per_node[std::abs(kidx.contigID)] += 1;
-            seen_contigs.insert(std::abs(kidx.contigID));
-        }
-
-        for (sgNodeID_t node = 0; node < sg.nodes.size(); node++) {
-            total_kmers_per_node[node] = sg.nodes[node].sequence.size() - (k - 1);
-        }
-    }
-*/
     const_iterator find(const uint64_t hash) const {
         return kmer_to_graphposition.find(hash);
     };
