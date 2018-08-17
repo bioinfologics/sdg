@@ -9,7 +9,7 @@
 #include <sglib/types/GenericTypes.hpp>
 #include <sglib/types/KmerTypes.hpp>
 #include <sglib/graph/SequenceGraph.hpp>
-#include <sglib/indexers/uniqueKmerIndex.hpp>
+#include <sglib/indexers/UniqueKmerIndex.hpp>
 
 class NodeMapper;
 
@@ -57,7 +57,7 @@ class NodeMapper {
 
 public:
     using SequenceMappingStore = std::unordered_map<seqID_t, std::vector<NodeMapping>>;
-    NodeMapper(SequenceGraph &sg, uniqueKmerIndex &uki);
+    NodeMapper(SequenceGraph &sg, UniqueKmerIndex &uki);
     void mapSequences(const std::string &filename);
     void write_mappings_to_binary_file(std::string filename) const;
     void read_mappings_from_binary_file(std::string filename);
@@ -88,7 +88,7 @@ public:
 private:
     // Graph storage
     const SequenceGraph& sg;
-    uniqueKmerIndex& graph_kmer_index;
+    UniqueKmerIndex& graph_kmer_index;
 
     // Settings storage
     std::string query_seq_file;

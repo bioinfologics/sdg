@@ -3,7 +3,7 @@
 #include <sglib/graph/SequenceGraph.hpp>
 #include <cxxopts.hpp>
 #include <sglib/logger/OutputLog.h>
-#include <sglib/indexers/skipMerIndex.hpp>
+#include <sglib/indexers/SkipMerIndex.hpp>
 
 
 int main(int argc, char * argv[]) {
