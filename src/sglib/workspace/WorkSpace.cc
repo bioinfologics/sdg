@@ -101,7 +101,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
         throw "Incompatible version";
     }
 
-    if (type != KCI_FT) {
+    if (type != WS_FT) {
         std::cerr << "This file is not compatible with this type" << std::endl;
         throw "Incompatible file type";
     }
