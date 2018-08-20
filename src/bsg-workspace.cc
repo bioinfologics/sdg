@@ -62,23 +62,19 @@ int main(int argc, char * argv[]) {
             w.getKCI().load_from_disk(kci_filename);
             w.add_log_entry("KCI kmer spectra imported from "+kci_filename);
         }
+
         for (auto prds:pr_datastores){
             //create and load the datastore, and the mapper!
             w.getPairedReadDatastores().emplace_back(prds);
             w.getPairedReadMappers().emplace_back(w.getGraph(),w.getPairedReadDatastores().back(),w.uniqueKmerIndex, w.unique63merIndex);
             w.add_log_entry("PairedReadDatastore imported from "+prds+" ("+std::to_string(w.getPairedReadDatastores().back().size())+" reads)");
         }
+
         for (auto lrds:lr_datastores){
             //create and load the datastore, and the mapper!
             w.getLinkedReadDatastores().emplace_back(lrds);
             w.getLinkedReadMappers().emplace_back(w.getGraph(),w.getLinkedReadDatastores().back(),w.uniqueKmerIndex, w.unique63merIndex);
             w.add_log_entry("LinkedReadDatastore imported from "+lrds+" ("+std::to_string(w.getLinkedReadDatastores().back().size())+" reads)");
-        }
-        for (auto Lrds:Lr_datastores){
-            //create and load the datastore, and the mapper!
-            w.long_read_datastores.emplace_back(Lrds);
-            w.long_read_mappers.emplace_back(w.sg,w.long_read_datastores.back());
-            w.add_log_entry("LongReadDatastore imported from "+Lrds+" ("+std::to_string(w.long_read_datastores.back().size())+" reads)");
         }
 
         for (auto Lrds:Lr_datastores){
