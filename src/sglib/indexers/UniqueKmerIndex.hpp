@@ -25,7 +25,7 @@ public:
     explicit UniqueKmerIndex(uint k) : k(k) {}
 
     UniqueKmerIndex(const SequenceGraph &sg, uint k) :
-            k(k) { generate_index(sg, k); }
+            k(k) { if (!sg.nodes.empty()) generate_index(sg, k); }
 
     void generate_index(const SequenceGraph &sg, bool verbose=true) {
         std::vector<pair> kidxv;
@@ -208,7 +208,7 @@ public:
     explicit Unique63merIndex() : k(63) {}
 
     Unique63merIndex(const SequenceGraph &sg) :
-            k(63) { generate_index(sg, k); }
+            k(63) { if (!sg.nodes.empty()) generate_index(sg, k); }
 
     void generate_index(const SequenceGraph &sg, bool verbose=true) {
         std::vector<pair> kidxv;
