@@ -10,6 +10,7 @@
 #include <iostream>
 #include <sglib/readers/FileReader.h>
 #include <sglib/types/KmerTypes.hpp>
+#include <array>
 
 #define unlikely(x)     __builtin_expect((x),0)
 
@@ -20,7 +21,7 @@ public:
     uint64_t fkmer{};
     uint64_t rkmer{};
 
-    inline void fillKBuf(const char b, uint64_t &rkmer, uint64_t &fkmer, int64_t &last) {
+    inline void fillKBuf(const unsigned char b, uint64_t &rkmer, uint64_t &fkmer, int64_t &last) {
         if (unlikely(b2f[b] == 4)) {
             last = 0;
             fkmer = ((fkmer << 2) + 0) & KMER_MASK;
@@ -53,8 +54,8 @@ protected:
 private:
     const uint64_t KMER_MASK;
     const uint64_t KMER_FIRSTOFFSET;
-    char b2f[255]{4};
-    char b2r[255]{4};
+    std::array<char,256> b2f={4};
+    std::array<char,256> b2r={4};
 };
 
 class KMerFactory128 {
@@ -64,7 +65,7 @@ public:
     __uint128_t fkmer{};
     __uint128_t rkmer{};
 
-    inline void fillKBuf(const char b, __uint128_t &rkmer, __uint128_t &fkmer, int64_t &last) {
+    inline void fillKBuf(const unsigned char b, __uint128_t &rkmer, __uint128_t &fkmer, int64_t &last) {
         if (unlikely(b2f[b] == 4)) {
             last = 0;
             fkmer = ((fkmer << 2) + 0) & KMER_MASK;
@@ -97,8 +98,8 @@ protected:
 private:
     const __uint128_t KMER_MASK;
     const __uint128_t KMER_FIRSTOFFSET;
-    char b2f[255]{4};
-    char b2r[255]{4};
+    std::array<char,256> b2f={4};
+    std::array<char,256> b2r={4};
 };
 
 

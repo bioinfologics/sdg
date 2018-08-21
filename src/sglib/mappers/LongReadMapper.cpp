@@ -25,6 +25,15 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
         std::vector<std::vector<std::pair<uint32_t, bool>>> node_matches;
 #pragma omp for
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
+
+            if (readID%1000 == 0) {
+                num_reads_done+=1000;
+#pragma omp critical (lrmap_progress)
+                {
+                    sglib::OutputLog() << num_reads_done << " / " << datastore.size() << " reads mapped" << std::endl;
+                }
+            }
+
             if ((!readIDs.empty() and readIDs.count(readID)==0 /*Read not in selected set*/)
                 or
                 (readIDs.empty() and !read_to_mappings[readID].empty()/*No selection and read is mapped*/)) {
@@ -128,19 +137,19 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 //                    readout << std::endl;
 //                }
             }
-            num_reads_done++;
 
             if (winners.empty()) {
                 continue;
             }
             int rp(0),wp(0),last_winner(0);
-            while(winners[rp].first==0){rp++;} // Find first non zero
+            while(rp < winners.size() and winners[rp].first==0){rp++;} // Find first non zero
+            if (rp == winners.size()) continue;
             wp=rp;
             last_winner=winners[wp].first;
             wp++;
             rp++;
             for (; rp < winners.size(); rp++) {
-                while (winners[wp].first == winners[rp].first and rp < winners.size()) {
+                while (rp < winners.size() and winners[wp].first == winners[rp].first) {
                     rp++;
                 }
                 if (rp-wp > 1) {
@@ -150,12 +159,6 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                     }
                 }
                 wp=rp;
-            }
-            if (num_reads_done%1000 == 0) {
-#pragma omp critical (lrmap_progress)
-                {
-                    sglib::OutputLog() << num_reads_done << " / " << datastore.size() << " reads mapped" << std::endl;
-                }
             }
         }
     }
