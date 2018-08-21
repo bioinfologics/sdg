@@ -35,8 +35,6 @@ class LongReadsDatastore {
     int lr_sequence_fd = 0;
     std::string file_containing_long_read_sequence;
 
-    void read_rtfr(std::ifstream &ifs);
-    void write_rtfr(std::ofstream &output_file);
     void load_index(std::string &file);
 
 

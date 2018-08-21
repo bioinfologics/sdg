@@ -40,7 +40,8 @@ void LongReadsDatastore::load_index(std::string &file) {
     input_file.read((char*)&nReads, sizeof(nReads));
     input_file.read((char*)&fPos, sizeof(fPos));
     input_file.seekg(fPos);
-    read_rtfr(input_file);
+    read_to_fileRecord.resize(nReads);
+    input_file.read((char *) read_to_fileRecord.data(), read_to_fileRecord.size()*sizeof(read_to_fileRecord[0]));
 
     sglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()-1<<std::endl;
 }
@@ -61,7 +62,7 @@ uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, std::string l
             uint32_t size = seq.size();
             auto offset = outf.tellp();
             outf.write((char*)&size, sizeof(size));
-            read_to_fileRecord.emplace_back(offset,size);
+            read_to_fileRecord.emplace_back((off_t)offset+sizeof(BSG_MAGIC)+ sizeof(BSG_VN)+sizeof(BSG_FILETYPE),size);
             outf.write((char*)seq.c_str(), size);
         }
         std::getline(fastq_ifstream, p);
@@ -70,20 +71,6 @@ uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, std::string l
     }
     read_to_fileRecord.pop_back();
     return static_cast<uint32_t>(read_to_fileRecord.size());
-}
-
-void LongReadsDatastore::read_rtfr(std::ifstream &ifs) {
-    uint32_t s;
-    ifs.read((char *) &s, sizeof(s));
-    read_to_fileRecord.resize(s);
-    ifs.read((char *) read_to_fileRecord.data(), s*sizeof(read_to_fileRecord[0]));
-}
-
-void LongReadsDatastore::write_rtfr(std::ofstream &output_file) {
-    //read filename
-    uint32_t s=read_to_fileRecord.size();
-    output_file.write((char *) &s,sizeof(s));
-    output_file.write((char *)read_to_fileRecord.data(),s*sizeof(read_to_fileRecord[0]));
 }
 
 void LongReadsDatastore::read(std::ifstream &ifs) {
@@ -120,7 +107,7 @@ LongReadsDatastore::LongReadsDatastore(std::string long_read_file, std::string o
     ofs.write((char*) &fPos, sizeof(fPos));
     nReads = build_from_fastq(ofs, long_read_file); // Build read_to_fileRecord
     fPos = ofs.tellp();                             // Write position after reads
-    write_rtfr(ofs);                                // Dump rtfr
+    ofs.write((char *)read_to_fileRecord.data(),read_to_fileRecord.size()*sizeof(read_to_fileRecord[0]));
     ofs.seekp(sizeof(BSG_MAGIC)+sizeof(BSG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
     ofs.write((char*) &nReads, sizeof(nReads));     // Dump # of reads
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
@@ -204,5 +191,5 @@ std::string BufferedSequenceGetter::get_read_sequence(uint64_t readID) {
         lseek(fd,read_offset_in_file,SEEK_SET);
         read(fd,buffer,bufsize);
     }
-    return std::string(buffer+(read_offset_in_file-buffer_offset),buffer+(read_offset_in_file-buffer_offset+datastore.read_to_fileRecord[readID].record_size));
+    return std::string(buffer+(read_offset_in_file-buffer_offset),buffer+(read_offset_in_file-buffer_offset)+datastore.read_to_fileRecord[readID].record_size);
 }

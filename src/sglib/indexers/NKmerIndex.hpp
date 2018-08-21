@@ -11,14 +11,16 @@
 #include <sglib/factories/KMerFactory.h>
 #include <sglib/logger/OutputLog.h>
 #include <sglib/graph/SequenceGraph.hpp>
+#include <sglib/bloom/BloomFilter.hpp>
 
 class NKmerIndex {
+    BloomFilter filter;
     std::vector<kmerPos> assembly_kmers;
     uint8_t k;
 public:
     using const_iterator = std::vector<kmerPos>::const_iterator;
 
-    explicit NKmerIndex(uint8_t k) : k(k) {}
+    explicit NKmerIndex(uint8_t k) : k(k), filter(45*1024*1024) {}
 
     void generate_index(const SequenceGraph &sg, int filter_limit = 200) {
         assembly_kmers.reserve(100000000);
@@ -50,11 +52,12 @@ public:
         auto ritr = witr;
         for (; ritr != assembly_kmers.end();) {
             auto bitr = ritr;
-            while (bitr->kmer == ritr->kmer and ritr != assembly_kmers.end()) {
+            while (ritr != assembly_kmers.end() and bitr->kmer == ritr->kmer) {
                 ++ritr;
             }
             if (ritr-bitr < max_kmer_repeat) {
                 while (bitr != ritr) {
+                    filter.add(bitr->kmer);
                     *witr = *bitr;
                     ++witr;++bitr;
                 }
@@ -63,6 +66,8 @@ public:
         assembly_kmers.resize(witr-assembly_kmers.begin());
 
         sglib::OutputLog() << "Kmers for mapping " << assembly_kmers.size() << std::endl;
+        sglib::OutputLog() << "Number of elements in bloom " << filter.number_bits_set() << std::endl;
+        sglib::OutputLog() << "Filter FPR " << filter.false_positive_rate() << std::endl;
         sglib::OutputLog() << "DONE" << std::endl;
     }
 
@@ -70,7 +75,12 @@ public:
     const_iterator begin() const {return assembly_kmers.cbegin();}
     const_iterator end() const {return assembly_kmers.cend();}
 
-    const_iterator find(const uint64_t kmer) const { return std::lower_bound(assembly_kmers.cbegin(), assembly_kmers.cend(), kmer);}
+    const_iterator find(const uint64_t kmer) const {
+        if (filter.contains(kmer)) {
+            return std::lower_bound(assembly_kmers.cbegin(), assembly_kmers.cend(), kmer);
+        }
+        return assembly_kmers.cend();
+    }
 };
 
 
