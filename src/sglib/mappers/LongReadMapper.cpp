@@ -178,6 +178,8 @@ void LongReadMapper::update_indexes_from_mappings() {
         read_to_mappings[mappingItr->read_id].push_back(index);
         reads_in_node[std::abs(mappingItr->node)].push_back(mappingItr->read_id);
     }
+
+    sglib::OutputLog() << "Finished with " << mappings.size() << " mappings" << std::endl;
 }
 
 LongReadMapper::LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k)

@@ -20,7 +20,7 @@ class NKmerIndex {
 public:
     using const_iterator = std::vector<kmerPos>::const_iterator;
 
-    explicit NKmerIndex(uint8_t k) : k(k), filter(45*1024*1024) {}
+    explicit NKmerIndex(uint8_t k) : k(k), filter(70*1024*1024) {}
 
     void generate_index(const SequenceGraph &sg, int filter_limit = 200) {
         assembly_kmers.reserve(100000000);
@@ -76,10 +76,9 @@ public:
     const_iterator end() const {return assembly_kmers.cend();}
 
     const_iterator find(const uint64_t kmer) const {
-        if (filter.contains(kmer)) {
-            return std::lower_bound(assembly_kmers.cbegin(), assembly_kmers.cend(), kmer);
-        }
+        if (filter.contains(kmer)) { return std::lower_bound(assembly_kmers.cbegin(), assembly_kmers.cend(), kmer); }
         return assembly_kmers.cend();
+//        return std::lower_bound(assembly_kmers.cbegin(), assembly_kmers.cend(), kmer);
     }
 };
 
