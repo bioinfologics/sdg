@@ -28,6 +28,7 @@ matrix:
     - os: osx
       osx_image: xcode9.4
 before_install:
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo softwareupdate -i "Command Line Tools (macOS High Sierra version 10.13) for Xcode-9.4"; fi
     - eval "${MATRIX_EVAL}"
 
 script: ./build.sh
