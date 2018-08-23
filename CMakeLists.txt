@@ -222,14 +222,14 @@ target_link_libraries(seq-thread bsg)
 
 
 IF(BUILD_TESTING)
+    include_directories("tests/include")
     add_library( CatchMain OBJECT tests/sglib/catch-main.cpp tests/include/catch.hpp )
-    add_executable(runBasicTests tests/sglib/smr_tests.cpp tests/include/catch.hpp)
+    add_executable(runBasicTests $<TARGET_OBJECTS:CatchMain> tests/sglib/smr_tests.cpp tests/sglib/kmerfactory_tests.cpp tests/include/catch.hpp)
     IF(BUILD_COV)
         set_target_properties(runBasicTests PROPERTIES
                           COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
                           LINK_FLAGS    "--coverage")
     ENDIF()
-    target_link_libraries(runBasicTests CatchMain)
     target_link_libraries(runBasicTests bsg)
     add_test(basicTests runBasicTests)
 ENDIF()

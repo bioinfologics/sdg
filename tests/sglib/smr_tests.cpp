@@ -2,7 +2,7 @@
 // Created by Luis Yanes (EI) on 11/06/2018.
 //
 
-#include "../include/catch.hpp"
+#include <catch.hpp>
 #include <sglib/SMR.h>
 #include <sglib/types/KmerTypes.hpp>
 #include <sglib/readers/FileReader.h>
