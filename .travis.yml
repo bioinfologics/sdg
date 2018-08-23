@@ -24,7 +24,7 @@ matrix:
     - os: osx
       osx_image: xcode9.4
       env:
-        - MATRIX_EVAL="brew update && brew install swig gcc6 && CC=gcc-6 && CXX=g++-6"
+        - MATRIX_EVAL="brew update && brew cask uninstall oclint && brew install swig gcc6 && CC=gcc-6 && CXX=g++-6"
     - os: osx
       osx_image: xcode9.4
 before_install:
