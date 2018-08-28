@@ -893,10 +893,10 @@ void LocalHaplotypeAssembler::construct_patched_backbone(bool single_scaffold, b
                     last_linked=true;
                     if (np>end_p) {
                         //true -> add "patch" sequence to seq; last_linked=true
-                        seq += end_matching_seq.substr(end_p, np - end_p);
+                        seq += end_matching_seq.substr(end_p, (np - end_p+1)); // gonza TODO: Check if +1 is correct!!
                         //std::cout<<"patch added!!!!"<<std::endl;
                     } else {
-                        seq=seq.substr(0,seq.size()-(np-end_p));//TODO:test this one!!!!
+                        seq=seq.substr(0,seq.size()-(end_p-np+1));
                         //std::cout<<"overlap removed!!!!"<<std::endl;
                     }
                 }
