@@ -527,7 +527,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
 }
 
 void SequenceGraph::write_to_gfa(std::string filename, const std::vector<std::vector<Link>> &arg_links,
-                                 const std::vector<sgNodeID_t> &selected_nodes, const std::unordered_set<sgNodeID_t> &mark_red,
+                                 const std::unordered_set<sgNodeID_t> &selected_nodes, const std::unordered_set<sgNodeID_t> &mark_red,
                                  const std::vector<double> &depths) {
     std::unordered_set<sgNodeID_t > output_nodes(selected_nodes.begin(), selected_nodes.end());
     std::string fasta_filename;
