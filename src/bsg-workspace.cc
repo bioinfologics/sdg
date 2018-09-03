@@ -105,6 +105,7 @@ void make_workspace(int argc, char** argv){
 
     w.dump_to_disk(output + ".bsgws");
 }
+
 void log_workspace(int argc, char **argv){
     std::string filename;
     try {
@@ -137,6 +138,7 @@ void log_workspace(int argc, char **argv){
     w.load_from_disk(filename,true);
     w.print_log();
 }
+
 void dump_workspace(int argc, char **argv){
     std::string filename,gfafilename,nodeinfofilename,seqfilename;
     float minKCI=.5, maxKCI=1.25;
@@ -196,6 +198,7 @@ void dump_workspace(int argc, char **argv){
         }
     }
 }
+
 void node_kci_dump_workspace(int argc,char **argv){
     std::string filename;
     std::string node_list;
@@ -284,6 +287,7 @@ void node_kci_dump_workspace(int argc,char **argv){
         assm_ofl.close();
     }
 }
+
 void kci_profile_workspace(int argc,char **argv){
     std::string filename;
     std::string prefix;
@@ -321,21 +325,22 @@ void kci_profile_workspace(int argc,char **argv){
     std::cout << "Sacando" << std::endl;
     w.getKCI().compute_kci_profiles(prefix);
 }
+
 void merge_workspace(int argc, char **argv){
     std::vector<int> lr_datastores,pr_datastores,Lr_datastores;
     std::string output="";
     std::string base_filename="",merge_filename="";
     bool force(false);
     try {
-        cxxopts::Options options("bsg-kmerspectra make", "BSG make workspace");
+        cxxopts::Options options("bsg-workspace merge", "BSG merge workspace");
 
         options.add_options()
                 ("help", "Print help")
                 ("w,workspace_base", "base workspace", cxxopts::value<std::string>(base_filename))
                 ("m,workspace_merge", "merge workspace", cxxopts::value<std::string>(merge_filename))
-                ("p,paired_reads", "paired reads datastore", cxxopts::value<std::vector<int>>(pr_datastores))
-                ("l,linked_reads", "linked reads datastore", cxxopts::value<std::vector<int>>(lr_datastores))
-                ("L,long_reads", "long reads datastore", cxxopts::value<std::vector<int>>(Lr_datastores))
+                ("p,paired_reads", "Indices of paired reads datastore to copy", cxxopts::value<std::vector<int>>(pr_datastores))
+                ("l,linked_reads", "Indices of linked reads datastore to copy", cxxopts::value<std::vector<int>>(lr_datastores))
+                ("L,long_reads", "Indices of long reads datastore to copy", cxxopts::value<std::vector<int>>(Lr_datastores))
                 ("f,force", "force copy of datastores", cxxopts::value<bool>(force))
                 ("o,output", "output file", cxxopts::value<std::string>(output));
         auto newargc=argc-1;
@@ -369,7 +374,7 @@ void merge_workspace(int argc, char **argv){
     for (int i = 0; i < base.paired_read_datastores.size(); ++i) {
         base_datastores.insert(base.paired_read_datastores[i].filename);
         if (lr_filter.empty() or lr_filter.count(i) == 0) {
-            sglib::OutputLog()<< "Adding " << merge.paired_read_datastores[i].filename << std::endl;
+            sglib::OutputLog()<< "Adding " << base.paired_read_datastores[i].filename << std::endl;
             out.paired_read_datastores.push_back(base.paired_read_datastores[i]);
             out.paired_read_mappers.push_back(base.paired_read_mappers[i]);
         }
@@ -482,7 +487,10 @@ int main(int argc, char * argv[]) {
             merge_workspace(argc,argv);
             break;
         default:
-            std::cout<<"Please specify one of: make, log, status, dump, copy_mapped"<<std::endl;
+            std::cout << "Invalid option specified." << std::endl;
+            std::cout<<"Please specify one of the following functions: ";
+            for (auto &p: functionMap) {std::cout << p.first << ", ";}
+            std::cout << "to select the execution mode." << std::endl;
             exit(1);
             break;
     }

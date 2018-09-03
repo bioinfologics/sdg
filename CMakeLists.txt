@@ -159,7 +159,7 @@ add_library(bsg SHARED
             src/sglib/processors/PathExplorer.cpp
             src/sglib/processors/LinkageUntangler.cc
             src/sglib/workspace/WorkSpace.cc
-        src/sglib/processors/KmerCompressionIndex.cc
+            src/sglib/processors/KmerCompressionIndex.cc
             src/sglib/processors/GraphEditor.cc
             src/sglib/processors/GraphMaker.cc
             src/sglib/processors/LocalHaplotypeAssembler.cc
@@ -275,9 +275,6 @@ IF(BUILD_PYTHON_INTERFACE)
     SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES CPLUSPLUS ON)
     SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES SWIG_FLAGS "")
     set_property(SOURCE interfaces/SequenceGraph.i PROPERTY DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
-    SWIG_ADD_LIBRARY(bsg LANGUAGE python SOURCES
-    interfaces/SequenceGraph.i
-    )
-    SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} bsg "")
-    add_dependencies(_bsg doxy2swig)
+    SWIG_ADD_LIBRARY(pbsg LANGUAGE python SOURCES interfaces/SequenceGraph.i)
+    SWIG_LINK_LIBRARIES(pbsg ${PYTHON_LIBRARIES} bsg "")
 ENDIF()
