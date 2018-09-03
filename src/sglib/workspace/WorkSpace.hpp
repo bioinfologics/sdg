@@ -15,6 +15,7 @@
 #include <sglib/datastores/PathsDatastore.hpp>
 #include "sglib/graph/SequenceGraph.hpp"
 #include "sglib/processors/KmerCompressionIndex.hpp"
+#include <sglib/indexers/UniqueKmerIndex.hpp>
 
 class LogEntry{
 public:
@@ -23,10 +24,14 @@ public:
     std::string bsg_version;
     std::string log_text;
 };
+
 class WorkSpace {
 
 public:
-    WorkSpace():kci(sg){};
+    WorkSpace() :
+    kci(sg),
+    uniqueKmerIndex(sg, 31),
+    unique63merIndex(sg){};
     WorkSpace(const WorkSpace& that) = delete; //we definitely do not want copy constructors here, thank you
     void print_log();
 
@@ -38,6 +43,8 @@ public:
 
     //general operations
 
+    void create_index() { uniqueKmerIndex.generate_index(sg,31); }
+    void create_63mer_index() { unique63merIndex.generate_index(sg); }
     void remap_all();
     void remap_all63();
     //Projected operations with info from the graph
@@ -51,6 +58,8 @@ public:
 
     //All status classes are public, treat them with care anyway ;)
     SequenceGraph sg;
+    UniqueKmerIndex uniqueKmerIndex;
+    Unique63merIndex unique63merIndex;
     std::vector<PairedReadsDatastore> paired_read_datastores;
     std::vector<PairedReadMapper> paired_read_mappers;
     std::vector<LinkedReadsDatastore> linked_read_datastores;

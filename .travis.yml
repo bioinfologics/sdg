@@ -20,15 +20,15 @@ matrix:
             - swig
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && GCOV=gcov-6 && DEPLOY=true"
-        - CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 -DBUILD_PYTHON_INTERFACE=OFF -DBUILD_COV=ON -DBUILD_DOC=ON -DINSTALL_GTEST=OFF -DINSTALL_GMOCK=OFF"
+        - CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 -DBUILD_PYTHON_INTERFACE=OFF -DBUILD_COV=ON -DBUILD_DOC=ON"
     - os: osx
-      osx_image: xcode8
+      osx_image: xcode9.4
       env:
-        - MATRIX_EVAL="brew update && brew install swig gcc6 && CC=gcc-6 && CXX=g++-6"
+        - MATRIX_EVAL="brew update && brew cask uninstall oclint && brew install swig gcc6 && CC=gcc-6 && CXX=g++-6"
     - os: osx
-      osx_image: xcode8
-
+      osx_image: xcode9.4
 before_install:
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo softwareupdate -i "Command Line Tools (macOS High Sierra version 10.13) for Xcode-9.4"; fi
     - eval "${MATRIX_EVAL}"
 
 script: ./build.sh

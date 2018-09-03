@@ -5,9 +5,12 @@
 #ifndef SEQ_SORTER_KMERFACTORY_H
 #define SEQ_SORTER_KMERFACTORY_H
 
-
+#include <vector>
 #include <cstdint>
 #include <iostream>
+#include <sglib/readers/FileReader.h>
+#include <sglib/types/KmerTypes.hpp>
+#include <array>
 
 #define unlikely(x)     __builtin_expect((x),0)
 
@@ -18,7 +21,7 @@ public:
     uint64_t fkmer{};
     uint64_t rkmer{};
 
-    inline void fillKBuf(const char b, uint64_t &rkmer, uint64_t &fkmer, int64_t &last) {
+    inline void fillKBuf(const unsigned char b, uint64_t &rkmer, uint64_t &fkmer, int64_t &last) {
         if (unlikely(b2f[b] == 4)) {
             last = 0;
             fkmer = ((fkmer << 2) + 0) & KMER_MASK;
@@ -51,8 +54,8 @@ protected:
 private:
     const uint64_t KMER_MASK;
     const uint64_t KMER_FIRSTOFFSET;
-    char b2f[255]{4};
-    char b2r[255]{4};
+    std::array<char,256> b2f={4};
+    std::array<char,256> b2r={4};
 };
 
 class KMerFactory128 {
@@ -62,7 +65,7 @@ public:
     __uint128_t fkmer{};
     __uint128_t rkmer{};
 
-    inline void fillKBuf(const char b, __uint128_t &rkmer, __uint128_t &fkmer, int64_t &last) {
+    inline void fillKBuf(const unsigned char b, __uint128_t &rkmer, __uint128_t &fkmer, int64_t &last) {
         if (unlikely(b2f[b] == 4)) {
             last = 0;
             fkmer = ((fkmer << 2) + 0) & KMER_MASK;
@@ -95,14 +98,14 @@ protected:
 private:
     const __uint128_t KMER_MASK;
     const __uint128_t KMER_FIRSTOFFSET;
-    char b2f[255]{4};
-    char b2r[255]{4};
+    std::array<char,256> b2f={4};
+    std::array<char,256> b2r={4};
 };
 
 
 class StringKMerFactory : protected KMerFactory {
 public:
-    explicit StringKMerFactory(std::string & s, uint8_t k) : KMerFactory(k),s(s) {
+    explicit StringKMerFactory(uint8_t k) : KMerFactory(k) {
         fkmer=0;
         rkmer=0;
         last_unknown=0;
@@ -111,48 +114,36 @@ public:
     ~StringKMerFactory() {}
 
     // TODO: Adjust for when K is larger than what fits in uint64_t!
-    const bool create_kmers(std::vector<uint64_t> &mers) {
-        uint64_t p(0);
-        while (p < s.size()) {
-            //fkmer: grows from the right (LSB)
-            //rkmer: grows from the left (MSB)
-            fillKBuf(s[p], fkmer, rkmer, last_unknown);
-            p++;
-            if (last_unknown >= K) {
-                if (fkmer <= rkmer) {
-                    // Is fwd
-                    mers.emplace_back(fkmer);
-                } else {
-                    // Is bwd
-                    mers.emplace_back(rkmer);
-                }
-            }
-        }
-        return false;
-    }
-
-private:
-    std::string & s;
-};
-
-class StringKMerFactory128 : protected KMerFactory128 {
-public:
-    explicit StringKMerFactory128(std::string & s, uint8_t k) : KMerFactory128(k),s(s) {
+    const bool create_kmers(const std::string &s, std::vector<std::pair<bool, uint64_t>> &mers) {
         fkmer=0;
         rkmer=0;
         last_unknown=0;
-    }
-
-    ~StringKMerFactory128() {
-#pragma omp critical (KMerFactoryDestructor)
-        {
-            //std::cout << "Bases processed " << bases << "\n";
-        }
-    }
-
-    // TODO: Adjust for when K is larger than what fits in uint64_t!
-    const bool create_kmers(std::vector<__uint128_t> &mers) {
         uint64_t p(0);
+        mers.reserve(s.size());
+        while (p < s.size()) {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(s[p], fkmer, rkmer, last_unknown);
+            p++;
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(true, fkmer);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(false, rkmer);
+                }
+            }
+        }
+        return false;
+    }
+
+    const bool create_kmers(const std::string &s, std::vector<uint64_t> &mers) {
+        fkmer=0;
+        rkmer=0;
+        last_unknown=0;
+        uint64_t p(0);
+        mers.reserve(s.size());
         while (p < s.size()) {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
@@ -171,9 +162,6 @@ public:
         return false;
     }
 
-private:
-    std::string & s;
 };
-
 
 #endif //SEQ_SORTER_KMERFACTORY_H

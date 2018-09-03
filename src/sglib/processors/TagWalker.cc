@@ -44,12 +44,12 @@ std::vector<std::unordered_set<uint64_t>> TagWalker::get_distinctive_kmers(std::
 
     std::unordered_set<uint64_t> seen_kmers,shared_kmers;
     std::vector<std::unordered_set<uint64_t>> distinctive_kmers;
+    StringKMerFactory skf(31);
     for (auto n:nodes){
         distinctive_kmers.emplace_back();
-        StringKMerFactory skf(sg.nodes[llabs(n)].sequence,31);
         std::vector<uint64_t> nkmers;
         nkmers.reserve(sg.nodes[llabs(n)].sequence.size());
-        skf.create_kmers(nkmers);
+        skf.create_kmers(sg.nodes[llabs(n)].sequence,nkmers);
         for (auto x:nkmers) {
             if (seen_kmers.count(x) > 0) {
                 shared_kmers.insert(x);

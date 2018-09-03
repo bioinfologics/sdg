@@ -62,23 +62,19 @@ int main(int argc, char * argv[]) {
             w.getKCI().load_from_disk(kci_filename);
             w.add_log_entry("KCI kmer spectra imported from "+kci_filename);
         }
+
         for (auto prds:pr_datastores){
             //create and load the datastore, and the mapper!
             w.getPairedReadDatastores().emplace_back(prds);
-            w.getPairedReadMappers().emplace_back(w.getGraph(),w.getPairedReadDatastores().back());
+            w.getPairedReadMappers().emplace_back(w.getGraph(),w.getPairedReadDatastores().back(),w.uniqueKmerIndex, w.unique63merIndex);
             w.add_log_entry("PairedReadDatastore imported from "+prds+" ("+std::to_string(w.getPairedReadDatastores().back().size())+" reads)");
         }
+
         for (auto lrds:lr_datastores){
             //create and load the datastore, and the mapper!
             w.getLinkedReadDatastores().emplace_back(lrds);
-            w.getLinkedReadMappers().emplace_back(w.getGraph(),w.getLinkedReadDatastores().back());
+            w.getLinkedReadMappers().emplace_back(w.getGraph(),w.getLinkedReadDatastores().back(),w.uniqueKmerIndex, w.unique63merIndex);
             w.add_log_entry("LinkedReadDatastore imported from "+lrds+" ("+std::to_string(w.getLinkedReadDatastores().back().size())+" reads)");
-        }
-        for (auto Lrds:Lr_datastores){
-            //create and load the datastore, and the mapper!
-            w.long_read_datastores.emplace_back(Lrds);
-            w.long_read_mappers.emplace_back(w.sg,w.long_read_datastores.back());
-            w.add_log_entry("LongReadDatastore imported from "+Lrds+" ("+std::to_string(w.long_read_datastores.back().size())+" reads)");
         }
 
         for (auto Lrds:Lr_datastores){
@@ -407,14 +403,14 @@ int main(int argc, char * argv[]) {
                 if (base_datastores.find(merge.paired_read_datastores[i].filename) == base_datastores.end()) {
                     sglib::OutputLog()<< "Adding " << merge.paired_read_datastores[i].filename << " without mappings" << std::endl;
                     out.paired_read_datastores.push_back(merge.paired_read_datastores[i]);
-                    out.paired_read_mappers.emplace_back(merge.sg,merge.paired_read_datastores[i]);
+                    out.paired_read_mappers.emplace_back(merge.sg,merge.paired_read_datastores[i], out.uniqueKmerIndex, out.unique63merIndex);
                 }
             }
             for (int i = 0; i < merge.linked_read_datastores.size(); ++i) {
                 if (base_datastores.find(merge.linked_read_datastores[i].filename) == base_datastores.end()) {
                     sglib::OutputLog()<< "Adding " << merge.linked_read_datastores[i].filename << " without mappings" << std::endl;
                     out.linked_read_datastores.push_back(merge.linked_read_datastores[i]);
-                    out.linked_read_mappers.emplace_back(merge.sg,merge.linked_read_datastores[i]);
+                    out.linked_read_mappers.emplace_back(merge.sg,merge.linked_read_datastores[i], out.uniqueKmerIndex, out.unique63merIndex);
                 }
             }
             for (int i = 0; i < merge.long_read_datastores.size(); ++i) {

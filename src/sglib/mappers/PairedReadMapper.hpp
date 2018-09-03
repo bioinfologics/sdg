@@ -13,7 +13,10 @@
 #include "sglib/readers/SequenceGraphReader.h"
 #include "sglib/SMR.h"
 #include <sglib/datastores/PairedReadsDatastore.hpp>
+#include <sglib/indexers/UniqueKmerIndex.hpp>
 
+class UniqueKmerIndex;
+class Unique63merIndex;
 class PairedReadConnectivityDetail; //Forward declaration
 
 /**
@@ -23,66 +26,14 @@ class PairedReadConnectivityDetail; //Forward declaration
  */
 
 class PairedReadMapper {
-    class StreamKmerFactory : public  KMerFactory {
-    public:
-        explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
-        inline void produce_all_kmers(const char * seq, std::vector<KmerIDX> &mers){
-            // TODO: Adjust for when K is larger than what fits in uint64_t!
-            last_unknown=0;
-            fkmer=0;
-            rkmer=0;
-            auto s=seq;
-            while (*s!='\0' and *s!='\n') {
-                //fkmer: grows from the right (LSB)
-                //rkmer: grows from the left (MSB)
-                fillKBuf(*s, fkmer, rkmer, last_unknown);
-                if (last_unknown >= K) {
-                    if (fkmer <= rkmer) {
-                        // Is fwd
-                        mers.emplace_back(fkmer);
-                        mers.back().contigID=1;
-                    } else {
-                        // Is bwd
-                        mers.emplace_back(rkmer);
-                        mers.back().contigID=-1;
-                    }
-                }
-                ++s;
-            }
-        }
-    };
-
-    class StreamKmerFactory128 : public  KMerFactory128 {
-    public:
-        explicit StreamKmerFactory128(uint8_t k) : KMerFactory128(k){}
-        inline void produce_all_kmers(const char * seq, std::vector<KmerIDX128> &mers){
-            // TODO: Adjust for when K is larger than what fits in uint64_t!
-            last_unknown=0;
-            fkmer=0;
-            rkmer=0;
-            auto s=seq;
-            while (*s!='\0' and *s!='\n') {
-                //fkmer: grows from the right (LSB)
-                //rkmer: grows from the left (MSB)
-                fillKBuf(*s, fkmer, rkmer, last_unknown);
-                if (last_unknown >= K) {
-                    if (fkmer <= rkmer) {
-                        // Is fwd
-                        mers.emplace_back(fkmer);
-                        mers.back().contigID=1;
-                    } else {
-                        // Is bwd
-                        mers.emplace_back(rkmer);
-                        mers.back().contigID=-1;
-                    }
-                }
-                ++s;
-            }
-        }
-    };
 
 public:
-    PairedReadMapper(SequenceGraph &_sg, PairedReadsDatastore &_datastore) : sg(_sg),datastore(_datastore){
+    PairedReadMapper(SequenceGraph &_sg, PairedReadsDatastore &_datastore, const UniqueKmerIndex &uki,const Unique63merIndex &u63i) :
+    sg(_sg),
+    datastore(_datastore),
+    kmer_to_graphposition(uki),
+    k63mer_to_graphposition(u63i)
+    {
         reads_in_node.resize(sg.nodes.size());
     };
     void write(std::ofstream & output_file);
@@ -102,6 +53,8 @@ public:
     std::vector<uint64_t> get_node_readpairs_ids(sgNodeID_t);
 
     const SequenceGraph & sg;
+    const UniqueKmerIndex& kmer_to_graphposition;
+    const Unique63merIndex& k63mer_to_graphposition;
     const PairedReadsDatastore & datastore;
     std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process

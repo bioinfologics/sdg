@@ -93,7 +93,7 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
     {
         const int min_matches=1;
         std::vector<KmerIDX> readkmers;
-        StreamKmerFactory skf(31);
+        StreamKmerIDXFactory skf(31);
         ReadMapping mapping;
         auto blrs=BufferedPairedSequenceGetter(datastore,128*1024,2010);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
@@ -124,8 +124,8 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                     ++nokmers;
                 }
                 for (auto &rk:readkmers) {
-                    auto nk = sg.kmer_to_graphposition.find(rk.kmer);
-                    if (sg.kmer_to_graphposition.end()!=nk) {
+                    auto nk = kmer_to_graphposition.find(rk.kmer);
+                    if (kmer_to_graphposition.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation
@@ -210,7 +210,7 @@ void PairedReadMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_
     {
         const int min_matches=1;
         std::vector<KmerIDX128> readkmers;
-        StreamKmerFactory128 skf(63);
+        StreamKmerIDXFactory128 skf(63);
         ReadMapping mapping;
         auto blrs=BufferedPairedSequenceGetter(datastore,128*1024,260);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
@@ -241,8 +241,8 @@ void PairedReadMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_
                     ++nokmers;
                 }
                 for (auto &rk:readkmers) {
-                    auto nk = sg.k63mer_to_graphposition.find(rk.kmer);
-                    if (sg.k63mer_to_graphposition.end()!=nk) {
+                    auto nk = k63mer_to_graphposition.find(rk.kmer);
+                    if (k63mer_to_graphposition.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation

@@ -169,7 +169,7 @@ int main(int argc, char * argv[]) {
         lu.select_nodes_by_size_and_ci(min_backbone_node_size,min_backbone_ci,max_backbone_ci);
         tag_ldg.links=lu.make_and_simplify_linkage(min_shared_tags).links;
         tag_ldg.dump_to_text(create_linkage);
-        ws.sg.write_to_gfa(output_prefix+"_linkage.gfa", tag_ldg.links, {}, tag_ldg.get_connected_nodes());
+        ws.sg.write_to_gfa(output_prefix+"_linkage.gfa", tag_ldg.links, tag_ldg.get_connected_nodes());
         auto lines=tag_ldg.get_all_lines(dev_min_nodes);
         std::ofstream linesf(output_prefix+"_linkage_lines.txt");
         for (auto l:lines){
@@ -227,11 +227,11 @@ int main(int argc, char * argv[]) {
             LocalHaplotypeAssembler lha(ws);
             lha.init_from_backbone(l);
             lha.assemble(63, 7, false, false);
-            lha.assembly.create_63mer_index(false);
+            lha.create_63mer_index(false);
             lha.path_linked_reads_informative_singles();
             lha.expand_canonical_repeats();
             lha.assembly.join_all_unitigs();
-            lha.assembly.create_63mer_index(false);
+            lha.create_63mer_index(false);
             lha.path_linked_reads_informative_singles();
             lha.expand_canonical_repeats();
             lha.assembly.join_all_unitigs();
@@ -343,11 +343,11 @@ int main(int argc, char * argv[]) {
                     LocalHaplotypeAssembler lha(ws);
                     lha.init_from_backbone(l);
                     lha.assemble(63, min_coverage, false, false);
-                    lha.assembly.create_63mer_index(false);
+                    lha.create_63mer_index(false);
                     lha.path_linked_reads_informative_singles();
                     lha.expand_canonical_repeats();
                     lha.assembly.join_all_unitigs();
-                    lha.assembly.create_63mer_index(false);
+                    lha.create_63mer_index(false);
                     lha.path_linked_reads_informative_singles();
                     lha.expand_canonical_repeats();
                     lha.assembly.join_all_unitigs();
@@ -408,11 +408,11 @@ int main(int argc, char * argv[]) {
             LocalHaplotypeAssembler lha(ws);
             lha.init_from_backbone(l);
             lha.assemble(63, dev_local_min_cvg, false, false);
-            lha.assembly.create_63mer_index(false);
+            lha.create_63mer_index(false);
             lha.path_linked_reads_informative_singles();
             lha.expand_canonical_repeats();
             lha.assembly.join_all_unitigs();
-            lha.assembly.create_63mer_index(false);
+            lha.create_63mer_index(false);
             lha.path_linked_reads_informative_singles();
             lha.expand_canonical_repeats();
             lha.assembly.join_all_unitigs();

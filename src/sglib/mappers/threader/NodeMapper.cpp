@@ -6,7 +6,7 @@
 
 // Public Methods...
 
-NodeMapper::NodeMapper(SequenceGraph &sg, uniqueKmerIndex &uki) : sg(sg), graph_kmer_index(uki) {}
+NodeMapper::NodeMapper(SequenceGraph &sg, UniqueKmerIndex &uki) : sg(sg), graph_kmer_index(uki) {}
 
 void NodeMapper::mapSequences(const std::string &filename) {
     query_seq_file = filename;

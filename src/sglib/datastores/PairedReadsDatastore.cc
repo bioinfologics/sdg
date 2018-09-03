@@ -53,7 +53,7 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
         if (NULL == fgets(readbuffer, 2999, fd2)) continue;
         if (NULL == fgets(readbuffer, 2999, fd2)) continue;
         if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
-        else {std::cout<<"READ IS LONGER THAN 2998bp. ABORTING!!!! Get your act together and choose the right datastore.write_to_gfa"<<std::endl; exit(1);};
+        else {std::cout<<"READ IS LONGER THAN 2998bp. ABORTING!!!! Get your act together and choose the right datastore"<<std::endl; exit(1);};
         if (currrent_read.seq1.size()<_min_rs or currrent_read.seq2.size()<_min_rs) {
             ++discarded;
             continue;

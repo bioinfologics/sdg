@@ -13,7 +13,7 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<std::endl;
 
     if (argc <2){
-        std::cout<<"Please specify one of: make, stats, apply"<<std::endl;
+        std::cout<<"Please specify one of: make, stats, apply, transform"<<std::endl;
         exit(1);
     }
 
@@ -141,8 +141,58 @@ int main(int argc, char * argv[]) {
         kci.compute_all_nodes_kci(maxfreq);
         sg.write_to_gfa(output, {}, {}, {}, kci.nodes_depth);
     }
+    else if (0==strcmp(argv[1],"transform")) {
+        std::string kci_filename,gfa_filename,output;
+
+        try {
+
+            cxxopts::Options options("bsg-kmerspectra transform", "BSG kmer spectra transform");
+
+            options.add_options()
+                    ("help", "Print help")
+                    ("s,kmerspectra", "kmerspectra name", cxxopts::value<std::string>(kci_filename))
+                    ("o,output", "output gfa file with depth", cxxopts::value<std::string>(output));
+
+            auto newargc=argc-1;
+            auto newargv=&argv[1];
+            auto result=options.parse(newargc,newargv);
+            if (result.count("help")) {
+                std::cout << options.help({""}) << std::endl;
+                exit(0);
+            }
+
+            if (result.count("kmerspectra")==0 or result.count("output")==0) {
+                throw cxxopts::OptionException(" please specify gfa, kmer spectra and output files");
+            }
+
+
+        } catch (const cxxopts::OptionException &e) {
+            std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
+                      << "Use option --help to check command line arguments." << std::endl;
+            exit(1);
+        }
+
+
+        std::ifstream kci_file(kci_filename);
+        SequenceGraph sg;
+        KmerCompressionIndex kci(sg);
+        uint64_t kcount;
+        kci_file.read(( char *) &kcount,sizeof(kcount));
+        kci.graph_kmers.resize(kcount);
+        kci_file.read(( char *) kci.graph_kmers.data(),sizeof(KmerCount)*kcount);
+        //read-to-node
+        uint64_t ccount;
+        kci_file.read(( char *) &ccount,sizeof(ccount));
+        for (auto i=0;i<ccount;++i) {
+            kci.read_counts.emplace_back();
+            kci.read_counts.back().resize(kcount);
+            kci_file.read(( char *) kci.read_counts.back().data(), sizeof(uint16_t) * kcount);
+        }
+        kci.compute_compression_stats();
+        kci.save_to_disk(output);
+    }
     else {
-        std::cout<<"Please specify one of: make, stats, view"<<std::endl;
+        std::cout<<"Please specify one of: make, stats, view, transform"<<std::endl;
     }
 }
 

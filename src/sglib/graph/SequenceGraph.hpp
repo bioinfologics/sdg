@@ -40,19 +40,17 @@ public:
     std::string filename,fasta_filename;    /// Name of the files containing the graph and the fasta.
     std::vector<std::string> oldnames;      /// Mapping structure IDs to input names
     std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids; /// Mapping structure from input names -> IDs
-    std::unordered_map<uint64_t, graphPosition> kmer_to_graphposition;  /// Indexing structure saves a unique kmer -> graphPosition
-    std::unordered_map<__uint128_t, graphPosition> k63mer_to_graphposition; /// Indexing structure saves a unique 63mer -> graphPosition
 
     bool operator==(const SequenceGraph &o) const {
         return nodes == o.nodes;
     }
 
-    SequenceGraph(){};
+    SequenceGraph() {};
     SequenceGraph(const SequenceGraph &sg) = delete; // Avoid implicit generation of the copy constructor.
     //=== I/O functions ===
     void load_from_gfa(std::string filename);
     void write_to_gfa(std::string filename, const std::vector<std::vector<Link>> &arg_links={},
-                          const std::vector<sgNodeID_t> &selected_nodes={}, const std::unordered_set<sgNodeID_t> &mark_red={},
+                          const std::unordered_set<sgNodeID_t> &selected_nodes={}, const std::unordered_set<sgNodeID_t> &mark_red={},
                           const std::vector<double> &depths={});
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
@@ -274,19 +272,6 @@ public:
     const std::string& nodeID_to_name(sgNodeID_t id) const {
         return oldnames[std::abs(id)];
     }
-
-    /**
-     * Function to index the graph
-     * Stores the result in the local kmer_to_graphposition object
-     */
-    void create_index(bool verbose=true);
-
-    /**
-     * Function to index the graph
-     * Stores the result in the local kmer_to_graphposition object
-     */
-    void create_63mer_index(bool verbose=true);
-
 
     size_t count_active_nodes();
     std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes=20, bool abort_on_loops=true);};

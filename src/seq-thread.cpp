@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
     sg.load_from_gfa(graph_filename);
 
 // LOAD OR CONSTRUCT A UNIQUE KMER INDEX FOR GRAPH...
-    uniqueKmerIndex uki(k);
+    UniqueKmerIndex uki(k);
     if (index_file.empty()) {
         uki.generate_index(sg, k);
         if (dump_index) {
