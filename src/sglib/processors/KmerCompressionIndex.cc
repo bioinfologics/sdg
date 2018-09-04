@@ -7,6 +7,7 @@
 #include <atomic>
 #include <sstream>
 #include <sglib/readers/FileReader.h>
+#include <sglib/utilities/omp_safe.hpp>
 
 const bsgVersion_t KmerCompressionIndex::min_compat = 0x0001;
 
@@ -29,7 +30,7 @@ void KmerCompressionIndex::index_graph(){
     }
     sglib::OutputLog(sglib::INFO)<<graph_kmers.size()<<" kmers in total"<<std::endl;
     sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
-    std::sort(graph_kmers.begin(),graph_kmers.end());
+    sglib::sort(graph_kmers.begin(),graph_kmers.end());
     sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
     auto wi=graph_kmers.begin();
     auto ri=graph_kmers.begin();
@@ -212,6 +213,17 @@ void KmerCompressionIndex::add_counts_from_file(std::vector<std::string> filenam
 #pragma omp critical(fastqreader)
                 c = fastqReader.next_record(read);
             }
+
+#pragma omp critical(results_merge)
+            {
+                auto &arc = read_counts.back();
+                for (auto &x:found_kmers) if (arc[x] < UINT16_MAX) ++arc[x];
+                rp += thread_rp;
+                present += thread_present;
+                absent += thread_absent;
+            }
+            found_kmers.clear();
+
         }
         sglib::OutputLog(sglib::INFO) << rp << " reads processed " << present << " / " << present + absent
                                       << " kmers found" << std::endl;
