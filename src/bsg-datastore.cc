@@ -73,7 +73,7 @@ int main(int argc, char * argv[]) {
             //ds.dump_index_to_disk(output+".lrIdx");
         }
         else if (read_type == "long") {
-            LongReadsDatastore ds(long_reads, output+".Lrseq");
+            LongReadsDatastore ds(long_reads, output+".loseq");
         }
         else {
             std::cout << "read_type '" << read_type << "' is not supported (yet?)" << std::endl;
