@@ -5,6 +5,7 @@
 #ifndef BSG_VERSIONING_HPP
 #define BSG_VERSIONING_HPP
 
+#include <cstdint>
 typedef uint16_t bsgVersion_t;
 typedef uint16_t bsgMagic_t;
 
