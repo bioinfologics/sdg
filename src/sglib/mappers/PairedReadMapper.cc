@@ -353,9 +353,9 @@ void PairedReadMapper::print_stats(){
 
 std::vector<uint64_t> PairedReadMapper::size_distribution() {
     frdist.clear();
-    frdist.resize(20000);
+    frdist.resize(70000);
     rfdist.clear();
-    rfdist.resize(20000);
+    rfdist.resize(70000);
     uint64_t frcount=0,rfcount=0;
     std::vector<int32_t> read_firstpos(read_to_node.size()),read_lastpos(read_to_node.size());
     std::vector<bool> read_rev(read_to_node.size());
