@@ -502,7 +502,7 @@ void LocalHaplotypeAssembler::path_paired_reads_informative_singles() {
     //BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, 1000);
     for (auto lpr:paired_reads) {
 //        auto chim=0;
-        BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lpr.first],100000,1000);
+        BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lpr.first],100000,ws.paired_read_datastores[lpr.first].readsize*2+2);
         for (auto rid : lpr.second) {
             readkmers.clear();
             kmernodes.clear();
@@ -562,7 +562,7 @@ void LocalHaplotypeAssembler::path_all_reads() {
 
     //now do the same for each paired library
     for (auto lpr:paired_reads) {
-        BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lpr.first],100000,1000);
+        BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lpr.first],100000,ws.paired_read_datastores[lpr.first].readsize*2+2);
         for (auto rid : lpr.second) {
             //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
             if (rid%2!=1) continue;
@@ -975,7 +975,7 @@ void LocalHaplotypeAssembler::problem_analysis(std::string prefix) {
         ++lmplib;
         std::ofstream lmp_r1file(prefix+"_lmp"+std::to_string(lmplib)+"_R1.fasta");
         std::ofstream lmp_r2file(prefix+"_lmp"+std::to_string(lmplib)+"_R2.fasta");
-        BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lpr.first],100000,1000);
+        BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lpr.first],100000,ws.paired_read_datastores[lpr.first].readsize*2+2);
         for (auto rid : lpr.second) {
             //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
             if (rid%2!=1) continue;
