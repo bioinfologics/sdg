@@ -5,6 +5,7 @@
 #include "cxxopts.hpp"
 
 enum WorkspaceFunctions{
+    NONE, //This is needed because the default of a map is 0
     MAKE,
     LOG,
     DUMP,
@@ -18,8 +19,8 @@ struct WorkspaceFunctionMap : public std::map<std::string, WorkspaceFunctions>
     WorkspaceFunctionMap()
     {
         this->operator[]("make") =  MAKE;
-        this->operator[]("dump") = LOG;
-        this->operator[]("log") = DUMP;
+        this->operator[]("log") = LOG;
+        this->operator[]("dump") = DUMP;
         this->operator[]("node-kci-profile") = NODE_KCI_DUMP;
         this->operator[]("kci-profile") = KCI_PROFILE;
         this->operator[]("merge") = MERGE;
@@ -33,7 +34,7 @@ void make_workspace(int argc, char** argv){
     std::string output = "";
     std::string gfa_filename = "", kci_filename = "";
     try {
-        cxxopts::Options options("bsg-kmerspectra make", "BSG make workspace");
+        cxxopts::Options options("bsg-workspace make", "BSG make workspace");
 
         options.add_options()
                 ("help", "Print help")
@@ -145,7 +146,7 @@ void dump_workspace(int argc, char **argv){
     size_t min_size=2000,max_size=100000000;
     try {
 
-        cxxopts::Options options("bsg-workspace log", "BSG workspace log");
+        cxxopts::Options options("bsg-workspace dump", "BSG workspace dump");
 
         options.add_options()
                 ("help", "Print help")
@@ -206,7 +207,7 @@ void node_kci_dump_workspace(int argc,char **argv){
     std::string prefix;
 
     try {
-        cxxopts::Options options("bsg-workspace kci-dump", "BSG workspace kci-dump");
+        cxxopts::Options options("bsg-workspace node_kci-dump", "BSG workspace node_kci-dump");
 
         options.add_options()
                 ("help", "Print help")
@@ -332,7 +333,7 @@ void merge_workspace(int argc, char **argv){
     std::string base_filename="",merge_filename="";
     bool force(false);
     try {
-        cxxopts::Options options("bsg-workspace merge", "BSG merge workspace");
+        cxxopts::Options options("bsg-workspace merge", "BSG workspace merge");
 
         options.add_options()
                 ("help", "Print help")
