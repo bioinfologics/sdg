@@ -91,7 +91,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 //            readout << std::endl;
 //        }
 
-            std::vector< std::pair<uint32_t, float> > winners;
+            std::vector< std::pair<int32_t, float> > winners;
             for (int wp_i = 0 , w_i = 0; wp_i < read_kmers.size(); ++w_i) {
                 std::map<uint32_t,float> win_node_score;
                 auto win_start(w_i * window_slide);
@@ -100,16 +100,16 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 for (wp_i = win_start; wp_i < win_end and wp_i < read_kmers.size(); wp_i++) {
                     for (auto matchnode:node_matches[wp_i]) {
                         if (matchnode.second) win_node_score[matchnode.first] += 1.f/node_matches[wp_i].size();
-                        else win_node_score[matchnode.first] -= 1.f/node_matches[wp_i].size();
+                        else win_node_score[-matchnode.first] += 1.f/node_matches[wp_i].size();
                     }
                 }
 
-                std::vector<std::pair<int,float>> win_node_vec(win_node_score.begin(),win_node_score.end());
+                std::vector<std::pair<int32_t,float>> win_node_vec(win_node_score.begin(),win_node_score.end());
 
                 std::sort(win_node_vec.begin(), win_node_vec.end(),
                           [](const std::pair<uint32_t ,float> &a, const std::pair<uint32_t ,float> &b) {return std::abs(a.second) > std::abs(b.second);});
 
-                std::pair<uint32_t, float> winner(0,0.0f);
+                std::pair<int32_t, float> winner(0,0.0f);
 
                 if (print_window) sglib::OutputLog() << "Window " << w_i+1 << " " << win_start << " to " << win_end << " ";
 //            if (print_csv) {
@@ -162,21 +162,22 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
             }
         }
     }
-    for (int thread = 0; thread<omp_get_max_threads(); thread++) {
-        mappings.reserve(thread_mappings.size());
-        for (const auto &mapping : thread_mappings[thread]) {
-            mappings.emplace_back(mapping);
-        }
+    for (auto & threadm : thread_mappings) {
+        mappings.insert(mappings.end(),threadm.begin(),threadm.end());
     }
-
+    sglib::OutputLog() << "Updating mapping indexes" <<std::endl;
     update_indexes_from_mappings();
 }
 
 void LongReadMapper::update_indexes_from_mappings() {
-    for (std::vector<LongReadMapping>::const_iterator mappingItr = mappings.cbegin(); mappingItr != mappings.cend(); ++mappingItr) {
-        auto index = (unsigned long)std::distance(mappings.cbegin(), mappingItr);
-        read_to_mappings[mappingItr->read_id].push_back(index);
-        reads_in_node[std::abs(mappingItr->node)].push_back(mappingItr->read_id);
+    reads_in_node.clear();
+    reads_in_node.resize(sg.nodes.size());
+    read_to_mappings.clear();
+    read_to_mappings.resize(datastore.size());
+    for (auto i=0;i<mappings.size();++i) {
+        auto &m=mappings[i];
+        read_to_mappings[m.read_id].push_back(i);
+        reads_in_node[std::abs(m.node)].push_back(m.read_id);
     }
 
     sglib::OutputLog() << "Finished with " << mappings.size() << " mappings" << std::endl;
