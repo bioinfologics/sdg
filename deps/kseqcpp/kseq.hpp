@@ -34,6 +34,7 @@
 #ifndef AC_KSEQ_H
 #define AC_KSEQ_H
 
+#include <iostream>
 #include <cctype>
 #include <string>
 #include <cstdlib>
@@ -131,8 +132,9 @@ public:
         }
 
         getSeq(seq);
-        if (c != '+')
+        if (c != '+') {
             return (int)seq.seq.length();
+        }
         while ((c = this->getc()) != -1 && c != '\n');  // Ignore whatever comes after '+'
 
         if (c == -1) {
@@ -184,6 +186,7 @@ public:
             std::cerr << "ERROR: There was an error reading the sequence of the record: " << seq.name << std::endl;
             return -3;
         }
+        return 0;
     }
 
 private:
@@ -206,9 +209,10 @@ private:
             return -1;
         if (c != '\n')
             return this->getuntil( EOL, seq.comment, &c);
+        return 0;
     }
 
-    int getSeq(kseq& seq){
+    void getSeq(kseq& seq){
         while ((c = this->getc()) != -1 && c != '>' && c != '+' && c != '@')
         {
             if (isgraph(c))
