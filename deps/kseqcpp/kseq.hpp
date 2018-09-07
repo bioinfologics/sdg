@@ -208,7 +208,7 @@ private:
             return this->getuntil( EOL, seq.comment, &c);
     }
 
-    int getSeq(kseq& seq){
+    void getSeq(kseq& seq){
         while ((c = this->getc()) != -1 && c != '>' && c != '+' && c != '@')
         {
             if (isgraph(c))
