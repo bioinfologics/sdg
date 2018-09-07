@@ -12,9 +12,11 @@
 const bsgVersion_t LongReadMapper::min_compat = 0x0001;
 
 void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
+
     if (assembly_kmers.empty()) assembly_kmers.generate_index(sg);
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
     std::atomic<uint32_t > num_reads_done(0);
+    std::atomic<uint64_t > window_low_score(0),window_close_second(0),window_hit(0);
 #pragma omp parallel
     {
         StringKMerFactory skf(k);
@@ -39,7 +41,6 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 (readIDs.empty() and !read_to_mappings[readID].empty()/*No selection and read is mapped*/)) {
                 continue;
             }
-            bool print_window(false);
 
             const auto query_sequence(sequenceGetter.get_read_sequence(readID));
             if ( query_sequence.size()< 4*window_size) {
@@ -47,9 +48,12 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
             }
 
             std::map<uint32_t , uint32_t > node_score;
-            //===== Create a vector of nodes for every k-mer in the read.
+
+            //===== Create a vector of nodes for every k-mer in the read and count node kmer-hits
+            //XXX (conrner case): long repetitions may create a large number of high-scoring nodes that mask unique results
+            //XXX: nodes are non-directional at this stage
             read_kmers.clear();
-            skf.create_kmers(query_sequence, read_kmers); //XXX: Ns will produce "deletion-windows"
+            skf.create_kmers(query_sequence, read_kmers); //XXX: Ns will produce "deletion-windows" in the read
 
             if (node_matches.size() < read_kmers.size()) {
                 node_matches.resize(read_kmers.size());
@@ -82,27 +86,24 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 score_node.resize(max_num_score_nodes);
             }
 
-            //===== For every window (sliding by win_size/2) save total of kmers in every node of the top N
-//            bool print_csv(false);
-//            std::ofstream readout("read" + std::to_string(readID+1) + ".csv");
-//        if (print_csv) {
-//            readout << "window#";
-//            for (auto n:score_node) readout << "," << "seq" <<n.second;
-//            readout << std::endl;
-//        }
+            //===== For every window (sliding by win_size/2) score
 
             std::vector< std::pair<int32_t, float> > winners;
+
             for (int wp_i = 0 , w_i = 0; wp_i < read_kmers.size(); ++w_i) {
                 std::map<uint32_t,float> win_node_score;
+
                 auto win_start(w_i * window_slide);
                 auto win_end(w_i * window_slide + window_size);
 
+                //aggregate node scores of 1/kmer-hits for every position, win_node_score keys are directional nodes
                 for (wp_i = win_start; wp_i < win_end and wp_i < read_kmers.size(); wp_i++) {
                     for (auto matchnode:node_matches[wp_i]) {
                         if (matchnode.second) win_node_score[matchnode.first] += 1.f/node_matches[wp_i].size();
                         else win_node_score[-matchnode.first] += 1.f/node_matches[wp_i].size();
                     }
                 }
+                //TODO: no need to do a vector, sort, etc only to consider second-best score!
 
                 std::vector<std::pair<int32_t,float>> win_node_vec(win_node_score.begin(),win_node_score.end());
 
@@ -111,57 +112,37 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 
                 std::pair<int32_t, float> winner(0,0.0f);
 
-                if (print_window) sglib::OutputLog() << "Window " << w_i+1 << " " << win_start << " to " << win_end << " ";
-//            if (print_csv) {
-//                readout << w_i;
-//            }
-                int lt_minkmers(0);
-                int spread_bellow_min(0);
-                if (win_node_vec.size()>0 and std::abs(win_node_vec[0].second) > min_kmers) {
-                    if (win_node_vec.size()<2 or std::abs(win_node_vec[0].second*min_spread) > std::abs(win_node_vec[1].second)) {
-                        if (print_window) std::cout << win_node_vec[0].first-1 << " " << win_node_vec[0].second;
+                if (win_node_vec.size()>0) {
+                    if (win_node_vec[0].second < min_score)
+                        ++window_low_score;
+                    else if (win_node_vec.size() > 1 and
+                             win_node_vec[1].second * 100 >= win_node_vec[0].second * second_best_score_pct)
+                        ++window_close_second;
+                    else {
                         winner = win_node_vec[0];
-                    } else {
-                        spread_bellow_min++;
+                        ++window_hit;
                     }
-                } else {
-                    lt_minkmers++;
                 }
-                if (print_window) sglib::OutputLog() << " lt_minkmers " << lt_minkmers << " spread " << spread_bellow_min << std::endl;
 
                 winners.emplace_back(winner);
-//                if (print_csv) {
-//                    for (auto n:score_node) {
-//                        readout << "," << win_node_score[n.second];
-//                    }
-//                    readout << std::endl;
-//                }
             }
+
+            //Now transform windows of winners into mappings
 
             if (winners.empty()) {
                 continue;
             }
-            int rp(0),wp(0),last_winner(0);
-            while(rp < winners.size() and winners[rp].first==0){rp++;} // Find first non zero
-            if (rp == winners.size()) continue;
-            wp=rp;
-            last_winner=winners[wp].first;
-            wp++;
-            rp++;
-            for (; rp < winners.size(); rp++) {
-                while (rp < winners.size() and winners[wp].first == winners[rp].first) {
-                    rp++;
+            
+            sgNodeID_t last_winner(0);
+            for (auto & w:winners){
+                if (w.first != 0 and w.first != last_winner) {
+                    last_winner = w.first;
+                    private_results.emplace_back(w.first, readID, 0, 0, 0, 0);//TODO: Use the correct positions!
                 }
-                if (rp-wp > 1) {
-                    if (winners[wp].first != 0 and winners[wp].first != last_winner) {
-                        last_winner = winners[wp].first;
-                        private_results.emplace_back(winners[wp].first, readID, 0, 0, 0, 0); //TODO: Use the correct positions!
-                    }
-                }
-                wp=rp;
             }
         }
     }
+    sglib::OutputLog()<<"Read window results:    "<<window_low_score<<" low score    "<<window_close_second<<" close second    "<<window_hit<<" hits"<<std::endl;
     for (auto & threadm : thread_mappings) {
         mappings.insert(mappings.end(),threadm.begin(),threadm.end());
     }

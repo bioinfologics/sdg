@@ -23,10 +23,9 @@ class LongReadMapper {
     uint8_t k=15;
     int window_size = 750;
     int window_slide = window_size/3;
-    int min_kmers = 11;
-    int spread_pct =90;
-    int max_num_score_nodes = 100;
-    float min_spread = spread_pct/100.f;
+    int min_score = 11;
+    int second_best_score_pct=90;
+    int max_num_score_nodes = 100; //how many high-scoring nodes to consider per read
 
     /**
      * Stores an index of the mappings of a node to all the mappings where it appears.
