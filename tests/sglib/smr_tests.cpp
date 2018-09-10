@@ -49,3 +49,10 @@ TEST_CASE("Test SMR from memory"){
     unique_kmers = kmerIDX_SMR.process_from_memory();
     REQUIRE(unique_kmers.size() != 0);
 }
+
+TEST_CASE("Load GFA") {
+    sglib::OutputLogLevel = sglib::DEBUG;
+    SequenceGraph sg;
+    sg.load_from_gfa("../tests/datasets/tgraph.gfa");
+    REQUIRE(sg.nodes.size() > 0);
+}
