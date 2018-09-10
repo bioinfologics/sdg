@@ -12,8 +12,7 @@
 const bsgVersion_t LongReadMapper::min_compat = 0x0001;
 
 void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
-
-    if (assembly_kmers.empty()) assembly_kmers.generate_index(sg);
+    update_graph_index();
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
     std::atomic<uint32_t > num_reads_done(0);
     std::atomic<uint64_t > window_low_score(0),window_close_second(0),window_hit(0);
@@ -51,7 +50,6 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
 
             //===== Create a vector of nodes for every k-mer in the read and count node kmer-hits
             //XXX (conrner case): long repetitions may create a large number of high-scoring nodes that mask unique results
-            //XXX: nodes are non-directional at this stage
             read_kmers.clear();
             skf.create_kmers(query_sequence, read_kmers); //XXX: Ns will produce "deletion-windows" in the read
 
@@ -63,20 +61,26 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 node_matches[i].clear();
                 auto first = assembly_kmers.find(read_kmers[i].second);
                 for (auto it = first; it != assembly_kmers.end() && it->kmer == read_kmers[i].second; ++it) {
-                    if (read_kmers[i].first != std::signbit(it->offset)){
-                        node_matches[i].emplace_back(it->contigID, true);
+                    //XXX: yes, offset 0 is screwed up because -0 can't be used for reverse, so it is not used
+                    auto offset=(read_kmers[i].first ? it->offset:-it->offset);
+                    if (offset>0) {
+                        node_matches[i].emplace_back(it->contigID, offset);
+                        ++node_score[it->contigID];
                     }
-                    else {
-                        node_matches[i].emplace_back(it->contigID, false);
+                    else if (it->offset<0) {
+                        auto L=sg.nodes[it->contigID].sequence.size();
+                        node_matches[i].emplace_back(-it->contigID, L-offset-1);
+                        ++node_score[-it->contigID];
                     }
-                    ++node_score[it->contigID];
                 }
             }
 
 
 
             //===== Rank nodes by how many kmer-hits they have on the read, choose the top N
-            std::vector<std::pair<uint32_t , uint32_t>> score_node;
+            //XXX: very good matches in short windows will be hard to catch.
+
+            std::vector<std::pair<uint32_t , int32_t>> score_node;
             for (auto &ns:node_score){
                 score_node.emplace_back(ns.second, ns.first);
             }
@@ -91,7 +95,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
             std::vector< std::pair<int32_t, float> > winners;
 
             for (int wp_i = 0 , w_i = 0; wp_i < read_kmers.size(); ++w_i) {
-                std::map<uint32_t,float> win_node_score;
+                std::map<int32_t,float> win_node_score;
 
                 auto win_start(w_i * window_slide);
                 auto win_end(w_i * window_slide + window_size);
@@ -99,8 +103,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 //aggregate node scores of 1/kmer-hits for every position, win_node_score keys are directional nodes
                 for (wp_i = win_start; wp_i < win_end and wp_i < read_kmers.size(); wp_i++) {
                     for (auto matchnode:node_matches[wp_i]) {
-                        if (matchnode.second) win_node_score[matchnode.first] += 1.f/node_matches[wp_i].size();
-                        else win_node_score[-matchnode.first] += 1.f/node_matches[wp_i].size();
+                        win_node_score[matchnode.first] += 1.f/node_matches[wp_i].size();
                     }
                 }
                 //TODO: no need to do a vector, sort, etc only to consider second-best score!
@@ -113,31 +116,47 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 std::pair<int32_t, float> winner(0,0.0f);
 
                 if (win_node_vec.size()>0) {
-                    if (win_node_vec[0].second < min_score)
+                    if (win_node_vec[0].second < min_score) {
                         ++window_low_score;
+                        winner.second=1;
+                    }
                     else if (win_node_vec.size() > 1 and
-                             win_node_vec[1].second * 100 >= win_node_vec[0].second * second_best_score_pct)
+                             win_node_vec[1].second * 100 >= win_node_vec[0].second * second_best_score_pct) {
                         ++window_close_second;
+                        winner.second=2;
+                    }
                     else {
                         winner = win_node_vec[0];
                         ++window_hit;
                     }
                 }
-
                 winners.emplace_back(winner);
             }
 
             //Now transform windows of winners into mappings
-
-            if (winners.empty()) {
-                continue;
-            }
-            
-            sgNodeID_t last_winner(0);
-            for (auto & w:winners){
-                if (w.first != 0 and w.first != last_winner) {
-                    last_winner = w.first;
-                    private_results.emplace_back(w.first, readID, 0, 0, 0, 0);//TODO: Use the correct positions!
+#pragma omp critical
+            {
+                //std::cout<<"Aggregating among "<<winners.size()<<" winners:";
+                //for (auto &w:winners)std::cout<<"  "<<w.first<< " ("<<w.second<<")";
+                //std::cout<<std::endl;
+                auto win = 0;
+                for (; win < winners.size(); ++win) {
+                    auto win_start = win;
+                    while (win_start < winners.size() and winners[win_start].first == 0) ++win_start;
+                    if (win_start == winners.size()) break;
+                    //std::cout<<" extending window from: " << win_start <<": "<<winners[win_start].first<<std::endl;
+                    win=win_start;
+                    auto win_end=win;
+                    while (win < winners.size() and
+                           (winners[win].first == 0 or winners[win].first == winners[win_start].first)) {
+                        if (winners[win].first!=0) win_end=win;
+                        ++win;
+                    }
+                    //std::cout<<"  window extended to: " << win_end <<": "<<winners[win_end].first<<std::endl;
+                    //Ok, so now every winner in winners[win_start:win_end] is either 0 or the winner node;
+                    //TODO: use median or >20% ^ <80% to choose start/finish
+                    private_results.emplace_back(winners[win_start].first, readID, 0, 0,
+                                                 window_slide*win_start, window_slide*win_end+window_size);//TODO: Use the correct positions: first kmer from first, last kmer fomr last
                 }
             }
         }
@@ -241,4 +260,8 @@ std::vector<uint64_t> LongReadMapper::get_node_read_ids(sgNodeID_t nodeID) const
     return rpin;
 }
 
-void LongReadMapper::update_graph_index() { assembly_kmers.generate_index(sg); }
+void LongReadMapper::update_graph_index() {
+    std::cout<<"updating index with k="<<std::to_string(k)<<std::endl;
+    assembly_kmers=NKmerIndex(k);
+    assembly_kmers.generate_index(sg);
+}
