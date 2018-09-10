@@ -174,7 +174,9 @@ void KmerCompressionIndex::add_counts_from_file(std::vector<std::string> filenam
 
             bool c;
 #pragma omp critical(fastqreader)
-            c = fastqReader.next_record(read);
+            {
+                c = fastqReader.next_record(read);
+            }
             while (c) {
                 readkmers.clear();
                 kf.setFileRecord(read);

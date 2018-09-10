@@ -17,7 +17,7 @@ endif (APPLE)
 PROJECT (bsg)
 ENABLE_TESTING()
 OPTION(BUILD_TESTING "Build tests." ON)
-OPTION(BUILD_DOC "Build documentation" ON)
+OPTION(BUILD_DOC "Build documentation" OFF)
 OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" OFF)
 OPTION(BUILD_COV "Build coverage" OFF)
 
