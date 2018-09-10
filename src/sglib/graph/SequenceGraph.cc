@@ -502,7 +502,7 @@ void SequenceGraph::load_from_gfa(std::string filename) {
 
             // Check equal length seq and node length reported in gfa
             if (oldnames_to_ids.find(gfa_source) != oldnames_to_ids.end()){
-                if (stoi(gfa_length.substr(5)) != nodes[oldnames_to_ids[gfa_source]].sequence.length()){
+                if (std::stoi(gfa_length.substr(5)) != nodes[std::abs(oldnames_to_ids[gfa_source])].sequence.length()){
                     throw std::logic_error("Different length in node and fasta for sequence: " + gfa_source+ " -> gfa:" + gfa_length.substr(5) + ", fasta: " + std::to_string(nodes[oldnames_to_ids[gfa_source]].sequence.length()));
                 }
             }
