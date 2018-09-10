@@ -701,7 +701,7 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_p
 }
 
 
-LinkageDiGraph LinkageUntangler::make_longRead_linkage() {
+LinkageDiGraph LinkageUntangler::make_longRead_linkage(int min_reads) {
     SequenceGraph& sg(ws.getGraph());
     LinkageDiGraph ldg(sg);
 
@@ -712,23 +712,31 @@ LinkageDiGraph LinkageUntangler::make_longRead_linkage() {
     //use all libraries collect votes on each link
     auto rmi=0;
     for (LongReadMapper &lm:ws.getLongReadMappers()) {
-        for (auto r = 0UL; r < lm.read_to_mappings.size(); r++) { // For all reads
-            for (auto i = 0UL; !lm.read_to_mappings[r].empty() && i < lm.read_to_mappings[r].size() - 1; i++) { // All "forward" mappings
-                for (auto j = i + 1; j < lm.read_to_mappings[r].size(); j++) {
-                    sgNodeID_t n1=lm.mappings[lm.read_to_mappings[r][i]].node;
-                    sgNodeID_t n2=lm.mappings[lm.read_to_mappings[r][j]].node;
-                    if (n1 == 0 or n2 == 0 or n1 == n2 or !selected_nodes[std::abs(n1)] or !selected_nodes[std::abs(n2)]) continue;
-                    n1=-n1;//get the output end
-                    if (llabs(n1) > llabs(n2)) std::swap(n1, n2);
-                    ++lv[std::make_pair(n1, n2)];
+        sgNodeID_t last_sel_node=0;
+        seqID_t last_sel_node_read=0;
+        for (auto &m: lm.mappings) { // For all reads
+            //only link to the next selected node
+            if (!selected_nodes[std::abs(m.node)]) continue;
+            if (last_sel_node_read==m.read_id) {
+                if (last_sel_node != m.node) {
+                    sgNodeID_t n1 = last_sel_node;
+                    sgNodeID_t n2 = m.node;
+                    if (n1 != 0 and n2 != 0 and n1 != n2 and n1 != -n2) {
+                        n1 = -n1;//get the output end
+                        if (llabs(n1) > llabs(n2)) std::swap(n1, n2);
+                        ++lv[std::make_pair(n1, n2)];
+                    }
                 }
+
             }
+            last_sel_node = m.node;
+            last_sel_node_read=m.read_id;
+
         }
-        ++rmi;
     }
     sglib::OutputLog()<<"adding links"<<std::endl;
     for (auto l:lv) {
-        if (l.second >= 5) {
+        if (l.second >= min_reads) {
             //todo: size, appropriate linkage handling, etc
             //todo: check alternative signs for same linkage
             auto s = l.first.first;
