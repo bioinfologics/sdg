@@ -20,10 +20,10 @@ class LongReadMapper {
 
     const SequenceGraph & sg;
 
-    uint8_t k=15;
-    int window_size = 750;
+    uint8_t k=13;//15
+    int window_size = 1500;//750;
     int window_slide = window_size/3;
-    int min_score = 11;
+    int min_score = 50;//11;
     int second_best_score_pct=90;
     int max_num_score_nodes = 100; //how many high-scoring nodes to consider per read
 
