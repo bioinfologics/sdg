@@ -103,7 +103,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 //aggregate node scores of 1/kmer-hits for every position, win_node_score keys are directional nodes
                 for (wp_i = win_start; wp_i < win_end and wp_i < read_kmers.size(); wp_i++) {
                     for (auto matchnode:node_matches[wp_i]) {
-                        win_node_score[matchnode.first] += 1.f/node_matches[wp_i].size();
+                        win_node_score[matchnode.first] += 1.f/(std::pow(1.5,node_matches[wp_i].size()));
                     }
                 }
                 //TODO: no need to do a vector, sort, etc only to consider second-best score!
