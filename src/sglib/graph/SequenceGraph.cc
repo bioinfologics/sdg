@@ -86,6 +86,7 @@ bool SequenceGraph::is_sane() const {
             if (!found) return false;
         }
     }
+    return true;
 }
 
 sgNodeID_t SequenceGraph::add_node(Node n) {
