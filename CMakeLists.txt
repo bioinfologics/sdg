@@ -209,10 +209,11 @@ add_executable(seq-thread
         src/seq-thread.cpp
         )
 
-## add executables and respective sources
-
 add_executable(gfa-extract
         src/gfa-extract.cc)
+
+add_executable(bsg-dbg
+        src/bsg-dbg.cc)
 
 target_link_libraries(bsg-workspace bsg)
 target_link_libraries(bsg-datastore bsg)
@@ -223,6 +224,7 @@ target_link_libraries(bsg-untangler bsg ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-lhapassembler bsg ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract bsg)
 target_link_libraries(seq-thread bsg)
+target_link_libraries(bsg-dbg bsg)
 
 
 IF(BUILD_TESTING)
