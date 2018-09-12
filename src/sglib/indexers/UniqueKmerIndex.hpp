@@ -24,8 +24,8 @@ public:
     using const_iterator = std::unordered_map<uint64_t, graphStrandPos>::const_iterator;
     explicit UniqueKmerIndex(uint k) : k(k) {}
 
-    UniqueKmerIndex(const SequenceGraph &sg, uint k) :
-            k(k) { if (!sg.nodes.empty()) generate_index(sg, k); }
+    UniqueKmerIndex(const SequenceGraph &sg, uint8_t k) :
+            k(k) { }
 
     void generate_index(const SequenceGraph &sg, bool verbose=true) {
         kmer_to_graphposition.clear();
@@ -59,7 +59,6 @@ public:
         std::sort(kidxv.begin(),kidxv.end(),[](const pair & a, const pair & b){return a.first<b.first;});
 #endif
 
-        sglib::OutputLog(sglib::INFO) << "  Merging..." << std::endl;
         if (verbose) sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
         auto wi=kidxv.begin();
         auto ri=kidxv.begin();
@@ -73,7 +72,7 @@ public:
             ri=nri;
         }
         kidxv.resize(wi - kidxv.begin());
-        sglib::OutputLog(sglib::INFO) << kidxv.size() << " unique kmers in index, creating map" << std::endl;
+        if (verbose) sglib::OutputLog(sglib::INFO) << kidxv.size() << " unique kmers in index, creating map" << std::endl;
         std::unordered_set<sgNodeID_t > seen_contigs;
         seen_contigs.reserve(sg.nodes.size());
         unique_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
@@ -82,7 +81,7 @@ public:
             unique_kmers_per_node[std::abs(kidx.second.node)] += 1;
             seen_contigs.insert(std::abs(kidx.second.node));
         }
-        sglib::OutputLog(sglib::INFO) << seen_contigs.size() << " nodes with indexed kmers" <<std::endl;
+        if (verbose) sglib::OutputLog(sglib::INFO) << seen_contigs.size() << " nodes with indexed kmers" <<std::endl;
     }
 
     const_iterator find(const uint64_t hash) const {
@@ -209,7 +208,7 @@ public:
     explicit Unique63merIndex() : k(63) {}
 
     Unique63merIndex(const SequenceGraph &sg) :
-            k(63) { if (!sg.nodes.empty()) generate_index(sg, k); }
+            k(63) { }
 
     void generate_index(const SequenceGraph &sg, bool verbose=true) {
         kmer_to_graphposition.clear();
@@ -237,13 +236,9 @@ public:
         }
         if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
         if (verbose) sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
-#ifdef _OPENMP
-        __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const pair & a, const pair & b){return a.first<b.first;});
-#else
-        std::sort(kidxv.begin(),kidxv.end(),[](const pair & a, const pair & b){return a.first<b.first;});
-#endif
 
-        sglib::OutputLog(sglib::INFO) << "  Merging..." << std::endl;
+        sglib::sort(kidxv.begin(),kidxv.end(),[](const pair & a, const pair & b){return a.first<b.first;});
+
         if (verbose) sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
         auto wi=kidxv.begin();
         auto ri=kidxv.begin();
@@ -257,7 +252,8 @@ public:
             ri=nri;
         }
         kidxv.resize(wi - kidxv.begin());
-        sglib::OutputLog(sglib::INFO) << kidxv.size() << " unique kmers in index, creating map" << std::endl;
+
+        if (verbose) sglib::OutputLog(sglib::INFO) << kidxv.size() << " unique kmers in index, creating map" << std::endl;
         std::unordered_set<sgNodeID_t > seen_contigs;
         seen_contigs.reserve(sg.nodes.size());
         unique_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
@@ -266,7 +262,7 @@ public:
             unique_kmers_per_node[std::abs(kidx.second.node)] += 1;
             seen_contigs.insert(std::abs(kidx.second.node));
         }
-        sglib::OutputLog(sglib::INFO) << seen_contigs.size() << " nodes with indexed kmers" <<std::endl;
+        if (verbose) sglib::OutputLog(sglib::INFO) << seen_contigs.size() << " nodes with indexed kmers" <<std::endl;
     }
 
     const_iterator find(const __uint128_t hash) const {

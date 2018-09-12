@@ -21,6 +21,10 @@ OPTION(BUILD_DOC "Build documentation" OFF)
 OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" OFF)
 OPTION(BUILD_COV "Build coverage" OFF)
 
+if (BUILD_PYTHON_INTERFACE)
+    MESSAGE("Building docs for python interface")
+    SET(BUILD_DOC ON)
+endif ()
 # Get the remote url
 execute_process(
         COMMAND git remote get-url origin
