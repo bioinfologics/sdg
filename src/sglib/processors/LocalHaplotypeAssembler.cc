@@ -879,7 +879,7 @@ void LocalHaplotypeAssembler::construct_patched_backbone(bool single_scaffold, b
                         return;
                     }
                     end_matching_seq = s;
-                    end_p = p+ENDS_SIZE;//THIS IS SO IF POINTS AFTER THE MATCH
+                    end_p = p+end_seq[bn].size();//THIS IS SO IF POINTS AFTER THE MATCH
                     //std::cout<<"End of anchor #"<<bn<<" ("<<backbone[bn]<<") found on pos "<<end_p<<" of unititg"<<std::endl;
                 }
             }
@@ -888,15 +888,16 @@ void LocalHaplotypeAssembler::construct_patched_backbone(bool single_scaffold, b
             if (bn < backbone_nodes.size() - 1) {
                 //check if next's node start_seq is on same contig, higher position
                 auto np=end_matching_seq.find(start_seq[bn+1]);
-                if (np<end_matching_seq.size()){
+                if (np<end_matching_seq.size()){ //start of next contig on same sequence
                     //std::cout<<"Start of next anchor #"<<bn+1<<" ("<<backbone[bn+1]<<") found on pos "<<np<<" of this anchor's end unititg, last_linked=true!"<<std::endl;
                     last_linked=true;
-                    if (np>end_p) {
-                        //true -> add "patch" sequence to seq; last_linked=true
-                        seq += end_matching_seq.substr(end_p, (np - end_p+1)); // gonza TODO: Check if +1 is correct!!
+                    if (np>end_p) { //is the start of next after the end of current?
+                        //There is no overlap, so we need to add the sequence in between
+                        seq += end_matching_seq.substr(end_p, (np - end_p)); // gonza TODO: Check if +1 is correct!!
                         //std::cout<<"patch added!!!!"<<std::endl;
                     } else {
-                        seq=seq.substr(0,seq.size()-(end_p-np+1));
+                        //There is overlap, so we need to remove the overlap.
+                        seq=seq.substr(0,seq.size()-(end_p-np));
                         //std::cout<<"overlap removed!!!!"<<std::endl;
                     }
                 }

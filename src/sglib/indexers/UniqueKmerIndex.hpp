@@ -28,6 +28,7 @@ public:
             k(k) { if (!sg.nodes.empty()) generate_index(sg, k); }
 
     void generate_index(const SequenceGraph &sg, bool verbose=true) {
+        kmer_to_graphposition.clear();
         std::vector<pair> kidxv;
         uint64_t total_k { 0 };
         total_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
@@ -211,6 +212,7 @@ public:
             k(63) { if (!sg.nodes.empty()) generate_index(sg, k); }
 
     void generate_index(const SequenceGraph &sg, bool verbose=true) {
+        kmer_to_graphposition.clear();
         std::vector<pair> kidxv;
         uint64_t total_k { 0 };
         total_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
