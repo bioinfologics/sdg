@@ -43,8 +43,8 @@ public:
 
     //general operations
 
-    void create_index() { uniqueKmerIndex.generate_index(sg,31); }
-    void create_63mer_index() { unique63merIndex.generate_index(sg); }
+    void create_index(bool verbose = true) { uniqueKmerIndex.generate_index(sg,verbose); }
+    void create_63mer_index(bool verbose = true) { unique63merIndex.generate_index(sg,verbose); }
     void remap_all();
     void remap_all63();
     //Projected operations with info from the graph

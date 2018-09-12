@@ -18,6 +18,10 @@ namespace sglib {
     void inline sort(RItr first, RItr last) {
         __gnu_parallel::sort(first, last);
     }
+    template<typename RItr, class Comp>
+    void inline sort(RItr first, RItr last, Comp comp_fn) {
+        __gnu_parallel::sort(first, last, comp_fn);
+    }
 }
 #else
 constexpr static inline int omp_get_max_threads();
@@ -28,11 +32,17 @@ static inline int omp_get_thread_num();
 constexpr int omp_get_max_threads() {return 1u;}
 int omp_get_thread_num() {return 0u;}
 
+#include <algorithm>
 namespace sglib {
     template<typename RItr>
     void inline sort(RItr first, RItr last) {
         std::sort(first, last);
     }
+    template<typename RItr, class Comp>
+    void inline sort(RItr first, RItr last, Comp comp_fn) {
+        std::sort(first, last, comp_fn);
+    }
+
 }
 
 #endif

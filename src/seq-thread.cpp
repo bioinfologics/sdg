@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
 // LOAD OR CONSTRUCT A UNIQUE KMER INDEX FOR GRAPH...
     UniqueKmerIndex uki(k);
     if (index_file.empty()) {
-        uki.generate_index(sg, k);
+        uki.generate_index(sg);
         if (dump_index) {
             uki.write_to_file(output_dir + "/unique_kmer_index");
             std::ofstream kmers(output_dir + "/index_kmers.txt");
