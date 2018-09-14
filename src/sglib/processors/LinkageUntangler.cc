@@ -737,6 +737,7 @@ LinkageDiGraph LinkageUntangler::make_longRead_linkage(int min_reads) {
     sglib::OutputLog()<<"adding links"<<std::endl;
     uint64_t lc(0);
     for (auto l:lv) {
+        if (std::abs(l.first.first)==243 or std::abs(l.first.second)==243) std::cout<<l.first.first<<" <-> "<<l.first.second<<" :"<<l.second<<std::endl;
         if (l.second >= min_reads) {
             //todo: size, appropriate linkage handling, etc
             //todo: check alternative signs for same linkage

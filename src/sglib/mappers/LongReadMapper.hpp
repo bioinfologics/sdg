@@ -56,7 +56,9 @@ public:
         second_best_score_pct=_second_best_score_pct;
         max_num_score_nodes = _max_num_score_nodes;
     }
-    void map_reads(std::unordered_set<uint32_t> readIDs = {});
+    void map_reads(std::unordered_set<uint32_t> readIDs = {},std::string detailed_log="");
+
+    void map_reads(std::string detailed_log){map_reads({},detailed_log);};
 
     void read(std::string filename);
 
