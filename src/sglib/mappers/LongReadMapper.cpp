@@ -11,6 +11,130 @@
 
 const bsgVersion_t LongReadMapper::min_compat = 0x0001;
 
+void LongReadMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers){
+    if (matches.size() < read_kmers.size()) matches.resize(read_kmers.size());
+    uint64_t no_match=0,single_match=0,multi_match=0; //DEBUG
+    for (auto i=0;i<read_kmers.size();++i){
+        matches[i].clear();
+        auto first = assembly_kmers.find(read_kmers[i].second);
+        for (auto it = first; it != assembly_kmers.end() && it->kmer == read_kmers[i].second; ++it) {
+            int32_t offset=it->offset; //so far, this is +1 and the sign indicate direction of kmer in contig
+            sgNodeID_t node=it->contigID; //so far, this is always positive
+            if (read_kmers[i].first != (offset>0) ) {
+                node=-node;
+                offset=( (int) sg.nodes[std::llabs(it->contigID)].sequence.size() ) - std::abs(offset);
+            }
+            else offset=std::abs(offset)-1;
+            matches[i].emplace_back(node, offset);
+        }
+        if (matches[i].empty()) ++no_match; //DEBUG
+        else if (matches[i].size()==1) ++single_match; //DEBUG
+        else ++multi_match; //DEBUG
+    }
+    std::cout<<"From get_all_kmer_matches: "<<no_match<<" ("<< (no_match*100/read_kmers.size()) << "%) no match   "
+            <<single_match<<" ("<< (single_match*100/read_kmers.size()) << "%) single match   "
+            <<multi_match<<" ("<< (multi_match*100/read_kmers.size()) << "%) multi match"<<std::endl;
+}
+
+std::set<sgNodeID_t> LongReadMapper::window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, uint32_t read_kmers_size){
+    //beware you need the size! otherwise there is a size from the matches and not from the reads!
+    std::set<sgNodeID_t> candidates;
+    std::map<int32_t,uint32_t> candidate_votes;
+    std::map<int32_t,uint32_t> candidate_multivotes;
+    for (auto i=0;i<read_kmers_size;++i) {
+        for (auto m:matches[i]) ++candidate_votes[m.first];
+        if (matches[i].size()>1) for (auto m:matches[i]) ++candidate_multivotes[m.first];
+    }
+    //std::cout<<"From window_candidates, hit nodes:"<<std::endl;
+    //for (auto cv:candidate_votes) std::cout<<"   "<<cv.first<<": "<<cv.second<<" ("<<candidate_multivotes[cv.first]<<" multi "<<cv.second-candidate_multivotes[cv.first]<<" single)"<<std::endl;
+    //std::cout<<std::endl;
+    for (auto cv:candidate_votes) if (cv.second>50) candidates.insert(cv.first);
+    /*uint32_t total_windows=(matches.size()-window_size)/window_slide+1;
+
+    std::map<int32_t , uint32_t > node_score[total_windows];
+
+    for (auto i=0;i<read_kmers.size();++i){
+        matches[i].clear();
+        auto first = assembly_kmers.find(read_kmers[i].second);
+        //std::cout<<"Processing hits for position #"<<i<<" read k-mer orientation "<<(read_kmers[i].first ? "FW":"RC")<<std::endl;
+        for (auto it = first; it != assembly_kmers.end() && it->kmer == read_kmers[i].second; ++it) {
+            //XXX: yes, offset 0 is screwed up because -0 can't be used for reverse, so it is not used
+            //std::cout<<" hit to "<<it->contigID<<" : "<<it->offset<<std::endl;
+            int32_t offset=it->offset; //so far, this is +1 and the sign indicate direction of kmer in contig
+            sgNodeID_t node=it->contigID; //so far, this is always positive
+            if (read_kmers[i].first != (offset>0) ) {
+                node=-node;
+                offset=( (int) sg.nodes[std::llabs(it->contigID)].sequence.size() ) - std::abs(offset);
+            }
+            else offset=std::abs(offset)-1;
+            //std::cout<<" node "<<node<<", offset "<<offset<<std::endl;
+            node_matches[i].emplace_back(node, offset);
+            //std::cout<<"  Adding result to windows "<<std::max(0,(i-window_size)/window_slide)<< " to "<<std::min(i/window_slide,(int)total_windows-1)<<std::endl;
+            for (auto win=std::max(0,(i-window_size)/window_slide+1);win<std::min(i/window_slide,(int)total_windows-1);++win) {
+                win=++node_score[win][node];
+            }
+        }
+    }*/
+    return candidates;
+}
+
+std::vector<LongReadMapping> LongReadMapper::alignment_blocks(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,
+                                                              uint32_t read_kmers_size,
+                                                              std::set<sgNodeID_t> &candidates) {
+    std::cout<<"Alignment block search starting with candidates:";
+    for (auto c:candidates) std::cout<<" "<<c;
+    std::cout<<std::endl;
+    std::vector<LongReadMapping> blocks;
+    //transform to matches per candidate;
+    std::map<int32_t , std::vector<std::pair<int32_t,int32_t>>> candidate_hits;
+    const int max_jump=500;
+    const int max_delta_change=50;
+    const int min_chain=50;
+    const int min_size=50;
+
+    for (auto p=0;p<read_kmers_size;++p){
+        for (auto m:matches[p]) {
+            if (candidates.count(m.first)){
+                std::cout<<"adding hit for candidate "<<m.first<<" "<<p<<" -> "<<m.second<<std::endl;
+                candidate_hits[m.first].emplace_back(p,m.second);
+            }
+        }
+    }
+
+    for (auto &ch:candidate_hits){
+        int startp=0;
+        int startt=0;
+        int last_delta=0;
+        int last_t=-1000;
+        int last_p=-1000;
+        int chain=-1;
+        for (auto pp:ch.second) {
+            //check if the chain is broken
+            if ( chain ==-1 or last_t>pp.second or last_p>pp.first or last_p-pp.first>max_jump or last_t-pp.second>max_jump or last_delta-(last_t-last_p)>max_delta_change) {
+                //check if block is valid
+                if (chain>=min_chain and pp.first-startp>=min_size) {
+                    LongReadMapping b;
+                    b.qStart=startp;
+                    b.qEnd=last_p;
+                    b.node=ch.first;
+                    b.nStart=startt;
+                    b.nEnd=last_t;
+                    b.score=chain;
+                    blocks.push_back(b);
+                }
+                chain=0;
+                startp=pp.first;
+                startt=pp.second;
+            }
+            ++chain;
+            last_p=pp.first;
+            last_t=pp.second;
+            last_delta=last_t-last_p;
+        }
+    }
+    return blocks;
+}
+
 void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string detailed_log) {
     update_graph_index();
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
@@ -28,7 +152,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
         BufferedSequenceGetter sequenceGetter(datastore);
         std::vector<std::vector<std::pair<int32_t, int32_t>>> node_matches; //node, offset
 #pragma omp for
-        for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
+        for (uint32_t readID = 1; readID < /*datastore.size()*/ 20; ++readID) {
 
             if (readID%1000 == 0) {
                 num_reads_done+=1000;
@@ -44,49 +168,33 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
                 continue;
             }
 
+            //========== 1. Get read sequence, kmerise, get all matches ==========
             const auto query_sequence(sequenceGetter.get_read_sequence(readID));
-            if ( query_sequence.size()< 4*window_size) {
+            if ( query_sequence.size()< 2*window_size) {
                 continue;
             }
-            //std::cout<<"processing read #"<<readID<<std::endl;
-
-            //get the kmers from the read
-            //std::cout<<"creating kmers"<<std::endl;
             read_kmers.clear();
-            skf.create_kmers(query_sequence, read_kmers); //XXX: Ns will produce "deletion-windows" in the read
-            //std::cout<<"kmers created"<<std::endl;
+            skf.create_kmers(query_sequence, read_kmers);
+            get_all_kmer_matches(node_matches,read_kmers);
+
+            //========== 2. Find match candidates in fixed windows ==========
+
+            auto candidates = window_candidates(node_matches,read_kmers.size());
+
+            //========== 3. Create alignment blocks from candidates ==========
+
+            auto blocks = alignment_blocks(node_matches,read_kmers.size(),candidates);
+
+            for (auto b:blocks) std::cout<<"Target: "<<b.node<<"  "<<b.qStart<<":"<<b.qEnd<<" -> "<<b.nStart<<":"<<b.nEnd<<" ("<<b.score<<" chained hits)"<<std::endl;
+
+            //========== 4. Construct mapping path ==========
+
+            /*
             //populate vector of vectors with the matches for every kmer
-            if (node_matches.size() < read_kmers.size()) {
-                node_matches.resize(read_kmers.size());
-            }
+
 
             //std::cout<<"read has "<<read_kmers.size()<<" kmers"<<std::endl;
-            uint32_t total_windows=(read_kmers.size()-window_size)/window_slide+1;
-            //std::cout<<"read has "<<total_windows<<" windows of "<<window_size<<" bp, every "<<window_slide<<" bp"<<std::endl;
-            std::map<uint32_t , uint32_t > node_score[total_windows];
-            //std::cout<<"adding hits and scores"<<std::endl;
-            for (auto i=0;i<read_kmers.size();++i){
-                node_matches[i].clear();
-                auto first = assembly_kmers.find(read_kmers[i].second);
-                //std::cout<<"Processing hits for position #"<<i<<" read k-mer orientation "<<(read_kmers[i].first ? "FW":"RC")<<std::endl;
-                for (auto it = first; it != assembly_kmers.end() && it->kmer == read_kmers[i].second; ++it) {
-                    //XXX: yes, offset 0 is screwed up because -0 can't be used for reverse, so it is not used
-                    //std::cout<<" hit to "<<it->contigID<<" : "<<it->offset<<std::endl;
-                    int32_t offset=it->offset; //so far, this is +1 and the sign indicate direction of kmer in contig
-                    sgNodeID_t node=it->contigID; //so far, this is always positive
-                    if (read_kmers[i].first != (offset>0) ) {
-                        node=-node;
-                        offset=( (int) sg.nodes[std::llabs(it->contigID)].sequence.size() ) - std::abs(offset);
-                    }
-                    else offset=std::abs(offset)-1;
-                    //std::cout<<" node "<<node<<", offset "<<offset<<std::endl;
-                    node_matches[i].emplace_back(node, offset);
-                    //std::cout<<"  Adding result to windows "<<std::max(0,(i-window_size)/window_slide)<< " to "<<std::min(i/window_slide,(int)total_windows-1)<<std::endl;
-                    for (auto win=std::max(0,(i-window_size)/window_slide+1);win<std::min(i/window_slide,(int)total_windows-1);++win) {
-                        win=++node_score[win][node];
-                    }
-                }
-            }
+
 
 
             //std::cout<<"picking candidates"<<std::endl;
@@ -109,9 +217,9 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
                 if (ns.second>3) candidates.insert(ns.first);
             }
 
-            /*if (score_node.size()>max_num_score_nodes) {
+            if (score_node.size()>max_num_score_nodes) {
                 score_node.resize(max_num_score_nodes);
-            }*/
+            }
 
             //===== For every window (sliding by win_size/2) score
             //std::cout<<"picking window winners among "<<candidates.size()<<" candidates:";
@@ -170,6 +278,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
                     for (auto &w:winners) dl<<" "<<w.first<<"("<<w.second<<")";
                     dl << std::endl;
                 }
+
             }
             //std::cout<<"winners picked, writing mappings"<<std::endl;
             //Now transform windows of winners into mappings
@@ -205,6 +314,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
                 else if (prs+1==private_results.size()) ++single_matches;
                 else ++multi_matches;
             }
+            */
         }
     }
     //TODO: report read and win coverage by winners vs. by loosers
