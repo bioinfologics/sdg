@@ -31,7 +31,7 @@ void LongReadMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int3
         else if (matches[i].size()==1) ++single_match; //DEBUG
         else ++multi_match; //DEBUG
     }
-    std::cout<<"From get_all_kmer_matches: "<<no_match<<" ("<< (no_match*100/read_kmers.size()) << "%) no match   "
+    std::cout<<"From get_all_kmer_matches with "<< read_kmers.size() <<": "<<no_match<<" ("<< (no_match*100/read_kmers.size()) << "%) no match   "
             <<single_match<<" ("<< (single_match*100/read_kmers.size()) << "%) single match   "
             <<multi_match<<" ("<< (multi_match*100/read_kmers.size()) << "%) multi match"<<std::endl;
 }
@@ -49,36 +49,11 @@ std::set<sgNodeID_t> LongReadMapper::window_candidates(std::vector<std::vector<s
     //for (auto cv:candidate_votes) std::cout<<"   "<<cv.first<<": "<<cv.second<<" ("<<candidate_multivotes[cv.first]<<" multi "<<cv.second-candidate_multivotes[cv.first]<<" single)"<<std::endl;
     //std::cout<<std::endl;
     for (auto cv:candidate_votes) if (cv.second>50) candidates.insert(cv.first);
-    /*uint32_t total_windows=(matches.size()-window_size)/window_slide+1;
 
-    std::map<int32_t , uint32_t > node_score[total_windows];
-
-    for (auto i=0;i<read_kmers.size();++i){
-        matches[i].clear();
-        auto first = assembly_kmers.find(read_kmers[i].second);
-        //std::cout<<"Processing hits for position #"<<i<<" read k-mer orientation "<<(read_kmers[i].first ? "FW":"RC")<<std::endl;
-        for (auto it = first; it != assembly_kmers.end() && it->kmer == read_kmers[i].second; ++it) {
-            //XXX: yes, offset 0 is screwed up because -0 can't be used for reverse, so it is not used
-            //std::cout<<" hit to "<<it->contigID<<" : "<<it->offset<<std::endl;
-            int32_t offset=it->offset; //so far, this is +1 and the sign indicate direction of kmer in contig
-            sgNodeID_t node=it->contigID; //so far, this is always positive
-            if (read_kmers[i].first != (offset>0) ) {
-                node=-node;
-                offset=( (int) sg.nodes[std::llabs(it->contigID)].sequence.size() ) - std::abs(offset);
-            }
-            else offset=std::abs(offset)-1;
-            //std::cout<<" node "<<node<<", offset "<<offset<<std::endl;
-            node_matches[i].emplace_back(node, offset);
-            //std::cout<<"  Adding result to windows "<<std::max(0,(i-window_size)/window_slide)<< " to "<<std::min(i/window_slide,(int)total_windows-1)<<std::endl;
-            for (auto win=std::max(0,(i-window_size)/window_slide+1);win<std::min(i/window_slide,(int)total_windows-1);++win) {
-                win=++node_score[win][node];
-            }
-        }
-    }*/
     return candidates;
 }
 
-std::vector<LongReadMapping> LongReadMapper::alignment_blocks(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,
+std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,
                                                               uint32_t read_kmers_size,
                                                               std::set<sgNodeID_t> &candidates) {
     std::cout<<"Alignment block search starting with candidates:";
@@ -89,49 +64,67 @@ std::vector<LongReadMapping> LongReadMapper::alignment_blocks(std::vector<std::v
     std::map<int32_t , std::vector<std::pair<int32_t,int32_t>>> candidate_hits;
     const int max_jump=500;
     const int max_delta_change=50;
-    const int min_chain=50;
-    const int min_size=50;
+    const int min_chain=100;
+    const int min_size=500;
 
     for (auto p=0;p<read_kmers_size;++p){
         for (auto m:matches[p]) {
             if (candidates.count(m.first)){
-                std::cout<<"adding hit for candidate "<<m.first<<" "<<p<<" -> "<<m.second<<std::endl;
+                //std::cout<<"adding hit for candidate "<<m.first<<" "<<p<<" -> "<<m.second<<std::endl;
                 candidate_hits[m.first].emplace_back(p,m.second);
             }
         }
     }
-
     for (auto &ch:candidate_hits){
-        int startp=0;
-        int startt=0;
+        int start_p=0;
+        int start_t=0;
         int last_delta=0;
         int last_t=-1000;
         int last_p=-1000;
         int chain=-1;
-        for (auto pp:ch.second) {
-            //check if the chain is broken
-            if ( chain ==-1 or last_t>pp.second or last_p>pp.first or last_p-pp.first>max_jump or last_t-pp.second>max_jump or last_delta-(last_t-last_p)>max_delta_change) {
-                //check if block is valid
-                if (chain>=min_chain and pp.first-startp>=min_size) {
-                    LongReadMapping b;
-                    b.qStart=startp;
-                    b.qEnd=last_p;
-                    b.node=ch.first;
-                    b.nStart=startt;
-                    b.nEnd=last_t;
-                    b.score=chain;
-                    blocks.push_back(b);
-                }
-                chain=0;
-                startp=pp.first;
-                startt=pp.second;
-            }
-            ++chain;
-            last_p=pp.first;
-            last_t=pp.second;
+        auto &chits=ch.second;
+        //TODO: change to: start from the first unused and try to extend its chain.
+        std::vector<bool> used(ch.second.size());
+        for (auto starti=0 ; starti<chits.size() ; ++starti){
+            if (used[starti]) continue;
+            chain=1;
+            start_p=chits[starti].first;
+            start_t=chits[starti].second;
+            last_p=chits[starti].first;
+            last_t=chits[starti].second;
             last_delta=last_t-last_p;
+            used[starti]=true;
+            //std::cout<<"New chain to "<<ch.first<<" started with "<<start_p<<"->"<<start_t<<std::endl;
+            for (auto i=starti+1;i<chits.size() and chits[i].first-last_p<=max_jump;++i){
+                auto &h=chits[i];
+                //if not in chain, continue;
+                if (used[i] or last_p > h.first or last_t > h.second or h.second-last_t > max_jump
+                    or last_delta-(h.second-h.first)>max_delta_change) {
+                    //std::cout<<" skipping "<<h.first<<"->"<<h.second<<std::endl;
+                    continue;
+                }
+                ++chain;
+                last_p=h.first;
+                last_t=h.second;
+                last_delta=last_t-last_p;
+                used[i]=true;
+                //std::cout<<" chain is now length "<<chain<<" after adding "<<h.first<<"->"<<h.second<<std::endl;
+            }
+            if (chain>=min_chain and last_p-start_p>=min_size) {
+                LongReadMapping b;
+                b.read_id=readID;
+                b.qStart=start_p;
+                b.qEnd=last_p;
+                b.node=ch.first;
+                b.nStart=start_t;
+                b.nEnd=last_t;
+                b.score=chain;
+                blocks.push_back(b);
+            }
+
         }
     }
+    std::sort(blocks.begin(),blocks.end());
     return blocks;
 }
 
@@ -183,138 +176,15 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
 
             //========== 3. Create alignment blocks from candidates ==========
 
-            auto blocks = alignment_blocks(node_matches,read_kmers.size(),candidates);
+            auto blocks = alignment_blocks(readID,node_matches,read_kmers.size(),candidates);
 
-            for (auto b:blocks) std::cout<<"Target: "<<b.node<<"  "<<b.qStart<<":"<<b.qEnd<<" -> "<<b.nStart<<":"<<b.nEnd<<" ("<<b.score<<" chained hits)"<<std::endl;
-
+            for (auto b:blocks) std::cout<<"Target: "<<b.node<<" ("<<sg.nodes[llabs(b.node)].sequence.size()<<" bp)  "
+                                          <<b.qStart<<":"<<b.qEnd<<" -> "<<b.nStart<<":"<<b.nEnd
+                                          <<" ("<<b.score<<" chained hits, "<< b.score *100 /(b.qEnd-b.qStart)<<"%)"<<std::endl;
+            std::cout<<std::endl;
             //========== 4. Construct mapping path ==========
 
-            /*
-            //populate vector of vectors with the matches for every kmer
 
-
-            //std::cout<<"read has "<<read_kmers.size()<<" kmers"<<std::endl;
-
-
-
-            //std::cout<<"picking candidates"<<std::endl;
-            //===== Rank nodes by how many kmer-hits they have on the read, choose the top N
-            //pick winners in all windows
-            std::map<uint32_t , int32_t > node_total_score;
-            for (auto win=0;win<total_windows;++win){
-                std::vector<std::pair<uint32_t , int32_t>> winscore_node;
-                for (auto &ns:node_score[win]){
-                    winscore_node.emplace_back(ns.second, ns.first);
-                }
-                std::sort(winscore_node.rbegin(),winscore_node.rend());
-
-                for (auto i=0;i<std::min((int)winscore_node.size(),10);++i)
-                    ++node_total_score[winscore_node[i].second];
-            }
-            //std::vector<std::pair<uint32_t , int32_t>> score_node;
-            std::unordered_set<int32_t> candidates;
-            for (auto &ns:node_total_score){
-                if (ns.second>3) candidates.insert(ns.first);
-            }
-
-            if (score_node.size()>max_num_score_nodes) {
-                score_node.resize(max_num_score_nodes);
-            }
-
-            //===== For every window (sliding by win_size/2) score
-            //std::cout<<"picking window winners among "<<candidates.size()<<" candidates:";
-            //for (auto c:candidates) std::cout<<" "<<c;
-            //std::cout<<std::endl;
-
-            std::vector< std::pair<int32_t, float> > winners;
-
-            for (int window = 0; window<total_windows; ++window) {
-                std::map<int32_t,float> win_node_score;
-
-                auto win_start(window * window_slide);
-                auto win_end(std::min((int)read_kmers.size(),window * window_slide + window_size));
-
-                //aggregate node scores of 1/kmer-hits for every position, win_node_score keys are directional nodes
-                for (auto wp_i = win_start; wp_i < win_end ; ++wp_i) {
-                    int total_candidate_matches=0;
-                    for (auto matchnode:node_matches[wp_i])
-                        if (candidates.count(matchnode.second > 0 ? matchnode.first:-matchnode.first)) ++total_candidate_matches;
-                    for (auto matchnode:node_matches[wp_i]) {
-                        if (candidates.count(matchnode.second>0 ? matchnode.first:-matchnode.first))
-                            win_node_score[matchnode.first] += 1.f/(std::pow(2,total_candidate_matches));
-                    }
-                }
-                //TODO: no need to do a vector, sort, etc only to consider second-best score!
-
-                std::vector<std::pair<int32_t,float>> win_node_vec(win_node_score.begin(),win_node_score.end());
-
-                std::sort(win_node_vec.begin(), win_node_vec.end(),
-                          [](const std::pair<uint32_t ,float> &a, const std::pair<uint32_t ,float> &b) {return std::abs(a.second) > std::abs(b.second);});
-
-                std::pair<int32_t, float> winner(0,0.0f);
-
-                if (win_node_vec.size()>0) {
-                    if (win_node_vec[0].second < min_score) {
-                        ++window_low_score;
-                        winner.second=1;
-                    }
-                    else if (win_node_vec.size() > 1 and
-                             win_node_vec[1].second * 100 >= win_node_vec[0].second * second_best_score_pct) {
-                        ++window_close_second;
-                        winner.second=2;
-                    }
-                    else {
-                        winner = win_node_vec[0];
-                        ++window_hit;
-                    }
-                }
-                //std::cout<<"winner: "<<winner.first<<std::endl;
-                winners.emplace_back(winner);
-            }
-            if (!detailed_log.empty()){
-#pragma omp critical
-                {
-                    dl << readID << ": ";
-                    for (auto &w:winners) dl<<" "<<w.first<<"("<<w.second<<")";
-                    dl << std::endl;
-                }
-
-            }
-            //std::cout<<"winners picked, writing mappings"<<std::endl;
-            //Now transform windows of winners into mappings
-            {
-                //std::cout<<"Aggregating among "<<winners.size()<<" winners:";
-                //for (auto &w:winners)std::cout<<"  "<<w.first<< " ("<<w.second<<")";
-                //std::cout<<std::endl;
-                auto prs=private_results.size();
-                auto win = 0;
-                for (; win < winners.size(); ++win) {
-                    auto win_start = win;
-                    while (win_start < winners.size() and winners[win_start].first == 0) ++win_start;
-                    if (win_start == winners.size()) break;
-                    //std::cout<<" extending window from: " << win_start <<": "<<winners[win_start].first<<std::endl;
-                    win=win_start;
-                    auto win_end=win;
-                    int matches=0;
-                    while (win < winners.size() and
-                           (winners[win].first == 0 or winners[win].first == winners[win_start].first)) {
-                        if (winners[win].first!=0) {
-                            win_end=win;
-                            ++matches;
-                        }
-                        ++win;
-                    }
-                    //std::cout<<"  window extended to: " << win_end <<": "<<winners[win_end].first<<std::endl;
-                    //Ok, so now every winner in winners[win_start:win_end] is either 0 or the winner node;
-                    //TODO: use median or >20% ^ <80% to choose start/finish
-                    if (matches>5) private_results.emplace_back(winners[win_start].first, readID, 0, 0,
-                                                 window_slide*win_start, window_slide*win_end+window_size);//TODO: Use the correct positions: first kmer from first, last kmer fomr last
-                }
-                if (prs==private_results.size()) ++no_matches;
-                else if (prs+1==private_results.size()) ++single_matches;
-                else ++multi_matches;
-            }
-            */
         }
     }
     //TODO: report read and win coverage by winners vs. by loosers

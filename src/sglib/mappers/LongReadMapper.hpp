@@ -61,7 +61,7 @@ public:
 
     std::set<sgNodeID_t> window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, uint32_t read_kmers_size);
 
-    std::vector<LongReadMapping> alignment_blocks(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,  uint32_t read_kmers_size, std::set<sgNodeID_t> &candidates);
+    std::vector<LongReadMapping> alignment_blocks(uint32_t readID, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,  uint32_t read_kmers_size, std::set<sgNodeID_t> &candidates);
 
     void map_reads(std::unordered_set<uint32_t> readIDs = {},std::string detailed_log="");
 
