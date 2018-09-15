@@ -21,11 +21,10 @@ class LongReadMapper {
     const SequenceGraph & sg;
 
     uint8_t k=15;
-    int window_size = 1500;
-    int window_slide = window_size/3;
-    int min_score = 50;
-    int second_best_score_pct=50;
-    int max_num_score_nodes = 100; //how many high-scoring nodes to consider per read
+    int min_size=1000;
+    int min_chain=50;
+    int max_jump=500;
+    int max_delta_change=30;
 
     /**
      * Stores an index of the mappings of a node to all the mappings where it appears.
@@ -48,13 +47,12 @@ public:
 
     std::vector<uint64_t> get_node_read_ids(sgNodeID_t nodeID) const ;
 
-    void set_params(uint8_t _k=15, int _window_size=1500, int _min_score=50, int _second_best_score_pct=50, int _max_num_score_nodes = 100){
+    void set_params(uint8_t _k=15, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 30){
         k=_k;
-        window_size = _window_size;
-        window_slide = window_size/3;
-        min_score = _min_score;
-        second_best_score_pct=_second_best_score_pct;
-        max_num_score_nodes = _max_num_score_nodes;
+        min_size=_min_size;
+        min_chain=_min_chain;
+        max_jump=_max_jump;
+        max_delta_change=_max_delta_change;
     }
 
     void get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers);

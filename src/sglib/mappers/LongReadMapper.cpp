@@ -31,9 +31,9 @@ void LongReadMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int3
         else if (matches[i].size()==1) ++single_match; //DEBUG
         else ++multi_match; //DEBUG
     }
-    std::cout<<"From get_all_kmer_matches with "<< read_kmers.size() <<": "<<no_match<<" ("<< (no_match*100/read_kmers.size()) << "%) no match   "
-            <<single_match<<" ("<< (single_match*100/read_kmers.size()) << "%) single match   "
-            <<multi_match<<" ("<< (multi_match*100/read_kmers.size()) << "%) multi match"<<std::endl;
+//    std::cout<<"From get_all_kmer_matches with "<< read_kmers.size() <<": "<<no_match<<" ("<< (no_match*100/read_kmers.size()) << "%) no match   "
+//            <<single_match<<" ("<< (single_match*100/read_kmers.size()) << "%) single match   "
+//            <<multi_match<<" ("<< (multi_match*100/read_kmers.size()) << "%) multi match"<<std::endl;
 }
 
 std::set<sgNodeID_t> LongReadMapper::window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, uint32_t read_kmers_size){
@@ -56,16 +56,12 @@ std::set<sgNodeID_t> LongReadMapper::window_candidates(std::vector<std::vector<s
 std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,
                                                               uint32_t read_kmers_size,
                                                               std::set<sgNodeID_t> &candidates) {
-    std::cout<<"Alignment block search starting with candidates:";
-    for (auto c:candidates) std::cout<<" "<<c;
-    std::cout<<std::endl;
+//    std::cout<<"Alignment block search starting with candidates:";
+//    for (auto c:candidates) std::cout<<" "<<c;
+//    std::cout<<std::endl;
     std::vector<LongReadMapping> blocks;
     //transform to matches per candidate;
     std::map<int32_t , std::vector<std::pair<int32_t,int32_t>>> candidate_hits;
-    const int max_jump=500;
-    const int max_delta_change=50;
-    const int min_chain=100;
-    const int min_size=500;
 
     for (auto p=0;p<read_kmers_size;++p){
         for (auto m:matches[p]) {
@@ -145,7 +141,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
         BufferedSequenceGetter sequenceGetter(datastore);
         std::vector<std::vector<std::pair<int32_t, int32_t>>> node_matches; //node, offset
 #pragma omp for
-        for (uint32_t readID = 1; readID < /*datastore.size()*/ 20; ++readID) {
+        for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
 
             if (readID%1000 == 0) {
                 num_reads_done+=1000;
@@ -163,7 +159,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
 
             //========== 1. Get read sequence, kmerise, get all matches ==========
             const auto query_sequence(sequenceGetter.get_read_sequence(readID));
-            if ( query_sequence.size()< 2*window_size) {
+            if ( query_sequence.size()< 2 * min_size) {
                 continue;
             }
             read_kmers.clear();
@@ -178,12 +174,15 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
 
             auto blocks = alignment_blocks(readID,node_matches,read_kmers.size(),candidates);
 
-            for (auto b:blocks) std::cout<<"Target: "<<b.node<<" ("<<sg.nodes[llabs(b.node)].sequence.size()<<" bp)  "
-                                          <<b.qStart<<":"<<b.qEnd<<" -> "<<b.nStart<<":"<<b.nEnd
-                                          <<" ("<<b.score<<" chained hits, "<< b.score *100 /(b.qEnd-b.qStart)<<"%)"<<std::endl;
-            std::cout<<std::endl;
+//            for (auto b:blocks) std::cout<<"Target: "<<b.node<<" ("<<sg.nodes[llabs(b.node)].sequence.size()<<" bp)  "
+//                                          <<b.qStart<<":"<<b.qEnd<<" -> "<<b.nStart<<":"<<b.nEnd
+//                                          <<" ("<<b.score<<" chained hits, "<< b.score *100 /(b.qEnd-b.qStart)<<"%)"<<std::endl;
+//            std::cout<<std::endl;
             //========== 4. Construct mapping path ==========
-
+            if (blocks.empty()) ++no_matches;
+            else if (blocks.size()==1) ++single_matches;
+            else ++multi_matches;
+            private_results.insert(private_results.end(),blocks.begin(),blocks.end());
 
         }
     }
