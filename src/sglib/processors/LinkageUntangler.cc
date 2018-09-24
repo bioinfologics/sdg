@@ -712,25 +712,27 @@ LinkageDiGraph LinkageUntangler::make_longRead_linkage(int min_reads) {
     //use all libraries collect votes on each link
     auto rmi=0;
     for (LongReadMapper &lm:ws.getLongReadMappers()) {
-        sgNodeID_t last_sel_node=0;
-        seqID_t last_sel_node_read=0;
+
+        LongReadMapping lsm;
         for (auto &m: lm.mappings) { // For all reads
             //only link to the next selected node
             if (!selected_nodes[std::abs(m.node)]) continue;
-            if (last_sel_node_read==m.read_id) {
-                if (last_sel_node != m.node) {
-                    sgNodeID_t n1 = last_sel_node;
+            if (lsm.read_id==m.read_id) {
+                if (lsm.node != m.node) {
+                    sgNodeID_t n1 = lsm.node;
                     sgNodeID_t n2 = m.node;
                     if (n1 != 0 and n2 != 0 and n1 != n2 and n1 != -n2) {
                         n1 = -n1;//get the output end
                         if (llabs(n1) > llabs(n2)) std::swap(n1, n2);
-                        ++lv[std::make_pair(n1, n2)];
+                        //filter to ends
+                        if (sg.nodes[llabs(lsm.node)].sequence.size()-lsm.nEnd<3000 and
+                            m.nStart<3000)
+                            ++lv[std::make_pair(n1, n2)];
                     }
                 }
 
             }
-            last_sel_node = m.node;
-            last_sel_node_read=m.read_id;
+            lsm=m;
 
         }
     }
