@@ -124,6 +124,24 @@ std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID, s
     return blocks;
 }
 
+std::vector<LongReadMapping> LongReadMapper::filter_blocks(std::vector<LongReadMapping> &blocks,
+                                                           std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
+                                                           uint32_t read_kmers_size) {
+    std::vector<LongReadMapping> fblocks;
+    for (auto &b:blocks){
+        bool looser=false;
+        for (auto &ob:blocks){
+            if (ob==b) continue;
+            if (ob.qStart<=b.qStart and ob.qEnd>=b.qEnd and ob.score>b.score) {
+                looser=true;
+                break;
+            }
+        }
+        if (!looser) fblocks.emplace_back(b);
+    }
+    return fblocks;
+}
+
 void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string detailed_log) {
     update_graph_index();
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
@@ -173,21 +191,39 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
             //========== 3. Create alignment blocks from candidates ==========
 
             auto blocks = alignment_blocks(readID,node_matches,read_kmers.size(),candidates);
+//            std::cout<<"====== Read #"<<readID<<" - "<<query_sequence.size()<<"bp ======"<<std::endl;
+//            std::cout<<"BEFORE FILTERING:"<<std::endl;
+//            for (auto b:blocks)
+//                std::cout << "Target: " << b.node << " (" << sg.nodes[llabs(b.node)].sequence.size() << " bp)  "
+//                          << b.qStart << ":" << b.qEnd << " -> " << b.nStart << ":" << b.nEnd
+//                          << " (" << b.score << " chained hits, " << b.qEnd - b.qStart + k << "bp, "
+//                          << b.score * 100 / (b.qEnd - b.qStart) << "%)"
+//                          << std::endl;
 
-//            for (auto b:blocks) std::cout<<"Target: "<<b.node<<" ("<<sg.nodes[llabs(b.node)].sequence.size()<<" bp)  "
-//                                          <<b.qStart<<":"<<b.qEnd<<" -> "<<b.nStart<<":"<<b.nEnd
-//                                          <<" ("<<b.score<<" chained hits, "<< b.score *100 /(b.qEnd-b.qStart)<<"%)"<<std::endl;
-//            std::cout<<std::endl;
             //========== 4. Construct mapping path ==========
             if (blocks.empty()) ++no_matches;
             else if (blocks.size()==1) ++single_matches;
             else ++multi_matches;
-            private_results.insert(private_results.end(),blocks.begin(),blocks.end());
+            //TODO: align blocks that occupy the same space as longer/better blocks should be thrown away.
+
+            auto fblocks=filter_blocks(blocks,node_matches,read_kmers.size());
+
+
+//            std::cout<<"After FILTERING:"<<std::endl;
+//            for (auto b:fblocks)
+//                std::cout << "Target: " << b.node << " (" << sg.nodes[llabs(b.node)].sequence.size() << " bp)  "
+//                          << b.qStart << ":" << b.qEnd << " -> " << b.nStart << ":" << b.nEnd
+//                          << " (" << b.score << " chained hits, " << b.qEnd - b.qStart + k << "bp, "
+//                          << b.score * 100 / (b.qEnd - b.qStart) << "%)"
+//                          << std::endl;
+
+            private_results.insert(private_results.end(),fblocks.begin(),fblocks.end());
+
 
         }
     }
     //TODO: report read and win coverage by winners vs. by loosers
-    sglib::OutputLog()<<"Read window results:    "<<window_low_score<<" low score    "<<window_close_second<<" close second    "<<window_hit<<" hits"<<std::endl;
+//    sglib::OutputLog()<<"Read window results:    "<<window_low_score<<" low score    "<<window_close_second<<" close second    "<<window_hit<<" hits"<<std::endl;
     sglib::OutputLog()<<"Read results:    "<<no_matches<<" no match    "<<single_matches<<" single match    "<<multi_matches<<" multi matches"<<std::endl;
     for (auto & threadm : thread_mappings) {
         mappings.insert(mappings.end(),threadm.begin(),threadm.end());
