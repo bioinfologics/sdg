@@ -25,27 +25,6 @@ OPTION(BUILD_DOC "Build documentation" OFF)
 OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" OFF)
 OPTION(BUILD_COV "Build coverage" OFF)
 
-
-function(check_int64_long _flag)
-    file(WRITE ${CMAKE_BINARY_DIR}/test_int64_long.cpp
-            "\#include <stdint.h>
-             \#include <vector>
-             std::vector<int64_t>* test(){return (std::vector<long>*)0;}
-             int main(){test();return 0;}
-             ")
-    try_compile(${_flag} ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/test_int64_long.cpp)
-endfunction()
-
-check_int64_long(IS_INT64_LONG)
-
-if(IS_INT64_LONG)
-    message("Using SWIGWORDSIZE64")
-    set(SWIG_WORDSIZE_FLAG "SWIGWORDSIZE64")
-else()
-    message("Using SWIGWORDSIZE32")
-    set(SWIG_WORDSIZE_FLAG "SWIGWORDSIZE32")
-endif()
-
 if (BUILD_PYTHON_INTERFACE)
     MESSAGE("Building docs for python interface")
     SET(BUILD_DOC ON)
@@ -192,6 +171,7 @@ add_library(bsg SHARED
             src/sglib/processors/GraphEditor.cc
             src/sglib/processors/GraphMaker.cc
             src/sglib/processors/LocalHaplotypeAssembler.cc
+            src/sglib/hash/xxhash.c
         )
 
 target_link_libraries(bsg ${DEPENDENCY_LIBS})
@@ -306,12 +286,9 @@ IF(BUILD_PYTHON_INTERFACE)
     SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES CPLUSPLUS ON)
     SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES SWIG_FLAGS "")
     set_property(SOURCE interfaces/SequenceGraph.i PROPERTY DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
-    if (SWIG_WORDSIZE_FLAG EQUAL "SWIGWORDSIZE64")
+    if (NOT APPLE)
         set_property(SOURCE interfaces/SequenceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
         set_property(SOURCE interfaces/SequenceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
-    elseif (SWIG_WORDSIZE_FLAG EQUAL "SWIGWORDSIZE32")
-        set_property(SOURCE interfaces/SequenceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE32")
-        set_property(SOURCE interfaces/SequenceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE32")
     endif()
     SWIG_ADD_LIBRARY(bsg LANGUAGE python SOURCES interfaces/SequenceGraph.i)
     SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} bsg "")

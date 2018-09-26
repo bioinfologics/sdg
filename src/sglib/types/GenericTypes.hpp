@@ -9,6 +9,7 @@
 #include <string>
 #include <tuple>
 #include <limits>
+#include <sglib/hash/xxhash.h>
 #include "hashing_helper.hpp"
 
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
@@ -110,14 +111,15 @@ namespace std {
     {
         size_t operator()(const __int128 unsigned & x) const
         {
-            return hash<uint64_t>()((uint64_t)x);
+            auto hash = XXH64(x, sizeof(__int128 unsigned), 0);
+            return hash;
         }
     };
 }
-#endif
+#endif // __clang__ (clang provides int128 hashing)
 /// \endcond
-#endif
-#endif
+#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // SWIG
 
 
 #endif //BSG_GENERICTYPES_HPP
