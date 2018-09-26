@@ -76,6 +76,7 @@ public:
         std::unordered_set<sgNodeID_t > seen_contigs;
         seen_contigs.reserve(sg.nodes.size());
         unique_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
+        kmer_to_graphposition.reserve(kidxv.size());
         for (auto &kidx :kidxv) {
             kmer_to_graphposition[kidx.first] = { kidx.second.node, kidx.second.pos };
             unique_kmers_per_node[std::abs(kidx.second.node)] += 1;
