@@ -63,7 +63,7 @@ public:
 
     std::vector<LongReadMapping> filter_blocks(std::vector<LongReadMapping> & blocks, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,  uint32_t read_kmers_size);
 
-    std::vector<LongReadMapping> extend_blocks_to_paths(std::vector<LongReadMapping> & blocks, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,  uint32_t read_kmers_size);
+    std::vector<LongReadMapping> refine_multinode_reads();
 
     void map_reads(std::unordered_set<uint32_t> readIDs = {},std::string detailed_log="");
 

@@ -232,6 +232,17 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
     update_indexes_from_mappings();
 }
 
+std::vector<LongReadMapping> LongReadMapper::refine_multinode_reads() {
+    //node->mappings map. (maybe just re-sort the mappings?)
+
+    //take each node, extend mappings, if extended add to the curated mappings.
+
+    //read->mappings again, this time check if the read can be made to produce a path.
+
+
+
+}
+
 void LongReadMapper::update_indexes_from_mappings() {
     reads_in_node.clear();
     reads_in_node.resize(sg.nodes.size());
