@@ -95,7 +95,7 @@ std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID, s
                 auto &h=chits[i];
                 //if not in chain, continue;
                 if (used[i] or last_p > h.first or last_t > h.second or h.second-last_t > max_jump
-                    or last_delta-(h.second-h.first)>max_delta_change) {
+                    or llabs(last_delta-(h.second-h.first))>max_delta_change) {
                     //std::cout<<" skipping "<<h.first<<"->"<<h.second<<std::endl;
                     continue;
                 }
