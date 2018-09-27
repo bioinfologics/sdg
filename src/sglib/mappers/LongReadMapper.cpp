@@ -71,6 +71,7 @@ std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID, s
             }
         }
     }
+
     for (auto &ch:candidate_hits){
         int start_p=0;
         int start_t=0;
@@ -79,8 +80,22 @@ std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID, s
         int last_p=-1000;
         int chain=-1;
         auto &chits=ch.second;
-        //TODO: change to: start from the first unused and try to extend its chain.
         std::vector<bool> used(ch.second.size());
+        //std::sort(chits.begin(),chits.end());
+        //Filter hits on overused positions
+        for (auto starti=0 ; starti<chits.size() ; ++starti){
+            auto endi=starti;
+            while (endi<chits.size()-1 and chits[starti].first==chits[endi+1].first) ++endi;
+            bool discard=false;
+            if (endi>starti+4) discard=true; //more than 5 hits to candidate ->discard
+            else {
+                for (auto x=starti;x<endi;++x) {
+                    if (chits[x+1].second-chits[x].second<max_jump) discard=true;
+                }
+            }
+            if (discard) for (auto x=starti;x<=endi;++x) used[x]=true;
+        }
+
         for (auto starti=0 ; starti<chits.size() ; ++starti){
             if (used[starti]) continue;
             chain=1;
@@ -104,7 +119,7 @@ std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID, s
                 last_t=h.second;
                 last_delta=last_t-last_p;
                 used[i]=true;
-                //std::cout<<" chain is now length "<<chain<<" after adding "<<h.first<<"->"<<h.second<<std::endl;
+                //if (start_p==61 and start_t==3621) std::cout<<" chain is now length "<<chain<<" after adding "<<h.first<<"->"<<h.second<<" (delta "<<h.first-h.second<<")"<<std::endl;
             }
             if (chain>=min_chain and last_p-start_p>=min_size) {
                 LongReadMapping b;
@@ -183,6 +198,14 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
             read_kmers.clear();
             skf.create_kmers(query_sequence, read_kmers);
             get_all_kmer_matches(node_matches,read_kmers);
+//
+//            if (readID==737) {
+//                std::ofstream r89("read737_matches.txt");
+//                for (auto i=0;i<read_kmers.size();++i)
+//                    for (auto m:node_matches[i]){
+//                    r89<<i<<","<<m.first<<","<<m.second<<std::endl;
+//                }
+//            }
 
             //========== 2. Find match candidates in fixed windows ==========
 
@@ -191,14 +214,16 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
             //========== 3. Create alignment blocks from candidates ==========
 
             auto blocks = alignment_blocks(readID,node_matches,read_kmers.size(),candidates);
-//            std::cout<<"====== Read #"<<readID<<" - "<<query_sequence.size()<<"bp ======"<<std::endl;
-//            std::cout<<"BEFORE FILTERING:"<<std::endl;
-//            for (auto b:blocks)
-//                std::cout << "Target: " << b.node << " (" << sg.nodes[llabs(b.node)].sequence.size() << " bp)  "
-//                          << b.qStart << ":" << b.qEnd << " -> " << b.nStart << ":" << b.nEnd
-//                          << " (" << b.score << " chained hits, " << b.qEnd - b.qStart + k << "bp, "
-//                          << b.score * 100 / (b.qEnd - b.qStart) << "%)"
-//                          << std::endl;
+//            if (readID==89) {
+//                std::cout << "====== Read #" << readID << " - " << query_sequence.size() << "bp ======" << std::endl;
+//                std::cout << "BEFORE FILTERING:" << std::endl;
+//                for (auto b:blocks)
+//                    std::cout << "Target: " << b.node << " (" << sg.nodes[llabs(b.node)].sequence.size() << " bp)  "
+//                              << b.qStart << ":" << b.qEnd << " -> " << b.nStart << ":" << b.nEnd
+//                              << " (" << b.score << " chained hits, " << b.qEnd - b.qStart + k << "bp, "
+//                              << b.score * 100 / (b.qEnd - b.qStart) << "%)"
+//                              << std::endl;
+//            }
 
             //========== 4. Construct mapping path ==========
             if (blocks.empty()) ++no_matches;
