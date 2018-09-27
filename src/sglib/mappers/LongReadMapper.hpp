@@ -24,7 +24,7 @@ class LongReadMapper {
     int min_size=1000;
     int min_chain=50;
     int max_jump=500;
-    int max_delta_change=30;
+    int max_delta_change=60;
 
     /**
      * Stores an index of the mappings of a node to all the mappings where it appears.
@@ -47,7 +47,7 @@ public:
 
     std::vector<uint64_t> get_node_read_ids(sgNodeID_t nodeID) const ;
 
-    void set_params(uint8_t _k=15, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 30){
+    void set_params(uint8_t _k=15, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60){
         k=_k;
         min_size=_min_size;
         min_chain=_min_chain;
