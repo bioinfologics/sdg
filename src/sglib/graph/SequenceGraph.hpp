@@ -45,7 +45,9 @@ public:
         return nodes == o.nodes;
     }
 
-    SequenceGraph() {};
+    SequenceGraph() {
+        add_node(Node("",sgNodeDeleted)); //an empty deleted node on 0, just to skip the space
+    };
     SequenceGraph(const SequenceGraph &sg) = delete; // Avoid implicit generation of the copy constructor.
     //=== I/O functions ===
     void load_from_gfa(std::string filename);

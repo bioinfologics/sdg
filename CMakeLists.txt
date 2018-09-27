@@ -8,9 +8,13 @@ endif()
 if (POLICY CMP0048)
     cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
+if (POLICY CMP0074)
+    cmake_policy(SET CMP0074 NEW)
+endif (POLICY CMP0074)
+
 
 if (APPLE)
-       set(CMAKE_MACOSX_RPATH ON)
+    set(CMAKE_MACOSX_RPATH ON)
 endif (APPLE)
 
 
@@ -21,6 +25,10 @@ OPTION(BUILD_DOC "Build documentation" OFF)
 OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" OFF)
 OPTION(BUILD_COV "Build coverage" OFF)
 
+if (BUILD_PYTHON_INTERFACE)
+    MESSAGE("Building docs for python interface")
+    SET(BUILD_DOC ON)
+endif ()
 # Get the remote url
 execute_process(
         COMMAND git remote get-url origin
@@ -121,10 +129,10 @@ IF(BUILD_DOC)
 
         # note the option ALL which allows to build the docs together with the application
         add_custom_target(doc_doxygen ALL
-                          COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-                          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                          COMMENT "Generating API documentation with Doxygen"
-                          VERBATIM)
+                COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                COMMENT "Generating API documentation with Doxygen"
+                VERBATIM)
     else (DOXYGEN_FOUND)
         message("Doxygen need to be installed to generate the doxygen documentation")
     endif (DOXYGEN_FOUND)
@@ -169,8 +177,8 @@ target_link_libraries(bsg ${DEPENDENCY_LIBS})
 
 if (BUILD_COV)
     set_target_properties(bsg PROPERTIES
-                      COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
-                      LINK_FLAGS    "--coverage")
+            COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
+            LINK_FLAGS    "--coverage")
 endif()
 
 add_executable(bsg-datastore
@@ -205,10 +213,11 @@ add_executable(seq-thread
         src/seq-thread.cpp
         )
 
-## add executables and respective sources
-
 add_executable(gfa-extract
         src/gfa-extract.cc)
+
+add_executable(bsg-dbg
+        src/bsg-dbg.cc)
 
 target_link_libraries(bsg-workspace bsg)
 target_link_libraries(bsg-datastore bsg)
@@ -219,6 +228,7 @@ target_link_libraries(bsg-untangler bsg ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-lhapassembler bsg ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract bsg)
 target_link_libraries(seq-thread bsg)
+target_link_libraries(bsg-dbg bsg)
 
 
 IF(BUILD_TESTING)
@@ -227,8 +237,8 @@ IF(BUILD_TESTING)
     add_executable(runBasicTests $<TARGET_OBJECTS:CatchMain> tests/sglib/files_tests.cpp tests/sglib/smr_tests.cpp tests/sglib/kmerfactory_tests.cpp tests/include/catch.hpp)
     IF(BUILD_COV)
         set_target_properties(runBasicTests PROPERTIES
-                          COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
-                          LINK_FLAGS    "--coverage")
+                COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
+                LINK_FLAGS    "--coverage")
     ENDIF()
     target_link_libraries(runBasicTests bsg)
     add_test(basicTests runBasicTests)
@@ -261,13 +271,13 @@ IF(BUILD_PYTHON_INTERFACE)
     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
     add_custom_command (
-    OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
-    COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py
-    --quiet ${CMAKE_BINARY_DIR}/docs/xml/index.xml
-    ${CMAKE_BINARY_DIR}/python_docs.i
-    COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
-    DEPENDS doc_doxygen
-    VERBATIM)
+            OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
+            COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py
+            --quiet ${CMAKE_BINARY_DIR}/docs/xml/index.xml
+            ${CMAKE_BINARY_DIR}/python_docs.i
+            COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
+            DEPENDS doc_doxygen
+            VERBATIM)
 
     add_custom_target(doxy2swig DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
     SET(CMAKE_SWIG_FLAGS "")
@@ -275,6 +285,10 @@ IF(BUILD_PYTHON_INTERFACE)
     SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES CPLUSPLUS ON)
     SET_SOURCE_FILES_PROPERTIES(interfaces/SequenceGraph.i PROPERTIES SWIG_FLAGS "")
     set_property(SOURCE interfaces/SequenceGraph.i PROPERTY DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
+    if (NOT APPLE)
+        set_property(SOURCE interfaces/SequenceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
+        set_property(SOURCE interfaces/SequenceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
+    endif()
     SWIG_ADD_LIBRARY(bsg LANGUAGE python SOURCES interfaces/SequenceGraph.i)
     SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} bsg "")
     add_dependencies(_bsg doxy2swig)

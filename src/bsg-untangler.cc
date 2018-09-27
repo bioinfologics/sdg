@@ -19,7 +19,7 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<std::endl;
 
     std::string workspace_file,output_prefix;
-    sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
+    sglib::OutputLogLevel=sglib::LogLevels::INFO;
     bool repeat_expansion=false, neighbour_connection_graph=false, bubbly_paths=false;
     bool unroll_loops=false,pop_errors=false, paired_scaff=false, select_hspnps=false;
     bool explore_homopolymers=false;
@@ -32,7 +32,7 @@ int main(int argc, char * argv[]) {
     int dev_max_lines=0;
     uint8_t dev_local_k=63;
     int dev_local_min_cvg=7;
-    uint64_t dev_min_nodes=2,dev_min_total_size=0;
+    uint16_t dev_min_nodes=2,dev_min_total_size=0;
     std::string create_linkage,dev_skate_linkage,make_patches, load_patches, patch_backbones, patch_workspace,load_linkage;
     bool dev_local_patching=false;
     bool remap_reads=true;
@@ -86,10 +86,10 @@ int main(int argc, char * argv[]) {
                 //("dev_skate_linkage","Loads linkage from file and skates",cxxopts::value<std::string>(dev_skate_linkage))
                 ("dev_linkage_stats","Loads linkage from file and computes local assemblies stats",cxxopts::value<std::string>(dev_linkage_stats))
                 ("dev_max_lines","Limits lines to be skated on dev",cxxopts::value<int>(dev_max_lines))
-                ("dev_min_nodes","Limits lines to be locally assembled on dev to at least min_nodes",cxxopts::value<uint64_t>(dev_min_nodes))
-                ("dev_min_total_size","Limits lines to be locally assembled on dev to at least min_total_size",cxxopts::value<uint64_t>(dev_min_total_size))
+                ("dev_min_nodes","Limits lines to be locally assembled on dev to at least min_nodes",cxxopts::value<uint16_t >(dev_min_nodes))
+                ("dev_min_total_size","Limits lines to be locally assembled on dev to at least min_total_size",cxxopts::value<uint16_t>(dev_min_total_size))
                 ("dev_local_k","k value for local assembly",cxxopts::value<uint8_t>(dev_local_k))
-                ("dev_local_min_cvg","minimum coverga for local assemblies",cxxopts::value<int>(dev_local_min_cvg))
+                ("dev_local_min_cvg","minimum coverage for local assemblies",cxxopts::value<int>(dev_local_min_cvg))
                 ("dev_dump_local_problems_from","dumps local problems from",cxxopts::value<int>(dev_dump_local_problems_from))
                 ("dev_dump_local_problems_to","dumps local problems from",cxxopts::value<int>(dev_dump_local_problems_to));
 

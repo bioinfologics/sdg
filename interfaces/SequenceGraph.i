@@ -16,7 +16,7 @@
 #include "sglib/workspace/WorkSpace.hpp"
 
 
-#include "sglib/indexers/uniqueKmerIndex.hpp"
+#include "sglib/indexers/UniqueKmerIndex.hpp"
 #include "sglib/mappers/LinkedReadMapper.hpp"
 #include "sglib/mappers/LongReadMapper.hpp"
 #include "sglib/datastores/LongReadsDatastore.hpp"
@@ -48,7 +48,7 @@
 %include "sglib/graph/SequenceGraphPath.hpp"
 %include "sglib/graph/SequenceSubGraph.hpp"
 %include "sglib/graph/SequenceGraph.hpp"
-%include "sglib/indexers/uniqueKmerIndex.hpp"
+%include "sglib/indexers/UniqueKmerIndex.hpp"
 %include "sglib/processors/KmerCompressionIndex.hpp"
 %include "sglib/workspace/WorkSpace.hpp"
 

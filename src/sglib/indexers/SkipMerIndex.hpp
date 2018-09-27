@@ -12,6 +12,7 @@
 #include <sglib/readers/SequenceGraphReader.h>
 #include <cmath>
 #include <sglib/factories/SkipMerFactory.hpp>
+#include <sglib/utilities/omp_safe.hpp>
 
 class SkipMerIndex {
 
@@ -53,7 +54,7 @@ public:
                 total_kmers_per_node[node] = n;
             }
         }
-        std::vector<std::pair<uint64_t,graphPosition>> kidxv;
+        std::vector<std::pair<uint64_t,graphStrandPos>> kidxv;
         FastaRecord r;
         kidxv.reserve(total_k);
         SkipmerIndexFactory kf( k, m, n );
@@ -68,13 +69,8 @@ public:
 
         if (verbose) sglib::OutputLog(sglib::INFO)<<kidxv.size()<<" kmers in total"<<std::endl;
         if (verbose) sglib::OutputLog(sglib::INFO) << "  Sorting..."<<std::endl;
-#ifdef _OPENMP
-        __gnu_parallel::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
-#else
-        std::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphPosition> & a, const std::pair<uint64_t,graphPosition> & b){return a.first<b.first;});
-#endif
+        sglib::sort(kidxv.begin(),kidxv.end(),[](const std::pair<uint64_t,graphStrandPos> & a, const std::pair<uint64_t,graphStrandPos> & b){return a.first<b.first;});
 
-        sglib::OutputLog(sglib::INFO) << "  Merging..." << std::endl;
         if (verbose) sglib::OutputLog(sglib::INFO) << "  Merging..."<<std::endl;
         auto wi=kidxv.begin();
         auto ri=kidxv.begin();

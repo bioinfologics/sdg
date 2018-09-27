@@ -54,5 +54,5 @@ TEST_CASE("Load GFA") {
     sglib::OutputLogLevel = sglib::DEBUG;
     SequenceGraph sg;
     sg.load_from_gfa("../tests/datasets/tgraph.gfa");
-    REQUIRE(sg.nodes.size() > 0);
+    REQUIRE(sg.nodes.size() > 1);
 }
