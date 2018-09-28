@@ -231,8 +231,8 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
             else ++multi_matches;
             //TODO: align blocks that occupy the same space as longer/better blocks should be thrown away.
 
-            auto fblocks=filter_blocks(blocks,node_matches,read_kmers.size());
-
+            //auto fblocks=filter_blocks(blocks,node_matches,read_kmers.size());
+            auto fblocks=blocks;
 
 //            std::cout<<"After FILTERING:"<<std::endl;
 //            for (auto b:fblocks)
