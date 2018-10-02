@@ -11,6 +11,9 @@ endif (POLICY CMP0048)
 if (POLICY CMP0074)
     cmake_policy(SET CMP0074 NEW)
 endif (POLICY CMP0074)
+if (POLICY CMP0028)
+    cmake_policy(SET CMP0028 OLD)
+endif (POLICY CMP0028)
 
 
 if (APPLE)
@@ -370,3 +373,23 @@ install(TARGETS
         LIBRARY DESTINATION lib)
 install(DIRECTORY src/sglib
         DESTINATION include)
+
+IF (JlCxx_DIR)
+    list(APPEND CMAKE_PREFIX_PATH ${JlCxx_DIR}/lib/cmake/JlCxx)
+    message("Building julia (The superior language TM) wrapper")
+    message("Using cmake prefix path: ${JlCxx_DIR}/lib/cmake/JlCxx")
+    message("Using jlcxx include: ${JlCxx_DIR}/include")
+    include_directories(${JlCxx_DIR}/include)
+    find_package(JlCxx REQUIRED)
+    IF (JlCxx_FOUND)
+        include_directories(${Julia_INCLUDE_DIRS})
+        get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+        foreach(dir ${dirs})
+            message(STATUS "dir='${dir}'")
+        endforeach()
+
+        add_library(bsg_julia SHARED interfaces/JuliaBSG.cpp)
+        target_link_libraries(bsg_julia bsg)
+        target_link_libraries(bsg_julia JlCxx::cxxwrap_julia)
+    ENDIF()
+ENDIF()
