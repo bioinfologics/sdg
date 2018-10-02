@@ -439,9 +439,9 @@ void LinkedReadMapper::compute_all_tag_neighbours(int min_size, float min_score)
             //analyse tag per tag -> add this count on the shared set of this (check min_size for both)
             if (node_readcount.size()<1000) {
                 for (auto &n1:node_readcount) {
-                    if (sg.nodes[n1.first].sequence.size() >= min_size and n1.second > 1) {
+                    if (sg.nodes[n1.first].sequence.size() >= min_size and n1.second > 2) {
                         for (auto &n2:node_readcount) {
-                            if (sg.nodes[n2.first].sequence.size() >= min_size and n2.second > 1) {
+                            if (sg.nodes[n2.first].sequence.size() >= min_size and n2.second > 2) {
                                 scores[n1.first][n2.first] += n1.second;
                             }
                         }

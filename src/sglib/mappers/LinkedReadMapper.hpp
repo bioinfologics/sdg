@@ -14,9 +14,10 @@
 
 class UniqueKmerIndex;
 class Unique63merIndex;
-class tagNeighbour {
+class TagNeighbour {
 public:
-    tagNeighbour(sgNodeID_t n, float s):node(n),score(s){};
+    TagNeighbour(){};
+    TagNeighbour(sgNodeID_t n, float s):node(n),score(s){};
     sgNodeID_t node;
     float score; //breaking the latte principle
 };
@@ -66,7 +67,7 @@ public:
     LinkedReadsDatastore &datastore;
     std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
-    std::vector<std::vector<tagNeighbour>> tag_neighbours;
+    std::vector<std::vector<TagNeighbour>> tag_neighbours;
 
     static const bsgVersion_t min_compat;
 };
