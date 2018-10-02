@@ -428,10 +428,11 @@ std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadMapper::get_tag_neigh
  * @param min_score
  */
 void LinkedReadMapper::compute_all_tag_neighbours(int min_size, float min_score) {
-    std::map<std::pair<sgNodeID_t,sgNodeID_t>,uint32_t> scores;
+    std::vector<std::map<sgNodeID_t,uint32_t>> scores(sg.nodes.size());
     bsg10xTag last_tag=0;
     //make a map with counts of how many times the tag appears on every node
     std::map<sgNodeID_t, uint32_t > node_readcount;
+    sglib::OutputLog()<<"Counting into individual maps..."<<std::endl;
     for (size_t i=0;i<read_to_node.size();++i){
         if (datastore.get_read_tag(i)==0) continue;//skip tag 0
         if (datastore.get_read_tag(i)!=last_tag){
@@ -440,7 +441,7 @@ void LinkedReadMapper::compute_all_tag_neighbours(int min_size, float min_score)
                 if (sg.nodes[n1.first].sequence.size()>=min_size) {
                     for (auto &n2:node_readcount) {
                         if (sg.nodes[n2.first].sequence.size() >= min_size) {
-                            ++scores[std::make_pair(n1.first, n2.first)];
+                            scores[n1.first][n2.first]+=n1.second;
                         }
                     }
                 }
@@ -458,21 +459,23 @@ void LinkedReadMapper::compute_all_tag_neighbours(int min_size, float min_score)
         if (sg.nodes[n1.first].sequence.size()>=min_size) {
             for (auto &n2:node_readcount) {
                 if (sg.nodes[n2.first].sequence.size() >= min_size) {
-                    ++scores[std::make_pair(n1.first, n2.first)];
+                    scores[n1.first][n2.first]+=n1.second;
                 }
             }
         }
     }
-
+    sglib::OutputLog()<<"... copying to result vector..."<<std::endl;
     //now flatten the map into its first dimension.
     tag_neighbours.clear();
     tag_neighbours.resize(sg.nodes.size());
-    for (auto s:scores){
-        float tag_score=s.second / scores[std::make_pair(s.first.first,s.first.first)];
-        if (tag_score>=min_score)
-            tag_neighbours[s.first.first].emplace_back(s.first.second,tag_score);
+    for (auto i=1;i<sg.nodes.size();++i){
+        for (auto &s:scores[i]) {
+            float tag_score = s.second / scores[i][i];
+            if (tag_score >= min_score)
+                tag_neighbours[i].emplace_back(s.first, tag_score);
+        }
     }
-
+    sglib::OutputLog()<<"...DONE!"<<std::endl;
 }
 
 LinkedReadMapper LinkedReadMapper::operator=(const LinkedReadMapper &other) {
