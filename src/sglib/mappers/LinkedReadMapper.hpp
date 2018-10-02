@@ -14,6 +14,12 @@
 
 class UniqueKmerIndex;
 class Unique63merIndex;
+class tagNeighbour {
+public:
+    tagNeighbour(sgNodeID_t n, float s):node(n),score(s){};
+    sgNodeID_t node;
+    float score; //breaking the latte principle
+};
 
 /**
  * @brief A mapper for linked reads from a LinkedReadsDatastore.
@@ -51,6 +57,8 @@ public:
     std::map<bsg10xTag, std::vector<sgNodeID_t>> get_tag_nodes(uint32_t min_nodes = 2,
                                                                const std::vector<bool> &selected_nodes = {});
     std::vector<std::pair<sgNodeID_t , sgNodeID_t >> get_tag_neighbour_nodes(uint32_t min_shared,const std::vector<bool> & selected_nodes={});
+    void compute_all_tag_neighbours(int min_size,float min_score);
+
 
     SequenceGraph & sg;
     const UniqueKmerIndex& kmer_to_graphposition;
@@ -58,6 +66,7 @@ public:
     LinkedReadsDatastore &datastore;
     std::vector<std::vector<ReadMapping>> reads_in_node;
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
+    std::vector<std::vector<tagNeighbour>> tag_neighbours;
 
     static const bsgVersion_t min_compat;
 };

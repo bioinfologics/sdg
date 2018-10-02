@@ -413,6 +413,68 @@ std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadMapper::get_tag_neigh
     return tns;
 }
 
+/**
+ * Finds all nodes that have tags that cover min_score of the total tags of each node.
+ *
+ * Example:
+ *      - node A has tags 5, 5, 6, 7, 8
+ *      - node B has tags 5, 8, 9, 9, 10
+ *
+ * Then B covers 3/6=0.5 of A tags, and A covers 2/5=0.4 of B tags.
+ * If min_score=.5 then B is in A's neighbours, but A is not in B's
+ *
+ * Results are stored in the tag_neighbours vector
+ * @param min_size
+ * @param min_score
+ */
+void LinkedReadMapper::compute_all_tag_neighbours(int min_size, float min_score) {
+    std::map<std::pair<sgNodeID_t,sgNodeID_t>,uint32_t> scores;
+    bsg10xTag last_tag=0;
+    //make a map with counts of how many times the tag appears on every node
+    std::map<sgNodeID_t, uint32_t > node_readcount;
+    for (size_t i=0;i<read_to_node.size();++i){
+        if (datastore.get_read_tag(i)==0) continue;//skip tag 0
+        if (datastore.get_read_tag(i)!=last_tag){
+            //analyse tag per tag -> add this count on the shared set of this (check min_size for both)
+            for (auto &n1:node_readcount) {
+                if (sg.nodes[n1.first].sequence.size()>=min_size) {
+                    for (auto &n2:node_readcount) {
+                        if (sg.nodes[n2.first].sequence.size() >= min_size) {
+                            ++scores[std::make_pair(n1.first, n2.first)];
+                        }
+                    }
+                }
+            }
+            //reset for next cycle
+            last_tag=datastore.get_read_tag(i);
+            node_readcount.clear();
+        }
+        if (read_to_node[i]!=0) {
+            ++node_readcount[llabs(read_to_node[i])];
+        }
+    }
+    //last tag
+    for (auto &n1:node_readcount) {
+        if (sg.nodes[n1.first].sequence.size()>=min_size) {
+            for (auto &n2:node_readcount) {
+                if (sg.nodes[n2.first].sequence.size() >= min_size) {
+                    ++scores[std::make_pair(n1.first, n2.first)];
+                }
+            }
+        }
+    }
+
+    //now flatten the map into its first dimension.
+    tag_neighbours.clear();
+    tag_neighbours.resize(sg.nodes.size());
+    for (auto s:scores){
+        float tag_score=s.second / scores[std::make_pair(s.first.first,s.first.first)];
+        if (tag_score>=min_score)
+            tag_neighbours[s.first.first].emplace_back(s.first.second,tag_score);
+    }
+
+}
+
 LinkedReadMapper LinkedReadMapper::operator=(const LinkedReadMapper &other) {
     if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceGraph"); }
     if (&other == this) {
