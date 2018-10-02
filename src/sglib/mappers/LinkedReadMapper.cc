@@ -428,20 +428,22 @@ std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadMapper::get_tag_neigh
  * @param min_score
  */
 void LinkedReadMapper::compute_all_tag_neighbours(int min_size, float min_score) {
-    std::vector<std::map<sgNodeID_t,uint32_t>> scores(sg.nodes.size());
+    std::vector<std::unordered_map<sgNodeID_t,uint32_t>> scores(sg.nodes.size());
     bsg10xTag last_tag=0;
     //make a map with counts of how many times the tag appears on every node
-    std::map<sgNodeID_t, uint32_t > node_readcount;
+    std::unordered_map<sgNodeID_t, uint32_t > node_readcount;
     sglib::OutputLog()<<"Counting into individual maps..."<<std::endl;
     for (size_t i=0;i<read_to_node.size();++i){
         if (datastore.get_read_tag(i)==0) continue;//skip tag 0
         if (datastore.get_read_tag(i)!=last_tag){
             //analyse tag per tag -> add this count on the shared set of this (check min_size for both)
-            for (auto &n1:node_readcount) {
-                if (sg.nodes[n1.first].sequence.size()>=min_size) {
-                    for (auto &n2:node_readcount) {
-                        if (sg.nodes[n2.first].sequence.size() >= min_size) {
-                            scores[n1.first][n2.first]+=n1.second;
+            if (node_readcount.size()<1000) {
+                for (auto &n1:node_readcount) {
+                    if (sg.nodes[n1.first].sequence.size() >= min_size and n1.second > 1) {
+                        for (auto &n2:node_readcount) {
+                            if (sg.nodes[n2.first].sequence.size() >= min_size and n2.second > 1) {
+                                scores[n1.first][n2.first] += n1.second;
+                            }
                         }
                     }
                 }
