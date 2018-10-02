@@ -437,7 +437,7 @@ void LinkedReadMapper::compute_all_tag_neighbours(int min_size, float min_score)
         if (datastore.get_read_tag(i)==0) continue;//skip tag 0
         if (datastore.get_read_tag(i)!=last_tag){
             //analyse tag per tag -> add this count on the shared set of this (check min_size for both)
-            if (node_readcount.size()<1000) {
+            if (node_readcount.size()<500) {
                 for (auto &n1:node_readcount) {
                     if (sg.nodes[n1.first].sequence.size() >= min_size and n1.second > 2) {
                         for (auto &n2:node_readcount) {
@@ -472,7 +472,7 @@ void LinkedReadMapper::compute_all_tag_neighbours(int min_size, float min_score)
     tag_neighbours.resize(sg.nodes.size());
     for (auto i=1;i<sg.nodes.size();++i){
         for (auto &s:scores[i]) {
-            float tag_score = s.second / scores[i][i];
+            float tag_score = ((float) s.second) / scores[i][i];
             if (tag_score >= min_score)
                 tag_neighbours[i].emplace_back(s.first, tag_score);
         }
