@@ -75,6 +75,7 @@ namespace std {
    %template(vectorString) vector<string>;
    %template(vectorLink) vector<Link>;
    %template(vectorSGNode) vector<sgNodeID_t>;
+   %template(vectorvectorSGNode) vector<vector<sgNodeID_t>>;
    %template(vectorNode) vector<Node>;
    %template(vectorNodeVisitor) vector<nodeVisitor>;
    %template(vectorUINT16) vector<uint16_t >;
@@ -86,6 +87,7 @@ namespace std {
    %template(vectorReadMapping) vector<ReadMapping>;
    %template(vectorvectorReadMapping) vector<vector<ReadMapping>>;
    %template(vectorLongReadMapping) vector<LongReadMapping>;
+   %template(vectorvectorLongReadMapping) vector<vector<LongReadMapping>>;
    %template(vectorTagNeighbour) vector<TagNeighbour>;
    %template(vectorvectorTagNeighbour) vector<vector<TagNeighbour>>;
 
