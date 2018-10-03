@@ -87,6 +87,7 @@ public:
      *
      * @param lrm a LinkedReadMapper with mapped reads, over the same graph this mapper has mapped Long Reads.
      * @param min_size minimum size of the read to filter mappings.
+     * @param min_tnscore minimum neighbour score on linked reads
      */
     void filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size=10000, float min_tnscore=0.03);
 
