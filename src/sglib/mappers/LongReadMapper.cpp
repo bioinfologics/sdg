@@ -370,16 +370,24 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
         sglib::OutputLog()<<"Can't filter mappins because there are no tag_neighbours on the LinkedReadMapper"<<std::endl;
         return;
     }
-    read_to_mappings.clear();
-    read_to_mappings.resize(datastore.size());
+    sglib::OutputLog()<<"Filtering mappings"<<std::endl;
+    filtered_read_mappings.clear();
+    filtered_read_mappings.resize(datastore.size());
     BufferedSequenceGetter lrbsg(datastore);
     //create a collection of mappings for every read.
     uint64_t last_mapindex=0;
+    uint64_t rshort=0,runmapped=0,rnocovset=0,rprocessed=0;
     for (auto rid=0;rid<datastore.size();++rid) {
         auto seq=lrbsg.get_read_sequence(rid);
-        if (seq.size()<min_size) continue;
+        if (seq.size()<min_size) {
+            ++rshort;
+            continue;
+        }
         while (last_mapindex<mappings.size() and mappings[last_mapindex].read_id<rid) ++last_mapindex;
-        if (last_mapindex>=mappings.size() or mappings[last_mapindex].read_id!=rid) continue;
+        if (last_mapindex>=mappings.size() or mappings[last_mapindex].read_id!=rid) {
+            ++runmapped;
+            continue;
+        }
         std::vector<LongReadMapping> readmappings;
         std::unordered_set<sgNodeID_t> all_nodes;
         while (last_mapindex>=mappings.size() and mappings[last_mapindex].read_id==rid) {
@@ -422,7 +430,10 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
             uint64_t cov1=std::count(coverage.begin(),coverage.end(),1);
             cov1set.emplace_back(cov1, nodeset);
         }
-        if (cov1set.empty()) return;
+        if (cov1set.empty()) {
+            ++rnocovset;
+            return;
+        }
         std::sort(cov1set.begin(),cov1set.end());
         auto &winset=cov1set[0].second;
         //TODO: 4) try to find "turn-arounds" for CCS-style reads (later)
@@ -430,7 +441,9 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
         for (auto &m:mappings){
             if (winset.count(llabs(m.node))) filtered_read_mappings[rid].push_back(m);
         }
+        ++rprocessed;
     }
+    sglib::OutputLog()<<"too short: "<<rshort<<"  no mappings: "<<runmapped<<"  no cov1>50%: "<<rnocovset<<" processed: "<<rprocessed<<std::endl;
 
 
 }
