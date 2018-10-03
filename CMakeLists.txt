@@ -24,6 +24,7 @@ OPTION(BUILD_TESTING "Build tests." ON)
 OPTION(BUILD_DOC "Build documentation" OFF)
 OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" OFF)
 OPTION(BUILD_COV "Build coverage" OFF)
+set(CMAKE_CXX_STANDARD 14)
 
 if (BUILD_PYTHON_INTERFACE)
     MESSAGE("Building docs for python interface")
@@ -98,8 +99,6 @@ if(OPENMP_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
-
-add_definitions(${CMAKE_CXX_FLAGS})
 
 find_package(ZLIB REQUIRED)
 if (ZLIB_FOUND)

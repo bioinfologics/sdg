@@ -101,6 +101,16 @@ struct nodeVisitor {
     }
 };
 
+
+struct int128_hash {
+    size_t operator()( const __int128 &x) const
+    {
+        const void *buffer = (unsigned char *) &x;
+        uint64_t tmp_hash = XXH64(buffer, 16, 0);
+        return tmp_hash;
+    }
+};
+/*
 #ifndef SWIG
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 /// \cond DO_NOT_DOCUMENT
@@ -109,10 +119,12 @@ namespace std {
     //TODO: this hashing sucks, but it is needed
     template <> struct hash<__int128 unsigned>
     {
+
         size_t operator()(const __int128 unsigned & x) const
         {
-            auto hash = XXH64(x, sizeof(__int128 unsigned), 0);
-            return hash;
+            const void* buffer = (unsigned char *) &x;
+            uint64_t tmp_hash = XXH64(buffer, 16, 0);
+            return tmp_hash;
         }
     };
 }
@@ -120,6 +132,6 @@ namespace std {
 /// \endcond
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 #endif // SWIG
-
+*/
 
 #endif //BSG_GENERICTYPES_HPP

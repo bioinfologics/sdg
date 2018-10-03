@@ -202,7 +202,7 @@ private:
 
 class Unique63merIndex {
 public:
-    using Map = std::unordered_map<__uint128_t, graphStrandPos>;
+    using Map = std::unordered_map<__uint128_t, graphStrandPos, int128_hash>;
     using pair = std::pair<__uint128_t, graphStrandPos>;
     using const_iterator = Map::const_iterator;
     explicit Unique63merIndex() : k(63) {}
@@ -257,6 +257,7 @@ public:
         std::unordered_set<sgNodeID_t > seen_contigs;
         seen_contigs.reserve(sg.nodes.size());
         unique_kmers_per_node = std::vector<uint64_t>(sg.nodes.size(), 0);
+        kmer_to_graphposition.reserve(kidxv.size());
         for (auto &kidx :kidxv) {
             kmer_to_graphposition[kidx.first] = { kidx.second.node, kidx.second.pos };
             unique_kmers_per_node[std::abs(kidx.second.node)] += 1;
