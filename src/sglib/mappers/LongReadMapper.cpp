@@ -436,7 +436,7 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
             continue;
         }
         std::sort(cov1set.begin(),cov1set.end());
-        auto &winset=cov1set[0].second;
+        auto &winset=cov1set.back().second;
         //TODO: 4) try to find "turn-arounds" for CCS-style reads (later)
         //TODO: 7) copy vector to read_to_mappings
         for (auto &m:mappings){
