@@ -432,7 +432,7 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
         }
         if (cov1set.empty()) {
             ++rnocovset;
-            return;
+            continue;
         }
         std::sort(cov1set.begin(),cov1set.end());
         auto &winset=cov1set[0].second;
