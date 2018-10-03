@@ -376,7 +376,7 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
     BufferedSequenceGetter lrbsg(datastore);
     //create a collection of mappings for every read.
     uint64_t last_mapindex=0;
-    uint64_t rshort=0,runmapped=0,rnocovset=0,rprocessed=0;
+    uint64_t rshort=0,runmapped=0,rnocovset=0,rprocessed=0,rnoset=0;
     for (auto rid=0;rid<datastore.size();++rid) {
         auto seq=lrbsg.get_read_sequence(rid);
         if (seq.size()<min_size) {
@@ -390,7 +390,7 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
         }
         std::vector<LongReadMapping> readmappings;
         std::unordered_set<sgNodeID_t> all_nodes;
-        while (last_mapindex>=mappings.size() and mappings[last_mapindex].read_id==rid) {
+        while (last_mapindex<mappings.size() and mappings[last_mapindex].read_id==rid) {
             readmappings.emplace_back(mappings[last_mapindex]);
             all_nodes.insert(llabs(readmappings.back().node));
             ++last_mapindex;
@@ -411,6 +411,7 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
             }
             ++all_nsets[nset];
         }
+        if (all_nsets.empty()) ++rnoset;
         std::vector<std::pair<uint64_t,std::set<sgNodeID_t>>> cov1set;
 
         //3) remove all sets not passing a "sum of all mappings >50% of the read"
@@ -443,7 +444,7 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
         }
         ++rprocessed;
     }
-    sglib::OutputLog()<<"too short: "<<rshort<<"  no mappings: "<<runmapped<<"  no cov1>50%: "<<rnocovset<<" processed: "<<rprocessed<<std::endl;
+    sglib::OutputLog()<<"too short: "<<rshort<<"  no mappings: "<<runmapped<<"  no sets: "<<rnoset<<"  no cov1>50%: "<<rnocovset<<" processed: "<<rprocessed<<std::endl;
 
 
 }
