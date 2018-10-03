@@ -383,6 +383,7 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
             ++rshort;
             continue;
         }
+        auto rsize=seq.size();
         while (last_mapindex<mappings.size() and mappings[last_mapindex].read_id<rid) ++last_mapindex;
         if (last_mapindex>=mappings.size() or mappings[last_mapindex].read_id!=rid) {
             ++runmapped;
@@ -425,7 +426,7 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
             //this can be done faster by saving all starts and ends and keeping a rolling value;
             for (auto m:mappings) {
                 if (nodeset.count(llabs(m.node))){
-                    for (auto i=m.qStart;i<=m.qEnd;++i) ++coverage[i];
+                    for (auto i=m.qStart;i<=m.qEnd and i<rsize;++i) ++coverage[i];
                 }
             }
             uint64_t cov1=std::count(coverage.begin(),coverage.end(),1);
