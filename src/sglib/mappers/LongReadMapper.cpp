@@ -420,7 +420,7 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
             auto &nodeset=nsv.first;
             uint64_t total_map_bp=0;
             for (auto m:mappings) if (nodeset.count(llabs(m.node))) total_map_bp+=m.qEnd-m.qStart;
-            if (total_map_bp*2>seq.size()) continue;
+            if (total_map_bp*2<seq.size()) continue;
             //this can be done faster by saving all starts and ends and keeping a rolling value;
             for (auto m:mappings) {
                 if (nodeset.count(llabs(m.node))){
