@@ -389,11 +389,11 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
             ++runmapped;
             continue;
         }
-        std::vector<LongReadMapping> readmappings;
+        std::vector<LongReadMapping> read_mappings;
         std::unordered_set<sgNodeID_t> all_nodes;
         while (last_mapindex<mappings.size() and mappings[last_mapindex].read_id==rid) {
-            readmappings.emplace_back(mappings[last_mapindex]);
-            all_nodes.insert(llabs(readmappings.back().node));
+            read_mappings.emplace_back(mappings[last_mapindex]);
+            all_nodes.insert(llabs(read_mappings.back().node));
             ++last_mapindex;
         }
         //evaluate a read's mappings:
@@ -421,10 +421,10 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
         for (auto &nsv:all_nsets){
             auto &nodeset=nsv.first;
             uint64_t total_map_bp=0;
-            for (auto m:mappings) if (nodeset.count(llabs(m.node))) total_map_bp+=m.qEnd-m.qStart;
+            for (auto m:read_mappings) if (nodeset.count(llabs(m.node))) total_map_bp+=m.qEnd-m.qStart;
             if (total_map_bp*2<seq.size()) continue;
             //this can be done faster by saving all starts and ends and keeping a rolling value;
-            for (auto m:mappings) {
+            for (auto m:read_mappings) {
                 if (nodeset.count(llabs(m.node))){
                     for (auto i=m.qStart;i<=m.qEnd and i<rsize;++i) ++coverage[i];
                 }
@@ -440,7 +440,7 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
         auto &winset=cov1set.back().second;
         //TODO: 4) try to find "turn-arounds" for CCS-style reads (later)
         //TODO: 7) copy vector to read_to_mappings
-        for (auto &m:mappings){
+        for (auto &m:read_mappings){
             if (winset.count(llabs(m.node))) filtered_read_mappings[rid].push_back(m);
         }
         ++rprocessed;
