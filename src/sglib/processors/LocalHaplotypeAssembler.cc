@@ -377,7 +377,7 @@ void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, bool si
     }
 }
 
-void add_readkmer_nodes_lha(std::vector<sgNodeID_t> & kmernodes, std::vector<std::pair<uint64_t,bool>> & readkmers, const std::unordered_map<uint64_t, graphStrandPos> & index, bool rev){
+void add_readkmer_nodes_lha(std::vector<sgNodeID_t> & kmernodes, std::vector<std::pair<uint64_t,bool>> & readkmers, const UniqueKmerIndex::Map & index, bool rev){
     //TODO allow for a minimum of kmers to count the hit?
     if (not rev) {
         for (auto rki=readkmers.begin();rki<readkmers.end();++rki) {
@@ -398,7 +398,7 @@ void add_readkmer_nodes_lha(std::vector<sgNodeID_t> & kmernodes, std::vector<std
 
 }
 
-void add_readkmer_nodes_lha128(std::vector<sgNodeID_t> & kmernodes, std::vector<std::pair<__uint128_t,bool>> & readkmers, const std::unordered_map<__uint128_t, graphStrandPos> & index, bool rev){
+void add_readkmer_nodes_lha128(std::vector<sgNodeID_t> & kmernodes, std::vector<std::pair<__uint128_t,bool>> & readkmers, const Unique63merIndex::Map& index, bool rev){
     //TODO allow for a minimum of kmers to count the hit?
     if (not rev) {
         for (auto rki=readkmers.begin();rki<readkmers.end();++rki) {
