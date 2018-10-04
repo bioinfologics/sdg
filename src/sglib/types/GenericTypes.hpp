@@ -9,6 +9,7 @@
 #include <string>
 #include <tuple>
 #include <limits>
+#include <sglib/hash/xxhash.h>
 #include "hashing_helper.hpp"
 
 typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
@@ -100,6 +101,16 @@ struct nodeVisitor {
     }
 };
 
+
+struct int128_hash {
+    size_t operator()( const __int128 &x) const
+    {
+        const void *buffer = (unsigned char *) &x;
+        uint64_t tmp_hash = XXH64(buffer, 16, 0);
+        return tmp_hash;
+    }
+};
+/*
 #ifndef SWIG
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 /// \cond DO_NOT_DOCUMENT
@@ -108,16 +119,19 @@ namespace std {
     //TODO: this hashing sucks, but it is needed
     template <> struct hash<__int128 unsigned>
     {
+
         size_t operator()(const __int128 unsigned & x) const
         {
-            return hash<uint64_t>()((uint64_t)x);
+            const void* buffer = (unsigned char *) &x;
+            uint64_t tmp_hash = XXH64(buffer, 16, 0);
+            return tmp_hash;
         }
     };
 }
-#endif
+#endif // __clang__ (clang provides int128 hashing)
 /// \endcond
-#endif
-#endif
-
+#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // SWIG
+*/
 
 #endif //BSG_GENERICTYPES_HPP
