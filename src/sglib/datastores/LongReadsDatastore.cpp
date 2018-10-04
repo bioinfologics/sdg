@@ -38,6 +38,7 @@ void LongReadsDatastore::load_index(std::string &file) {
     }
 
     input_file.read((char*)&nReads, sizeof(nReads));
+
     input_file.read((char*)&fPos, sizeof(fPos));
     input_file.seekg(fPos);
     read_to_fileRecord.resize(nReads);
@@ -176,20 +177,34 @@ void BufferedSequenceGetter::write_selection(std::ofstream &output_file, const s
     output_file.write((char *) &type, sizeof(type));
 
     output_file.write((char *) &size, sizeof(size)); // How many reads we will write in the file
+    std::string seq;
     for (auto i=0;i<read_ids.size();i++) {
-        std::string seq(get_read_sequence(read_ids[i]));
+        get_read_sequence(read_ids[i], seq);
         size=seq.size();
         output_file.write((char *) &size,sizeof(size)); // Read length
         output_file.write(seq.data(),seq.size());       // Read sequence
     }
 }
 
-std::string BufferedSequenceGetter::get_read_sequence(uint64_t readID) {
+void BufferedSequenceGetter::get_read_sequence(uint64_t readID, std::string &seq) {
     off_t read_offset_in_file=datastore.read_to_fileRecord[readID].offset;
     if (read_offset_in_file<buffer_offset or read_offset_in_file+datastore.read_to_fileRecord[readID].record_size>buffer_offset+bufsize) {
         buffer_offset=read_offset_in_file;
         lseek(fd,read_offset_in_file,SEEK_SET);
-        read(fd,buffer,bufsize);
+        size_t sz_read=0, total_left = bufsize;
+        char * buffer_pointer = buffer;
+        std::cout << "Need to read a new buffer";
+        while(total_left>0) {
+            ssize_t current = read(fd, buffer_pointer, total_left);
+            if (current < 0) {
+                throw std::runtime_error("Reading from " + this->datastore.filename + " failed!");
+            } else {
+                sz_read += current;
+                total_left -= current;
+                buffer_pointer += current;
+                std::cout << "buffer[" << buffer_pointer-buffer << "] read " << current << " left to read" << total_left << std::endl;
+            }
+        }
     }
-    return std::string(buffer+(read_offset_in_file-buffer_offset),buffer+(read_offset_in_file-buffer_offset)+datastore.read_to_fileRecord[readID].record_size);
+    seq = std::string(buffer+(read_offset_in_file-buffer_offset),buffer+(read_offset_in_file-buffer_offset)+datastore.read_to_fileRecord[readID].record_size);
 }
