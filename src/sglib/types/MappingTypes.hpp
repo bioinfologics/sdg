@@ -66,9 +66,10 @@ struct LongReadMapping {
                == std::tie(other.node,other.read_id,other.nStart,other.nEnd,other.qStart,other.qEnd);
     }
 
+
     bool operator<(const LongReadMapping &other) const {
-        return std::tie(node,read_id,nStart,nEnd,qStart,qEnd)
-               < std::tie(other.node,other.read_id,other.nStart,other.nEnd,other.qStart,other.qEnd);
+        return std::tie(read_id,qStart,qEnd,node,nStart,nEnd)
+               < std::tie(other.read_id,other.qStart,other.qEnd,other.node,other.nStart,other.nEnd);
     }
 
     sgNodeID_t node = 0;        /// Node ID, sign represents direction

@@ -192,7 +192,7 @@ struct kmerPos {
                                                                     contigID(contigID),offset(offset) {}
 
     uint64_t kmer = 0;
-    uint32_t contigID = 0;
+    int32_t contigID = 0;
     int32_t offset = 0;
 
     friend class byKmerContigOffset;

@@ -19,6 +19,7 @@
 #include "sglib/indexers/UniqueKmerIndex.hpp"
 #include "sglib/mappers/LinkedReadMapper.hpp"
 #include "sglib/mappers/LongReadMapper.hpp"
+#include "sglib/datastores/LongReadsDatastore.hpp"
 #include "sglib/mappers/PairedReadMapper.hpp"
 #include "sglib/datastores/PairedReadsDatastore.hpp"
 #include "sglib/datastores/PathsDatastore.hpp"
@@ -103,6 +104,14 @@ namespace std {
    %ignore vector<PairedReadsDatastore>::vector(size_type);
    %ignore vector<PairedReadsDatastore>::resize;
    %template(vectorPairedReadsDatastore) vector<PairedReadsDatastore>;
+
+   %ignore vector<LinkedReadsDatastore>::vector(size_type);
+   %ignore vector<LinkedReadsDatastore>::resize;
+   %template(vectorLinkedReadsDatastore) vector<LinkedReadsDatastore>;
+
+   %ignore vector<LongReadsDatastore>::vector(size_type);
+   %ignore vector<LongReadsDatastore>::resize;
+   %template(vectorLongReadsDatastore) vector<LongReadsDatastore>;
 
    %ignore vector<PathsDatastore>::vector(size_type);
    %ignore vector<PathsDatastore>::resize;

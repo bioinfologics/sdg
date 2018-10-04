@@ -21,12 +21,10 @@ class LongReadMapper {
     const SequenceGraph & sg;
 
     uint8_t k=15;
-    int window_size = 750;
-    int window_slide = window_size/3;
-    int min_kmers = 11;
-    int spread_pct =90;
-    int max_num_score_nodes = 100;
-    float min_spread = spread_pct/100.f;
+    int min_size=1000;
+    int min_chain=50;
+    int max_jump=500;
+    int max_delta_change=60;
 
     /**
      * Stores an index of the mappings of a node to all the mappings where it appears.
@@ -49,7 +47,27 @@ public:
 
     std::vector<uint64_t> get_node_read_ids(sgNodeID_t nodeID) const ;
 
-    void map_reads(std::unordered_set<uint32_t> readIDs = {});
+    void set_params(uint8_t _k=15, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60){
+        k=_k;
+        min_size=_min_size;
+        min_chain=_min_chain;
+        max_jump=_max_jump;
+        max_delta_change=_max_delta_change;
+    }
+
+    void get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers);
+
+    std::set<sgNodeID_t> window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, uint32_t read_kmers_size);
+
+    std::vector<LongReadMapping> alignment_blocks(uint32_t readID, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,  uint32_t read_kmers_size, std::set<sgNodeID_t> &candidates);
+
+    std::vector<LongReadMapping> filter_blocks(std::vector<LongReadMapping> & blocks, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,  uint32_t read_kmers_size);
+
+    std::vector<LongReadMapping> refine_multinode_reads();
+
+    void map_reads(std::unordered_set<uint32_t> readIDs = {},std::string detailed_log="");
+
+    void map_reads(std::string detailed_log){map_reads({},detailed_log);};
 
     void read(std::string filename);
 
