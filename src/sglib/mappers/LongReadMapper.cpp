@@ -173,6 +173,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
         auto & private_results=thread_mappings[omp_get_thread_num()];
         BufferedSequenceGetter sequenceGetter(datastore);
         std::vector<std::vector<std::pair<int32_t, int32_t>>> node_matches; //node, offset
+        std::string query_sequence;
 #pragma omp for
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
 
@@ -191,7 +192,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
             }
 
             //========== 1. Get read sequence, kmerise, get all matches ==========
-            const auto query_sequence(sequenceGetter.get_read_sequence(readID));
+            sequenceGetter.get_read_sequence(readID,query_sequence);
             if ( query_sequence.size()< 2 * min_size) {
                 continue;
             }
@@ -378,7 +379,8 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
     uint64_t last_mapindex=0;
     uint64_t rshort=0,runmapped=0,rnocovset=0,rprocessed=0,rnoset=0;
     for (auto rid=0;rid<datastore.size();++rid) {
-        auto seq=lrbsg.get_read_sequence(rid);
+        std::string seq;
+        lrbsg.get_read_sequence(rid,seq);
         if (seq.size()<min_size) {
             ++rshort;
             continue;
