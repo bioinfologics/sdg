@@ -29,11 +29,11 @@ TEST_CASE("Long reads datastore create, read, write") {
     for (auto &r:reads_to_check){
         r = dis(gen);
     }
-
+    std::string seq;
     std::unordered_map<uint32_t, size_t> read_sz1;
     for (const auto &r: reads_to_check){
-        auto s=bufferedSequenceGetter.get_read_sequence(r);
-        read_sz1[r]=s.size();
+        bufferedSequenceGetter.get_read_sequence(r,seq);
+        read_sz1[r]=seq.size();
     }
 
     uint32_t read_to_validate=3234;
@@ -42,8 +42,8 @@ TEST_CASE("Long reads datastore create, read, write") {
     int i=0;
     while(equal and it < 100) {
         for (i = 0; i < reads_to_check.size() and equal; i++) {
-            auto s = bufferedSequenceGetter.get_read_sequence(reads_to_check[i]);
-            if (s.size() != read_sz1[reads_to_check[i]]) equal = false;
+            bufferedSequenceGetter.get_read_sequence(reads_to_check[i],seq);
+            if (seq.size() != read_sz1[reads_to_check[i]]) equal = false;
         }
         it++;
     }

@@ -23,6 +23,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
         auto & private_results=thread_mappings[omp_get_thread_num()];
         BufferedSequenceGetter sequenceGetter(datastore);
         std::vector<std::vector<std::pair<uint32_t, bool>>> node_matches;
+        std::string query_sequence;
 #pragma omp for
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
 
@@ -40,8 +41,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 continue;
             }
             bool print_window(false);
-
-            const auto query_sequence(sequenceGetter.get_read_sequence(readID));
+            sequenceGetter.get_read_sequence(readID,query_sequence);
             if ( query_sequence.size()< 4*window_size) {
                 continue;
             }
