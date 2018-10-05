@@ -161,6 +161,57 @@ public:
         }
         return false;
     }
+};
+
+class StreamKmerFactory : protected KMerFactory {
+public:
+    explicit StreamKmerFactory(uint8_t k) : KMerFactory(k) {}
+
+    inline void produce_all_kmers(const char * seq, std::vector<std::pair<bool, uint64_t>> &mers){
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        last_unknown=0;
+        fkmer=0;
+        rkmer=0;
+        auto s=seq;
+        while (*s!='\0' and *s!='\n') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(true,fkmer);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(false,rkmer);
+                }
+            }
+            ++s;
+        }
+    }
+
+    inline void produce_all_kmers(const char * seq, std::vector<uint64_t> &mers){
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        last_unknown=0;
+        fkmer=0;
+        rkmer=0;
+        auto s=seq;
+        while (*s!='\0' and *s!='\n') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(fkmer);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(rkmer);
+                }
+            }
+            ++s;
+        }
+    }
 
 };
 

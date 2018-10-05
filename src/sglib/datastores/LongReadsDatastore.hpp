@@ -82,7 +82,7 @@ public:
 
         buffer=(char *)malloc(bufsize);
     }
-    void get_read_sequence(uint64_t readID, std::string &seq);
+    const char * get_read_sequence(uint64_t readID);
 
     ~BufferedSequenceGetter(){
         free(buffer);

@@ -23,7 +23,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
         auto & private_results=thread_mappings[omp_get_thread_num()];
         BufferedSequenceGetter sequenceGetter(datastore);
         std::vector<std::vector<std::pair<uint32_t, bool>>> node_matches;
-        std::string query_sequence;
+        const char * query_sequence_ptr;
 #pragma omp for
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
 
@@ -41,15 +41,15 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs) {
                 continue;
             }
             bool print_window(false);
-            sequenceGetter.get_read_sequence(readID,query_sequence);
-            if ( query_sequence.size()< 4*window_size) {
-                continue;
-            }
+            query_sequence_ptr = sequenceGetter.get_read_sequence(readID);
 
             std::map<uint32_t , uint32_t > node_score;
             //===== Create a vector of nodes for every k-mer in the read.
             read_kmers.clear();
-            skf.create_kmers(query_sequence, read_kmers); //XXX: Ns will produce "deletion-windows"
+            skf.create_kmers(query_sequence_ptr, read_kmers); //XXX: Ns will produce "deletion-windows"
+            if ( read_kmers.size()< 4*window_size) {
+                continue;
+            }
 
             if (node_matches.size() < read_kmers.size()) {
                 node_matches.resize(read_kmers.size());
