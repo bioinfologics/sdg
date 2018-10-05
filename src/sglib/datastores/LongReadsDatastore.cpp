@@ -198,7 +198,8 @@ const char * BufferedSequenceGetter::get_read_sequence(uint64_t readID) {
     if (read_offset_in_file<buffer_offset or read_offset_in_file+chunk_size>buffer_offset+bufsize) {
         buffer_offset=read_offset_in_file;
         lseek(fd,read_offset_in_file,SEEK_SET);
-        size_t sz_read=0, total_left = bufsize;
+        size_t sz_read=0, total_left = 0;
+        total_left = std::min((uint64_t) bufsize, (uint64_t) total_size-read_offset_in_file);
         char * buffer_pointer = buffer;
         while(total_left>0) {
             ssize_t current = read(fd, buffer_pointer, total_left);

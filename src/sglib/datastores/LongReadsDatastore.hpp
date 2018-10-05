@@ -5,6 +5,7 @@
 #ifndef BSG_LONGREADSDATASTORE_HPP
 #define BSG_LONGREADSDATASTORE_HPP
 
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -79,7 +80,9 @@ public:
             perror(msg.c_str());
             throw std::runtime_error("Cannot open " + datastore.filename);
         }
-
+        struct stat f_stat;
+        stat(_ds.filename.c_str(), &f_stat);
+        total_size = f_stat.st_size;
         buffer=(char *)malloc(bufsize);
     }
     const char * get_read_sequence(uint64_t readID);
@@ -97,6 +100,7 @@ private:
     size_t bufsize,chunk_size;
     off_t buffer_offset = std::numeric_limits<off_t>::max();
     int fd;
+    off_t total_size=0;
 };
 
 #endif //BSG_LONGREADSDATASTORE_HPP
