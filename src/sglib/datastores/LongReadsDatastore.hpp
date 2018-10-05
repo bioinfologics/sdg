@@ -5,6 +5,7 @@
 #ifndef BSG_LONGREADSDATASTORE_HPP
 #define BSG_LONGREADSDATASTORE_HPP
 
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -71,7 +72,7 @@ public:
 // Check if this needs to be page size aware
 class BufferedSequenceGetter{
 public:
-    BufferedSequenceGetter(const LongReadsDatastore &_ds, size_t _bufsize = 1024*1024*30, size_t _chunk_size = 1024*1024*4):
+    BufferedSequenceGetter(const LongReadsDatastore &_ds, size_t _bufsize = 1024*1024*30ul, size_t _chunk_size = 1024*1024*4ul):
             datastore(_ds),bufsize(_bufsize),chunk_size(_chunk_size){
         fd=open(datastore.filename.c_str(),O_RDONLY);
         if (fd == -1) {
@@ -79,10 +80,12 @@ public:
             perror(msg.c_str());
             throw std::runtime_error("Cannot open " + datastore.filename);
         }
-
+        struct stat f_stat;
+        stat(_ds.filename.c_str(), &f_stat);
+        total_size = f_stat.st_size;
         buffer=(char *)malloc(bufsize);
     }
-    std::string get_read_sequence(uint64_t readID);
+    const char * get_read_sequence(uint64_t readID);
 
     ~BufferedSequenceGetter(){
         free(buffer);
@@ -97,6 +100,7 @@ private:
     size_t bufsize,chunk_size;
     off_t buffer_offset = std::numeric_limits<off_t>::max();
     int fd;
+    off_t total_size=0;
 };
 
 #endif //BSG_LONGREADSDATASTORE_HPP

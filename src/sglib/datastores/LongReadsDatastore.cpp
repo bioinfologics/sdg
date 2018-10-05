@@ -38,6 +38,7 @@ void LongReadsDatastore::load_index(std::string &file) {
     }
 
     input_file.read((char*)&nReads, sizeof(nReads));
+
     input_file.read((char*)&fPos, sizeof(fPos));
     input_file.seekg(fPos);
     read_to_fileRecord.resize(nReads);
@@ -176,20 +177,40 @@ void BufferedSequenceGetter::write_selection(std::ofstream &output_file, const s
     output_file.write((char *) &type, sizeof(type));
 
     output_file.write((char *) &size, sizeof(size)); // How many reads we will write in the file
+    const char* seq_ptr;
     for (auto i=0;i<read_ids.size();i++) {
-        std::string seq(get_read_sequence(read_ids[i]));
+        seq_ptr = get_read_sequence(read_ids[i]);
+        std::string seq(seq_ptr);
         size=seq.size();
         output_file.write((char *) &size,sizeof(size)); // Read length
         output_file.write(seq.data(),seq.size());       // Read sequence
     }
 }
 
-std::string BufferedSequenceGetter::get_read_sequence(uint64_t readID) {
+const char * BufferedSequenceGetter::get_read_sequence(uint64_t readID) {
     off_t read_offset_in_file=datastore.read_to_fileRecord[readID].offset;
-    if (read_offset_in_file<buffer_offset or read_offset_in_file+datastore.read_to_fileRecord[readID].record_size>buffer_offset+bufsize) {
+    if (chunk_size < datastore.read_to_fileRecord[readID].record_size) {
+        throw std::runtime_error(
+                "Reading from " + this->datastore.filename +
+                " failed!\nThe size of the buffer chunk is smaller than read " +
+                std::to_string(readID) + " increase the chunk_size so this read fits");
+    }
+    if (read_offset_in_file<buffer_offset or read_offset_in_file+chunk_size>buffer_offset+bufsize) {
         buffer_offset=read_offset_in_file;
         lseek(fd,read_offset_in_file,SEEK_SET);
-        read(fd,buffer,bufsize);
+        size_t sz_read=0, total_left = 0;
+        total_left = std::min((uint64_t) bufsize, (uint64_t) total_size-read_offset_in_file);
+        char * buffer_pointer = buffer;
+        while(total_left>0) {
+            ssize_t current = read(fd, buffer_pointer, total_left);
+            if (current < 0) {
+                throw std::runtime_error("Reading from " + this->datastore.filename + " failed!");
+            } else {
+                sz_read += current;
+                total_left -= current;
+                buffer_pointer += current;
+            }
+        }
     }
-    return std::string(buffer+(read_offset_in_file-buffer_offset),buffer+(read_offset_in_file-buffer_offset)+datastore.read_to_fileRecord[readID].record_size);
+    return buffer+(read_offset_in_file-buffer_offset);
 }

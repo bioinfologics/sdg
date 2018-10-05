@@ -12,6 +12,7 @@
 #include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/types/MappingTypes.hpp>
 #include <sglib/indexers/NKmerIndex.hpp>
+#include "LinkedReadMapper.hpp"
 
 /**
  * Long read mapping to the graph, this class manages storage and computation of the alignments.
@@ -79,17 +80,30 @@ public:
 
     void update_graph_index();
 
+    /**
+     * This goes read by read, and filters the mappings by finding a set of linked nodes that maximises 1-cov of the read
+     *
+     * Unfiltered mappings read from this->mappings and results stored in this->filtered_read_mappings, which is cleared.
+     *
+     * @param lrm a LinkedReadMapper with mapped reads, over the same graph this mapper has mapped Long Reads.
+     * @param min_size minimum size of the read to filter mappings.
+     * @param min_tnscore minimum neighbour score on linked reads
+     */
+    void filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size=10000, float min_tnscore=0.03);
+
     LongReadsDatastore datastore;
     /**
      * This public member stores a flat list of mappings from the reads, it is accessed using the mappings_in_node index
      * or the read_to_mappings index.
      */
     std::vector<LongReadMapping> mappings;
+    std::vector < std::vector<LongReadMapping> > filtered_read_mappings;
     /**
      * Stores an index of the resulting mappings of a single long read, for each long read, stores the position of it's mappings.
      * This index can be used to query all the nodes that map to a single read.
      */
     std::vector< std::vector < std::vector<LongReadMapping>::size_type > > read_to_mappings;    /// Nodes in the read, 0 or empty = unmapped
+
 
     static const bsgVersion_t min_compat;
 

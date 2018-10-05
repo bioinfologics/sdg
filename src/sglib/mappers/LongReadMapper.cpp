@@ -167,12 +167,13 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
     if (!detailed_log.empty()) dl.open(detailed_log);
 #pragma omp parallel
     {
-        StringKMerFactory skf(k);
+        StreamKmerFactory skf(k);
         std::vector<std::pair<bool, uint64_t>> read_kmers;
 
         auto & private_results=thread_mappings[omp_get_thread_num()];
         BufferedSequenceGetter sequenceGetter(datastore);
         std::vector<std::vector<std::pair<int32_t, int32_t>>> node_matches; //node, offset
+        const char * query_sequence_ptr;
 #pragma omp for
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
 
@@ -191,12 +192,14 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
             }
 
             //========== 1. Get read sequence, kmerise, get all matches ==========
-            const auto query_sequence(sequenceGetter.get_read_sequence(readID));
-            if ( query_sequence.size()< 2 * min_size) {
+            query_sequence_ptr = sequenceGetter.get_read_sequence(readID);
+            read_kmers.clear();
+            skf.produce_all_kmers(query_sequence_ptr, read_kmers);
+
+            if ( read_kmers.size()< 2 * min_size) {
                 continue;
             }
-            read_kmers.clear();
-            skf.create_kmers(query_sequence, read_kmers);
+
             get_all_kmer_matches(node_matches,read_kmers);
 //
 //            if (readID==737) {
@@ -363,4 +366,91 @@ void LongReadMapper::update_graph_index() {
     std::cout<<"updating index with k="<<std::to_string(k)<<std::endl;
     assembly_kmers=NKmerIndex(k);
     assembly_kmers.generate_index(sg);
+}
+
+void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size, float min_tnscore) {
+    if (lrm.tag_neighbours.empty()) {
+        sglib::OutputLog()<<"Can't filter mappins because there are no tag_neighbours on the LinkedReadMapper"<<std::endl;
+        return;
+    }
+    sglib::OutputLog()<<"Filtering mappings"<<std::endl;
+    filtered_read_mappings.clear();
+    filtered_read_mappings.resize(datastore.size());
+    BufferedSequenceGetter lrbsg(datastore);
+    //create a collection of mappings for every read.
+    uint64_t last_mapindex=0;
+    uint64_t rshort=0,runmapped=0,rnocovset=0,rprocessed=0,rnoset=0;
+    for (auto rid=0;rid<datastore.size();++rid) {
+        const char* seq_ptr;
+        seq_ptr = lrbsg.get_read_sequence(rid);
+        std::string seq(seq_ptr);
+        if (seq.size()<min_size) {
+            ++rshort;
+            continue;
+        }
+        auto rsize=seq.size();
+        while (last_mapindex<mappings.size() and mappings[last_mapindex].read_id<rid) ++last_mapindex;
+        if (last_mapindex>=mappings.size() or mappings[last_mapindex].read_id!=rid) {
+            ++runmapped;
+            continue;
+        }
+        std::vector<LongReadMapping> read_mappings;
+        std::unordered_set<sgNodeID_t> all_nodes;
+        while (last_mapindex<mappings.size() and mappings[last_mapindex].read_id==rid) {
+            read_mappings.emplace_back(mappings[last_mapindex]);
+            all_nodes.insert(llabs(read_mappings.back().node));
+            ++last_mapindex;
+        }
+        //evaluate a read's mappings:
+        //TODO: 1) remove middle-mappings (later)
+        //2) create the neighbour sets, uniq to not evaluate same set many times over.
+        std::map<std::set<sgNodeID_t>,int> all_nsets;
+        for (auto n:all_nodes){
+            std::set<sgNodeID_t> nset;
+            for (auto m:all_nodes){
+                for (auto &score:lrm.tag_neighbours[n]){
+                    if (score.node==m and score.score>min_tnscore) {
+                        nset.insert(m);
+                        break;
+                    }
+                }
+            }
+            ++all_nsets[nset];
+        }
+        if (all_nsets.empty()) ++rnoset;
+        std::vector<std::pair<uint64_t,std::set<sgNodeID_t>>> cov1set;
+
+        //3) remove all sets not passing a "sum of all mappings >50% of the read"
+        //   compute the 1-cov total bases for each set, find set with highest 1-cov
+        std::vector<uint8_t> coverage(seq.size());
+        for (auto &nsv:all_nsets){
+            auto &nodeset=nsv.first;
+            uint64_t total_map_bp=0;
+            for (auto m:read_mappings) if (nodeset.count(llabs(m.node))) total_map_bp+=m.qEnd-m.qStart;
+            if (total_map_bp*2<seq.size()) continue;
+            //this can be done faster by saving all starts and ends and keeping a rolling value;
+            for (auto m:read_mappings) {
+                if (nodeset.count(llabs(m.node))){
+                    for (auto i=m.qStart;i<=m.qEnd and i<rsize;++i) ++coverage[i];
+                }
+            }
+            uint64_t cov1=std::count(coverage.begin(),coverage.end(),1);
+            cov1set.emplace_back(cov1, nodeset);
+        }
+        if (cov1set.empty()) {
+            ++rnocovset;
+            continue;
+        }
+        std::sort(cov1set.begin(),cov1set.end());
+        auto &winset=cov1set.back().second;
+        //TODO: 4) try to find "turn-arounds" for CCS-style reads (later)
+        //TODO: 7) copy vector to read_to_mappings
+        for (auto &m:read_mappings){
+            if (winset.count(llabs(m.node))) filtered_read_mappings[rid].push_back(m);
+        }
+        ++rprocessed;
+    }
+    sglib::OutputLog()<<"too short: "<<rshort<<"  no mappings: "<<runmapped<<"  no sets: "<<rnoset<<"  no cov1>50%: "<<rnocovset<<" processed: "<<rprocessed<<std::endl;
+
+
 }
