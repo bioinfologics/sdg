@@ -12,12 +12,12 @@ TEST_CASE("Workspace create, read, write") {
 }
 
 TEST_CASE("Long reads datastore create, read, write") {
-/*    {
-        std::string lr_filepath("../tests/datasets/workspace/strwb_lr.fastq");
+    {
+        std::string lr_filepath("../tests/datasets/workspace/long_reads.fastq");
         std::string lrds_output_path("long_reads.loseq");
         LongReadsDatastore ds(lr_filepath, lrds_output_path);
     }
-*/
+
     LongReadsDatastore ds("long_reads.loseq");
     BufferedSequenceGetter bufferedSequenceGetter(ds);
 
@@ -25,7 +25,7 @@ TEST_CASE("Long reads datastore create, read, write") {
     std::mt19937 gen(10); // Always using same seed to get same results
     std::uniform_int_distribution<> dis(1, ds.size());
 
-    std::array<uint64_t, 300> reads_to_check;
+    std::array<uint64_t, 50> reads_to_check;
     for (auto &r:reads_to_check){
         r = dis(gen);
     }
@@ -43,7 +43,7 @@ TEST_CASE("Long reads datastore create, read, write") {
     bool equal=true;
     uint32_t it=0;
     int i=0;
-    while(equal and it < 100) {
+    while(equal and it < 20) {
         for (i = 0; i < reads_to_check.size() and equal; i++) {
             seq_ptr = bufferedSequenceGetter.get_read_sequence(reads_to_check[i]);
             read_kmers.clear();
