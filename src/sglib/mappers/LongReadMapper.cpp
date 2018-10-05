@@ -167,7 +167,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
     if (!detailed_log.empty()) dl.open(detailed_log);
 #pragma omp parallel
     {
-        StreamKMerFactory skf(k);
+        StreamKmerFactory skf(k);
         std::vector<std::pair<bool, uint64_t>> read_kmers;
 
         auto & private_results=thread_mappings[omp_get_thread_num()];
@@ -194,7 +194,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
             //========== 1. Get read sequence, kmerise, get all matches ==========
             query_sequence_ptr = sequenceGetter.get_read_sequence(readID);
             read_kmers.clear();
-            skf.produce_all_kmers(query_sequence, read_kmers);
+            skf.produce_all_kmers(query_sequence_ptr, read_kmers);
 
             if ( read_kmers.size()< 2 * min_size) {
                 continue;
@@ -381,8 +381,9 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
     uint64_t last_mapindex=0;
     uint64_t rshort=0,runmapped=0,rnocovset=0,rprocessed=0,rnoset=0;
     for (auto rid=0;rid<datastore.size();++rid) {
-        std::string seq;
-        lrbsg.get_read_sequence(rid,seq);
+        const char* seq_ptr;
+        seq_ptr = lrbsg.get_read_sequence(rid);
+        std::string seq(seq_ptr);
         if (seq.size()<min_size) {
             ++rshort;
             continue;
