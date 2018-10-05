@@ -19,6 +19,7 @@
 #include "sglib/indexers/UniqueKmerIndex.hpp"
 #include "sglib/mappers/LinkedReadMapper.hpp"
 #include "sglib/mappers/LongReadMapper.hpp"
+#include "sglib/datastores/LongReadsDatastore.hpp"
 #include "sglib/mappers/PairedReadMapper.hpp"
 #include "sglib/datastores/PairedReadsDatastore.hpp"
 #include "sglib/datastores/PathsDatastore.hpp"
@@ -74,6 +75,7 @@ namespace std {
    %template(vectorString) vector<string>;
    %template(vectorLink) vector<Link>;
    %template(vectorSGNode) vector<sgNodeID_t>;
+   %template(vectorvectorSGNode) vector<vector<sgNodeID_t>>;
    %template(vectorNode) vector<Node>;
    %template(vectorNodeVisitor) vector<nodeVisitor>;
    %template(vectorUINT16) vector<uint16_t >;
@@ -83,9 +85,11 @@ namespace std {
    %template(vectorMinPosIDX) vector<MinPosIDX>;
    %template(vectorReadPosSize) vector< ReadPosSize >;
    %template(vectorReadMapping) vector<ReadMapping>;
-   %template(vectorvectorReadMapping) vector<std::vector<ReadMapping>>;
+   %template(vectorvectorReadMapping) vector<vector<ReadMapping>>;
    %template(vectorLongReadMapping) vector<LongReadMapping>;
-
+   %template(vectorvectorLongReadMapping) vector<vector<LongReadMapping>>;
+   %template(vectorTagNeighbour) vector<TagNeighbour>;
+   %template(vectorvectorTagNeighbour) vector<vector<TagNeighbour>>;
 
 
    %ignore vector<LongReadMapper>::vector(size_type);
@@ -103,6 +107,14 @@ namespace std {
    %ignore vector<PairedReadsDatastore>::vector(size_type);
    %ignore vector<PairedReadsDatastore>::resize;
    %template(vectorPairedReadsDatastore) vector<PairedReadsDatastore>;
+
+   %ignore vector<LinkedReadsDatastore>::vector(size_type);
+   %ignore vector<LinkedReadsDatastore>::resize;
+   %template(vectorLinkedReadsDatastore) vector<LinkedReadsDatastore>;
+
+   %ignore vector<LongReadsDatastore>::vector(size_type);
+   %ignore vector<LongReadsDatastore>::resize;
+   %template(vectorLongReadsDatastore) vector<LongReadsDatastore>;
 
    %ignore vector<PathsDatastore>::vector(size_type);
    %ignore vector<PathsDatastore>::resize;

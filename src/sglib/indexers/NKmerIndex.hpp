@@ -25,7 +25,7 @@ public:
     void generate_index(const SequenceGraph &sg, int filter_limit = 200) {
         assembly_kmers.reserve(100000000);
 
-        sglib::OutputLog() << "Updating lr mapping index" << std::endl;
+        sglib::OutputLog() << "Updating mapping index for k=" << std::to_string(k) << std::endl;
         StringKMerFactory skf(k);
         std::vector<std::pair<bool,uint64_t > > contig_kmers;
 

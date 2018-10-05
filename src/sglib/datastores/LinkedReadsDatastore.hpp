@@ -35,14 +35,6 @@ struct LinkedReadData {
 class BufferedLRSequenceGetter;
 
 std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16);
-/*namespace std {
-    inline template<> std::size_t hash (__int128 unsigned x)
-    {
-        // not a very good hash function, but I just want to get it working first!
-        return std::hash(((uint64_t) x));
-    }
-}*/
-
 
 /**
  * LinkedReadsDatastore is a file with reads and 10xTags.

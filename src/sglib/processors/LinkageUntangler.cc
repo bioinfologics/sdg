@@ -701,7 +701,7 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_p
 }
 
 
-LinkageDiGraph LinkageUntangler::make_longRead_linkage() {
+LinkageDiGraph LinkageUntangler::make_longRead_linkage(int min_reads) {
     SequenceGraph& sg(ws.getGraph());
     LinkageDiGraph ldg(sg);
 
@@ -712,36 +712,51 @@ LinkageDiGraph LinkageUntangler::make_longRead_linkage() {
     //use all libraries collect votes on each link
     auto rmi=0;
     for (LongReadMapper &lm:ws.getLongReadMappers()) {
-        for (auto r = 0UL; r < lm.read_to_mappings.size(); r++) { // For all reads
-            for (auto i = 0UL; !lm.read_to_mappings[r].empty() && i < lm.read_to_mappings[r].size() - 1; i++) { // All "forward" mappings
-                for (auto j = i + 1; j < lm.read_to_mappings[r].size(); j++) {
-                    sgNodeID_t n1=lm.mappings[lm.read_to_mappings[r][i]].node;
-                    sgNodeID_t n2=lm.mappings[lm.read_to_mappings[r][j]].node;
-                    if (n1 == 0 or n2 == 0 or n1 == n2 or !selected_nodes[std::abs(n1)] or !selected_nodes[std::abs(n2)]) continue;
-                    n1=-n1;//get the output end
-                    if (llabs(n1) > llabs(n2)) std::swap(n1, n2);
-                    ++lv[std::make_pair(n1, n2)];
+
+        LongReadMapping lsm;
+        for (auto &m: lm.mappings) { // For all reads
+            //only link to the next selected node
+            if (!selected_nodes[std::abs(m.node)]) continue;
+            if (lsm.read_id==m.read_id) {
+                if (lsm.node != m.node) {
+                    sgNodeID_t n1 = lsm.node;
+                    sgNodeID_t n2 = m.node;
+                    if (n1 != 0 and n2 != 0 and n1 != n2 and n1 != -n2) {
+                        n1 = -n1;//get the output end
+                        if (llabs(n1) > llabs(n2)) std::swap(n1, n2);
+                        //filter to ends
+                        if (sg.nodes[llabs(lsm.node)].sequence.size()-lsm.nEnd<3000 and
+                            m.nStart<3000)
+                            ++lv[std::make_pair(n1, n2)];
+                    }
                 }
+
             }
+            lsm=m;
+
         }
-        ++rmi;
     }
     sglib::OutputLog()<<"adding links"<<std::endl;
+    uint64_t lc(0);
     for (auto l:lv) {
-        if (l.second >= 5) {
+        if (std::abs(l.first.first)==243 or std::abs(l.first.second)==243) std::cout<<l.first.first<<" <-> "<<l.first.second<<" :"<<l.second<<std::endl;
+        if (l.second >= min_reads) {
             //todo: size, appropriate linkage handling, etc
             //todo: check alternative signs for same linkage
-            auto s = l.first.first;
+            /*auto s = l.first.first;
             auto d = l.first.second;
             auto v1 = std::make_pair(-s, d);
             auto v2 = std::make_pair(-s, -d);
             auto v3 = std::make_pair(s, -d);
             if (lv.count(v1) and lv[v1] > 5 * l.second) continue;
             if (lv.count(v2) and lv[v2] > 5 * l.second) continue;
-            if (lv.count(v3) and lv[v3] > 5 * l.second) continue;
+            if (lv.count(v3) and lv[v3] > 5 * l.second) continue;*/
             ldg.add_link(l.first.first, l.first.second, 0);
+            ++lc;
+
         }
     }
+    sglib::OutputLog()<<"long reads produced "<<lc<<" links"<<std::endl;
     return ldg;
 }
 
