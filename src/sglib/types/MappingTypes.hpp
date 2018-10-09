@@ -73,8 +73,8 @@ struct LongReadMapping {
     }
 
     friend std::ostream& operator<<(std::ostream& os, const LongReadMapping& m){
-        os << "<LongReadMapping " << m.read_id << " (" << m.qStart << ":" << m.qEnd << ") -> "
-                                  << m.node << " (" << m.qStart << ":" << m.qEnd << ")  " <<m.score<< "hits>";
+        os << "LongReadMapping " << m.read_id << " (" << m.qStart << ":" << m.qEnd << ") -> "
+                                  << m.node << " (" << m.nStart << ":" << m.nEnd << ")  " <<m.score<< " hits";
         return os;
     }
 
