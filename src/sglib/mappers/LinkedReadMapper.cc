@@ -489,3 +489,29 @@ LinkedReadMapper LinkedReadMapper::operator=(const LinkedReadMapper &other) {
     read_to_node = other.read_to_node;
     return *this;
 }
+
+
+void LinkedReadMapper::write_tag_neighbours(std::string filename) {
+    std::ofstream output_file(filename.c_str());
+    uint64_t count;
+    count =tag_neighbours.size();
+    output_file.write((const char *) &count,sizeof(count));
+    for (auto i=0;i<count;++i) {
+        uint64_t mcount=tag_neighbours[i].size();
+        output_file.write((const char *) &mcount,sizeof(mcount));
+        output_file.write((const char *) tag_neighbours[i].data(), sizeof(TagNeighbour) * mcount);
+    }
+}
+
+void LinkedReadMapper::read_tag_neighbours(std::string filename) {
+    std::ifstream input_file(filename.c_str());
+    uint64_t count;
+    input_file.read(( char *) &count,sizeof(count));
+    tag_neighbours.resize(count);
+    for (auto i=0;i<count;++i) {
+        uint64_t mcount;
+        input_file.read(( char *) &mcount,sizeof(mcount));
+        tag_neighbours[i].resize(mcount);
+        input_file.read(( char *) tag_neighbours[i].data(), sizeof(TagNeighbour) * mcount);
+    }
+}

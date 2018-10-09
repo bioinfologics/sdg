@@ -370,7 +370,7 @@ void LongReadMapper::update_graph_index() {
 
 void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size, float min_tnscore) {
     if (lrm.tag_neighbours.empty()) {
-        sglib::OutputLog()<<"Can't filter mappins because there are no tag_neighbours on the LinkedReadMapper"<<std::endl;
+        sglib::OutputLog()<<"Can't filter mappings because there are no tag_neighbours on the LinkedReadMapper"<<std::endl;
         return;
     }
     sglib::OutputLog()<<"Filtering mappings"<<std::endl;
