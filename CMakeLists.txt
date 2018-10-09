@@ -245,21 +245,6 @@ IF(BUILD_TESTING)
     add_test(basicTests runBasicTests)
 ENDIF()
 
-install(TARGETS
-        bsg-workspace
-        bsg-datastore
-        bsg-kmerspectra
-        bsg-mapper
-        bsg-flowmaker
-        bsg-untangler
-        bsg-lhapassembler
-        runBasicTests
-        RUNTIME DESTINATION bin
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib/static)
-install(DIRECTORY src/sglib
-        DESTINATION include)
-
 IF(BUILD_PYTHON_INTERFACE)
     FIND_PACKAGE(SWIG)
     INCLUDE(${SWIG_USE_FILE})
@@ -295,4 +280,30 @@ IF(BUILD_PYTHON_INTERFACE)
     SWIG_ADD_LIBRARY(bsg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
     SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} bsg "")
     add_dependencies(_bsg doxy2swig)
+
+    install(TARGETS
+            _bsg
+            RUNTIME DESTINATION bsg
+            ARCHIVE DESTINATION bsg
+            LIBRARY DESTINATION bsg)
+
 ENDIF()
+
+
+install(TARGETS
+        bsg-workspace
+        bsg-datastore
+        bsg-kmerspectra
+        bsg-mapper
+        bsg-flowmaker
+        bsg-untangler
+        bsg-lhapassembler
+        gfa-extract
+        seq-thread
+        bsg
+        runBasicTests
+        RUNTIME DESTINATION bin
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib)
+install(DIRECTORY src/sglib
+        DESTINATION include)
