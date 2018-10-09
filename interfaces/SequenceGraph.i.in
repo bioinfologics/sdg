@@ -149,5 +149,7 @@ std::string __str__() {
 
 //TODO: Make sure this changes on new releases
 %pythoncode %{
-__version__ = "0.1"
+__version__ = @bsg_VERSION@
+__branch__ = @GIT_BRANCH@
+__commit__ = @GIT_COMMIT_HASH@
 %}
