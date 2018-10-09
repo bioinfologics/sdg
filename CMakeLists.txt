@@ -248,6 +248,7 @@ ENDIF()
 IF(BUILD_PYTHON_INTERFACE)
     FIND_PACKAGE(SWIG)
     INCLUDE(${SWIG_USE_FILE})
+    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/bsg)
     configure_file(interfaces/python/__init__.py.in bsg/__init__.py)
     configure_file(interfaces/SequenceGraph.i.in SequenceGraph.i)
 
