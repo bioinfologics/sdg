@@ -147,6 +147,10 @@ std::string __str__() {
     __STR__();
 }
 
+%extend LongReadMapping{
+    __STR__();
+};
+
 //TODO: Make sure this changes on new releases
 %pythoncode %{
 __version__ = "0.1"

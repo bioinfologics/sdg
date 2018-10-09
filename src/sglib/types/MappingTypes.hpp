@@ -72,6 +72,12 @@ struct LongReadMapping {
                < std::tie(other.read_id,other.qStart,other.qEnd,other.node,other.nStart,other.nEnd);
     }
 
+    friend std::ostream& operator<<(std::ostream& os, const LongReadMapping& m){
+        os << "<LongReadMapping " << m.read_id << " (" << m.qStart << ":" << m.qEnd << ") -> "
+                                  << m.node << " (" << m.qStart << ":" << m.qEnd << ")  " <<m.score<< "hits>";
+        return os;
+    }
+
     sgNodeID_t node = 0;        /// Node ID, sign represents direction
     uint32_t read_id = 0;       /// ID of the read from the Datastore   (this is never negative!)
     int32_t nStart = 0;         /// Position of the starting node kmer of this mapping
