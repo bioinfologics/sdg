@@ -2,7 +2,7 @@
 // Created by Bernardo Clavijo (EI) on 10/02/2018.
 //
 
-#include <sglib/logger/OutputLog.h>
+#include <sglib/logger/OutputLog.hpp>
 #include <fstream>
 #include <strings.h>
 #include <cstring>
@@ -126,18 +126,15 @@ void PairedReadsDatastore::load_index(){
     fread((char *) &type, sizeof(type),1,fd);
 
     if (magic != BSG_MAGIC) {
-        std::cerr << "This file seems to be corrupted" << std::endl;
-        throw "This file appears to be corrupted";
+        throw std::runtime_error(filename + " appears to be corrupted");
     }
 
     if (version < min_compat) {
-        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw "Incompatible version";
+        throw std::runtime_error("Incompatible version");
     }
 
     if (type != PairedDS_FT) {
-        std::cerr << "The file type is incompatible with this reader" << std::endl;
-        throw "Incompatible file type";
+        throw std::runtime_error("Incompatible file type");
     }
 
     fread( &readsize,sizeof(readsize),1,fd);
@@ -158,18 +155,15 @@ void PairedReadsDatastore::load_from_stream(std::string _filename,std::ifstream 
     input_file.read((char *) &type, sizeof(type));
 
     if (magic != BSG_MAGIC) {
-        std::cerr << "This file seems to be corrupted" << std::endl;
-        throw "This file appears to be corrupted";
+        throw std::runtime_error(filename + " appears to be corrupted");
     }
 
     if (version < min_compat) {
-        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw "Incompatible version";
+        throw std::runtime_error(filename + "has an ncompatible version");
     }
 
     if (type != PairedDS_FT) {
-        std::cerr << "This file is not compatible with this type" << std::endl;
-        throw "Incompatible file type";
+        throw std::runtime_error(filename + " has an incompatible file type");
     }
 
     input_file.read( (char *) &readsize,sizeof(readsize));

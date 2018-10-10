@@ -8,9 +8,9 @@
 
 
 #include "LinkedReadMapper.hpp"
-#include "sglib/SMR.h"
-#include "sglib/factories/KMerIDXFactory.h"
-#include "sglib/readers/SequenceGraphReader.h"
+#include "sglib/SMR.hpp"
+#include "sglib/factories/KMerIDXFactory.hpp"
+#include "sglib/readers/SequenceGraphReader.hpp"
 #include <sglib/utilities/omp_safe.hpp>
 
 const bsgVersion_t LinkedReadMapper::min_compat = 0x0001;
@@ -46,19 +46,17 @@ void LinkedReadMapper::read(std::ifstream &input_file) {
     input_file.read((char *) &type, sizeof(type));
 
     if (magic != BSG_MAGIC) {
-        std::cerr << "This file seems to be corrupted" << std::endl;
-        throw "This file appears to be corrupted";
+        throw std::runtime_error("Magic number not present in the LinkedReadMap file");
     }
 
     if (version < min_compat) {
-        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw "Incompatible version";
+        throw std::runtime_error("LinkedReadMap file version: " + std::to_string(version) + " is not compatible with " + std::to_string(min_compat));
     }
 
     if (type != LinkedMap_FT) {
-        std::cerr << "This file is not compatible with this type" << std::endl;
-        throw "Incompatible file type";
+        throw std::runtime_error("File type supplied: " + std::to_string(type) + " is not compatible with LinkedMap_FT");
     }
+
 
     input_file.read(( char *) &count,sizeof(count));
     read_to_node.resize(count);

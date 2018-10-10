@@ -8,8 +8,8 @@
 #include <sglib/utilities/omp_safe.hpp>
 #include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/types/KmerTypes.hpp>
-#include <sglib/readers/FileReader.h>
-#include <sglib/readers/SequenceGraphReader.h>
+#include <sglib/readers/FileReader.hpp>
+#include <sglib/readers/SequenceGraphReader.hpp>
 #include <cmath>
 #include <sglib/factories/SkipMerFactory.hpp>
 #include <sglib/utilities/omp_safe.hpp>

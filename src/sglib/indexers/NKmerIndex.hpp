@@ -8,8 +8,8 @@
 #include <vector>
 #include <sglib/utilities/omp_safe.hpp>
 #include <sglib/types/KmerTypes.hpp>
-#include <sglib/factories/KMerFactory.h>
-#include <sglib/logger/OutputLog.h>
+#include <sglib/factories/KMerFactory.hpp>
+#include <sglib/logger/OutputLog.hpp>
 #include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/bloom/BloomFilter.hpp>
 

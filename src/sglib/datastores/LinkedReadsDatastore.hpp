@@ -17,7 +17,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <algorithm>
-#include <sglib/factories/KMerFactory.h>
+#include <sglib/factories/KMerFactory.hpp>
 #include <sglib/Version.hpp>
 
 

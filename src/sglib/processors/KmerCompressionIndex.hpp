@@ -5,10 +5,10 @@
 #ifndef BSG_KMERCOMPRESSIONINDEX_HPP
 #define BSG_KMERCOMPRESSIONINDEX_HPP
 
-#include <sglib/factories/KMerCountFactory.h>
-#include <sglib/readers/SequenceGraphReader.h>
+#include <sglib/factories/KMerCountFactory.hpp>
+#include <sglib/readers/SequenceGraphReader.hpp>
 #include <sglib/datastores/PairedReadsDatastore.hpp>
-#include "sglib/SMR.h"
+#include "sglib/SMR.hpp"
 #include "sglib/graph/SequenceGraph.hpp"
 
 class CStringKMerFactory : protected KMerFactory {

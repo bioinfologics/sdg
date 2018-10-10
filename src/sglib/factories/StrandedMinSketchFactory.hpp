@@ -9,7 +9,7 @@
 #include <vector>
 #include <algorithm>
 #include <set>
-#include "KMerFactory.h"
+#include "KMerFactory.hpp"
 
 /**
  * @brief

@@ -18,10 +18,10 @@
 #include <iterator>
 #include <vector>
 #include <map>
-#include <sglib/logger/OutputLog.h>
-#include <sglib/readers/Common.h>
+#include <sglib/logger/OutputLog.hpp>
+#include <sglib/readers/Common.hpp>
 #include <sglib/types/KmerTypes.hpp>
-#include <sglib/factories/KMerFactory.h>
+#include <sglib/factories/KMerFactory.hpp>
 
 using uint = unsigned int;
 

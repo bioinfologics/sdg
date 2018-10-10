@@ -21,9 +21,9 @@
 #include <set>
 #include <unordered_set>
 #include <cmath>
-#include "sglib/logger/OutputLog.h"
-#include <sglib/filesystem/helpers.h>
-#include <sglib/readers/Common.h>
+#include "sglib/logger/OutputLog.hpp"
+#include <sglib/filesystem/helpers.hpp>
+#include <sglib/readers/Common.hpp>
 #include <cassert>
 
 

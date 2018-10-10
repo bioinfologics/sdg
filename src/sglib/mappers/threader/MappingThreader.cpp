@@ -2,9 +2,9 @@
 // Created by Ben Ward (EI) on 21/05/2018.
 //
 
-#include <sglib/mappers/threader/MappingThreader.h>
-#include <sglib/processors/PathExplorer.h>
-#include <sglib/utilities/nstats.h>
+#include <sglib/mappers/threader/MappingThreader.hpp>
+#include <sglib/processors/PathExplorer.hpp>
+#include <sglib/utilities/nstats.hpp>
 
 // Mapping Threader...
 

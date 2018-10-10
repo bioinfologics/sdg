@@ -9,7 +9,7 @@
 #include <limits>
 #include <tuple>
 #include <cmath>
-#include <sglib/factories/KMerFactory.h>
+#include <sglib/factories/KMerFactory.hpp>
 #include <sglib/types/KmerTypes.hpp>
 
 struct KMerIDXFactoryParams {

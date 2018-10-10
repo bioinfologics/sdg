@@ -2,7 +2,7 @@
 // Created by Bernardo Clavijo (EI) on 10/02/2018.
 //
 
-#include <sglib/logger/OutputLog.h>
+#include <sglib/logger/OutputLog.hpp>
 #include <fstream>
 #include <strings.h>
 #include <cstring>
@@ -227,18 +227,15 @@ void LinkedReadsDatastore::load_index(std::string _filename){
     fread((char *) &type, sizeof(type),1,fd);
 
     if (magic != BSG_MAGIC) {
-        std::cerr << "This file seems to be corrupted" << std::endl;
-        throw "This file appears to be corrupted";
+        throw std::runtime_error("Magic number not present in " + _filename);
     }
 
     if (version < min_compat) {
-        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw "Incompatible version";
+        throw std::runtime_error("LinkedReadsDS file version: " + std::to_string(version) + " is not compatible with " + std::to_string(min_compat));
     }
 
     if (type != LinkedDS_FT) {
-        std::cerr << "The file type is incompatible with this reader" << std::endl;
-        throw "Incompatible file type";
+        throw std::runtime_error("File type supplied: " + std::to_string(type) + " is not compatible with LinkedDS_FT");
     }
 
     fread( &readsize,sizeof(readsize),1,fd);
@@ -260,18 +257,15 @@ void LinkedReadsDatastore::load_from_stream(std::string _filename,std::ifstream 
     fread((char *) &type, sizeof(type),1,fd);
 
     if (magic != BSG_MAGIC) {
-        std::cerr << "This file seems to be corrupted" << std::endl;
-        throw "This file appears to be corrupted";
+        throw std::runtime_error("Magic number not present in " + _filename);
     }
 
     if (version < min_compat) {
-        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw "Incompatible version";
+        throw std::runtime_error("LinkedDS file version: " + std::to_string(version) + " is not compatible with " + std::to_string(min_compat));
     }
 
     if (type != LinkedDS_FT) {
-        std::cerr << "The file type is incompatible with this reader" << std::endl;
-        throw "Incompatible file type";
+        throw std::runtime_error("File type supplied: " + std::to_string(type) + " is not compatible with LinkedDS_FT");
     }
 
     input_file.read( (char *) &readsize,sizeof(readsize));

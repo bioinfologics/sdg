@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <iostream>
 #include <vector>
-#include <sglib/readers/FileReader.h>
+#include <sglib/readers/FileReader.hpp>
 #include <sglib/types/KmerTypes.hpp>
 
 #define unlikely(x)     __builtin_expect((x),0)

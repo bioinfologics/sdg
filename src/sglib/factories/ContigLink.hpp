@@ -13,7 +13,7 @@
 #include <iomanip>
 #include <cmath>
 #include <numeric>
-#include "KMerIDXFactory.h"
+#include "KMerIDXFactory.hpp"
 
 struct FilterSetParams {
     FilterSetParams(std::string output_prefix, uint8_t k, std::vector<KmerIDX> &uniq_kmers,

@@ -82,41 +82,40 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     uint64_t count;
     //read log
     log.clear();
-    std::string version,text;
+    std::string git_version,text;
     std::time_t timestamp;
+
     bsgMagic_t magic;
-    bsgVersion_t bsgversion;
+    bsgVersion_t version;
     BSG_FILETYPE type;
     wsfile.read((char *) &magic, sizeof(magic));
-    wsfile.read((char *) &bsgversion, sizeof(bsgversion));
+    wsfile.read((char *) &version, sizeof(version));
     wsfile.read((char *) &type, sizeof(type));
 
     if (magic != BSG_MAGIC) {
-        std::cerr << "This file seems to be corrupted" << std::endl;
-        throw "This file appears to be corrupted";
+        throw std::runtime_error("Magic number not present in the kci file");
     }
 
-    if (bsgversion < min_compat) {
-        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw "Incompatible version";
+    if (version < min_compat) {
+        throw std::runtime_error("kci file version: " + std::to_string(version) + " is not compatible with " + std::to_string(min_compat));
     }
 
     if (type != WS_FT) {
-        std::cerr << "This file is not compatible with this type" << std::endl;
-        throw "Incompatible file type";
+        throw std::runtime_error("File type supplied: " + std::to_string(type) + " is not compatible with WS_FT");
     }
+
 
     wsfile.read((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
         uint64_t ssize;
         wsfile.read((char *) &timestamp,sizeof(timestamp));
         wsfile.read((char *) &ssize,sizeof(ssize));
-        version.resize(ssize);
-        wsfile.read((char *) version.data(),ssize);
+        git_version.resize(ssize);
+        wsfile.read((char *) git_version.data(),ssize);
         wsfile.read((char *) &ssize,sizeof(ssize));
         text.resize(ssize);
         wsfile.read((char *) text.data(),ssize);
-        log.emplace_back(timestamp,version,text);
+        log.emplace_back(timestamp,git_version,text);
     }
     if (log_only) return;
     //read element type, then use that element's read

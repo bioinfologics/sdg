@@ -2,7 +2,7 @@
 #include <fstream>
 #include <sglib/WorkSpace.hpp>
 #include <sglib/processors/GraphMaker.hpp>
-#include "sglib/logger/OutputLog.h"
+#include "sglib/logger/OutputLog.hpp"
 #include "cxxopts.hpp"
 
 
