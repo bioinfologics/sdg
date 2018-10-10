@@ -8,7 +8,10 @@ for entry in bad_entries:
     del locals()[entry]
 
 from IPython.core.getipython import get_ipython
-get_ipython().run_line_magic('reload_ext', 'wurlitzer')
+try:
+    get_ipython().run_line_magic('reload_ext', 'wurlitzer')
+except:
+    pass
 
 print("version", bsg.__version__)
 print(bsg.__branch__, bsg.__commit__)
