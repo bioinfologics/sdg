@@ -172,6 +172,10 @@ add_library(bsg SHARED
             src/sglib/processors/GraphMaker.cc
             src/sglib/processors/LocalHaplotypeAssembler.cc
             src/sglib/hash/xxhash.c
+            src/sglib/types/MappingTypes.hpp
+            src/sglib/types/GenericTypes.hpp
+            src/sglib/types/KmerTypes.hpp
+            src/sglib/types/hashing_helper.hpp
         )
 
 target_link_libraries(bsg ${DEPENDENCY_LIBS})
