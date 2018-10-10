@@ -442,8 +442,8 @@ MappingFilterResult LongReadMapper::filter_mappings_with_linked_reads(const Link
 
     //3) remove all sets not passing a "sum of all mappings >50% of the read"
     //   compute the 1-cov total bases for each set, find set with highest 1-cov
-    std::vector<uint8_t> coverage(seq.size());
     for (auto &nsv:all_nsets){
+        std::vector<uint8_t> coverage(seq.size());
         auto &nodeset=nsv.first;
         uint64_t total_map_bp=0;
         for (auto m:read_mappings) if (nodeset.count(llabs(m.node))) total_map_bp+=m.qEnd-m.qStart;
