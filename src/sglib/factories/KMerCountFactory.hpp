@@ -32,7 +32,7 @@ struct KmerCount {
         return kmer==other.kmer;
     }
 
-    // http://locklessinc.com/articles/sat_arithmetic 
+    // http://locklessinc.com/articles/sat_arithmetic
     void merge(const KmerCount &other) {
         uint8_t res = count + other.count;
         res |= -(res < count);
@@ -55,16 +55,13 @@ struct KmerCount {
     }
     uint64_t kmer;
     uint8_t count;
-};
-
-namespace std {
-    template <>
-    struct hash<KmerCount> {
+    struct KmerCount_hash {
         size_t operator()(const KmerCount& k) const {
             return k.kmer;
         }
     };
-}
+
+};
 
 template<typename FileRecord>
 class KmerCountFactory : protected KMerFactory {

@@ -36,18 +36,16 @@ public:
     int32_t last_pos = 0;       /// Position of the last node kmer of this mapping
     int32_t unique_matches = 0; /// Number of unique kmer matches
     bool rev=false;
-};
 
-namespace std {
-    template <>
-    struct hash<ReadMapping> {
-        size_t operator()(const ReadMapping& lr) const {
-            std::tuple<sgNodeID_t , uint64_t , int32_t > tp (lr.node,lr.read_id,lr.first_pos);
-            sglib::hash<std::tuple<sgNodeID_t , uint64_t , int32_t>> h;
-            return h (tp);
-        }
-    };
-}
+
+};
+struct ReadMapping_hash {
+    size_t operator()(const ReadMapping& lr) const {
+        std::tuple<sgNodeID_t , uint64_t , int32_t > tp (lr.node,lr.read_id,lr.first_pos);
+        sglib::hash<std::tuple<sgNodeID_t , uint64_t , int32_t>> h;
+        return h (tp);
+    }
+};
 
 /**
  * TODO: Generate indices for LongReadMapping
@@ -81,16 +79,13 @@ struct LongReadMapping {
     int32_t score = 0;          /// Alignment score
 };
 
-namespace std {
-    template <>
-    struct hash<LongReadMapping> {
-        size_t operator()(const LongReadMapping& lr) const {
-            std::tuple<sgNodeID_t , uint64_t , int32_t > tp (lr.node,lr.read_id,lr.nStart);
-            sglib::hash<std::tuple<sgNodeID_t , uint64_t , int32_t>> h;
-            return h (tp);
-        }
-    };
-}
+struct LongReadMapping_hash {
+    size_t operator()(const LongReadMapping& lr) const {
+        std::tuple<sgNodeID_t , uint64_t , int32_t > tp (lr.node,lr.read_id,lr.nStart);
+        sglib::hash<std::tuple<sgNodeID_t , uint64_t , int32_t>> h;
+        return h (tp);
+    }
+};
 
 
 #endif //BSG_MAPPINGTYPES_HPP

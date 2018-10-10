@@ -8,6 +8,9 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_set>
+#include <unordered_map>
+#include <iosfwd>
+#include <algorithm>
 #include <set>
 #include <limits>
 #include <iomanip>
@@ -357,7 +360,7 @@ private:
     const uint32_t offset_limit;
 
 
-    const std::unordered_set<KmerIDX> kmers;
+    const std::unordered_set<KmerIDX, KmerIDX_hash> kmers;
     const std::unordered_map<int32_t, std::pair<uint64_t, uint32_t>> unitigs;
 
     char b2f[255];
