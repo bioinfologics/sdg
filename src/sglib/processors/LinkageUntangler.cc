@@ -760,7 +760,7 @@ LinkageDiGraph LinkageUntangler::make_longRead_linkage(int min_reads) {
     return ldg;
 }
 
-std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<LongReadMapping> lorm_mappings, uint32_t read_size) {
+std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<LongReadMapping> &lorm_mappings, uint32_t read_size) {
     std::vector<Link> linkage;
     std::unordered_map<sgNodeID_t,uint64_t> total_bp;
     std::vector<LongReadMapping> mfilt_total,mmergedfilt;

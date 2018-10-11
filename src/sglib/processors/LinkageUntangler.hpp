@@ -34,7 +34,7 @@ public:
     LinkageDiGraph make_paired_linkage(int min_reads);
     //LinkageDiGraph make_tag_linkage(int min_tags,float end_perc=.3);
     LinkageDiGraph make_longRead_linkage(int min_reads=5);
-    std::vector<Link> mappings_to_multilinkage(const std::vector<LongReadMapping>, uint32_t read_size);
+    std::vector<Link> mappings_to_multilinkage(const std::vector<LongReadMapping> &lorm_mappings, uint32_t read_size);
     LinkageDiGraph make_longRead_multilinkage(const LongReadMapper &lorm);
     LinkageDiGraph make_paired_linkage_pe(int min_reads);
     LinkageDiGraph make_paired_linkage_by_kmer(int min_shared, std::vector<size_t> libraries, bool r1rev, bool r2rev);
