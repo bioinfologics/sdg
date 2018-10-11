@@ -210,9 +210,6 @@ if (BUILD_COV)
     set_target_properties(bsg PROPERTIES
             COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
             LINK_FLAGS    "--coverage")
-    set_target_properties(bsg_static PROPERTIES
-            COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
-            LINK_FLAGS    "--coverage")
 endif()
 
 add_executable(bsg-datastore
@@ -278,7 +275,7 @@ IF(BUILD_TESTING)
     IF(BUILD_COV)
         set_target_properties(runBasicTests PROPERTIES
                 COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
-                LINK_FLAGS    "--coverage --whole-archive")
+                LINK_FLAGS    "--coverage -lgcov")
     ENDIF()
     target_link_libraries(runBasicTests bsg_static)
     add_test(basicTests runBasicTests)
@@ -317,8 +314,8 @@ IF(BUILD_PYTHON_INTERFACE)
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
     endif()
-    SWIG_ADD_LIBRARY(bsg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
-    SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} "")
+    SWIG_ADD_LIBRARY(bsg TYPE STATIC LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
+    SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} bsg_static)
     add_dependencies(_bsg doxy2swig)
 
     install(TARGETS
