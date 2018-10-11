@@ -760,49 +760,60 @@ LinkageDiGraph LinkageUntangler::make_longRead_linkage(int min_reads) {
     return ldg;
 }
 
+std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<LongReadMapping> lorm_mappings, uint32_t read_size) {
+    std::vector<Link> linkage;
+    std::unordered_map<sgNodeID_t,uint64_t> total_bp;
+    std::vector<LongReadMapping> mfilt_total,mmergedfilt;
+    //first, copy mappings, removing nodes whose total mapping adds up to less than 70% of the node unless first or last
+    for (auto &m:lorm_mappings) total_bp[m.node] +=m.nEnd-m.nStart+1;
+    for (int i=0; i<lorm_mappings.size();++i){
+        auto &m=lorm_mappings[i];
+        auto ns=ws.sg.nodes[llabs(m.node)].sequence.size();
+        if ( (i==0 and m.qStart<1000) or (i==mfilt_total.size()-1 and m.qEnd+1000>read_size) or total_bp[m.node]>=.7*ns) {
+            //If a node has mode than one consecutive mapping, merge them.
+            if (mfilt_total.size()>0 and mfilt_total.back().node==m.node and mfilt_total.back().nStart<m.nStart and mfilt_total.back().nEnd<m.nEnd and mfilt_total.back().nEnd<m.nStart+500) {
+                mfilt_total.back().nEnd = m.nEnd;
+                mfilt_total.back().qEnd = m.qEnd;
+            }
+            else mfilt_total.push_back(m);
+        }
+    }
+
+    //Now remove all mappings that do not cover 80% of the node
+    for (int i=0; i<mfilt_total.size();++i){
+        auto &m=mfilt_total[i];
+        auto ns=ws.sg.nodes[llabs(m.node)].sequence.size();
+        if ( (i==0 and m.nEnd>.9*ns and m.qStart<1000) or (i==mfilt_total.size()-1 and m.nStart<.1*ns and m.qEnd+1000>read_size) or m.nEnd-m.nStart+1>=.8*ns) {
+            mmergedfilt.push_back(m);
+        }
+    }
+    //now compute starts and ends for 0% and 100%
+    std::vector<std::pair<sgNodeID_t, std::pair<int32_t, int32_t>>> node_ends;
+    for (auto &m:mmergedfilt) {
+        node_ends.emplace_back(m.node, std::make_pair(m.qStart-m.nStart,m.qEnd+ws.sg.nodes[llabs(m.node)].sequence.size()-m.nEnd));
+    }
+    //for every nodeA:
+    for (auto nA=0;nA<node_ends.size()-1;++nA) {
+        //for every other nodeB fw:
+        for (auto nB=nA;nB<node_ends.size();++nB) {
+            //link from -nodeA to +nodeB with dist start[nodeB]-end[nodeA]-1
+            linkage.emplace_back(-node_ends[nA].first,node_ends[nB].first,node_ends[nB].second.first-node_ends[nA].second.second+1);
+        }
+    }
+}
+
 LinkageDiGraph LinkageUntangler::make_longRead_multilinkage(const LongReadMapper &lorm) {
     SequenceGraph& sg(ws.getGraph());
     LinkageDiGraph ldg(sg);
+    std::vector<Link> linkage;
     //for each read's filtered mappings:
     for(uint64_t rid=0;rid<lorm.filtered_read_mappings.size();++rid) {
-        std::unordered_map<sgNodeID_t,uint64_t> total_bp;
-        std::vector<LongReadMapping> mfilt_total,mmergedfilt;
-        //first, copy mappings, removing nodes whose total mapping adds up to less than 70% of the node unless first or last
-        for (auto &m:lorm.filtered_read_mappings[rid]) total_bp[m.node] +=m.nEnd-m.nStart+1;
-        for (int i=0; i<lorm.filtered_read_mappings[rid].size();++i){
-            auto &m=lorm.filtered_read_mappings[rid][i];
-            auto ns=ws.sg.nodes[llabs(m.node)].sequence.size();
-            if ( (i==0 and m.qStart<1000) or (i==mfilt_total.size()-1 and m.qEnd+1000>lorm.datastore.read_to_fileRecord[rid].record_size) or total_bp[m.node]>=.7*ns) {
-                //If a node has mode than one consecutive mapping, merge them.
-                if (mfilt_total.size()>0 and mfilt_total.back().node==m.node and mfilt_total.back().nStart<m.nStart and mfilt_total.back().nEnd<m.nEnd and mfilt_total.back().nEnd<m.nStart+500) {
-                    mfilt_total.back().nEnd = m.nEnd;
-                    mfilt_total.back().qEnd = m.qEnd;
-                }
-                else mfilt_total.push_back(m);
-            }
-        }
-
-        //Now remove all mappings that do not cover 80% of the node
-        for (int i=0; i<mfilt_total.size();++i){
-            auto &m=mfilt_total[i];
-            auto ns=ws.sg.nodes[llabs(m.node)].sequence.size();
-            if ( (i==0 and m.nEnd>.9*ns and m.qStart<1000) or (i==mfilt_total.size()-1 and m.nStart<.1*ns and m.qEnd+1000>lorm.datastore.read_to_fileRecord[rid].record_size) or m.nEnd-m.nStart+1>=.8*ns) {
-                mmergedfilt.push_back(m);
-            }
-        }
-        //now compute starts and ends for 0% and 100%
-        std::vector<std::pair<sgNodeID_t, std::pair<int32_t, int32_t>>> node_ends;
-        for (auto &m:mmergedfilt) {
-            node_ends.emplace_back(m.node, std::make_pair(m.qStart-m.nStart,m.qEnd+ws.sg.nodes[llabs(m.node)].sequence.size()-m.nEnd));
-        }
-        //for every nodeA:
-        for (auto nA=0;nA<node_ends.size()-1;++nA) {
-            //for every other nodeB fw:
-            for (auto nB=nA;nB<node_ends.size();++nB) {
-                //link from -nodeA to +nodeB with dist start[nodeB]-end[nodeA]-1
-                ldg.add_link(-node_ends[nA].first,node_ends[nB].first,node_ends[nB].second.first-node_ends[nA].second.second+1);
-            }
-        }
+        if (lorm.filtered_read_mappings[rid].empty()) continue;
+        auto newlinks=mappings_to_multilinkage(lorm.filtered_read_mappings[rid],lorm.datastore.read_to_fileRecord[rid].record_size);
+        linkage.insert(linkage.end(),newlinks.begin(),newlinks.end());
+    }
+    for (auto l:linkage) {
+        ldg.add_link(l.source,l.dest,l.dist);
     }
     return ldg;
 }
