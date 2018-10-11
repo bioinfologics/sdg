@@ -374,7 +374,7 @@ void merge_workspace(int argc, char **argv){
     std::unordered_set<std::string> base_datastores;
     for (int i = 0; i < base.paired_read_datastores.size(); ++i) {
         base_datastores.insert(base.paired_read_datastores[i].filename);
-        if (lr_filter.empty() or lr_filter.count(i) == 0) {
+        if (pr_filter.empty() or pr_filter.count(i) == 0) {
             sglib::OutputLog()<< "Adding " << base.paired_read_datastores[i].filename << std::endl;
             out.paired_read_datastores.push_back(base.paired_read_datastores[i]);
             out.paired_read_mappers.push_back(base.paired_read_mappers[i]);
@@ -392,7 +392,7 @@ void merge_workspace(int argc, char **argv){
 
     for (int i = 0; i < base.long_read_datastores.size(); ++i) {
         base_datastores.insert(base.long_read_datastores[i].filename);
-        if (lr_filter.empty() or lr_filter.count(i) == 0) {
+        if (Lr_filter.empty() or Lr_filter.count(i) == 0) {
             sglib::OutputLog()<< "Adding " << base.long_read_datastores[i].filename << std::endl;
             out.long_read_datastores.push_back(base.long_read_datastores[i]);
             out.long_read_mappers.push_back(base.long_read_mappers[i]);
