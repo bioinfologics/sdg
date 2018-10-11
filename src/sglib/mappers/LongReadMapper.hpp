@@ -7,7 +7,7 @@
 
 
 #include <iostream>
-#include <sglib/factories/KMerIDXFactory.h>
+#include <sglib/factories/KMerIDXFactory.hpp>
 #include <sglib/datastores/LongReadsDatastore.hpp>
 #include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/types/MappingTypes.hpp>

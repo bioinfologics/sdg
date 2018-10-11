@@ -2,7 +2,7 @@
 // Created by Luis Yanes (EI) on 23/03/2018.
 //
 
-#include <sglib/logger/OutputLog.h>
+#include <sglib/logger/OutputLog.hpp>
 #include "LongReadsDatastore.hpp"
 
 const bsgVersion_t LongReadsDatastore::min_compat = 0x0001;
@@ -23,18 +23,15 @@ void LongReadsDatastore::load_index(std::string &file) {
     input_file.read((char *) &type, sizeof(type));
 
     if (magic != BSG_MAGIC) {
-        std::cerr << "This file seems to be corrupted" << std::endl;
-        throw std::runtime_error("This file appears to be corrupted");
+        throw std::runtime_error("This file appears to be corrupted: " + file);
     }
 
     if (version < min_compat) {
-        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw std::runtime_error("Incompatible version");
+        throw std::runtime_error("Incompatible version" + std::to_string(version));
     }
 
     if (type != LongDS_FT) {
-        std::cerr << "This file is not compatible with this type" << std::endl;
-        throw std::runtime_error("Incompatible file type");
+        throw std::runtime_error("Incompatible file type" + std::to_string(type));
     }
 
     input_file.read((char*)&nReads, sizeof(nReads));
@@ -139,17 +136,14 @@ void LongReadsDatastore::load_from_stream(std::string file_name, std::ifstream &
     input_file.read((char *) &type, sizeof(type));
 
     if (magic != BSG_MAGIC) {
-        std::cerr << "This file seems to be corrupted" << std::endl;
-        throw std::runtime_error("This file appears to be corrupted");
+        throw std::runtime_error(file_name + " appears to be corrupted");
     }
 
     if (version < min_compat) {
-        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
         throw std::runtime_error("Incompatible version");
     }
 
     if (type != LongDS_FT) {
-        std::cerr << "This file is not compatible with this type" << std::endl;
         throw std::runtime_error("Incompatible file type");
     }
 

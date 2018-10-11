@@ -174,10 +174,43 @@ add_library(bsg SHARED
             src/sglib/hash/xxhash.c
         )
 
+add_library(bsg_static STATIC
+        src/sglib/graph/SequenceGraph.cc
+        src/sglib/graph/SequenceSubGraph.cpp
+        src/sglib/graph/SequenceGraphPath.cpp
+        src/sglib/graph/LinkageDiGraph.cc
+        src/sglib/filesystem/helpers.cc
+        src/sglib/logger/OutputLog.cc
+        src/sglib/datastores/PairedReadsDatastore.cc
+        src/sglib/datastores/LinkedReadsDatastore.cc
+        src/sglib/datastores/PathsDatastore.cc
+        src/sglib/datastores/LongReadsDatastore.cpp
+        src/sglib/mappers/LongReadMapper.cpp
+        src/sglib/mappers/threader/NodeMapper.cpp
+        src/sglib/mappers/threader/MappingThreader.cpp
+        src/sglib/mappers/LinkedReadMapper.cc
+        src/sglib/mappers/PairedReadMapper.cc
+        src/sglib/processors/Untangler.cc
+        src/sglib/processors/TagWalker.cc
+        src/sglib/processors/FlowFollower.cc
+        src/sglib/processors/PathExplorer.cpp
+        src/sglib/processors/LinkageUntangler.cc
+        src/sglib/workspace/WorkSpace.cc
+        src/sglib/processors/KmerCompressionIndex.cc
+        src/sglib/processors/GraphEditor.cc
+        src/sglib/processors/GraphMaker.cc
+        src/sglib/processors/LocalHaplotypeAssembler.cc
+        src/sglib/hash/xxhash.c
+        )
+
 target_link_libraries(bsg ${DEPENDENCY_LIBS})
+target_link_libraries(bsg_static ${DEPENDENCY_LIBS})
 
 if (BUILD_COV)
     set_target_properties(bsg PROPERTIES
+            COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
+            LINK_FLAGS    "--coverage")
+    set_target_properties(bsg_static PROPERTIES
             COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
             LINK_FLAGS    "--coverage")
 endif()
@@ -220,28 +253,34 @@ add_executable(gfa-extract
 add_executable(bsg-dbg
         src/bsg-dbg.cc)
 
-target_link_libraries(bsg-workspace bsg)
-target_link_libraries(bsg-datastore bsg)
-target_link_libraries(bsg-kmerspectra bsg)
-target_link_libraries(bsg-mapper bsg ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-flowmaker bsg ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-untangler bsg ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-lhapassembler bsg ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(gfa-extract bsg)
-target_link_libraries(seq-thread bsg)
-target_link_libraries(bsg-dbg bsg)
+target_link_libraries(bsg-workspace bsg_static)
+target_link_libraries(bsg-datastore bsg_static)
+target_link_libraries(bsg-kmerspectra bsg_static)
+target_link_libraries(bsg-mapper bsg_static ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-flowmaker bsg_static ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-untangler bsg_static ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-lhapassembler bsg_static ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(gfa-extract bsg_static)
+target_link_libraries(seq-thread bsg_static)
+target_link_libraries(bsg-dbg bsg_static)
 
 
 IF(BUILD_TESTING)
     include_directories("tests/include")
     add_library( CatchMain OBJECT tests/sglib/catch-main.cpp tests/include/catch.hpp )
-    add_executable(runBasicTests $<TARGET_OBJECTS:CatchMain> tests/sglib/files_tests.cpp tests/sglib/smr_tests.cpp tests/sglib/kmerfactory_tests.cpp tests/include/catch.hpp tests/sglib/index_tests.cpp)
+    add_executable(runBasicTests
+            $<TARGET_OBJECTS:CatchMain>
+            tests/sglib/files_tests.cpp
+            tests/sglib/smr_tests.cpp
+            tests/sglib/kmerfactory_tests.cpp
+            tests/sglib/index_tests.cpp
+            )
     IF(BUILD_COV)
         set_target_properties(runBasicTests PROPERTIES
                 COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
                 LINK_FLAGS    "--coverage")
     ENDIF()
-    target_link_libraries(runBasicTests bsg)
+    target_link_libraries(runBasicTests bsg_static)
     add_test(basicTests runBasicTests)
 ENDIF()
 
@@ -279,7 +318,7 @@ IF(BUILD_PYTHON_INTERFACE)
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
     endif()
     SWIG_ADD_LIBRARY(bsg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
-    SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} bsg "")
+    SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} bsg_static "")
     add_dependencies(_bsg doxy2swig)
 
     install(TARGETS
@@ -302,6 +341,7 @@ install(TARGETS
         gfa-extract
         seq-thread
         bsg
+        bsg_static
         runBasicTests
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib

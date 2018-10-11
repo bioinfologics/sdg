@@ -3,7 +3,7 @@
 //
 
 #include <ctime>
-#include "OutputLog.h"
+#include "OutputLog.hpp"
 
 namespace sglib {
     template<class cT, class traits = std::char_traits<cT> >

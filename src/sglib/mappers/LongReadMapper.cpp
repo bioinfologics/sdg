@@ -4,7 +4,7 @@
 
 #include <cmath>
 #include <sglib/mappers/LongReadMapper.hpp>
-#include <sglib/logger/OutputLog.h>
+#include <sglib/logger/OutputLog.hpp>
 
 #include <sglib/utilities/omp_safe.hpp>
 #include <atomic>

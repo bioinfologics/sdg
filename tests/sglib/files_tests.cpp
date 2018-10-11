@@ -3,7 +3,7 @@
 //
 
 #include <catch.hpp>
-#include <sglib/readers/FileReader.h>
+#include <sglib/readers/FileReader.hpp>
 #include <sglib/workspace/WorkSpace.hpp>
 #include <random>
 

@@ -3,11 +3,11 @@
 //
 
 #include <catch.hpp>
-#include <sglib/SMR.h>
+#include <sglib/SMR.hpp>
 #include <sglib/types/KmerTypes.hpp>
-#include <sglib/readers/FileReader.h>
-#include <sglib/readers/SequenceGraphReader.h>
-#include <sglib/factories/KMerIDXFactory.h>
+#include <sglib/readers/FileReader.hpp>
+#include <sglib/readers/SequenceGraphReader.hpp>
+#include <sglib/factories/KMerIDXFactory.hpp>
 #include <sglib/graph/SequenceGraph.hpp>
 
 TEST_CASE("Test SMR from fasta"){

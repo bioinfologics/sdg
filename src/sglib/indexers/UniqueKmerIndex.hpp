@@ -8,13 +8,13 @@
 #include <cstdint>
 #include <unordered_set>
 #include <iostream>
-#include <sglib/factories/KMerIDXFactory.h>
-#include <sglib/readers/SequenceGraphReader.h>
+#include <sglib/factories/KMerIDXFactory.hpp>
+#include <sglib/readers/SequenceGraphReader.hpp>
 #include <sglib/utilities/omp_safe.hpp>
 #include <sglib/mappers/PairedReadMapper.hpp>
 #include <sglib/datastores/LinkedReadsDatastore.hpp>
 #include <sglib/types/KmerTypes.hpp>
-#include <sglib/readers/FileReader.h>
+#include <sglib/readers/FileReader.hpp>
 #include <sglib/factories/KmerPosFactory.hpp>
 
 class UniqueKmerIndex {

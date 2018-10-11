@@ -9,8 +9,8 @@
 #include <fstream>
 #include <iostream>
 #include <fcntl.h>
-#include <sglib/readers/Common.h>
-#include <sglib/logger/OutputLog.h>
+#include <sglib/readers/Common.hpp>
+#include <sglib/logger/OutputLog.hpp>
 #include "kseq.hpp"
 
 struct FastxReaderParams {

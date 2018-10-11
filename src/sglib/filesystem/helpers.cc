@@ -7,7 +7,7 @@
 #include <array>
 #include <fcntl.h>
 #include <cassert>
-#include "helpers.h"
+#include "helpers.hpp"
 
 bool sglib::check_file(std::string &filepath) {
     struct stat sb{};

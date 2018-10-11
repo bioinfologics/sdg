@@ -6,7 +6,7 @@
 #define BSG_KMERGRAPHPOSFACTORY_HPP
 
 #include <vector>
-#include "KMerFactory.h"
+#include "KMerFactory.hpp"
 
 class KmerGraphPosFactory : protected KMerFactory {
 public:

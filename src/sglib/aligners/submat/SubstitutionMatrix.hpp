@@ -6,7 +6,7 @@
 #define BSG_SUBSTITUTIONMATRIX_H
 
 #include <iostream>
-#include <sglib/utilities/matrix.h>
+#include <sglib/utilities/matrix.hpp>
 
 namespace sglib {
     namespace alignment {

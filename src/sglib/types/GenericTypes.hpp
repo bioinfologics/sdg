@@ -67,18 +67,14 @@ public:
         os << link.source << " -> " << link.dest;
         return os;
     }
-
 };
-namespace std {
-    template <>
-    struct hash<Link> {
-        size_t operator()(const Link& l) const {
-            std::tuple<sgNodeID_t , sgNodeID_t , int32_t > tp (l.source,l.dest,l.dist);
-            sglib::hash<std::tuple<sgNodeID_t , sgNodeID_t , int32_t>> h;
-            return h (tp);
-        }
-    };
-}
+struct link_hash{
+    size_t operator()(const Link& l) const {
+        std::tuple<sgNodeID_t , sgNodeID_t , int32_t > tp (l.source,l.dest,l.dist);
+        sglib::hash<std::tuple<sgNodeID_t , sgNodeID_t , int32_t>> h;
+        return h (tp);
+    }
+};
 
 /**
  * A node visitor contains the node ID, and distances in terms of NTs and Nodes from the starting node
@@ -110,28 +106,5 @@ struct int128_hash {
         return tmp_hash;
     }
 };
-/*
-#ifndef SWIG
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
-/// \cond DO_NOT_DOCUMENT
-#ifndef __clang__
-namespace std {
-    //TODO: this hashing sucks, but it is needed
-    template <> struct hash<__int128 unsigned>
-    {
-
-        size_t operator()(const __int128 unsigned & x) const
-        {
-            const void* buffer = (unsigned char *) &x;
-            uint64_t tmp_hash = XXH64(buffer, 16, 0);
-            return tmp_hash;
-        }
-    };
-}
-#endif // __clang__ (clang provides int128 hashing)
-/// \endcond
-#endif // DOXYGEN_SHOULD_SKIP_THIS
-#endif // SWIG
-*/
 
 #endif //BSG_GENERICTYPES_HPP

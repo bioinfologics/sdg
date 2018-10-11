@@ -8,7 +8,7 @@
 #include <vector>
 #include <limits>
 #include <tuple>
-#include "sglib/factories/KMerFactory.h"
+#include "sglib/factories/KMerFactory.hpp"
 struct KmerCountFactoryParams {
     uint8_t k;
 };
@@ -31,11 +31,13 @@ struct KmerCount {
     const bool operator==(const KmerCount &other) const {
         return kmer==other.kmer;
     }
+
+    // http://locklessinc.com/articles/sat_arithmetic
     void merge(const KmerCount &other) {
-        if (other.count < 255-count) {
-            count += other.count;
-        }
-        else count=255;
+        uint8_t res = count + other.count;
+        res |= -(res < count);
+
+        count = res;
     }
 
     KmerCount max() {
@@ -53,16 +55,13 @@ struct KmerCount {
     }
     uint64_t kmer;
     uint8_t count;
-};
-
-namespace std {
-    template <>
-    struct hash<KmerCount> {
+    struct KmerCount_hash {
         size_t operator()(const KmerCount& k) const {
             return k.kmer;
         }
     };
-}
+
+};
 
 template<typename FileRecord>
 class KmerCountFactory : protected KMerFactory {

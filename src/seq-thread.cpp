@@ -4,8 +4,8 @@
 
 #include <tuple>
 #include "cxxopts.hpp"
-#include <sglib/mappers/threader/NodeMapper.h>
-#include <sglib/mappers/threader/MappingThreader.h>
+#include <sglib/mappers/threader/NodeMapper.hpp>
+#include <sglib/mappers/threader/MappingThreader.hpp>
 
 int main(int argc, char **argv) {
 

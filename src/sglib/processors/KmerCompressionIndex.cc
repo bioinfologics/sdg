@@ -6,7 +6,7 @@
 #include "KmerCompressionIndex.hpp"
 #include <atomic>
 #include <sstream>
-#include <sglib/readers/FileReader.h>
+#include <sglib/readers/FileReader.hpp>
 #include <sglib/utilities/omp_safe.hpp>
 
 const bsgVersion_t KmerCompressionIndex::min_compat = 0x0001;
@@ -89,18 +89,15 @@ void KmerCompressionIndex::read(std::ifstream &input_file) {
     input_file.read((char *) &type, sizeof(type));
 
     if (magic != BSG_MAGIC) {
-        std::cerr << "This file seems to be corrupted" << std::endl;
-        throw "This file appears to be corrupted";
+        throw std::runtime_error("Magic number not present in the kci file");
     }
 
     if (version < min_compat) {
-        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw "Incompatible version";
+        throw std::runtime_error("kci file version: " + std::to_string(version) + " is not compatible with " + std::to_string(min_compat));
     }
 
     if (type != KCI_FT) {
-        std::cerr << "This file is not compatible with this type" << std::endl;
-        throw "Incompatible file type";
+        throw std::runtime_error("File type supplied: " + std::to_string(type) + " is not compatible with KCI_FT");
     }
 
     input_file.read(( char *) &kcount,sizeof(kcount));
@@ -257,7 +254,7 @@ void KmerCompressionIndex::compute_compression_stats() {
     sglib::OutputLog()<<"KCI Median coverage for unique kmers: " << median <<std::endl;
     sglib::OutputLog()<<"KCI Mode coverage for unique kmers:   " << mode <<std::endl;
 
-    if (median<.9*mode or median>.9*mode ) sglib::OutputLog()<<"WARNING -> median and mode highly divergent"<<std::endl;
+    if ( std::abs( float(median-mode) ) > mode*.1) sglib::OutputLog()<<"WARNING -> median and mode highly divergent"<<std::endl;
     uniq_mode=mode;
 
 }

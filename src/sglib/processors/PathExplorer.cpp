@@ -4,9 +4,9 @@
 
 #include <stack>
 #include <sglib/graph/SequenceGraphPath.hpp>
-#include <sglib/readers/FileReader.h>
-#include <sglib/processors/PathExplorer.h>
-#include <sglib/factories/KMerIDXFactory.h>
+#include <sglib/readers/FileReader.hpp>
+#include <sglib/processors/PathExplorer.hpp>
+#include <sglib/factories/KMerIDXFactory.hpp>
 
 std::vector<SequenceGraphPath> PathExplorer::collect_paths(const sgNodeID_t seed, const sgNodeID_t target,
                                                            const std::string& query, const unsigned int flank) const {

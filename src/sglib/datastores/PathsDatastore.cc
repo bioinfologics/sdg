@@ -37,18 +37,15 @@ void PathsDatastore::read(std::ifstream &input_file) {
     input_file.read((char *) &type, sizeof(type));
 
     if (magic != BSG_MAGIC) {
-        std::cerr << "This file seems to be corrupted" << std::endl;
-        throw "This file appears to be corrupted";
+        throw std::runtime_error("PathsDatastore file seems to be corrupted");
     }
 
     if (version < min_compat) {
-        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw "Incompatible version";
+        throw std::runtime_error("Incompatible version");
     }
 
     if (type != PathDS_FT) {
-        std::cerr << "This file is not compatible with this type" << std::endl;
-        throw "Incompatible file type";
+        throw std::runtime_error("Incompatible file type");
     }
 
     uint64_t count;

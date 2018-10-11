@@ -3,7 +3,7 @@
 #include <sglib/workspace/WorkSpace.hpp>
 #include <sglib/processors/Untangler.hpp>
 #include <sglib/processors/FlowFollower.hpp>
-#include "sglib/logger/OutputLog.h"
+#include "sglib/logger/OutputLog.hpp"
 #include "cxxopts.hpp"
 
 int main(int argc, char * argv[]) {

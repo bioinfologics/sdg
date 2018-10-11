@@ -2,7 +2,7 @@
 #include <fstream>
 #include <sglib/workspace/WorkSpace.hpp>
 #include <sglib/processors/LocalHaplotypeAssembler.hpp>
-#include "sglib/logger/OutputLog.h"
+#include "sglib/logger/OutputLog.hpp"
 #include "cxxopts.hpp"
 
 

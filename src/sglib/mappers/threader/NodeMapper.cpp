@@ -2,7 +2,7 @@
 // Created by Ben Ward (EI) on 18/05/2018.
 //
 
-#include <sglib/mappers/threader/NodeMapper.h>
+#include <sglib/mappers/threader/NodeMapper.hpp>
 
 // Public Methods...
 
