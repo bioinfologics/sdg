@@ -277,7 +277,7 @@ IF(BUILD_TESTING)
                 COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
                 LINK_FLAGS    "--coverage -lgcov")
     ENDIF()
-    target_link_libraries(runBasicTests bsg_static)
+    target_link_libraries(runBasicTests bsg)
     add_test(basicTests runBasicTests)
 ENDIF()
 
