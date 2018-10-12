@@ -778,7 +778,6 @@ std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<L
             else mfilt_total.push_back(m);
         }
     }
-
     //Now remove all mappings that do not cover 80% of the node
     for (int i=0; i<mfilt_total.size();++i){
         auto &m=mfilt_total[i];
@@ -793,13 +792,14 @@ std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<L
         node_ends.emplace_back(m.node, std::make_pair(m.qStart-m.nStart,m.qEnd+ws.sg.nodes[llabs(m.node)].sequence.size()-m.nEnd));
     }
     //for every nodeA:
-    for (int nA=0;nA<node_ends.size()-1;++nA) {
+    for (int nA=0;nA+1<node_ends.size();++nA) {
         //for every other nodeB fw:
-        for (int nB=nA;nB<node_ends.size();++nB) {
+        for (int nB=nA+1;nB<node_ends.size();++nB) {
             //link from -nodeA to +nodeB with dist start[nodeB]-end[nodeA]-1
             linkage.emplace_back(-node_ends[nA].first,node_ends[nB].first,node_ends[nB].second.first-node_ends[nA].second.second+1);
         }
     }
+    return linkage;
 }
 
 LinkageDiGraph LinkageUntangler::make_longRead_multilinkage(const LongReadMapper &lorm) {
