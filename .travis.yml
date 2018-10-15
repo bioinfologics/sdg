@@ -1,10 +1,35 @@
 language: c++
-
 sudo: false
 
-matrix:
-  include:
-    - os: linux
+stages:
+    - testing
+    - release binaries
+
+_test_stage: &_test_stage
+   stage: testing
+   install: true
+   script: ./build.sh
+   after_success:
+    # Creating report
+      - lcov --gcov-tool=gcov-6 --directory . --capture --output-file coverage.info # capture coverage info
+      - lcov --gcov-tool=gcov-6 --remove coverage.info '/usr/*' --output-file coverage.info # filter out system
+      - lcov --gcov-tool=gcov-6 --remove coverage.info '*googletest*' --output-file coverage.info # filter out googletest
+      - lcov --gcov-tool=gcov-6 --list coverage.info #debug info
+    # Uploading report to CodeCov
+      - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
+   deploy:
+     provider: pages
+     skip_cleanup: true
+     github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
+     local_dir: build/docs/html
+     on:
+       branch: master
+       condition: $DEPLOY = true
+
+jobs:
+  include: 
+    - <<: *_test_stage
+      os: linux
       addons:
         apt:
           sources:
@@ -18,36 +43,46 @@ matrix:
             - graphviz
             - lcov
             - swig
+      before_install:
+        - CC=gcc-6 && CXX=g++-6 && GCOV=gcov-6 && DEPLOY=true
       env:
-        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && GCOV=gcov-6 && DEPLOY=true"
         - CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 -DBUILD_PYTHON_INTERFACE=OFF -DBUILD_COV=ON -DBUILD_DOC=ON"
-    - os: osx
+      
+    - <<: *_test_stage
+      os: osx
       osx_image: xcode9.4
+      before_install:
+          - sudo softwareupdate -i "Command Line Tools (macOS High Sierra version 10.13) for Xcode-9.4"
+          - brew update && brew cask uninstall oclint && brew install swig gcc6 && CC=gcc-6 && CXX=g++-6
+          - brew update && brew cask install julia
+
+    - stage: release binaries
+      os: linux
+      if: branch = master OR tag IS present
+      cache:
+        timeout: 1000
+        directories:
+          - downloads
       env:
-        - MATRIX_EVAL="brew update && brew cask uninstall oclint && brew install swig gcc6 && CC=gcc-6 && CXX=g++-6"
-    - os: osx
-      osx_image: xcode9.4
-before_install:
-    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo softwareupdate -i "Command Line Tools (macOS High Sierra version 10.13) for Xcode-9.4"; fi
-    - eval "${MATRIX_EVAL}"
-
-script: ./build.sh
-
-after_success:
-    # Creating report
-  - lcov --gcov-tool=gcov-6 --directory . --capture --output-file coverage.info # capture coverage info
-  - lcov --gcov-tool=gcov-6 --remove coverage.info '/usr/*' --output-file coverage.info # filter out system
-  - lcov --gcov-tool=gcov-6 --remove coverage.info '*googletest*' --output-file coverage.info # filter out googletest
-  - lcov --gcov-tool=gcov-6 --list coverage.info #debug info
-  # Uploading report to CodeCov
-  - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
-
-install: true
-deploy:
-  provider: pages
-  skip_cleanup: true
-  github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
-  local_dir: build/docs/html
-  on:
-    branch: master
-    condition: $DEPLOY = true
+          global:
+            - BINARYBUILDER_DOWNLOADS_CACHE=downloads
+            - BINARYBUILDER_AUTOMATIC_APPLE=true
+      sudo: required
+      before_install:
+          - wget https://julialang-s3.julialang.org/bin/linux/x64/1.0/julia-1.0.1-linux-x86_64.tar.gz && tar -xvf julia-1.0.1-linux-x86_64.tar.gz && PATH=$PATH:julia-1.0.1/bin
+      before_script:
+        - julia -e 'using Pkg; pkg"add BinaryProvider"; pkg"add BinaryBuilder#master"; Pkg.build()'
+      script:
+        - julia build_tarballs.jl
+      deploy:
+          provider: releases
+          api_key: $BINARY_DEPLOY_TOKEN
+          file_glob: true
+          file: products/*
+          skip_cleanup: true
+          on:
+              repo: bioinfologics/bsg
+              tags: true
+      
+      
+        
