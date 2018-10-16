@@ -14,7 +14,7 @@
 #include "sglib/readers/SequenceGraphReader.hpp"
 #include "sglib/processors/KmerCompressionIndex.hpp"
 #include "sglib/workspace/WorkSpace.hpp"
-
+#include "sglib/factories/KMerCountFactory.hpp"
 
 #include "sglib/indexers/UniqueKmerIndex.hpp"
 #include "sglib/mappers/LinkedReadMapper.hpp"
@@ -41,6 +41,7 @@
 %include "std_string.i"
 %include "std_vector.i"
 %include "std_unordered_set.i"
+%include "std_set.i"
 
 %include "sglib/types/KmerTypes.hpp"
 %include "sglib/types/GenericTypes.hpp"
@@ -51,6 +52,7 @@
 %include "sglib/indexers/UniqueKmerIndex.hpp"
 %include "sglib/processors/KmerCompressionIndex.hpp"
 %include "sglib/workspace/WorkSpace.hpp"
+%include "sglib/factories/KMerCountFactory.hpp"
 
 %include "sglib/processors/Untangler.hpp"
 %include "sglib/processors/PathExplorer.hpp"
@@ -127,6 +129,9 @@ namespace std {
    %ignore vector<SequenceGraphPath>::vector(size_type);
    %ignore vector<SequenceGraphPath>::resize;
    %template(vectorPath) vector<SequenceGraphPath>;
+   %template(set10xTag) set<bsg10xTag>;
+   %template(setSGNodePair) set<pair<sgNodeID_t, sgNodeID_t>>;
+   %template(vectorKmerCount) vector<KmerCount>;
 };
 
 %feature("python:tp_hash") Link "std::hash<Link>";
