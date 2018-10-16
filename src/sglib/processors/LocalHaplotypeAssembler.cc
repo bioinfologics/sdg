@@ -92,17 +92,14 @@ void LocalHaplotypeAssembler::init_from_file(std::string problem_file) {
     input_file.read((char *) &type, sizeof(type));
 
     if (magic != BSG_MAGIC) {
-        std::cerr << "This file seems to be corrupted" << std::endl;
-        throw std::runtime_error("This file appears to be corrupted");
+        throw std::runtime_error(problem_file + " appears to be corrupted");
     }
 
     if (version < min_compat_problem) {
-        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
         throw std::runtime_error("Incompatible version");
     }
 
     if (type != HLAP_FT) {
-        std::cerr << "This file is not compatible with this type" << std::endl;
         throw std::runtime_error("Incompatible file type");
     }
 
@@ -671,18 +668,15 @@ void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
     input_file.read((char *) &type, sizeof(type));
 
     if (magic != BSG_MAGIC) {
-        std::cerr << "This file seems to be corrupted" << std::endl;
-        throw std::runtime_error("This file appears to be corrupted");
+        throw std::runtime_error(full_file + " appears to be corrupted");
     }
 
     if (version < min_compat_full_problem) {
-        std::cerr << "This version of the file is not compatible with the current build, please update" << std::endl;
-        throw std::runtime_error("Incompatible version");
+        throw std::runtime_error(full_file + " has an incompatible version");
     }
 
     if (type != HLAF_FT) {
-        std::cerr << "This file is not compatible with this type" << std::endl;
-        throw std::runtime_error("Incompatible file type");
+        throw std::runtime_error(full_file + " has an incompatible file type");
     }
 
     uint64_t count;

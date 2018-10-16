@@ -8,8 +8,8 @@
 #include <numeric>
 #include <string>
 #include <vector>
-#include <sglib/utilities/matrix.h>
-#include <sglib/aligners/submat/SubstitutionMatrix.h>
+#include <sglib/utilities/matrix.hpp>
+#include <sglib/aligners/submat/SubstitutionMatrix.hpp>
 
 namespace sglib {
     namespace alignment {

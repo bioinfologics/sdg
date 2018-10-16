@@ -5,7 +5,7 @@
 #ifndef BSG_MAPPINGTHREADER_H
 #define BSG_MAPPINGTHREADER_H
 
-#include <sglib/mappers/threader/NodeMapper.h>
+#include <sglib/mappers/threader/NodeMapper.hpp>
 
 class MappingThread;
 

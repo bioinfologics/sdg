@@ -2,7 +2,7 @@
 // Created by Bernardo Clavijo (EI) on 25/05/2018.
 //
 
-#include <sglib/logger/OutputLog.h>
+#include <sglib/logger/OutputLog.hpp>
 #include <fstream>
 #include "LinkageDiGraph.hpp"
 void LinkageDiGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d) {

@@ -11,7 +11,7 @@
 #include "sglib/graph/SequenceGraphPath.hpp"
 #include "sglib/graph/SequenceSubGraph.hpp"
 #include "sglib/graph/SequenceGraph.hpp"
-#include "sglib/readers/SequenceGraphReader.h"
+#include "sglib/readers/SequenceGraphReader.hpp"
 #include "sglib/processors/KmerCompressionIndex.hpp"
 #include "sglib/workspace/WorkSpace.hpp"
 
@@ -24,11 +24,11 @@
 #include "sglib/datastores/PairedReadsDatastore.hpp"
 #include "sglib/datastores/PathsDatastore.hpp"
 
-#include "sglib/mappers/threader/NodeMapper.h"
-#include "sglib/mappers/threader/MappingThreader.h"
+#include "sglib/mappers/threader/NodeMapper.hpp"
+#include "sglib/mappers/threader/MappingThreader.hpp"
 
 #include "sglib/processors/Untangler.hpp"
-#include "sglib/processors/PathExplorer.h"
+#include "sglib/processors/PathExplorer.hpp"
 #include "sglib/graph/LinkageDiGraph.hpp"
 #include "sglib/processors/LinkageUntangler.hpp"
 
@@ -53,7 +53,7 @@
 %include "sglib/workspace/WorkSpace.hpp"
 
 %include "sglib/processors/Untangler.hpp"
-%include "sglib/processors/PathExplorer.h"
+%include "sglib/processors/PathExplorer.hpp"
 
 %include "sglib/datastores/LinkedReadsDatastore.hpp"
 %include "sglib/datastores/LongReadsDatastore.hpp"
@@ -62,8 +62,8 @@
 %include "sglib/mappers/LongReadMapper.hpp"
 %include "sglib/mappers/LinkedReadMapper.hpp"
 %include "sglib/mappers/PairedReadMapper.hpp"
-%include "sglib/mappers/threader/NodeMapper.h"
-%include "sglib/mappers/threader/MappingThreader.h"
+%include "sglib/mappers/threader/NodeMapper.hpp"
+%include "sglib/mappers/threader/MappingThreader.hpp"
 %include "sglib/processors/LinkageUntangler.hpp"
 %include "sglib/graph/LinkageDiGraph.hpp"
 
@@ -164,5 +164,7 @@ std::string __repr__() {
 
 //TODO: Make sure this changes on new releases
 %pythoncode %{
-__version__ = "0.1"
+__version__ = "@bsg_VERSION@"
+__branch__ = "@GIT_BRANCH@"
+__commit__ = "@GIT_COMMIT_HASH@"
 %}

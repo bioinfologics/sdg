@@ -17,8 +17,8 @@
 #include <functional>
 #include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/mappers/LinkedReadMapper.hpp>
-#include <sglib/readers/FileReader.h>
-#include <sglib/logger/OutputLog.h>
+#include <sglib/readers/FileReader.hpp>
+#include <sglib/logger/OutputLog.hpp>
 #include "SequenceGraphPath.hpp"
 #include <sglib/utilities/omp_safe.hpp>
 #include <sglib/factories/KmerPosFactory.hpp>
@@ -547,8 +547,9 @@ void SequenceGraph::load_from_gfa(std::string filename) {
 }
 
 void SequenceGraph::write_to_gfa(std::string filename, const std::vector<std::vector<Link>> &arg_links,
-                                 const std::unordered_set<sgNodeID_t> &selected_nodes, const std::unordered_set<sgNodeID_t> &mark_red,
+                                 const std::vector<sgNodeID_t> &selected_nodes, const std::vector<sgNodeID_t> &mark_red,
                                  const std::vector<double> &depths) {
+    std::unordered_set<sgNodeID_t> output_mark_red(mark_red.begin(), mark_red.end());
     std::unordered_set<sgNodeID_t > output_nodes(selected_nodes.begin(), selected_nodes.end());
     std::string fasta_filename;
     //check the filename ends in .gfa
@@ -573,7 +574,7 @@ void SequenceGraph::write_to_gfa(std::string filename, const std::vector<std::ve
         if (!output_nodes.empty() and output_nodes.count(i)==0 and output_nodes.count(-i)==0) continue;
         fastaf<<">seq"<<i<<std::endl<<nodes[i].sequence<<std::endl;
         gfaf<<"S\tseq"<<i<<"\t*\tLN:i:"<<nodes[i].sequence.size()<<"\tUR:Z:"<<fasta_filename
-                <<(mark_red.count(i)?"\tCL:Z:red":"")<<(depths.empty() or std::isnan(depths[i])?"":"\tDP:f:"+std::to_string(depths[i]))<<std::endl;
+                <<(output_mark_red.count(i)?"\tCL:Z:red":"")<<(depths.empty() or std::isnan(depths[i])?"":"\tDP:f:"+std::to_string(depths[i]))<<std::endl;
     }
 
     for (auto &ls:(arg_links.size()>0? arg_links:links)){

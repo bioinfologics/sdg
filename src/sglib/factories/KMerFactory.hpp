@@ -8,7 +8,7 @@
 #include <vector>
 #include <cstdint>
 #include <iostream>
-#include <sglib/readers/FileReader.h>
+#include <sglib/readers/FileReader.hpp>
 #include <sglib/types/KmerTypes.hpp>
 #include <array>
 

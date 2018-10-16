@@ -5,10 +5,10 @@
 #include <string>
 #include <sglib/graph/SequenceGraph.hpp>
 #include <cxxopts.hpp>
-#include <sglib/filesystem/helpers.h>
-#include <sglib/logger/OutputLog.h>
-#include <sglib/factories/KMerIDXFactory.h>
-#include <sglib/factories/ContigBlockFactory.h>
+#include <sglib/filesystem/helpers.hpp>
+#include <sglib/logger/OutputLog.hpp>
+#include <sglib/factories/KMerIDXFactory.hpp>
+#include <sglib/factories/ContigBlockFactory.hpp>
 
 enum string_code {
     union_,

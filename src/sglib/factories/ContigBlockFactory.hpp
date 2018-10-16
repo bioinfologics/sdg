@@ -18,15 +18,15 @@
 #include <iterator>
 #include <vector>
 #include <map>
-#include <sglib/logger/OutputLog.h>
-#include <sglib/readers/Common.h>
+#include <sglib/logger/OutputLog.hpp>
+#include <sglib/readers/Common.hpp>
 #include <sglib/types/KmerTypes.hpp>
-#include <sglib/factories/KMerFactory.h>
+#include <sglib/factories/KMerFactory.hpp>
 
 using uint = unsigned int;
 
 struct FilterSetParams {
-    FilterSetParams(std::string output_prefix, uint8_t k, std::unordered_set<KmerIDX> &uniq_kmers,
+    FilterSetParams(std::string output_prefix, uint8_t k, std::unordered_set<KmerIDX, KmerIDX_hash> &uniq_kmers,
                     uint32_t min_kmers_to_call_match = 1,
                     uint32_t min_seen_contig_to_write_output = 0) : k(k), uniq_kmers(uniq_kmers),
                                                                     min_kmers_to_call_match(min_kmers_to_call_match),
@@ -35,7 +35,7 @@ struct FilterSetParams {
                                                                             min_seen_contig_to_write_output) {}
 
     uint8_t k;
-    const std::unordered_set<KmerIDX> &uniq_kmers;
+    const std::unordered_set<KmerIDX, KmerIDX_hash> &uniq_kmers;
     const uint32_t min_kmers_to_call_match;
     const uint32_t min_seen_contig_to_write_output;
     const std::string output_prefix;
@@ -531,7 +531,7 @@ private:
     const uint32_t offset_limit;
 
 
-    const std::unordered_set<KmerIDX>& kmers;
+    const std::unordered_set<KmerIDX, KmerIDX_hash>& kmers;
 
     char b2f[255];
     char b2r[255];

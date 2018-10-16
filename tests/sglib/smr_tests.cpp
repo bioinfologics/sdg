@@ -3,11 +3,11 @@
 //
 
 #include <catch.hpp>
-#include <sglib/SMR.h>
+#include <sglib/SMR.hpp>
 #include <sglib/types/KmerTypes.hpp>
-#include <sglib/readers/FileReader.h>
-#include <sglib/readers/SequenceGraphReader.h>
-#include <sglib/factories/KMerIDXFactory.h>
+#include <sglib/readers/FileReader.hpp>
+#include <sglib/readers/SequenceGraphReader.hpp>
+#include <sglib/factories/KMerIDXFactory.hpp>
 #include <sglib/graph/SequenceGraph.hpp>
 
 TEST_CASE("Test SMR from fasta"){
@@ -48,11 +48,4 @@ TEST_CASE("Test SMR from memory"){
     // Get the unique_kmers from the file
     unique_kmers = kmerIDX_SMR.process_from_memory();
     REQUIRE(unique_kmers.size() != 0);
-}
-
-TEST_CASE("Load GFA") {
-    sglib::OutputLogLevel = sglib::DEBUG;
-    SequenceGraph sg;
-    sg.load_from_gfa("../tests/datasets/tgraph.gfa");
-    REQUIRE(sg.nodes.size() > 1);
 }

@@ -9,9 +9,9 @@
 #include <fstream>
 
 #include "sglib/types/MappingTypes.hpp"
-#include "sglib/factories/KMerIDXFactory.h"
-#include "sglib/readers/SequenceGraphReader.h"
-#include "sglib/SMR.h"
+#include "sglib/factories/KMerIDXFactory.hpp"
+#include "sglib/readers/SequenceGraphReader.hpp"
+#include "sglib/SMR.hpp"
 #include <sglib/datastores/PairedReadsDatastore.hpp>
 #include <sglib/indexers/UniqueKmerIndex.hpp>
 

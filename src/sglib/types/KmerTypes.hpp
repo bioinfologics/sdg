@@ -55,22 +55,18 @@ struct KmerIDX {
         }
     };
 
+
     uint64_t kmer;
     int32_t contigID;
     uint32_t pos;
     uint8_t count;
 };
 
-namespace std {
-    template <>
-    struct hash<KmerIDX> {
-        size_t operator()(const KmerIDX& k) const {
-            return k.kmer;
-        }
-    };
-}
-
-
+struct KmerIDX_hash {
+    size_t operator()(const KmerIDX& k) const {
+        return k.kmer;
+    }
+};
 /**
  * This type support k > 31
  */
@@ -118,21 +114,17 @@ struct KmerIDX128 {
         }
     };
 
+
     __uint128_t kmer;
     int32_t contigID;
     uint32_t pos;
     uint8_t count;
 };
-
-namespace std {
-    template <>
-    struct hash<KmerIDX128> {
-        size_t operator()(const KmerIDX128& k) const {
-            return (uint64_t) k.kmer;
-        }
-    };
-}
-
+struct KMerIDX128_hash{
+    size_t operator()(const KmerIDX128& k) const {
+        return (uint64_t) k.kmer;
+    }
+};
 
 /**
  * Stores a signed node,position pair, where the node encodes the direction
@@ -175,17 +167,13 @@ public:
         return os;
     }
 
+
 };
-
-namespace std {
-    template <>
-    struct hash<MinPosIDX> {
-        size_t operator()(const MinPosIDX& k) const {
-            return k.hash;
-        }
-    };
-}
-
+struct MinPosIDX_hash{
+    size_t operator()(const MinPosIDX& k) const {
+        return k.hash;
+    }
+};
 struct kmerPos {
     kmerPos() = default;
     kmerPos(uint64_t kmer, uint32_t contigID, int32_t offset) : kmer(kmer),
