@@ -700,63 +700,61 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_p
     return ldg;
 }
 
+std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<LongReadMapping> &lorm_mappings, uint32_t read_size) {
+    std::vector<Link> linkage;
+    std::unordered_map<sgNodeID_t,uint64_t> total_bp;
+    std::vector<LongReadMapping> mfilt_total,mmergedfilt;
+    //first, copy mappings, removing nodes whose total mapping adds up to less than 70% of the node unless first or last
+    for (auto &m:lorm_mappings) total_bp[m.node] +=m.nEnd-m.nStart+1;
+    for (int i=0; i<lorm_mappings.size();++i){
+        auto &m=lorm_mappings[i];
+        auto ns=ws.sg.nodes[llabs(m.node)].sequence.size();
+        if ( (i==0 and m.qStart<1000) or (i==mfilt_total.size()-1 and m.qEnd+1000>read_size) or total_bp[m.node]>=.7*ns) {
+            //If a node has mode than one consecutive mapping, merge them.
+            if (mfilt_total.size()>0 and mfilt_total.back().node==m.node and mfilt_total.back().nStart<m.nStart and mfilt_total.back().nEnd<m.nEnd and mfilt_total.back().nEnd<m.nStart+500) {
+                mfilt_total.back().nEnd = m.nEnd;
+                mfilt_total.back().qEnd = m.qEnd;
+            }
+            else mfilt_total.push_back(m);
+        }
+    }
+    //Now remove all mappings that do not cover 80% of the node
+    for (int i=0; i<mfilt_total.size();++i){
+        auto &m=mfilt_total[i];
+        auto ns=ws.sg.nodes[llabs(m.node)].sequence.size();
+        if ( (i==0 and m.nEnd>.9*ns and m.qStart<1000) or (i==mfilt_total.size()-1 and m.nStart<.1*ns and m.qEnd+1000>read_size) or m.nEnd-m.nStart+1>=.8*ns) {
+            mmergedfilt.push_back(m);
+        }
+    }
+    //now compute starts and ends for 0% and 100%
+    std::vector<std::pair<sgNodeID_t, std::pair<int32_t, int32_t>>> node_ends;
+    for (auto &m:mmergedfilt) {
+        node_ends.emplace_back(m.node, std::make_pair(m.qStart-m.nStart,m.qEnd+ws.sg.nodes[llabs(m.node)].sequence.size()-m.nEnd));
+    }
+    //for every nodeA:
+    for (int nA=0;nA+1<node_ends.size();++nA) {
+        //for every other nodeB fw:
+        for (int nB=nA+1;nB<node_ends.size();++nB) {
+            //link from -nodeA to +nodeB with dist start[nodeB]-end[nodeA]-1
+            linkage.emplace_back(-node_ends[nA].first,node_ends[nB].first,node_ends[nB].second.first-node_ends[nA].second.second+1);
+        }
+    }
+    return linkage;
+}
 
-LinkageDiGraph LinkageUntangler::make_longRead_linkage(int min_reads) {
+LinkageDiGraph LinkageUntangler::make_longRead_multilinkage(const LongReadMapper &lorm) {
     SequenceGraph& sg(ws.getGraph());
     LinkageDiGraph ldg(sg);
-
-    // For each read link every node with every other coming forward in the correct direction,
-    // only using the canonical link direction (1,2) instead of (2,1)
-    std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
-    sglib::OutputLog()<<"collecting link votes across all long read libraries"<<std::endl;
-    //use all libraries collect votes on each link
-    auto rmi=0;
-    for (LongReadMapper &lm:ws.getLongReadMappers()) {
-
-        LongReadMapping lsm;
-        for (auto &m: lm.mappings) { // For all reads
-            //only link to the next selected node
-            if (!selected_nodes[std::abs(m.node)]) continue;
-            if (lsm.read_id==m.read_id) {
-                if (lsm.node != m.node) {
-                    sgNodeID_t n1 = lsm.node;
-                    sgNodeID_t n2 = m.node;
-                    if (n1 != 0 and n2 != 0 and n1 != n2 and n1 != -n2) {
-                        n1 = -n1;//get the output end
-                        if (llabs(n1) > llabs(n2)) std::swap(n1, n2);
-                        //filter to ends
-                        if (sg.nodes[llabs(lsm.node)].sequence.size()-lsm.nEnd<3000 and
-                            m.nStart<3000)
-                            ++lv[std::make_pair(n1, n2)];
-                    }
-                }
-
-            }
-            lsm=m;
-
-        }
+    std::vector<Link> linkage;
+    //for each read's filtered mappings:
+    for(uint64_t rid=0;rid<lorm.filtered_read_mappings.size();++rid) {
+        if (lorm.filtered_read_mappings[rid].empty()) continue;
+        auto newlinks=mappings_to_multilinkage(lorm.filtered_read_mappings[rid],lorm.datastore.read_to_fileRecord[rid].record_size);
+        linkage.insert(linkage.end(),newlinks.begin(),newlinks.end());
     }
-    sglib::OutputLog()<<"adding links"<<std::endl;
-    uint64_t lc(0);
-    for (auto l:lv) {
-        if (std::abs(l.first.first)==243 or std::abs(l.first.second)==243) std::cout<<l.first.first<<" <-> "<<l.first.second<<" :"<<l.second<<std::endl;
-        if (l.second >= min_reads) {
-            //todo: size, appropriate linkage handling, etc
-            //todo: check alternative signs for same linkage
-            /*auto s = l.first.first;
-            auto d = l.first.second;
-            auto v1 = std::make_pair(-s, d);
-            auto v2 = std::make_pair(-s, -d);
-            auto v3 = std::make_pair(s, -d);
-            if (lv.count(v1) and lv[v1] > 5 * l.second) continue;
-            if (lv.count(v2) and lv[v2] > 5 * l.second) continue;
-            if (lv.count(v3) and lv[v3] > 5 * l.second) continue;*/
-            ldg.add_link(l.first.first, l.first.second, 0);
-            ++lc;
-
-        }
+    for (auto l:linkage) {
+        ldg.add_link(l.source,l.dest,l.dist);
     }
-    sglib::OutputLog()<<"long reads produced "<<lc<<" links"<<std::endl;
     return ldg;
 }
 

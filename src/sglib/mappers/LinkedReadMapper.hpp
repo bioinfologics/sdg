@@ -59,7 +59,8 @@ public:
                                                                const std::vector<bool> &selected_nodes = {});
     std::vector<std::pair<sgNodeID_t , sgNodeID_t >> get_tag_neighbour_nodes(uint32_t min_shared,const std::vector<bool> & selected_nodes={});
     void compute_all_tag_neighbours(int min_size,float min_score);
-
+    void write_tag_neighbours(std::string filename);
+    void read_tag_neighbours(std::string filename);
 
     SequenceGraph & sg;
     const UniqueKmerIndex& kmer_to_graphposition;

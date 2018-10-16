@@ -14,6 +14,8 @@
 #include <sglib/indexers/NKmerIndex.hpp>
 #include "LinkedReadMapper.hpp"
 
+
+enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage};
 /**
  * Long read mapping to the graph, this class manages storage and computation of the alignments.
  */
@@ -90,6 +92,18 @@ public:
      * @param min_tnscore minimum neighbour score on linked reads
      */
     void filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size=10000, float min_tnscore=0.03);
+
+    /**
+     * Single-read nano10x filtering. Return status
+     * @param lrm
+     * @param lrbsg
+     * @param min_size
+     * @param min_tnscore
+     * @param readID
+     * @param offset_hint
+     * @return
+     */
+    MappingFilterResult filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, BufferedSequenceGetter &lrbsg, uint32_t min_size, float min_tnscore, uint64_t readID, uint64_t offset_hint=0);
 
     LongReadsDatastore datastore;
     /**

@@ -139,13 +139,28 @@ std::string __str__() {
 }
 %enddef
 
+%define __REPR__()
+std::string __repr__() {
+  std::ostringstream out;
+  out << "<" << *$self << ">";
+  return out.str().c_str();
+}
+%enddef
+
 %extend Link{
     __STR__();
+    __REPR__();
 }
 
 %extend Node{
     __STR__();
+    __REPR__();
 }
+
+%extend LongReadMapping{
+    __STR__();
+    __REPR__();
+};
 
 //TODO: Make sure this changes on new releases
 %pythoncode %{

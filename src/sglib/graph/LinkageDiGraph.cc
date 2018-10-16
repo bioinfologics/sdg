@@ -9,10 +9,9 @@ void LinkageDiGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d) {
     if (llabs(source)>=links.size()) links.resize(llabs(source)+1);
     if (llabs(dest)>=links.size()) links.resize(llabs(dest)+1);
     Link l(source,dest,d);
-    for (auto el:links[(source > 0 ? source : -source)]) if (el.dest==dest and el.dist==d) return;
-    links[(source > 0 ? source : -source)].emplace_back(l);
+    links[llabs(source)].emplace_back(l);
     std::swap(l.source,l.dest);
-    links[(dest > 0 ? dest : -dest)].emplace_back(l);
+    links[llabs(dest)].emplace_back(l);
 }
 
 void LinkageDiGraph::add_links(const LinkageDiGraph &other) {
