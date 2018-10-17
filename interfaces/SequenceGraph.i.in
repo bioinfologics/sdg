@@ -128,10 +128,13 @@ namespace std {
 
    %ignore vector<SequenceGraphPath>::vector(size_type);
    %ignore vector<SequenceGraphPath>::resize;
+
    %template(vectorPath) vector<SequenceGraphPath>;
+   %template(vectorKmerCount) vector<KmerCount>;
+
    %template(set10xTag) set<bsg10xTag>;
    %template(setSGNodePair) set<pair<sgNodeID_t, sgNodeID_t>>;
-   %template(vectorKmerCount) vector<KmerCount>;
+   %template(setSGNode) set<sgNodeID_t>;
 };
 
 %feature("python:tp_hash") Link "std::hash<Link>";
