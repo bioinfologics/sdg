@@ -86,7 +86,7 @@ else()
     endif()
 endif()
 if("${GIT_BRANCH}" STREQUAL "")
-    add_definitions("-DGIT_COMMIT_HASH=\"not from git\"")
+    add_definitions("-DGIT_COMMIT_HASH=\"not_from_git\"")
 else()
     add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
 endif()
@@ -98,6 +98,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -fno-omit-frame-pointer -
 
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO"${CMAKE_CXX_FLAGS_DEBUG} -O3 -g -fno-omit-frame-pointer")
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package (Threads)
 
@@ -289,6 +290,7 @@ IF(BUILD_TESTING)
 ENDIF()
 
 IF(BUILD_PYTHON_INTERFACE)
+    MESSAGE("Building python interface")
     FIND_PACKAGE(SWIG)
     INCLUDE(${SWIG_USE_FILE})
     set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/bsg)
@@ -321,15 +323,15 @@ IF(BUILD_PYTHON_INTERFACE)
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
     endif()
-    SWIG_ADD_LIBRARY(bsg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
-    SWIG_LINK_LIBRARIES(bsg ${PYTHON_LIBRARIES} bsg_static)
-    add_dependencies(_bsg doxy2swig)
+    SWIG_ADD_LIBRARY(pybsg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
+    SWIG_LINK_LIBRARIES(pybsg ${PYTHON_LIBRARIES} bsg_static)
+    add_dependencies(_pybsg doxy2swig)
 
     install(TARGETS
-            _bsg
-            RUNTIME DESTINATION bsg
-            ARCHIVE DESTINATION bsg
-            LIBRARY DESTINATION bsg)
+            _pybsg
+            RUNTIME DESTINATION pybsg
+            ARCHIVE DESTINATION pybsg
+            LIBRARY DESTINATION pybsg)
 
 ENDIF()
 
