@@ -6,7 +6,7 @@ make sure to execute the cmake configuration with the BUILD_PYTHON_INTERFACE var
 
 `cmake -DBUILD_PYTHON_INTERFACE=ON`
 
-This will generate the `_bsg.so` and `bsg.py` files linked to the `libbsg` c++ library.
+This will generate the `_pybsg.so` and `pybsg.py` files linked to the `libbsg` c++ library.
 
 ## Using the python interface
 
@@ -14,13 +14,17 @@ To use the interface in a python interpreter, make sure to make the `_bsg.so, li
 available to the interpreter either by `LD_LIBRARY_PATH` or `DYLIB_LIBRARY_PATH` (depending on your OS) or
 by copying the files to the working directory of the interpreter.
 
-The library should be available and can be loaded using:
+Another option is to append the location of the compiled `bsg` objects to the python interpreter path using, e.g:
 
 ```python
-import bsg
-bsg.__version__
-    '0.1'
+import sys
+sys.path.append("~/git_sources/bsg/build")
+```
 
+The library should be available and can be loaded using, this command prints the library version:
+
+```python
+import pybsg
 ```
 
 Documentation for the functions is available to the user by doing:
@@ -38,3 +42,5 @@ mean that the library won't be loaded in the best case or will crash the
 interpreter in the worst, this is particularly true for OSX environments using brew
 which can lead to having multiple python versions coexisting.
 
+In order to redirect the library output to the interpreter, make sure you have the 
+`wurlitzer` package installed. To install it, use `pip install wurlitzer`

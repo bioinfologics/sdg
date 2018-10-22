@@ -1,4 +1,13 @@
-%module bsg
+#ifdef SWIGR
+%module rbsg
+#endif
+#ifdef SWIGPYTHON
+%module pybsg
+#endif
+#ifdef SWIGR
+%ignore PathExplorer;
+#endif
+
 %ignore Backbone;
 %ignore PairedReadLinker;
 %{
@@ -35,13 +44,20 @@
 %}
 
 
+#ifdef SWIGPYTHON
 %include "python_docs.i"
+%include "std_unordered_set.i"
+#endif
+
 %include "stdint.i"
 %include "inttypes.i"
 %include "std_string.i"
 %include "std_vector.i"
-%include "std_unordered_set.i"
+%include "std_pair.i"
+
+#ifndef SWIGR
 %include "std_set.i"
+#endif
 
 %include "sglib/types/KmerTypes.hpp"
 %include "sglib/types/GenericTypes.hpp"
@@ -68,7 +84,6 @@
 %include "sglib/mappers/threader/MappingThreader.hpp"
 %include "sglib/processors/LinkageUntangler.hpp"
 %include "sglib/graph/LinkageDiGraph.hpp"
-
 
 namespace std {
    %template(vectorInt) vector<int>;
@@ -132,11 +147,14 @@ namespace std {
    %template(vectorPath) vector<SequenceGraphPath>;
    %template(vectorKmerCount) vector<KmerCount>;
 
+#ifndef SWIGR
    %template(set10xTag) set<bsg10xTag>;
    %template(setSGNodePair) set<pair<sgNodeID_t, sgNodeID_t>>;
    %template(setSGNode) set<sgNodeID_t>;
+#endif
 };
 
+#ifdef SWIGPYTHON
 %feature("python:tp_hash") Link "std::hash<Link>";
 
 %define __STR__()
@@ -176,3 +194,4 @@ __version__ = "@bsg_VERSION@"
 __branch__ = "@GIT_BRANCH@"
 __commit__ = "@GIT_COMMIT_HASH@"
 %}
+#endif

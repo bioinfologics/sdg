@@ -1,4 +1,4 @@
-from .bsg import *
+from .pybsg import *
 
 # Remove useless and annoying `*_swigregister` entries from the namespace
 # see https://cta-redmine.irap.omp.eu/issues/832
@@ -7,7 +7,7 @@ bad_entries = [entry for entry in list(locals()) if entry.endswith('_swigregiste
 for entry in bad_entries:
     del locals()[entry]
 
-bad_entries = [entry for entry in list(bsg.__dict__) if entry.endswith('_swigregister')]
+bad_entries = [entry for entry in list(pybsg.__dict__) if entry.endswith('_swigregister')]
 for entry in bad_entries:
     del bsg.__dict__[entry]
 
@@ -18,5 +18,5 @@ try:
 except:
     pass
 
-print("version", bsg.__version__)
-print(bsg.__branch__, bsg.__commit__)
+print("version", pybsg.__version__)
+print(pybsg.__branch__, pybsg.__commit__)
