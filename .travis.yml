@@ -19,7 +19,6 @@ matrix:
             - lcov
             - r-base
             - r-base-dev
-            - swig3.0
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && GCOV=gcov-6 && DEPLOY=true"
         - CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 -DBUILD_PYTHON_INTERFACE=ON -DBUILD_R_INTERFACE=ON -DBUILD_COV=ON -DBUILD_DOC=ON"
@@ -33,7 +32,11 @@ before_install:
     - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo softwareupdate -i "Command Line Tools (macOS High Sierra version 10.13) for Xcode-9.4"; fi
     - eval "${MATRIX_EVAL}"
 
-script: ./build.sh
+script:
+  - .travis/build.sh
+
+install:
+  - .travis/install.sh
 
 after_success:
     # Creating report
@@ -44,7 +47,7 @@ after_success:
   # Uploading report to CodeCov
   - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
 
-install: true
+
 deploy:
   provider: pages
   skip_cleanup: true
