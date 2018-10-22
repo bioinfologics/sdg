@@ -12,8 +12,6 @@
 #  R_LIBRARY_READLINE  - Path to readline library
 #  R_LIBRARIES         - Array of: R_LIBRARY_BASE, R_LIBRARY_BLAS, R_LIBRARY_LAPACK, R_LIBRARY_BASE [, R_LIBRARY_READLINE]
 #
-#  VTK_R_HOME          - (deprecated, use R_HOME instead) Path to 'R home', as reported by R
-#
 # Variable search order:
 #   1. Attempt to locate and set R_COMMAND
 #     - If unsuccessful, generate error and prompt user to manually set R_COMMAND
@@ -34,37 +32,37 @@ if(R_COMMAND)
             COMMAND ${R_COMMAND} RHOME
             OUTPUT_VARIABLE R_ROOT_DIR
             OUTPUT_STRIP_TRAILING_WHITESPACE)
-    # deprecated
-    if(VTK_R_HOME)
-        set(R_HOME ${VTK_R_HOME} CACHE PATH "R home directory obtained from R RHOME")
-    else()
-        set(R_HOME ${R_ROOT_DIR} CACHE PATH "R home directory obtained from R RHOME")
-        set(VTK_R_HOME ${R_HOME})
-    endif()
-    # /deprecated
     # the following command does nothing currently, but will be used when deprecated code is removed
     set(R_HOME ${R_ROOT_DIR} CACHE PATH "R home directory obtained from R RHOME")
+    message("Found R: ${R_HOME}")
 
     find_path(R_INCLUDE_DIR R.h
             HINTS ${R_ROOT_DIR}
             PATHS /usr/local/lib /usr/local/lib64 /usr/share
             PATH_SUFFIXES include R/include
-            ../doc "Path to file R.h")
+            )
+    find_path(R_INCLUDE_DIR Rdefines.h
+            HINTS ${R_ROOT_DIR}
+            PATHS /usr/local/lib /usr/local/lib64 /usr/share
+            PATH_SUFFIXES include R/include
+            )
+
+    MESSAGE("R include dir: ${R_INCLUDE_DIR}")
 
     find_library(R_LIBRARY_BASE R
             HINTS ${R_ROOT_DIR}/lib
-            ../doc "R library (example libR.a, libR.dylib, etc.).")
+            )
 
     find_library(R_LIBRARY_BLAS NAMES Rblas blas
             HINTS ${R_ROOT_DIR}/lib
-            ../doc "Rblas library (example libRblas.a, libRblas.dylib, etc.).")
+            )
 
     find_library(R_LIBRARY_LAPACK NAMES Rlapack lapack
             HINTS ${R_ROOT_DIR}/lib
-            ../doc "Rlapack library (example libRlapack.a, libRlapack.dylib, etc.).")
+            )
 
     find_library(R_LIBRARY_READLINE readline
-            ../doc "(Optional) system readline library. Only required if the R libraries were built with readline support.")
+            )
 
 else()
     message(SEND_ERROR "FindR.cmake requires the following variables to be set: R_COMMAND")
@@ -72,6 +70,7 @@ endif()
 
 # Note: R_LIBRARY_BASE is added to R_LIBRARIES twice; this may be due to circular linking dependencies; needs further investigation
 set(R_LIBRARIES ${R_LIBRARY_BASE} ${R_LIBRARY_BLAS} ${R_LIBRARY_LAPACK} ${R_LIBRARY_BASE})
+message("R libraries path: ${R_LIBRARIES}")
 if(R_LIBRARY_READLINE)
     set(R_LIBRARIES ${R_LIBRARIES} ${R_LIBRARY_READLINE})
 endif()

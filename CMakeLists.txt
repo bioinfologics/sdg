@@ -294,14 +294,14 @@ ENDIF()
 
 IF(BUILD_PYTHON_INTERFACE)
     MESSAGE("Building python interface")
-    FIND_PACKAGE(SWIG)
+    FIND_PACKAGE(SWIG REQUIRED)
     INCLUDE(${SWIG_USE_FILE})
     set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/bsg)
     configure_file(interfaces/python/__init__.py.in bsg/__init__.py)
     configure_file(interfaces/SequenceGraph.i.in SequenceGraph.i)
 
-    FIND_PACKAGE(PythonInterp 3)
-    FIND_PACKAGE(PythonLibs 3)
+    FIND_PACKAGE(PythonInterp 3 REQUIRED)
+    FIND_PACKAGE(PythonLibs 3 REQUIRED)
 
     INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
 
