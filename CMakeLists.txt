@@ -25,7 +25,7 @@ ENABLE_TESTING()
 OPTION(BUILD_TESTING "Build tests." ON)
 OPTION(BUILD_DOC "Build documentation" OFF)
 OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" OFF)
-OPTION(BUILD_R_INTERFACE "Build R interface" ON)
+OPTION(BUILD_R_INTERFACE "Build R interface" OFF)
 OPTION(BUILD_COV "Build coverage" OFF)
 
 set(CMAKE_CXX_STANDARD 14)
