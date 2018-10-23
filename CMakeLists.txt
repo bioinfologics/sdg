@@ -296,7 +296,7 @@ IF(BUILD_PYTHON_INTERFACE)
     MESSAGE("Building python interface")
     FIND_PACKAGE(SWIG REQUIRED)
     INCLUDE(${SWIG_USE_FILE})
-    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/bsg)
+    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/pybsg)
     configure_file(interfaces/python/__init__.py.in pybsg/__init__.py)
     configure_file(interfaces/SequenceGraph.i.in SequenceGraph.i)
 
