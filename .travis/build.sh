@@ -1,5 +1,8 @@
 #! /bin/bash
 # Bash Script that builds project
+
+export PATH="${HOME}"/swig/bin:"${PATH}"
+
 mkdir build
 cd build
 cmake .. ${CMAKE_OPTIONS}
