@@ -59,6 +59,28 @@ std::set<sgNodeID_t> LinkageDiGraph::fw_reached_nodes(sgNodeID_t n, int radius) 
     return reached;
 }
 
+std::vector<std::pair<int,sgNodeID_t>> LinkageDiGraph::fw_neighbours_by_distance(sgNodeID_t n, int min_links) const {
+    if (min_links<1 or llabs(n)>=links.size()) return {};
+    std::map<sgNodeID_t,std::vector<int>> fndists;//neighbour and all distances to it
+    std::vector<std::pair<int,sgNodeID_t>> fnd; //median distance and neighbours if with min_links
+    //ndists[dest] -> [dist1, dist2, dist3...]
+    for (auto &l:links[llabs(n)]){
+        if (l.source==-n){
+            fndists[l.dest].emplace_back(l.dist);
+        }
+    }
+    //fnd <- [(median2, n1),(median2,n2)...]
+    for (auto &fn:fndists){
+        if (fn.second.size()>=min_links){
+            std::sort(fn.second.begin(),fn.second.end());
+            if (fn.second.size()%2==0) fnd.emplace_back(std::make_pair((fn.second[fn.second.size()/2-1]+fn.second[fn.second.size()/2])/2,fn.first));
+            else fnd.emplace_back(fn.second[fn.second.size()/2],fn.first);
+        }
+    }
+    std::sort(fnd.begin(),fnd.end());
+    return fnd;
+}
+
 void LinkageDiGraph::remove_transitive_links(int radius) {
     std::cout<<"removing transitive connections..."<<std::endl;
     std::set<std::pair<sgNodeID_t,sgNodeID_t>> indirect;
@@ -220,7 +242,14 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> LinkageDiGraph::find_bubbles(uint3
     return r;
 }
 
-bool LinkageDiGraph::are_connected(sgNodeID_t n1, sgNodeID_t n2) {
+bool LinkageDiGraph::are_connected(sgNodeID_t n1, sgNodeID_t n2) const {
+    if (llabs(n1)>=links.size()) return false;
     for (auto &l:links[llabs(n1)]) if (l.source==n1 and l.dest==n2) return true;
     return false;
+}
+
+uint32_t LinkageDiGraph::link_count(sgNodeID_t n1, sgNodeID_t n2) const {
+    uint32_t c=0;
+    for (auto &l:links[llabs(n1)]) if (l.source==n1 and l.dest==n2) ++c;
+    return c;
 }
