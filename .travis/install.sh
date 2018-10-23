@@ -9,4 +9,12 @@ if [ "${TRAVIS_OS_NAME}" == linux ]; then
     ./autogen.sh && ./configure --prefix "${HOME}"/swig/ 1>/dev/null &&
     make >/dev/null &&
     make install >/dev/null;
+
+
+    export DOXYGEN_VER=doxygen-1.8.14
+    export DOXYGEN_TAR=${DOXYGEN_VER}.linux.bin.tar.gz
+    export DOXYGEN_URL="http://ftp.stack.nl/pub/users/dimitri/${DOXYGEN_TAR}"
+    wget -O - "${DOXYGEN_URL}" | tar xz -C ${TMPDIR-/tmp} ${DOXYGEN_VER}/bin/doxygen
+    export PATH="${TMPDIR-/tmp}/${DOXYGEN_VER}/bin:$PATH";
+
 fi
