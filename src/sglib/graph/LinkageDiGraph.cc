@@ -205,7 +205,7 @@ void LinkageDiGraph::load_from_text(std::string filename) {
     }
 }
 
-std::vector<std::pair<sgNodeID_t,sgNodeID_t>> LinkageDiGraph::find_bubbles(uint32_t min_size,uint32_t max_size) {
+std::vector<std::pair<sgNodeID_t,sgNodeID_t>> LinkageDiGraph::find_bubbles(uint32_t min_size,uint32_t max_size) const {
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> r;
     std::vector<bool> used(sg.nodes.size(),false);
     sgNodeID_t n1,n2;
@@ -238,6 +238,38 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> LinkageDiGraph::find_bubbles(uint3
         used[llabs(n2)]=true;
         r.emplace_back(n1,n2);
 
+    }
+    return r;
+}
+
+std::vector<sgNodeID_t> LinkageDiGraph::find_tips(uint32_t min_size, uint32_t max_size) const {
+    std::vector<sgNodeID_t> r;
+    for (auto &l:links){
+        if (l.size()==1 and sg.nodes[llabs(l[0].source)].sequence.size()>=min_size and sg.nodes[llabs(l[0].source)].sequence.size()<=max_size){
+            for (auto &ol:links[llabs(l[0].dest)]){
+                if (ol.source==l[0].dest and ol.dest!=l[0].source){
+                    r.emplace_back(l[0].source);
+                    break;
+                }
+            }
+        }
+    }
+    return r;
+}
+
+std::vector<sgNodeID_t> LinkageDiGraph::find_self_loops(uint32_t min_size, uint32_t max_size, bool include_circles=true) const {
+    std::vector<sgNodeID_t> r;
+    for (auto &lv:links) {
+        bool loop=false;
+        bool other=include_circles;
+        for (auto &l:lv){
+            if (llabs(l.source)==llabs(l.dest)) loop=true;
+            else other=true;
+            if (loop and other) {
+                r.emplace_back(llabs(l.source));
+                break;
+            }
+        }
     }
     return r;
 }
