@@ -174,7 +174,6 @@ add_library(bsg SHARED
             src/sglib/mappers/PairedReadMapper.cc
             src/sglib/processors/Untangler.cc
             src/sglib/processors/TagWalker.cc
-            src/sglib/processors/FlowFollower.cc
             src/sglib/processors/PathExplorer.cpp
             src/sglib/processors/LinkageUntangler.cc
             src/sglib/workspace/WorkSpace.cc
@@ -203,7 +202,6 @@ add_library(bsg_static STATIC
         src/sglib/mappers/PairedReadMapper.cc
         src/sglib/processors/Untangler.cc
         src/sglib/processors/TagWalker.cc
-        src/sglib/processors/FlowFollower.cc
         src/sglib/processors/PathExplorer.cpp
         src/sglib/processors/LinkageUntangler.cc
         src/sglib/workspace/WorkSpace.cc
@@ -243,10 +241,6 @@ add_executable(bsg-untangler
         src/bsg-untangler.cc
         )
 
-add_executable(bsg-flowmaker
-        src/bsg-flowmaker.cc
-        )
-
 add_executable(bsg-lhapassembler
         src/bsg-lhapassembler.cc
         )
@@ -265,7 +259,6 @@ target_link_libraries(bsg-workspace bsg_static)
 target_link_libraries(bsg-datastore bsg_static)
 target_link_libraries(bsg-kmerspectra bsg_static)
 target_link_libraries(bsg-mapper bsg_static ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-flowmaker bsg_static ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-untangler bsg_static ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-lhapassembler bsg_static ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract bsg_static)
@@ -365,7 +358,6 @@ install(TARGETS
         bsg-datastore
         bsg-kmerspectra
         bsg-mapper
-        bsg-flowmaker
         bsg-untangler
         bsg-lhapassembler
         gfa-extract
