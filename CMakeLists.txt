@@ -173,7 +173,6 @@ add_library(bsg SHARED
             src/sglib/mappers/LinkedReadMapper.cc
             src/sglib/mappers/PairedReadMapper.cc
             src/sglib/processors/Untangler.cc
-            src/sglib/processors/TagWalker.cc
             src/sglib/processors/PathExplorer.cpp
             src/sglib/processors/LinkageUntangler.cc
             src/sglib/workspace/WorkSpace.cc
@@ -201,7 +200,6 @@ add_library(bsg_static STATIC
         src/sglib/mappers/LinkedReadMapper.cc
         src/sglib/mappers/PairedReadMapper.cc
         src/sglib/processors/Untangler.cc
-        src/sglib/processors/TagWalker.cc
         src/sglib/processors/PathExplorer.cpp
         src/sglib/processors/LinkageUntangler.cc
         src/sglib/workspace/WorkSpace.cc

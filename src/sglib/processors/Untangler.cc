@@ -3,7 +3,6 @@
 //
 
 #include "Untangler.hpp"
-#include "TagWalker.hpp"
 
 struct Counter
 {
