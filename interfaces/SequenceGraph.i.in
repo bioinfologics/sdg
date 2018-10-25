@@ -147,6 +147,9 @@ namespace std {
    %template(vectorPath) vector<SequenceGraphPath>;
    %template(vectorKmerCount) vector<KmerCount>;
 
+    %template(intSGNodePair) pair<int, sgNodeID_t>;
+    %template(vectorintSGNodePair) vector<pair<int, sgNodeID_t>>;
+
 #ifndef SWIGR
    %template(set10xTag) set<bsg10xTag>;
    %template(setSGNodePair) set<pair<sgNodeID_t, sgNodeID_t>>;
