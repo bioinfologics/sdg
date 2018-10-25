@@ -257,7 +257,7 @@ std::vector<sgNodeID_t> LinkageDiGraph::find_tips(uint32_t min_size, uint32_t ma
     return r;
 }
 
-std::vector<sgNodeID_t> LinkageDiGraph::find_self_loops(uint32_t min_size, uint32_t max_size, bool include_circles=true) const {
+std::vector<sgNodeID_t> LinkageDiGraph::find_self_loops(uint32_t min_size, uint32_t max_size, bool include_circles) const {
     std::vector<sgNodeID_t> r;
     for (auto &lv:links) {
         bool loop=false;
