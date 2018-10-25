@@ -2,7 +2,6 @@
 #include <fstream>
 #include <sglib/workspace/WorkSpace.hpp>
 #include <sglib/processors/Untangler.hpp>
-#include <sglib/processors/FlowFollower.hpp>
 #include <sglib/processors/LinkageUntangler.hpp>
 #include <sglib/processors/LocalHaplotypeAssembler.hpp>
 #include <sglib/processors/GraphEditor.hpp>
