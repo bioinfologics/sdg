@@ -1,7 +1,7 @@
 #! /bin/bash
 # Bash Script that builds project
 
-export PATH="${HOME}"/swig/bin:"${HOME}"/"${DOXYGEN_VER}"/bin:"${PATH}"
+export PATH="${HOME}"/swig/bin:"${HOME}"/bin:"${PATH}"
 
 mkdir build
 cd build

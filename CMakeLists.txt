@@ -307,27 +307,29 @@ IF(BUILD_PYTHON_INTERFACE)
 
     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
-    add_custom_command (
-            OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
-            COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py
-            --quiet ${CMAKE_BINARY_DIR}/docs/xml/index.xml
-            ${CMAKE_BINARY_DIR}/python_docs.i
-            COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
-            DEPENDS doc_doxygen
-            VERBATIM)
-
-    add_custom_target(doxy2swig DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
     set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY SWIG_MODULE_NAME pybsg)
 
     SET_SOURCE_FILES_PROPERTIES(${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTIES CPLUSPLUS ON)
-    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
     if (NOT APPLE)
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
     endif()
+
+    if(DOXYGEN_FOUND)
+        add_custom_command (
+                OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
+                COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py
+                --quiet ${CMAKE_BINARY_DIR}/docs/xml/index.xml
+                ${CMAKE_BINARY_DIR}/python_docs.i
+                COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
+                DEPENDS doc_doxygen
+                VERBATIM
+        )
+        add_custom_target(doxy2swig DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
+        set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
+    endif(DOXYGEN_FOUND)
     SWIG_ADD_LIBRARY(pybsg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
     SWIG_LINK_LIBRARIES(pybsg ${PYTHON_LIBRARIES} bsg_static)
-    add_dependencies(_pybsg doxy2swig)
 
     install(TARGETS
             _pybsg
