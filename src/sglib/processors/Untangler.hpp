@@ -115,7 +115,7 @@ public:
     std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> solve_bubbly_path_2(const SequenceSubGraph & bp);
 
     uint64_t solve_canonical_repeats_by_tags(std::unordered_set<uint64_t> & reads_to_remap); //TODO: deprecate
-    uint64_t extend_HSPNPs_by_tagwalking(); //TODO: deprecate
+
     void analise_paths_through_nodes(); //TODO: deprecate
 
     //graph manipulation TODO: move to SequenceGraph
@@ -128,7 +128,6 @@ public:
 
     //TODO: just deprecate these ASAP
 
-    uint64_t connect_neighbours(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance);
     void connect_neighbours_trivial(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,
                                      const std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> &tagneighbours,
                                      const std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> & bndist,

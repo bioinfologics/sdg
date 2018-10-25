@@ -3,7 +3,6 @@
 //
 
 #include "Untangler.hpp"
-#include "TagWalker.hpp"
 
 struct Counter
 {
@@ -269,95 +268,6 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
     return hps;
 }
 
-
-/**
- * @brief generates tag walk for each HSPNPs, finds common extensions and extends the bubbles
- * @return
- */
-uint64_t Untangler::extend_HSPNPs_by_tagwalking() {
-    auto const hps=get_all_HSPNPs();
-    //std::cout<<"limiting HSPNs to 1000!!! (for test purposes)"<<std::endl;
-    //hps.resize(100);
-    std::atomic<uint64_t> processing(0);
-    std::vector<std::vector<SequenceGraphPath>> new_ppaths;
-#pragma omp parallel for
-    for (auto i=0;i<hps.size();++i) {
-        uint64_t p;
-        if ((p=++processing)%100==0) sglib::OutputLog()<<"Procesing HSPNP #"<<p<<std::endl;
-        //if (ws.sg.nodes[llabs(hp.first)].sequence.size()<2000 or ws.sg.nodes[llabs(hp.second)].sequence.size()<2000 ) continue;
-        TagWalker tw(ws,hps[i]);
-        auto ct= tw.remove_crosstalk();
-        if (ct>0.01) continue;
-        auto wp=tw.walk(.98,.02);
-        auto parallelpaths=make_parallel_paths(wp);
-        //tw.dump_reads("HPSNP_"+std::to_string(llabs(hp.first))+"_"+std::to_string(llabs(hp.second)));
-
-
-        //walk_from(hp.first,ws);
-        //walk_from(hp.second,ws);
-#pragma omp critical (print_paths)
-        {
-
-            //std::cout << std::endl << "PATH A (" << wp[0].get_sequence().size() << " bp): ";
-            //for (auto n:wp[0].nodes) std::cout << "seq" << llabs(n) << ", ";
-            //std::cout << std::endl << "PATH B (" << wp[1].get_sequence().size() << " bp): ";
-            //for (auto n:wp[1].nodes) std::cout << "seq" << llabs(n) << ", ";
-            //std::cout << std::endl;
-            if (parallelpaths[0].nodes.size()<4 or not all_nodes_consumed(parallelpaths)){
-                //std::cout << std::endl <<"NO ALL-CONSUMING PARALLEL PATHS"<<std::endl;
-            }
-            else {
-                new_ppaths.emplace_back(parallelpaths);
-                //std::cout << "PARALLEL PATHS #"<<new_ppaths.size()-1;
-                //std::cout << std::endl << "PARALLEL PATH A (" << parallelpaths[0].get_sequence().size() << " bp): ";
-                //for (auto n:parallelpaths[0].nodes) std::cout << "seq" << llabs(n) << ", ";
-                //std::cout << std::endl << "PARALLEL PATH B (" << parallelpaths[1].get_sequence().size() << " bp): ";
-                //for (auto n:parallelpaths[1].nodes) std::cout << "seq" << llabs(n) << ", ";
-                //std::cout << std::endl;
-            }
-        }
-
-    }
-    //get the "best neighbour" for each pp
-//    for (auto i1=0;i1<new_ppaths.size();++i1){
-//        for (auto i2=i1+1;i2<new_ppaths.size();++i2){
-//            auto shared=shared_nodes({new_ppaths[i1],new_ppaths[i2]});
-//            if (shared.size()>1) {
-//                std::cout<<"Parallel paths #"<<i1<<" and #"<<i2<<" share "<<shared.size()<<" nodes"<<std::endl;
-//            }
-//        }
-//    }
-    //execute merging/conflict
-
-    //now join the paths that survived
-    std::sort(new_ppaths.begin(),new_ppaths.end(),
-              [](const std::vector<SequenceGraphPath> &a,const std::vector<SequenceGraphPath> &b)
-              {return a[0].nodes.size()>b[0].nodes.size();});
-    std::vector<bool> used(ws.sg.nodes.size());
-    for (auto pp:new_ppaths){
-        if (pp[0].nodes.size()<4) continue;
-        bool skip=false;
-        for (auto &p:pp) for (auto n:p.nodes) if (used[llabs(n)]) {skip=true; break;}
-        if (skip) continue;
-        std::cout << "JOINING PARALLEL PATHS #"<<new_ppaths.size()-1;
-        std::cout << std::endl << "PARALLEL PATH A (" << pp[0].get_sequence().size() << " bp): ";
-        for (auto n:pp[0].nodes) std::cout << "seq" << llabs(n) << ", ";
-        std::cout << std::endl << "PARALLEL PATH B (" << pp[1].get_sequence().size() << " bp): ";
-        for (auto n:pp[1].nodes) std::cout << "seq" << llabs(n) << ", ";
-        std::cout << std::endl;
-        for (auto &p:pp) {
-            std::vector<sgNodeID_t> middle_nodes;
-            for (auto it=p.nodes.begin()+1;it<p.nodes.end()-1;++it) middle_nodes.push_back(*it);
-            for (auto n:middle_nodes) used[llabs(n)]=true;
-            ws.sg.join_path(SequenceGraphPath(ws.sg,middle_nodes),true);
-        }
-    }
-    ws.sg.write_to_gfa("graph_after_joining_walks.gfa");
-    ws.linked_read_mappers[0].remove_obsolete_mappings();
-    ws.create_index();
-    ws.linked_read_mappers[0].map_reads();
-    ws.kci.reindex_graph();
-}
 
 /**
  * @brief finds a common source and a common sink, so the paths run parallel through a region
@@ -1100,59 +1010,6 @@ std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_si
     }
     sglib::OutputLog()<<with_neighbours<<" selected_nodes with neighbours"<<std::endl;*/
     return {};
-}
-
-uint64_t Untangler::connect_neighbours(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance) {
-    //first find all nodes' neighbours
-    auto tagneighbours=find_tag_neighbours(min_size,min_ci,max_ci);
-    std::vector<std::vector<std::pair<sgNodeID_t,int64_t>>> fndist(ws.sg.nodes.size()),bndist(ws.sg.nodes.size());
-    TagWalker tw(ws,{});
-    for (auto n=1;n<ws.sg.nodes.size();++n) {
-        //explore from a node til hitting a neighbour, check if another selected node is on the way
-        std::set<sgNodeID_t> ntn;
-        for (auto nd:tagneighbours[n]) ntn.emplace(nd.first);
-        if (ntn.empty()) continue;
-        fndist[n] = ws.sg.get_distances_to(n, ntn, max_distance);
-        bndist[n] = ws.sg.get_distances_to(-n, ntn, max_distance);
-    }
-
-    //TODO: only fw or bw neighbour, corresponding, good tag intersection
-//    std::cout<<"Finding disconnected tips"<<std::endl;
-//    for (auto n=1;n<ws.sg.nodes.size();++n){
-//        if (tagneighbours[n].empty()) continue;
-//        if (ws.sg.get_fw_links(n).size()==0 or ws.sg.get_bw_links(n).size()==0) {
-//            for (auto tn:tagneighbours[n]){
-//                if (ws.sg.get_fw_links(tn.first).size()==0 or ws.sg.get_bw_links(tn.first).size()==0) {
-//                    std::cout<<"Nodes "<<n<<" and "<<tn.first<<" have disconnected ends and have "<<tn.second<<" shared tags"<<std::endl;
-//                }
-//            }
-//        }
-//    }
-    //connect_neighbours_trivial(min_size,min_ci,max_ci,max_distance,tagneighbours,bndist,fndist);
-    //bndist.resize(ws.sg.nodes.size());
-    //fndist.resize(ws.sg.nodes.size());
-    //tagneighbours.resize(ws.sg.nodes.size());
-    return connect_neighbours_paths_to_same(min_size,min_ci,max_ci,max_distance,tagneighbours,bndist,fndist);
-    //std::cout<<"Analysing non-trivial connections"<<std::endl;
-    //std::cout
-
-
-        /*//if successfull, create a copy of the skated path and disconnect/connect appropriately
-        //TODO: check if a node with different neighbours is here
-        auto walkf=tw.walk_between(n,nd[0].first);
-        if (not walkf.nodes.empty()) {
-            sg.create_path_through(walkf);
-        }
-        auto nd=ws.sg.get_distances_to(-n,ntn,100000);
-        //if successfull, create a copy of the skated path and disconnect/connect appropriately
-        //TODO: check if a node with different neighbours is here
-        auto walkb=tw.walk_between(n,nd[0].first);
-        if (not walkb.nodes.empty()) {
-            sg.create_path_through(walkb);
-        }*/
-
-
-
 }
 
 void Untangler::connect_neighbours_trivial(uint64_t min_size, float min_ci, float max_ci, int64_t max_distance,
