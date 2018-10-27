@@ -1,3 +1,4 @@
+#include <vector>
 #include <iostream>
 #include <fstream>
 #include <sglib/processors/KmerCompressionIndex.hpp>
@@ -11,9 +12,9 @@ enum WorkspaceFunctions{
     DUMP,
     NODE_KCI_DUMP,
     KCI_PROFILE,
-    MERGE
+    MERGE,
+    ADD_DS
 };
-
 struct WorkspaceFunctionMap : public std::map<std::string, WorkspaceFunctions>
 {
     WorkspaceFunctionMap()
@@ -24,6 +25,7 @@ struct WorkspaceFunctionMap : public std::map<std::string, WorkspaceFunctions>
         this->operator[]("node-kci-profile") = NODE_KCI_DUMP;
         this->operator[]("kci-profile") = KCI_PROFILE;
         this->operator[]("merge") = MERGE;
+        this->operator[]("add") = ADD_DS;
     };
     ~WorkspaceFunctionMap(){}
 };
@@ -449,6 +451,79 @@ void merge_workspace(int argc, char **argv){
     out.dump_to_disk(output+".bsgws");
 }
 
+void add_datastores(int argc, char **argv) {
+    std::string output;
+    std::string base_filename;
+    std::vector<std::string> add_filenames;
+    try {
+        cxxopts::Options options("bsg-workspace add", "BSG workspace add");
+
+        options.add_options()
+                ("help", "Print help")
+                ("w,workspace_base", "Base workspace, the graph and KCI are taken from this workspace", cxxopts::value<std::string>(base_filename))
+                ("a,workspace_add", "Workspaces to add (they will be added in the order specified)", cxxopts::value<std::vector<std::string>>(add_filenames))
+                ("o,output", "Output workspace", cxxopts::value<std::string>(output));
+        auto newargc=argc-1;
+        auto newargv=&argv[1];
+        auto result=options.parse(newargc,newargv);
+        if (result.count("help")) {
+            std::cout << options.help({""}) << std::endl;
+            exit(0);
+        }
+
+        if (output=="" or base_filename=="" or add_filenames.empty()) {
+            throw cxxopts::OptionException(" please specify a base workspace, a merge workspace and output prefix");
+        }
+
+    } catch (const cxxopts::OptionException &e) {
+        std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
+                  << "Use option --help to check command line arguments." << std::endl;
+        exit(1);
+    }
+
+    WorkSpace base,out;
+
+    base.load_from_disk(base_filename);
+    out.kci = base.kci;
+    out.sg = base.sg;
+
+    /* Copy BASE datastores and mappers */
+    for (int i = 0; i < base.paired_read_datastores.size(); ++i){
+        out.paired_read_datastores.emplace_back(base.paired_read_datastores[i]);
+        out.paired_read_mappers.emplace_back(base.paired_read_mappers[i]);
+    }
+    for (int i = 0; i < base.linked_read_datastores.size(); ++i){
+        out.linked_read_datastores.emplace_back(base.linked_read_datastores[i]);
+        out.linked_read_mappers.emplace_back(base.linked_read_mappers[i]);
+    }
+    for (int i = 0; i < base.long_read_datastores.size(); ++i){
+        out.long_read_datastores.emplace_back(base.long_read_datastores[i]);
+        out.long_read_mappers.emplace_back(base.long_read_mappers[i]);
+    }
+
+    /* Copy for each ADD their datastores and mappers */
+    for (const auto &fn: add_filenames) {
+        WorkSpace add;
+        add.load_from_disk(fn);
+        for (int i = 0; i < add.paired_read_datastores.size(); ++i){
+            out.paired_read_datastores.emplace_back(add.paired_read_datastores[i]);
+            out.paired_read_mappers.emplace_back(add.paired_read_mappers[i]);
+        }
+        for (int i = 0; i < add.linked_read_datastores.size(); ++i){
+            out.linked_read_datastores.emplace_back(add.linked_read_datastores[i]);
+            out.linked_read_mappers.emplace_back(add.linked_read_mappers[i]);
+        }
+        for (int i = 0; i < add.long_read_datastores.size(); ++i){
+            out.long_read_datastores.emplace_back(add.long_read_datastores[i]);
+            out.long_read_mappers.emplace_back(add.long_read_mappers[i]);
+        }
+    }
+
+    out.dump_to_disk(output+".bsgws");
+
+
+}
+
 int main(int argc, char * argv[]) {
     std::cout << "bsg-workspace"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
@@ -486,6 +561,9 @@ int main(int argc, char * argv[]) {
             break;
         case MERGE:
             merge_workspace(argc,argv);
+            break;
+        case ADD_DS:
+            add_datastores(argc,argv);
             break;
         default:
             std::cout << "Invalid option specified." << std::endl;
