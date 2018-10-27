@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <fstream>
 #include <iostream>
+#include <unordered_set>
+#include <sglib/graph/SequenceGraph.hpp>
 #include "SequenceSubGraph.hpp"
 
 

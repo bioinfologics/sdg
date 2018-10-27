@@ -5,8 +5,10 @@
 #ifndef BSG_SEQUENCESUBGRAPH_HPP
 #define BSG_SEQUENCESUBGRAPH_HPP
 
-#include "sglib/graph/SequenceGraph.hpp"
-#include "sglib/graph/SequenceGraphPath.hpp"
+#include <vector>
+#include <sglib/types/GenericTypes.hpp>
+
+
 class SequenceGraph;
 
 class SequenceSubGraph {
