@@ -128,12 +128,6 @@ public:
     std::vector<LongReadMapping> filter_blocks(std::vector<LongReadMapping> & blocks, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,  uint32_t read_kmers_size);
 
     /**
-     * NOT IMPLEMENTED
-     * @return
-     */
-    std::vector<LongReadMapping> refine_multinode_reads();
-
-    /**
      * Function to map a read to the graph in 4 steps using the methods in this class
      *
      * //========== 1. Get read sequence, kmerise, get all matches ==========
