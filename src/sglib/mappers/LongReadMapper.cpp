@@ -201,14 +201,6 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
             }
 
             get_all_kmer_matches(node_matches,read_kmers);
-//
-//            if (readID==737) {
-//                std::ofstream r89("read737_matches.txt");
-//                for (auto i=0;i<read_kmers.size();++i)
-//                    for (auto m:node_matches[i]){
-//                    r89<<i<<","<<m.first<<","<<m.second<<std::endl;
-//                }
-//            }
 
             //========== 2. Find match candidates in fixed windows ==========
 
@@ -217,16 +209,6 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
             //========== 3. Create alignment blocks from candidates ==========
 
             auto blocks = alignment_blocks(readID,node_matches,read_kmers.size(),candidates);
-//            if (readID==89) {
-//                std::cout << "====== Read #" << readID << " - " << query_sequence.size() << "bp ======" << std::endl;
-//                std::cout << "BEFORE FILTERING:" << std::endl;
-//                for (auto b:blocks)
-//                    std::cout << "Target: " << b.node << " (" << sg.nodes[llabs(b.node)].sequence.size() << " bp)  "
-//                              << b.qStart << ":" << b.qEnd << " -> " << b.nStart << ":" << b.nEnd
-//                              << " (" << b.score << " chained hits, " << b.qEnd - b.qStart + k << "bp, "
-//                              << b.score * 100 / (b.qEnd - b.qStart) << "%)"
-//                              << std::endl;
-//            }
 
             //========== 4. Construct mapping path ==========
             if (blocks.empty()) ++no_matches;
