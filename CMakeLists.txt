@@ -173,8 +173,6 @@ add_library(bsg SHARED
             src/sglib/mappers/LinkedReadMapper.cc
             src/sglib/mappers/PairedReadMapper.cc
             src/sglib/processors/Untangler.cc
-            src/sglib/processors/TagWalker.cc
-            src/sglib/processors/FlowFollower.cc
             src/sglib/processors/PathExplorer.cpp
             src/sglib/processors/LinkageUntangler.cc
             src/sglib/workspace/WorkSpace.cc
@@ -202,8 +200,6 @@ add_library(bsg_static STATIC
         src/sglib/mappers/LinkedReadMapper.cc
         src/sglib/mappers/PairedReadMapper.cc
         src/sglib/processors/Untangler.cc
-        src/sglib/processors/TagWalker.cc
-        src/sglib/processors/FlowFollower.cc
         src/sglib/processors/PathExplorer.cpp
         src/sglib/processors/LinkageUntangler.cc
         src/sglib/workspace/WorkSpace.cc
@@ -243,10 +239,6 @@ add_executable(bsg-untangler
         src/bsg-untangler.cc
         )
 
-add_executable(bsg-flowmaker
-        src/bsg-flowmaker.cc
-        )
-
 add_executable(bsg-lhapassembler
         src/bsg-lhapassembler.cc
         )
@@ -265,7 +257,6 @@ target_link_libraries(bsg-workspace bsg_static)
 target_link_libraries(bsg-datastore bsg_static)
 target_link_libraries(bsg-kmerspectra bsg_static)
 target_link_libraries(bsg-mapper bsg_static ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-flowmaker bsg_static ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-untangler bsg_static ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-lhapassembler bsg_static ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract bsg_static)
@@ -307,27 +298,29 @@ IF(BUILD_PYTHON_INTERFACE)
 
     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
-    add_custom_command (
-            OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
-            COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py
-            --quiet ${CMAKE_BINARY_DIR}/docs/xml/index.xml
-            ${CMAKE_BINARY_DIR}/python_docs.i
-            COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
-            DEPENDS doc_doxygen
-            VERBATIM)
-
-    add_custom_target(doxy2swig DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
     set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY SWIG_MODULE_NAME pybsg)
 
     SET_SOURCE_FILES_PROPERTIES(${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTIES CPLUSPLUS ON)
-    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
     if (NOT APPLE)
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
     endif()
+
+    if(DOXYGEN_FOUND)
+        add_custom_command (
+                OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
+                COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py
+                --quiet ${CMAKE_BINARY_DIR}/docs/xml/index.xml
+                ${CMAKE_BINARY_DIR}/python_docs.i
+                COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
+                DEPENDS doc_doxygen
+                VERBATIM
+        )
+        add_custom_target(doxy2swig DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
+        set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
+    endif(DOXYGEN_FOUND)
     SWIG_ADD_LIBRARY(pybsg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
     SWIG_LINK_LIBRARIES(pybsg ${PYTHON_LIBRARIES} bsg_static)
-    add_dependencies(_pybsg doxy2swig)
 
     install(TARGETS
             _pybsg
@@ -365,7 +358,6 @@ install(TARGETS
         bsg-datastore
         bsg-kmerspectra
         bsg-mapper
-        bsg-flowmaker
         bsg-untangler
         bsg-lhapassembler
         gfa-extract

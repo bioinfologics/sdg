@@ -43,10 +43,12 @@
 
 %}
 
-
+#define MADE_DOCS "@DOXYGEN_FOUND@"
 #ifdef SWIGPYTHON
-%include "python_docs.i"
-%include "std_unordered_set.i"
+    #if MADE_DOCS=="YES"
+        %include "python_docs.i"
+    #endif
+    %include "std_unordered_set.i"
 #endif
 
 %include "stdint.i"

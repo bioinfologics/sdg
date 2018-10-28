@@ -32,6 +32,8 @@ class LongReadMapper {
     /**
      * Stores an index of the mappings of a node to all the mappings where it appears.
      * This index can be queried to get information about all reads that map to a node.
+     *
+     * reads_in_node[dimension: node_id][position in node][read_id]
      */
     std::vector< std::vector < std::vector<LongReadMapping>::size_type > > reads_in_node;        /// Reads matching node
 
@@ -46,10 +48,28 @@ public:
 
     LongReadMapper operator=(const LongReadMapper &other);
 
+    /** @brief Getter for the defined datastore
+     *
+     * @return
+     */
     LongReadsDatastore& getLongReadsDatastore() {return datastore;}
 
+    /** @brief Given a node id returns the read ids that map to that node from the reads_in_node collection
+     *
+     * @param nodeID Id of the node
+     * @return Collection of reads mapped to node nodeID
+     */
     std::vector<uint64_t> get_node_read_ids(sgNodeID_t nodeID) const ;
 
+    /**
+     * Sets mapping parameters
+     * TODO: explain each parameter
+     * @param _k kmer size for mapping
+     * @param _min_size
+     * @param _min_chain
+     * @param _max_jump
+     * @param _max_delta_change
+     */
     void set_params(uint8_t _k=15, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60){
         k=_k;
         min_size=_min_size;
@@ -58,16 +78,74 @@ public:
         max_delta_change=_max_delta_change;
     }
 
+    /**
+     * Populates the matches container with the matches between all kmers from one read and the index of the graph.
+     * The index is a filtered set of kmers from the graph constructed using update_graph_index() or similar.
+     * A match is a perfect Kmer match between the read and the graph index
+     *
+     * matches are stored as read_kmer->kmer_match->match_description:
+     *  matches[read_kmer][kmer_match].first = node_id for a match of that kmer in the graph, sign indicates orientation
+     *  matches[read_kmer][kmer_match].second = offset for a match of that kmer for corresponding node_id (.first), the offsets are always calculated from the begining of the read
+     *
+     *  TODO: Change matche type from in32_t to sgNodeId in this function !!!
+     *
+     * @param vetor to store the mappings
+     * @param vector containing read kmers with the orientations
+     */
     void get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers);
 
+    /**
+     * Using the populated matches collection (see het_all_kmer_matches()) returns a collection of nodeIDs that have more than 50 matches with that particular read.
+     * TODO: parameter to ckeck, the 50 in the filter, why is 50?.
+     * @param matches matches vector
+     * @param read_kmers_size number of kmers in the read
+     * @return set of nodeIDs of nodes with more than 50 matches to the read
+     */
     std::set<sgNodeID_t> window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, uint32_t read_kmers_size);
 
+    /**
+     * This function will check for continuous blocks of alignments between the read and the window candidates produced by window_candidates() using the matches prudiced by get_allKmer_matches()
+     * The result is a vector af LongReadMappings where each element describes a mapping of a block of the read to a block of a node (see struct LongReadMapping)
+     *
+     * Each LongReadMapping describes a chain of matching kmers in the read and the node where the matches advance at the same pace (within a jumping distance allowance)
+     *
+     * @param readID id of the analyzed read
+     * @param matches matches collection produced by get_allKmer_matches()
+     * @param read_kmers_size Number of kmers in the read
+     * @param candidates collection of candidate matches produced by window_candidates()
+     * @return collection of readtonode mappings (LongReadMapping)
+     */
     std::vector<LongReadMapping> alignment_blocks(uint32_t readID, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,  uint32_t read_kmers_size, std::set<sgNodeID_t> &candidates);
 
+    /**
+     * Given a list of blocks the filter will discard overlapping blocks keeping those with the max span and score combination
+     *
+     * @param blocks Maping blocks produced by alignment_blocks()
+     * @param matches Matches produced by get_all_kmer_matches()
+     * @param read_kmers_size Number of kmers in the read
+     * @return Filtered, non overlapping collection of mapping blocks (LongReadMapping)
+     */
     std::vector<LongReadMapping> filter_blocks(std::vector<LongReadMapping> & blocks, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,  uint32_t read_kmers_size);
 
+    /**
+     * NOT IMPLEMENTED
+     * @return
+     */
     std::vector<LongReadMapping> refine_multinode_reads();
 
+    /**
+     * Function to map a read to the graph in 4 steps using the methods in this class
+     *
+     * //========== 1. Get read sequence, kmerise, get all matches ==========
+     * //========== 2. Find match candidates in fixed windows ==========
+     * //========== 3. Create alignment blocks from candidates ==========
+     * //========== 4. Construct mapping path ==========
+     *
+     * Results are stored in the mappings collection of this object
+     *
+     * @param readIDs
+     * @param detailed_log
+     */
     void map_reads(std::unordered_set<uint32_t> readIDs = {},std::string detailed_log="");
 
     void map_reads(std::string detailed_log){map_reads({},detailed_log);};
@@ -80,6 +158,9 @@ public:
 
     void write(std::ofstream &output_file);
 
+    /**
+     * Updates the assembly_kmers index with the kmers of the current graph with frequency less than 200
+     */
     void update_graph_index();
 
     /**
