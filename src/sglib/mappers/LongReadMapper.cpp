@@ -266,49 +266,33 @@ LongReadMapper::LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_
 LongReadMapper::~LongReadMapper() {}
 
 void LongReadMapper::read(std::string filename) {
-    // Read the mappings from file
-    sglib::OutputLog() << "Reading long read mappings" << std::endl;
     std::ifstream inf(filename, std::ios_base::binary);
-    auto mapSize(mappings.size());
-    inf.read(reinterpret_cast<char *>(&k), sizeof(k));
-    inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
-    mappings.reserve(mapSize);
-    inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
-
-    sglib::OutputLog() << "Updating read mapping indexes!" << std::endl;
-    update_indexes_from_mappings();
-    sglib::OutputLog() << "Done!" << std::endl;
+    read(inf);
 }
 
 void LongReadMapper::read(std::ifstream &inf) {
+    sglib::OutputLog() << "Reading long read mappings" << std::endl;
     auto mapSize(mappings.size());
     inf.read(reinterpret_cast<char *>(&k), sizeof(k));
     inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
     mappings.resize(mapSize);
     inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
-
     sglib::OutputLog() << "Updating read mapping indexes!" << std::endl;
     update_indexes_from_mappings();
     sglib::OutputLog() << "Done!" << std::endl;
 }
 
 void LongReadMapper::write(std::string filename) {
-    // Write mappings to file
-    sglib::OutputLog() << "Dumping long read mappings" << std::endl;
-    std::ofstream outf(filename, std::ios_base::binary);
-    auto mapSize(mappings.size());
-    outf.write(reinterpret_cast<const char *>(&k), sizeof(k));
-    outf.write(reinterpret_cast<const char *>(&mapSize), sizeof(mapSize));
-    outf.write(reinterpret_cast<const char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
-    sglib::OutputLog() << "Done!" << std::endl;
+    std::ofstream ofs(filename, std::ios_base::binary);
+    write(ofs);
 }
 
 void LongReadMapper::write(std::ofstream &ofs) {
+    sglib::OutputLog() << "Dumping long read mappings" << std::endl;
     auto mapSize(mappings.size());
-    ofs.write(reinterpret_cast<char *>(&k), sizeof(k));
-    ofs.write(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
-    mappings.reserve(mapSize);
-    ofs.write(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+    ofs.write(reinterpret_cast<const char *>(&k), sizeof(k));
+    ofs.write(reinterpret_cast<const char *>(&mapSize), sizeof(mapSize));
+    ofs.write(reinterpret_cast<const char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
     sglib::OutputLog() << "Done!" << std::endl;
 }
 
