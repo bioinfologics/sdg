@@ -152,6 +152,10 @@ public:
 
     void write(std::ofstream &output_file);
 
+    void write_filtered_mappings(std::string filename);
+
+    void read_filtered_mappings(std::string filename);
+
     /**
      * Updates the assembly_kmers index with the kmers of the current graph with frequency less than 200
      */

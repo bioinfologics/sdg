@@ -8,6 +8,7 @@
 
 #include <sglib/utilities/omp_safe.hpp>
 #include <atomic>
+#include <sglib/utilities/io_helpers.hpp>
 
 const bsgVersion_t LongReadMapper::min_compat = 0x0001;
 
@@ -294,6 +295,16 @@ void LongReadMapper::write(std::ofstream &ofs) {
     ofs.write(reinterpret_cast<const char *>(&mapSize), sizeof(mapSize));
     ofs.write(reinterpret_cast<const char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
     sglib::OutputLog() << "Done!" << std::endl;
+}
+
+void LongReadMapper::write_filtered_mappings(std::string filename) {
+    std::ofstream ofs(filename, std::ios_base::binary);
+    sglib::write_flat_vector(ofs,filtered_read_mappings);
+}
+
+void LongReadMapper::read_filtered_mappings(std::string filename) {
+    std::ifstream ifs(filename, std::ios_base::binary);
+    sglib::read_flat_vector(ifs,filtered_read_mappings);
 }
 
 LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
