@@ -9,6 +9,7 @@
 #include <string>
 #include <tuple>
 #include <limits>
+#include <cstdint>
 #include <sglib/hash/xxhash.h>
 #include "hashing_helper.hpp"
 

@@ -5,7 +5,6 @@
 #ifndef BSG_LINKAGEDIGRAPH_HPP
 #define BSG_LINKAGEDIGRAPH_HPP
 
-
 #include <sglib/graph/SequenceGraph.hpp>
 
 /**

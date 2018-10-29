@@ -14,6 +14,7 @@
 #include <iostream>
 #include <array>
 #include <unordered_set>
+#include <iosfwd>
 #include <sglib/types/KmerTypes.hpp>
 #include <sglib/types/GenericTypes.hpp>
 #include <sglib/graph/SequenceSubGraph.hpp>
