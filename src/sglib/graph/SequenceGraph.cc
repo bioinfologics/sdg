@@ -12,16 +12,9 @@
 #include <queue>
 #include <stack>
 #include <tuple>
-#include <list>
-#include <tuple>
 #include <functional>
 #include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/mappers/LinkedReadMapper.hpp>
-#include <sglib/readers/FileReader.hpp>
-#include <sglib/logger/OutputLog.hpp>
-#include "SequenceGraphPath.hpp"
-#include <sglib/utilities/omp_safe.hpp>
-#include <sglib/factories/KmerPosFactory.hpp>
 
 bool Node::is_canonical() {
     for (size_t i=0,j=sequence.size()-1;i<j;++i,--j){
