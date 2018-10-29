@@ -316,9 +316,9 @@ IF(BUILD_PYTHON_INTERFACE)
                 DEPENDS doc_doxygen
                 VERBATIM
         )
-    add_custom_target(doxy2swig)
-    SET_PROPERTY(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY SWIG_COMPILE_OPTIONS -O)
-        set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
+        add_custom_target(doxy2swig)
+        SET_PROPERTY(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY SWIG_COMPILE_OPTIONS -O)
+        SET_PROPERTY(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
     endif(DOXYGEN_FOUND)
     SWIG_ADD_LIBRARY(pybsg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
     SWIG_LINK_LIBRARIES(pybsg ${PYTHON_LIBRARIES} bsg_static)
