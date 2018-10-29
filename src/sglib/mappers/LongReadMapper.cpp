@@ -299,12 +299,12 @@ void LongReadMapper::write(std::ofstream &ofs) {
 
 void LongReadMapper::write_filtered_mappings(std::string filename) {
     std::ofstream ofs(filename, std::ios_base::binary);
-    sglib::write_flat_vector(ofs,filtered_read_mappings);
+    sglib::write_flat_vectorvector(ofs,filtered_read_mappings);
 }
 
 void LongReadMapper::read_filtered_mappings(std::string filename) {
     std::ifstream ifs(filename, std::ios_base::binary);
-    sglib::read_flat_vector(ifs,filtered_read_mappings);
+    sglib::read_flat_vectorvector(ifs,filtered_read_mappings);
 }
 
 LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
