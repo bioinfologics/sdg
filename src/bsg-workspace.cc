@@ -456,12 +456,12 @@ void add_datastores(int argc, char **argv) {
     std::string base_filename;
     std::vector<std::string> add_filenames;
     try {
-        cxxopts::Options options("bsg-workspace add", "BSG workspace add");
+        cxxopts::Options options("bsg-workspace add", "BSG workspace add, adds workspaces to a base workspace in the order they are passed in to an output workspace.");
 
         options.add_options()
                 ("help", "Print help")
                 ("w,workspace_base", "Base workspace, the graph and KCI are taken from this workspace", cxxopts::value<std::string>(base_filename))
-                ("a,workspace_add", "Workspaces to add (they will be added in the order specified)", cxxopts::value<std::vector<std::string>>(add_filenames))
+                ("a,workspace_add", "Workspaces to add, can be defined multiple times (they will be added in the order specified)", cxxopts::value<std::vector<std::string>>(add_filenames))
                 ("o,output", "Output workspace", cxxopts::value<std::string>(output));
         auto newargc=argc-1;
         auto newargv=&argv[1];
