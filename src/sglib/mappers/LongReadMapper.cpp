@@ -188,7 +188,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
 
             if ((!readIDs.empty() and readIDs.count(readID)==0 /*Read not in selected set*/)
                 or
-                (readIDs.empty() and !read_to_mappings[readID].empty()/*No selection and read is mapped*/)) {
+                (readIDs.empty()/*No selection*/)) {
                 continue;
             }
 
@@ -240,17 +240,14 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
         mappings.insert(mappings.end(),threadm.begin(),threadm.end());
     }
     sglib::OutputLog() << "Updating mapping indexes" <<std::endl;
-    update_indexes_from_mappings();
+    update_indexes();
 }
 
-void LongReadMapper::update_indexes_from_mappings() {
+void LongReadMapper::update_indexes() {
     reads_in_node.clear();
     reads_in_node.resize(sg.nodes.size());
-    read_to_mappings.clear();
-    read_to_mappings.resize(datastore.size());
     for (auto i=0;i<mappings.size();++i) {
         auto &m=mappings[i];
-        read_to_mappings[m.read_id].push_back(i);
         reads_in_node[std::abs(m.node)].push_back(m.read_id);
     }
 
@@ -261,7 +258,6 @@ LongReadMapper::LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_
         : sg(sg), k(k), datastore(ds), assembly_kmers(k) {
 
     reads_in_node.resize(sg.nodes.size());
-    read_to_mappings.resize(datastore.size());
 }
 
 LongReadMapper::~LongReadMapper() {}
@@ -279,7 +275,7 @@ void LongReadMapper::read(std::ifstream &inf) {
     mappings.resize(mapSize);
     inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
     sglib::OutputLog() << "Updating read mapping indexes!" << std::endl;
-    update_indexes_from_mappings();
+    update_indexes();
     sglib::OutputLog() << "Done!" << std::endl;
 }
 
@@ -313,19 +309,8 @@ LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
         return *this;
     }
     mappings = other.mappings;
-    update_indexes_from_mappings();
+    update_indexes();
     return *this;
-}
-
-std::vector<uint64_t> LongReadMapper::get_node_read_ids(sgNodeID_t nodeID) const {
-    std::vector<uint64_t> rpin;
-    nodeID=llabs(nodeID);
-    rpin.reserve(reads_in_node[nodeID].size());
-    for (auto &rm:reads_in_node[nodeID]){
-        rpin.emplace_back(rm);
-    }
-    std::sort(rpin.begin(),rpin.end());
-    return rpin;
 }
 
 void LongReadMapper::update_graph_index() {

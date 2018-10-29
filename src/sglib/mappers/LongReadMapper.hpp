@@ -29,17 +29,9 @@ class LongReadMapper {
     int max_jump=500;
     int max_delta_change=60;
 
-    /**
-     * Stores an index of the mappings of a node to all the mappings where it appears.
-     * This index can be queried to get information about all reads that map to a node.
-     *
-     * reads_in_node[dimension: node_id][position in node][read_id]
-     */
-    std::vector< std::vector < std::vector<LongReadMapping>::size_type > > reads_in_node;        /// Reads matching node
-
     NKmerIndex assembly_kmers;
 
-    void update_indexes_from_mappings();
+    void update_indexes();
 
 public:
 
@@ -53,13 +45,6 @@ public:
      * @return
      */
     LongReadsDatastore& getLongReadsDatastore() {return datastore;}
-
-    /** @brief Given a node id returns the read ids that map to that node from the reads_in_node collection
-     *
-     * @param nodeID Id of the node
-     * @return Collection of reads mapped to node nodeID
-     */
-    std::vector<uint64_t> get_node_read_ids(sgNodeID_t nodeID) const ;
 
     /**
      * Sets mapping parameters
@@ -191,11 +176,15 @@ public:
      */
     std::vector<LongReadMapping> mappings;
     std::vector < std::vector<LongReadMapping> > filtered_read_mappings;
+
     /**
-     * Stores an index of the resulting mappings of a single long read, for each long read, stores the position of it's mappings.
-     * This index can be used to query all the nodes that map to a single read.
+     * Stores an index of all reads that map to a node.
+     * This index can be queried restrict search of particular mappings.
+     *
      */
-    std::vector< std::vector < std::vector<LongReadMapping>::size_type > > read_to_mappings;    /// Nodes in the read, 0 or empty = unmapped
+    std::vector<std::vector<uint64_t>> reads_in_node;
+
+
 
 
     static const bsgVersion_t min_compat;

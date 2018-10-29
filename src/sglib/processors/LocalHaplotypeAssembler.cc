@@ -70,7 +70,8 @@ void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backb
     for (auto lrl = 0; ws.long_read_mappers.size(); ++lrl) {
         long_reads.emplace_back(std::make_pair(lrl, std::vector<uint64_t>()));
         for (auto &ln:backbone) {
-            auto nreads = ws.long_read_mappers[lrl].get_node_read_ids(ln);
+            auto nreads = ws.long_read_mappers[lrl].reads_in_node[llabs(ln)];
+            std::sort(nreads.begin(),nreads.end());
             long_reads.back().second.insert(long_reads.back().second.end(), nreads.begin(), nreads.end());
         }
         if (long_reads.back().second.empty()) long_reads.pop_back();
