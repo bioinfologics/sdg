@@ -308,8 +308,6 @@ IF(BUILD_PYTHON_INTERFACE)
     SWIG_ADD_LIBRARY(pybsg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
     SWIG_LINK_LIBRARIES(pybsg ${PYTHON_LIBRARIES} bsg_static)
 
-    SWIG_ADD_LIBRARY(pybsg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
-    SWIG_LINK_LIBRARIES(pybsg ${PYTHON_LIBRARIES} bsg_static)
     if(DOXYGEN_FOUND)
         add_custom_command (
                 OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
