@@ -246,12 +246,13 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
 void LongReadMapper::update_indexes() {
     reads_in_node.clear();
     reads_in_node.resize(sg.nodes.size());
-    for (auto i=0;i<mappings.size();++i) {
-        auto &m=mappings[i];
-        reads_in_node[std::abs(m.node)].push_back(m.read_id);
+    for (auto &rm:filtered_read_mappings) {
+        for (auto &m:rm) {
+            if (reads_in_node[std::abs(m.node)].empty() or reads_in_node[std::abs(m.node)].back()!=m.read_id)
+                reads_in_node[std::abs(m.node)].push_back(m.read_id);
+        }
     }
-
-    sglib::OutputLog() << "Finished with " << mappings.size() << " mappings" << std::endl;
+    sglib::OutputLog() << "Finished with " << filtered_read_mappings.size() << " mappings" << std::endl;
 }
 
 LongReadMapper::LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k)

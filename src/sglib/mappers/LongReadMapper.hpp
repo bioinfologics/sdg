@@ -16,8 +16,13 @@
 
 
 enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage};
+
 /**
- * Long read mapping to the graph, this class manages storage and computation of the alignments.
+ * Long read mapping to SequenceGraph, computation and storage of the raw alignments and filtered alingments.
+ *
+ * this->mappings is filled via small k-mers to multi-position index and a chain search.
+ * this->filtered_read_mappings is filled by calling one of the filter_mappings_* methods, which can use extra data.
+ * the reads_in_node index is populated by update_indexes() from this->filtered_read_mappings data.
  */
 class LongReadMapper {
 
@@ -31,7 +36,7 @@ class LongReadMapper {
 
     NKmerIndex assembly_kmers;
 
-    void update_indexes();
+
 
 public:
 
@@ -140,6 +145,11 @@ public:
     void write_filtered_mappings(std::string filename);
 
     void read_filtered_mappings(std::string filename);
+
+    /**
+     * Updates reads_in_nodes
+     */
+    void update_indexes();
 
     /**
      * Updates the assembly_kmers index with the kmers of the current graph with frequency less than 200
