@@ -2,12 +2,8 @@
 // Created by Luis Yanes (EI) on 22/03/2018.
 //
 #include <string>
-#include <stdexcept>
 #include <fstream>
-#include <iostream>
-#include <unordered_set>
 #include <sglib/graph/SequenceGraph.hpp>
-#include "SequenceSubGraph.hpp"
 
 
 void SequenceSubGraph::write_to_gfa(std::string filename) {
