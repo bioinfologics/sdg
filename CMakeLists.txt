@@ -305,9 +305,9 @@ IF(BUILD_PYTHON_INTERFACE)
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
     endif()
-
     SWIG_ADD_LIBRARY(pybsg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
     SWIG_LINK_LIBRARIES(pybsg ${PYTHON_LIBRARIES} bsg_static)
+
     if(DOXYGEN_FOUND)
         add_custom_command (
                 OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
