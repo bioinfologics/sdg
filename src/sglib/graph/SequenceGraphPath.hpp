@@ -5,9 +5,12 @@
 #ifndef BSG_SEQUENCEGRAPHPATH_HPP
 #define BSG_SEQUENCEGRAPHPATH_HPP
 
-#include <sglib/graph/SequenceSubGraph.hpp>
-#include <sglib/graph/SequenceGraph.hpp>
+#include <string>
+#include <vector>
+#include <set>
+#include <sglib/types/GenericTypes.hpp>
 
+class SequenceSubGraph;
 class SequenceGraph;
 class SequenceGraphPath {
 public:

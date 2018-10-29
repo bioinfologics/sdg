@@ -3,7 +3,6 @@
 //
 
 #include <sglib/graph/SequenceGraph.hpp>
-#include <sglib/graph/SequenceSubGraph.hpp>
 
 std::string SequenceGraphPath::get_fasta_header(bool use_oldnames) const {
     std::string h = ">sgPath_[";
