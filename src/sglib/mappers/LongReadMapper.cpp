@@ -393,7 +393,7 @@ MappingFilterResult LongReadMapper::filter_mappings_with_linked_reads(const Link
     std::vector<std::pair<uint64_t,std::set<sgNodeID_t>>> cov1set;
 
     //3) remove all sets not passing a "sum of all mappings >50% of the read"
-    //   compute the 1-cov total bases for each set, find set with highest 1-cov
+    //   compute the 1-cov total bases for each set, if it is not 50% of the read discard too
     for (auto &nsv:all_nsets){
         std::vector<uint8_t> coverage(seq.size());
         auto &nodeset=nsv.first;
@@ -407,9 +407,11 @@ MappingFilterResult LongReadMapper::filter_mappings_with_linked_reads(const Link
             }
         }
         uint64_t cov1=std::count(coverage.begin(),coverage.end(),1);
-        cov1set.emplace_back(cov1, nodeset);
+        if (cov1*2>=seq.size())
+            cov1set.emplace_back(cov1, nodeset);
     }
     if (cov1set.empty()) return MappingFilterResult::LowCoverage;
+    //find set with highest 1-cov
     std::sort(cov1set.begin(),cov1set.end());
     auto &winset=cov1set.back().second;
     //TODO: 4) try to find "turn-arounds" for CCS-style reads (later)
