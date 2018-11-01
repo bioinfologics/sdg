@@ -51,6 +51,12 @@ public:
      */
     LongReadsDatastore& getLongReadsDatastore() {return datastore;}
 
+    /** @brief Getter for the defined SequenceGraph
+     *
+     * @return
+     */
+    const SequenceGraph& getSequenceGraph() {return sg;}
+
     /**
      * Sets mapping parameters
      * TODO: explain each parameter
