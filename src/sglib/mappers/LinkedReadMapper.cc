@@ -388,7 +388,7 @@ std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadMapper::get_tag_neigh
     }
 
     sglib::OutputLog()<<"all structures ready"<<std::endl;
-#pragma omp parallel firstprivate(tags_in_node,nodes_in_tag)
+#pragma omp parallel firstprivate(tags_in_node,nodes_in_tags)
     {
         std::vector<uint32_t> shared_with(sg.nodes.size());
         std::vector<std::pair<sgNodeID_t, sgNodeID_t >> tnsl;
