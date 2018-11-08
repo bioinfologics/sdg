@@ -375,7 +375,7 @@ install(TARGETS
 install(DIRECTORY src/sglib
         DESTINATION include)
 
-IF (JlCxx_DIR)
+IF (BUILD_JULIA_INTERFACE)
     list(APPEND CMAKE_PREFIX_PATH ${JlCxx_DIR}/lib/cmake/JlCxx)
     message("Building julia (The superior language TM) wrapper")
     #message("Using cmake prefix path: ${JlCxx_DIR}/lib/cmake/JlCxx")
