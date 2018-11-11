@@ -8,6 +8,7 @@
 
 #include <sglib/utilities/omp_safe.hpp>
 #include <atomic>
+#include <sglib/utilities/io_helpers.hpp>
 
 const bsgVersion_t LongReadMapper::min_compat = 0x0001;
 
@@ -187,7 +188,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
 
             if ((!readIDs.empty() and readIDs.count(readID)==0 /*Read not in selected set*/)
                 or
-                (readIDs.empty() and !read_to_mappings[readID].empty()/*No selection and read is mapped*/)) {
+                (readIDs.empty()/*No selection*/)) {
                 continue;
             }
 
@@ -201,14 +202,6 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
             }
 
             get_all_kmer_matches(node_matches,read_kmers);
-//
-//            if (readID==737) {
-//                std::ofstream r89("read737_matches.txt");
-//                for (auto i=0;i<read_kmers.size();++i)
-//                    for (auto m:node_matches[i]){
-//                    r89<<i<<","<<m.first<<","<<m.second<<std::endl;
-//                }
-//            }
 
             //========== 2. Find match candidates in fixed windows ==========
 
@@ -217,16 +210,6 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
             //========== 3. Create alignment blocks from candidates ==========
 
             auto blocks = alignment_blocks(readID,node_matches,read_kmers.size(),candidates);
-//            if (readID==89) {
-//                std::cout << "====== Read #" << readID << " - " << query_sequence.size() << "bp ======" << std::endl;
-//                std::cout << "BEFORE FILTERING:" << std::endl;
-//                for (auto b:blocks)
-//                    std::cout << "Target: " << b.node << " (" << sg.nodes[llabs(b.node)].sequence.size() << " bp)  "
-//                              << b.qStart << ":" << b.qEnd << " -> " << b.nStart << ":" << b.nEnd
-//                              << " (" << b.score << " chained hits, " << b.qEnd - b.qStart + k << "bp, "
-//                              << b.score * 100 / (b.qEnd - b.qStart) << "%)"
-//                              << std::endl;
-//            }
 
             //========== 4. Construct mapping path ==========
             if (blocks.empty()) ++no_matches;
@@ -257,88 +240,68 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
         mappings.insert(mappings.end(),threadm.begin(),threadm.end());
     }
     sglib::OutputLog() << "Updating mapping indexes" <<std::endl;
-    update_indexes_from_mappings();
+    update_indexes();
 }
 
-std::vector<LongReadMapping> LongReadMapper::refine_multinode_reads() {
-    //node->mappings map. (maybe just re-sort the mappings?)
-
-    //take each node, extend mappings, if extended add to the curated mappings.
-
-    //read->mappings again, this time check if the read can be made to produce a path.
-
-
-
-}
-
-void LongReadMapper::update_indexes_from_mappings() {
+void LongReadMapper::update_indexes() {
     reads_in_node.clear();
     reads_in_node.resize(sg.nodes.size());
-    read_to_mappings.clear();
-    read_to_mappings.resize(datastore.size());
-    for (auto i=0;i<mappings.size();++i) {
-        auto &m=mappings[i];
-        read_to_mappings[m.read_id].push_back(i);
-        reads_in_node[std::abs(m.node)].push_back(m.read_id);
+    for (auto &rm:filtered_read_mappings) {
+        for (auto &m:rm) {
+            if (reads_in_node[std::abs(m.node)].empty() or reads_in_node[std::abs(m.node)].back()!=m.read_id)
+                reads_in_node[std::abs(m.node)].push_back(m.read_id);
+        }
     }
-
-    sglib::OutputLog() << "Finished with " << mappings.size() << " mappings" << std::endl;
+    sglib::OutputLog() << "Finished with " << filtered_read_mappings.size() << " mappings" << std::endl;
 }
 
 LongReadMapper::LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k)
         : sg(sg), k(k), datastore(ds), assembly_kmers(k) {
 
     reads_in_node.resize(sg.nodes.size());
-    read_to_mappings.resize(datastore.size());
 }
 
 LongReadMapper::~LongReadMapper() {}
 
 void LongReadMapper::read(std::string filename) {
-    // Read the mappings from file
-    sglib::OutputLog() << "Reading long read mappings" << std::endl;
     std::ifstream inf(filename, std::ios_base::binary);
-    auto mapSize(mappings.size());
-    inf.read(reinterpret_cast<char *>(&k), sizeof(k));
-    inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
-    mappings.reserve(mapSize);
-    inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
-
-    sglib::OutputLog() << "Updating read mapping indexes!" << std::endl;
-    update_indexes_from_mappings();
-    sglib::OutputLog() << "Done!" << std::endl;
+    read(inf);
 }
 
 void LongReadMapper::read(std::ifstream &inf) {
+    sglib::OutputLog() << "Reading long read mappings" << std::endl;
     auto mapSize(mappings.size());
     inf.read(reinterpret_cast<char *>(&k), sizeof(k));
     inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
     mappings.resize(mapSize);
     inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
-
     sglib::OutputLog() << "Updating read mapping indexes!" << std::endl;
-    update_indexes_from_mappings();
+    update_indexes();
     sglib::OutputLog() << "Done!" << std::endl;
 }
 
 void LongReadMapper::write(std::string filename) {
-    // Write mappings to file
-    sglib::OutputLog() << "Dumping long read mappings" << std::endl;
-    std::ofstream outf(filename, std::ios_base::binary);
-    auto mapSize(mappings.size());
-    outf.write(reinterpret_cast<const char *>(&k), sizeof(k));
-    outf.write(reinterpret_cast<const char *>(&mapSize), sizeof(mapSize));
-    outf.write(reinterpret_cast<const char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
-    sglib::OutputLog() << "Done!" << std::endl;
+    std::ofstream ofs(filename, std::ios_base::binary);
+    write(ofs);
 }
 
 void LongReadMapper::write(std::ofstream &ofs) {
+    sglib::OutputLog() << "Dumping long read mappings" << std::endl;
     auto mapSize(mappings.size());
-    ofs.write(reinterpret_cast<char *>(&k), sizeof(k));
-    ofs.write(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
-    mappings.reserve(mapSize);
-    ofs.write(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+    ofs.write(reinterpret_cast<const char *>(&k), sizeof(k));
+    ofs.write(reinterpret_cast<const char *>(&mapSize), sizeof(mapSize));
+    ofs.write(reinterpret_cast<const char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
     sglib::OutputLog() << "Done!" << std::endl;
+}
+
+void LongReadMapper::write_filtered_mappings(std::string filename) {
+    std::ofstream ofs(filename, std::ios_base::binary);
+    sglib::write_flat_vectorvector(ofs,filtered_read_mappings);
+}
+
+void LongReadMapper::read_filtered_mappings(std::string filename) {
+    std::ifstream ifs(filename, std::ios_base::binary);
+    sglib::read_flat_vectorvector(ifs,filtered_read_mappings);
 }
 
 LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
@@ -347,19 +310,8 @@ LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
         return *this;
     }
     mappings = other.mappings;
-    update_indexes_from_mappings();
+    update_indexes();
     return *this;
-}
-
-std::vector<uint64_t> LongReadMapper::get_node_read_ids(sgNodeID_t nodeID) const {
-    std::vector<uint64_t> rpin;
-    nodeID=llabs(nodeID);
-    rpin.reserve(reads_in_node[nodeID].size());
-    for (auto &rm:reads_in_node[nodeID]){
-        rpin.emplace_back(rm);
-    }
-    std::sort(rpin.begin(),rpin.end());
-    return rpin;
 }
 
 void LongReadMapper::update_graph_index() {
@@ -441,7 +393,7 @@ MappingFilterResult LongReadMapper::filter_mappings_with_linked_reads(const Link
     std::vector<std::pair<uint64_t,std::set<sgNodeID_t>>> cov1set;
 
     //3) remove all sets not passing a "sum of all mappings >50% of the read"
-    //   compute the 1-cov total bases for each set, find set with highest 1-cov
+    //   compute the 1-cov total bases for each set, if it is not 50% of the read discard too
     for (auto &nsv:all_nsets){
         std::vector<uint8_t> coverage(seq.size());
         auto &nodeset=nsv.first;
@@ -455,9 +407,11 @@ MappingFilterResult LongReadMapper::filter_mappings_with_linked_reads(const Link
             }
         }
         uint64_t cov1=std::count(coverage.begin(),coverage.end(),1);
-        cov1set.emplace_back(cov1, nodeset);
+        if (cov1*2>=seq.size())
+            cov1set.emplace_back(cov1, nodeset);
     }
     if (cov1set.empty()) return MappingFilterResult::LowCoverage;
+    //find set with highest 1-cov
     std::sort(cov1set.begin(),cov1set.end());
     auto &winset=cov1set.back().second;
     //TODO: 4) try to find "turn-arounds" for CCS-style reads (later)

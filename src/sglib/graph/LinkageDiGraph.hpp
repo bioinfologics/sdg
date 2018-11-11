@@ -77,6 +77,14 @@ public:
      */
     std::set<sgNodeID_t> fw_reached_nodes(sgNodeID_t n, int radius) const;
 
+    /**
+     * Vector of FW distances and neighbours from n, sorted in ascending distance (median if multi-link) order.
+     * @param n
+     * @param min_links
+     * @return
+     */
+    std::vector<std::pair<int,sgNodeID_t>> fw_neighbours_by_distance( sgNodeID_t n, int min_links) const;
+
     /** @brief Returns all the nodeIDs with connections in the link collection
      *
      * @return set of nodeIDs
@@ -103,7 +111,8 @@ public:
      * @param nodeID n2
      * @return true is the nodes are connected false otherwise
      */
-    bool are_connected(sgNodeID_t n1, sgNodeID_t n2);
+    bool are_connected(sgNodeID_t n1, sgNodeID_t n2) const;
+    uint32_t link_count(sgNodeID_t n1, sgNodeID_t n2) const;
 
     /**
      * Get all unitigs from the graph, returns a vector of paths where all nodes are connected 1-1
@@ -122,7 +131,9 @@ public:
      * @param max_size
      * @return
      */
-    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> find_bubbles(uint32_t min_size,uint32_t max_size) ;
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> find_bubbles(uint32_t min_size,uint32_t max_size) const;
+    std::vector<sgNodeID_t> find_tips(uint32_t min_size=0,uint32_t max_size=1000000) const;
+    std::vector<sgNodeID_t> find_self_loops(uint32_t min_size=0,uint32_t max_size=1000000, bool include_circles=true) const;
 
     /**
      * Dumps the LinkageDiGraph (links) to <filename>
