@@ -126,7 +126,7 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
                     auto nk = kmer_to_graphposition.find(rk.kmer);
                     if (kmer_to_graphposition.end()!=nk) {
                         //get the node just as node
-                        sgNodeID_t nknode = llabs(nk->second.node);
+                        sgNodeID_t nknode = llabs(nk->second.node); // nk->second is the graphStrandPosition node is the node id of that
                         //TODO: sort out the sign/orientation representation
                         if (mapping.node == 0) {
                             mapping.node = nknode;
@@ -379,16 +379,16 @@ std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadMapper::get_tag_neigh
                                                                                            const std::vector<bool> &selected_nodes) {
     std::vector<std::pair<sgNodeID_t , sgNodeID_t >> tns;
 
-    auto nodes_in_tag= get_tag_nodes(2, selected_nodes);
+    auto nodes_in_tags= get_tag_nodes(2, selected_nodes);
 
     std::unordered_map<sgNodeID_t , std::vector<bsg10xTag>> tags_in_node;
-    sglib::OutputLog()<<"There are "<<nodes_in_tag.size()<<" informative tags"<<std::endl;
-    for (auto &t:nodes_in_tag){
+    sglib::OutputLog()<<"There are "<<nodes_in_tags.size()<<" informative tags"<<std::endl;
+    for (auto &t:nodes_in_tags){
         for (auto n:t.second) tags_in_node[n].push_back(t.first);
     }
 
     sglib::OutputLog()<<"all structures ready"<<std::endl;
-#pragma omp parallel firstprivate(tags_in_node,nodes_in_tag)
+#pragma omp parallel firstprivate(tags_in_node,nodes_in_tags)
     {
         std::vector<uint32_t> shared_with(sg.nodes.size());
         std::vector<std::pair<sgNodeID_t, sgNodeID_t >> tnsl;
@@ -399,7 +399,7 @@ std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadMapper::get_tag_neigh
 
             bzero(shared_with.data(), sizeof(uint32_t) * shared_with.size()); //clearing with bzero is the fastest way?
             for (auto t:tags_in_node[n])
-                for (auto n:nodes_in_tag[t]) ++shared_with[n];
+                for (auto n:nodes_in_tags[t]) ++shared_with[n];
             for (auto i = n + 1; i < shared_with.size(); ++i) {
                 if (shared_with[i] >= min_shared) tnsl.emplace_back(n, i);
             }
@@ -411,20 +411,6 @@ std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadMapper::get_tag_neigh
     return tns;
 }
 
-/**
- * Finds all nodes that have tags that cover min_score of the total tags of each node.
- *
- * Example:
- *      - node A has tags 5, 5, 6, 7, 8
- *      - node B has tags 5, 8, 9, 9, 10
- *
- * Then B covers 3/6=0.5 of A tags, and A covers 2/5=0.4 of B tags.
- * If min_score=.5 then B is in A's neighbours, but A is not in B's
- *
- * Results are stored in the tag_neighbours vector
- * @param min_size
- * @param min_score
- */
 void LinkedReadMapper::compute_all_tag_neighbours(int min_size, float min_score) {
     std::vector<std::unordered_map<sgNodeID_t,uint32_t>> scores(sg.nodes.size());
     bsg10xTag last_tag=0;
@@ -433,6 +419,7 @@ void LinkedReadMapper::compute_all_tag_neighbours(int min_size, float min_score)
     sglib::OutputLog()<<"Counting into individual maps..."<<std::endl;
     for (size_t i=0;i<read_to_node.size();++i){
         if (datastore.get_read_tag(i)==0) continue;//skip tag 0
+        // This is because the reads are stored sorted by  tags
         if (datastore.get_read_tag(i)!=last_tag){
             //analyse tag per tag -> add this count on the shared set of this (check min_size for both)
             if (node_readcount.size()<500) {
