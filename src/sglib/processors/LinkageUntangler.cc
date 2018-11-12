@@ -153,6 +153,8 @@ size_t intersection_size_fast(const std::vector<bsg10xTag>& v1, const std::vecto
     return s;
 }
 
+//======= NODE SELECTION METHODS =======
+
 void LinkageUntangler::clear_node_selection() {
     selected_nodes.clear();
     selected_nodes.resize(ws.sg.nodes.size());
@@ -250,6 +252,37 @@ void LinkageUntangler::select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, f
 
 }
 
+void LinkageUntangler::select_multi_linkage_linear_anchors(const LinkageDiGraph &multi_ldg, int min_links, int min_transitive_links) {
+    for (auto n=1;n<ws.sg.nodes.size();++n){
+        if (ws.sg.nodes[n].status == sgNodeDeleted) continue;
+        bool anchor=true;
+        auto fw_sorted=multi_ldg.fw_neighbours_by_distance(n,min_links);
+        if (fw_sorted.size()>1) {
+            for (auto i = 0; i < fw_sorted.size() - 1; ++i) {
+                if (multi_ldg.link_count(-fw_sorted[i].second, fw_sorted[i + 1].second) < min_transitive_links) {
+                    anchor = false;
+                    break;
+                }
+            }
+        }
+        if (anchor) {
+            auto bw_sorted = multi_ldg.fw_neighbours_by_distance(-n, min_links);
+            if (bw_sorted.size()>1) {
+                for (auto i = 0; i < bw_sorted.size() - 1; ++i) {
+                    if (multi_ldg.link_count(-bw_sorted[i].second, bw_sorted[i + 1].second) < min_transitive_links) {
+                        anchor = false;
+                        break;
+                    }
+                }
+            }
+            if (bw_sorted.empty() and fw_sorted.empty()) anchor=false;
+        }
+        if (anchor) {
+                selected_nodes[n] = true;
+        }
+    }
+}
+
 LinkageDiGraph LinkageUntangler::make_topology_linkage(int radius) {
     LinkageDiGraph ldg(ws.sg);
     for (auto m=1;m<ws.sg.nodes.size();++m) {
@@ -277,24 +310,6 @@ LinkageDiGraph LinkageUntangler::make_topology_linkage(int radius) {
 
 LinkageDiGraph LinkageUntangler::make_paired_linkage(int min_reads) {
     LinkageDiGraph ldg(ws.sg);
-    /*sglib::OutputLog()<<"filling orientation indexes"<<std::endl;
-    uint64_t revc=0,dirc=0,false_rev=0,false_dir=0,true_rev=0,true_dir=0;
-    std::vector<std::vector<bool>> orientation;
-    for (auto &pm:ws.paired_read_mappers){
-        orientation.emplace_back();
-        orientation.back().resize(pm.read_to_node.size());
-        for (auto n=1;n<ws.sg.nodes.size();++n)
-            for (auto &rm:pm.reads_in_node[n]) {
-                orientation.back()[rm.read_id]=rm.rev;
-                if (rm.first_pos<rm.last_pos){if (rm.rev) ++false_rev; else ++true_rev;};
-                if (rm.first_pos>rm.last_pos ){if (!rm.rev) ++false_dir; else ++true_dir;};
-                if (rm.rev) revc++;
-                else dirc++;
-            }
-    }
-    std::ofstream lof("paired_links.txt");
-    sglib::OutputLog()<<"FW: "<<dirc<<" ( "<<true_dir<<" - "<< false_dir<<" )"<<std::endl;
-    sglib::OutputLog()<<"BW: "<<revc<<" ( "<<true_rev<<" - "<< false_rev<<" )"<<std::endl;*/
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
     sglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
     //use all libraries collect votes on each link
@@ -335,24 +350,6 @@ LinkageDiGraph LinkageUntangler::make_paired_linkage(int min_reads) {
 
 LinkageDiGraph LinkageUntangler::make_paired_linkage_pe(int min_reads) {
     LinkageDiGraph ldg(ws.sg);
-    /*sglib::OutputLog()<<"filling orientation indexes"<<std::endl;
-    uint64_t revc=0,dirc=0,false_rev=0,false_dir=0,true_rev=0,true_dir=0;
-    std::vector<std::vector<bool>> orientation;
-    for (auto &pm:ws.paired_read_mappers){
-        orientation.emplace_back();
-        orientation.back().resize(pm.read_to_node.size());
-        for (auto n=1;n<ws.sg.nodes.size();++n)
-            for (auto &rm:pm.reads_in_node[n]) {
-                orientation.back()[rm.read_id]=rm.rev;
-                if (rm.first_pos<rm.last_pos){if (rm.rev) ++false_rev; else ++true_rev;};
-                if (rm.first_pos>rm.last_pos ){if (!rm.rev) ++false_dir; else ++true_dir;};
-                if (rm.rev) revc++;
-                else dirc++;
-            }
-    }
-    std::ofstream lof("paired_links.txt");
-    sglib::OutputLog()<<"FW: "<<dirc<<" ( "<<true_dir<<" - "<< false_dir<<" )"<<std::endl;
-    sglib::OutputLog()<<"BW: "<<revc<<" ( "<<true_rev<<" - "<< false_rev<<" )"<<std::endl;*/
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
     sglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
     //use all libraries collect votes on each link
@@ -488,13 +485,6 @@ std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> LinkageUntangler::shared_r
     std::cout<<"Done!"<<std::endl;
     //TODO: create linkage
     return shared_paths;
-}
-
-LinkageDiGraph LinkageUntangler::make_paired_linkage_by_kmer(int min_shared, std::vector<size_t> libraries, bool r1rev, bool r2rev ) {
-    LinkageDiGraph ldg(ws.sg);
-    auto slp=shared_read_paths(min_shared,libraries,r1rev,r2rev);
-    //TODO: fill ldg;
-    return ldg;
 }
 
 LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_paths) {
@@ -700,12 +690,39 @@ LinkageDiGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_p
     return ldg;
 }
 
+LinkageDiGraph LinkageUntangler::make_nextselected_linkage(const LinkageDiGraph &multi_ldg, int min_links) {
+    LinkageDiGraph ldg(ws.sg);
+    for (auto n=1;n<ws.sg.nodes.size();++n) {
+        if (ws.sg.nodes[n].status == sgNodeDeleted or !selected_nodes[n]) continue;
+        auto fw_sorted = multi_ldg.fw_neighbours_by_distance(n, min_links);
+        for (auto &fwl:fw_sorted) {
+            if (selected_nodes[llabs(fwl.second)]) {
+                if (!ldg.are_connected(-n, fwl.second)) {
+                    ldg.add_link(-n, fwl.second, fwl.first);
+                }
+                break;
+            }
+        }
+        auto bw_sorted = multi_ldg.fw_neighbours_by_distance(-n, min_links);
+        for (auto &bwl:bw_sorted) {
+            if (selected_nodes[llabs(bwl.second)]) {
+                if (!ldg.are_connected(n, bwl.second)) {
+                    ldg.add_link(n, bwl.second, bwl.first);
+                }
+                break;
+            }
+        }
+    }
+    return ldg;
+}
+
 std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<LongReadMapping> &lorm_mappings, uint32_t read_size) {
     std::vector<Link> linkage;
     std::unordered_map<sgNodeID_t,uint64_t> total_bp;
     std::vector<LongReadMapping> mfilt_total,mmergedfilt;
     //first, copy mappings, removing nodes whose total mapping adds up to less than 70% of the node unless first or last
     for (auto &m:lorm_mappings) total_bp[m.node] +=m.nEnd-m.nStart+1;
+    if (read_size==0) for (auto &m:lorm_mappings) if (m.qEnd>read_size) read_size=m.qEnd;
     for (int i=0; i<lorm_mappings.size();++i){
         auto &m=lorm_mappings[i];
         auto ns=ws.sg.nodes[llabs(m.node)].sequence.size();
@@ -742,14 +759,14 @@ std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<L
     return linkage;
 }
 
-LinkageDiGraph LinkageUntangler::make_longRead_multilinkage(const LongReadMapper &lorm) {
+LinkageDiGraph LinkageUntangler::make_longRead_multilinkage(const LongReadMapper &lorm,bool real_read_size) {
     SequenceGraph& sg(ws.getGraph());
     LinkageDiGraph ldg(sg);
     std::vector<Link> linkage;
     //for each read's filtered mappings:
     for(uint64_t rid=0;rid<lorm.filtered_read_mappings.size();++rid) {
         if (lorm.filtered_read_mappings[rid].empty()) continue;
-        auto newlinks=mappings_to_multilinkage(lorm.filtered_read_mappings[rid],lorm.datastore.read_to_fileRecord[rid].record_size);
+        auto newlinks=mappings_to_multilinkage(lorm.filtered_read_mappings[rid],(real_read_size ? lorm.datastore.read_to_fileRecord[rid].record_size : 0));
         linkage.insert(linkage.end(),newlinks.begin(),newlinks.end());
     }
     for (auto l:linkage) {
