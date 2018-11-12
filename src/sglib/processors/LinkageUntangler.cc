@@ -722,6 +722,7 @@ std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<L
     std::vector<LongReadMapping> mfilt_total,mmergedfilt;
     //first, copy mappings, removing nodes whose total mapping adds up to less than 70% of the node unless first or last
     for (auto &m:lorm_mappings) total_bp[m.node] +=m.nEnd-m.nStart+1;
+    if (read_size==0) for (auto &m:lorm_mappings) if (m.qEnd>read_size) read_size=m.qEnd;
     for (int i=0; i<lorm_mappings.size();++i){
         auto &m=lorm_mappings[i];
         auto ns=ws.sg.nodes[llabs(m.node)].sequence.size();
@@ -758,14 +759,14 @@ std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<L
     return linkage;
 }
 
-LinkageDiGraph LinkageUntangler::make_longRead_multilinkage(const LongReadMapper &lorm) {
+LinkageDiGraph LinkageUntangler::make_longRead_multilinkage(const LongReadMapper &lorm,bool real_read_size) {
     SequenceGraph& sg(ws.getGraph());
     LinkageDiGraph ldg(sg);
     std::vector<Link> linkage;
     //for each read's filtered mappings:
     for(uint64_t rid=0;rid<lorm.filtered_read_mappings.size();++rid) {
         if (lorm.filtered_read_mappings[rid].empty()) continue;
-        auto newlinks=mappings_to_multilinkage(lorm.filtered_read_mappings[rid],lorm.datastore.read_to_fileRecord[rid].record_size);
+        auto newlinks=mappings_to_multilinkage(lorm.filtered_read_mappings[rid],(real_read_size ? lorm.datastore.read_to_fileRecord[rid].record_size : 0));
         linkage.insert(linkage.end(),newlinks.begin(),newlinks.end());
     }
     for (auto l:linkage) {
