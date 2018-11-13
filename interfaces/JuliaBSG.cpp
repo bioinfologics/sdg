@@ -11,6 +11,7 @@
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 {
+    // Graph types
     mod.add_type<SequenceGraph>("SequenceGraph")
             .constructor()
             .method("load_from_gfa", &SequenceGraph::load_from_gfa)
@@ -37,6 +38,64 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             .method("link_exists", &SequenceGraph::link_exists)
             .method("nodeID_to_name", &SequenceGraph::nodeID_to_name);
 
+    mod.add_type<SequenceGraphPath>("SequenceGraphPath")
+            .constructor<SequenceGraph&, const std::vector<sgNodeID_t>>()
+            .constructor<const SequenceGraph&, const std::vector<sgNodeID_t>>()
+            .constructor<const SequenceGraphPath&>()
+            .method("get_fasta_header", &SequenceGraphPath::get_fasta_header)
+            .method("get_sequence", &SequenceGraphPath::get_sequence)
+            .method("get_sequence_size_fast", &SequenceGraphPath::get_sequence_size_fast)
+            .method("get_next_links", &SequenceGraphPath::get_next_links)
+            .method("reverse", &SequenceGraphPath::reverse)
+            .method("is_canonical", &SequenceGraphPath::is_canonical)
+            .method("make_set_of_nodes", &SequenceGraphPath::make_set_of_nodes)
+            .method("append_to_path", &SequenceGraphPath::append_to_path)
+            .method("extend_if_coherent", &SequenceGraphPath::extend_if_coherent)
+            .method("clear", &SequenceGraphPath::clear)
+            .method("is_unitig", &SequenceGraphPath::is_unitig)
+            .method("getNodes", static_cast<std::vector<sgNodeID_t>& (SequenceGraphPath::*)()>(&SequenceGraphPath::getNodes));
+
+    mod.add_type<SequenceSubGraph>("SequenceSubGraph")
+            .constructor<const SequenceGraph&, std::vector<sgNodeID_t>>()
+            .constructor<const SequenceGraph&, std::vector<nodeVisitor>>()
+            .method("write_to_gfa", &SequenceSubGraph::write_to_gfa)
+            .method("total_size", &SequenceSubGraph::total_size);
+
+    mod.add_type<LinkageDiGraph>("LinkageDiGraph")
+            .constructor<SequenceGraph&>()
+            .method("add_link", &LinkageDiGraph::add_link)
+            .method("add_links", &LinkageDiGraph::add_links)
+            .method("remove_link", &LinkageDiGraph::remove_link)
+            .method("disconnect_node", &LinkageDiGraph::disconnect_node)
+            .method("get_fw_links", &LinkageDiGraph::get_fw_links)
+            .method("get_bw_links", &LinkageDiGraph::get_bw_links)
+            .method("fw_reached_nodes", &LinkageDiGraph::fw_reached_nodes)
+            .method("get_connected_nodes", &LinkageDiGraph::get_connected_nodes)
+            .method("remove_transitive_links", &LinkageDiGraph::remove_transitive_links)
+            .method("report_connectivity", &LinkageDiGraph::report_connectivity)
+            .method("are_connected", &LinkageDiGraph::are_connected)
+                    //.method("get_all_lines", &LinkageDiGraph::get_all_lines)
+            .method("find_bubbles", &LinkageDiGraph::find_bubbles)
+            .method("dump_to_text", &LinkageDiGraph::dump_to_text)
+            .method("load_from_text", &LinkageDiGraph::load_from_text);
+
+    // Generic Types
+    mod.add_type<Node>("Node")
+            .constructor<std::string, sgNodeStatus_t>()
+            .constructor<std::string>()
+            .method("is_canonical", &Node::is_canonical)
+            .method("make_rc", &Node::make_rc);
+
+    mod.add_type<Link>("Link")
+            .constructor()
+            .constructor<sgNodeID_t, sgNodeID_t, int32_t>();
+
+    mod.add_type<nodeVisitor>("nodeVisitor")
+            .constructor()
+            .constructor<sgNodeID_t, unsigned int, unsigned int>()
+            .method("reverseDirection", &nodeVisitor::reverseDirection);
+
+    // Untanglers
     mod.add_type<LinkageUntangler>("LinkageUntangler")
             .constructor<WorkSpace&>()
             .method("clear_node_selection", &LinkageUntangler::clear_node_selection)
@@ -59,6 +118,25 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             .method("linear_regions_tag_local_assembly", &LinkageUntangler::linear_regions_tag_local_assembly)
             .method("fill_linkage_line", &LinkageUntangler::fill_linkage_line);
 
+    // Read mapping types
+    mod.add_type<ReadMapping>("ReadMapping")
+            .constructor()
+            .method("merge", &ReadMapping::merge);
+
+    mod.add_type<LongReadMapping>("LongReadMapping")
+            .constructor();
+
+    // Kmer types
+    mod.add_type<KmerIDX>("KmerIDX")
+            .constructor();
+
+    mod.add_type<KmerIDX128>("KmerIDX128")
+            .constructor();
+
+    mod.add_type<graphStrandPos>("graphStrandPos")
+            .constructor();
+
+    // Read mappers
     mod.add_type<LinkedReadMapper>("LinkedReadMapper")
             .constructor<SequenceGraph&, LinkedReadsDatastore&, const UniqueKmerIndex&, const Unique63merIndex&>()
             .method("map_reads", &LinkedReadMapper::map_reads)
@@ -103,24 +181,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             .method("write", static_cast<void (LongReadMapper::*)(std::ofstream&)>(&LongReadMapper::write))
             .method("update_graph_index", &LongReadMapper::update_graph_index);
 
-    mod.add_type<LinkageDiGraph>("LinkageDiGraph")
-            .constructor<SequenceGraph&>()
-            .method("add_link", &LinkageDiGraph::add_link)
-            .method("add_links", &LinkageDiGraph::add_links)
-            .method("remove_link", &LinkageDiGraph::remove_link)
-            .method("disconnect_node", &LinkageDiGraph::disconnect_node)
-            .method("get_fw_links", &LinkageDiGraph::get_fw_links)
-            .method("get_bw_links", &LinkageDiGraph::get_bw_links)
-            .method("fw_reached_nodes", &LinkageDiGraph::fw_reached_nodes)
-            .method("get_connected_nodes", &LinkageDiGraph::get_connected_nodes)
-            .method("remove_transitive_links", &LinkageDiGraph::remove_transitive_links)
-            .method("report_connectivity", &LinkageDiGraph::report_connectivity)
-            .method("are_connected", &LinkageDiGraph::are_connected)
-            //.method("get_all_lines", &LinkageDiGraph::get_all_lines)
-            .method("find_bubbles", &LinkageDiGraph::find_bubbles)
-            .method("dump_to_text", &LinkageDiGraph::dump_to_text)
-            .method("load_from_text", &LinkageDiGraph::load_from_text);
-
+    // Workspaces
     mod.add_type<WorkSpace>("WorkSpace")
             .constructor()
             .method("load_from_disk", &WorkSpace::load_from_disk)
