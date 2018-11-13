@@ -764,13 +764,14 @@ LinkageDiGraph LinkageUntangler::make_longRead_multilinkage(const LongReadMapper
     LinkageDiGraph ldg(sg);
     std::vector<Link> linkage;
     //for each read's filtered mappings:
-    for(uint64_t rid=0;rid<lorm.filtered_read_mappings.size();++rid) {
+    for(int64_t rid=0;rid<lorm.filtered_read_mappings.size();++rid) {
         if (lorm.filtered_read_mappings[rid].empty()) continue;
         auto newlinks=mappings_to_multilinkage(lorm.filtered_read_mappings[rid],(real_read_size ? lorm.datastore.read_to_fileRecord[rid].record_size : 0));
+        for (auto &l:newlinks) l.read_id=rid;
         linkage.insert(linkage.end(),newlinks.begin(),newlinks.end());
     }
     for (auto l:linkage) {
-        ldg.add_link(l.source,l.dest,l.dist);
+        ldg.add_link(l.source,l.dest,l.dist,l.read_id);
     }
     return ldg;
 }

@@ -56,10 +56,11 @@ public:
 class Link{
 public:
     Link(){};
-    Link( sgNodeID_t _src, sgNodeID_t _dst, int32_t _dist) : source(_src), dest(_dst), dist(_dist) {};
+    Link( sgNodeID_t _src, sgNodeID_t _dst, int32_t _dist, int64_t _read_id=0) : source(_src), dest(_dst), dist(_dist), read_id(_read_id) {};
     sgNodeID_t source = 0;
     sgNodeID_t dest = 0;
     int32_t dist = 0;
+    int64_t read_id;
 
     bool operator==( const  Link);
     bool operator<(const Link)const;
