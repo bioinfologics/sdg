@@ -5,7 +5,7 @@
 #include <sglib/logger/OutputLog.hpp>
 #include "LongReadsDatastore.hpp"
 
-const bsgVersion_t LongReadsDatastore::min_compat = 0x0001;
+const bsgVersion_t LongReadsDatastore::min_compat = 0x0002;
 
 void LongReadsDatastore::load_index(std::string &file) {
     filename = file;
@@ -59,9 +59,8 @@ uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, std::string l
         if (!seq.empty()) {
             uint32_t size = seq.size();
             auto offset = outf.tellp();
-            outf.write((char*)&size, sizeof(size));
-            read_to_fileRecord.emplace_back((off_t)offset+sizeof(BSG_MAGIC)+ sizeof(BSG_VN)+sizeof(BSG_FILETYPE),size);
-            outf.write((char*)seq.c_str(), size);
+            read_to_fileRecord.emplace_back((off_t)offset,size);
+            outf.write((char*)seq.c_str(), size+1);//+1 writes the \0
         }
         std::getline(fastq_ifstream, p);
         std::getline(fastq_ifstream, qual);
