@@ -416,6 +416,7 @@ MappingFilterResult LongReadMapper::filter_mappings_with_linked_reads(const Link
     auto &winset=cov1set.back().second;
     //TODO: 4) try to find "turn-arounds" for CCS-style reads (later)
     //TODO: 7) copy vector to read_to_mappings
+    filtered_read_mappings[readID].clear();
     for (auto &m:read_mappings){
         if (winset.count(llabs(m.node))) filtered_read_mappings[readID].push_back(m);
     }
