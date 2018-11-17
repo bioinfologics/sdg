@@ -53,7 +53,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             .constructor<std::string, sgNodeStatus_t>()
             .constructor<std::string>()
             .method("is_canonical", &Node::is_canonical)
-            .method("make_rc", &Node::make_rc);
+            .method("make_rc", &Node::make_rc)
+            .method("sequence", [](Node& nd){ return nd.sequence; })
+            .method("status", [](Node& nd){ return nd.status; })
+            .method("==", &Node::operator==);
 
     mod.add_type<Link>("Link")
             .constructor()
@@ -88,6 +91,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
                 sg.write_to_gfa(filename);
             })
             .method("add_node", &SequenceGraph::add_node)
+            .method("get_node", &SequenceGraph::get_node)
             .method("add_link", &SequenceGraph::add_link)
             .method("get_link", &SequenceGraph::get_link)
             .method("get_fw_links", &SequenceGraph::get_fw_links)
