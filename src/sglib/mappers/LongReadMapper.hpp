@@ -14,6 +14,50 @@
 #include <sglib/indexers/NKmerIndex.hpp>
 #include "LinkedReadMapper.hpp"
 
+typedef struct {
+    std::vector<sgNodeID_t> haplotype_nodes;
+    float score;
+} HaplotypeScore_t;
+
+class LongReadMapper;
+
+/**
+ * This class groups all methods to filter long read mappings to  haplotype solutions within a long read
+ * The
+ * 1) set_read -> inits the problem, gets read sequence, mappings. cleans up alignments if needed.
+ * 2) generate_haplotypes_from_linked_reads -> creates the possible haplotypes, all with score 0
+ * 3) score_* -> these funcions add up scores in range(0,1), modulated by their weight parameter
+ * 4) sort
+ * 5) filter_winner_haplotype -> populates filtered_alingments with the winning haplotype alignments
+ */
+class LongReadHaplotypeMappingsFilter {
+    LongReadHaplotypeMappingsFilter (const LongReadMapper & _lorm, const LinkedReadMapper & _lirm):lorm(_lorm),lirm(_lirm){};
+
+
+public:
+    void set_read(uint64_t read_id);
+    void generate_haplotypes_from_linkedreads(float min_tn);
+    std::array<uint64_t,3> haplotype_coverage_dist(const std::vector<sgNodeID_t> & haplotype); //this is a generalization of the 1-cov
+    void score_coverage(float weight);
+    void score_window_winners(int win_size, int win_step, float weight);
+
+    /**
+     * This method runs all the scoring, then puts all haplotypes that pass criteria and their scores in a sorted vector
+     *
+     * @param read_id
+     * @param coverage_weight
+     * @param winners_weight
+     * @return
+     */
+    void rank(uint64_t read_id, float coverage_weight, float winners_weight);
+
+    uint64_t read_id;
+    std::vector<LongReadMapping> mappings;
+    std::vector<HaplotypeScore_t> haplotype_scores;
+    const LongReadMapper & lorm;
+    const LinkedReadMapper & lirm;
+
+};
 
 enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage};
 

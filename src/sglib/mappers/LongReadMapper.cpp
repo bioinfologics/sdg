@@ -12,6 +12,32 @@
 
 const bsgVersion_t LongReadMapper::min_compat = 0x0001;
 
+void LongReadHaplotypeMappingsFilter::set_read(uint64_t _read_id) {
+    read_id=_read_id;
+    mappings=lorm.get_raw_mappings_from_read(read_id);
+}
+
+void LongReadHaplotypeMappingsFilter::generate_haplotypes_from_linkedreads(float min_tn) {
+
+}
+
+std::array<uint64_t,3> LongReadHaplotypeMappingsFilter::haplotype_coverage_dist(
+        const std::vector<sgNodeID_t> &haplotype) {
+    return {0,0,0};
+}
+
+void LongReadHaplotypeMappingsFilter::score_coverage(float weight) {
+
+}
+
+void LongReadHaplotypeMappingsFilter::score_window_winners(int win_size, int win_step, float weight) {
+
+}
+
+void LongReadHaplotypeMappingsFilter::rank(uint64_t read_id, float coverage_weight, float winners_weight) {
+
+}
+
 std::vector<LongReadMapping> LongReadMapper::get_raw_mappings_from_read(uint64_t read_id) const {
     std::vector<LongReadMapping> r;
     if (first_mapping[read_id]!=-1) {
