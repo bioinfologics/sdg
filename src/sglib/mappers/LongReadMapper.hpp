@@ -75,6 +75,13 @@ public:
     }
 
     /**
+     * Copies all mappings to read from raw mappings into a vector and returns it.
+     * @param read_id
+     * @return
+     */
+    std::vector<LongReadMapping> get_raw_mappings_from_read(uint64_t read_id) const;
+
+    /**
      * Populates the matches container with the matches between all kmers from one read and the index of the graph.
      * The index is a filtered set of kmers from the graph constructed using update_graph_index() or similar.
      * A match is a perfect Kmer match between the read and the graph index

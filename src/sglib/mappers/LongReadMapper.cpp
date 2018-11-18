@@ -12,6 +12,14 @@
 
 const bsgVersion_t LongReadMapper::min_compat = 0x0001;
 
+std::vector<LongReadMapping> LongReadMapper::get_raw_mappings_from_read(uint64_t read_id) const {
+    std::vector<LongReadMapping> r;
+    if (first_mapping[read_id]!=-1) {
+        for (auto i = first_mapping[read_id];mappings[i].read_id==read_id;++i) r.emplace_back(mappings[i]);
+    }
+    return std::move(r);
+}
+
 void LongReadMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers){
     if (matches.size() < read_kmers.size()) matches.resize(read_kmers.size());
     uint64_t no_match=0,single_match=0,multi_match=0; //DEBUG
