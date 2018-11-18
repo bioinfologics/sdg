@@ -244,6 +244,14 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
 }
 
 void LongReadMapper::update_indexes() {
+    std::sort(mappings.begin(),mappings.end());
+    first_mapping.clear();
+    first_mapping.resize(datastore.size(),-1);
+    for (int64_t i=0;i<mappings.size();++i){
+        auto &m=mappings[i];
+        if (first_mapping.size()<=m.read_id) first_mapping.resize(m.read_id+1,-1);
+        if (first_mapping[m.read_id]==-1) first_mapping[m.read_id]=i;
+    }
     reads_in_node.clear();
     reads_in_node.resize(sg.nodes.size());
     for (auto &rm:filtered_read_mappings) {

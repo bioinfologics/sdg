@@ -187,10 +187,11 @@ public:
 
     LongReadsDatastore datastore;
     /**
-     * This public member stores a flat list of mappings from the reads, it is accessed using the mappings_in_node index
-     * or the read_to_mappings index.
+     * Flat list of mappings from the reads
      */
     std::vector<LongReadMapping> mappings;
+    std::vector<int64_t> first_mapping; //index to the first mapping of the read. If no mappings, -1.
+
     std::vector < std::vector<LongReadMapping> > filtered_read_mappings;
 
     /**
