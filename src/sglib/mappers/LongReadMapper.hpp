@@ -13,6 +13,7 @@
 #include <sglib/types/MappingTypes.hpp>
 #include <sglib/indexers/NKmerIndex.hpp>
 #include "LinkedReadMapper.hpp"
+#include <memory>
 
 typedef struct {
     std::vector<sgNodeID_t> haplotype_nodes;
@@ -31,12 +32,13 @@ class LongReadMapper;
  * 5) filter_winner_haplotype -> populates filtered_alingments with the winning haplotype alignments
  */
 class LongReadHaplotypeMappingsFilter {
-    LongReadHaplotypeMappingsFilter (const LongReadMapper & _lorm, const LinkedReadMapper & _lirm):lorm(_lorm),lirm(_lirm){};
-
-
 public:
+    LongReadHaplotypeMappingsFilter (const LongReadMapper & _lorm, const LinkedReadMapper & _lirm,int _min_read_size=5000);
+    ~LongReadHaplotypeMappingsFilter(){
+        delete(lrbsgp);
+    }
     void set_read(uint64_t read_id);
-    void generate_haplotypes_from_linkedreads(float min_tn);
+    void generate_haplotypes_from_linkedreads(float min_tn=0.05);
     std::array<uint64_t,3> haplotype_coverage_dist(const std::vector<sgNodeID_t> & haplotype); //this is a generalization of the 1-cov
     void score_coverage(float weight);
     void score_window_winners(int win_size, int win_step, float weight);
@@ -52,10 +54,14 @@ public:
     void rank(uint64_t read_id, float coverage_weight, float winners_weight);
 
     uint64_t read_id;
+    std::string read_seq;
     std::vector<LongReadMapping> mappings;
     std::vector<HaplotypeScore_t> haplotype_scores;
     const LongReadMapper & lorm;
     const LinkedReadMapper & lirm;
+    BufferedSequenceGetter * lrbsgp;
+    int min_read_size;
+    std::vector<sgNodeID_t> nodeset;
 
 };
 

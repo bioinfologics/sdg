@@ -9,16 +9,57 @@
 #include <sglib/utilities/omp_safe.hpp>
 #include <atomic>
 #include <sglib/utilities/io_helpers.hpp>
+#include "LongReadMapper.hpp"
 
 const bsgVersion_t LongReadMapper::min_compat = 0x0001;
 
+LongReadHaplotypeMappingsFilter::LongReadHaplotypeMappingsFilter (const LongReadMapper & _lorm, const LinkedReadMapper & _lirm, int _min_read_size):
+        lorm(_lorm),lirm(_lirm),min_read_size(_min_read_size){
+    lrbsgp=new BufferedSequenceGetter(lorm.datastore);
+};
+
+
 void LongReadHaplotypeMappingsFilter::set_read(uint64_t _read_id) {
     read_id=_read_id;
-    mappings=lorm.get_raw_mappings_from_read(read_id);
+    read_seq=std::string(lrbsgp->get_read_sequence(_read_id));
+    if (read_seq.size()>=min_read_size) {
+        mappings = lorm.get_raw_mappings_from_read(read_id);
+        //TODO: filter mappings?
+        for (auto &m:mappings) {
+            auto n=llabs(m.node);
+            bool dup=false;
+            for (auto &x:nodeset) if (x==n) { dup=true; break; }
+            if (!dup) nodeset.emplace_back(n);
+        }
+        std::sort(nodeset.begin(),nodeset.end());
+        haplotype_scores.clear();
+    }
 }
 
 void LongReadHaplotypeMappingsFilter::generate_haplotypes_from_linkedreads(float min_tn) {
-
+    //2) create the neighbour sets, uniq to not evaluate same set many times over.
+    haplotype_scores.clear();
+    std::vector<std::vector<sgNodeID_t>> all_nsets;
+    for (auto n:nodeset){
+        all_nsets.emplace_back();
+        if (n>=lirm.tag_neighbours.size() or lirm.tag_neighbours[n].empty()) continue;
+        for (auto m:nodeset){
+            for (auto &score:lirm.tag_neighbours[n]){
+                if (score.node==m and score.score>min_tn) {
+                    all_nsets.back().push_back(m);
+                    break;
+                }
+            }
+        }
+    }
+    std::sort(all_nsets.begin(),all_nsets.end());
+    for (auto ns:all_nsets) {
+        if (ns.empty()) continue;
+        for (auto &hs:haplotype_scores) if (ns==hs.haplotype_nodes) continue;
+        haplotype_scores.emplace_back();
+        haplotype_scores.back().haplotype_nodes=ns;
+        haplotype_scores.back().score=0;
+    }
 }
 
 std::array<uint64_t,3> LongReadHaplotypeMappingsFilter::haplotype_coverage_dist(
@@ -41,7 +82,7 @@ void LongReadHaplotypeMappingsFilter::rank(uint64_t read_id, float coverage_weig
 std::vector<LongReadMapping> LongReadMapper::get_raw_mappings_from_read(uint64_t read_id) const {
     std::vector<LongReadMapping> r;
     if (first_mapping[read_id]!=-1) {
-        for (auto i = first_mapping[read_id];mappings[i].read_id==read_id;++i) r.emplace_back(mappings[i]);
+        for (auto i = first_mapping[read_id];i<mappings.size() and mappings[i].read_id==read_id;++i) r.emplace_back(mappings[i]);
     }
     return std::move(r);
 }
