@@ -15,6 +15,8 @@
 #include "LinkedReadMapper.hpp"
 #include <memory>
 
+class WorkSpace; //fw declaration
+
 typedef struct {
     std::vector<sgNodeID_t> haplotype_nodes;
     float score;
@@ -33,15 +35,14 @@ class LongReadMapper;
  */
 class LongReadHaplotypeMappingsFilter {
 public:
-    LongReadHaplotypeMappingsFilter (const LongReadMapper & _lorm, const LinkedReadMapper & _lirm,int _min_read_size=5000);
+    LongReadHaplotypeMappingsFilter (const WorkSpace & _ws, const LongReadMapper & _lorm, const LinkedReadMapper & _lirm,int _min_read_size=5000);
     ~LongReadHaplotypeMappingsFilter(){
         delete(lrbsgp);
     }
     void set_read(uint64_t read_id);
     void generate_haplotypes_from_linkedreads(float min_tn=0.05);
-    std::array<uint64_t,3> haplotype_coverage_dist(const std::vector<sgNodeID_t> & haplotype); //this is a generalization of the 1-cov
     void score_coverage(float weight);
-    void score_window_winners(int win_size, int win_step, float weight);
+    void score_window_winners(float weight, int k=15, int win_size=500, int win_step=250);
 
     /**
      * This method runs all the scoring, then puts all haplotypes that pass criteria and their scores in a sorted vector
@@ -57,11 +58,13 @@ public:
     std::string read_seq;
     std::vector<LongReadMapping> mappings;
     std::vector<HaplotypeScore_t> haplotype_scores;
+    const WorkSpace & ws;
     const LongReadMapper & lorm;
     const LinkedReadMapper & lirm;
     BufferedSequenceGetter * lrbsgp;
     int min_read_size;
     std::vector<sgNodeID_t> nodeset;
+
 
 };
 

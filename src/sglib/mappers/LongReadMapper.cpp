@@ -2,19 +2,18 @@
 // Created by Luis Yanes (EI) on 22/03/2018.
 //
 
-#include <cmath>
-#include <sglib/mappers/LongReadMapper.hpp>
-#include <sglib/logger/OutputLog.hpp>
-
-#include <sglib/utilities/omp_safe.hpp>
-#include <atomic>
-#include <sglib/utilities/io_helpers.hpp>
 #include "LongReadMapper.hpp"
+#include <sglib/logger/OutputLog.hpp>
+#include <sglib/utilities/omp_safe.hpp>
+#include <sglib/utilities/io_helpers.hpp>
+#include <sglib/workspace/WorkSpace.hpp>
+#include <atomic>
+#include <cmath>
 
 const bsgVersion_t LongReadMapper::min_compat = 0x0001;
 
-LongReadHaplotypeMappingsFilter::LongReadHaplotypeMappingsFilter (const LongReadMapper & _lorm, const LinkedReadMapper & _lirm, int _min_read_size):
-        lorm(_lorm),lirm(_lirm),min_read_size(_min_read_size){
+LongReadHaplotypeMappingsFilter::LongReadHaplotypeMappingsFilter (const WorkSpace & _ws, const LongReadMapper & _lorm, const LinkedReadMapper & _lirm, int _min_read_size):
+        lorm(_lorm),lirm(_lirm),min_read_size(_min_read_size),ws(_ws){
     lrbsgp=new BufferedSequenceGetter(lorm.datastore);
 };
 
@@ -55,24 +54,81 @@ void LongReadHaplotypeMappingsFilter::generate_haplotypes_from_linkedreads(float
     std::sort(all_nsets.begin(),all_nsets.end());
     for (auto ns:all_nsets) {
         if (ns.empty()) continue;
-        for (auto &hs:haplotype_scores) if (ns==hs.haplotype_nodes) continue;
+        bool dup=false;
+        for (auto &hs:haplotype_scores) if (ns==hs.haplotype_nodes) {dup=true;break;}
+        if (dup) continue;
         haplotype_scores.emplace_back();
         haplotype_scores.back().haplotype_nodes=ns;
         haplotype_scores.back().score=0;
     }
 }
 
-std::array<uint64_t,3> LongReadHaplotypeMappingsFilter::haplotype_coverage_dist(
-        const std::vector<sgNodeID_t> &haplotype) {
-    return {0,0,0};
-}
-
 void LongReadHaplotypeMappingsFilter::score_coverage(float weight) {
-
+    for (auto &hs:haplotype_scores){
+        std::vector<uint8_t> coverage(read_seq.size());
+        auto &nodeset=hs.haplotype_nodes;
+        uint64_t total_map_bp=0;
+        for (auto m:mappings) if (std::count(nodeset.begin(),nodeset.end(),llabs(m.node))) total_map_bp+=m.qEnd-m.qStart;
+        //this can be done faster by saving all starts and ends and keeping a rolling value;
+        for (auto m:mappings) {
+            if (std::count(nodeset.begin(),nodeset.end(),llabs(m.node))){
+                for (auto i=m.qStart;i<=m.qEnd and i<read_seq.size();++i) ++coverage[i];
+            }
+        }
+        int64_t cov1=std::count(coverage.begin(),coverage.end(),1);
+        int64_t cov0=std::count(coverage.begin(),coverage.end(),0);
+        int64_t covm=coverage.size()-cov0-cov1;
+        float score=(cov1-4*covm )*1.0/coverage.size();
+        hs.score+=weight*score;
+    }
 }
 
-void LongReadHaplotypeMappingsFilter::score_window_winners(int win_size, int win_step, float weight) {
+void LongReadHaplotypeMappingsFilter::score_window_winners(float weight, int k, int win_size, int win_step) {
+    //kmerise read
+    StreamKmerFactory skf(k);
+    std::vector<uint64_t> rkmers;
+    skf.produce_all_kmers(read_seq.c_str(),rkmers);
+    std::cout<<"Kmers in read: "<<rkmers.size()<<std::endl;
+    //first create a list of used kmers
+    std::vector<std::vector<bool>> kmer_hits_by_node;
+    std::vector<uint64_t> nkmers;
+    for (auto &n:nodeset){
+        nkmers.clear();
+        skf.produce_all_kmers(ws.sg.nodes[n].sequence.c_str(),nkmers);
+        std::sort(nkmers.begin(),nkmers.end());
+        kmer_hits_by_node.emplace_back(rkmers.size());
+        for (auto i=0;i<rkmers.size();++i){
+            auto nklb=std::lower_bound(nkmers.begin(),nkmers.end(),rkmers[i]);
+            if (nklb!=nkmers.end() and *nklb==rkmers[i]) kmer_hits_by_node.back()[i]=1;
+        }
+    }
+    std::map<sgNodeID_t,int> node_wins;
+    int total_windows=0;
+    int total_wins=0;
+    for (int64_t start=0;start<rkmers.size()-win_size;start+=win_step,++total_windows){
+        int win_node_idx=-1;
+        int win_score=.2*win_size;
+        for (auto ni=0;ni<nodeset.size();++ni){
+            auto nscore=std::count(kmer_hits_by_node[ni].begin()+start,kmer_hits_by_node[ni].begin()+start+win_size,1);
+            if (nscore>win_score) {
+                win_node_idx=ni;
+                win_score=nscore;
+            }
+        }
+        if (win_node_idx!=-1) {
+            ++total_wins;
+            ++node_wins[nodeset[win_node_idx]];
+            std::cout<<"Node "<< nodeset[win_node_idx] << " wins window #"<<total_wins-1<<" with "<<win_score<<" hits"<<std::endl;
+        }
+    }
 
+    std::cout<<"winners found in "<<total_wins<<" / "<<total_windows<<" windows"<<std::endl;
+    for (auto &hs:haplotype_scores){
+        float score=0;
+        for (auto &n:hs.haplotype_nodes) score+=node_wins[n];
+        score/=total_windows;
+        hs.score+=weight*score;
+    }
 }
 
 void LongReadHaplotypeMappingsFilter::rank(uint64_t read_id, float coverage_weight, float winners_weight) {
