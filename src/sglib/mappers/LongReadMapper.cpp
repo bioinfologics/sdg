@@ -88,7 +88,7 @@ void LongReadHaplotypeMappingsFilter::score_window_winners(float weight, int k, 
     StreamKmerFactory skf(k);
     std::vector<uint64_t> rkmers;
     skf.produce_all_kmers(read_seq.c_str(),rkmers);
-    std::cout<<"Kmers in read: "<<rkmers.size()<<std::endl;
+    if (rkmers.size()<win_size) return;
     //first create a list of used kmers
     std::vector<std::vector<bool>> kmer_hits_by_node;
     std::vector<uint64_t> nkmers;
@@ -118,11 +118,9 @@ void LongReadHaplotypeMappingsFilter::score_window_winners(float weight, int k, 
         if (win_node_idx!=-1) {
             ++total_wins;
             ++node_wins[nodeset[win_node_idx]];
-            std::cout<<"Node "<< nodeset[win_node_idx] << " wins window #"<<total_wins-1<<" with "<<win_score<<" hits"<<std::endl;
         }
     }
-
-    std::cout<<"winners found in "<<total_wins<<" / "<<total_windows<<" windows"<<std::endl;
+    
     for (auto &hs:haplotype_scores){
         float score=0;
         for (auto &n:hs.haplotype_nodes) score+=node_wins[n];
