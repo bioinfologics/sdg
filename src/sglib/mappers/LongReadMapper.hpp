@@ -15,12 +15,15 @@
 #include "LinkedReadMapper.hpp"
 #include <memory>
 
-class WorkSpace; //fw declaration
-
-typedef struct {
-    std::vector<sgNodeID_t> haplotype_nodes;
+class HaplotypeScore {
+public:
     float score;
-} HaplotypeScore_t;
+    std::vector<sgNodeID_t> haplotype_nodes;
+
+    bool operator<(const HaplotypeScore &other) const {
+        return other.score<score;
+    }
+};
 
 class LongReadMapper;
 
@@ -35,7 +38,7 @@ class LongReadMapper;
  */
 class LongReadHaplotypeMappingsFilter {
 public:
-    LongReadHaplotypeMappingsFilter (const WorkSpace & _ws, const LongReadMapper & _lorm, const LinkedReadMapper & _lirm,int _min_read_size=5000);
+    LongReadHaplotypeMappingsFilter (const LongReadMapper & _lorm, const LinkedReadMapper & _lirm);
     ~LongReadHaplotypeMappingsFilter(){
         delete(lrbsgp);
     }
@@ -50,19 +53,18 @@ public:
      * @param read_id
      * @param coverage_weight
      * @param winners_weight
+     * @param min_tn
      * @return
      */
-    void rank(uint64_t read_id, float coverage_weight, float winners_weight);
+    void rank(uint64_t read_id, float coverage_weight, float winners_weight, float min_tn=0.05);
 
     uint64_t read_id;
     std::string read_seq;
     std::vector<LongReadMapping> mappings;
-    std::vector<HaplotypeScore_t> haplotype_scores;
-    const WorkSpace & ws;
+    std::vector<HaplotypeScore> haplotype_scores;
     const LongReadMapper & lorm;
     const LinkedReadMapper & lirm;
     BufferedSequenceGetter * lrbsgp;
-    int min_read_size;
     std::vector<sgNodeID_t> nodeset;
 
 
@@ -78,6 +80,9 @@ enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage
  * the reads_in_node index is populated by update_indexes() from this->filtered_read_mappings data.
  */
 class LongReadMapper {
+    NKmerIndex assembly_kmers;
+
+public:
 
     const SequenceGraph & sg;
 
@@ -86,12 +91,6 @@ class LongReadMapper {
     int min_chain=50;
     int max_jump=500;
     int max_delta_change=60;
-
-    NKmerIndex assembly_kmers;
-
-
-
-public:
 
     LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k=15);
     ~LongReadMapper();

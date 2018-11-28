@@ -12,8 +12,8 @@
 
 const bsgVersion_t LongReadMapper::min_compat = 0x0001;
 
-LongReadHaplotypeMappingsFilter::LongReadHaplotypeMappingsFilter (const WorkSpace & _ws, const LongReadMapper & _lorm, const LinkedReadMapper & _lirm, int _min_read_size):
-        lorm(_lorm),lirm(_lirm),min_read_size(_min_read_size),ws(_ws){
+LongReadHaplotypeMappingsFilter::LongReadHaplotypeMappingsFilter (const LongReadMapper & _lorm, const LinkedReadMapper & _lirm):
+        lorm(_lorm),lirm(_lirm){
     lrbsgp=new BufferedSequenceGetter(lorm.datastore);
 };
 
@@ -21,18 +21,16 @@ LongReadHaplotypeMappingsFilter::LongReadHaplotypeMappingsFilter (const WorkSpac
 void LongReadHaplotypeMappingsFilter::set_read(uint64_t _read_id) {
     read_id=_read_id;
     read_seq=std::string(lrbsgp->get_read_sequence(_read_id));
-    if (read_seq.size()>=min_read_size) {
-        mappings = lorm.get_raw_mappings_from_read(read_id);
-        //TODO: filter mappings?
-        for (auto &m:mappings) {
-            auto n=llabs(m.node);
-            bool dup=false;
-            for (auto &x:nodeset) if (x==n) { dup=true; break; }
-            if (!dup) nodeset.emplace_back(n);
-        }
-        std::sort(nodeset.begin(),nodeset.end());
-        haplotype_scores.clear();
+    mappings = lorm.get_raw_mappings_from_read(read_id);
+    //TODO: filter mappings?
+    for (auto &m:mappings) {
+        auto n=llabs(m.node);
+        bool dup=false;
+        for (auto &x:nodeset) if (x==n) { dup=true; break; }
+        if (!dup) nodeset.emplace_back(n);
     }
+    std::sort(nodeset.begin(),nodeset.end());
+    haplotype_scores.clear();
 }
 
 void LongReadHaplotypeMappingsFilter::generate_haplotypes_from_linkedreads(float min_tn) {
@@ -94,7 +92,7 @@ void LongReadHaplotypeMappingsFilter::score_window_winners(float weight, int k, 
     std::vector<uint64_t> nkmers;
     for (auto &n:nodeset){
         nkmers.clear();
-        skf.produce_all_kmers(ws.sg.nodes[n].sequence.c_str(),nkmers);
+        skf.produce_all_kmers(lorm.sg.nodes[n].sequence.c_str(),nkmers);
         std::sort(nkmers.begin(),nkmers.end());
         kmer_hits_by_node.emplace_back(rkmers.size());
         for (auto i=0;i<rkmers.size();++i){
@@ -129,8 +127,11 @@ void LongReadHaplotypeMappingsFilter::score_window_winners(float weight, int k, 
     }
 }
 
-void LongReadHaplotypeMappingsFilter::rank(uint64_t read_id, float coverage_weight, float winners_weight) {
-
+void LongReadHaplotypeMappingsFilter::rank(uint64_t read_id, float coverage_weight, float winners_weight, float min_tn) {
+    set_read(read_id);
+    generate_haplotypes_from_linkedreads(min_tn);
+    score_window_winners(winners_weight);
+    score_coverage(coverage_weight);
 }
 
 std::vector<LongReadMapping> LongReadMapper::get_raw_mappings_from_read(uint64_t read_id) const {
@@ -457,7 +458,7 @@ void LongReadMapper::update_graph_index() {
     assembly_kmers.generate_index(sg);
 }
 
-void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size, float min_tnscore) {
+void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size,  float min_tnscore) {
     if (lrm.tag_neighbours.empty()) {
         sglib::OutputLog()<<"Can't filter mappings because there are no tag_neighbours on the LinkedReadMapper"<<std::endl;
         return;
@@ -465,32 +466,36 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
     sglib::OutputLog()<<"Filtering mappings"<<std::endl;
     filtered_read_mappings.clear();
     filtered_read_mappings.resize(datastore.size());
-    BufferedSequenceGetter lrbsg(datastore);
-    //create a collection of mappings for every read.
-    uint64_t last_mapindex=0;
-    uint64_t rshort=0,runmapped=0,rnocovset=0,rprocessed=0,rnoset=0;
-    for (uint64_t rid=0;rid<datastore.size();++rid) {
-        while (last_mapindex<mappings.size() and mappings[last_mapindex].read_id<rid) ++last_mapindex;
-        auto r=filter_mappings_with_linked_reads(lrm,lrbsg,min_size,min_tnscore,rid,last_mapindex);
-        switch(r){
-            case MappingFilterResult::Success:
-                ++rprocessed;
-                break;
-            case MappingFilterResult::TooShort:
+    std::atomic<uint64_t> rshort(0), runmapped(0), rnoresult(0), rfiltered(0);
+#pragma omp parallel
+    {
+        BufferedSequenceGetter lrbsg(datastore);
+        LongReadHaplotypeMappingsFilter hap_filter(*this,lrm);
+        //run hap_filter on every read
+#pragma omp for schedule(static, 100)
+        for (uint64_t rid = 0; rid < datastore.size(); ++rid) {
+            hap_filter.set_read(rid);
+            if (hap_filter.read_seq.size()<min_size){
                 ++rshort;
-                break;
-            case MappingFilterResult::NoMappings:
+                continue;
+            }
+            if (hap_filter.mappings.empty()) {
                 ++runmapped;
-                break;
-            case MappingFilterResult::NoReadSets:
-                ++rnoset;
-                break;
-            case MappingFilterResult::LowCoverage:
-                ++rnocovset;
-                break;
+                continue;
+            }
+            hap_filter.generate_haplotypes_from_linkedreads(min_tnscore);
+            hap_filter.score_coverage(1);
+            hap_filter.score_window_winners(3);
+            std::sort(hap_filter.haplotype_scores.rbegin(),hap_filter.haplotype_scores.rend());
+            if (hap_filter.haplotype_scores[0].score>1.5) {
+                std::set<sgNodeID_t> winners;
+                for (auto &hn:hap_filter.haplotype_scores[0].haplotype_nodes) winners.insert(hn);
+                for (auto &m:hap_filter.mappings) if (winners.count(llabs(m.node))) filtered_read_mappings[rid].emplace_back(m);
+                ++rfiltered;
+            } else ++rnoresult;
         }
     }
-    sglib::OutputLog()<<"too short: "<<rshort<<"  no mappings: "<<runmapped<<"  no sets: "<<rnoset<<"  no cov1>50%: "<<rnocovset<<" processed: "<<rprocessed<<std::endl;
+    sglib::OutputLog()<<"too short: "<<rshort<<"  no mappings: "<<runmapped<<"  no winner: "<<rnoresult<<"  filtered: "<<rfiltered<<std::endl;
 }
 
 MappingFilterResult LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, BufferedSequenceGetter &lrbsg, uint32_t min_size, float min_tnscore, uint64_t readID, uint64_t offset_hint) {
