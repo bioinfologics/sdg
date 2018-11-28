@@ -458,7 +458,7 @@ void LongReadMapper::update_graph_index() {
     assembly_kmers.generate_index(sg);
 }
 
-void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size,  float min_tnscore) {
+void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size,  float min_tnscore, uint64_t first_id, uint64_t last_id) {
     if (lrm.tag_neighbours.empty()) {
         sglib::OutputLog()<<"Can't filter mappings because there are no tag_neighbours on the LinkedReadMapper"<<std::endl;
         return;
@@ -467,13 +467,15 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
     filtered_read_mappings.clear();
     filtered_read_mappings.resize(datastore.size());
     std::atomic<uint64_t> rshort(0), runmapped(0), rnoresult(0), rfiltered(0);
+    if (last_id==0) last_id=datastore.size()-1;
 #pragma omp parallel
     {
         BufferedSequenceGetter lrbsg(datastore);
         LongReadHaplotypeMappingsFilter hap_filter(*this,lrm);
         //run hap_filter on every read
-#pragma omp for schedule(static, 100)
-        for (uint64_t rid = 0; rid < datastore.size(); ++rid) {
+
+#pragma omp for schedule(static, 10)
+        for (uint64_t rid = 0; rid <= last_id; ++rid) {
             hap_filter.set_read(rid);
             if (hap_filter.read_seq.size()<min_size){
                 ++rshort;

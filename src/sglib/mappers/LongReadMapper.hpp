@@ -21,7 +21,7 @@ public:
     std::vector<sgNodeID_t> haplotype_nodes;
 
     bool operator<(const HaplotypeScore &other) const {
-        return other.score<score;
+        return score<other.score;
     }
 };
 
@@ -229,8 +229,10 @@ public:
      * @param lrm a LinkedReadMapper with mapped reads, over the same graph this mapper has mapped Long Reads.
      * @param min_size minimum size of the read to filter mappings.
      * @param min_tnscore minimum neighbour score on linked reads
+     * @param first_id
+     * @param last_id
      */
-    void filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size=10000, float min_tnscore=0.03);
+    void filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size=10000, float min_tnscore=0.03, uint64_t first_id=0, uint64_t last_id=0);
 
     /**
      * Single-read nano10x filtering. Return status
