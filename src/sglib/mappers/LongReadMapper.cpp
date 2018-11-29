@@ -343,9 +343,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
                 }
             }
 
-            if ((!readIDs.empty() and readIDs.count(readID)==0 /*Read not in selected set*/)
-                or
-                (readIDs.empty()/*No selection*/)) {
+            if ((!readIDs.empty() and readIDs.count(readID)==0 /*Read not in selected set*/)) {
                 continue;
             }
 
