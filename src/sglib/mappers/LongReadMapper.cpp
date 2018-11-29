@@ -319,8 +319,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
     update_graph_index();
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
     std::atomic<uint32_t > num_reads_done(0);
-    std::atomic<uint64_t > window_low_score(0),window_close_second(0),window_hit(0);
-    std::atomic<uint64_t > no_matches(0),single_matches(0),multi_matches(0);
+    uint64_t no_matches(0),single_matches(0),multi_matches(0);
     std::ofstream dl;
     if (!detailed_log.empty()) dl.open(detailed_log);
 #pragma omp parallel
@@ -332,11 +331,11 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
         BufferedSequenceGetter sequenceGetter(datastore);
         std::vector<std::vector<std::pair<int32_t, int32_t>>> node_matches; //node, offset
         const char * query_sequence_ptr;
-#pragma omp for schedule(static,1000)
+#pragma omp for schedule(static,1000) reduction(+:no_matches,single_matches,multi_matches,+num_reads_done)
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
 
             if (++num_reads_done%1000 == 0) {
-                sglib::OutputLog() << "Processing read " << num_reads_done << " / " << datastore.size() << " reads mapped" << std::endl;
+                sglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" processing its read #" << num_reads_done << std::endl;
             }
 
             if ((!readIDs.empty() and readIDs.count(readID)==0 /*Read not in selected set*/)) {
