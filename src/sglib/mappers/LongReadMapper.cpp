@@ -318,7 +318,7 @@ std::vector<LongReadMapping> LongReadMapper::filter_blocks(std::vector<LongReadM
 void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string detailed_log) {
     update_graph_index();
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
-    std::atomic<uint32_t > num_reads_done(0);
+    uint32_t num_reads_done(0);
     uint64_t no_matches(0),single_matches(0),multi_matches(0);
     std::ofstream dl;
     if (!detailed_log.empty()) dl.open(detailed_log);
@@ -331,7 +331,7 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
         BufferedSequenceGetter sequenceGetter(datastore);
         std::vector<std::vector<std::pair<int32_t, int32_t>>> node_matches; //node, offset
         const char * query_sequence_ptr;
-#pragma omp for schedule(static,1000) reduction(+:no_matches,single_matches,multi_matches,+num_reads_done)
+#pragma omp for schedule(static,1000) reduction(+:no_matches,single_matches,multi_matches,num_reads_done)
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
 
             if (++num_reads_done%1000 == 0) {
