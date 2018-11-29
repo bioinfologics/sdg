@@ -40,7 +40,7 @@ void LinkedReadsDatastore::print_status() {
         ++tagcount;
         t=prevtag;
     }
-    sglib::OutputLog()<<"LinkedRead Datastore from "<<filename<<" contains "<<size()-1<<" reads in "<< tagcount <<" tags.";
+    sglib::OutputLog()<<"LinkedRead Datastore from "<<filename<<" contains "<<size()-1<<" reads in "<< tagcount <<" tags."<<std::endl;
 }
 
 void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int _rs, size_t chunksize) {

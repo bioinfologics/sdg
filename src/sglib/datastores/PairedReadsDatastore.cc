@@ -10,7 +10,7 @@
 #include <sglib/types/GenericTypes.hpp>
 
 void PairedReadsDatastore::print_status() {
-    sglib::OutputLog()<<"PairedRead Datastore from "<<filename<<" contains "<<size()-1<<" reads.";
+    sglib::OutputLog()<<"PairedRead Datastore from "<<filename<<" contains "<<size()-1<<" reads."<<std::endl;
 }
 
 void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int _min_rs, int _rs, size_t chunksize) {
