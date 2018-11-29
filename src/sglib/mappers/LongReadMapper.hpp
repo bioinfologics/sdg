@@ -102,6 +102,8 @@ public:
 
     LongReadMapper operator=(const LongReadMapper &other);
 
+    void print_status();
+
     /** @brief Getter for the defined datastore
      *
      * @return

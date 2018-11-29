@@ -64,7 +64,7 @@ int main(int argc, char * argv[]) {
         sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         if (!use63mers) m.remap_all_reads();
         else m.remap_all_reads63();
-        m.print_stats();
+        m.print_status();
         sglib::OutputLog()<<"Computing size distribution..."<<std::endl;
         auto sdist=m.size_distribution();
         std::ofstream df("prdist_"+std::to_string(pri++)+".csv");

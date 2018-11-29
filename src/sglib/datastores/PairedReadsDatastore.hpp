@@ -36,6 +36,7 @@ public:
     PairedReadsDatastore(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250){
         build_from_fastq(read1_filename,read2_filename,output_filename,min_readsize,max_readsize);
     };
+    void print_status();
     void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250, size_t chunksize=10000000);
     void write(std::ofstream & output_file);
     void write_selection(std::ofstream &output_file, std::vector<uint64_t> read_ids);

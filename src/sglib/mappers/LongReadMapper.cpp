@@ -150,6 +150,17 @@ void LongReadHaplotypeMappingsFilter::rank(uint64_t read_id, float coverage_weig
     score_coverage(coverage_weight);
 }
 
+void LongReadMapper::print_status() {
+    uint64_t fm_rcount=0,fm_count=0;
+    for (auto &fm:filtered_read_mappings){
+        if (!fm.empty()) {
+            ++fm_rcount;
+            fm_rcount+=fm.size();
+        }
+    }
+    sglib::OutputLog()<<"Long read mappings:  Raw: "<<mappings.size()<<"  Filtered: "<<fm_count<<" on "<<fm_rcount<<" / "<< filtered_read_mappings.size() <<" reads"<<std::endl;
+}
+
 std::vector<LongReadMapping> LongReadMapper::get_raw_mappings_from_read(uint64_t read_id) const {
     std::vector<LongReadMapping> r;
     if (first_mapping[read_id]!=-1) {

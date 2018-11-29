@@ -277,6 +277,7 @@ public:
     }
 
     size_t count_active_nodes();
-    std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes=20, bool abort_on_loops=true);};
-
+    std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes=20, bool abort_on_loops=true);
+    void print_status();
+};
 #endif //SG_SEQUENCEGRAPH_HPP

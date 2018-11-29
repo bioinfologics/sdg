@@ -57,6 +57,7 @@ public:
     LinkedReadsDatastore(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250){
         build_from_fastq(read1_filename,read2_filename,output_filename,format,readsize);
     };
+    void print_status();
     void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250,size_t chunksize=10000000);
     void write(std::ofstream & output_file);
     void write_selection(std::ofstream & output_file, const std::set<bsg10xTag> & tagSet);

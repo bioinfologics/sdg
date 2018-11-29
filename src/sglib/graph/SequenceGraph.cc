@@ -1122,3 +1122,30 @@ std::vector<sgNodeID_t> SequenceGraph::get_flanking_nodes(sgNodeID_t loopy_node)
     }
     return std::vector<sgNodeID_t> (neigh_set.begin(), neigh_set.end());
 }
+
+void SequenceGraph::print_status() {
+    auto &log_no_date=sglib::OutputLog(sglib::LogLevels::INFO,false);
+    std::vector<uint64_t> node_sizes;
+    uint64_t total_size=0;
+    for (auto n:nodes) {
+        if (n.status!=sgNodeDeleted) {
+            total_size += n.sequence.size();
+            node_sizes.push_back(n.sequence.size());
+        }
+    }
+    std::sort(node_sizes.rbegin(),node_sizes.rend());
+    auto on20s=total_size*.2;
+    auto on50s=total_size*.5;
+    auto on80s=total_size*.8;
+    sglib::OutputLog() <<"The graph contains "<<node_sizes.size()<<" sequences with "<<total_size<<"bp, ";
+    uint64_t acc=0;
+    for (auto s:node_sizes){
+        if (acc==0)  log_no_date<<"N0: "<<s<<"bp  ";
+        if (acc<on20s and acc+s>on20s) log_no_date<<"N20: "<<s<<"bp  ";
+        if (acc<on50s and acc+s>on50s) log_no_date<<"N50: "<<s<<"bp  ";
+        if (acc<on80s and acc+s>on80s) log_no_date<<"N80: "<<s<<"bp  ";
+        acc+=s;
+        if (acc==total_size)  log_no_date<<"N100: "<<s<<"bp  ";
+    }
+    log_no_date<<std::endl;
+}
