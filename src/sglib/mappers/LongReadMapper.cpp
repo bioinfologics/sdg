@@ -31,6 +31,7 @@ void LongReadHaplotypeMappingsFilter::set_read(uint64_t _read_id) {
     }
     std::sort(nodeset.begin(),nodeset.end());
     haplotype_scores.clear();
+    rkmers.clear();
 }
 
 void LongReadHaplotypeMappingsFilter::generate_haplotypes_from_linkedreads(float min_tn) {
@@ -63,7 +64,8 @@ void LongReadHaplotypeMappingsFilter::generate_haplotypes_from_linkedreads(float
 
 void LongReadHaplotypeMappingsFilter::score_coverage(float weight) {
     for (auto &hs:haplotype_scores){
-        std::vector<uint8_t> coverage(read_seq.size());
+        coverage.clear();
+        coverage.resize(read_seq.size());
         auto &nodeset=hs.haplotype_nodes;
         uint64_t total_map_bp=0;
         for (auto m:mappings) if (std::count(nodeset.begin(),nodeset.end(),llabs(m.node))) total_map_bp+=m.qEnd-m.qStart;
@@ -84,21 +86,35 @@ void LongReadHaplotypeMappingsFilter::score_coverage(float weight) {
 void LongReadHaplotypeMappingsFilter::score_window_winners(float weight, int k, int win_size, int win_step) {
     //kmerise read
     StreamKmerFactory skf(k);
-    std::vector<uint64_t> rkmers;
     skf.produce_all_kmers(read_seq.c_str(),rkmers);
+    std::unordered_map<uint64_t,int32_t> rkmerpos;
+    rkmerpos.reserve(rkmers.size());
+    int32_t rkp=0;
+    for (auto &rk:rkmers){
+        auto rkhit=rkmerpos.find(rk);
+        if (rkhit!=rkmerpos.end()) rkmerpos[rk]=-1;
+        else rkmerpos[rk]=rkp;
+        ++rkp;
+    };
     if (rkmers.size()<win_size) return;
+    if (kmer_hits_by_node.size()<nodeset.size()) kmer_hits_by_node.resize(nodeset.size());
     //first create a list of used kmers
-    std::vector<std::vector<bool>> kmer_hits_by_node;
-    std::vector<uint64_t> nkmers;
+    uint64_t ni=0;
     for (auto &n:nodeset){
         nkmers.clear();
         skf.produce_all_kmers(lorm.sg.nodes[n].sequence.c_str(),nkmers);
-        std::sort(nkmers.begin(),nkmers.end());
-        kmer_hits_by_node.emplace_back(rkmers.size());
-        for (auto i=0;i<rkmers.size();++i){
-            auto nklb=std::lower_bound(nkmers.begin(),nkmers.end(),rkmers[i]);
-            if (nklb!=nkmers.end() and *nklb==rkmers[i]) kmer_hits_by_node.back()[i]=1;
+        //std::sort(nkmers.begin(),nkmers.end());
+        kmer_hits_by_node[ni].clear();
+        kmer_hits_by_node[ni].resize(rkmers.size());
+        for (auto &nk:nkmers) {
+            auto rkhit=rkmerpos.find(nk);
+            if (rkhit!=rkmerpos.end() and rkhit->second!=-1) kmer_hits_by_node[ni][rkhit->second]=1;
         }
+        /*for (auto i=0;i<rkmers.size();++i){
+            auto nklb=std::lower_bound(nkmers.begin(),nkmers.end(),rkmers[i]);
+            if (nklb!=nkmers.end() and *nklb==rkmers[i]) kmer_hits_by_node[ni][i]=1;
+        }*/
+        ++ni;
     }
     std::map<sgNodeID_t,int> node_wins;
     int total_windows=0;

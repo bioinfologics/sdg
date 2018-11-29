@@ -37,6 +37,10 @@ class LongReadMapper;
  * 5) filter_winner_haplotype -> populates filtered_alingments with the winning haplotype alignments
  */
 class LongReadHaplotypeMappingsFilter {
+    std::vector<uint64_t> rkmers;
+    std::vector<uint64_t> nkmers;
+    std::vector<uint8_t> coverage;
+    std::vector<std::vector<bool>> kmer_hits_by_node;
 public:
     LongReadHaplotypeMappingsFilter (const LongReadMapper & _lorm, const LinkedReadMapper & _lirm);
     ~LongReadHaplotypeMappingsFilter(){
@@ -66,6 +70,7 @@ public:
     const LinkedReadMapper & lirm;
     BufferedSequenceGetter * lrbsgp;
     std::vector<sgNodeID_t> nodeset;
+
 
 
 };
