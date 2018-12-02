@@ -23,6 +23,7 @@ void LongReadHaplotypeMappingsFilter::set_read(uint64_t _read_id) {
     read_seq=std::string(lrbsgp->get_read_sequence(_read_id));
     mappings = lorm.get_raw_mappings_from_read(read_id);
     //TODO: filter mappings?
+    nodeset.clear();
     for (auto &m:mappings) {
         auto n=llabs(m.node);
         bool dup=false;
