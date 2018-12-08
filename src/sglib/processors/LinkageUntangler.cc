@@ -776,6 +776,52 @@ LinkageDiGraph LinkageUntangler::make_longRead_multilinkage(const LongReadMapper
     return ldg;
 }
 
+LinkageDiGraph LinkageUntangler::make_paired10x_multilinkage(const PairedReadMapper &prm, const LinkedReadMapper &lirm, float min_tnscore, bool fr,
+                                                             uint64_t read_offset) {
+    LinkageDiGraph ldg(ws.sg);
+    uint64_t unmapped(0),same(0),non_neighbours(0),used(0);
+    for (uint64_t rid1=1; rid1<prm.read_to_node.size()-1; rid1+=2){
+        uint64_t rid2=rid1+1;
+        sgNodeID_t n1=prm.read_to_node[rid1];
+        sgNodeID_t n2=prm.read_to_node[rid2];
+        if (n1==0 or n2==0) {
+            ++unmapped;
+            continue;
+        }
+        if (n1==n2) {
+            ++same;
+            continue;
+        }
+        //Check neighbourhod (any direction passes)
+        bool tnpass=false;
+        for (auto &tn:lirm.tag_neighbours[n1]) {
+            if (tn.node == n2 and tn.score >= min_tnscore) {
+                tnpass = true;
+                break;
+            };
+        }
+        if (not tnpass) {
+            for (auto &tn:lirm.tag_neighbours[n2]) {
+                if (tn.node == n1 and tn.score >= min_tnscore) {
+                    tnpass = true;
+                    break;
+                };
+            }
+        }
+        if (not tnpass) {
+            ++non_neighbours;
+            continue;
+        }
+        //orient nodes as per connection ends
+        if (fr==prm.read_direction_in_node[rid1]) n1=-n1;
+        if (fr==prm.read_direction_in_node[rid2]) n2=-n2;
+        ldg.add_link(n1,n2,0,read_offset+rid1);
+        ++used;
+    }
+    sglib::OutputLog()<<"From lmp10x: "<<unmapped<<" unmapped,  "<<same<<" same,  "<<non_neighbours<<" non-neighbours,  "<<used<<" used"<<std::endl;
+    return ldg;
+}
+
 LinkageDiGraph LinkageUntangler::filter_linkage_to_hspnp_duos(uint64_t min_size, float min_ci, float max_ci,
                                                               const LinkageDiGraph &ldg_old) {
     std::unordered_map<sgNodeID_t,sgNodeID_t> node_to_parallel;
