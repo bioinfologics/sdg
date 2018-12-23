@@ -159,7 +159,7 @@ public:
      * Accumulates the kmer count from the provided fastq file to the last available read_counts collection
      * @param path to fastq file
      */
-    void add_counts_from_file(std::vector<std::string> filename);
+    void add_counts_from_file(std::vector<std::string> filenames);
 
     /**
      * Accumulates the kmer count from the provided data-store to the last available read_counts collection
@@ -208,6 +208,13 @@ public:
      * @param filename
      */
     void dump_histogram(std::string filename);
+
+    /**
+     * Dumps a kmer comparison matrix between the graph and the selected kmer collection to disk, the matrix is kat compatible
+     * @param filename Output file for the matrix
+     * @param kmer_collection Position of the kmer source in the reads count collection
+     */
+    void dump_comp_mx(std::string filename, int kmer_collection);
 
     /**
      * Computes the kci index for the selected node using the kmers from the node with kmer count in the

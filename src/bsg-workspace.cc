@@ -13,7 +13,8 @@ enum WorkspaceFunctions{
     NODE_KCI_DUMP,
     KCI_PROFILE,
     MERGE,
-    ADD_DS
+    ADD_DS,
+    SPECTRA_CN
 };
 struct WorkspaceFunctionMap : public std::map<std::string, WorkspaceFunctions>
 {
@@ -26,6 +27,7 @@ struct WorkspaceFunctionMap : public std::map<std::string, WorkspaceFunctions>
         this->operator[]("kci-profile") = KCI_PROFILE;
         this->operator[]("merge") = MERGE;
         this->operator[]("add") = ADD_DS;
+        this->operator[]("spectra-cn") = SPECTRA_CN;
     };
     ~WorkspaceFunctionMap(){}
 };
@@ -329,6 +331,44 @@ void kci_profile_workspace(int argc,char **argv){
     w.getKCI().compute_kci_profiles(prefix);
 }
 
+void spectra_cn_dump(int argc, char ** argv){
+    std::string filename;
+    std::string prefix;
+
+    try {
+        cxxopts::Options options("bsg-workspace kci-spectra-cn", "BSG workspace kci-spectra-cn");
+
+        options.add_options()
+                ("help", "Print help")
+                ("w,workspace", "workspace filename", cxxopts::value<std::string>(filename))
+                ("p,prefix", "Prefix for the output file", cxxopts::value<std::string>(prefix));
+//                    ("b,whitelist", "Backbone nodeid list", cxxopts::value<std::string>(backbone_whitelist));
+
+        auto newargc=argc-1;
+        auto newargv=&argv[1];
+        auto result=options.parse(newargc,newargv);
+        if (result.count("help")) {
+            std::cout << options.help({""}) << std::endl;
+            exit(0);
+        }
+
+        if (result.count("workspace")==0) {
+            throw cxxopts::OptionException(" please specify kmer spectra file");
+        }
+
+
+    } catch (const cxxopts::OptionException &e) {
+        std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
+                  << "Use option --help to check command line arguments." << std::endl;
+        exit(1);
+    }
+
+    WorkSpace w;
+    w.load_from_disk(filename);
+    w.kci.dump_comp_mx(prefix+"-matrix.mx", 0);
+
+}
+
 void merge_workspace(int argc, char **argv){
     std::vector<int> lr_datastores,pr_datastores,Lr_datastores;
     std::string output="";
@@ -564,6 +604,9 @@ int main(int argc, char * argv[]) {
             break;
         case ADD_DS:
             add_datastores(argc,argv);
+            break;
+        case SPECTRA_CN:
+            spectra_cn_dump(argc,argv);
             break;
         default:
             std::cout << "Invalid option specified." << std::endl;

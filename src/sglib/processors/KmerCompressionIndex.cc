@@ -274,6 +274,49 @@ void KmerCompressionIndex::dump_histogram(std::string filename) {
     for (auto i=0;i<1000;++i) kchf<<i<<","<<covuniq[i]<<std::endl;
 }
 
+void KmerCompressionIndex::dump_comp_mx(std::string filename, int kmer_collection){
+    std::ofstream okm(filename);
+    std::cout << "File open..." << std::endl;
+    std::cout << "Graph kmers: "<< this->graph_kmers.size() << std::endl;
+
+    int max_read_cvg = 1001;
+    int max_graph_cvg = 1001;
+    std::vector<std::vector<int>> matrix(max_read_cvg, std::vector<int>(max_read_cvg));
+
+    // Count values and accumulate in the matrix
+    std::cout << "Counting values " << std::endl;
+    for (uint64_t i=0; i<this->graph_kmers.size(); ++i){
+        auto read_cvg = this->read_counts[kmer_collection][i];
+        auto graph_cvg = graph_kmers[i].count;
+        if (read_cvg < max_read_cvg & graph_cvg < max_graph_cvg){
+            matrix[read_cvg][graph_cvg]++;
+        }
+    }
+
+    // Write the headers
+    std::cout << "Dumping matrix " << std::endl;
+    okm << "# Title:K-mer comparison plot generated with BSG" << std::endl;
+    okm << "# XLabel:27-mer frequency for: kmer read collection" << std::endl;
+    okm << "# YLabel:27-mer frequency for: graph kmers" << std::endl;
+    okm << "# ZLabel:# distinct 31-mers" << std::endl;
+    okm << "# Columns:1001" << std::endl;
+    okm << "# Rows:1001" << std::endl;
+    okm << "# MaxVal:NA" << std::endl;
+    okm << "# Transpose:1" << std::endl;
+    okm << "# Kmer value:NA" << std::endl;
+    okm << "# Input 1: Kmer read collection" << std::endl;
+    okm << "# Input 2: Graph" << std::endl;
+    okm << "###" << std::endl;
+
+    // Dump matrix
+    for(auto &row: matrix){
+        for (auto &column: row){
+            okm << column << " ";
+        }
+        okm << std::endl;
+    }
+}
+
 double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint16_t max_graph_freq, uint16_t dataset) {
     const int k=31;
     auto n=_node>0 ? _node:-_node;
