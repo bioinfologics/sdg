@@ -204,10 +204,12 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
         for (auto n=1;n<sg.nodes.size();++n) {
             if (sg.nodes[n].sequence.size() < min_size) continue;
             if (sg.nodes[n].sequence.size() > max_size) continue;
+            // TODO: for the linked reads only checks first mapped library
             if (!linked_read_mappers.empty()) {
                 auto ntags = linked_read_mappers[0].get_node_tags(n);
                 if (ntags.size() < min_tags or ntags.size() > max_tags) continue;
             }
+            // TODO: for the read counts only checks first counted kmer set
             if (!kci.graph_kmers.empty()) {
                 auto ci = kci.compute_compression_for_node(n, 1);
                 if (ci < min_ci or ci > max_ci) continue;
