@@ -278,6 +278,9 @@ double KmerCompressionIndex::compute_compression_for_node(sgNodeID_t _node, uint
     const int k=31;
     auto n=_node>0 ? _node:-_node;
     auto & node=sg.nodes[n];
+    if (uniq_mode == 0) {
+        std::cout << "WARNING, kci.unique_mode == 0" << std::endl;
+    }
 
     //eliminate "overlapping" kmers
     int32_t max_bw_ovlp=0;
