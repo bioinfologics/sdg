@@ -13,7 +13,7 @@ if [ "${TRAVIS_OS_NAME}" == linux ]; then
     export DOXYGEN_VERSION=1.8.15
     export DOXYGEN_VER=doxygen-${DOXYGEN_VERSION}
     export DOXYGEN_TAR=${DOXYGEN_VER}.linux.bin.tar.gz
-    export DOXYGEN_URL="https://sourceforge.net/projects/doxygen/files/rel-${DOXYGEN_VERSION)/${DOXYGEN_TAR}/download"
+    export DOXYGEN_URL="https://sourceforge.net/projects/doxygen/files/rel-${DOXYGEN_VERSION}/${DOXYGEN_TAR}/download"
     wget -O - "${DOXYGEN_URL}" | tar xz -C ${HOME} ${DOXYGEN_VER}/bin/doxygen &&
     mkdir -p ${HOME}/bin && mv ${HOME}/${DOXYGEN_VER}/bin/* ${HOME}/bin
 fi
