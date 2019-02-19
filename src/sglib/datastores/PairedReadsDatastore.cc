@@ -224,7 +224,7 @@ const char* BufferedPairedSequenceGetter::get_read_sequence(uint64_t readID) {
     return buffer+(read_offset_in_file-buffer_offset);
 }
 
-std::unordered_set<__uint128_t> PairedReadsDatastore::get_all_kmers128(int k, int min_tag_cov) {
+std::unordered_set<__uint128_t, int128_hash> PairedReadsDatastore::get_all_kmers128(int k, int min_tag_cov) {
     class StreamKmerFactory128 : public  KMerFactory128 {
     public:
         explicit StreamKmerFactory128(uint8_t k) : KMerFactory128(k){}
@@ -261,7 +261,7 @@ std::unordered_set<__uint128_t> PairedReadsDatastore::get_all_kmers128(int k, in
     }
 
     std::sort(all_kmers.begin(),all_kmers.end());
-    std::unordered_set<__uint128_t> kset;
+    std::unordered_set<__uint128_t, int128_hash> kset;
     auto ri=all_kmers.begin();
     auto nri=all_kmers.begin();
     while (ri<all_kmers.end()){
@@ -272,7 +272,7 @@ std::unordered_set<__uint128_t> PairedReadsDatastore::get_all_kmers128(int k, in
     return std::move(kset);
 }
 
-std::unordered_set<__uint128_t> PairedReadsDatastore::get_reads_kmers128(int k, int min_tag_cov, std::vector<uint64_t> reads) {
+std::unordered_set<__uint128_t, int128_hash> PairedReadsDatastore::get_reads_kmers128(int k, int min_tag_cov, std::vector<uint64_t> reads) {
     class StreamKmerFactory128 : public  KMerFactory128 {
     public:
         explicit StreamKmerFactory128(uint8_t k) : KMerFactory128(k){}
@@ -309,7 +309,7 @@ std::unordered_set<__uint128_t> PairedReadsDatastore::get_reads_kmers128(int k, 
     }
 
     std::sort(all_kmers.begin(),all_kmers.end());
-    std::unordered_set<__uint128_t> kset;
+    std::unordered_set<__uint128_t, int128_hash> kset;
     auto ri=all_kmers.begin();
     auto nri=all_kmers.begin();
     while (ri<all_kmers.end()){

@@ -70,7 +70,7 @@ public:
     //inline std::string get_read_sequence(size_t readID){return get_read_sequence(readID,fd1,fd2);};
     bsg10xTag get_read_tag(size_t readID);
     std::unordered_set<uint64_t> get_tags_kmers(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg);
-    std::unordered_set<__uint128_t> get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg, bool count_tag_cvg=false);
+    std::unordered_set<__uint128_t, int128_hash> get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg, bool count_tag_cvg=false);
     std::vector<uint64_t> get_tag_reads(bsg10xTag tag) const;
     std::vector<std::pair<bsg10xTag, uint32_t>> get_tag_readcount();
     void dump_tag_occupancy_histogram(std::string filename);

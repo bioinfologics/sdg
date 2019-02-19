@@ -288,7 +288,7 @@ __uint128_t kmer_fw_ovl128(__uint128_t kmer, uint8_t k){
     return  kmer%(((__uint128_t) 1)<<((k-1)*2));
 }
 
-void GraphMaker::new_graph_from_kmerset_trivial128(const std::unordered_set<__uint128_t> & kmerset,uint8_t k) {
+void GraphMaker::new_graph_from_kmerset_trivial128(const std::unordered_set<__uint128_t, int128_hash> & kmerset,uint8_t k) {
     //std::cout<<"Constructing Sequence Graph from "<<kmerset.size()<<" "<<std::to_string(k)<<"-mers"<<std::endl;
     std::set<std::pair<__uint128_t,__uint128_t>> unitig_ends;
     std::vector<std::pair<__uint128_t,sgNodeID_t>> kmerovl_bw_nodes,kmerovl_fw_nodes;
