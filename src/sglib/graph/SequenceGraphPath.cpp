@@ -138,7 +138,7 @@ size_t SequenceGraphPath::get_sequence_size_fast() {
     // just iterate over every node in path - contig names are converted to ids at construction
     for (auto &n:nodes) {
         std::string nseq;
-        size=sg.nodes[llabs(n)].sequence.size();
+        size+=sg.nodes[llabs(n)].sequence.size();
         if (pnode !=0){
             //find link between pnode' output (+pnode) and n's sink (-n)
             auto l=sg.links[llabs(pnode)].begin();
