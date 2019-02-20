@@ -13,8 +13,8 @@
 #include <sglib/hash/xxhash.h>
 #include "hashing_helper.hpp"
 
-typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
-typedef int32_t seqID_t; //first sequence is 0;
+using sgNodeID_t = int64_t; //first node is 1; negatives are RC
+using seqID_t = int32_t; //first sequence is 0;
 
 enum sgNodeStatus_t {sgNodeActive, sgNodeDeleted};
 

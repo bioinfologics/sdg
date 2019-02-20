@@ -21,7 +21,7 @@
 #include <sglib/Version.hpp>
 
 
-typedef uint32_t bsg10xTag;
+using bsg10xTag = uint32_t;
 enum class LinkedReadsFormat {UCDavis,raw,seq};
 struct LinkedReadData {
     bsg10xTag tag;
