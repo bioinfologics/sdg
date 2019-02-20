@@ -12,6 +12,7 @@ if (POLICY CMP0074)
     cmake_policy(SET CMP0074 NEW)
 endif (POLICY CMP0074)
 
+cmake_policy(SET CMP0078 NEW)
 
 if (APPLE)
     set(CMAKE_MACOSX_RPATH ON)
@@ -141,9 +142,17 @@ IF(BUILD_DOC)
         # note the option ALL which allows to build the docs together with the application
         add_custom_target(doc_doxygen ALL
                 COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                 COMMENT "Generating API documentation with Doxygen"
                 VERBATIM)
+
+        add_custom_target (
+                doxy2swig
+                COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py --quiet docs/xml/index.xml ${CMAKE_BINARY_DIR}/python_docs.i
+                COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
+                VERBATIM
+        )
+
+        add_dependencies(doxy2swig doc_doxygen)
     else (DOXYGEN_FOUND)
         message("Doxygen need to be installed to generate the doxygen documentation")
     endif (DOXYGEN_FOUND)
@@ -305,24 +314,13 @@ IF(BUILD_PYTHON_INTERFACE)
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
     endif()
+
+    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY DEPENDS doxy2swig)
     SWIG_ADD_LIBRARY(pybsg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
     SWIG_LINK_LIBRARIES(pybsg ${PYTHON_LIBRARIES} bsg_static)
 
-    if(DOXYGEN_FOUND)
-        add_custom_command (
-                OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
-                COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py
-                --quiet ${CMAKE_BINARY_DIR}/docs/xml/index.xml
-                ${CMAKE_BINARY_DIR}/python_docs.i
-                COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
-                DEPENDS doc_doxygen
-                VERBATIM
-        )
-        add_dependencies(_pybsg doc_doxygen)
-    endif(DOXYGEN_FOUND)
-
     install(TARGETS
-            _pybsg
+            pybsg
             RUNTIME DESTINATION pybsg
             ARCHIVE DESTINATION pybsg
             LIBRARY DESTINATION pybsg)
