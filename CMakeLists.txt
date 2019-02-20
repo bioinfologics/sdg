@@ -318,8 +318,7 @@ IF(BUILD_PYTHON_INTERFACE)
                 DEPENDS doc_doxygen
                 VERBATIM
         )
-        add_custom_target(doxy2swig DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
-        add_dependencies(_pybsg doxy2swig)
+        add_dependencies(_pybsg doc_doxygen)
     endif(DOXYGEN_FOUND)
 
     install(TARGETS
