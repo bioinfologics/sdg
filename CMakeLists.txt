@@ -12,7 +12,9 @@ if (POLICY CMP0074)
     cmake_policy(SET CMP0074 NEW)
 endif (POLICY CMP0074)
 
-cmake_policy(SET CMP0078 NEW)
+if (POLICY CMP0078)
+    cmake_policy(SET CMP0078 NEW)
+endif (POLICY CMP0078)
 
 if (APPLE)
     set(CMAKE_MACOSX_RPATH ON)
