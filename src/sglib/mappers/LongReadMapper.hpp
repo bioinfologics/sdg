@@ -202,9 +202,9 @@ public:
      * @param readIDs
      * @param detailed_log
      */
-    void map_reads(std::unordered_set<uint32_t> readIDs = {},std::string detailed_log="");
+    void map_reads(int filter_limit=200, std::unordered_set<uint32_t> readIDs = {},std::string detailed_log="");
 
-    void map_reads(std::string detailed_log){map_reads({},detailed_log);};
+    //void map_reads(std::string detailed_log){map_reads({},detailed_log);};
 
     void read(std::string filename);
 
@@ -226,7 +226,7 @@ public:
     /**
      * Updates the assembly_kmers index with the kmers of the current graph with frequency less than 200
      */
-    void update_graph_index();
+    void update_graph_index(int filter_limit=200);
 
     /**
      * This goes read by read, and filters the mappings by finding a set of linked nodes that maximises 1-cov of the read

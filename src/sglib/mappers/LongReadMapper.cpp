@@ -316,8 +316,8 @@ std::vector<LongReadMapping> LongReadMapper::filter_blocks(std::vector<LongReadM
     return fblocks;
 }
 
-void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string detailed_log) {
-    update_graph_index();
+void LongReadMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> readIDs, std::string detailed_log) {
+    update_graph_index(filter_limit);
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
     uint32_t num_reads_done(0);
     uint64_t no_matches(0),single_matches(0),multi_matches(0);
@@ -472,10 +472,10 @@ LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
     return *this;
 }
 
-void LongReadMapper::update_graph_index() {
+void LongReadMapper::update_graph_index(int filter_limit) {
     std::cout<<"updating index with k="<<std::to_string(k)<<std::endl;
     assembly_kmers=NKmerIndex(k);
-    assembly_kmers.generate_index(sg);
+    assembly_kmers.generate_index(sg,filter_limit);
 }
 
 void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size,  float min_tnscore, uint64_t first_id, uint64_t last_id) {
