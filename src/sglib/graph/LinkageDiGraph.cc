@@ -15,7 +15,7 @@ void LinkageDiGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, uin
 }
 
 void LinkageDiGraph::add_links(const LinkageDiGraph &other) {
-    for (auto &lv:other.links) for (auto l:lv) add_link(l.source,l.dest,l.dist);
+    for (auto &lv:other.links) for (auto l:lv) add_link(l.source,l.dest,l.dist,l.read_id);
 }
 
 void LinkageDiGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
