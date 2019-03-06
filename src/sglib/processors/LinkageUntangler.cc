@@ -813,8 +813,8 @@ LinkageDiGraph LinkageUntangler::make_paired10x_multilinkage(const PairedReadMap
             continue;
         }
         //orient nodes as per connection ends
-        if (fr==prm.read_direction_in_node[rid1]) n1=-n1;
-        if (fr==prm.read_direction_in_node[rid2]) n2=-n2;
+        if (fr!=prm.read_direction_in_node[rid1]) n1=-n1;
+        if (fr!=prm.read_direction_in_node[rid2]) n2=-n2;
         ldg.add_link(n1,n2,0,read_offset+rid1);
         ++used;
     }
