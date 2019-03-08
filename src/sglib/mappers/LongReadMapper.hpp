@@ -204,6 +204,13 @@ public:
      */
     void map_reads(int filter_limit=200, std::unordered_set<uint32_t> readIDs = {},std::string detailed_log="");
 
+    /**
+     * This function maps any sequence to the graph, index needs to be already updated!
+     * WARNING: this is slow, not meant for high throughput
+     * @param query_sequence_ptr
+     * @return
+     */
+    std::vector<LongReadMapping> map_sequence(const char * query_sequence_ptr);
     //void map_reads(std::string detailed_log){map_reads({},detailed_log);};
 
     void read(std::string filename);
@@ -240,18 +247,6 @@ public:
      * @param last_id
      */
     void filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size=10000, float min_tnscore=0.03, uint64_t first_id=0, uint64_t last_id=0);
-
-    /**
-     * Single-read nano10x filtering. Return status
-     * @param lrm
-     * @param lrbsg
-     * @param min_size
-     * @param min_tnscore
-     * @param readID
-     * @param offset_hint
-     * @return
-     */
-    MappingFilterResult filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, BufferedSequenceGetter &lrbsg, uint32_t min_size, float min_tnscore, uint64_t readID, uint64_t offset_hint=0);
 
     LongReadsDatastore datastore;
     /**

@@ -393,6 +393,27 @@ void LongReadMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> re
     update_indexes();
 }
 
+std::vector<LongReadMapping> LongReadMapper::map_sequence(const char * query_sequence_ptr) {
+    std::vector<LongReadMapping> private_results;
+
+    StreamKmerFactory skf(k);
+    std::vector<std::pair<bool, uint64_t>> read_kmers;
+    std::vector<std::vector<std::pair<int32_t, int32_t>>> node_matches; //node, offset
+    read_kmers.clear();
+
+    skf.produce_all_kmers(query_sequence_ptr, read_kmers);
+    get_all_kmer_matches(node_matches,read_kmers);
+
+    //========== 2. Find match candidates in fixed windows ==========
+
+    auto candidates = window_candidates(node_matches,read_kmers.size());
+
+    //========== 3. Create alignment blocks from candidates ==========
+
+    return alignment_blocks(0,node_matches,read_kmers.size(),candidates);
+
+}
+
 void LongReadMapper::update_indexes() {
     std::sort(mappings.begin(),mappings.end());
     first_mapping.clear();
@@ -404,13 +425,16 @@ void LongReadMapper::update_indexes() {
     }
     reads_in_node.clear();
     reads_in_node.resize(sg.nodes.size());
+    uint64_t frmcount=0,reads_with_filtered_mappings=0;
     for (auto &rm:filtered_read_mappings) {
+        if (not rm.empty()) ++reads_with_filtered_mappings;
         for (auto &m:rm) {
+            ++frmcount;
             if (reads_in_node[std::abs(m.node)].empty() or reads_in_node[std::abs(m.node)].back()!=m.read_id)
                 reads_in_node[std::abs(m.node)].push_back(m.read_id);
         }
     }
-    sglib::OutputLog() << "Finished with " << filtered_read_mappings.size() << " mappings" << std::endl;
+    sglib::OutputLog() << "LongReadMapper index updated with " << mappings.size() << " mappings and "<< frmcount << " filtered mappings (over "<< reads_with_filtered_mappings << " reads)"<< std::endl;
 }
 
 LongReadMapper::LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k)
@@ -490,12 +514,11 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
     if (last_id==0) last_id=datastore.size()-1;
 #pragma omp parallel
     {
-        BufferedSequenceGetter lrbsg(datastore);
         LongReadHaplotypeMappingsFilter hap_filter(*this,lrm);
         //run hap_filter on every read
 
 #pragma omp for schedule(static, 10)
-        for (uint64_t rid = 0; rid <= last_id; ++rid) {
+        for (uint64_t rid = first_id; rid <= last_id; ++rid) {
             hap_filter.set_read(rid);
             if (hap_filter.read_seq.size()<min_size){
                 ++rshort;
@@ -518,71 +541,4 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
         }
     }
     sglib::OutputLog()<<"too short: "<<rshort<<"  no mappings: "<<runmapped<<"  no winner: "<<rnoresult<<"  filtered: "<<rfiltered<<std::endl;
-}
-
-MappingFilterResult LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, BufferedSequenceGetter &lrbsg, uint32_t min_size, float min_tnscore, uint64_t readID, uint64_t offset_hint) {
-    uint64_t last_mapindex=offset_hint;
-    const char* seq_ptr;
-    seq_ptr = lrbsg.get_read_sequence(readID);
-    std::string seq(seq_ptr);
-    if (seq.size()<min_size) return MappingFilterResult::TooShort;
-    auto rsize=seq.size();
-    while (last_mapindex>0 and mappings[last_mapindex].read_id>readID) --last_mapindex;
-    while (last_mapindex<mappings.size() and mappings[last_mapindex].read_id<readID) ++last_mapindex;
-    if (last_mapindex>=mappings.size() or mappings[last_mapindex].read_id!=readID) return MappingFilterResult::NoMappings;
-    std::vector<LongReadMapping> read_mappings;
-    std::unordered_set<sgNodeID_t> all_nodes;
-    while (last_mapindex<mappings.size() and mappings[last_mapindex].read_id==readID) {
-        read_mappings.emplace_back(mappings[last_mapindex]);
-        all_nodes.insert(llabs(read_mappings.back().node));
-        ++last_mapindex;
-    }
-    //evaluate a read's mappings:
-    //TODO: 1) remove middle-mappings (later)
-    //2) create the neighbour sets, uniq to not evaluate same set many times over.
-    std::map<std::set<sgNodeID_t>,int> all_nsets;
-    for (auto n:all_nodes){
-        std::set<sgNodeID_t> nset;
-        for (auto m:all_nodes){
-            for (auto &score:lrm.tag_neighbours[n]){
-                if (score.node==m and score.score>min_tnscore) {
-                    nset.insert(m);
-                    break;
-                }
-            }
-        }
-        ++all_nsets[nset];
-    }
-    if (all_nsets.empty()) return MappingFilterResult::NoReadSets;
-    std::vector<std::pair<uint64_t,std::set<sgNodeID_t>>> cov1set;
-
-    //3) remove all sets not passing a "sum of all mappings >50% of the read"
-    //   compute the 1-cov total bases for each set, if it is not 50% of the read discard too
-    for (auto &nsv:all_nsets){
-        std::vector<uint8_t> coverage(seq.size());
-        auto &nodeset=nsv.first;
-        uint64_t total_map_bp=0;
-        for (auto m:read_mappings) if (nodeset.count(llabs(m.node))) total_map_bp+=m.qEnd-m.qStart;
-        if (total_map_bp*2<seq.size()) continue;
-        //this can be done faster by saving all starts and ends and keeping a rolling value;
-        for (auto m:read_mappings) {
-            if (nodeset.count(llabs(m.node))){
-                for (auto i=m.qStart;i<=m.qEnd and i<rsize;++i) ++coverage[i];
-            }
-        }
-        uint64_t cov1=std::count(coverage.begin(),coverage.end(),1);
-        if (cov1*2>=seq.size())
-            cov1set.emplace_back(cov1, nodeset);
-    }
-    if (cov1set.empty()) return MappingFilterResult::LowCoverage;
-    //find set with highest 1-cov
-    std::sort(cov1set.begin(),cov1set.end());
-    auto &winset=cov1set.back().second;
-    //TODO: 4) try to find "turn-arounds" for CCS-style reads (later)
-    //TODO: 7) copy vector to read_to_mappings
-    filtered_read_mappings[readID].clear();
-    for (auto &m:read_mappings){
-        if (winset.count(llabs(m.node))) filtered_read_mappings[readID].push_back(m);
-    }
-    return MappingFilterResult::Success;
 }
