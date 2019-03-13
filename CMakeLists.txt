@@ -191,6 +191,7 @@ add_library(bsg SHARED
             src/sglib/processors/GraphEditor.cc
             src/sglib/processors/GraphMaker.cc
             src/sglib/processors/LocalHaplotypeAssembler.cc
+            src/sglib/processors/HaplotypeConsensus.cc
             src/sglib/hash/xxhash.c
         )
 
@@ -218,6 +219,7 @@ add_library(bsg_static STATIC
         src/sglib/processors/GraphEditor.cc
         src/sglib/processors/GraphMaker.cc
         src/sglib/processors/LocalHaplotypeAssembler.cc
+        src/sglib/processors/HaplotypeConsensus.cc
         src/sglib/hash/xxhash.c
         )
 

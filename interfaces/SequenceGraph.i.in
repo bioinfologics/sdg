@@ -38,6 +38,8 @@
 #include "sglib/graph/LinkageDiGraph.hpp"
 #include "sglib/processors/LinkageUntangler.hpp"
 
+#include "sglib/processors/HaplotypeConsensus.hpp"
+
 %}
 
 #define MADE_DOCS "@DOXYGEN_FOUND@"
@@ -199,3 +201,6 @@ namespace std {
 %include "sglib/mappers/threader/MappingThreader.hpp"
 %include "sglib/processors/LinkageUntangler.hpp"
 %include "sglib/graph/LinkageDiGraph.hpp"
+
+%include "sglib/processors/HaplotypeConsensus.hpp"
+

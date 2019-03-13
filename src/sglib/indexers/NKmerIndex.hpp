@@ -22,10 +22,10 @@ public:
 
     explicit NKmerIndex(uint8_t k) : k(k), filter(70*1024*1024) {}
 
-    void generate_index(const SequenceGraph &sg, int filter_limit = 200) {
+    void generate_index(const SequenceGraph &sg, int filter_limit = 200, bool verbose=true) {
         assembly_kmers.reserve(100000000);
 
-        sglib::OutputLog() << "Updating mapping index for k=" << std::to_string(k) << std::endl;
+        if (verbose) sglib::OutputLog() << "Updating mapping index for k=" << std::to_string(k) << std::endl;
         StringKMerFactory skf(k);
         std::vector<std::pair<bool,uint64_t > > contig_kmers;
 
@@ -47,7 +47,7 @@ public:
 #endif
 
         int max_kmer_repeat(filter_limit);
-        sglib::OutputLog() << "Filtering kmers appearing less than " << max_kmer_repeat << " from " << assembly_kmers.size() << " initial kmers" << std::endl;
+        if (verbose) sglib::OutputLog() << "Filtering kmers appearing less than " << max_kmer_repeat << " from " << assembly_kmers.size() << " initial kmers" << std::endl;
         auto witr = assembly_kmers.begin();
         auto ritr = witr;
         for (; ritr != assembly_kmers.end();) {
@@ -65,10 +65,10 @@ public:
         }
         assembly_kmers.resize(witr-assembly_kmers.begin());
 
-        sglib::OutputLog() << "Kmers for mapping " << assembly_kmers.size() << std::endl;
-        sglib::OutputLog() << "Number of elements in bloom " << filter.number_bits_set() << std::endl;
-        sglib::OutputLog() << "Filter FPR " << filter.false_positive_rate() << std::endl;
-        sglib::OutputLog() << "DONE" << std::endl;
+        if (verbose) sglib::OutputLog() << "Kmers for mapping " << assembly_kmers.size() << std::endl;
+        if (verbose) sglib::OutputLog() << "Number of elements in bloom " << filter.number_bits_set() << std::endl;
+        if (verbose) sglib::OutputLog() << "Filter FPR " << filter.false_positive_rate() << std::endl;
+        if (verbose) sglib::OutputLog() << "DONE" << std::endl;
     }
 
     bool empty() const { return assembly_kmers.empty(); }

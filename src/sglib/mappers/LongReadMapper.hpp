@@ -233,7 +233,7 @@ public:
     /**
      * Updates the assembly_kmers index with the kmers of the current graph with frequency less than 200
      */
-    void update_graph_index(int filter_limit=200);
+    void update_graph_index(int filter_limit=200, bool verbose=true);
 
     /**
      * This goes read by read, and filters the mappings by finding a set of linked nodes that maximises 1-cov of the read
@@ -247,6 +247,26 @@ public:
      * @param last_id
      */
     void filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size=10000, float min_tnscore=0.03, uint64_t first_id=0, uint64_t last_id=0);
+
+    /**
+     * This goes read by read, and transforms the filtered mappings into path-mappings, by:
+     * 1) chaining coherent successive mappings
+     * 2) removing secondary mappings
+     * 3) Pathing between mappings as far as the read supports a single path
+     *
+     */
+    void path_filtered_mappings();
+
+    //void dump_path_mappings();
+
+    //void load_path_mappings();
+
+    /**
+     * This updates the filtered mappings by taking the elements from the path mapping that have the right size and neighbourhood conditions
+     */
+    //void update_filtered_mappings_from_paths(const LinkedReadMapper &lrm,uint32_t min_size=10000, float min_tnscore=0.03);
+
+    //void update_filtered_mappings_from_paths(uint32_t min_size=10000, float min_tnscore=0.03);
 
     LongReadsDatastore datastore;
     /**

@@ -496,10 +496,10 @@ LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
     return *this;
 }
 
-void LongReadMapper::update_graph_index(int filter_limit) {
-    std::cout<<"updating index with k="<<std::to_string(k)<<std::endl;
+void LongReadMapper::update_graph_index(int filter_limit, bool verbose) {
+    if (verbose) std::cout<<"updating index with k="<<std::to_string(k)<<std::endl;
     assembly_kmers=NKmerIndex(k);
-    assembly_kmers.generate_index(sg,filter_limit);
+    assembly_kmers.generate_index(sg,filter_limit, verbose);
 }
 
 void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size,  float min_tnscore, uint64_t first_id, uint64_t last_id) {
