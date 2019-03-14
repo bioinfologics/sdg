@@ -641,12 +641,27 @@ LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMap
 
     std::cout << "Filtered matches:\n";
     for (const auto &mb : filtered_mbo) {
+        LongReadMapping chained;
+        chained.nStart=INT32_MAX;
+        chained.nEnd=INT32_MIN;
+        chained.score=0;
+        chained.read_id=matches[0].read_id;
+        chained.node=mb.dir ? matches[0].node : -matches[0].node;
         for (const auto &m : matches) {
             if ((m.qStart - m.nStart) >= mb.start_off and (m.qEnd - m.nEnd) <= mb.end_off) {
-                filtered_matches.emplace_back(m);
-                std::cout << m << "\n\tOffsets: " << m.qStart - m.nStart << ", " << m.qEnd - m.nEnd << "\n";
+                if (chained.nStart>m.nStart){
+                    chained.nStart=m.nStart;
+                    chained.qStart=m.qStart;
+                }
+                if (chained.nEnd<m.nEnd){
+                    chained.nEnd=m.nEnd;
+                    chained.qEnd=m.qEnd;
+                }
+                chained.score+=m.score;
             }
         }
+        filtered_matches.emplace_back(chained);
+        std::cout << chained << "\n\tOffsets: " << chained.qStart - chained.nStart << ", " << chained.qEnd - chained.nEnd << "\n";
     }
     std::cout << std::endl;
 
