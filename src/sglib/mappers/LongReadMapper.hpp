@@ -17,15 +17,15 @@
 
 struct match_band{
     bool dir;
-    int32_t start_off;
-    int32_t end_off;
+    int32_t min_offset;
+    int32_t max_offset;
     int32_t len;
     int32_t score;
 
     match_band(bool d, int32_t s, int32_t e, int32_t l, int32_t sc) :
     dir(d),
-    start_off(s),
-    end_off(e),
+    min_offset(s),
+    max_offset(e),
     len(l),
     score(sc){}
 };
@@ -277,7 +277,7 @@ public:
     //void load_path_mappings();
 
     std::vector<LongReadMapping>
-    filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose=true);
+    filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose=false);
 
     std::vector<LongReadMapping> improve_read_filtered_mappings(uint32_t rid, bool correct_on_ws=false);
 

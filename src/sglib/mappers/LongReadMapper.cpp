@@ -563,6 +563,7 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
 std::vector<LongReadMapping>
 LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose) {
 
+    const int32_t OFFSET_BANDWITDH=200;
     if (verbose){
         std::cout<<"Filtering matches:" << std::endl;
         for (const auto &m : matches)
@@ -577,15 +578,16 @@ LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMap
     }
 
     for (auto &m : mbo) {
-        m.start_off = std::min(m.start_off,m.end_off)-200;
-        m.end_off = std::max(m.start_off, m.end_off)+200;
-
+        auto mino=std::min(m.min_offset,m.max_offset)-OFFSET_BANDWITDH;
+        auto maxo=std::max(m.min_offset, m.max_offset)+OFFSET_BANDWITDH;
+        m.min_offset = mino;
+        m.max_offset = maxo;
     }
 
     if (verbose){
         std::cout << "Orientations, offsets, lengths and scores:" << std::endl;
         for (const auto &m : mbo){
-            std::cout << ((m.dir) ? "true":"false") << ", " << m.start_off << ", " << m.end_off << ", " << m.len << ", " << m.score << std::endl;
+            std::cout << ((m.dir) ? "true":"false") << ", " << m.min_offset << ", " << m.max_offset << ", " << m.len << ", " << m.score << std::endl;
         }
     }
 
@@ -602,9 +604,9 @@ LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMap
             for (int mi2 = 0; mi2 < mbo.size(); mi2++) {
                 if (used[mi2]){continue;}
                 auto m2 = mbo[mi2];
-                if (m.start_off<m2.end_off and m2.start_off < m.start_off){
-                    m.start_off = std::min(m.start_off,m2.start_off);
-                    m.end_off = std::max(m.end_off,m2.end_off);
+                if (m.min_offset<m2.max_offset and m2.min_offset < m.min_offset){
+                    m.min_offset = std::min(m.min_offset,m2.min_offset);
+                    m.max_offset = std::max(m.max_offset,m2.max_offset);
                     m.len += m2.len;
                     m.score += m2.score;
                     used[mi2] = true;
@@ -621,7 +623,7 @@ LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMap
     if (verbose){
         std::cout << "Consolidated orientations, offsets, lengths and scores:\n";
         for (const auto &m : mbo){
-            std::cout << ((m.dir) ? "true":"false") << ", " << m.start_off << ", " << m.end_off << ", " << m.len << ", " << m.score << std::endl;
+            std::cout << ((m.dir) ? "true":"false") << ", " << m.min_offset << ", " << m.max_offset << ", " << m.len << ", " << m.score << std::endl;
         }
     }
 
@@ -632,14 +634,13 @@ LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMap
     if (verbose){
         std::cout << "Filtered orientations, offsets, lengths and scores:\n";
         for (const auto &m : filtered_mbo){
-            std::cout << ((m.dir) ? "true":"false") << ", " << m.start_off << ", " << m.end_off << ", " << m.len << ", " << m.score << std::endl;
+            std::cout << ((m.dir) ? "true":"false") << ", " << m.min_offset << ", " << m.max_offset << ", " << m.len << ", " << m.score << std::endl;
         }
     }
 
     // Create matches min, max positions for each band that has passed the filter
     std::vector<LongReadMapping> filtered_matches;
 
-    std::cout << "Filtered matches:\n";
     for (const auto &mb : filtered_mbo) {
         LongReadMapping chained;
         chained.nStart=INT32_MAX;
@@ -648,7 +649,7 @@ LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMap
         chained.read_id=matches[0].read_id;
         chained.node=mb.dir ? matches[0].node : -matches[0].node;
         for (const auto &m : matches) {
-            if ((m.qStart - m.nStart) >= mb.start_off and (m.qEnd - m.nEnd) <= mb.end_off) {
+            if ((m.qStart - m.nStart) >= mb.min_offset and (m.qEnd - m.nEnd) <= mb.max_offset) {
                 if (chained.nStart>m.nStart){
                     chained.nStart=m.nStart;
                     chained.qStart=m.qStart;
@@ -661,9 +662,13 @@ LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMap
             }
         }
         filtered_matches.emplace_back(chained);
-        std::cout << chained << "\n\tOffsets: " << chained.qStart - chained.nStart << ", " << chained.qEnd - chained.nEnd << "\n";
     }
-    std::cout << std::endl;
+
+    if (verbose){
+        std::cout<<"Filtered matches:" << std::endl;
+        for (const auto &m : filtered_matches)
+            std::cout << m << std::endl;
+    }
 
     return filtered_matches;
 }
@@ -682,11 +687,7 @@ std::vector<LongReadMapping> LongReadMapper::improve_read_filtered_mappings(uint
 
     std::multimap<uint32_t , sgNodeID_t > most_common = flip_map(most_common_map);
 
-    for (const auto &n : most_common) {
-        std::cout << n.first << ", " << n.second << std::endl;
-    }
-
-    if (most_common.rbegin()->first == 1) return std::vector<LongReadMapping>();
+    if (most_common.rbegin()->first == 1) return mappings;
 
     for (const auto &n : most_common) {
         std::vector<LongReadMapping> nm;
