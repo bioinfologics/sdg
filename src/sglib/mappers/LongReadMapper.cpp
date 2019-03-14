@@ -10,6 +10,21 @@
 #include <atomic>
 #include <cmath>
 
+template<typename A, typename B>
+std::pair<B,A> flip_pair(const std::pair<A,B> &p)
+{
+    return std::pair<B,A>(p.second, p.first);
+}
+
+template<typename A, typename B>
+std::multimap<B,A> flip_map(const std::map<A,B> &src)
+{
+    std::multimap<B,A> dst;
+    std::transform(src.begin(), src.end(), std::inserter(dst, dst.begin()),
+                   flip_pair<A,B>);
+    return dst;
+}
+
 const bsgVersion_t LongReadMapper::min_compat = 0x0001;
 
 LongReadHaplotypeMappingsFilter::LongReadHaplotypeMappingsFilter (const LongReadMapper & _lorm, const LinkedReadMapper & _lirm):
@@ -541,4 +556,149 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
         }
     }
     sglib::OutputLog()<<"too short: "<<rshort<<"  no mappings: "<<runmapped<<"  no winner: "<<rnoresult<<"  filtered: "<<rfiltered<<std::endl;
+}
+
+
+std::vector<LongReadMapping>
+LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose) {
+
+    if (verbose){
+        std::cout<<"Filtering matches:" << std::endl;
+        for (const auto &m : matches)
+            std::cout << m << std::endl;
+    }
+
+
+    std::vector<match_band> mbo;
+    auto node = std::abs(matches[0].node);
+    for (const auto &m : matches ){
+        mbo.emplace_back(node == m.node, m.qStart-m.nStart, m.qEnd-m.nEnd, m.nEnd-m.nStart, m.score);
+    }
+
+    for (auto &m : mbo) {
+        m.start_off = std::min(m.start_off,m.end_off)-200;
+        m.end_off = std::max(m.start_off, m.end_off)+200;
+
+    }
+
+    if (verbose){
+        std::cout << "Orientations, offsets, lengths and scores:" << std::endl;
+        for (const auto &m : mbo){
+            std::cout << ((m.dir) ? "true":"false") << ", " << m.start_off << ", " << m.end_off << ", " << m.len << ", " << m.score << std::endl;
+        }
+    }
+
+    auto prev_len = mbo.size()+1;
+
+    while (mbo.size() < prev_len) {
+        auto used = std::vector<bool>(mbo.size(), false);
+        std::vector<match_band> new_mbo;
+
+        for (int mi=0; mi < mbo.size(); mi++) {
+            if (used[mi]){continue;}
+            used[mi] = true;
+            auto m = mbo[mi];
+            for (int mi2 = 0; mi2 < mbo.size(); mi2++) {
+                if (used[mi2]){continue;}
+                auto m2 = mbo[mi2];
+                if (m.start_off<m2.end_off and m2.start_off < m.start_off){
+                    m.start_off = std::min(m.start_off,m2.start_off);
+                    m.end_off = std::max(m.end_off,m2.end_off);
+                    m.len += m2.len;
+                    m.score += m2.score;
+                    used[mi2] = true;
+                }
+            }
+            new_mbo.emplace_back(m);
+        }
+        prev_len = mbo.size();
+        mbo = new_mbo;
+    }
+
+    std::sort(mbo.begin(), mbo.end(), [](match_band &ma, match_band &mb){return ma.score > mb.score;});
+
+    if (verbose){
+        std::cout << "Consolidated orientations, offsets, lengths and scores:\n";
+        for (const auto &m : mbo){
+            std::cout << ((m.dir) ? "true":"false") << ", " << m.start_off << ", " << m.end_off << ", " << m.len << ", " << m.score << std::endl;
+        }
+    }
+
+    std::vector<match_band> filtered_mbo;
+    auto max_score = mbo[0].score;
+    std::copy_if(mbo.begin(), mbo.end(), std::back_inserter(filtered_mbo), [max_score](match_band &m){ return m.score >= 0.5f*max_score; });
+
+    if (verbose){
+        std::cout << "Filtered orientations, offsets, lengths and scores:\n";
+        for (const auto &m : filtered_mbo){
+            std::cout << ((m.dir) ? "true":"false") << ", " << m.start_off << ", " << m.end_off << ", " << m.len << ", " << m.score << std::endl;
+        }
+    }
+
+    // Create matches min, max positions for each band that has passed the filter
+    std::vector<LongReadMapping> filtered_matches;
+
+    std::cout << "Unfiltered matches:\n";
+    for (const auto &m : matches) {
+        std::cout << m << "\n";
+    }
+    std::cout << std::endl;
+//    for (const auto &fmbo: filtered_mbo) {
+//        for (const auto &m: matches) {
+//        }
+//    }
+
+    return filtered_matches;
+}
+
+std::vector<LongReadMapping> LongReadMapper::improve_read_filtered_mappings(uint32_t rid, bool correct_on_ws) {
+
+    std::vector<LongReadMapping> new_mappings;
+    auto mappings = filtered_read_mappings[rid]; // This has to be a copy and can be a bit expensive!
+    if (mappings.empty()) return mappings;
+
+    std::map<sgNodeID_t, uint32_t > most_common_map;
+
+    for (const auto &m : mappings) {
+        ++most_common_map[std::abs(m.node)];
+    }
+
+    std::multimap<uint32_t , sgNodeID_t > most_common = flip_map(most_common_map);
+
+    for (const auto &n : most_common) {
+        std::cout << n.first << ", " << n.second << std::endl;
+    }
+
+    if (most_common.rbegin()->first == 1) return std::vector<LongReadMapping>();
+
+    for (const auto &n : most_common) {
+        std::vector<LongReadMapping> nm;
+        // This copy will obviously be expensive! It's better to sort the whole structure first and then check if needed to process it.
+        std::copy_if(mappings.begin(), mappings.end(), std::back_inserter(nm),
+                     [n](const LongReadMapping& m){
+                         return n.second == std::abs(m.node);
+                     });
+        std::sort(nm.begin(), nm.end(),
+                  [](const LongReadMapping &a, const LongReadMapping &b) {
+                      uint64_t na = std::abs(a.node);
+                      uint64_t nb = std::abs(b.node);
+                      return std::tie(na, a.qStart) < std::tie(nb, b.qStart);
+                  });
+
+        if (nm.size() <= 1){
+            new_mappings.insert(new_mappings.end(), nm.begin(), nm.end());
+        } else {
+            auto fm = filter_and_chain_matches_by_offset_group(nm);
+            new_mappings.insert(new_mappings.end(), fm.begin(), fm.end());
+        }
+    }
+
+    std::sort(new_mappings.begin(), new_mappings.end(), [](LongReadMapping &a, LongReadMapping &b){
+        return a.qStart < b.qStart;
+    });
+
+    if (correct_on_ws) {
+        filtered_read_mappings[rid] = new_mappings;
+    }
+    return new_mappings;
 }
