@@ -638,15 +638,16 @@ LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMap
     // Create matches min, max positions for each band that has passed the filter
     std::vector<LongReadMapping> filtered_matches;
 
-    std::cout << "Unfiltered matches:\n";
-    for (const auto &m : matches) {
-        std::cout << m << "\n";
+    std::cout << "Filtered matches:\n";
+    for (const auto &mb : filtered_mbo) {
+        for (const auto &m : matches) {
+            if ((m.qStart - m.nStart) >= mb.start_off and (m.qEnd - m.nEnd) <= mb.end_off) {
+                filtered_matches.emplace_back(m);
+                std::cout << m << "\n\tOffsets: " << m.qStart - m.nStart << ", " << m.qEnd - m.nEnd << "\n";
+            }
+        }
     }
     std::cout << std::endl;
-//    for (const auto &fmbo: filtered_mbo) {
-//        for (const auto &m: matches) {
-//        }
-//    }
 
     return filtered_matches;
 }
