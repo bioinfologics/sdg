@@ -795,9 +795,11 @@ std::vector<LongReadMapping> LongReadMapper::create_read_path(uint32_t rid, bool
         if (!path_mappings.empty()) {
             for (int i = 0; i < 10 and i < path_mappings.size(); i++) {
                 std::cout << path_mappings[i] << std::endl;
-                std::copy(paths[path_mappings[i].node-1].nodes.begin(), paths[path_mappings[i].node-1].nodes.end(), std::ostream_iterator<sgNodeID_t>(std::cout, ","));
+                std::copy(paths[path_mappings[i].node-1].nodes.begin(), paths[path_mappings[i].node-1].nodes.end(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
                 std::cout << std::endl;
             }
+        } else {
+            continue;
         }
 
         std::cout << "Creating winners"<< std::endl;
@@ -815,9 +817,69 @@ std::vector<LongReadMapping> LongReadMapper::create_read_path(uint32_t rid, bool
             nodes = winners[0];
         } else {
             // These are the nodes shared
+            if (verbose) std::cout << "Finding shared nodes in " << winners.size() << " winner paths" << std::endl;
+
+            // Get the winner with the smallest number of nodes
+            const auto min_nodes = std::min_element(winners.cbegin(), winners.cend(),
+                    [](const std::vector<sgNodeID_t> &a, const std::vector<sgNodeID_t> &b) {
+                return a.size() < b.size();
+            })->size();
+
+
+            if (verbose) std::cout << "Finding first shared nodes based on the shortest path of length " << min_nodes << std::endl;
+
+            uint32_t shared_first=0;
+            for (int32_t i=0; i<min_nodes;++i) {
+                for (int32_t wi=1; wi<min_nodes; ++wi) if (winners[0][i]!=winners[wi][i]) break;
+                shared_first=i;
+            }
+
+            if (verbose) std::cout << "Finding last shared nodes based on the shortest path of length " << min_nodes << std::endl;
+            uint32_t shared_last=min_nodes;
+            for (int32_t i = min_nodes-1; i>=0;--i) {
+                for (int32_t wi=min_nodes-2; wi>0; --wi) if (winners[0][i]!=winners[wi][i]) break;
+                shared_last=i;
+            }
+
+            if (verbose) std::cout << "first "<< shared_first << " nodes and last " << shared_last << " nodes shared among all winners" << std::endl;
+
+            for (int i = 0; i < shared_first; i++) {
+                nodes.emplace_back(winners[0][i]);
+            }
+            for (int i = shared_last; i < min_nodes; i++) {
+                nodes.emplace_back(winners[0][i]);
+            }
         }
 
-    }
+        SequenceGraph rsg;
+        rsg.add_node(Node(seq));
+        LongReadMapper rm(rsg,datastore);
+        std::cout << "Trying to add nodes: " << std::endl;
+        std::copy(nodes.begin(), nodes.end(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+        std::cout << std::endl;
+        rm.k=15;
+        rm.min_size=50;
+        rm.min_chain=2;
+        rm.max_jump=100;
+        rm.max_delta_change=30;
+        rm.update_graph_index(10,false);
 
+        for (const auto &n : nodes) {
+            std::vector<sgNodeID_t > nv;
+            nv.emplace_back(n);
+            SequenceGraphPath p(sg, nv);
+            auto ps = p.get_sequence();
+            std::cout << "node " << n << " (" << ps.size() << "bp): " << ps.substr(0, 10) << "..."
+                      << ps.substr(ps.size() - 10, 10) << std::endl;
+            auto nlm = rm.map_sequence(ps.data());
+            std::copy(nlm.begin(), nlm.end(), std::ostream_iterator<LongReadMapping>(std::cout,", "));
+            if (nlm.size() == 1) {
+                nlm[0].node = n;
+                std::cout << "adding final mapping " << nlm[0] << std::endl;
+                final_mappings.emplace_back(n, m1.read_id, nlm[0].qStart, nlm[0].qEnd, nlm[0].nStart, nlm[0].nEnd, nlm[0].score);
+            }
+        }
+    }
+    final_mappings.emplace_back(*mappings.rend());
     return final_mappings;
 }
