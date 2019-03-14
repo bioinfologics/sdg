@@ -985,7 +985,7 @@ void SequenceGraph::print_bubbly_subgraph_stats(const std::vector<SequenceSubGra
 
 }
 
-std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes, bool abort_on_loops) {
+std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes, bool abort_on_loops) const {
     std::vector<SequenceGraphPath> current_paths,next_paths,final_paths;
     for(auto &fl:get_fw_links(from)) current_paths.emplace_back(SequenceGraphPath(*this,{fl.dest}));
     //int rounds=20;

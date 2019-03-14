@@ -9,6 +9,7 @@
 #include <sglib/workspace/WorkSpace.hpp>
 #include <atomic>
 #include <cmath>
+#include <iomanip>      // std::setprecision
 
 template<typename A, typename B>
 std::pair<B,A> flip_pair(const std::pair<A,B> &p)
@@ -702,4 +703,105 @@ std::vector<LongReadMapping> LongReadMapper::improve_read_filtered_mappings(uint
         filtered_read_mappings[rid] = new_mappings;
     }
     return new_mappings;
+}
+
+std::vector<LongReadMapping> LongReadMapper::create_read_path(uint32_t rid, bool verbose) {
+    const std::vector<LongReadMapping> &initial_mappings = filtered_read_mappings[rid];
+    std::vector<LongReadMapping> mappings;
+    for (auto &m : initial_mappings) {
+        auto tp = 100.f/sg.nodes[std::abs(m.node)].sequence.size();
+        std::string r;
+
+        if (verbose) std::cout << m << " -> " << std::setprecision(2) << (m.nEnd-m.nStart)*tp << " (" << m.nStart*tp << ":" << m.nEnd*tp << ") ";
+
+        if (!(m != *initial_mappings.begin() and m != *initial_mappings.rbegin() and ((m.nEnd-m.nStart)*tp) < 80 )) {
+            mappings.emplace_back(m);
+            std::cout << std::endl;
+        } else {
+            if (verbose) std::cout << "REMOVED" << std::endl;
+        }
+    }
+
+    std::vector<LongReadMapping> final_mappings;
+
+    for (uint32_t tid = 0; tid < mappings.size()-1; tid++) {
+        const auto &m1 = mappings[tid];
+        const auto &m2 = mappings[tid+1];
+
+        final_mappings.emplace_back(m1);
+
+        bool need_pathing = true;
+        for (const auto &l : sg.get_fw_links(m1.node)) {
+            if (l.dest == m2.node) need_pathing = false;
+        }
+
+        std::vector<SequenceGraphPath> paths;
+        int32_t ad;
+        if (need_pathing){
+            ad = (m2.qStart-m2.nStart)-(m1.qEnd+(sg.nodes[abs(m1.node)].sequence.size())-m1.nEnd);
+            auto pd = ad+199*2;
+            if (verbose) std::cout << "Alignment distance: " << ad << " bp, path distance " << pd << ", looking for paths of up to " << std::setprecision(2) << 1.5f*pd << " bp" << std::endl;
+            paths = sg.find_all_paths_between(m1.node, m2.node, int(1.5f*pd), 40, false);
+            if (paths.size()>1000) {
+                if (verbose) std::cout << "Too many paths" << std::endl;
+                continue;
+            }
+            if (verbose)  std::cout << "There are " << paths.size() << " paths" <<std::endl;
+
+        } else {
+            if (verbose) std::cout << "Nodes directly connected, no pathing required\n";
+        }
+
+        SequenceGraph psg;
+
+        for (const auto &p : paths) {
+            psg.add_node(Node(p.get_sequence()));
+        }
+
+        auto pm = LongReadMapper(psg, datastore);
+        pm.k = 15;
+
+        pm.min_size = std::min(int(ad/2), 1000);
+        pm.min_chain=2;
+        pm.max_jump=100;
+        pm.max_delta_change=30;
+
+
+        pm.update_graph_index(paths.size()*2+1,false);
+
+        BufferedSequenceGetter sequenceGetter(datastore);
+        std::string seq(sequenceGetter.get_read_sequence(rid));
+        auto subs_string = seq.substr(m1.qEnd-199, m2.qStart+15+199 - m1.qEnd-199);
+        auto path_mappings = pm.map_sequence(subs_string.data());
+        std::sort(path_mappings.begin(), path_mappings.end(),
+                [](const LongReadMapping &a, const LongReadMapping &b){return a.score > b.score;});
+
+        if (!path_mappings.empty()) {
+            for (int i = 0; i < 10 and i < path_mappings.size(); i++) {
+                std::cout << path_mappings[i] << std::endl;
+                std::copy(paths[path_mappings[i].node-1].nodes.begin(), paths[path_mappings[i].node-1].nodes.end(), std::ostream_iterator<sgNodeID_t>(std::cout, ","));
+                std::cout << std::endl;
+            }
+        }
+
+        std::cout << "Creating winners"<< std::endl;
+        std::vector<std::vector<sgNodeID_t>> winners;
+        for (const auto &a: path_mappings) {
+            if (a.score == path_mappings[0].score) {
+                winners.emplace_back(paths[a.node-1].nodes);
+            }
+        }
+
+        std::vector<sgNodeID_t> nodes;
+        if (winners.size() == 1) {
+            // Single path, no need to find any nodes
+            if (verbose) std::cout << "Single winner path" << std::endl;
+            nodes = winners[0];
+        } else {
+            // These are the nodes shared
+        }
+
+    }
+
+    return final_mappings;
 }

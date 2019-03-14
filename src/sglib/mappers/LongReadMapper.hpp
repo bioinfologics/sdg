@@ -281,6 +281,13 @@ public:
 
     std::vector<LongReadMapping> improve_read_filtered_mappings(uint32_t rid, bool correct_on_ws=false);
 
+    void create_read_paths() {
+        for (uint32_t rid = 0; rid < datastore.size(); ++rid){
+            create_read_path(rid, false);
+        }
+    }
+
+    std::vector<LongReadMapping> create_read_path(uint32_t rid, bool verbose=true);
     /**
      * This updates the filtered mappings by taking the elements from the path mapping that have the right size and neighbourhood conditions
      */
@@ -296,6 +303,8 @@ public:
     std::vector<int64_t> first_mapping; //index to the first mapping of the read. If no mappings, -1.
 
     std::vector < std::vector<LongReadMapping> > filtered_read_mappings;
+
+    std::vector<std::vector<sgNodeID_t>> read_paths;
 
     /**
      * Stores an index of all reads that map to a node.
