@@ -7,8 +7,10 @@ int main(int argc, char **argv) {
 
     ws.long_read_mappers[0].read_filtered_mappings("fm_10K3.bsgfrm");
     ws.long_read_mappers[0].update_indexes();
-    ws.long_read_mappers[0].improve_read_filtered_mappings(100166);
+//    ws.long_read_mappers[0].improve_read_filtered_mappings(100166);
 
     ws.long_read_mappers[0].create_read_path(38174);
+    ws.long_read_mappers[0].create_read_path(35729);
+
     return 0;
 }
