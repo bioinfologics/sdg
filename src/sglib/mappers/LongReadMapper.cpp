@@ -729,8 +729,9 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
     const std::vector<LongReadMapping> &mappings = filtered_read_mappings[rid];
 
     std::vector<sgNodeID_t> read_path;
+    if (mappings.empty()) return read_path;
 
-    for (uint32_t tid = 0; tid < mappings.size()-1; ++tid) {
+    for (int32_t tid = 0; tid < mappings.size()-1; ++tid) {
         const auto &m1 = mappings[tid];
         const auto &m2 = mappings[tid+1];
 

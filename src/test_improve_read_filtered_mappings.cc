@@ -9,8 +9,14 @@ int main(int argc, char **argv) {
     ws.long_read_mappers[0].update_indexes();
 //    ws.long_read_mappers[0].improve_read_filtered_mappings(100166);
 
-    ws.long_read_mappers[0].create_read_path(38174);
-    ws.long_read_mappers[0].create_read_path(35729);
+//    for (int i = 35729; i < 38174; i++) {
+//        ws.long_read_mappers[0].create_read_path()
+//    }
+
+    for (int i = 37174; i < 39174; i++) {
+    ws.long_read_mappers[0].improve_read_filtered_mappings(i, true);
+    ws.long_read_mappers[0].create_read_path(i);
+    }
 
     return 0;
 }
