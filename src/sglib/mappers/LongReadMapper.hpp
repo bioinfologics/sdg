@@ -287,7 +287,7 @@ public:
         }
     }
 
-    std::vector<LongReadMapping> create_read_path(uint32_t rid, bool verbose=true);
+    std::vector<LongReadMapping> create_read_path(uint32_t rid, bool verbose=false, const std::string read_seq="");
     /**
      * This updates the filtered mappings by taking the elements from the path mapping that have the right size and neighbourhood conditions
      */

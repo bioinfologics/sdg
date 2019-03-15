@@ -721,7 +721,7 @@ std::vector<LongReadMapping> LongReadMapper::improve_read_filtered_mappings(uint
     return new_mappings;
 }
 
-std::vector<LongReadMapping> LongReadMapper::create_read_path(uint32_t rid, bool verbose) {
+std::vector<LongReadMapping> LongReadMapper::create_read_path(uint32_t rid, bool verbose, const std::string read_seq) {
     const std::vector<LongReadMapping> &initial_mappings = filtered_read_mappings[rid];
     std::vector<LongReadMapping> mappings;
     for (auto &m : initial_mappings) {
@@ -740,12 +740,13 @@ std::vector<LongReadMapping> LongReadMapper::create_read_path(uint32_t rid, bool
 
     std::vector<LongReadMapping> final_mappings;
 
-    for (uint32_t tid = 0; tid < mappings.size()-1; tid++) {
+    for (uint32_t tid = 0; tid < mappings.size()-1; ++tid) {
         const auto &m1 = mappings[tid];
         const auto &m2 = mappings[tid+1];
 
         final_mappings.emplace_back(m1);
 
+        //this checks the direct connection
         bool need_pathing = true;
         for (const auto &l : sg.get_fw_links(m1.node)) {
             if (l.dest == m2.node) need_pathing = false;
@@ -754,10 +755,11 @@ std::vector<LongReadMapping> LongReadMapper::create_read_path(uint32_t rid, bool
         std::vector<SequenceGraphPath> paths;
         int32_t ad;
         if (need_pathing){
-            ad = (m2.qStart-m2.nStart)-(m1.qEnd+(sg.nodes[abs(m1.node)].sequence.size())-m1.nEnd);
+            ad = (m2.qStart-m2.nStart)-(m1.qEnd+sg.nodes[std::abs(m1.node)].sequence.size()-m1.nEnd);
             auto pd = ad+199*2;
-            if (verbose) std::cout << "Alignment distance: " << ad << " bp, path distance " << pd << ", looking for paths of up to " << std::setprecision(2) << 1.5f*pd << " bp" << std::endl;
-            paths = sg.find_all_paths_between(m1.node, m2.node, int(1.5f*pd), 40, false);
+            auto max_path_size = std::max((int32_t)(pd*1.5),pd+400);
+            if (verbose) std::cout << "\n\nJumping between "<<m1<<" and "<<m2<<std::endl<<"Alignment distance: " << ad << " bp, path distance " << pd << ", looking for paths of up to " << max_path_size << " bp" << std::endl;
+            paths = sg.find_all_paths_between(m1.node, m2.node, max_path_size, 40, false);
             if (paths.size()>1000) {
                 if (verbose) std::cout << "Too many paths" << std::endl;
                 continue;
@@ -784,9 +786,11 @@ std::vector<LongReadMapping> LongReadMapper::create_read_path(uint32_t rid, bool
 
 
         pm.update_graph_index(paths.size()*2+1,false);
-
-        BufferedSequenceGetter sequenceGetter(datastore);
-        std::string seq(sequenceGetter.get_read_sequence(rid));
+        std::string seq=read_seq;
+        if (read_seq.empty()) {
+            BufferedSequenceGetter sequenceGetter(datastore);
+            seq=sequenceGetter.get_read_sequence(rid);
+        }
         auto subs_string = seq.substr(m1.qEnd-199, m2.qStart+15+199 - m1.qEnd-199);
         auto path_mappings = pm.map_sequence(subs_string.data());
         std::sort(path_mappings.begin(), path_mappings.end(),
@@ -880,6 +884,6 @@ std::vector<LongReadMapping> LongReadMapper::create_read_path(uint32_t rid, bool
             }
         }
     }
-    final_mappings.emplace_back(*mappings.rend());
+    final_mappings.emplace_back(mappings.back());
     return final_mappings;
 }
