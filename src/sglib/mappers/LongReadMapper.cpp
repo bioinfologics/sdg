@@ -542,9 +542,13 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
             }
             if (hap_filter.mappings.empty()) {
                 ++runmapped;
-                continue;
+                continue; // no mappings to group
             }
             hap_filter.generate_haplotypes_from_linkedreads(min_tnscore);
+            if (hap_filter.haplotype_scores.empty()) {
+                ++rnoresult;
+                continue; // no haplotypes to score (all nodes too short)
+            }
             hap_filter.score_coverage(1);
             hap_filter.score_window_winners(3);
             std::sort(hap_filter.haplotype_scores.rbegin(),hap_filter.haplotype_scores.rend());
