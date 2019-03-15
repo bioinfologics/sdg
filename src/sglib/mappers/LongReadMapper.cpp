@@ -779,7 +779,7 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
                     BufferedSequenceGetter sequenceGetter(datastore);
                     seq = sequenceGetter.get_read_sequence(rid);
                 }
-                auto subs_string = seq.substr(m1.qEnd - 199, m2.qStart + 15 + 199 - m1.qEnd - 199);
+                auto subs_string = seq.substr(m1.qEnd - 199, m2.qStart + 15 + 199 - m1.qEnd + 199);
                 auto path_mappings = pm.map_sequence(subs_string.data());
                 std::sort(path_mappings.begin(), path_mappings.end(),
                           [](const LongReadMapping &a, const LongReadMapping &b) { return a.score > b.score; });
