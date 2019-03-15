@@ -651,7 +651,7 @@ LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMap
         chained.nEnd=INT32_MIN;
         chained.score=0;
         chained.read_id=matches[0].read_id;
-        chained.node=mb.dir ? matches[0].node : -matches[0].node;
+        chained.node=mb.dir ? std::abs(matches[0].node) : -std::abs(matches[0].node);
         for (const auto &m : matches) {
             if ((m.qStart - m.nStart) >= mb.min_offset and (m.qEnd - m.nEnd) <= mb.max_offset) {
                 if (chained.nStart>m.nStart){
