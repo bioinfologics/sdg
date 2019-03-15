@@ -722,21 +722,7 @@ std::vector<LongReadMapping> LongReadMapper::improve_read_filtered_mappings(uint
 }
 
 std::vector<LongReadMapping> LongReadMapper::create_read_path(uint32_t rid, bool verbose, const std::string read_seq) {
-    const std::vector<LongReadMapping> &initial_mappings = filtered_read_mappings[rid];
-    std::vector<LongReadMapping> mappings;
-    for (auto &m : initial_mappings) {
-        auto tp = 100.f/sg.nodes[std::abs(m.node)].sequence.size();
-        std::string r;
-
-        if (verbose) std::cout << m << " -> " << std::setprecision(2) << (m.nEnd-m.nStart)*tp << " (" << m.nStart*tp << ":" << m.nEnd*tp << ") ";
-
-        if (!(m != *initial_mappings.begin() and m != *initial_mappings.rbegin() and ((m.nEnd-m.nStart)*tp) < 80 )) {
-            mappings.emplace_back(m);
-            std::cout << std::endl;
-        } else {
-            if (verbose) std::cout << "REMOVED" << std::endl;
-        }
-    }
+    const std::vector<LongReadMapping> &mappings = filtered_read_mappings[rid];
 
     std::vector<LongReadMapping> final_mappings;
 
