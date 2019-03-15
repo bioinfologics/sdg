@@ -112,7 +112,7 @@ public:
     int max_jump=500;
     int max_delta_change=60;
 
-    LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k=15);
+    LongReadMapper(const SequenceGraph &sg, const LongReadsDatastore &ds, uint8_t k=15);
     ~LongReadMapper();
 
     LongReadMapper operator=(const LongReadMapper &other);
@@ -123,7 +123,7 @@ public:
      *
      * @return
      */
-    LongReadsDatastore& getLongReadsDatastore() {return datastore;}
+    const LongReadsDatastore& getLongReadsDatastore() {return datastore;}
 
     /** @brief Getter for the defined SequenceGraph
      *
@@ -305,7 +305,7 @@ public:
 
     //void update_filtered_mappings_from_paths(uint32_t min_size=10000, float min_tnscore=0.03);
 
-    LongReadsDatastore datastore;
+    const LongReadsDatastore &datastore;
     /**
      * Flat list of mappings from the reads
      */
