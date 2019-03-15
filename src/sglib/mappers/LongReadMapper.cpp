@@ -677,10 +677,28 @@ LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMap
     return filtered_matches;
 }
 
+std::vector<LongReadMapping> LongReadMapper::remove_shadowed_matches(std::vector<LongReadMapping> &matches,
+                                                                     bool verbose) {
+    std::vector<LongReadMapping> filtered_matches;
+
+    for (auto mi1=0;mi1<matches.size();++mi1){
+        auto &m1=matches[mi1];
+        bool use=true;
+        for (auto &m2: matches) {
+            if (m2.qStart<=m1.qStart and m2.qEnd>=m1.qEnd and m2.score>m1.score){
+                use=false;
+                break;
+            }
+        }
+        if (use) filtered_matches.emplace_back(m1);
+    }
+
+    return filtered_matches;
+}
 std::vector<LongReadMapping> LongReadMapper::improve_read_filtered_mappings(uint32_t rid, bool correct_on_ws) {
 
     std::vector<LongReadMapping> new_mappings;
-    auto mappings = filtered_read_mappings[rid]; // This has to be a copy and can be a bit expensive!
+    auto mappings = remove_shadowed_matches(filtered_read_mappings[rid]); // This has to be a copy and can be a bit expensive!
     if (mappings.empty()) return mappings;
 
     std::map<sgNodeID_t, uint32_t > most_common_map;
@@ -691,7 +709,10 @@ std::vector<LongReadMapping> LongReadMapper::improve_read_filtered_mappings(uint
 
     std::multimap<uint32_t , sgNodeID_t > most_common = flip_map(most_common_map);
 
-    if (most_common.rbegin()->first == 1) return mappings;
+    if (most_common.rbegin()->first == 1) {
+        filtered_read_mappings[rid] = mappings;
+        return mappings;
+    }
 
     for (const auto &n : most_common) {
         std::vector<LongReadMapping> nm;
@@ -714,7 +735,7 @@ std::vector<LongReadMapping> LongReadMapper::improve_read_filtered_mappings(uint
             new_mappings.insert(new_mappings.end(), fm.begin(), fm.end());
         }
     }
-
+    new_mappings=remove_shadowed_matches(new_mappings);
     std::sort(new_mappings.begin(), new_mappings.end(), [](LongReadMapping &a, LongReadMapping &b){
         return a.qStart < b.qStart;
     });

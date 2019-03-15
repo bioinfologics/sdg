@@ -279,7 +279,17 @@ public:
     std::vector<LongReadMapping>
     filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose=false);
 
+    std::vector<LongReadMapping>
+    remove_shadowed_matches(std::vector<LongReadMapping> &matches, bool verbose=false);
+
     std::vector<LongReadMapping> improve_read_filtered_mappings(uint32_t rid, bool correct_on_ws=false);
+
+    void improve_filtered_mappings() {
+        for (uint32_t rid = 0; rid < filtered_read_mappings.size(); ++rid) {
+            improve_read_filtered_mappings(rid,true);
+        }
+        update_indexes();
+    }
 
     void create_read_paths() {
         for (uint32_t rid = 0; rid < datastore.size(); ++rid){
