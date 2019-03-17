@@ -453,7 +453,7 @@ void LongReadMapper::update_indexes() {
     sglib::OutputLog() << "LongReadMapper index updated with " << mappings.size() << " mappings and "<< frmcount << " filtered mappings (over "<< reads_with_filtered_mappings << " reads)"<< std::endl;
 }
 
-LongReadMapper::LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k)
+LongReadMapper::LongReadMapper(const SequenceGraph &sg, const LongReadsDatastore &ds, uint8_t k)
         : sg(sg), k(k), datastore(ds), assembly_kmers(k) {
 
     reads_in_node.resize(sg.nodes.size());
@@ -825,8 +825,17 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
                     std::vector<std::vector<sgNodeID_t>> winners;
                     for (const auto &a: path_mappings) {
                         if (a.score == path_mappings[0].score) {
-                            winners.emplace_back(paths[a.node - 1].nodes);
+                            if (a.node < 0) {
+                                winners.clear();
+                                break;
+                            } else {
+                                winners.emplace_back(paths[a.node - 1].nodes);
+                            }
                         }
+                    }
+
+                    if (winners.empty()) {
+                        read_path.emplace_back(0);
                     }
 
                     //Add nodes from winner(s) to path

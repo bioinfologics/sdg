@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
 //    }
 
     for (int i = 37174; i < 39174; i++) {
-    ws.long_read_mappers[0].improve_read_filtered_mappings(i, true);
+//    ws.long_read_mappers[0].improve_read_filtered_mappings(i, true);
     ws.long_read_mappers[0].create_read_path(i);
     }
 
