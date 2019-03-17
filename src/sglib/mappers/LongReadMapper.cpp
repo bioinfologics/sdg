@@ -774,6 +774,7 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
             paths = sg.find_all_paths_between(m1.node, m2.node, max_path_size, 40, false);
             if (paths.size()>1000) {
                 if (verbose) std::cout << "Too many paths" << std::endl;
+                read_path.emplace_back(0);
                 continue;
             }
             if (verbose)  std::cout << "There are " << paths.size() << " paths" <<std::endl;
