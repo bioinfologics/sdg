@@ -31,17 +31,21 @@ std::string HaplotypeConsensus::consensus_sequence() {
 
 void HaplotypeConsensus::use_long_reads_from_file(std::string filename) {
     std::ifstream reads(filename);
-    if (!input.good()) {
+    if (!reads.good()) {
         std::cerr << "Error opening: " << filename << ".\n" << std::strerror(errno) << std::endl;
         return;
     }
 
     std::string line, id, DNA_sequence;
+    uint32_t rid(0);
     while (std::getline(reads, line).good()) {
         if (line[0] == '>') {
             id = line.substr(1);
-//            read_seqs[id]=DNA_sequence;
-            ws.long_read_mappers[0].read_paths[id] = ws.long_read_mappers[0].create_read_path(std::stoi(id), false, DNA_sequence);
+            if (!DNA_sequence.empty()) {
+                ws.long_read_mappers[0].read_paths[rid] =
+                        ws.long_read_mappers[0].create_read_path(rid, false, DNA_sequence);
+            }
+            rid = std::stoul(id);
             DNA_sequence.clear();
         }
         else if (line[0] != '>'){

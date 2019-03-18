@@ -20,7 +20,7 @@
  */
 class HaplotypeConsensus {
 public:
-    HaplotypeConsensus(const WorkSpace &_ws, const LinkageDiGraph &_mldg, const LinkageDiGraph &_ldg, std::vector<sgNodeID_t> _backbone):ws(_ws),mldg(_mldg),ldg(_ldg){
+    HaplotypeConsensus(WorkSpace &_ws, const LinkageDiGraph &_mldg, const LinkageDiGraph &_ldg, std::vector<sgNodeID_t> _backbone):ws(_ws),mldg(_mldg),ldg(_ldg){
         backbone=_backbone;
         for (auto n:backbone){
             for (auto rin:ws.long_read_mappers[0].reads_in_node[llabs(n)]) long_reads_in_backbone.insert(rin);
@@ -39,7 +39,7 @@ public:
     std::vector<sgNodeID_t> backbone;
     std::vector<sgNodeID_t> backbone_filled_path;
     std::set<uint64_t> long_reads_in_backbone;
-    const WorkSpace &ws;
+    WorkSpace &ws;
     const LinkageDiGraph &mldg;
     const LinkageDiGraph &ldg;
 };

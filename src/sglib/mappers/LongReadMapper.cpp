@@ -418,7 +418,7 @@ std::vector<LongReadMapping> LongReadMapper::map_sequence(const char * query_seq
 }
 
 void LongReadMapper::update_indexes() {
-    std::sort(mappings.begin(),mappings.end());
+    sglib::sort(mappings.begin(),mappings.end());
     first_mapping.clear();
     first_mapping.resize(datastore.size(),-1);
     for (int64_t i=0;i<mappings.size();++i){
