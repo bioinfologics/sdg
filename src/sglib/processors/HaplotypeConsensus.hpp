@@ -27,15 +27,14 @@ public:
         }
     }
 
-    std::string run_consensus();
-
-    void add_non_specific_nodes();
-
+    void orient_read_paths();
+    void build_line_path();
     std::string consensus_sequence();
 
     void use_long_reads_from_file(std::string filename);
 
     bool reads_from_file;
+    std::vector<std::vector<sgNodeID_t >> oriented_read_paths;
     std::map<uint64_t,std::string> read_seqs;
     std::vector<sgNodeID_t> backbone;
     std::vector<sgNodeID_t> backbone_filled_path;

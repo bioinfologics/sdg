@@ -285,6 +285,7 @@ public:
     std::vector<LongReadMapping> improve_read_filtered_mappings(uint32_t rid, bool correct_on_ws=false);
 
     void improve_filtered_mappings() {
+#pragma omp parallel for
         for (uint32_t rid = 0; rid < filtered_read_mappings.size(); ++rid) {
             improve_read_filtered_mappings(rid,true);
         }
@@ -292,6 +293,7 @@ public:
     }
 
     void create_read_paths() {
+#pragma omp parallel for
         for (uint32_t rid = 0; rid < datastore.size(); ++rid){
             create_read_path(rid, false);
         }
