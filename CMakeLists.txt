@@ -272,6 +272,9 @@ add_executable(test_improve_read_filtered_mappings
 add_executable(test_haplotype_consensus
         src/test_haplotype_consensus.cc)
 
+add_executable(test_haplotype_consensus_parts
+        src/test_haplotype_consensus_parts.cc)
+
 target_link_libraries(bsg-workspace bsg_static)
 target_link_libraries(bsg-datastore bsg_static)
 target_link_libraries(bsg-kmerspectra bsg_static)
@@ -283,6 +286,7 @@ target_link_libraries(seq-thread bsg_static)
 target_link_libraries(bsg-dbg bsg_static)
 target_link_libraries(test_improve_read_filtered_mappings bsg_static)
 target_link_libraries(test_haplotype_consensus bsg_static)
+target_link_libraries(test_haplotype_consensus_parts bsg_static)
 
 
 IF(BUILD_TESTING)
