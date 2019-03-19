@@ -986,40 +986,60 @@ void SequenceGraph::print_bubbly_subgraph_stats(const std::vector<SequenceSubGra
 }
 
 std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes, bool abort_on_loops) const {
-    std::vector<SequenceGraphPath> current_paths,next_paths,final_paths;
-    current_paths.reserve(10000);
-    next_paths.reserve(10000);
-    final_paths.reserve(10000);
-    for(auto &fl:get_fw_links(from)) current_paths.emplace_back(SequenceGraphPath(*this,{fl.dest}));
-    //int rounds=20;
-    while (not current_paths.empty() and --max_nodes>0){
-        //std::cout<<"starting round of context expansion, current nodes:  ";
-        //for (auto cn:current_nodes) std::cout<<cn.first<<"("<<cn.second<<")  ";
-        //std::cout<<std::endl;
-        next_paths.clear();
-        for (auto &p:current_paths){
-            //if node is a destination add it to final nodes
-            if (p.nodes.back()==-to) return {};//std::cout<<"WARNING: found path to -TO node"<<std::endl;
-            if (p.nodes.back()==to) {
-                final_paths.push_back(p);
-                final_paths.back().nodes.pop_back();
-            }
-                //else get fw links, compute distances for each, and if not >max_dist add to nodes
-            else {
-                for (auto l:get_fw_links(p.nodes.back())){
-                    if (abort_on_loops and std::find(p.nodes.begin(),p.nodes.end(),l.dest)!=p.nodes.end()) {
-                        //std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
-                        return {};
-                        //continue;
+    typedef struct T {
+        int64_t prev;
+        sgNodeID_t node;
+        int node_count;
+        int64_t partial_size;
+        T(uint64_t a, sgNodeID_t b, int c, int64_t d) : prev(a),node(b),node_count(c),partial_size(d){};
+    } pathNodeEntry_t;
+
+    std::vector<pathNodeEntry_t> node_entries;
+    node_entries.reserve(100000);
+    std::vector<SequenceGraphPath> final_paths;
+    std::vector<sgNodeID_t> pp;
+
+    for(auto &fl:get_fw_links(from)) {
+        if (nodes[llabs(fl.dest)].sequence.size()<=max_size) {
+            node_entries.emplace_back(-1, fl.dest, 1, nodes[llabs(fl.dest)].sequence.size());
+        }
+    }
+
+
+    for (uint64_t current_index=0;current_index<node_entries.size();++current_index){
+        auto current_entry=node_entries[current_index];
+        auto fwl=get_fw_links(current_entry.node);
+        for(auto &fl:fwl) {
+            if (fl.dest==to){
+                //reconstruct path backwards
+                pp.resize(current_entry.node_count);
+
+                for (uint64_t ei=current_index;ei!=-1;ei=node_entries[ei].prev){
+                    pp[node_entries[ei].node_count-1]=node_entries[ei].node;
+                }
+                //check if there are any loops
+                if (abort_on_loops) {
+                    for (auto i1 = 0; i1 < pp.size(); ++i1) {
+                        for (auto i2 = 0; i2 < pp.size(); ++i2) {
+                            if (pp[i1]==pp[i2]) {
+                                return {};
+                            }
+                        }
                     }
-                    next_paths.push_back(p);
-                    next_paths.back().nodes.push_back(l.dest);
-                    if (l.dest!=to and next_paths.back().get_sequence_size_fast()>max_size) next_paths.pop_back();
+                }
+                //add to solutions
+                final_paths.emplace_back(*this,pp);
+            }
+            else {
+                uint64_t new_size=current_entry.partial_size+fl.dist+nodes[llabs(fl.dest)].sequence.size();
+                if (new_size<=max_size and current_entry.node_count<=max_nodes) {
+                    node_entries.emplace_back(current_index, fl.dest, current_entry.node_count+1, new_size);
                 }
             }
         }
-        std::swap(current_paths, next_paths);
+
     }
+
     return final_paths;
 }
 
