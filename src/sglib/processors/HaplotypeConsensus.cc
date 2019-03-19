@@ -57,7 +57,7 @@ void HaplotypeConsensus::orient_read_path(uint64_t rid) {
     std::set<sgNodeID_t > l(backbone.cbegin(), backbone.cend());
 
     const auto &forward_path = ws.long_read_mappers[0].read_paths[rid];
-    std::cout << "Oriented read path " << rid << ": " << std::endl;
+    std::cout << "Original read path " << rid << ": " << std::endl;
     std::copy(forward_path.cbegin(), forward_path.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
     std::cout << std::endl;
 
@@ -78,7 +78,7 @@ void HaplotypeConsensus::orient_read_path(uint64_t rid) {
     if (count_reversed > count_forward) {
         oriented_read_paths[rid] = reversed_path;
     } else {
-        oriented_read_paths[rid] = forward_path;
+        oriented_read_paths[rid] = ws.long_read_mappers[0].read_paths[rid];
     }
     std::cout << "Oriented read path " << rid << ": " << std::endl;
     std::copy(oriented_read_paths[rid].cbegin(), oriented_read_paths[rid].cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
@@ -96,11 +96,11 @@ void HaplotypeConsensus::build_line_path() {
         std::cout << "\n\nPrinting paths between "<<n1 << ", " << " and "<< n2 << ":\n";
         std::map<std::vector<sgNodeID_t>, uint32_t> gap_paths;
         auto read = read_seqs.begin();
-        for (int i = 0; i < 4; i++, ++read ) {
+        for (int i = 0; i < 100; i++, ++read ) {
             const auto &p = oriented_read_paths[read->first];
             auto pn1 = std::find(p.cbegin(), p.cend(), n1);
             auto pn2 = std::find(p.cbegin(), p.cend(), n2);
-//            if (std::distance(p.cbegin(), pn2) < std::distance(p.cbegin(), pn1)) std::swap(pn1,pn2);
+            if (std::distance(p.cbegin(), pn2) < std::distance(p.cbegin(), pn1)) continue; // TODO: Some paths seem to be wrongly oriented?!
             if (pn1 != p.cend() and pn2 != p.cend()){
                 ++gap_paths[std::vector<sgNodeID_t>(pn1, pn2)];
             }

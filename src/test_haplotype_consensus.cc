@@ -212,59 +212,27 @@ int main(int argc, char **argv) {
         std::cout << ">" << pair.first << std::endl;
     }
 
+    std::string consensus;
+
     auto read = haplotypeConsensus.read_seqs.begin();
     sglib::OutputLog() << "Processing read " << read->first << std::endl;
-    std::string consensus;
-    int consensus_round(0);
-    readfasta << ">" << read->first << std::endl;
-    readfasta << read->second << std::endl;
-    ws.long_read_mappers[0].read_paths[read->first] = ws.long_read_mappers[0].create_read_path(read->first, false, read->second);
-    haplotypeConsensus.oriented_read_paths.resize(std::max(read->first, (uint64_t) haplotypeConsensus.oriented_read_paths.size()));
-    haplotypeConsensus.orient_read_path(read->first);
-    haplotypeConsensus.backbone_filled_path = haplotypeConsensus.oriented_read_paths[read->first];
-    consensus = haplotypeConsensus.consensus_sequence();
-    consensusfasta << ">consensus" << ++consensus_round << std::endl;
-    consensusfasta << consensus << std::endl;
 
-    ++read;
-    sglib::OutputLog() << "Processing read " << read->first << std::endl;
-    readfasta << ">" << read->first << std::endl;
-    readfasta << read->second << std::endl;
-    ws.long_read_mappers[0].read_paths[read->first] = ws.long_read_mappers[0].create_read_path(read->first, false, read->second);
-    haplotypeConsensus.oriented_read_paths.resize(std::max(read->first, (uint64_t) haplotypeConsensus.oriented_read_paths.size()));
-    haplotypeConsensus.orient_read_path(read->first);
-    haplotypeConsensus.backbone_filled_path = haplotypeConsensus.oriented_read_paths[read->first];
-    consensus = haplotypeConsensus.consensus_sequence();
-    consensusfasta << ">consensus" << ++consensus_round << std::endl;
-    consensusfasta << consensus << std::endl;
-
-    ++read;
-    sglib::OutputLog() << "Processing read " << read->first << std::endl;
-    readfasta << ">" << read->first << std::endl;
-    readfasta << read->second << std::endl;
-    ws.long_read_mappers[0].read_paths[read->first] = ws.long_read_mappers[0].create_read_path(read->first, false, read->second);
-    haplotypeConsensus.oriented_read_paths.resize(std::max(read->first, (uint64_t) haplotypeConsensus.oriented_read_paths.size()));
-    haplotypeConsensus.orient_read_path(read->first);
-    haplotypeConsensus.backbone_filled_path = haplotypeConsensus.oriented_read_paths[read->first];
-    consensus = haplotypeConsensus.consensus_sequence();
-    consensusfasta << ">consensus" << ++consensus_round << std::endl;
-    consensusfasta << consensus << std::endl;
-
-    ++read;
-    sglib::OutputLog() << "Processing read " << read->first << std::endl;
-    readfasta << ">" << read->first << std::endl;
-    readfasta << read->second << std::endl;
-    ws.long_read_mappers[0].read_paths[read->first] = ws.long_read_mappers[0].create_read_path(read->first, false, read->second);
-    haplotypeConsensus.oriented_read_paths.resize(std::max(read->first, (uint64_t) haplotypeConsensus.oriented_read_paths.size()));
-    haplotypeConsensus.orient_read_path(read->first);
-    haplotypeConsensus.backbone_filled_path = haplotypeConsensus.oriented_read_paths[read->first];
+    for (int i = 0; i < 100; i++, ++read) {
+        readfasta << ">" << read->first << std::endl;
+        readfasta << read->second << std::endl;
+        ws.long_read_mappers[0].read_paths[read->first] = ws.long_read_mappers[0].create_read_path(read->first, false,
+                                                                                                   read->second);
+        haplotypeConsensus.oriented_read_paths.resize(
+                std::max(read->first+1, (uint64_t) haplotypeConsensus.oriented_read_paths.size()));
+        haplotypeConsensus.orient_read_path(read->first);
+    }
 
     sglib::OutputLog() << "Done processing reads!" << std::endl << std::endl;
     sglib::OutputLog() << "Oriented read paths size: " << haplotypeConsensus.oriented_read_paths.size() << std::endl;
 
     haplotypeConsensus.build_line_path();
     consensus = haplotypeConsensus.consensus_sequence();
-    consensusfasta << ">consensus" << ++consensus_round << std::endl;
+    consensusfasta << ">consensus" << std::endl;
     consensusfasta << consensus << std::endl;
 
     return 0;
