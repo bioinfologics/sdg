@@ -42,6 +42,10 @@ void HaplotypeConsensus::use_long_reads_from_file(std::string filename) {
         if (line[0] == '>') {
             id = line.substr(1);
             if (!DNA_sequence.empty()) {
+                if (ws.long_read_mappers[0].read_paths.size() < rid) {
+                    ws.long_read_mappers[0].read_paths.resize(rid+1000);
+                    oriented_read_paths.resize(ws.long_read_mappers[0].read_paths.size());
+                }
                 ws.long_read_mappers[0].read_paths[rid] =
                         ws.long_read_mappers[0].create_read_path(rid, false, DNA_sequence);
             }
@@ -73,9 +77,9 @@ void HaplotypeConsensus::orient_read_paths() {
                 [&l,&count_forward](const sgNodeID_t &n){l.find(n) != l.cend() ? ++count_forward:count_forward;});
 
         if (count_reversed > count_forward) {
-            oriented_read_paths.push_back(reversed_path);
+            oriented_read_paths[rid] = reversed_path;
         } else {
-            oriented_read_paths.push_back(forward_path);
+            oriented_read_paths[rid] = forward_path;
         }
     }
 }

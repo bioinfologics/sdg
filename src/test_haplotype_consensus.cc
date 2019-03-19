@@ -4,16 +4,19 @@
 #include <sglib/processors/HaplotypeConsensus.hpp>
 
 int main(int argc, char **argv) {
-    std::cout << "Hello world" << std::endl;
-
     WorkSpace ws;
-    ws.load_from_disk("nano10x_rg_lmpLR10x_mapped.bsgws");
 
+    ws.sg.load_from_gfa("initial_graph.gfa.gfa");
+
+    ws.long_read_datastores.emplace_back();
+    ws.long_read_mappers.emplace_back(ws.sg,ws.long_read_datastores[0]);
     ws.long_read_mappers[0].read_filtered_mappings("fm_10K3.bsgfrm");
     ws.long_read_mappers[0].update_indexes();
     ws.long_read_mappers[0].improve_filtered_mappings();
-    ws.long_read_mappers[0].read_paths.resize(ws.long_read_mappers[0].datastore.size());
+    ws.long_read_mappers[0].read_paths.resize(ws.long_read_mappers[0].filtered_read_mappings.size());
 
+    ws.linked_read_datastores.emplace_back();
+    ws.linked_read_mappers.emplace_back(ws.sg,ws.linked_read_datastores[0],ws.uniqueKmerIndex,ws.unique63merIndex);
     ws.linked_read_mappers[0].read_tag_neighbours("tag_neighbours_1000_0.03.data");
 
 
@@ -25,9 +28,9 @@ int main(int argc, char **argv) {
 
     auto ilines = ildg1.get_all_lines(2,10000); // Confirm these are backbones?!
     
-    std::cout << "Num read paths: " << ws.long_read_mappers[0].read_paths.size() << std::endl;
+    sglib::OutputLog() << "Num read paths: " << ws.long_read_mappers[0].read_paths.size() << std::endl;
 
-    for (int i = 0; i < 10; i++){
+    for (int i = 0; i < 10; i++) {
         HaplotypeConsensus haplotypeConsensus(ws, imldg, ildg1, ilines[i]);
         haplotypeConsensus.use_long_reads_from_file("reads_in_iline_"+std::to_string(i)+".fasta");
         haplotypeConsensus.orient_read_paths();
