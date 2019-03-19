@@ -53,11 +53,11 @@ void HaplotypeConsensus::use_long_reads_from_file(std::string filename) {
     return;
 }
 
-void HaplotypeConsensus::orient_read_path(uint32_t rid) {
+void HaplotypeConsensus::orient_read_path(uint64_t rid) {
     std::set<sgNodeID_t > l(backbone.cbegin(), backbone.cend());
 
     const auto &forward_path = ws.long_read_mappers[0].read_paths[rid];
-    std::cout << "Original read path: " << std::endl;
+    std::cout << "Oriented read path " << rid << ": " << std::endl;
     std::copy(forward_path.cbegin(), forward_path.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
     std::cout << std::endl;
 
@@ -80,7 +80,7 @@ void HaplotypeConsensus::orient_read_path(uint32_t rid) {
     } else {
         oriented_read_paths[rid] = forward_path;
     }
-    std::cout << "Oriented read path: " << std::endl;
+    std::cout << "Oriented read path " << rid << ": " << std::endl;
     std::copy(oriented_read_paths[rid].cbegin(), oriented_read_paths[rid].cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
     std::cout << std::endl;
 
@@ -95,8 +95,9 @@ void HaplotypeConsensus::build_line_path() {
         auto n2=backbone[gap_number];
         std::cout << "\n\nPrinting paths between "<<n1 << ", " << " and "<< n2 << ":\n";
         std::map<std::vector<sgNodeID_t>, uint32_t> gap_paths;
-        for (const auto &rid :long_reads_in_backbone) {
-            const auto &p = oriented_read_paths[rid];
+        auto read = read_seqs.begin();
+        for (int i = 0; i < 4; i++, ++read ) {
+            const auto &p = oriented_read_paths[read->first];
             auto pn1 = std::find(p.cbegin(), p.cend(), n1);
             auto pn2 = std::find(p.cbegin(), p.cend(), n2);
 //            if (std::distance(p.cbegin(), pn2) < std::distance(p.cbegin(), pn1)) std::swap(pn1,pn2);

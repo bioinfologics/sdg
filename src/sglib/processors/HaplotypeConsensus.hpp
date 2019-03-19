@@ -27,7 +27,7 @@ public:
         }
     }
 
-    void orient_read_path(uint32_t rid);
+    void orient_read_path(uint64_t rid);
     void build_line_path();
     std::string consensus_sequence();
 
