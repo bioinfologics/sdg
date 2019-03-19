@@ -33,6 +33,7 @@ int main(int argc, char **argv) {
     for (int i = 0; i < 10; i++) {
         HaplotypeConsensus haplotypeConsensus(ws, imldg, ildg1, ilines[i]);
         haplotypeConsensus.use_long_reads_from_file("reads_in_iline_"+std::to_string(i)+".fasta");
+        haplotypeConsensus.oriented_read_paths.resize(ws.long_read_mappers[0].read_paths.size());
         haplotypeConsensus.orient_read_paths();
         haplotypeConsensus.build_line_path();
         haplotypeConsensus.consensus_sequence();
