@@ -19,11 +19,11 @@ std::string HaplotypeConsensus::consensus_sequence() {
             current_path.clear();
         }
         if (n == 0 and ni < backbone_filled_path.size()-1){
+            int dist=200;
             for (const auto &fwl: ldg.get_fw_links(backbone_filled_path[ni-1])) {
-                if (fwl.dest == backbone_filled_path[ni+1]) {
-                    consensus += std::string(std::max(fwl.dist,100), 'N');
-                }
+                if (fwl.dest == backbone_filled_path[ni+1]) dist=fwl.dist;
             }
+            consensus += std::string(std::max(dist,100), 'N');
         }
     }
     return consensus;
@@ -35,63 +35,46 @@ void HaplotypeConsensus::use_long_reads_from_file(std::string filename) {
         std::cerr << "Error opening: " << filename << ".\n" << std::strerror(errno) << std::endl;
         return;
     }
-#pragma omp parallel
-    {
-
-#pragma omp single nowait
-        {
-            std::string line, id, DNA_sequence;
-            uint32_t rid(0);
-            while (std::getline(reads, line).good()) {
-                if (line[0] == '>') {
-                    id = line.substr(1);
-                    if (!DNA_sequence.empty()) {
-                        if (ws.long_read_mappers[0].read_paths.size() < rid) {
-                            ws.long_read_mappers[0].read_paths.resize(rid + 1000);
-                            oriented_read_paths.resize(ws.long_read_mappers[0].read_paths.size());
-                        }
-#pragma omp task firstprivate(rid, DNA_sequence)
-                        {
-                            ws.long_read_mappers[0].read_paths[rid] =
-                                    ws.long_read_mappers[0].create_read_path(rid, true, DNA_sequence);
-                        }
-                    }
-                    rid = std::stoul(id);
-                    DNA_sequence.clear();
-                } else if (line[0] != '>') {
-                    DNA_sequence += line;
-                }
+    std::string line, id, DNA_sequence;
+    uint32_t rid(0);
+    while (std::getline(reads, line).good()) {
+        if (line[0] == '>') {
+            id = line.substr(1);
+            if (!DNA_sequence.empty()) {
+                read_seqs[rid]=DNA_sequence;
             }
+            rid = std::stoul(id);
+            DNA_sequence.clear();
+        } else if (line[0] != '>') {
+            DNA_sequence += line;
         }
     }
 
     return;
 }
 
-void HaplotypeConsensus::orient_read_paths() {
+void HaplotypeConsensus::orient_read_path(uint32_t rid) {
     std::set<sgNodeID_t > l(backbone.cbegin(), backbone.cend());
 
-    for (const auto &rid : long_reads_in_backbone) {
-        const auto &forward_path = ws.long_read_mappers[0].read_paths[rid];
-        std::vector<sgNodeID_t> reversed_path;
-        uint32_t count_reversed(0);
-        uint32_t count_forward(0);
-        // Look at the path reversed and with opposite signs
-        std::transform(forward_path.crbegin(), forward_path.crend(), std::back_inserter(reversed_path), [](const sgNodeID_t &n) {return -n;});
-        std::for_each(reversed_path.cbegin(), reversed_path.cend(),
-                [&l,&count_reversed](const sgNodeID_t &n){l.find(n) != l.cend() ? ++count_reversed:count_reversed;});
+    const auto &forward_path = ws.long_read_mappers[0].read_paths[rid];
+    std::vector<sgNodeID_t> reversed_path;
+    uint32_t count_reversed(0);
+    uint32_t count_forward(0);
+    // Look at the path reversed and with opposite signs
+    std::transform(forward_path.crbegin(), forward_path.crend(), std::back_inserter(reversed_path), [](const sgNodeID_t &n) {return -n;});
+    std::for_each(reversed_path.cbegin(), reversed_path.cend(),
+            [&l,&count_reversed](const sgNodeID_t &n){l.find(n) != l.cend() ? ++count_reversed:count_reversed;});
 
-        // Look at the path in the same direction
-        std::for_each(forward_path.cbegin(), forward_path.cend(),
-                [&l,&count_forward](const sgNodeID_t &n){l.find(n) != l.cend() ? ++count_forward:count_forward;});
+    // Look at the path in the same direction
+    std::for_each(forward_path.cbegin(), forward_path.cend(),
+            [&l,&count_forward](const sgNodeID_t &n){l.find(n) != l.cend() ? ++count_forward:count_forward;});
 
 
-        // Select the path that has the most amount of matches
-        if (count_reversed > count_forward) {
-            oriented_read_paths[rid] = reversed_path;
-        } else {
-            oriented_read_paths[rid] = forward_path;
-        }
+    // Select the path that has the most amount of matches
+    if (count_reversed > count_forward) {
+        oriented_read_paths[rid] = reversed_path;
+    } else {
+        oriented_read_paths[rid] = forward_path;
     }
 }
 
