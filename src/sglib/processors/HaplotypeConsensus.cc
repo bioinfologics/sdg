@@ -35,28 +35,35 @@ void HaplotypeConsensus::use_long_reads_from_file(std::string filename) {
         std::cerr << "Error opening: " << filename << ".\n" << std::strerror(errno) << std::endl;
         return;
     }
+#pragma omp parallel
+    {
 
-    std::string line, id, DNA_sequence;
-    uint32_t rid(0);
-    while (std::getline(reads, line).good()) {
-        if (line[0] == '>') {
-            id = line.substr(1);
-            if (!DNA_sequence.empty()) {
-                if (ws.long_read_mappers[0].read_paths.size() < rid) {
-                    ws.long_read_mappers[0].read_paths.resize(rid+1000);
-                    oriented_read_paths.resize(ws.long_read_mappers[0].read_paths.size());
+#pragma omp single nowait
+        {
+            std::string line, id, DNA_sequence;
+            uint32_t rid(0);
+            while (std::getline(reads, line).good()) {
+                if (line[0] == '>') {
+                    id = line.substr(1);
+                    if (!DNA_sequence.empty()) {
+                        if (ws.long_read_mappers[0].read_paths.size() < rid) {
+                            ws.long_read_mappers[0].read_paths.resize(rid + 1000);
+                            oriented_read_paths.resize(ws.long_read_mappers[0].read_paths.size());
+                        }
+#pragma omp task firstprivate(rid, DNA_sequence)
+                        {
+                            ws.long_read_mappers[0].read_paths[rid] =
+                                    ws.long_read_mappers[0].create_read_path(rid, true, DNA_sequence);
+                        }
+                    }
+                    rid = std::stoul(id);
+                    DNA_sequence.clear();
+                } else if (line[0] != '>') {
+                    DNA_sequence += line;
                 }
-                ws.long_read_mappers[0].read_paths[rid] =
-                        ws.long_read_mappers[0].create_read_path(rid, true, DNA_sequence);
             }
-            rid = std::stoul(id);
-            DNA_sequence.clear();
-        }
-        else if (line[0] != '>'){
-            DNA_sequence += line;
         }
     }
-
 
     return;
 }

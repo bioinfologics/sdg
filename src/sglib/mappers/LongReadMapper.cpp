@@ -879,148 +879,179 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
     return read_path;
 }
 
-std::vector<sgNodeID_t> LongReadMapper::create_read_path_fast(uint32_t rid, bool verbose, const std::string read_seq) {
-    const std::vector<LongReadMapping> &mappings = filtered_read_mappings[rid];
 
-    std::vector<sgNodeID_t> read_path;
-    if (mappings.empty()) return read_path;
-
-    for (int32_t tid = 0; tid < mappings.size()-1; ++tid) {
-        const auto &m1 = mappings[tid];
-        const auto &m2 = mappings[tid+1];
-
-        read_path.emplace_back(m1.node);
-
-        //this checks the direct connection
-        bool need_pathing = true;
-        for (const auto &l : sg.get_fw_links(m1.node)) {
-            if (l.dest == m2.node) need_pathing = false;
-        }
-
-        std::vector<SequenceGraphPath> paths;
-        int32_t ad;
-        if (need_pathing){
-            ad = (m2.qStart-m2.nStart)-(m1.qEnd+sg.nodes[std::abs(m1.node)].sequence.size()-m1.nEnd);
-            auto pd = ad+199*2;
-            auto max_path_size = std::max((int32_t)(pd*1.5),pd+400);
-            if (verbose) std::cout << "\n\nJumping between "<<m1<<" and "<<m2<<std::endl<<"Alignment distance: " << ad << " bp, path distance " << pd << ", looking for paths of up to " << max_path_size << " bp" << std::endl;
-            paths = sg.find_all_paths_between(m1.node, m2.node, max_path_size, 40, false);
-            if (paths.size()>1000) {
-                if (verbose) std::cout << "Too many paths" << std::endl;
-                read_path.emplace_back(0);
-                continue;
-            }
-            if (verbose)  std::cout << "There are " << paths.size() << " paths" <<std::endl;
-            if (paths.empty()){
-                read_path.emplace_back(0);
-            } else {
-                //Create a SG with every path as a node
-                SequenceGraph psg;
-                for (const auto &p : paths) {
-                    psg.add_node(Node(p.get_sequence()));
-                }
-
-                //Create, parametrise and index a mapper to the paths SG
-                auto pm = LongReadMapper(psg, datastore);
-                pm.k = 15;
-                pm.min_size = std::min(int(ad / 2), 1000);
-                pm.min_chain = 2;
-                pm.max_jump = 100;
-                pm.max_delta_change = 30;
-                pm.update_graph_index(paths.size() * 2 + 1, false);
-
-                //Align the read to the paths SG and pick the best(s) alignement(s)
-                std::string seq = read_seq;
-                if (read_seq.empty()) {
-                    BufferedSequenceGetter sequenceGetter(datastore);
-                    seq = sequenceGetter.get_read_sequence(rid);
-                }
-                auto subs_string = seq.substr(m1.qEnd - 199, m2.qStart + 15 + 199 - m1.qEnd + 199);
-                auto path_mappings = pm.map_sequence(subs_string.data());
-                std::sort(path_mappings.begin(), path_mappings.end(),
-                          [](const LongReadMapping &a, const LongReadMapping &b) { return a.score > b.score; });
-
-                if (path_mappings.empty()) {
-                    read_path.emplace_back(0);//paths do not map, add a gap
-                } else {
-                    if (verbose) {
-                        for (int i = 0; i < 10 and i < path_mappings.size(); i++) {
-                            std::cout << path_mappings[i] << std::endl;
-                            std::copy(paths[path_mappings[i].node - 1].nodes.begin(),
-                                      paths[path_mappings[i].node - 1].nodes.end(),
-                                      std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
-                            std::cout << std::endl;
-                        }
-                    }
-
-
-                    if (verbose)std::cout << "Creating winners" << std::endl;
-                    std::vector<std::vector<sgNodeID_t>> winners;
-                    for (const auto &a: path_mappings) {
-                        if (a.score == path_mappings[0].score) {
-                            if (a.node < 0) {
-                                winners.clear();
-                                break;
-                            } else {
-                                winners.emplace_back(paths[a.node - 1].nodes);
-                            }
-                        }
-                    }
-
-                    if (winners.empty()) {
-                        read_path.emplace_back(0);
-                    }
-
-                    //Add nodes from winner(s) to path
-                    if (winners.size() == 1) {
-                        // Single path, all its nodes go to the path
-                        if (verbose) std::cout << "Single winner path" << std::endl;
-                        read_path.insert(read_path.end(), winners[0].begin(), winners[0].end());
-                    } else {
-                        read_path.emplace_back(0);//as of now, if multiple winners, just put a full gap
-                    }
-                    /*else {
-                    // These are the nodes shared
-                    if (verbose) std::cout << "Finding shared nodes in " << winners.size() << " winner paths" << std::endl;
-
-                    // Get the winner with the smallest number of nodes
-                    const auto min_nodes = std::min_element(winners.cbegin(), winners.cend(),
-                                                            [](const std::vector<sgNodeID_t> &a, const std::vector<sgNodeID_t> &b) {
-                                                                return a.size() < b.size();
-                                                            })->size();
-
-
-                    if (verbose) std::cout << "Finding first shared nodes based on the shortest path of length " << min_nodes << std::endl;
-
-                    uint32_t shared_first=0;
-                    for (int32_t i=0; i<min_nodes;++i) {
-                        for (int32_t wi=1; wi<min_nodes; ++wi) if (winners[0][i]!=winners[wi][i]) break;
-                        shared_first=i;
-                    }
-
-                    if (verbose) std::cout << "Finding last shared nodes based on the shortest path of length " << min_nodes << std::endl;
-                    uint32_t shared_last=min_nodes;
-                    for (int32_t i = min_nodes-1; i>=0;--i) {
-                        for (int32_t wi=min_nodes-2; wi>0; --wi) if (winners[0][i]!=winners[wi][i]) break;
-                        shared_last=i;
-                    }
-
-                    if (verbose) std::cout << "first "<< shared_first << " nodes and last " << shared_last << " nodes shared among all winners" << std::endl;
-
-                    for (int i = 0; i < shared_first; i++) {
-                        nodes.emplace_back(winners[0][i]);
-                    }
-                    for (int i = shared_last; i < min_nodes; i++) {
-                        nodes.emplace_back(winners[0][i]);
-                    }
-
-                }*/
-                }
-            }
-        } else {
-            if (verbose) std::cout << "Nodes directly connected, no pathing required\n";
-        }
-    }
-    read_path.emplace_back(mappings.back().node);
-    return read_path;
-}
+//std::vector<sgNodeID_t> LongReadMapper::create_read_path_fast(uint32_t rid, bool verbose, const std::string read_seq) {
+//    const std::vector<LongReadMapping> &mappings = filtered_read_mappings[rid];
+//
+//    std::vector<sgNodeID_t> read_path;
+//    if (mappings.empty()) return read_path;
+//
+//    for (int32_t tid = 0; tid < mappings.size()-1; ++tid) {
+//        const auto &m1 = mappings[tid];
+//        const auto &m2 = mappings[tid+1];
+//
+//        read_path.emplace_back(m1.node);
+//
+//        //this checks the direct connection
+//        bool need_pathing = true;
+//        for (const auto &l : sg.get_fw_links(m1.node)) {
+//            if (l.dest == m2.node) need_pathing = false;
+//        }
+//
+//        std::vector<SequenceGraphPath> paths;
+//        int32_t ad;
+//        if (need_pathing){
+//            ad = (m2.qStart-m2.nStart)-(m1.qEnd+sg.nodes[std::abs(m1.node)].sequence.size()-m1.nEnd);
+//            auto pd = ad+199*2;
+//            auto max_path_size = std::max((int32_t)(pd*1.5),pd+400);
+//            if (verbose) std::cout << "\n\nJumping between "<<m1<<" and "<<m2<<std::endl<<"Alignment distance: " << ad << " bp, path distance " << pd << ", looking for paths of up to " << max_path_size << " bp" << std::endl;
+//            paths = sg.find_all_paths_between(m1.node, m2.node, max_path_size, 40, false);
+//            if (paths.size()>1000) {
+//                if (verbose) std::cout << "Too many paths" << std::endl;
+//                read_path.emplace_back(0);
+//                continue;
+//            }
+//            if (verbose)  std::cout << "There are " << paths.size() << " paths" <<std::endl;
+//            if (paths.empty()){
+//                read_path.emplace_back(0);
+//            } else {
+//                //Create a SG with every read as a node
+//                SequenceGraph psg;
+//                std::string seq = read_seq;
+//                if (read_seq.empty()) {
+//                    BufferedSequenceGetter sequenceGetter(datastore);
+//                    seq = sequenceGetter.get_read_sequence(rid);
+//                }
+//                psg.add_node(Node(seq.substr(m1.qEnd - 199, m2.qStart + 15 + 199 - m1.qEnd + 199)));
+//
+//                //Create, parametrise and index a mapper to the paths SG
+//                auto pm = LongReadMapper(psg, datastore);
+//                pm.k = 15;
+//                pm.min_size = std::min(int(ad / 2), 1000);
+//                pm.min_chain = 2;
+//                pm.max_jump = 100;
+//                pm.max_delta_change = 30;
+//                pm.update_graph_index(paths.size() * 2 + 1, false); // TODO: Check how to filter_min the mapper
+//
+//                // Graph with only subsection of the longread generated
+//
+//                // Now align the nodes to the graph and check which nodes get highest scores
+//                std::vector<std::pair<uint32_t , std::vector<sgNodeID_t>>> scored_paths(paths.size());
+//                for (uint32_t i=0; i < paths.size(); i++) { //each path
+//                    uint32_t path_score(0);
+//                    for (const auto &node : paths[i].nodes) {// each node in each path
+//                        auto mappings = pm.map_sequence(sg.nodes[node].sequence.data());
+//                        for (const auto &m: mappings) {
+//                            path_score + m.score;
+//                        }
+//                    }
+//                    scored_paths[i].first  = path_score;
+//                    scored_paths[i].second = paths[i].nodes;
+//                }
+//
+//                std::sort(scored_paths.begin(), scored_paths.end(),
+//                        [](const std::pair<uint32_t, std::vector<sgNodeID_t>> &a, const std::pair<uint32_t, std::vector<sgNodeID_t>> &b)
+//                        {return a.first > b.first;}
+//                        );
+//                // Now check which path contains the highest scoring node combination
+//
+//                //Align the read to the paths SG and pick the best(s) alignement(s)
+//                std::vector<std::vector<LongReadMapping>> path_mappings(paths.size());
+//                for (uint32_t i=0; i < paths.size(); i++) {
+//                    auto path_seq = paths[i].get_sequence();
+//                    for (const auto &pn: paths[i].nodes) {
+//                        auto mappings = pm.map_sequence(sg.nodes[pn].sequence.data());
+//                        for (auto &m:mappings) {
+//                            m.node=pn;
+//                            m.read_id=i;
+//                            path_mappings[i].emplace_back(m);
+//                        }
+//                    }
+//                }
+//                std::sort(path_mappings.begin(), path_mappings.end(),
+//                          [](const LongReadMapping &a, const LongReadMapping &b) { return a.score > b.score; });
+//
+//                if (path_mappings.empty()) {
+//                    read_path.emplace_back(0);//paths do not map, add a gap
+//                } else {
+//                    if (verbose) {
+//                        for (int i = 0; i < 10 and i < path_mappings.size(); i++) {
+//                            std::cout << path_mappings[i] << std::endl;
+//                            std::copy(paths[path_mappings[i].node - 1].nodes.begin(),
+//                                      paths[path_mappings[i].node - 1].nodes.end(),
+//                                      std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+//                            std::cout << std::endl;
+//                        }
+//                    }
+//
+//
+//                    if (verbose)std::cout << "Creating winners" << std::endl;
+//                    std::vector<std::vector<sgNodeID_t>> winners;
+//                    for (const auto &a: path_mappings) {
+//                        if (a.score == path_mappings[0].score) {
+//                            if (a.node < 0) {
+//                                winners.clear();
+//                                break;
+//                            } else {
+//                                winners.emplace_back(paths[a.node - 1].nodes);
+//                            }
+//                        }
+//                    }
+//
+//                    if (winners.empty()) {
+//                        read_path.emplace_back(0);
+//                    }
+//
+//                    //Add nodes from winner(s) to path
+//                    if (winners.size() == 1) {
+//                        // Single path, all its nodes go to the path
+//                        if (verbose) std::cout << "Single winner path" << std::endl;
+//                        read_path.insert(read_path.end(), winners[0].begin(), winners[0].end());
+//                    } else {
+//                        read_path.emplace_back(0);//as of now, if multiple winners, just put a full gap
+//                    }
+//                    /*else {
+//                    // These are the nodes shared
+//                    if (verbose) std::cout << "Finding shared nodes in " << winners.size() << " winner paths" << std::endl;
+//
+//                    // Get the winner with the smallest number of nodes
+//                    const auto min_nodes = std::min_element(winners.cbegin(), winners.cend(),
+//                                                            [](const std::vector<sgNodeID_t> &a, const std::vector<sgNodeID_t> &b) {
+//                                                                return a.size() < b.size();
+//                                                            })->size();
+//
+//
+//                    if (verbose) std::cout << "Finding first shared nodes based on the shortest path of length " << min_nodes << std::endl;
+//
+//                    uint32_t shared_first=0;
+//                    for (int32_t i=0; i<min_nodes;++i) {
+//                        for (int32_t wi=1; wi<min_nodes; ++wi) if (winners[0][i]!=winners[wi][i]) break;
+//                        shared_first=i;
+//                    }
+//
+//                    if (verbose) std::cout << "Finding last shared nodes based on the shortest path of length " << min_nodes << std::endl;
+//                    uint32_t shared_last=min_nodes;
+//                    for (int32_t i = min_nodes-1; i>=0;--i) {
+//                        for (int32_t wi=min_nodes-2; wi>0; --wi) if (winners[0][i]!=winners[wi][i]) break;
+//                        shared_last=i;
+//                    }
+//
+//                    if (verbose) std::cout << "first "<< shared_first << " nodes and last " << shared_last << " nodes shared among all winners" << std::endl;
+//
+//                    for (int i = 0; i < shared_first; i++) {
+//                        nodes.emplace_back(winners[0][i]);
+//                    }
+//                    for (int i = shared_last; i < min_nodes; i++) {
+//                        nodes.emplace_back(winners[0][i]);
+//                    }
+//
+//                }*/
+//                }
+//            }
+//        } else {
+//            if (verbose) std::cout << "Nodes directly connected, no pathing required\n";
+//        }
+//    }
+//    read_path.emplace_back(mappings.back().node);
+//    return read_path;
+//}
