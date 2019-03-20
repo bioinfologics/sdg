@@ -15,7 +15,7 @@ std::string HaplotypeConsensus::consensus_sequence() {
             current_path.emplace_back(n);
         }
         if (n == 0 or ni==backbone_filled_path.size()-1) {
-            consensus+=SequenceGraphPath(ldg.sg, current_path).get_sequence(); // TODO: CAREFUL!!! this is marked as failing!!
+            consensus+=SequenceGraphPath(ldg.sg, current_path).get_sequence();
             current_path.clear();
         }
         if (n == 0 and ni < backbone_filled_path.size()-1){
@@ -56,21 +56,21 @@ void HaplotypeConsensus::use_long_reads_from_file(std::string filename) {
 void HaplotypeConsensus::orient_read_path(uint64_t rid) {
     std::set<sgNodeID_t > l(backbone.cbegin(), backbone.cend());
 
-    const auto &forward_path = ws.long_read_mappers[0].read_paths[rid];
+    const auto &original_path = ws.long_read_mappers[0].read_paths[rid];
     std::cout << "Original read path " << rid << ": " << std::endl;
-    std::copy(forward_path.cbegin(), forward_path.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+    std::copy(original_path.cbegin(), original_path.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
     std::cout << std::endl;
 
     std::vector<sgNodeID_t> reversed_path;
     uint32_t count_reversed(0);
     uint32_t count_forward(0);
     // Look at the path reversed and with opposite signs
-    std::transform(forward_path.crbegin(), forward_path.crend(), std::back_inserter(reversed_path), [](const sgNodeID_t &n) {return -n;});
+    std::transform(original_path.crbegin(), original_path.crend(), std::back_inserter(reversed_path), [](const sgNodeID_t &n) {return -n;});
     std::for_each(reversed_path.cbegin(), reversed_path.cend(),
             [&l,&count_reversed](const sgNodeID_t &n){l.find(n) != l.cend() ? ++count_reversed:count_reversed;});
 
     // Look at the path in the same direction
-    std::for_each(forward_path.cbegin(), forward_path.cend(),
+    std::for_each(original_path.cbegin(), original_path.cend(),
             [&l,&count_forward](const sgNodeID_t &n){l.find(n) != l.cend() ? ++count_forward:count_forward;});
 
 
@@ -96,11 +96,13 @@ void HaplotypeConsensus::build_line_path() {
         std::cout << "\n\nPrinting paths between "<<n1 << ", " << " and "<< n2 << ":\n";
         std::map<std::vector<sgNodeID_t>, uint32_t> gap_paths;
         auto read = read_seqs.begin();
-        for (int i = 0; i < 100; i++, ++read ) {
+        for (int i = 0;  read != read_seqs.end(); i++, ++read ) {
             const auto &p = oriented_read_paths[read->first];
             auto pn1 = std::find(p.cbegin(), p.cend(), n1);
             auto pn2 = std::find(p.cbegin(), p.cend(), n2);
-            if (std::distance(p.cbegin(), pn2) < std::distance(p.cbegin(), pn1)) continue; // TODO: Some paths seem to be wrongly oriented?!
+            if (std::distance(p.cbegin(), pn2) < std::distance(p.cbegin(), pn1)) {
+                continue; // TODO: Some paths seem to be wrongly oriented?!
+            }
             if (pn1 != p.cend() and pn2 != p.cend()){
                 ++gap_paths[std::vector<sgNodeID_t>(pn1, pn2)];
             }

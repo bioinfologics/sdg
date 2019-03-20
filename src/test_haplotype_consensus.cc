@@ -201,26 +201,20 @@ int main(int argc, char **argv) {
                 -2101753, 2129668, -2036718
             }//9
     };
+
     std::ofstream readfasta("read.fasta");
-    std::ofstream consensusfasta("consensus.fasta");
-
-    HaplotypeConsensus haplotypeConsensus(ws, emptyLDG, emptyLDG, lines[0]);
-    haplotypeConsensus.use_long_reads_from_file("reads_in_iline_0.fasta");
-
-    sglib::OutputLog() << "Read " << haplotypeConsensus.read_seqs.size() << " sequences" << std::endl;
-    for (const auto &pair: haplotypeConsensus.read_seqs){
-        std::cout << ">" << pair.first << std::endl;
-    }
+    HaplotypeConsensus haplotypeConsensus(ws, emptyLDG, emptyLDG, lines[7]);
+    haplotypeConsensus.use_long_reads_from_file("reads_in_iline_7.fasta");
 
     std::string consensus;
 
     auto read = haplotypeConsensus.read_seqs.begin();
-    sglib::OutputLog() << "Processing read " << read->first << std::endl;
 
-    for (int i = 0; i < 100; i++, ++read) {
+    for (int i = 0; read != haplotypeConsensus.read_seqs.end(); i++, ++read) {
+        sglib::OutputLog() << "Processing read " << read->first << std::endl;
         readfasta << ">" << read->first << std::endl;
         readfasta << read->second << std::endl;
-        ws.long_read_mappers[0].read_paths[read->first] = ws.long_read_mappers[0].create_read_path(read->first, false,
+        ws.long_read_mappers[0].read_paths[read->first] = ws.long_read_mappers[0].create_read_path(read->first, true,
                                                                                                    read->second);
         haplotypeConsensus.oriented_read_paths.resize(
                 std::max(read->first+1, (uint64_t) haplotypeConsensus.oriented_read_paths.size()));
@@ -232,6 +226,7 @@ int main(int argc, char **argv) {
 
     haplotypeConsensus.build_line_path();
     consensus = haplotypeConsensus.consensus_sequence();
+    std::ofstream consensusfasta("consensus7.fasta");
     consensusfasta << ">consensus" << std::endl;
     consensusfasta << consensus << std::endl;
 

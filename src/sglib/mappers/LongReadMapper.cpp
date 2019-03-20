@@ -757,6 +757,7 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
             ad = (m2.qStart-m2.nStart)-(m1.qEnd+sg.nodes[std::abs(m1.node)].sequence.size()-m1.nEnd);
             auto pd = ad+199*2;
             auto max_path_size = std::max((int32_t)(pd*1.5),pd+400);
+//            max_path_size = 20000;
             if (verbose) std::cout << "\n\nJumping between "<<m1<<" and "<<m2<<std::endl<<"Alignment distance: " << ad << " bp, path distance " << pd << ", looking for paths of up to " << max_path_size << " bp" << std::endl;
             paths = sg.find_all_paths_between(m1.node, m2.node, max_path_size, 40, false);
             if (paths.size()>1000) {
@@ -767,6 +768,7 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
             if (verbose)  std::cout << "There are " << paths.size() << " paths" <<std::endl;
             if (paths.empty()){
                 read_path.emplace_back(0);
+                continue;
             } else {
                 //Create a SG with every path as a node
                 SequenceGraph psg;
@@ -796,9 +798,11 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
 
                 if (path_mappings.empty()) {
                     read_path.emplace_back(0);//paths do not map, add a gap
+                    continue;
                 } else {
                     if (verbose) {
                         for (int i = 0; i < 10 and i < path_mappings.size(); i++) {
+                            if (path_mappings[i].node < 0) continue;
                             std::cout << path_mappings[i] << std::endl;
                             std::copy(paths[path_mappings[i].node - 1].nodes.begin(),
                                       paths[path_mappings[i].node - 1].nodes.end(),
@@ -823,6 +827,7 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
 
                     if (winners.empty()) {
                         read_path.emplace_back(0);
+                        continue;
                     }
 
                     //Add nodes from winner(s) to path
@@ -831,7 +836,57 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
                         if (verbose) std::cout << "Single winner path" << std::endl;
                         read_path.insert(read_path.end(), winners[0].begin(), winners[0].end());
                     } else {
+                        if (verbose) std::cout << "Winner paths: " << std::endl;
+                        for (const auto &w: winners) {
+                            if (verbose) {
+                                std::copy(w.cbegin(), w.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+                                std::cout << std::endl;
+                            }
+                        }
+                        if (verbose) std::cout << std::endl;
+                        std::sort(winners.begin(), winners.end(), [](const std::vector<sgNodeID_t> &a, const std::vector<sgNodeID_t> &b){ return a.size() < b.size(); });
+                        std::vector<sgNodeID_t> shared_winner_nodes;
+                        for (int pos = 0; pos < winners[0].size(); ++pos) {
+                            bool sharing = true;
+                            auto &current_node = winners[0][pos];
+                            for (const auto &w : winners) {
+                                if (w[pos] != current_node) {
+                                    sharing=false;
+                                    break;
+                                }
+                            }
+                            if (sharing) shared_winner_nodes.emplace_back(current_node);
+                            else break;
+                        }
+
+                        std::vector<sgNodeID_t> back_shared_winner_nodes;
+                        for (int pos = 0; pos < winners[0].size() ; ++pos) {
+                            bool sharing = true;
+                            auto &current_node = winners[0][winners[0].size()-pos-1];
+                            for (const auto &w : winners) {
+                                if (w[w.size()-pos-1] != current_node) {
+                                    sharing=false;
+                                    break;
+                                }
+                            }
+                            if (sharing) back_shared_winner_nodes.emplace_back(current_node);
+                            else break;
+                        }
+
+                        if (verbose) {
+                            std::cout << std::endl << "Shared nodes in winner paths: " << std::endl;
+                        }
+                        read_path.insert(read_path.end(), shared_winner_nodes.begin(), shared_winner_nodes.end());
+                        if (verbose) {
+                            std::copy(shared_winner_nodes.cbegin(), shared_winner_nodes.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+                            std::cout << "0, ";
+                        }
                         read_path.emplace_back(0);//as of now, if multiple winners, just put a full gap
+                        read_path.insert(read_path.end(), back_shared_winner_nodes.rbegin(), back_shared_winner_nodes.rend());
+                        if (verbose) {
+                            std::copy(back_shared_winner_nodes.crbegin(), back_shared_winner_nodes.crend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+                            std::cout << std::endl;
+                        }
                     }
                     /*else {
                     // These are the nodes shared
