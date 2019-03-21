@@ -11,10 +11,15 @@ int main(int argc, char **argv) {
     ws.long_read_mappers[0].read_filtered_mappings("fm_10K3.bsgfrm");
     ws.linked_read_mappers[0].read_tag_neighbours("tag_neighbours_1000_0.03.data");
 
+    sglib::OutputLog() << "Begin pathing reads" << std::endl;
+
     ws.long_read_mappers[0].update_indexes();
     ws.long_read_mappers[0].improve_filtered_mappings();
     ws.long_read_mappers[0].read_paths.resize(ws.long_read_mappers[0].filtered_read_mappings.size());
     ws.long_read_mappers[0].create_read_paths();
+
+    sglib::OutputLog() << "Done pathing reads" << std::endl;
+    sglib::OutputLog() << "Selecting backbones" << std::endl;
 
     auto u=LinkageUntangler(ws);
     auto mldg=u.make_longRead_multilinkage(ws.long_read_mappers[0]);
@@ -23,8 +28,12 @@ int main(int argc, char **argv) {
 
     auto backbones=ldg.get_all_lines(2,10000);
 
+    sglib::OutputLog() << "Done selecting backbones" << std::endl;
+
 #pragma omp parallel for
     for (uint32_t backbone=0; backbone < backbones.size(); ++backbone) {
+        sglib::OutputLog() << "Starting consensus for backbone " << backbone << std::endl;
+
         HaplotypeConsensus haplotypeConsensus(ws, mldg, ldg, backbones[backbone]);
 
         haplotypeConsensus.orient_read_paths();
@@ -34,6 +43,7 @@ int main(int argc, char **argv) {
         std::ofstream backbone_consensus_fasta("consensus"+std::to_string(backbone)+".fasta");
         backbone_consensus_fasta << ">backbone_consensus_" << backbone << std::endl;
         backbone_consensus_fasta << consensus << std::endl;
+        sglib::OutputLog() << "Done consensus for backbone " << backbone << std::endl;
     }
 
     return 0;
