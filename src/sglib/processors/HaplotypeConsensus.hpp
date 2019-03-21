@@ -29,6 +29,7 @@ public:
     }
 
     void orient_read_paths() {
+#pragma omp parallel for
         for (uint32_t read = 0; read < ws.long_read_mappers[0].filtered_read_mappings.size(); read++) {
             orient_read_path(read);
         }

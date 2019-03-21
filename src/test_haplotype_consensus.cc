@@ -242,8 +242,10 @@ int main(int argc, char **argv) {
         sglib::OutputLog() << "Processing read " << read->first << std::endl;
         readfasta << ">" << read->first << std::endl;
         readfasta << read->second << std::endl;
-        ws.long_read_mappers[0].read_paths[read->first] = ws.long_read_mappers[0].create_read_path(read->first, true,
-                                                                                                   read->second);
+//        ws.long_read_mappers[0].read_paths[read->first] = ws.long_read_mappers[0].create_read_path(read->first, true,
+//                                                                                                   read->second);
+
+        ws.long_read_mappers[0].create_read_paths(lines[backbone]);
         haplotypeConsensus.oriented_read_paths.resize(
                 std::max(read->first+1, (uint64_t) haplotypeConsensus.oriented_read_paths.size()));
         haplotypeConsensus.orient_read_path(read->first);

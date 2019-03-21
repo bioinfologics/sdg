@@ -297,10 +297,22 @@ public:
         update_indexes();
     }
 
-    void create_read_paths() {
+    void create_read_paths(std::vector<sgNodeID_t> &backbone) {
+
+        // Only look at reads involved in backbone
+        // TODO: Make the useful_read an unordered_set and then iterate it!
+        std::vector<bool> useful_read(datastore.size(), false);
+        for (uint32_t bn = 0; bn < backbone.size(); bn++) {
+            for (const auto &read:reads_in_node[std::abs(backbone[bn])]){
+                useful_read[read] = true;
+            }
+        }
+
 #pragma omp parallel for
-        for (uint32_t rid = 0; rid < datastore.size(); ++rid){
-            create_read_path(rid, false);
+        for (uint32_t rid = 0; rid < datastore.size(); ++rid) {
+            if (useful_read[rid]) {
+                create_read_path(rid, false);
+            }
         }
     }
 
