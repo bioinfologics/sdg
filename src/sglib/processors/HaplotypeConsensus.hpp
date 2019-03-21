@@ -29,10 +29,14 @@ public:
     }
 
     void orient_read_paths(std::unordered_set<uint64_t > &useful_reads) {
-#pragma omp parallel for
-        for (auto read = useful_reads.cbegin(); read != useful_reads.cend(); ++read) {
-            orient_read_path(*read);
-        }
+        __gnu_parallel::for_each(useful_reads.cbegin(), useful_reads.cend(), [&](const uint64_t read) {
+            orient_read_path(read);
+        });
+//    }
+//#pragma omp parallel for
+//        for (auto read = useful_reads.cbegin(); read != useful_reads.cend(); ++read) {
+//            orient_read_path(*read);
+//        }
     }
     void orient_read_path(uint64_t rid);
     void build_line_path();
