@@ -95,9 +95,9 @@ void HaplotypeConsensus::build_line_path() {
         auto n2=backbone[gap_number];
         std::cout << "\n\nPrinting paths between "<<n1 << ", " << " and "<< n2 << ":\n";
         std::map<std::vector<sgNodeID_t>, uint32_t> gap_paths;
-        auto read = read_seqs.begin();
-        for (int i = 0;  read != read_seqs.end(); i++, ++read ) {
-            const auto &p = oriented_read_paths[read->first];
+        auto read_path = oriented_read_paths.cbegin();
+        for (int i = 0;  read_path != oriented_read_paths.end(); i++, ++read_path ) {
+            const auto &p = *read_path;
             auto pn1 = std::find(p.cbegin(), p.cend(), n1);
             auto pn2 = std::find(p.cbegin(), p.cend(), n2);
             if (std::distance(p.cbegin(), pn2) < std::distance(p.cbegin(), pn1)) {
