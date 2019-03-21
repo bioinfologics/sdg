@@ -771,8 +771,14 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
             auto max_path_size = std::max((int32_t)(pd*1.5),pd+400);
             if (max_path_size < 0) {
                 // TODO: Some mappings have negative distances, needs fixing at mapping stage?
-                read_path.emplace_back(0);
-                continue;
+
+                // XXX: For now simply accept negative distances lower than 500
+                if (std::abs(max_path_size) > 500) {
+                    read_path.emplace_back(0);
+                    continue;
+                } else {
+                    max_path_size = std::abs(max_path_size);
+                }
             }
 //            max_path_size = 20000;
             if (verbose) std::cout << "\n\nJumping between "<<m1<<" and "<<m2<<std::endl<<"Alignment distance: " << ad << " bp, path distance " << pd << ", looking for paths of up to " << max_path_size << " bp" << std::endl;
