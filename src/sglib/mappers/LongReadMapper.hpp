@@ -240,6 +240,10 @@ public:
 
     void read_filtered_mappings(std::string filename);
 
+    void write_read_paths(std::string filename);
+
+    void read_read_paths(std::string filename);
+
     /**
      * Updates reads_in_nodes
      */

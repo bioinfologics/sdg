@@ -489,6 +489,16 @@ void LongReadMapper::read_filtered_mappings(std::string filename) {
     sglib::read_flat_vectorvector(ifs,filtered_read_mappings);
 }
 
+void LongReadMapper::write_read_paths(std::string filename) {
+    std::ofstream ofs(filename, std::ios_base::binary);
+    sglib::write_flat_vectorvector(ofs, read_paths);
+}
+
+void LongReadMapper::read_read_paths(std::string filename) {
+    std::ifstream ifs(filename, std::ios_base::binary);
+    sglib::read_flat_vectorvector(ifs,read_paths);
+}
+
 LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
     if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceGraph"); }
     if (&other == this) {

@@ -127,15 +127,21 @@ void HaplotypeConsensus::build_line_path() {
             //TODO: Check for shared nodes amongst top paths (these are likely to be correct, or be the only option in the graph)
             std::vector<std::vector<sgNodeID_t>> winners;
             for (const auto &mcp : most_common) {
-                winners.emplace_back(mcp.second);
+                if (mcp.second.size() > 2) {
+                    winners.emplace_back(mcp.second);
+                }
+            }
+            if (winners.empty()){
+                line_path.emplace_back(0);
+                continue;
             }
             std::sort(winners.begin(), winners.end(), [](const std::vector<sgNodeID_t> &a, const std::vector<sgNodeID_t> &b){ return a.size() < b.size(); });
             std::vector<sgNodeID_t> shared_winner_nodes;
-            for (int pos = 0; pos < winners[0].size(); ++pos) {
+            for (int pos = 1; pos < winners[0].size() and winners[0][pos] != 0; ++pos) {
                 bool sharing = true;
                 auto &current_node = winners[0][pos];
                 for (const auto &w : winners) {
-                    if (w[pos] != current_node) {
+                    if (w[pos] != current_node or w[pos] == 0) {
                         sharing=false;
                         break;
                     }
@@ -145,11 +151,11 @@ void HaplotypeConsensus::build_line_path() {
             }
 
             std::vector<sgNodeID_t> back_shared_winner_nodes;
-            for (int pos = 0; pos < winners[0].size() ; ++pos) {
+            for (int pos = 0; pos < winners[0].size() and winners[0][winners[0].size()-pos-1] != 0; ++pos) {
                 bool sharing = true;
                 auto &current_node = winners[0][winners[0].size()-pos-1];
                 for (const auto &w : winners) {
-                    if (w[w.size()-pos-1] != current_node) {
+                    if (w[w.size()-pos-1] != current_node or w[w.size()-pos-1] == 0) {
                         sharing=false;
                         break;
                     }
@@ -162,11 +168,13 @@ void HaplotypeConsensus::build_line_path() {
             line_path.emplace_back(0);
             line_path.insert(line_path.end(), back_shared_winner_nodes.rbegin(), back_shared_winner_nodes.rend());
 
-            std::cout << "Partial line path from shared nodes in paths: " << std::endl;
-            std::copy(shared_winner_nodes.cbegin(), shared_winner_nodes.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
-            std::cout << "0, ";
-            std::copy(back_shared_winner_nodes.crbegin(), back_shared_winner_nodes.crend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
-            std::cout << std::endl;
+//            std::cout << "Partial line path from shared nodes in paths: " << std::endl;
+//            std::cout << "First shared winners: "; std::copy(shared_winner_nodes.cbegin(), shared_winner_nodes.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+//            std::cout << std::endl;
+//            std::cout << "0, ";
+//            std::cout << std::endl;
+//            std::cout << "Last shared winners: "; std::copy(back_shared_winner_nodes.crbegin(), back_shared_winner_nodes.crend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+//            std::cout << std::endl;
 
 
         }
