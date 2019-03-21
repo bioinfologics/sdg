@@ -742,6 +742,8 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
     for (int32_t tid = 0; tid < mappings.size()-1; ++tid) {
         const auto &m1 = mappings[tid];
         const auto &m2 = mappings[tid+1];
+        //TODO: Some mappings seem to have not been joined (m1.node == m2.node), needs fixing at mapping stage?
+        if (m1.node == m2.node) {continue;}
 
         read_path.emplace_back(m1.node);
 
@@ -757,6 +759,11 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
             ad = (m2.qStart-m2.nStart)-(m1.qEnd+sg.nodes[std::abs(m1.node)].sequence.size()-m1.nEnd);
             auto pd = ad+199*2;
             auto max_path_size = std::max((int32_t)(pd*1.5),pd+400);
+            if (max_path_size < 0) {
+                // TODO: Some mappings have negative distances, needs fixing at mapping stage?
+                read_path.emplace_back(0);
+                continue;
+            }
 //            max_path_size = 20000;
             if (verbose) std::cout << "\n\nJumping between "<<m1<<" and "<<m2<<std::endl<<"Alignment distance: " << ad << " bp, path distance " << pd << ", looking for paths of up to " << max_path_size << " bp" << std::endl;
             paths = sg.find_all_paths_between(m1.node, m2.node, max_path_size, 40, false);
