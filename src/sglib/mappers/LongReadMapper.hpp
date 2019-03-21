@@ -12,6 +12,7 @@
 #include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/types/MappingTypes.hpp>
 #include <sglib/indexers/NKmerIndex.hpp>
+#include <sglib/utilities/hashing_helpers.hpp>
 #include "LinkedReadMapper.hpp"
 #include <memory>
 
@@ -319,6 +320,13 @@ public:
      */
     std::vector<LongReadMapping> mappings;
     std::vector<int64_t> first_mapping; //index to the first mapping of the read. If no mappings, -1.
+
+    /**
+     * This structure holds "all paths" between consecutive backbone anchors
+     *
+     * (Maybe in canonical from->to orientation?)
+     */
+    std::unordered_map<std::pair<sgNodeID_t,sgNodeID_t>, std::vector<SequenceGraphPath>> all_paths_between;
 
     std::vector < std::vector<LongReadMapping> > filtered_read_mappings;
 

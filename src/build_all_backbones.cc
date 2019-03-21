@@ -11,14 +11,9 @@ int main(int argc, char **argv) {
     ws.long_read_mappers[0].read_filtered_mappings("fm_10K3.bsgfrm");
     ws.linked_read_mappers[0].read_tag_neighbours("tag_neighbours_1000_0.03.data");
 
-    sglib::OutputLog() << "Begin pathing reads" << std::endl;
-
     ws.long_read_mappers[0].update_indexes();
     ws.long_read_mappers[0].improve_filtered_mappings();
-    ws.long_read_mappers[0].read_paths.resize(ws.long_read_mappers[0].filtered_read_mappings.size());
-    ws.long_read_mappers[0].create_read_paths();
 
-    sglib::OutputLog() << "Done pathing reads" << std::endl;
     sglib::OutputLog() << "Selecting backbones" << std::endl;
 
     auto u=LinkageUntangler(ws);
@@ -29,6 +24,37 @@ int main(int argc, char **argv) {
     auto backbones=ldg.get_all_lines(2,10000);
 
     sglib::OutputLog() << "Done selecting backbones" << std::endl;
+
+
+    sglib::OutputLog() << "Creating all paths between anchors" << std::endl;
+
+    for (const auto &b: backbones) {
+        uint32_t pos = 0;
+        auto &all_paths_between = ws.long_read_mappers[0].all_paths_between;
+        for (; pos < b.size()-1; pos++) {
+            const auto a1 = b[pos];
+            const auto a2 = b[pos+1];
+            auto tmp = ws.sg.find_all_paths_between(a1, a2, 20000, 40, false);
+            all_paths_between[std::make_pair(a1,a2)] = tmp;
+
+            for (auto &p:tmp){
+                p.reverse();
+            }
+
+            all_paths_between[std::make_pair(-a2,-a1)] = tmp;
+        }
+    }
+
+    sglib::OutputLog() << "Done creating all paths between anchors " << std::endl;
+
+
+
+    sglib::OutputLog() << "Begin pathing reads" << std::endl;
+
+    ws.long_read_mappers[0].read_paths.resize(ws.long_read_mappers[0].filtered_read_mappings.size());
+    ws.long_read_mappers[0].create_read_paths();
+
+    sglib::OutputLog() << "Done pathing reads" << std::endl;
 
 #pragma omp parallel for
     for (uint32_t backbone=0; backbone < backbones.size(); ++backbone) {

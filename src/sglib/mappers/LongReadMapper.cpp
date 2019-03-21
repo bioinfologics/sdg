@@ -782,7 +782,20 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
             }
 //            max_path_size = 20000;
             if (verbose) std::cout << "\n\nJumping between "<<m1<<" and "<<m2<<std::endl<<"Alignment distance: " << ad << " bp, path distance " << pd << ", looking for paths of up to " << max_path_size << " bp" << std::endl;
-            paths = sg.find_all_paths_between(m1.node, m2.node, max_path_size, 40, false);
+
+            const auto place_in_map = all_paths_between.find(std::make_pair(m1.node, m2.node));
+            if (place_in_map != all_paths_between.end()){
+                std::cout <<"Backbone found in collection!!" <<std::endl;
+                paths = place_in_map->second;
+            } else {
+                std::cout <<"Adding backbone to collecion!!" <<std::endl;
+                paths = sg.find_all_paths_between(m1.node, m2.node, max_path_size, 40, false);
+#pragma omp critical
+                {
+                    all_paths_between[std::make_pair(m1.node,m2.node)] = paths; // Add path to structure if not there!
+                }
+            }
+
             if (paths.size()>1000) {
                 if (verbose) std::cout << "Too many paths" << std::endl;
                 read_path.emplace_back(0);

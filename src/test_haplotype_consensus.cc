@@ -6,6 +6,8 @@
 
 
 int main(int argc, char **argv) {
+
+    sglib::OutputLog() << "Starting to test a backbone haplotype consensus" << std::endl;
     WorkSpace ws;
 
     ws.sg.load_from_gfa("initial_graph.gfa.gfa");
@@ -204,6 +206,31 @@ int main(int argc, char **argv) {
 
     std::ofstream readfasta("read.fasta");
     int backbone = 5;
+
+//    sglib::OutputLog() << "Creating all paths between anchors" << std::endl;
+//    auto &all_paths_between = ws.long_read_mappers[0].all_paths_between;
+//    for (uint32_t pos = 0; pos < lines[backbone].size()-1; pos++) {
+//        const auto a1 = lines[backbone][pos];
+//        const auto a2 = lines[backbone][pos+1];
+//        auto tmp = ws.sg.find_all_paths_between(a1, a2, 20000, 40, false);
+//        all_paths_between[std::make_pair(a1,a2)] = tmp;
+//
+//        for (auto &p:tmp){
+//            p.reverse();
+//        }
+//
+//        all_paths_between[std::make_pair(-a2,-a1)] = tmp;
+//    }
+//    sglib::OutputLog() << "Done" << std::endl;
+
+    for (const auto &paths: ws.long_read_mappers[0].all_paths_between) {
+        if (!paths.second.empty()) {
+            std::cout << paths.first.first << ", " << paths.first.second << ": "
+                      << paths.second[0].get_sequence_size_fast() << std::endl;
+        }
+    }
+
+
     HaplotypeConsensus haplotypeConsensus(ws, emptyLDG, emptyLDG, lines[backbone]);
     haplotypeConsensus.use_long_reads_from_file("reads_in_iline_"+std::to_string(backbone)+".fasta");
 
@@ -231,5 +258,6 @@ int main(int argc, char **argv) {
     consensusfasta << ">consensus" << std::endl;
     consensusfasta << consensus << std::endl;
 
+    sglib::OutputLog() << "Done!" << std::endl;
     return 0;
 }

@@ -131,7 +131,7 @@ std::vector<Link> SequenceGraphPath::get_next_links() {
     return sg.get_fw_links(nodes.back());
 }
 
-size_t SequenceGraphPath::get_sequence_size_fast() {
+size_t SequenceGraphPath::get_sequence_size_fast() const{
     size_t size=0;
     //std::string s="";
     sgNodeID_t pnode=0;
