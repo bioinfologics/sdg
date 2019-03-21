@@ -17,15 +17,15 @@ int main(int argc, char **argv) {
     ws.long_read_mappers[0].create_read_paths();
 
     auto u=LinkageUntangler(ws);
-    auto mldg=u.make_longRead_multilinkage(lorm);
+    auto mldg=u.make_longRead_multilinkage(ws.long_read_mappers[0]);
     u.select_multi_linkage_linear_anchors(mldg,5);
-    auto ldg1=u.make_nextselected_linkage(mldg);
+    auto ldg=u.make_nextselected_linkage(mldg);
 
-    auto backbones=ldg1.get_all_lines(2,10000);
+    auto backbones=ldg.get_all_lines(2,10000);
 
 #pragma omp parallel for
     for (uint32_t backbone=0; backbone < backbones.size(); ++backbone) {
-        HaplotypeConsensus haplotypeConsensus(ws, emptyLDG, emptyLDG, backbones[backbone]);
+        HaplotypeConsensus haplotypeConsensus(ws, mldg, ldg, backbones[backbone]);
 
         haplotypeConsensus.orient_read_paths();
         haplotypeConsensus.write_read_paths("oriented_read_paths_backbone_"+std::to_string(backbone)+".orp");
