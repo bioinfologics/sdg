@@ -203,8 +203,9 @@ int main(int argc, char **argv) {
     };
 
     std::ofstream readfasta("read.fasta");
-    HaplotypeConsensus haplotypeConsensus(ws, emptyLDG, emptyLDG, lines[5]);
-    haplotypeConsensus.use_long_reads_from_file("reads_in_iline_5.fasta");
+    int backbone = 5;
+    HaplotypeConsensus haplotypeConsensus(ws, emptyLDG, emptyLDG, lines[backbone]);
+    haplotypeConsensus.use_long_reads_from_file("reads_in_iline_"+std::to_string(backbone)+".fasta");
 
     std::string consensus;
 
@@ -226,7 +227,7 @@ int main(int argc, char **argv) {
 
     haplotypeConsensus.build_line_path();
     consensus = haplotypeConsensus.consensus_sequence();
-    std::ofstream consensusfasta("consensus5.fasta");
+    std::ofstream consensusfasta("consensus"+std::to_string(backbone)+".fasta");
     consensusfasta << ">consensus" << std::endl;
     consensusfasta << consensus << std::endl;
 

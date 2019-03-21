@@ -125,8 +125,50 @@ void HaplotypeConsensus::build_line_path() {
         }
         if (!filled){
             //TODO: Check for shared nodes amongst top paths (these are likely to be correct, or be the only option in the graph)
+            std::vector<std::vector<sgNodeID_t>> winners;
+            for (const auto &mcp : most_common) {
+                winners.emplace_back(mcp.second);
+            }
+            std::sort(winners.begin(), winners.end(), [](const std::vector<sgNodeID_t> &a, const std::vector<sgNodeID_t> &b){ return a.size() < b.size(); });
+            std::vector<sgNodeID_t> shared_winner_nodes;
+            for (int pos = 0; pos < winners[0].size(); ++pos) {
+                bool sharing = true;
+                auto &current_node = winners[0][pos];
+                for (const auto &w : winners) {
+                    if (w[pos] != current_node) {
+                        sharing=false;
+                        break;
+                    }
+                }
+                if (sharing) shared_winner_nodes.emplace_back(current_node);
+                else break;
+            }
 
+            std::vector<sgNodeID_t> back_shared_winner_nodes;
+            for (int pos = 0; pos < winners[0].size() ; ++pos) {
+                bool sharing = true;
+                auto &current_node = winners[0][winners[0].size()-pos-1];
+                for (const auto &w : winners) {
+                    if (w[w.size()-pos-1] != current_node) {
+                        sharing=false;
+                        break;
+                    }
+                }
+                if (sharing) back_shared_winner_nodes.emplace_back(current_node);
+                else break;
+            }
+
+            line_path.insert(line_path.end(), shared_winner_nodes.begin(), shared_winner_nodes.end());
             line_path.emplace_back(0);
+            line_path.insert(line_path.end(), back_shared_winner_nodes.rbegin(), back_shared_winner_nodes.rend());
+
+            std::cout << "Partial line path from shared nodes in paths: " << std::endl;
+            std::copy(shared_winner_nodes.cbegin(), shared_winner_nodes.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+            std::cout << "0, ";
+            std::copy(back_shared_winner_nodes.crbegin(), back_shared_winner_nodes.crend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+            std::cout << std::endl;
+
+
         }
         line_path.emplace_back(n2);
     }
