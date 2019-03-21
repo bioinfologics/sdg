@@ -124,7 +124,6 @@ void HaplotypeConsensus::build_line_path() {
             }
         }
         if (!filled){
-            //TODO: Check for shared nodes amongst top paths (these are likely to be correct, or be the only option in the graph)
             std::vector<std::vector<sgNodeID_t>> winners;
             for (const auto &mcp : most_common) {
                 if (mcp.second.size() > 2) {
@@ -165,7 +164,7 @@ void HaplotypeConsensus::build_line_path() {
             }
 
             line_path.insert(line_path.end(), shared_winner_nodes.begin(), shared_winner_nodes.end());
-            line_path.emplace_back(0);
+            line_path.emplace_back(0);  // TODO: Check why there are more N's now with same number of gaps!
             line_path.insert(line_path.end(), back_shared_winner_nodes.rbegin(), back_shared_winner_nodes.rend());
 
 //            std::cout << "Partial line path from shared nodes in paths: " << std::endl;
@@ -175,7 +174,6 @@ void HaplotypeConsensus::build_line_path() {
 //            std::cout << std::endl;
 //            std::cout << "Last shared winners: "; std::copy(back_shared_winner_nodes.crbegin(), back_shared_winner_nodes.crend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
 //            std::cout << std::endl;
-
 
         }
         line_path.emplace_back(n2);
