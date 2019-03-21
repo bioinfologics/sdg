@@ -33,11 +33,11 @@ int main(int argc, char **argv) {
 
     for (uint32_t backbone=0; backbone < backbones.size(); ++backbone) {
         sglib::OutputLog() << "Starting consensus for backbone " << backbone << std::endl;
-        ws.long_read_mappers[0].create_read_paths(backbones[backbone]);
+        auto useful_read = ws.long_read_mappers[0].create_read_paths(backbones[backbone]);
 
         HaplotypeConsensus haplotypeConsensus(ws, mldg, ldg, backbones[backbone]);
 
-        haplotypeConsensus.orient_read_paths();
+        haplotypeConsensus.orient_read_paths(useful_read);
         haplotypeConsensus.write_read_paths("oriented_read_paths_backbone_"+std::to_string(backbone)+".orp");
         haplotypeConsensus.build_line_path();
         std::string consensus = haplotypeConsensus.consensus_sequence();

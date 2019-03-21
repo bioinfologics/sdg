@@ -743,6 +743,24 @@ std::vector<LongReadMapping> LongReadMapper::improve_read_filtered_mappings(uint
     return new_mappings;
 }
 
+std::unordered_set<uint64_t> LongReadMapper::create_read_paths(std::vector<sgNodeID_t> &backbone) {
+
+    // Only look at reads involved in backbone
+    // TODO: Make the useful_read an unordered_set and then iterate it!
+    std::unordered_set<uint64_t> useful_read;
+    for (uint32_t bn = 0; bn < backbone.size(); bn++) {
+        for (const auto &read:reads_in_node[std::abs(backbone[bn])]){
+            useful_read.emplace(read);
+        }
+    }
+
+#pragma omp parallel for
+    for (auto rid = useful_read.cbegin(); rid!=useful_read.cend(); ++rid) {
+        create_read_path(*rid, false);
+    }
+    return useful_read;
+}
+
 std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verbose, const std::string read_seq) {
     const std::vector<LongReadMapping> &mappings = filtered_read_mappings[rid];
 

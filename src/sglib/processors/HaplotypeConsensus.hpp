@@ -28,10 +28,10 @@ public:
         }
     }
 
-    void orient_read_paths() {
+    void orient_read_paths(std::unordered_set<uint64_t > &useful_reads) {
 #pragma omp parallel for
-        for (uint32_t read = 0; read < ws.long_read_mappers[0].filtered_read_mappings.size(); read++) {
-            orient_read_path(read);
+        for (auto read = useful_reads.cbegin(); read != useful_reads.cend(); ++read) {
+            orient_read_path(*read);
         }
     }
     void orient_read_path(uint64_t rid);
@@ -52,6 +52,7 @@ public:
 
     bool reads_from_file;
     std::vector<std::vector<sgNodeID_t >> oriented_read_paths;
+
     std::map<uint64_t,std::string> read_seqs;
     std::vector<sgNodeID_t> backbone;
     std::vector<sgNodeID_t> backbone_filled_path;
