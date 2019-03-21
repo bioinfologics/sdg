@@ -28,22 +28,22 @@ int main(int argc, char **argv) {
 
     sglib::OutputLog() << "Creating all paths between anchors" << std::endl;
 
-    for (const auto &b: backbones) {
-        uint32_t pos = 0;
-        auto &all_paths_between = ws.long_read_mappers[0].all_paths_between;
-        for (; pos < b.size()-1; pos++) {
-            const auto a1 = b[pos];
-            const auto a2 = b[pos+1];
-            auto tmp = ws.sg.find_all_paths_between(a1, a2, 20000, 40, false);
-            all_paths_between[std::make_pair(a1,a2)] = tmp;
-
-            for (auto &p:tmp){
-                p.reverse();
-            }
-
-            all_paths_between[std::make_pair(-a2,-a1)] = tmp;
-        }
-    }
+//    for (const auto &b: backbones) {
+//        uint32_t pos = 0;
+//        auto &all_paths_between = ws.long_read_mappers[0].all_paths_between;
+//        for (; pos < b.size()-1; pos++) {
+//            const auto a1 = b[pos];
+//            const auto a2 = b[pos+1];
+//            auto tmp = ws.sg.find_all_paths_between(a1, a2, 20000, 40, false);
+//            all_paths_between[std::make_pair(a1,a2)] = tmp;
+//
+//            for (auto &p:tmp){
+//                p.reverse();
+//            }
+//
+//            all_paths_between[std::make_pair(-a2,-a1)] = tmp;
+//        }
+//    }
 
     sglib::OutputLog() << "Done creating all paths between anchors " << std::endl;
 
