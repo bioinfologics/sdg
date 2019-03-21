@@ -755,7 +755,7 @@ std::unordered_set<uint64_t> LongReadMapper::create_read_paths(std::vector<sgNod
     }
 
     __gnu_parallel::for_each(useful_read.cbegin(), useful_read.cend(), [&](const uint64_t read){
-        create_read_path(read, false);
+        read_paths[read] = create_read_path(read, false);
     });
 
 //#pragma omp parallel for
