@@ -110,20 +110,22 @@ void HaplotypeConsensus::build_line_path() {
         std::multimap<uint32_t, std::vector<sgNodeID_t>> most_common = flip_map(gap_paths);
 
         auto filled(false);
-        for (const auto &p: most_common) {
-            std::cout << p.first << ": ";
-            std::copy(p.second.cbegin(), p.second.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+        for (auto p = most_common.crbegin(); p != most_common.crend(); ++p) {
+            std::cout << p->first << ": ";
+            std::copy(p->second.cbegin(), p->second.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
 
-            if (!filled and p.first>1 and std::find(p.second.cbegin(), p.second.cend(), 0) == p.second.cend()){
+            if (!filled and p->first>1 and std::find(p->second.cbegin(), p->second.cend(), 0) == p->second.cend()){
                 filled = true;
-                auto it = ++p.second.cbegin();
-                line_path.insert(line_path.end(), it, p.second.cend());
+                auto it = ++p->second.cbegin();
+                line_path.insert(line_path.end(), it, p->second.cend());
                 std::cout << " <-- WINNER" << std::endl;
             } else {
                 std::cout << std::endl;
             }
         }
         if (!filled){
+            //TODO: Check for shared nodes amongst top paths (these are likely to be correct, or be the only option in the graph)
+
             line_path.emplace_back(0);
         }
         line_path.emplace_back(n2);
