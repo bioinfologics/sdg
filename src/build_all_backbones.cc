@@ -37,6 +37,8 @@ int main(int argc, char **argv) {
 
         HaplotypeConsensus haplotypeConsensus(ws, mldg, ldg, backbones[backbone]);
 
+        auto max_rid = std::max_element(useful_read.cbegin(), useful_read.cend());
+        haplotypeConsensus.oriented_read_paths.resize(*max_rid);
         haplotypeConsensus.orient_read_paths(useful_read);
         haplotypeConsensus.write_read_paths("oriented_read_paths_backbone_"+std::to_string(backbone)+".orp");
         haplotypeConsensus.build_line_path();
