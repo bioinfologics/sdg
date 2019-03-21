@@ -7,6 +7,7 @@
 
 #include <sglib/workspace/WorkSpace.hpp>
 #include <sglib/graph/LinkageDiGraph.hpp>
+#include <sglib/utilities/io_helpers.hpp>
 
 /**
  * This class creates a haplotype consensus from a backbone.
@@ -27,11 +28,26 @@ public:
         }
     }
 
+    void orient_read_paths() {
+        for (uint32_t read = 0; read < ws.long_read_mappers[0].filtered_read_mappings.size(); read++) {
+            orient_read_path(read);
+        }
+    }
     void orient_read_path(uint64_t rid);
     void build_line_path();
     std::string consensus_sequence();
 
     void use_long_reads_from_file(std::string filename);
+
+    void write_read_paths(std::string filename) {
+        std::ofstream ofs(filename, std::ios_base::binary);
+        sglib::write_flat_vectorvector(ofs, oriented_read_paths);
+    }
+
+    void read_read_paths(std::string filename) {
+        std::ifstream ifs(filename, std::ios_base::binary);
+        sglib::read_flat_vectorvector(ifs,oriented_read_paths);
+    }
 
     bool reads_from_file;
     std::vector<std::vector<sgNodeID_t >> oriented_read_paths;
