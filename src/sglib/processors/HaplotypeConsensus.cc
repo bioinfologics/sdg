@@ -101,6 +101,7 @@ void HaplotypeConsensus::build_line_path() {
             auto pn1 = std::find(p.cbegin(), p.cend(), n1);
             auto pn2 = std::find(p.cbegin(), p.cend(), n2);
             if (std::distance(p.cbegin(), pn2) < std::distance(p.cbegin(), pn1)) {
+                std::cout << n1 << " and " << n2 << " nodes from backbone are at " << std::distance(p.cbegin(), pn1) << " and " << std::distance(p.cbegin(), pn2) << " from start, they are wrongly oriented in paths!" << std::endl;
                 continue; // TODO: Some paths seem to be wrongly oriented?!
             }
             if (pn1 != p.cend() and pn2 != p.cend()){
