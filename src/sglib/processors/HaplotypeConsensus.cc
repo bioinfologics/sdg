@@ -57,9 +57,9 @@ void HaplotypeConsensus::orient_read_path(uint64_t rid) {
     std::set<sgNodeID_t > l(backbone.cbegin(), backbone.cend());
 
     const auto &original_path = ws.long_read_mappers[0].read_paths[rid];
-    std::cout << "Original read path " << rid << ": " << std::endl;
-    std::copy(original_path.cbegin(), original_path.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
-    std::cout << std::endl;
+//    std::cout << "Original read path " << rid << ": " << std::endl;
+//    std::copy(original_path.cbegin(), original_path.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+//    std::cout << std::endl;
 
     std::vector<sgNodeID_t> reversed_path;
     uint32_t count_reversed(0);
@@ -80,9 +80,9 @@ void HaplotypeConsensus::orient_read_path(uint64_t rid) {
     } else {
         oriented_read_paths[rid] = ws.long_read_mappers[0].read_paths[rid];
     }
-    std::cout << "Oriented read path " << rid << ": " << std::endl;
-    std::copy(oriented_read_paths[rid].cbegin(), oriented_read_paths[rid].cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
-    std::cout << std::endl;
+//    std::cout << "Oriented read path " << rid << ": " << std::endl;
+//    std::copy(oriented_read_paths[rid].cbegin(), oriented_read_paths[rid].cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+//    std::cout << std::endl;
 
 }
 
