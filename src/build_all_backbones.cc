@@ -2,9 +2,41 @@
 #include <sglib/workspace/WorkSpace.hpp>
 #include <sglib/processors/LinkageUntangler.hpp>
 #include <sglib/processors/HaplotypeConsensus.hpp>
+#include "cxxopts.hpp"
+
 
 int main(int argc, char **argv) {
     WorkSpace ws;
+
+    std::string workspace_file;
+    std::string output_prefix;
+    uint32_t from(0), to(0);
+
+    cxxopts::Options options("build_backbones", "Create consensus for backbones");
+    try
+    {
+        options.add_options()
+            ("help", "Print help")
+            ("w,workspace", "input workspace", cxxopts::value(workspace_file))
+            ("o,output", "output file prefix", cxxopts::value(output_prefix))
+            ("from", "backbone range start", cxxopts::value(from));
+            ("to", "backbone range end", cxxopts::value(to));
+
+        auto result(options.parse(argc, argv));
+
+        if (result.count("help"))
+        {
+            std::cout << options.help({""}) << std::endl;
+            exit(0);
+        }
+    } catch (const cxxopts::OptionException& e)
+    {
+        options.help({""});
+        exit(1);
+    }
+
+    if (from != 0 or to != 0)
+        sglib::OutputLog() << "Building backbones from " << from << " to " << to << std::endl;
 
     ws.load_from_disk("nano10x_rg_lmpLR10x_mapped.bsgws");
 
@@ -25,13 +57,13 @@ int main(int argc, char **argv) {
 
     sglib::OutputLog() << "Done selecting backbones" << std::endl;
 
-    sglib::OutputLog() << "Begin pathing reads" << std::endl;
-
     ws.long_read_mappers[0].read_paths.resize(ws.long_read_mappers[0].filtered_read_mappings.size());
 
-    sglib::OutputLog() << "Done pathing reads" << std::endl;
-
-    for (uint32_t backbone=0; backbone < backbones.size(); ++backbone) {
+    if (to == 0) {
+        to = backbones.size();
+    }
+    sglib::OutputLog() << "Building backbones from " << from << " to " << to << std::endl;
+    for (uint32_t backbone=from; backbone <= to and backbone < backbones.size(); ++backbone) {
         sglib::OutputLog() << "Starting consensus for backbone " << backbone << std::endl;
         auto useful_read = ws.long_read_mappers[0].create_read_paths(backbones[backbone]);
 
@@ -47,6 +79,12 @@ int main(int argc, char **argv) {
         backbone_consensus_fasta << ">backbone_consensus_" << backbone << std::endl;
         backbone_consensus_fasta << consensus << std::endl;
         sglib::OutputLog() << "Done consensus for backbone " << backbone << std::endl;
+
+        // Clear temp structures
+        ws.long_read_mappers[0].all_paths_between.clear();
+        for (const auto &read: useful_read) {
+            ws.long_read_mappers[0].read_paths[read].clear();
+        }
     }
 
     return 0;
