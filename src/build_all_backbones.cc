@@ -65,13 +65,16 @@ int main(int argc, char **argv) {
         sglib::OutputLog() << "Starting consensus for backbone " << backbone << std::endl;
         auto useful_read = ws.long_read_mappers[0].create_read_paths(backbones[backbone]);
 
+        sglib::OutputLog() << "Created read paths for " << useful_read.size() << " reads"<<std::endl;
         HaplotypeConsensus haplotypeConsensus(ws, mldg, ldg, backbones[backbone]);
 
         auto max_rid = std::max_element(useful_read.cbegin(), useful_read.cend());
         haplotypeConsensus.oriented_read_paths.resize(*max_rid);
         haplotypeConsensus.orient_read_paths(useful_read);
+        sglib::OutputLog() << "Done orienting " << useful_read.size() << " read paths"<<std::endl;
         haplotypeConsensus.write_read_paths("oriented_read_paths_backbone_"+std::to_string(backbone)+".orp");
         haplotypeConsensus.build_line_path();
+        sglib::OutputLog() << "Done building line path" << std::endl;
         std::string consensus = haplotypeConsensus.consensus_sequence();
         std::ofstream backbone_consensus_fasta("consensus"+std::to_string(backbone)+".fasta");
         backbone_consensus_fasta << ">backbone_consensus_" << backbone << std::endl;
@@ -83,6 +86,7 @@ int main(int argc, char **argv) {
         for (const auto &read: useful_read) {
             ws.long_read_mappers[0].read_paths[read].clear();
         }
+        sglib::OutputLog() << "Done clearing structures" << std::endl;
     }
 
     return 0;

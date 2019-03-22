@@ -807,10 +807,10 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
 
             const auto place_in_map = all_paths_between.find(std::make_pair(m1.node, m2.node));
             if (place_in_map != all_paths_between.end()){
-                std::cout <<"Backbone found in collection!!" <<std::endl;
+                if (verbose) std::cout <<"Backbone found in collection!!" <<std::endl;
                 paths = place_in_map->second;
             } else {
-                std::cout <<"Adding backbone to collecion!!" <<std::endl;
+                if (verbose) std::cout <<"Adding backbone to collecion!!" <<std::endl;
                 paths = sg.find_all_paths_between(m1.node, m2.node, max_path_size, 40, false);
 #pragma omp critical
                 {
