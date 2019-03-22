@@ -17,10 +17,8 @@ int main(int argc, char **argv) {
     {
         options.add_options()
             ("help", "Print help")
-            ("w,workspace", "input workspace", cxxopts::value(workspace_file))
-            ("o,output", "output file prefix", cxxopts::value(output_prefix))
-            ("from", "backbone range start", cxxopts::value(from));
-            ("to", "backbone range end", cxxopts::value(to));
+            ("from", "backbone range start", cxxopts::value<uint32_t>(from))
+            ("to", "backbone range end", cxxopts::value<uint32_t>(to));
 
         auto result(options.parse(argc, argv));
 
