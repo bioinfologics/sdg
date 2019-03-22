@@ -132,8 +132,8 @@ void HaplotypeConsensus::build_line_path() {
                 }
             }
             if (winners.empty()){
-                line_path.emplace_back(n1);
                 line_path.emplace_back(0);
+                line_path.emplace_back(n2);
                 continue;
             }
             std::sort(winners.begin(), winners.end(), [](const std::vector<sgNodeID_t> &a, const std::vector<sgNodeID_t> &b){ return a.size() < b.size(); });
