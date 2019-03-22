@@ -132,6 +132,7 @@ void HaplotypeConsensus::build_line_path() {
                 }
             }
             if (winners.empty()){
+                line_path.emplace_back(n1);
                 line_path.emplace_back(0);
                 continue;
             }
