@@ -79,6 +79,10 @@ void WorkSpace::dump_to_disk(std::string filename) {
 
 void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     std::ifstream wsfile(filename);
+    if (!wsfile.good()) {
+        std::cerr << filename << " opening error: " << strerror(errno) << std::endl;
+        throw std::runtime_error("Error opening " + filename);
+    }
     uint64_t count;
     //read log
     log.clear();

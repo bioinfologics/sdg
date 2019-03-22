@@ -29,7 +29,8 @@ int main(int argc, char **argv) {
         }
     } catch (const cxxopts::OptionException& e)
     {
-        options.help({""});
+        std::cout << e.what() << std::endl;
+        std::cout << options.help({""}) << std::endl;
         exit(1);
     }
 
