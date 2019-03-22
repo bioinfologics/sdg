@@ -1006,7 +1006,8 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
     }
 
 
-    for (uint64_t current_index=0;current_index<node_entries.size();++current_index){
+    // XXX: This loop is growing forever on node 2083801 for backbone 58, the limits are heuristics to cap the complexity of regions captured
+    for (uint64_t current_index=0;current_index<node_entries.size() and node_entries.size() < 1000001 and final_paths.size() < 1001;++current_index){
         auto current_entry=node_entries[current_index];
         auto fwl=get_fw_links(current_entry.node);
         for(auto &fl:fwl) {
@@ -1040,6 +1041,18 @@ std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t 
 
     }
 
+    bool early_exit=false;
+    if (node_entries.size() == 1000000) {
+        std::cout << "From " << from << " to " << to << " with max_size " << max_size << " and max_nodes " << max_nodes << " there were too many nodes!"<< std::endl;
+        early_exit = true;
+    }
+
+    if (final_paths.size() == 1000) {
+        std::cout << "From " << from << " to " << to << " with max_size " << max_size << " and max_nodes " << max_nodes << " there were too many paths!"<< std::endl;
+        early_exit = true;
+    }
+
+    if (early_exit) return {};
     return final_paths;
 }
 
