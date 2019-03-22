@@ -63,6 +63,14 @@ int main(int argc, char **argv) {
     sglib::OutputLog() << "Building backbones from " << from << " to " << to << std::endl;
     for (uint32_t backbone=from; backbone <= to and backbone < backbones.size(); ++backbone) {
         sglib::OutputLog() << "Starting consensus for backbone " << backbone << std::endl;
+
+        for (const auto &n: backbones[backbone]) {
+            if (n != 0){
+                std::cout << "seq"<<std::abs(n)<<",";
+            }
+        }
+        std::cout << std::endl;
+
         auto useful_read = ws.long_read_mappers[0].create_read_paths(backbones[backbone]);
 
         sglib::OutputLog() << "Created read paths for " << useful_read.size() << " reads"<<std::endl;
