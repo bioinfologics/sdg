@@ -82,6 +82,15 @@ int main(int argc, char **argv) {
         sglib::OutputLog() << "Done orienting " << useful_read.size() << " read paths"<<std::endl;
         haplotypeConsensus.write_read_paths("oriented_read_paths_backbone_"+std::to_string(backbone)+".orp");
         haplotypeConsensus.build_line_path();
+
+        sglib::OutputLog() << "Backbone " << backbone << " consensus: " << std::endl;
+        for (const auto &n: haplotypeConsensus.backbone_filled_path) {
+            if (n != 0){
+                std::cout << "seq"<<std::abs(n)<<",";
+            }
+        }
+        std::cout << std::endl;
+
         sglib::OutputLog() << "Done building line path" << std::endl;
         std::string consensus = haplotypeConsensus.consensus_sequence();
         std::ofstream backbone_consensus_fasta("consensus"+std::to_string(backbone)+".fasta");
