@@ -87,6 +87,8 @@ int main(int argc, char **argv) {
 
 
             sglib::OutputLog() << "Created read paths for " << useful_read.size() << " reads" << std::endl;
+            std::cout << "Read ids: ";
+            std::copy(useful_read.cbegin(), useful_read.cend(), std::ostream_iterator<uint64_t>(std::cout, ", "));
 
             auto max_rid = std::max_element(useful_read.cbegin(), useful_read.cend());
             haplotypeConsensus.oriented_read_paths.resize(*max_rid);
