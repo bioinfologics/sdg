@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
             std::copy(useful_read.cbegin(), useful_read.cend(), std::ostream_iterator<uint64_t>(std::cout, ", "));
 
             auto max_rid = std::max_element(useful_read.cbegin(), useful_read.cend());
-            haplotypeConsensus.oriented_read_paths.resize(*max_rid + 1000);
+            haplotypeConsensus.oriented_read_paths.resize(*max_rid + 1);
             haplotypeConsensus.orient_read_paths(useful_read);
             sglib::OutputLog() << "Done orienting " << useful_read.size() << " read paths" << std::endl;
 
