@@ -128,7 +128,7 @@ void log_workspace(int argc, char **argv){
         }
 
         if (result.count("workspace")==0) {
-            throw cxxopts::OptionException(" please specify kmer spectra file");
+            throw cxxopts::OptionException(" please specify workspace file");
         }
 
 
@@ -138,8 +138,32 @@ void log_workspace(int argc, char **argv){
         exit(1);
     }
     WorkSpace w;
-    w.load_from_disk(filename,true);
+    w.load_from_disk(filename);
     w.print_log();
+    std::cout<<std::endl<<"---=== Workspace current status ===---"<<std::endl;
+    //graph
+    w.sg.print_status();
+    //kci
+    w.kci.print_status();
+    //PR datastores and mappings
+    sglib::OutputLog()<<"Workspace contains "<< w.paired_read_datastores.size() << " paired reads datastores" <<std::endl;
+    for (auto di=0;di<w.paired_read_datastores.size();++di){
+        w.paired_read_datastores[di].print_status();
+        w.paired_read_mappers[di].print_status();
+
+    }
+    //10x datastores and mappings
+    sglib::OutputLog()<<"Workspace contains "<< w.linked_read_datastores.size() << " linked reads datastores" <<std::endl;
+    for (auto di=0;di<w.linked_read_datastores.size();++di){
+        w.linked_read_datastores[di].print_status();
+        w.linked_read_mappers[di].print_status();
+    }
+    //LR datastores and mappings
+    sglib::OutputLog()<<"Workspace contains "<< w.long_read_datastores.size() << " long reads datastores" <<std::endl;
+    for (auto di=0;di<w.long_read_datastores.size();++di){
+        w.long_read_datastores[di].print_status();
+        w.long_read_mappers[di].print_status();
+    }
 }
 
 void dump_workspace(int argc, char **argv){

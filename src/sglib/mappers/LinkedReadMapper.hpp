@@ -88,10 +88,12 @@ public:
     void save_to_disk(std::string filename);
     void load_from_disk(std::string filename);*/
 
-    /**
-     * Not implemented
+    /** @brief Prints the count of pairs mapped.
+     *
+     * Prints the count of pairs mapped where no end mapped, a single end mapped and both ends mapped and of
+     * those how many mapped to a single node.
      */
-    void print_stats(){};
+    void print_status();
 
     /** @brief Given a nodeID returns a set of all tags mapped to that node.
      * if there are no mapped tags returns an empty set

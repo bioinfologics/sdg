@@ -1,11 +1,9 @@
 #ifdef SWIGR
-%module rbsg
+    %module rbsg
 #endif
+
 #ifdef SWIGPYTHON
-%module pybsg
-#endif
-#ifdef SWIGR
-%ignore PathExplorer;
+    %module pybsg
 #endif
 
 %ignore Backbone;
@@ -37,9 +35,10 @@
 #include "sglib/mappers/threader/MappingThreader.hpp"
 
 #include "sglib/processors/Untangler.hpp"
-#include "sglib/processors/PathExplorer.hpp"
 #include "sglib/graph/LinkageDiGraph.hpp"
 #include "sglib/processors/LinkageUntangler.hpp"
+
+#include "sglib/processors/HaplotypeConsensus.hpp"
 
 %}
 
@@ -58,34 +57,12 @@
 %include "std_pair.i"
 
 #ifndef SWIGR
-%include "std_set.i"
+    %include "std_set.i"
 #endif
 
 %include "sglib/types/KmerTypes.hpp"
 %include "sglib/types/GenericTypes.hpp"
-%include "sglib/types/MappingTypes.hpp"
-%include "sglib/graph/SequenceGraphPath.hpp"
-%include "sglib/graph/SequenceSubGraph.hpp"
-%include "sglib/graph/SequenceGraph.hpp"
-%include "sglib/indexers/UniqueKmerIndex.hpp"
-%include "sglib/processors/KmerCompressionIndex.hpp"
-%include "sglib/workspace/WorkSpace.hpp"
-%include "sglib/factories/KMerCountFactory.hpp"
-
-%include "sglib/processors/Untangler.hpp"
-%include "sglib/processors/PathExplorer.hpp"
-
 %include "sglib/datastores/LinkedReadsDatastore.hpp"
-%include "sglib/datastores/LongReadsDatastore.hpp"
-%include "sglib/datastores/PairedReadsDatastore.hpp"
-%include "sglib/datastores/PathsDatastore.hpp"
-%include "sglib/mappers/LongReadMapper.hpp"
-%include "sglib/mappers/LinkedReadMapper.hpp"
-%include "sglib/mappers/PairedReadMapper.hpp"
-%include "sglib/mappers/threader/NodeMapper.hpp"
-%include "sglib/mappers/threader/MappingThreader.hpp"
-%include "sglib/processors/LinkageUntangler.hpp"
-%include "sglib/graph/LinkageDiGraph.hpp"
 
 namespace std {
    %template(vectorInt) vector<int>;
@@ -110,7 +87,7 @@ namespace std {
    %template(vectorvectorLongReadMapping) vector<vector<LongReadMapping>>;
    %template(vectorTagNeighbour) vector<TagNeighbour>;
    %template(vectorvectorTagNeighbour) vector<vector<TagNeighbour>>;
-
+   %template(vectorHaplotypeScore) vector<HaplotypeScore>;
 
    %ignore vector<LongReadMapper>::vector(size_type);
    %ignore vector<LongReadMapper>::resize;
@@ -150,8 +127,8 @@ namespace std {
    %template(vectorPath) vector<SequenceGraphPath>;
    %template(vectorKmerCount) vector<KmerCount>;
 
-    %template(intSGNodePair) pair<int, sgNodeID_t>;
-    %template(vectorintSGNodePair) vector<pair<int, sgNodeID_t>>;
+   %template(intSGNodePair) pair<int, sgNodeID_t>;
+   %template(vectorintSGNodePair) vector<pair<int, sgNodeID_t>>;
 
 #ifndef SWIGR
    %template(set10xTag) set<bsg10xTag>;
@@ -161,43 +138,68 @@ namespace std {
 };
 
 #ifdef SWIGPYTHON
-%feature("python:tp_hash") Link "std::hash<Link>";
+    %feature("python:tp_hash") Link "std::hash<Link>";
 
-%define __STR__()
-std::string __str__() {
-  std::ostringstream out;
-  out << *$self;
-  return out.str().c_str();
-}
-%enddef
+    %define __STR__()
+    std::string __str__() {
+      std::ostringstream out;
+      out << *$self;
+      return out.str().c_str();
+    }
+    %enddef
 
-%define __REPR__()
-std::string __repr__() {
-  std::ostringstream out;
-  out << "<" << *$self << ">";
-  return out.str().c_str();
-}
-%enddef
+    %define __REPR__()
+    std::string __repr__() {
+      std::ostringstream out;
+      out << "<" << *$self << ">";
+      return out.str().c_str();
+    }
+    %enddef
 
-%extend Link{
-    __STR__();
-    __REPR__();
-}
+    %extend Link{
+        __STR__();
+        __REPR__();
+    }
 
-%extend Node{
-    __STR__();
-    __REPR__();
-}
+    %extend Node{
+        __STR__();
+        __REPR__();
+    }
 
-%extend LongReadMapping{
-    __STR__();
-    __REPR__();
-};
+    %extend LongReadMapping{
+        __STR__();
+        __REPR__();
+    };
 
-//TODO: Make sure this changes on new releases
-%pythoncode %{
-__version__ = "@bsg_VERSION@"
-__branch__ = "@GIT_BRANCH@"
-__commit__ = "@GIT_COMMIT_HASH@"
-%}
+    //TODO: Make sure this changes on new releases
+    %pythoncode %{
+    __version__ = "@bsg_VERSION@"
+    __branch__ = "@GIT_BRANCH@"
+    __commit__ = "@GIT_COMMIT_HASH@"
+    %}
 #endif
+
+
+%include "sglib/types/MappingTypes.hpp"
+%include "sglib/graph/SequenceGraphPath.hpp"
+%include "sglib/graph/SequenceSubGraph.hpp"
+%include "sglib/graph/SequenceGraph.hpp"
+%include "sglib/indexers/UniqueKmerIndex.hpp"
+%include "sglib/processors/KmerCompressionIndex.hpp"
+%include "sglib/workspace/WorkSpace.hpp"
+%include "sglib/factories/KMerCountFactory.hpp"
+
+%include "sglib/processors/Untangler.hpp"
+
+%include "sglib/datastores/LongReadsDatastore.hpp"
+%include "sglib/datastores/PairedReadsDatastore.hpp"
+%include "sglib/datastores/PathsDatastore.hpp"
+%include "sglib/mappers/LongReadMapper.hpp"
+%include "sglib/mappers/LinkedReadMapper.hpp"
+%include "sglib/mappers/PairedReadMapper.hpp"
+%include "sglib/mappers/threader/NodeMapper.hpp"
+%include "sglib/mappers/threader/MappingThreader.hpp"
+%include "sglib/processors/LinkageUntangler.hpp"
+%include "sglib/graph/LinkageDiGraph.hpp"
+
+%include "sglib/processors/HaplotypeConsensus.hpp"

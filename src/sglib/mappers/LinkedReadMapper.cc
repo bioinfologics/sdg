@@ -331,6 +331,22 @@ void LinkedReadMapper::remove_obsolete_mappings(){
     std::cout << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
 }
 
+void LinkedReadMapper::print_status() {
+    uint64_t none=0,single=0,both=0,same=0;
+    for (uint64_t r1=1;r1<read_to_node.size();r1+=2){
+        if (read_to_node[r1]==0) {
+            if (read_to_node[r1+1]==0) ++none;
+            else ++single;
+        }
+        else if (read_to_node[r1+1]==0) ++single;
+        else {
+            ++both;
+            if (abs(read_to_node[r1])==abs(read_to_node[r1+1])) ++same;
+        }
+    }
+    sglib::OutputLog()<<"Mapped pairs from "<<datastore.filename<<": None: "<<none<<"  Single: "<<single<<"  Both: "<<both<<" ("<<same<<" same)"<<std::endl;
+}
+
 std::set<bsg10xTag> LinkedReadMapper::get_node_tags(sgNodeID_t n) {
     std::set<bsg10xTag> tags;
     for (auto &rm:reads_in_node[(n>0?n:-n)])

@@ -23,7 +23,7 @@ public:
 
     std::string get_fasta_header(bool use_oldnames = false) const;
     std::string get_sequence() const;
-    size_t get_sequence_size_fast();
+    size_t get_sequence_size_fast() const;
     std::vector<Link> get_next_links();
     void reverse();
     bool is_canonical();

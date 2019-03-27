@@ -452,3 +452,7 @@ void KmerCompressionIndex::compute_kci_profiles(std::string filename) {
         of << ss.str() << std::endl;
     }
 }
+
+void KmerCompressionIndex::print_status() {
+    sglib::OutputLog()<<"KCI has "<<graph_kmers.size()<<" kmers"<<std::endl;
+}

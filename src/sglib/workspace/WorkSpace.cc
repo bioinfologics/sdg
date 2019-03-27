@@ -79,6 +79,10 @@ void WorkSpace::dump_to_disk(std::string filename) {
 
 void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     std::ifstream wsfile(filename);
+    if (!wsfile.good()) {
+        std::cerr << filename << " opening error: " << strerror(errno) << std::endl;
+        throw std::runtime_error("Error opening " + filename);
+    }
     uint64_t count;
     //read log
     log.clear();
@@ -236,7 +240,7 @@ void WorkSpace::remap_all() {
     for (auto &m:paired_read_mappers) {
         sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         m.remap_all_reads();
-        m.print_stats();
+        m.print_status();
         sglib::OutputLog()<<"Computing size distribution..."<<std::endl;
         //auto sdist=m.size_distribution();
         //std::ofstream df("prdist_"+std::to_string(pri++)+".csv");
@@ -262,7 +266,7 @@ void WorkSpace::remap_all63() {
     for (auto &m:paired_read_mappers) {
         sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         m.remap_all_reads63();
-        m.print_stats();
+        m.print_status();
         add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
         sglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
     }

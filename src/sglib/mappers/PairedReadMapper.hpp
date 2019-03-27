@@ -91,7 +91,7 @@ public:
      * Prints the count of pairs mapped where no end mapped, a single end mapped and both ends mapped and of
      * those how many mapped to a single node.
      */
-    void print_stats();
+    void print_status();
 
     PairedReadMapper operator=(const PairedReadMapper &other);
 

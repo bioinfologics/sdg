@@ -67,6 +67,8 @@ public:
     std::vector<LongReadsDatastore> long_read_datastores;
     std::vector<LongReadMapper> long_read_mappers;
     std::vector<PathsDatastore> path_datastores;
+
+
     KmerCompressionIndex kci;
     std::string verbose_log="";
 

@@ -332,7 +332,7 @@ void PairedReadMapper::remove_obsolete_mappings(){
     sglib::OutputLog(sglib::INFO, false) << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
 }
 
-void PairedReadMapper::print_stats(){
+void PairedReadMapper::print_status(){
     uint64_t none=0,single=0,both=0,same=0;
     for (uint64_t r1=1;r1<read_to_node.size();r1+=2){
         if (read_to_node[r1]==0) {

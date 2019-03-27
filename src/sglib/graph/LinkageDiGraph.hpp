@@ -27,8 +27,9 @@ public:
      * @param source Source node + or - end
      * @param dest Destination node + or - end
      * @param d Distance (overlap if it's negative)
+     * @param read_id id of the read supporting the link (experimental)
      */
-    void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
+    void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d, uint64_t read_id=0);
 
     /**
      * Given a LDG adds all the connection of that LDG to the current LDG links collection.

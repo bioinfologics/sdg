@@ -64,6 +64,9 @@ struct LongReadMapping {
                == std::tie(other.node,other.read_id,other.nStart,other.nEnd,other.qStart,other.qEnd);
     }
 
+    bool operator!=(const LongReadMapping &other) const {
+        return !(*this==other);
+    }
 
     bool operator<(const LongReadMapping &other) const {
         return std::tie(read_id,qStart,qEnd,node,nStart,nEnd)
