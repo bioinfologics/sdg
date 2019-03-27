@@ -38,6 +38,7 @@
 #include "sglib/graph/LinkageDiGraph.hpp"
 #include "sglib/processors/LinkageUntangler.hpp"
 
+#include "sglib/processors/HaplotypeConsensus.hpp"
 
 %}
 
@@ -201,4 +202,4 @@ namespace std {
 %include "sglib/processors/LinkageUntangler.hpp"
 %include "sglib/graph/LinkageDiGraph.hpp"
 
-
+%include "sglib/processors/HaplotypeConsensus.hpp"
