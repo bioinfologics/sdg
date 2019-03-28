@@ -26,6 +26,10 @@ struct ReadCacheItem {
         return os;
     }
 
+    bool operator<(const ReadCacheItem &o) const {
+        return id<o.id;
+    }
+
 };
 
 struct match_band{

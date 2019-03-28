@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
 
         if (!read_paths_in_file) {
             auto useful_read = ws.long_read_mappers[0].create_read_paths(backbones[backbone]);
-
+            sglib::sort(useful_read.begin(), useful_read.end());
 
             sglib::OutputLog() << "Created read paths for " << useful_read.size() << " reads" << std::endl;
             std::cout << "Read ids: ";
