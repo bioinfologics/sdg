@@ -753,7 +753,7 @@ std::vector<ReadCacheItem> LongReadMapper::create_read_paths(std::vector<sgNodeI
     for (uint32_t bn = 0; bn < backbone.size(); bn++) {
         for (const auto &read:reads_in_node[std::abs(backbone[bn])]) {
             const auto find_it = useful_read.find(read);
-            if (find_it != useful_read.cend()) {
+            if (find_it == useful_read.cend()) {
                 useful_read.emplace(read);
                 std::string seq = sequenceGetter.get_read_sequence(read);
                 read_cache.emplace_back(read, seq);
