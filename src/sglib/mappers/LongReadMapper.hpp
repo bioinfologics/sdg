@@ -20,6 +20,12 @@ struct ReadCacheItem {
     uint64_t id;
     std::string seq;
     ReadCacheItem(uint64_t i, std::string &sequence): id(i), seq(sequence) {}
+
+    friend std::ostream& operator<<(std::ostream& os, const ReadCacheItem& read) {
+        os << read.id;
+        return os;
+    }
+
 };
 
 struct match_band{
