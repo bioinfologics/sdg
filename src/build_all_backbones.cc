@@ -39,11 +39,9 @@ int main(int argc, char **argv) {
 
     ws.load_from_disk("nano10x_rg_lmpLR10x_mapped.bsgws");
 
-    ws.long_read_mappers[0].read_filtered_mappings("fm_10K3.bsgfrm");
+    ws.long_read_mappers[0].read_filtered_mappings("fm_10K3_filtered.bsgfrm");
     ws.linked_read_mappers[0].read_tag_neighbours("tag_neighbours_1000_0.03.data");
-
     ws.long_read_mappers[0].update_indexes();
-    ws.long_read_mappers[0].improve_filtered_mappings();
 
     sglib::OutputLog() << "Selecting backbones" << std::endl;
 
