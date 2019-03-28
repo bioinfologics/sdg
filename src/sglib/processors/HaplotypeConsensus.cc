@@ -105,10 +105,10 @@ void HaplotypeConsensus::build_line_path() {
                 uint32_t pn1 = p.size();
                 uint32_t pn2 = p.size();
                 for (uint32_t path_node_pos = 0; path_node_pos < p.size(); path_node_pos++) {
-                    if (p[path_node_pos] == n1 and pn1 != p.size()) {
+                    if (p[path_node_pos] == n1 and pn1 == p.size()) {
                         pn1 = path_node_pos;
                     }
-                    if (p[path_node_pos] == n2 and pn2 != p.size()) {
+                    if (p[path_node_pos] == n2 and pn2 == p.size()) {
                         pn2 = path_node_pos;
                     }
                 }
