@@ -117,7 +117,7 @@ void HaplotypeConsensus::build_line_path() {
                     continue; // TODO: Some paths seem to be wrongly oriented?!
                 }
                 if (pn1 != p.size() and pn2 != p.size()) {
-                    ++gap_paths[std::vector<sgNodeID_t>(pn1, pn2)];
+                    ++gap_paths[std::vector<sgNodeID_t>(p.begin()+pn1, p.begin()+pn2)];
                 }
             }
             std::multimap<uint32_t, std::vector<sgNodeID_t>> most_common = flip_map(gap_paths);
