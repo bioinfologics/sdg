@@ -16,6 +16,12 @@
 #include "LinkedReadMapper.hpp"
 #include <memory>
 
+struct ReadCacheItem {
+    uint64_t id;
+    std::string seq;
+    ReadCacheItem(uint64_t i, std::string &sequence): id(i), seq(sequence) {}
+};
+
 struct match_band{
     bool dir;
     int32_t min_offset;
