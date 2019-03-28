@@ -419,6 +419,7 @@ std::vector<LongReadMapping> LongReadMapper::map_sequence(const char * query_seq
 
 void LongReadMapper::update_indexes() {
     if (!std::is_sorted(mappings.begin(), mappings.end())) {
+        sglib::OutputLog() << "Sorting mappings" << std::endl;
         sglib::sort(mappings.begin(), mappings.end());
     }
     first_mapping.clear();
@@ -745,7 +746,7 @@ std::vector<LongReadMapping> LongReadMapper::improve_read_filtered_mappings(uint
     return new_mappings;
 }
 
-std::unordered_set<uint64_t> LongReadMapper::create_read_paths(std::vector<sgNodeID_t> &backbone) {
+std::vector<ReadCacheItem> LongReadMapper::create_read_paths(std::vector<sgNodeID_t> &backbone) {
     std::unordered_set<uint64_t> useful_read;
     std::vector<ReadCacheItem> read_cache;
     BufferedSequenceGetter sequenceGetter(datastore);
@@ -770,7 +771,7 @@ std::unordered_set<uint64_t> LongReadMapper::create_read_paths(std::vector<sgNod
         create_read_path(read_cache[rcp].id, false, read_cache[rcp].seq);
     }
 
-    return useful_read;
+    return read_cache;
 }
 
 std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verbose, const std::string read_seq) {

@@ -73,6 +73,7 @@ int main(int argc, char **argv) {
         HaplotypeConsensus haplotypeConsensus(ws, mldg, ldg, backbones[backbone]);
 
         bool read_paths_in_file=false;
+        if(false)
         {
             std::ifstream orp_file("oriented_read_paths_backbone_"+std::to_string(backbone)+".orp");
             if (orp_file.good()){
@@ -87,9 +88,8 @@ int main(int argc, char **argv) {
             sglib::OutputLog() << "Created read paths for " << useful_read.size() << " reads" << std::endl;
             std::cout << "Read ids: ";
             std::copy(useful_read.cbegin(), useful_read.cend(), std::ostream_iterator<uint64_t>(std::cout, ", "));
-
-            auto max_rid = std::max_element(useful_read.cbegin(), useful_read.cend());
-            haplotypeConsensus.oriented_read_paths.resize(*max_rid + 1);
+            auto max_rid = useful_read.end();
+            haplotypeConsensus.oriented_read_paths.resize(max_rid->id + 1);
             haplotypeConsensus.orient_read_paths(useful_read);
             sglib::OutputLog() << "Done orienting " << useful_read.size() << " read paths" << std::endl;
 
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
             // Clear temp structures
             ws.long_read_mappers[0].all_paths_between.clear();
             for (const auto &read: useful_read) {
-                ws.long_read_mappers[0].read_paths[read].clear();
+                ws.long_read_mappers[0].read_paths[read.id].clear();
             }
             sglib::OutputLog() << "Done clearing structures" << std::endl;
 

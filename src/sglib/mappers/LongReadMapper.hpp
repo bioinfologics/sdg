@@ -303,7 +303,7 @@ public:
         update_indexes();
     }
 
-    std::unordered_set<uint64_t> create_read_paths(std::vector<sgNodeID_t> &backbone);
+    std::vector<ReadCacheItem>create_read_paths(std::vector<sgNodeID_t> &backbone);
 
     std::vector<sgNodeID_t> create_read_path(uint32_t rid, bool verbose=false, const std::string read_seq="");
 
