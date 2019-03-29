@@ -563,6 +563,15 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
     sglib::OutputLog()<<"too short: "<<rshort<<"  no mappings: "<<runmapped<<"  no winner: "<<rnoresult<<"  filtered: "<<rfiltered<<std::endl;
 }
 
+void LongReadMapper::filter_mappings_by_size_and_id(int64_t size, float id) {
+    filtered_read_mappings.clear();
+    filtered_read_mappings.resize(datastore.size());
+    for (auto &m:mappings){
+        if (m.nEnd-m.nStart>=size and 100.0*m.score/(m.nEnd-m.nStart)>=id){
+            filtered_read_mappings[m.read_id].emplace_back(m);
+        }
+    }
+}
 
 std::vector<LongReadMapping>
 LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose) {

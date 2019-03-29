@@ -284,6 +284,7 @@ public:
      */
     void filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size=10000, float min_tnscore=0.03, uint64_t first_id=0, uint64_t last_id=0);
 
+    void filter_mappings_by_size_and_id(int64_t size, float id);
     /**
      * This goes read by read, and transforms the filtered mappings into path-mappings, by:
      * 1) chaining coherent successive mappings
