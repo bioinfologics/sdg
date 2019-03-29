@@ -716,7 +716,7 @@ LinkageDiGraph LinkageUntangler::make_nextselected_linkage(const LinkageDiGraph 
     return ldg;
 }
 
-std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<LongReadMapping> &lorm_mappings, uint32_t read_size) {
+std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<LongReadMapping> &lorm_mappings, uint32_t read_size, int32_t unmapped_end) {
     std::vector<Link> linkage;
     std::unordered_map<sgNodeID_t,uint64_t> total_bp;
     std::vector<LongReadMapping> mfilt_total,mmergedfilt;
@@ -726,7 +726,7 @@ std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<L
     for (int i=0; i<lorm_mappings.size();++i){
         auto &m=lorm_mappings[i];
         auto ns=ws.sg.nodes[llabs(m.node)].sequence.size();
-        if ( (i==0 and m.qStart<1000) or (i==mfilt_total.size()-1 and m.qEnd+1000>read_size) or total_bp[m.node]>=.7*ns) {
+        if ( (i==0 and m.qStart<unmapped_end) or (i==lorm_mappings.size()-1 and m.qEnd+unmapped_end>=read_size) or total_bp[m.node]>=.7*ns) {
             //If a node has mode than one consecutive mapping, merge them.
             if (mfilt_total.size()>0 and mfilt_total.back().node==m.node and mfilt_total.back().nStart<m.nStart and mfilt_total.back().nEnd<m.nEnd and mfilt_total.back().nEnd<m.nStart+500) {
                 mfilt_total.back().nEnd = m.nEnd;
@@ -739,7 +739,7 @@ std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<L
     for (int i=0; i<mfilt_total.size();++i){
         auto &m=mfilt_total[i];
         auto ns=ws.sg.nodes[llabs(m.node)].sequence.size();
-        if ( (i==0 and m.nEnd>.9*ns and m.qStart<1000) or (i==mfilt_total.size()-1 and m.nStart<.1*ns and m.qEnd+1000>read_size) or m.nEnd-m.nStart+1>=.8*ns) {
+        if ( (i==0 and m.nEnd>.9*ns and m.qStart<unmapped_end) or (i==mfilt_total.size()-1 and m.nStart<.1*ns and m.qEnd+unmapped_end>read_size) or m.nEnd-m.nStart+1>=.8*ns) {
             mmergedfilt.push_back(m);
         }
     }
@@ -759,14 +759,14 @@ std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<L
     return linkage;
 }
 
-LinkageDiGraph LinkageUntangler::make_longRead_multilinkage(const LongReadMapper &lorm,bool real_read_size) {
+LinkageDiGraph LinkageUntangler::make_longRead_multilinkage(const LongReadMapper &lorm,bool real_read_size, int32_t unmapped_end) {
     SequenceGraph& sg(ws.getGraph());
     LinkageDiGraph ldg(sg);
     std::vector<Link> linkage;
     //for each read's filtered mappings:
     for(int64_t rid=0;rid<lorm.filtered_read_mappings.size();++rid) {
         if (lorm.filtered_read_mappings[rid].empty()) continue;
-        auto newlinks=mappings_to_multilinkage(lorm.filtered_read_mappings[rid],(real_read_size ? lorm.datastore.read_to_fileRecord[rid].record_size : 0));
+        auto newlinks=mappings_to_multilinkage(lorm.filtered_read_mappings[rid],(real_read_size ? lorm.datastore.read_to_fileRecord[rid].record_size : 0), unmapped_end);
         for (auto &l:newlinks) l.read_id=rid;
         linkage.insert(linkage.end(),newlinks.begin(),newlinks.end());
     }

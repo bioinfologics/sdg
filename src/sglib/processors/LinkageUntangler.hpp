@@ -47,8 +47,8 @@ public:
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> shared_read_paths(int min_shared, std::vector<size_t> libraries, bool r1rev, bool r2rev);
     LinkageDiGraph make_topology_linkage(int radius);
     LinkageDiGraph make_paired_linkage(int min_reads);
-    std::vector<Link> mappings_to_multilinkage(const std::vector<LongReadMapping> &lorm_mappings, uint32_t read_size);
-    LinkageDiGraph make_longRead_multilinkage(const LongReadMapper &lorm,bool real_read_size=true);
+    std::vector<Link> mappings_to_multilinkage(const std::vector<LongReadMapping> &lorm_mappings, uint32_t read_size, int32_t unmapped_end=1000);
+    LinkageDiGraph make_longRead_multilinkage(const LongReadMapper &lorm,bool real_read_size=true, int32_t unmapped_end=1000);
     LinkageDiGraph make_paired10x_multilinkage(const PairedReadMapper &prm, const LinkedReadMapper &lirm, float min_tnscore=0.2, bool fr=false, uint64_t read_offset=0);
     LinkageDiGraph make_paired_linkage_pe(int min_reads);
     LinkageDiGraph make_tag_linkage(int min_tags, bool use_kmer_paths=false);
