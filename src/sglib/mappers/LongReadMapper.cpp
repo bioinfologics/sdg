@@ -768,7 +768,7 @@ std::vector<ReadCacheItem> LongReadMapper::create_read_paths(std::vector<sgNodeI
 
 #pragma omp parallel for
     for (uint32_t rcp = 0; rcp < read_cache.size(); rcp++) {
-        read_paths[read_cache[rcp]] = create_read_path(read_cache[rcp].id, false, read_cache[rcp].seq);
+        read_paths[read_cache[rcp].id] = create_read_path(read_cache[rcp].id, false, read_cache[rcp].seq);
     }
 
     return read_cache;
