@@ -16,6 +16,22 @@
 #include "LinkedReadMapper.hpp"
 #include <memory>
 
+struct ReadCacheItem {
+    uint64_t id;
+    std::string seq;
+    ReadCacheItem(uint64_t i, std::string &sequence): id(i), seq(sequence) {}
+
+    friend std::ostream& operator<<(std::ostream& os, const ReadCacheItem& read) {
+        os << read.id;
+        return os;
+    }
+
+    bool operator<(const ReadCacheItem &o) const {
+        return id<o.id;
+    }
+
+};
+
 struct match_band{
     bool dir;
     int32_t min_offset;
@@ -298,7 +314,7 @@ public:
         update_indexes();
     }
 
-    std::unordered_set<uint64_t> create_read_paths(std::vector<sgNodeID_t> &backbone);
+    std::vector<ReadCacheItem>create_read_paths(std::vector<sgNodeID_t> &backbone);
 
     std::vector<sgNodeID_t> create_read_path(uint32_t rid, bool verbose=false, const std::string read_seq="");
 
