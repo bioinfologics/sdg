@@ -5,17 +5,17 @@
 #include <sglib/logger/OutputLog.hpp>
 #include <fstream>
 #include "LinkageDiGraph.hpp"
-void LinkageDiGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d) {
+void LinkageDiGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, uint64_t rid) {
     if (llabs(source)>=links.size()) links.resize(llabs(source)+1);
     if (llabs(dest)>=links.size()) links.resize(llabs(dest)+1);
-    Link l(source,dest,d);
+    Link l(source,dest,d,rid);
     links[llabs(source)].emplace_back(l);
     std::swap(l.source,l.dest);
     links[llabs(dest)].emplace_back(l);
 }
 
 void LinkageDiGraph::add_links(const LinkageDiGraph &other) {
-    for (auto &lv:other.links) for (auto l:lv) add_link(l.source,l.dest,l.dist);
+    for (auto &lv:other.links) for (auto l:lv) add_link(l.source,l.dest,l.dist,l.read_id);
 }
 
 void LinkageDiGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {

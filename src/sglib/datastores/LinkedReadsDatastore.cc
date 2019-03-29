@@ -33,6 +33,16 @@ std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k) {
     return seq;
 }
 
+void LinkedReadsDatastore::print_status() {
+    uint64_t tagcount=0;
+    bsg10xTag prevtag=0;
+    for (auto &t:read_tag) if (t!=prevtag) {
+        ++tagcount;
+        t=prevtag;
+    }
+    sglib::OutputLog()<<"LinkedRead Datastore from "<<filename<<" contains "<<size()-1<<" reads in "<< tagcount <<" tags."<<std::endl;
+}
+
 void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int _rs, size_t chunksize) {
 
     //std::cout<<"Memory used by every read's entry:"<< sizeof(LinkedRead)<<std::endl;
@@ -421,7 +431,7 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
     return std::move(kset);
 }
 
-std::unordered_set<__uint128_t> LinkedReadsDatastore::get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg, bool count_tag_cvg) {
+std::unordered_set<__uint128_t, int128_hash> LinkedReadsDatastore::get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg, bool count_tag_cvg) {
     class StreamKmerFactory128 : public  KMerFactory128 {
     public:
         explicit StreamKmerFactory128(uint8_t k) : KMerFactory128(k){}
@@ -473,7 +483,7 @@ std::unordered_set<__uint128_t> LinkedReadsDatastore::get_tags_kmers128(int k, i
         }
     }
     std::sort(all_kmers.begin(),all_kmers.end());
-    std::unordered_set<__uint128_t> kset;
+    std::unordered_set<__uint128_t, int128_hash> kset;
     auto ri=all_kmers.begin();
     auto nri=all_kmers.begin();
     while (ri<all_kmers.end()){

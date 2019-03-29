@@ -32,7 +32,7 @@ int main(int argc, char * argv[]) {
         k=31;
         std::cout << std::endl << "Testing with a single sequence: 128bits" << std::endl;
         std::vector<__uint128_t> kmersv;
-        std::unordered_set<__uint128_t> kmers;
+        std::unordered_set<__uint128_t, int128_hash> kmers;
         StringKMerFactory128(seq1, k).create_kmers(kmersv);
         for (auto kmer:kmersv) kmers.insert(kmer);
         SequenceGraph sg;
@@ -45,7 +45,7 @@ int main(int argc, char * argv[]) {
         k=33;
         std::cout << std::endl << "Testing with a single sequence: 128bits" << std::endl;
         std::vector<__uint128_t> kmersv;
-        std::unordered_set<__uint128_t> kmers;
+        std::unordered_set<__uint128_t, int128_hash> kmers;
         StringKMerFactory128(seq1, k).create_kmers(kmersv);
         for (auto kmer:kmersv) kmers.insert(kmer);
         SequenceGraph sg;

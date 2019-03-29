@@ -13,8 +13,8 @@
 #include <sglib/hash/xxhash.h>
 #include "hashing_helper.hpp"
 
-typedef int64_t sgNodeID_t; //first node is 1; negatives are RC
-typedef int32_t seqID_t; //first sequence is 0;
+using sgNodeID_t = int64_t; //first node is 1; negatives are RC
+using seqID_t = int32_t; //first sequence is 0;
 
 enum sgNodeStatus_t {sgNodeActive, sgNodeDeleted};
 
@@ -56,10 +56,11 @@ public:
 class Link{
 public:
     Link(){};
-    Link( sgNodeID_t _src, sgNodeID_t _dst, int32_t _dist) : source(_src), dest(_dst), dist(_dist) {};
+    Link( sgNodeID_t _src, sgNodeID_t _dst, int32_t _dist, int64_t _read_id=0) : source(_src), dest(_dst), dist(_dist), read_id(_read_id) {};
     sgNodeID_t source = 0;
     sgNodeID_t dest = 0;
     int32_t dist = 0;
+    int64_t read_id;
 
     bool operator==( const  Link);
     bool operator<(const Link)const;

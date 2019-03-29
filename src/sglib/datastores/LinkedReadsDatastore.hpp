@@ -21,7 +21,7 @@
 #include <sglib/Version.hpp>
 
 
-typedef uint32_t bsg10xTag;
+using bsg10xTag = uint32_t;
 enum class LinkedReadsFormat {UCDavis,raw,seq};
 struct LinkedReadData {
     bsg10xTag tag;
@@ -57,6 +57,7 @@ public:
     LinkedReadsDatastore(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250){
         build_from_fastq(read1_filename,read2_filename,output_filename,format,readsize);
     };
+    void print_status();
     void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250,size_t chunksize=10000000);
     void write(std::ofstream & output_file);
     void write_selection(std::ofstream & output_file, const std::set<bsg10xTag> & tagSet);
@@ -70,7 +71,7 @@ public:
     //inline std::string get_read_sequence(size_t readID){return get_read_sequence(readID,fd1,fd2);};
     bsg10xTag get_read_tag(size_t readID);
     std::unordered_set<uint64_t> get_tags_kmers(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg);
-    std::unordered_set<__uint128_t> get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg, bool count_tag_cvg=false);
+    std::unordered_set<__uint128_t, int128_hash> get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg, bool count_tag_cvg=false);
     std::vector<uint64_t> get_tag_reads(bsg10xTag tag) const;
     std::vector<std::pair<bsg10xTag, uint32_t>> get_tag_readcount();
     void dump_tag_occupancy_histogram(std::string filename);

@@ -751,54 +751,6 @@ SequenceGraph::depth_first_search(const nodeVisitor seed, unsigned int size_limi
     return result;
 }
 
-SequenceGraphPath
-SequenceGraph::find_path_between(const sgNodeID_t seed, const sgNodeID_t target, unsigned int size_limit,
-                                 unsigned int edge_limit) {
-    struct visitor {
-        sgNodeID_t node;
-        uint dist;
-        uint path_length;
-        visitor(sgNodeID_t n, uint d, uint p) : node(n), dist(d), path_length(p) {}
-    };
-
-    std::vector<SequenceGraphPath> collected_paths;
-    std::vector<sgNodeID_t> current_path;
-
-    std::stack<visitor> to_visit;
-    to_visit.emplace(seed, 0, 0);
-    std::set<sgNodeID_t> visited;
-
-    while (!to_visit.empty()) {
-        const auto activeNode(to_visit.top());
-        to_visit.pop();
-        if (visited.find(activeNode.node) == visited.end() and (activeNode.path_length < edge_limit or edge_limit==0) and (activeNode.dist < size_limit or size_limit==0) )
-        {
-            visited.emplace(activeNode.node);
-
-            if (current_path.size() > activeNode.path_length) {
-                current_path[activeNode.path_length] = activeNode.node;
-                current_path.resize(activeNode.path_length + 1);
-            } else {
-                current_path.emplace_back(activeNode.node);
-            }
-
-            for (const auto &l : get_fw_links(activeNode.node)) {
-                // For each child of the current node, create a child visitor object, and enter it into the parent map.
-                visitor child { l.dest, activeNode.dist + uint(nodes[std::abs(l.dest)].sequence.length()), activeNode.path_length + 1 };
-
-                // If I've found the target along this dfs path, I need to collect it and put it into a SequenceGraphPath object.
-                if (child.node == target) {
-                    current_path.emplace_back(target);
-                    return SequenceGraphPath(*this,current_path);
-                } else {
-                    to_visit.emplace(child);
-                }
-            }
-        }
-    }
-    return SequenceGraphPath{*this};
-}
-
 std::vector<nodeVisitor>
 SequenceGraph::explore_nodes(std::vector<std::string> &nodes, unsigned int size_limit, unsigned int edge_limit) {
     std::set<nodeVisitor> resultNodes;
@@ -1033,38 +985,74 @@ void SequenceGraph::print_bubbly_subgraph_stats(const std::vector<SequenceSubGra
 
 }
 
-std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes, bool abort_on_loops) {
-    std::vector<SequenceGraphPath> current_paths,next_paths,final_paths;
-    for(auto &fl:get_fw_links(from)) current_paths.emplace_back(SequenceGraphPath(*this,{fl.dest}));
-    //int rounds=20;
-    while (not current_paths.empty() and --max_nodes>0){
-        //std::cout<<"starting round of context expansion, current nodes:  ";
-        //for (auto cn:current_nodes) std::cout<<cn.first<<"("<<cn.second<<")  ";
-        //std::cout<<std::endl;
-        next_paths.clear();
-        for (auto &p:current_paths){
-            //if node is a destination add it to final nodes
-            if (p.nodes.back()==-to) return {};//std::cout<<"WARNING: found path to -TO node"<<std::endl;
-            if (p.nodes.back()==to) {
-                final_paths.push_back(p);
-                final_paths.back().nodes.pop_back();
-            }
-                //else get fw links, compute distances for each, and if not >max_dist add to nodes
-            else {
-                for (auto l:get_fw_links(p.nodes.back())){
-                    if (abort_on_loops and std::find(p.nodes.begin(),p.nodes.end(),l.dest)!=p.nodes.end()) {
-                        //std::cout<<"Loop detected, aborting pathing attempt!"<<std::endl;
-                        return {};
-                        //continue;
+std::vector<SequenceGraphPath> SequenceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes, bool abort_on_loops) const {
+    typedef struct T {
+        int64_t prev;
+        sgNodeID_t node;
+        int node_count;
+        int64_t partial_size;
+        T(uint64_t a, sgNodeID_t b, int c, int64_t d) : prev(a),node(b),node_count(c),partial_size(d){};
+    } pathNodeEntry_t;
+
+    std::vector<pathNodeEntry_t> node_entries;
+    node_entries.reserve(100000);
+    std::vector<SequenceGraphPath> final_paths;
+    std::vector<sgNodeID_t> pp;
+
+    for(auto &fl:get_fw_links(from)) {
+        if (nodes[llabs(fl.dest)].sequence.size()<=max_size) {
+            node_entries.emplace_back(-1, fl.dest, 1, nodes[llabs(fl.dest)].sequence.size());
+        }
+    }
+
+
+    // XXX: This loop is growing forever on node 2083801 for backbone 58, the limits are heuristics to cap the complexity of regions captured
+    for (uint64_t current_index=0;current_index<node_entries.size() and node_entries.size() < 1000001 and final_paths.size() < 1001;++current_index){
+        auto current_entry=node_entries[current_index];
+        auto fwl=get_fw_links(current_entry.node);
+        for(auto &fl:fwl) {
+            if (fl.dest==to){
+                //reconstruct path backwards
+                pp.resize(current_entry.node_count);
+
+                for (uint64_t ei=current_index;ei!=-1;ei=node_entries[ei].prev){
+                    pp[node_entries[ei].node_count-1]=node_entries[ei].node;
+                }
+                //check if there are any loops
+                if (abort_on_loops) {
+                    for (auto i1 = 0; i1 < pp.size(); ++i1) {
+                        for (auto i2 = 0; i2 < pp.size(); ++i2) {
+                            if (pp[i1]==pp[i2]) {
+                                return {};
+                            }
+                        }
                     }
-                    next_paths.push_back(p);
-                    next_paths.back().nodes.push_back(l.dest);
-                    if (l.dest!=to and next_paths.back().get_sequence_size_fast()>max_size) next_paths.pop_back();
+                }
+                //add to solutions
+                final_paths.emplace_back(*this,pp);
+            }
+            else {
+                uint64_t new_size=current_entry.partial_size+fl.dist+nodes[llabs(fl.dest)].sequence.size();
+                if (new_size<=max_size and current_entry.node_count<=max_nodes) {
+                    node_entries.emplace_back(current_index, fl.dest, current_entry.node_count+1, new_size);
                 }
             }
         }
-        current_paths=next_paths;
+
     }
+
+    bool early_exit=false;
+    if (node_entries.size() == 1000000) {
+        std::cout << "From " << from << " to " << to << " with max_size " << max_size << " and max_nodes " << max_nodes << " there were too many nodes!"<< std::endl;
+        early_exit = true;
+    }
+
+    if (final_paths.size() == 1000) {
+        std::cout << "From " << from << " to " << to << " with max_size " << max_size << " and max_nodes " << max_nodes << " there were too many paths!"<< std::endl;
+        early_exit = true;
+    }
+
+    if (early_exit) return {};
     return final_paths;
 }
 
@@ -1121,4 +1109,31 @@ std::vector<sgNodeID_t> SequenceGraph::get_flanking_nodes(sgNodeID_t loopy_node)
         neigh_set.insert(std::abs(n));
     }
     return std::vector<sgNodeID_t> (neigh_set.begin(), neigh_set.end());
+}
+
+void SequenceGraph::print_status() {
+    auto &log_no_date=sglib::OutputLog(sglib::LogLevels::INFO,false);
+    std::vector<uint64_t> node_sizes;
+    uint64_t total_size=0;
+    for (auto n:nodes) {
+        if (n.status!=sgNodeDeleted) {
+            total_size += n.sequence.size();
+            node_sizes.push_back(n.sequence.size());
+        }
+    }
+    std::sort(node_sizes.rbegin(),node_sizes.rend());
+    auto on20s=total_size*.2;
+    auto on50s=total_size*.5;
+    auto on80s=total_size*.8;
+    sglib::OutputLog() <<"The graph contains "<<node_sizes.size()<<" sequences with "<<total_size<<"bp, ";
+    uint64_t acc=0;
+    for (auto s:node_sizes){
+        if (acc==0)  log_no_date<<"N0: "<<s<<"bp  ";
+        if (acc<on20s and acc+s>on20s) log_no_date<<"N20: "<<s<<"bp  ";
+        if (acc<on50s and acc+s>on50s) log_no_date<<"N50: "<<s<<"bp  ";
+        if (acc<on80s and acc+s>on80s) log_no_date<<"N80: "<<s<<"bp  ";
+        acc+=s;
+        if (acc==total_size)  log_no_date<<"N100: "<<s<<"bp  ";
+    }
+    log_no_date<<std::endl;
 }

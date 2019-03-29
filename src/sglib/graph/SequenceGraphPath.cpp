@@ -131,14 +131,14 @@ std::vector<Link> SequenceGraphPath::get_next_links() {
     return sg.get_fw_links(nodes.back());
 }
 
-size_t SequenceGraphPath::get_sequence_size_fast() {
+size_t SequenceGraphPath::get_sequence_size_fast() const{
     size_t size=0;
     //std::string s="";
     sgNodeID_t pnode=0;
     // just iterate over every node in path - contig names are converted to ids at construction
     for (auto &n:nodes) {
         std::string nseq;
-        size=sg.nodes[llabs(n)].sequence.size();
+        size+=sg.nodes[llabs(n)].sequence.size();
         if (pnode !=0){
             //find link between pnode' output (+pnode) and n's sink (-n)
             auto l=sg.links[llabs(pnode)].begin();

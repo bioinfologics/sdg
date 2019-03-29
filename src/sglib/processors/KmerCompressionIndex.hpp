@@ -222,6 +222,8 @@ public:
      */
     double compute_compression_for_node(sgNodeID_t node, uint16_t max_graph_freq=10, uint16_t dataset=0); // Only for dataset 0
 
+    void print_status();
+
     SequenceGraph & sg;
 
     /**

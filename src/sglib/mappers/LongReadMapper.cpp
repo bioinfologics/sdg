@@ -2,15 +2,176 @@
 // Created by Luis Yanes (EI) on 22/03/2018.
 //
 
-#include <cmath>
-#include <sglib/mappers/LongReadMapper.hpp>
+#include "LongReadMapper.hpp"
 #include <sglib/logger/OutputLog.hpp>
-
 #include <sglib/utilities/omp_safe.hpp>
-#include <atomic>
 #include <sglib/utilities/io_helpers.hpp>
+#include <sglib/utilities/most_common_helper.hpp>
+#include <sglib/workspace/WorkSpace.hpp>
+#include <atomic>
+#include <cmath>
+#include <iomanip>      // std::setprecision
+
 
 const bsgVersion_t LongReadMapper::min_compat = 0x0001;
+
+LongReadHaplotypeMappingsFilter::LongReadHaplotypeMappingsFilter (const LongReadMapper & _lorm, const LinkedReadMapper & _lirm):
+        lorm(_lorm),lirm(_lirm){
+    lrbsgp=new BufferedSequenceGetter(lorm.datastore);
+};
+
+
+void LongReadHaplotypeMappingsFilter::set_read(uint64_t _read_id) {
+    read_id=_read_id;
+    read_seq=std::string(lrbsgp->get_read_sequence(_read_id));
+    mappings = lorm.get_raw_mappings_from_read(read_id);
+    //TODO: filter mappings?
+    nodeset.clear();
+    for (auto &m:mappings) {
+        auto n=llabs(m.node);
+        bool dup=false;
+        for (auto &x:nodeset) if (x==n) { dup=true; break; }
+        if (!dup) nodeset.emplace_back(n);
+    }
+    std::sort(nodeset.begin(),nodeset.end());
+    haplotype_scores.clear();
+    rkmers.clear();
+}
+
+void LongReadHaplotypeMappingsFilter::generate_haplotypes_from_linkedreads(float min_tn) {
+    //2) create the neighbour sets, uniq to not evaluate same set many times over.
+    haplotype_scores.clear();
+    std::vector<std::vector<sgNodeID_t>> all_nsets;
+    for (auto n:nodeset){
+        all_nsets.emplace_back();
+        if (n>=lirm.tag_neighbours.size() or lirm.tag_neighbours[n].empty()) continue;
+        for (auto m:nodeset){
+            for (auto &score:lirm.tag_neighbours[n]){
+                if (score.node==m and score.score>min_tn) {
+                    all_nsets.back().push_back(m);
+                    break;
+                }
+            }
+        }
+    }
+    std::sort(all_nsets.begin(),all_nsets.end());
+    for (auto ns:all_nsets) {
+        if (ns.empty()) continue;
+        bool dup=false;
+        for (auto &hs:haplotype_scores) if (ns==hs.haplotype_nodes) {dup=true;break;}
+        if (dup) continue;
+        haplotype_scores.emplace_back();
+        haplotype_scores.back().haplotype_nodes=ns;
+        haplotype_scores.back().score=0;
+    }
+}
+
+void LongReadHaplotypeMappingsFilter::score_coverage(float weight) {
+    for (auto &hs:haplotype_scores){
+        coverage.clear();
+        coverage.resize(read_seq.size());
+        auto &nodeset=hs.haplotype_nodes;
+        uint64_t total_map_bp=0;
+        for (auto m:mappings) if (std::count(nodeset.begin(),nodeset.end(),llabs(m.node))) total_map_bp+=m.qEnd-m.qStart;
+        //this can be done faster by saving all starts and ends and keeping a rolling value;
+        for (auto m:mappings) {
+            if (std::count(nodeset.begin(),nodeset.end(),llabs(m.node))){
+                for (auto i=m.qStart;i<=m.qEnd and i<read_seq.size();++i) ++coverage[i];
+            }
+        }
+        int64_t cov1=std::count(coverage.begin(),coverage.end(),1);
+        int64_t cov0=std::count(coverage.begin(),coverage.end(),0);
+        int64_t covm=coverage.size()-cov0-cov1;
+        float score=(cov1-4*covm )*1.0/coverage.size();
+        hs.score+=weight*score;
+    }
+}
+
+void LongReadHaplotypeMappingsFilter::score_window_winners(float weight, int k, int win_size, int win_step) {
+    //kmerise read
+    StreamKmerFactory skf(k);
+    skf.produce_all_kmers(read_seq.c_str(),rkmers);
+    std::unordered_map<uint64_t,int32_t> rkmerpos;
+    rkmerpos.reserve(rkmers.size());
+    int32_t rkp=0;
+    for (auto &rk:rkmers){
+        auto rkhit=rkmerpos.find(rk);
+        if (rkhit!=rkmerpos.end()) rkmerpos[rk]=-1;
+        else rkmerpos[rk]=rkp;
+        ++rkp;
+    };
+    if (rkmers.size()<win_size) return;
+    if (kmer_hits_by_node.size()<nodeset.size()) kmer_hits_by_node.resize(nodeset.size());
+    //first create a list of used kmers
+    uint64_t ni=0;
+    for (auto &n:nodeset){
+        nkmers.clear();
+        skf.produce_all_kmers(lorm.sg.nodes[n].sequence.c_str(),nkmers);
+        //std::sort(nkmers.begin(),nkmers.end());
+        kmer_hits_by_node[ni].clear();
+        kmer_hits_by_node[ni].resize(rkmers.size());
+        for (auto &nk:nkmers) {
+            auto rkhit=rkmerpos.find(nk);
+            if (rkhit!=rkmerpos.end() and rkhit->second!=-1) kmer_hits_by_node[ni][rkhit->second]=1;
+        }
+        /*for (auto i=0;i<rkmers.size();++i){
+            auto nklb=std::lower_bound(nkmers.begin(),nkmers.end(),rkmers[i]);
+            if (nklb!=nkmers.end() and *nklb==rkmers[i]) kmer_hits_by_node[ni][i]=1;
+        }*/
+        ++ni;
+    }
+    std::map<sgNodeID_t,int> node_wins;
+    int total_windows=0;
+    int total_wins=0;
+    for (int64_t start=0;start<rkmers.size()-win_size;start+=win_step,++total_windows){
+        int win_node_idx=-1;
+        int win_score=.2*win_size;
+        for (auto ni=0;ni<nodeset.size();++ni){
+            auto nscore=std::count(kmer_hits_by_node[ni].begin()+start,kmer_hits_by_node[ni].begin()+start+win_size,1);
+            if (nscore>win_score) {
+                win_node_idx=ni;
+                win_score=nscore;
+            }
+        }
+        if (win_node_idx!=-1) {
+            ++total_wins;
+            ++node_wins[nodeset[win_node_idx]];
+        }
+    }
+    
+    for (auto &hs:haplotype_scores){
+        float score=0;
+        for (auto &n:hs.haplotype_nodes) score+=node_wins[n];
+        score/=total_windows;
+        hs.score+=weight*score;
+    }
+}
+
+void LongReadHaplotypeMappingsFilter::rank(uint64_t read_id, float coverage_weight, float winners_weight, float min_tn) {
+    set_read(read_id);
+    generate_haplotypes_from_linkedreads(min_tn);
+    score_window_winners(winners_weight);
+    score_coverage(coverage_weight);
+}
+
+void LongReadMapper::print_status() {
+    uint64_t fm_rcount=0,fm_count=0;
+    for (auto &fm:filtered_read_mappings){
+        if (!fm.empty()) {
+            ++fm_rcount;
+            fm_rcount+=fm.size();
+        }
+    }
+    sglib::OutputLog()<<"Long read mappings:  Raw: "<<mappings.size()<<"  Filtered: "<<fm_count<<" on "<<fm_rcount<<" / "<< filtered_read_mappings.size() <<" reads"<<std::endl;
+}
+
+std::vector<LongReadMapping> LongReadMapper::get_raw_mappings_from_read(uint64_t read_id) const {
+    std::vector<LongReadMapping> r;
+    if (first_mapping[read_id]!=-1) {
+        for (auto i = first_mapping[read_id];i<mappings.size() and mappings[i].read_id==read_id;++i) r.emplace_back(mappings[i]);
+    }
+    return std::move(r);
+}
 
 void LongReadMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers){
     if (matches.size() < read_kmers.size()) matches.resize(read_kmers.size());
@@ -158,12 +319,11 @@ std::vector<LongReadMapping> LongReadMapper::filter_blocks(std::vector<LongReadM
     return fblocks;
 }
 
-void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string detailed_log) {
-    update_graph_index();
+void LongReadMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> readIDs, std::string detailed_log) {
+    update_graph_index(filter_limit);
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
-    std::atomic<uint32_t > num_reads_done(0);
-    std::atomic<uint64_t > window_low_score(0),window_close_second(0),window_hit(0);
-    std::atomic<uint64_t > no_matches(0),single_matches(0),multi_matches(0);
+    uint32_t num_reads_done(0);
+    uint64_t no_matches(0),single_matches(0),multi_matches(0);
     std::ofstream dl;
     if (!detailed_log.empty()) dl.open(detailed_log);
 #pragma omp parallel
@@ -175,23 +335,17 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
         BufferedSequenceGetter sequenceGetter(datastore);
         std::vector<std::vector<std::pair<int32_t, int32_t>>> node_matches; //node, offset
         const char * query_sequence_ptr;
-#pragma omp for
+#pragma omp for schedule(static,1000) reduction(+:no_matches,single_matches,multi_matches,num_reads_done)
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
 
-            if (readID%1000 == 0) {
-                num_reads_done+=1000;
-#pragma omp critical (lrmap_progress)
-                {
-                    sglib::OutputLog() << num_reads_done << " / " << datastore.size() << " reads mapped" << std::endl;
-                }
+            if (++num_reads_done%1000 == 0) {
+                sglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" processing its read #" << num_reads_done << std::endl;
             }
 
-            if ((!readIDs.empty() and readIDs.count(readID)==0 /*Read not in selected set*/)
-                or
-                (readIDs.empty()/*No selection*/)) {
+            if ((!readIDs.empty() and readIDs.count(readID)==0 /*Read not in selected set*/)) {
                 continue;
             }
-
+            if (datastore.read_to_fileRecord[readID].record_size< 2 * min_size ) continue;
             //========== 1. Get read sequence, kmerise, get all matches ==========
             query_sequence_ptr = sequenceGetter.get_read_sequence(readID);
             read_kmers.clear();
@@ -230,7 +384,6 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
 
             private_results.insert(private_results.end(),fblocks.begin(),fblocks.end());
 
-
         }
     }
     //TODO: report read and win coverage by winners vs. by loosers
@@ -243,19 +396,54 @@ void LongReadMapper::map_reads(std::unordered_set<uint32_t> readIDs, std::string
     update_indexes();
 }
 
+std::vector<LongReadMapping> LongReadMapper::map_sequence(const char * query_sequence_ptr) {
+    std::vector<LongReadMapping> private_results;
+
+    StreamKmerFactory skf(k);
+    std::vector<std::pair<bool, uint64_t>> read_kmers;
+    std::vector<std::vector<std::pair<int32_t, int32_t>>> node_matches; //node, offset
+    read_kmers.clear();
+
+    skf.produce_all_kmers(query_sequence_ptr, read_kmers);
+    get_all_kmer_matches(node_matches,read_kmers);
+
+    //========== 2. Find match candidates in fixed windows ==========
+
+    auto candidates = window_candidates(node_matches,read_kmers.size());
+
+    //========== 3. Create alignment blocks from candidates ==========
+
+    return alignment_blocks(0,node_matches,read_kmers.size(),candidates);
+
+}
+
 void LongReadMapper::update_indexes() {
+    if (!std::is_sorted(mappings.begin(), mappings.end())) {
+        sglib::OutputLog() << "Sorting mappings" << std::endl;
+        sglib::sort(mappings.begin(), mappings.end());
+    }
+    first_mapping.clear();
+    first_mapping.resize(datastore.size(),-1);
+    for (int64_t i=0;i<mappings.size();++i){
+        auto &m=mappings[i];
+        if (first_mapping.size()<=m.read_id) first_mapping.resize(m.read_id+1,-1);
+        if (first_mapping[m.read_id]==-1) first_mapping[m.read_id]=i;
+    }
     reads_in_node.clear();
     reads_in_node.resize(sg.nodes.size());
+    uint64_t frmcount=0,reads_with_filtered_mappings=0;
     for (auto &rm:filtered_read_mappings) {
+        if (not rm.empty()) ++reads_with_filtered_mappings;
         for (auto &m:rm) {
+            ++frmcount;
             if (reads_in_node[std::abs(m.node)].empty() or reads_in_node[std::abs(m.node)].back()!=m.read_id)
                 reads_in_node[std::abs(m.node)].push_back(m.read_id);
         }
     }
-    sglib::OutputLog() << "Finished with " << filtered_read_mappings.size() << " mappings" << std::endl;
+    sglib::OutputLog() << "LongReadMapper index updated with " << mappings.size() << " mappings and "<< frmcount << " filtered mappings (over "<< reads_with_filtered_mappings << " reads)"<< std::endl;
 }
 
-LongReadMapper::LongReadMapper(SequenceGraph &sg, LongReadsDatastore &ds, uint8_t k)
+LongReadMapper::LongReadMapper(const SequenceGraph &sg, const LongReadsDatastore &ds, uint8_t k)
         : sg(sg), k(k), datastore(ds), assembly_kmers(k) {
 
     reads_in_node.resize(sg.nodes.size());
@@ -304,6 +492,16 @@ void LongReadMapper::read_filtered_mappings(std::string filename) {
     sglib::read_flat_vectorvector(ifs,filtered_read_mappings);
 }
 
+void LongReadMapper::write_read_paths(std::string filename) {
+    std::ofstream ofs(filename, std::ios_base::binary);
+    sglib::write_flat_vectorvector(ofs, read_paths);
+}
+
+void LongReadMapper::read_read_paths(std::string filename) {
+    std::ifstream ifs(filename, std::ios_base::binary);
+    sglib::read_flat_vectorvector(ifs,read_paths);
+}
+
 LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
     if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceGraph"); }
     if (&other == this) {
@@ -314,13 +512,13 @@ LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
     return *this;
 }
 
-void LongReadMapper::update_graph_index() {
-    std::cout<<"updating index with k="<<std::to_string(k)<<std::endl;
+void LongReadMapper::update_graph_index(int filter_limit, bool verbose) {
+    if (verbose) std::cout<<"updating index with k="<<std::to_string(k)<<std::endl;
     assembly_kmers=NKmerIndex(k);
-    assembly_kmers.generate_index(sg);
+    assembly_kmers.generate_index(sg,filter_limit, verbose);
 }
 
-void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size, float min_tnscore) {
+void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size,  float min_tnscore, uint64_t first_id, uint64_t last_id) {
     if (lrm.tag_neighbours.empty()) {
         sglib::OutputLog()<<"Can't filter mappings because there are no tag_neighbours on the LinkedReadMapper"<<std::endl;
         return;
@@ -328,96 +526,441 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
     sglib::OutputLog()<<"Filtering mappings"<<std::endl;
     filtered_read_mappings.clear();
     filtered_read_mappings.resize(datastore.size());
-    BufferedSequenceGetter lrbsg(datastore);
-    //create a collection of mappings for every read.
-    uint64_t last_mapindex=0;
-    uint64_t rshort=0,runmapped=0,rnocovset=0,rprocessed=0,rnoset=0;
-    for (uint64_t rid=0;rid<datastore.size();++rid) {
-        while (last_mapindex<mappings.size() and mappings[last_mapindex].read_id<rid) ++last_mapindex;
-        auto r=filter_mappings_with_linked_reads(lrm,lrbsg,min_size,min_tnscore,rid,last_mapindex);
-        switch(r){
-            case MappingFilterResult::Success:
-                ++rprocessed;
-                break;
-            case MappingFilterResult::TooShort:
+    std::atomic<uint64_t> rshort(0), runmapped(0), rnoresult(0), rfiltered(0);
+    if (last_id==0) last_id=datastore.size()-1;
+#pragma omp parallel
+    {
+        LongReadHaplotypeMappingsFilter hap_filter(*this,lrm);
+        //run hap_filter on every read
+
+#pragma omp for schedule(static, 10)
+        for (uint64_t rid = first_id; rid <= last_id; ++rid) {
+            hap_filter.set_read(rid);
+            if (hap_filter.read_seq.size()<min_size){
                 ++rshort;
-                break;
-            case MappingFilterResult::NoMappings:
+                continue;
+            }
+            if (hap_filter.mappings.empty()) {
                 ++runmapped;
-                break;
-            case MappingFilterResult::NoReadSets:
-                ++rnoset;
-                break;
-            case MappingFilterResult::LowCoverage:
-                ++rnocovset;
-                break;
+                continue; // no mappings to group
+            }
+            hap_filter.generate_haplotypes_from_linkedreads(min_tnscore);
+            if (hap_filter.haplotype_scores.empty()) {
+                ++rnoresult;
+                continue; // no haplotypes to score (all nodes too short)
+            }
+            hap_filter.score_coverage(1);
+            hap_filter.score_window_winners(3);
+            std::sort(hap_filter.haplotype_scores.rbegin(),hap_filter.haplotype_scores.rend());
+            if (hap_filter.haplotype_scores[0].score>1.5) {
+                std::set<sgNodeID_t> winners;
+                for (auto &hn:hap_filter.haplotype_scores[0].haplotype_nodes) winners.insert(hn);
+                for (auto &m:hap_filter.mappings) if (winners.count(llabs(m.node))) filtered_read_mappings[rid].emplace_back(m);
+                ++rfiltered;
+            } else ++rnoresult;
         }
     }
-    sglib::OutputLog()<<"too short: "<<rshort<<"  no mappings: "<<runmapped<<"  no sets: "<<rnoset<<"  no cov1>50%: "<<rnocovset<<" processed: "<<rprocessed<<std::endl;
+    sglib::OutputLog()<<"too short: "<<rshort<<"  no mappings: "<<runmapped<<"  no winner: "<<rnoresult<<"  filtered: "<<rfiltered<<std::endl;
 }
 
-MappingFilterResult LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, BufferedSequenceGetter &lrbsg, uint32_t min_size, float min_tnscore, uint64_t readID, uint64_t offset_hint) {
-    uint64_t last_mapindex=offset_hint;
-    const char* seq_ptr;
-    seq_ptr = lrbsg.get_read_sequence(readID);
-    std::string seq(seq_ptr);
-    if (seq.size()<min_size) return MappingFilterResult::TooShort;
-    auto rsize=seq.size();
-    while (last_mapindex>0 and mappings[last_mapindex].read_id>readID) --last_mapindex;
-    while (last_mapindex<mappings.size() and mappings[last_mapindex].read_id<readID) ++last_mapindex;
-    if (last_mapindex>=mappings.size() or mappings[last_mapindex].read_id!=readID) return MappingFilterResult::NoMappings;
-    std::vector<LongReadMapping> read_mappings;
-    std::unordered_set<sgNodeID_t> all_nodes;
-    while (last_mapindex<mappings.size() and mappings[last_mapindex].read_id==readID) {
-        read_mappings.emplace_back(mappings[last_mapindex]);
-        all_nodes.insert(llabs(read_mappings.back().node));
-        ++last_mapindex;
+
+std::vector<LongReadMapping>
+LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose) {
+
+    const int32_t OFFSET_BANDWITDH=200;
+    if (verbose){
+        std::cout<<"Filtering matches:" << std::endl;
+        for (const auto &m : matches)
+            std::cout << m << std::endl;
     }
-    //evaluate a read's mappings:
-    //TODO: 1) remove middle-mappings (later)
-    //2) create the neighbour sets, uniq to not evaluate same set many times over.
-    std::map<std::set<sgNodeID_t>,int> all_nsets;
-    for (auto n:all_nodes){
-        std::set<sgNodeID_t> nset;
-        for (auto m:all_nodes){
-            for (auto &score:lrm.tag_neighbours[n]){
-                if (score.node==m and score.score>min_tnscore) {
-                    nset.insert(m);
-                    break;
+
+
+    std::vector<match_band> mbo;
+    auto node = std::abs(matches[0].node);
+    for (const auto &m : matches ){
+        mbo.emplace_back(node == m.node, m.qStart-m.nStart, m.qEnd-m.nEnd, m.nEnd-m.nStart, m.score);
+    }
+
+    for (auto &m : mbo) {
+        auto mino=std::min(m.min_offset,m.max_offset)-OFFSET_BANDWITDH;
+        auto maxo=std::max(m.min_offset, m.max_offset)+OFFSET_BANDWITDH;
+        m.min_offset = mino;
+        m.max_offset = maxo;
+    }
+
+    if (verbose){
+        std::cout << "Orientations, offsets, lengths and scores:" << std::endl;
+        for (const auto &m : mbo){
+            std::cout << ((m.dir) ? "true":"false") << ", " << m.min_offset << ", " << m.max_offset << ", " << m.len << ", " << m.score << std::endl;
+        }
+    }
+
+    auto prev_len = mbo.size()+1;
+
+    while (mbo.size() < prev_len) {
+        auto used = std::vector<bool>(mbo.size(), false);
+        std::vector<match_band> new_mbo;
+
+        for (int mi=0; mi < mbo.size(); mi++) {
+            if (used[mi]){continue;}
+            used[mi] = true;
+            auto m = mbo[mi];
+            for (int mi2 = 0; mi2 < mbo.size(); mi2++) {
+                if (used[mi2]){continue;}
+                auto m2 = mbo[mi2];
+                if (m.min_offset<m2.max_offset and m2.min_offset < m.min_offset){
+                    m.min_offset = std::min(m.min_offset,m2.min_offset);
+                    m.max_offset = std::max(m.max_offset,m2.max_offset);
+                    m.len += m2.len;
+                    m.score += m2.score;
+                    used[mi2] = true;
                 }
             }
+            new_mbo.emplace_back(m);
         }
-        ++all_nsets[nset];
+        prev_len = mbo.size();
+        mbo = new_mbo;
     }
-    if (all_nsets.empty()) return MappingFilterResult::NoReadSets;
-    std::vector<std::pair<uint64_t,std::set<sgNodeID_t>>> cov1set;
 
-    //3) remove all sets not passing a "sum of all mappings >50% of the read"
-    //   compute the 1-cov total bases for each set, if it is not 50% of the read discard too
-    for (auto &nsv:all_nsets){
-        std::vector<uint8_t> coverage(seq.size());
-        auto &nodeset=nsv.first;
-        uint64_t total_map_bp=0;
-        for (auto m:read_mappings) if (nodeset.count(llabs(m.node))) total_map_bp+=m.qEnd-m.qStart;
-        if (total_map_bp*2<seq.size()) continue;
-        //this can be done faster by saving all starts and ends and keeping a rolling value;
-        for (auto m:read_mappings) {
-            if (nodeset.count(llabs(m.node))){
-                for (auto i=m.qStart;i<=m.qEnd and i<rsize;++i) ++coverage[i];
+    std::sort(mbo.begin(), mbo.end(), [](match_band &ma, match_band &mb){return ma.score > mb.score;});
+
+    if (verbose){
+        std::cout << "Consolidated orientations, offsets, lengths and scores:\n";
+        for (const auto &m : mbo){
+            std::cout << ((m.dir) ? "true":"false") << ", " << m.min_offset << ", " << m.max_offset << ", " << m.len << ", " << m.score << std::endl;
+        }
+    }
+
+    std::vector<match_band> filtered_mbo;
+    auto max_score = mbo[0].score;
+    std::copy_if(mbo.begin(), mbo.end(), std::back_inserter(filtered_mbo), [max_score](match_band &m){ return m.score >= 0.5f*max_score; });
+
+    if (verbose){
+        std::cout << "Filtered orientations, offsets, lengths and scores:\n";
+        for (const auto &m : filtered_mbo){
+            std::cout << ((m.dir) ? "true":"false") << ", " << m.min_offset << ", " << m.max_offset << ", " << m.len << ", " << m.score << std::endl;
+        }
+    }
+
+    // Create matches min, max positions for each band that has passed the filter
+    std::vector<LongReadMapping> filtered_matches;
+
+    for (const auto &mb : filtered_mbo) {
+        LongReadMapping chained;
+        chained.nStart=INT32_MAX;
+        chained.nEnd=INT32_MIN;
+        chained.score=0;
+        chained.read_id=matches[0].read_id;
+        chained.node=mb.dir ? std::abs(matches[0].node) : -std::abs(matches[0].node);
+        for (const auto &m : matches) {
+            if ((m.qStart - m.nStart) >= mb.min_offset and (m.qEnd - m.nEnd) <= mb.max_offset) {
+                if (chained.nStart>m.nStart){
+                    chained.nStart=m.nStart;
+                    chained.qStart=m.qStart;
+                }
+                if (chained.nEnd<m.nEnd){
+                    chained.nEnd=m.nEnd;
+                    chained.qEnd=m.qEnd;
+                }
+                chained.score+=m.score;
             }
         }
-        uint64_t cov1=std::count(coverage.begin(),coverage.end(),1);
-        if (cov1*2>=seq.size())
-            cov1set.emplace_back(cov1, nodeset);
+        filtered_matches.emplace_back(chained);
     }
-    if (cov1set.empty()) return MappingFilterResult::LowCoverage;
-    //find set with highest 1-cov
-    std::sort(cov1set.begin(),cov1set.end());
-    auto &winset=cov1set.back().second;
-    //TODO: 4) try to find "turn-arounds" for CCS-style reads (later)
-    //TODO: 7) copy vector to read_to_mappings
-    for (auto &m:read_mappings){
-        if (winset.count(llabs(m.node))) filtered_read_mappings[readID].push_back(m);
+
+    if (verbose){
+        std::cout<<"Filtered matches:" << std::endl;
+        for (const auto &m : filtered_matches)
+            std::cout << m << std::endl;
     }
-    return MappingFilterResult::Success;
+
+    return filtered_matches;
+}
+
+std::vector<LongReadMapping> LongReadMapper::remove_shadowed_matches(std::vector<LongReadMapping> &matches,
+                                                                     bool verbose) {
+    std::vector<LongReadMapping> filtered_matches;
+
+    for (auto mi1=0;mi1<matches.size();++mi1){
+        auto &m1=matches[mi1];
+        bool use=true;
+        for (auto &m2: matches) {
+            if (m2.qStart<=m1.qStart and m2.qEnd>=m1.qEnd and m2.score>m1.score){
+                use=false;
+                break;
+            }
+        }
+        if (use) filtered_matches.emplace_back(m1);
+    }
+
+    return filtered_matches;
+}
+std::vector<LongReadMapping> LongReadMapper::improve_read_filtered_mappings(uint32_t rid, bool correct_on_ws) {
+
+    std::vector<LongReadMapping> new_mappings;
+    auto mappings = remove_shadowed_matches(filtered_read_mappings[rid]); // This has to be a copy and can be a bit expensive!
+    if (mappings.empty()) return mappings;
+
+    std::map<sgNodeID_t, uint32_t > most_common_map;
+
+    for (const auto &m : mappings) {
+        ++most_common_map[std::abs(m.node)];
+    }
+
+    std::multimap<uint32_t , sgNodeID_t > most_common = flip_map(most_common_map);
+
+    if (most_common.rbegin()->first == 1) {
+        filtered_read_mappings[rid] = mappings;
+        return mappings;
+    }
+
+    for (const auto &n : most_common) {
+        std::vector<LongReadMapping> nm;
+        // This copy will obviously be expensive! It's better to sort the whole structure first and then check if needed to process it.
+        std::copy_if(mappings.begin(), mappings.end(), std::back_inserter(nm),
+                     [n](const LongReadMapping& m){
+                         return n.second == std::abs(m.node);
+                     });
+        std::sort(nm.begin(), nm.end(),
+                  [](const LongReadMapping &a, const LongReadMapping &b) {
+                      uint64_t na = std::abs(a.node);
+                      uint64_t nb = std::abs(b.node);
+                      return std::tie(na, a.qStart) < std::tie(nb, b.qStart);
+                  });
+
+        if (nm.size() <= 1){
+            new_mappings.insert(new_mappings.end(), nm.begin(), nm.end());
+        } else {
+            auto fm = filter_and_chain_matches_by_offset_group(nm);
+            new_mappings.insert(new_mappings.end(), fm.begin(), fm.end());
+        }
+    }
+    new_mappings=remove_shadowed_matches(new_mappings);
+    std::sort(new_mappings.begin(), new_mappings.end(), [](LongReadMapping &a, LongReadMapping &b){
+        return a.qStart < b.qStart;
+    });
+
+    if (correct_on_ws) {
+        filtered_read_mappings[rid] = new_mappings;
+    }
+    return new_mappings;
+}
+
+std::vector<ReadCacheItem> LongReadMapper::create_read_paths(std::vector<sgNodeID_t> &backbone) {
+    std::unordered_set<uint64_t> useful_read;
+    std::vector<ReadCacheItem> read_cache;
+    BufferedSequenceGetter sequenceGetter(datastore);
+    for (uint32_t bn = 0; bn < backbone.size(); bn++) {
+        for (const auto &read:reads_in_node[std::abs(backbone[bn])]) {
+            const auto find_it = useful_read.find(read);
+            if (find_it == useful_read.cend()) {
+                useful_read.emplace(read);
+                std::string seq = sequenceGetter.get_read_sequence(read);
+                read_cache.emplace_back(read, seq);
+            }
+
+        }
+    }
+
+//    __gnu_parallel::for_each(useful_read.cbegin(), useful_read.cend(), [&](const uint64_t read){
+//        read_paths[read] = create_read_path(read, false);
+//    });
+
+#pragma omp parallel for
+    for (uint32_t rcp = 0; rcp < read_cache.size(); rcp++) {
+        read_paths[read_cache[rcp].id] = create_read_path(read_cache[rcp].id, false, read_cache[rcp].seq);
+    }
+
+    return read_cache;
+}
+
+std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verbose, const std::string read_seq) {
+    const std::vector<LongReadMapping> &mappings = filtered_read_mappings[rid];
+
+    std::vector<sgNodeID_t> read_path;
+    if (mappings.empty()) return read_path;
+
+    for (int32_t tid = 0; tid < mappings.size()-1; ++tid) {
+        const auto &m1 = mappings[tid];
+        const auto &m2 = mappings[tid+1];
+        //TODO: Some mappings seem to have not been joined (m1.node == m2.node), needs fixing at mapping stage?
+        if (m1.node == m2.node) {continue;}
+
+        read_path.emplace_back(m1.node);
+
+        //this checks the direct connection
+        bool need_pathing = true;
+        for (const auto &l : sg.get_fw_links(m1.node)) {
+            if (l.dest == m2.node) need_pathing = false;
+        }
+
+        std::vector<SequenceGraphPath> paths;
+        int32_t ad;
+        if (need_pathing){
+            ad = (m2.qStart-m2.nStart)-(m1.qEnd+sg.nodes[std::abs(m1.node)].sequence.size()-m1.nEnd);
+            auto pd = ad+199*2;
+            auto max_path_size = std::max((int32_t)(pd*1.5),pd+400);
+            if (max_path_size < 0) {
+                // TODO: Some mappings have negative distances, needs fixing at mapping stage?
+
+                // XXX: For now simply accept negative distances lower than 500
+                if (std::abs(max_path_size) > 500) {
+                    read_path.emplace_back(0);
+                    continue;
+                } else {
+                    max_path_size = std::abs(max_path_size);
+                }
+            }
+//            max_path_size = 20000;
+            if (verbose) std::cout << "\n\nJumping between "<<m1<<" and "<<m2<<std::endl<<"Alignment distance: " << ad << " bp, path distance " << pd << ", looking for paths of up to " << max_path_size << " bp" << std::endl;
+
+            const auto place_in_map = all_paths_between.find(std::make_pair(m1.node, m2.node));
+            if (place_in_map != all_paths_between.end()){
+                if (verbose) std::cout <<"Backbone found in collection!!" <<std::endl;
+                paths = place_in_map->second;
+            } else {
+                if (verbose) std::cout <<"Adding backbone to collecion!!" <<std::endl;
+                paths = sg.find_all_paths_between(m1.node, m2.node, max_path_size, 40, false);
+#pragma omp critical
+                {
+                    all_paths_between[std::make_pair(m1.node,m2.node)] = paths; // Add path to structure if not there!
+                }
+            }
+
+            if (paths.size()>1000) {
+                if (verbose) std::cout << "Too many paths" << std::endl;
+                read_path.emplace_back(0);
+                continue;
+            }
+            if (verbose)  std::cout << "There are " << paths.size() << " paths" <<std::endl;
+            if (paths.empty()){
+                read_path.emplace_back(0);
+                continue;
+            } else {
+                //Create a SG with every path as a node
+                SequenceGraph psg;
+                for (const auto &p : paths) {
+                    psg.add_node(Node(p.get_sequence()));
+                }
+
+                //Create, parametrise and index a mapper to the paths SG
+                auto pm = LongReadMapper(psg, datastore);
+                pm.k = 15;
+                pm.min_size = std::min(int(ad / 2), 1000);
+                pm.min_chain = 2;
+                pm.max_jump = 100;
+                pm.max_delta_change = 30;
+                pm.update_graph_index(paths.size() * 2 + 1, false);
+
+                //Align the read to the paths SG and pick the best(s) alignement(s)
+                std::string seq = read_seq;
+                if (read_seq.empty()) {
+                    BufferedSequenceGetter sequenceGetter(datastore);
+                    seq = sequenceGetter.get_read_sequence(rid);
+                }
+                auto subs_string = seq.substr(m1.qEnd - 199, m2.qStart + 15 + 199 - m1.qEnd + 199);
+                auto path_mappings = pm.map_sequence(subs_string.data());
+                std::sort(path_mappings.begin(), path_mappings.end(),
+                          [](const LongReadMapping &a, const LongReadMapping &b) { return a.score > b.score; });
+
+                if (path_mappings.empty()) {
+                    read_path.emplace_back(0);//paths do not map, add a gap
+                    continue;
+                } else {
+                    if (verbose) {
+                        for (int i = 0; i < 10 and i < path_mappings.size(); i++) {
+                            if (path_mappings[i].node < 0) continue;
+                            std::cout << path_mappings[i] << std::endl;
+                            std::copy(paths[path_mappings[i].node - 1].nodes.begin(),
+                                      paths[path_mappings[i].node - 1].nodes.end(),
+                                      std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+                            std::cout << std::endl;
+                        }
+                    }
+
+
+                    if (verbose)std::cout << "Creating winners" << std::endl;
+                    std::vector<std::vector<sgNodeID_t>> winners;
+                    for (const auto &a: path_mappings) {
+                        if (a.score == path_mappings[0].score) {
+                            if (a.node < 0) {
+                                winners.clear();
+                                break;
+                            } else {
+                                winners.emplace_back(paths[a.node - 1].nodes);
+                            }
+                        }
+                    }
+
+                    if (winners.empty()) {
+                        read_path.emplace_back(0);
+                        continue;
+                    }
+
+                    //Add nodes from winner(s) to path
+                    if (winners.size() == 1) {
+                        // Single path, all its nodes go to the path
+                        if (verbose) std::cout << "Single winner path" << std::endl;
+                        read_path.insert(read_path.end(), winners[0].begin(), winners[0].end());
+                    } else {
+                        if (verbose) std::cout << "Winner paths: " << std::endl;
+                        for (const auto &w: winners) {
+                            if (verbose) {
+                                std::copy(w.cbegin(), w.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+                                std::cout << std::endl;
+                            }
+                        }
+                        if (verbose) std::cout << std::endl;
+                        std::sort(winners.begin(), winners.end(), [](const std::vector<sgNodeID_t> &a, const std::vector<sgNodeID_t> &b){ return a.size() < b.size(); });
+                        std::vector<sgNodeID_t> shared_winner_nodes;
+                        for (int pos = 0; pos < winners[0].size(); ++pos) {
+                            bool sharing = true;
+                            auto &current_node = winners[0][pos];
+                            for (const auto &w : winners) {
+                                if (w[pos] != current_node) {
+                                    sharing=false;
+                                    break;
+                                }
+                            }
+                            if (sharing) shared_winner_nodes.emplace_back(current_node);
+                            else break;
+                        }
+
+                        std::vector<sgNodeID_t> back_shared_winner_nodes;
+                        for (int pos = 0; pos < winners[0].size() ; ++pos) {
+                            bool sharing = true;
+                            auto &current_node = winners[0][winners[0].size()-pos-1];
+                            for (const auto &w : winners) {
+                                if (w[w.size()-pos-1] != current_node) {
+                                    sharing=false;
+                                    break;
+                                }
+                            }
+                            if (sharing) back_shared_winner_nodes.emplace_back(current_node);
+                            else break;
+                        }
+
+                        if (verbose) {
+                            std::cout << std::endl << "Shared nodes in winner paths: " << std::endl;
+                        }
+                        read_path.insert(read_path.end(), shared_winner_nodes.begin(), shared_winner_nodes.end());
+                        if (verbose) {
+                            std::copy(shared_winner_nodes.cbegin(), shared_winner_nodes.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+                            std::cout << "0, ";
+                        }
+                        read_path.emplace_back(0);//as of now, if multiple winners, just put a full gap
+                        read_path.insert(read_path.end(), back_shared_winner_nodes.rbegin(), back_shared_winner_nodes.rend());
+                        if (verbose) {
+                            std::copy(back_shared_winner_nodes.crbegin(), back_shared_winner_nodes.crend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+                            std::cout << std::endl;
+                        }
+                    }
+                }
+            }
+        } else {
+            if (verbose) std::cout << "Nodes directly connected, no pathing required\n";
+        }
+    }
+    read_path.emplace_back(mappings.back().node);
+    return read_path;
 }

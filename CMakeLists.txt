@@ -15,6 +15,9 @@ if (POLICY CMP0028)
     cmake_policy(SET CMP0028 OLD)
 endif (POLICY CMP0028)
 
+if (POLICY CMP0078)
+    cmake_policy(SET CMP0078 NEW)
+endif (POLICY CMP0078)
 
 if (APPLE)
     set(CMAKE_MACOSX_RPATH ON)
@@ -101,7 +104,7 @@ endif()
 ## Compiler flags
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -w -Wno-deprecated -std=c++11")
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined -ftemplate-backtrace-limit=0 -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -fno-omit-frame-pointer -ftemplate-backtrace-limit=0 -Wall")
 
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO"${CMAKE_CXX_FLAGS_DEBUG} -O3 -g -fno-omit-frame-pointer")
 
@@ -145,9 +148,17 @@ IF(BUILD_DOC)
         # note the option ALL which allows to build the docs together with the application
         add_custom_target(doc_doxygen ALL
                 COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                 COMMENT "Generating API documentation with Doxygen"
                 VERBATIM)
+
+        add_custom_target (
+                doxy2swig
+                COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py --quiet docs/xml/index.xml ${CMAKE_BINARY_DIR}/python_docs.i
+                COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
+                VERBATIM
+        )
+
+        add_dependencies(doxy2swig doc_doxygen)
     else (DOXYGEN_FOUND)
         message("Doxygen need to be installed to generate the doxygen documentation")
     endif (DOXYGEN_FOUND)
@@ -184,6 +195,7 @@ add_library(bsg SHARED
             src/sglib/processors/GraphEditor.cc
             src/sglib/processors/GraphMaker.cc
             src/sglib/processors/LocalHaplotypeAssembler.cc
+            src/sglib/processors/HaplotypeConsensus.cc
             src/sglib/hash/xxhash.c
         )
 
@@ -211,6 +223,7 @@ add_library(bsg_static STATIC
         src/sglib/processors/GraphEditor.cc
         src/sglib/processors/GraphMaker.cc
         src/sglib/processors/LocalHaplotypeAssembler.cc
+        src/sglib/processors/HaplotypeConsensus.cc
         src/sglib/hash/xxhash.c
         )
 
@@ -257,6 +270,18 @@ add_executable(gfa-extract
 add_executable(bsg-dbg
         src/bsg-dbg.cc)
 
+add_executable(test_improve_read_filtered_mappings
+        src/test_improve_read_filtered_mappings.cc)
+
+add_executable(test_haplotype_consensus
+        src/test_haplotype_consensus.cc)
+
+add_executable(test_haplotype_consensus_parts
+        src/test_haplotype_consensus_parts.cc)
+
+add_executable(build_all_backbones
+        src/build_all_backbones.cc)
+
 target_link_libraries(bsg-workspace bsg_static)
 target_link_libraries(bsg-datastore bsg_static)
 target_link_libraries(bsg-kmerspectra bsg_static)
@@ -266,26 +291,30 @@ target_link_libraries(bsg-lhapassembler bsg_static ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract bsg_static)
 target_link_libraries(seq-thread bsg_static)
 target_link_libraries(bsg-dbg bsg_static)
+target_link_libraries(test_improve_read_filtered_mappings bsg_static)
+target_link_libraries(test_haplotype_consensus bsg_static)
+target_link_libraries(test_haplotype_consensus_parts bsg_static)
+target_link_libraries(build_all_backbones bsg_static)
 
 
-IF(BUILD_TESTING)
-    include_directories("tests/include")
-    add_library( CatchMain OBJECT tests/sglib/catch-main.cpp tests/include/catch.hpp )
-    add_executable(runBasicTests
-            $<TARGET_OBJECTS:CatchMain>
-            tests/sglib/files_tests.cpp
-            tests/sglib/smr_tests.cpp
-            tests/sglib/kmerfactory_tests.cpp
-            tests/sglib/index_tests.cpp
-            )
-    IF(BUILD_COV)
-        set_target_properties(runBasicTests PROPERTIES
-                COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
-                LINK_FLAGS    "--coverage -lgcov")
-    ENDIF()
-    target_link_libraries(runBasicTests bsg)
-    add_test(basicTests runBasicTests)
-ENDIF()
+#IF(BUILD_TESTING)
+#    include_directories("tests/include")
+#    add_library( CatchMain OBJECT tests/sglib/catch-main.cpp tests/include/catch.hpp )
+#    add_executable(runBasicTests
+#            $<TARGET_OBJECTS:CatchMain>
+#            tests/sglib/files_tests.cpp
+#            tests/sglib/smr_tests.cpp
+#            tests/sglib/kmerfactory_tests.cpp
+#            tests/sglib/index_tests.cpp
+#            )
+#    IF(BUILD_COV)
+#        set_target_properties(runBasicTests PROPERTIES
+#                COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
+#                LINK_FLAGS    "--coverage -lgcov")
+#    ENDIF()
+#    target_link_libraries(runBasicTests bsg)
+#    add_test(basicTests runBasicTests)
+#ENDIF()
 
 IF(BUILD_PYTHON_INTERFACE)
     MESSAGE("Building python interface")
@@ -309,25 +338,13 @@ IF(BUILD_PYTHON_INTERFACE)
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
     endif()
+
+    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY DEPENDS doxy2swig)
     SWIG_ADD_LIBRARY(pybsg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
     SWIG_LINK_LIBRARIES(pybsg ${PYTHON_LIBRARIES} bsg_static)
 
-    if(DOXYGEN_FOUND)
-        add_custom_command (
-                OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
-                COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py
-                --quiet ${CMAKE_BINARY_DIR}/docs/xml/index.xml
-                ${CMAKE_BINARY_DIR}/python_docs.i
-                COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
-                DEPENDS doc_doxygen
-                VERBATIM
-        )
-        add_custom_target(doxy2swig DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
-        add_dependencies(_pybsg doxy2swig)
-    endif(DOXYGEN_FOUND)
-
     install(TARGETS
-            _pybsg
+            pybsg
             RUNTIME DESTINATION pybsg
             ARCHIVE DESTINATION pybsg
             LIBRARY DESTINATION pybsg)
@@ -368,7 +385,7 @@ install(TARGETS
         seq-thread
         bsg
         bsg_static
-        runBasicTests
+#        runBasicTests
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib)

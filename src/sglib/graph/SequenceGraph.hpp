@@ -178,16 +178,6 @@ public:
 
     std::vector<nodeVisitor> breath_first_search(nodeVisitor seed, unsigned int size_limit, unsigned int edge_limit, std::set<nodeVisitor> tabu={});
 
-    /**
-     * Finds a path between two nodes within size_limit and edge_limit.
-     * If any of the limits is violated before finding a path, an empty path is returned
-     * @param seed
-     * @param target
-     * @param size_limit
-     * @param edge_limit
-     * @return
-     */
-    SequenceGraphPath find_path_between(const sgNodeID_t seed, const sgNodeID_t target, unsigned int size_limit = 0, unsigned int edge_limit = 0);
 
     /**
      * Explores around "nodes" in both directions until either the size_limit or the edge_limit is reached,
@@ -277,6 +267,7 @@ public:
     }
 
     size_t count_active_nodes();
-    std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes=20, bool abort_on_loops=true);};
-
+    std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes=20, bool abort_on_loops=true) const;
+    void print_status();
+};
 #endif //SG_SEQUENCEGRAPH_HPP
