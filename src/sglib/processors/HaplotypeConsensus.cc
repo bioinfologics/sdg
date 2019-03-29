@@ -3,6 +3,7 @@
 //
 
 #include "HaplotypeConsensus.hpp"
+#include <sglib/utilities/omp_safe.hpp>
 #include <sglib/utilities/most_common_helper.hpp>
 
 std::string HaplotypeConsensus::consensus_sequence() {
@@ -87,87 +88,102 @@ void HaplotypeConsensus::orient_read_path(uint64_t rid) {
 }
 
 void HaplotypeConsensus::build_line_path() {
-    std::vector<sgNodeID_t> line_path;
-    line_path.emplace_back(backbone[0]);
-
-    for (int gap_number=1; gap_number < backbone.size(); gap_number++) {
-        auto n1=backbone[gap_number-1];
-        auto n2=backbone[gap_number];
-        std::cout << "\n\nPrinting paths between "<<n1 << ", " << " and "<< n2 << ":\n";
-        std::map<std::vector<sgNodeID_t>, uint32_t> gap_paths;
-        auto read_path = oriented_read_paths.cbegin();
-        for (int i = 0;  read_path != oriented_read_paths.end(); i++, ++read_path ) {
-            const auto &p = *read_path;
-            auto pn1 = std::find(p.cbegin(), p.cend(), n1);
-            auto pn2 = std::find(p.cbegin(), p.cend(), n2);
-            if (std::distance(p.cbegin(), pn2) < std::distance(p.cbegin(), pn1)) {
+    std::vector<sgNodeID_t> final_line_path;
+    final_line_path.emplace_back(backbone[0]);
+    std::vector<std::vector<sgNodeID_t>> thread_line_paths(backbone.size()-1);
+#pragma omp parallel
+    { // Parallel section for all gaps
+#pragma omp for
+        for (int gap_number = 1; gap_number < backbone.size(); gap_number++) {
+            auto n1 = backbone[gap_number - 1];
+            auto n2 = backbone[gap_number];
+            std::cout << "\n\nPrinting paths between " << n1 << ", " << " and " << n2 << ":\n";
+            std::map<std::vector<sgNodeID_t>, uint32_t> gap_paths;
+            auto read_path = oriented_read_paths.cbegin();
+            for (int i = 0; read_path != oriented_read_paths.end(); i++, ++read_path) {
+                const auto &p = *read_path;
+                uint32_t pn1 = p.size();
+                uint32_t pn2 = p.size();
+                for (uint32_t path_node_pos = 0; path_node_pos < p.size(); path_node_pos++) {
+                    if (p[path_node_pos] == n1 and pn1 == p.size()) {
+                        pn1 = path_node_pos;
+                    }
+                    if (p[path_node_pos] == n2 and pn2 == p.size()) {
+                        pn2 = path_node_pos;
+                    }
+                }
+                if (pn1 > pn2) {
 //                std::cout << n1 << " and " << n2 << " nodes from backbone are at " << std::distance(p.cbegin(), pn1) << " and " << std::distance(p.cbegin(), pn2) << " from start, they are wrongly oriented in paths!" << std::endl;
-                continue; // TODO: Some paths seem to be wrongly oriented?!
-            }
-            if (pn1 != p.cend() and pn2 != p.cend()){
-                ++gap_paths[std::vector<sgNodeID_t>(pn1, pn2)];
-            }
-        }
-        std::multimap<uint32_t, std::vector<sgNodeID_t>> most_common = flip_map(gap_paths);
-
-        auto filled(false);
-        for (auto p = most_common.crbegin(); p != most_common.crend(); ++p) {
-            std::cout << p->first << ": ";
-            std::copy(p->second.cbegin(), p->second.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
-
-            if (!filled and p->first>1 and std::find(p->second.cbegin(), p->second.cend(), 0) == p->second.cend()){
-                filled = true;
-                auto it = ++p->second.cbegin();
-                line_path.insert(line_path.end(), it, p->second.cend());
-                std::cout << " <-- WINNER" << std::endl;
-            } else {
-                std::cout << std::endl;
-            }
-        }
-        if (!filled){
-            std::vector<std::vector<sgNodeID_t>> winners;
-            for (const auto &mcp : most_common) {
-                if (mcp.second.size() > 2) {
-                    winners.emplace_back(mcp.second);
+                    continue; // TODO: Some paths seem to be wrongly oriented?!
+                }
+                if (pn1 != p.size() and pn2 != p.size()) {
+                    ++gap_paths[std::vector<sgNodeID_t>(p.begin()+pn1, p.begin()+pn2)];
                 }
             }
-            if (winners.empty()){
-                line_path.emplace_back(0);
-                line_path.emplace_back(n2);
-                continue;
+            std::multimap<uint32_t, std::vector<sgNodeID_t>> most_common = flip_map(gap_paths);
+
+            auto filled(false);
+            for (auto p = most_common.crbegin(); p != most_common.crend(); ++p) {
+                std::cout << p->first << ": ";
+                std::copy(p->second.cbegin(), p->second.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+
+                if (!filled and p->first > 1 and
+                    std::find(p->second.cbegin(), p->second.cend(), 0) == p->second.cend()) {
+                    filled = true;
+                    auto it = ++p->second.cbegin();
+                    thread_line_paths[gap_number].insert(thread_line_paths[gap_number].end(), it, p->second.cend());
+                    std::cout << " <-- WINNER" << std::endl;
+                } else {
+                    std::cout << std::endl;
+                }
             }
-            std::sort(winners.begin(), winners.end(), [](const std::vector<sgNodeID_t> &a, const std::vector<sgNodeID_t> &b){ return a.size() < b.size(); });
-            std::vector<sgNodeID_t> shared_winner_nodes;
-            for (int pos = 1; pos < winners[0].size() and winners[0][pos] != 0; ++pos) {
-                bool sharing = true;
-                auto &current_node = winners[0][pos];
-                for (const auto &w : winners) {
-                    if (w[pos] != current_node or w[pos] == 0) {
-                        sharing=false;
-                        break;
+            if (!filled) {
+                std::vector<std::vector<sgNodeID_t>> winners;
+                for (const auto &mcp : most_common) {
+                    if (mcp.second.size() > 2) {
+                        winners.emplace_back(mcp.second);
                     }
                 }
-                if (sharing) shared_winner_nodes.emplace_back(current_node);
-                else break;
-            }
-
-            std::vector<sgNodeID_t> back_shared_winner_nodes;
-            for (int pos = 0; pos < winners[0].size() and winners[0][winners[0].size()-pos-1] != 0; ++pos) {
-                bool sharing = true;
-                auto &current_node = winners[0][winners[0].size()-pos-1];
-                for (const auto &w : winners) {
-                    if (w[w.size()-pos-1] != current_node or w[w.size()-pos-1] == 0) {
-                        sharing=false;
-                        break;
-                    }
+                if (winners.empty()) {
+                    thread_line_paths[gap_number].emplace_back(0);
+                    thread_line_paths[gap_number].emplace_back(n2);
+                    continue;
                 }
-                if (sharing) back_shared_winner_nodes.emplace_back(current_node);
-                else break;
-            }
+                std::sort(winners.begin(), winners.end(),
+                          [](const std::vector<sgNodeID_t> &a, const std::vector<sgNodeID_t> &b) {
+                              return a.size() < b.size();
+                          });
+                std::vector<sgNodeID_t> shared_winner_nodes;
+                for (int pos = 1; pos < winners[0].size() and winners[0][pos] != 0; ++pos) {
+                    bool sharing = true;
+                    auto &current_node = winners[0][pos];
+                    for (const auto &w : winners) {
+                        if (w[pos] != current_node or w[pos] == 0) {
+                            sharing = false;
+                            break;
+                        }
+                    }
+                    if (sharing) shared_winner_nodes.emplace_back(current_node);
+                    else break;
+                }
 
-            line_path.insert(line_path.end(), shared_winner_nodes.begin(), shared_winner_nodes.end());
-            line_path.emplace_back(0);  // TODO: Check why there are more N's now with same number of gaps!
-            line_path.insert(line_path.end(), back_shared_winner_nodes.rbegin(), back_shared_winner_nodes.rend());
+                std::vector<sgNodeID_t> back_shared_winner_nodes;
+                for (int pos = 0; pos < winners[0].size() and winners[0][winners[0].size() - pos - 1] != 0; ++pos) {
+                    bool sharing = true;
+                    auto &current_node = winners[0][winners[0].size() - pos - 1];
+                    for (const auto &w : winners) {
+                        if (w[w.size() - pos - 1] != current_node or w[w.size() - pos - 1] == 0) {
+                            sharing = false;
+                            break;
+                        }
+                    }
+                    if (sharing) back_shared_winner_nodes.emplace_back(current_node);
+                    else break;
+                }
+
+                thread_line_paths[gap_number].insert(thread_line_paths[gap_number].end(), shared_winner_nodes.begin(), shared_winner_nodes.end());
+                thread_line_paths[gap_number].emplace_back(0);  // TODO: Check why there are more N's now with same number of gaps!
+                thread_line_paths[gap_number].insert(thread_line_paths[gap_number].end(), back_shared_winner_nodes.rbegin(), back_shared_winner_nodes.rend());
 
 //            std::cout << "Partial line path from shared nodes in paths: " << std::endl;
 //            std::cout << "First shared winners: "; std::copy(shared_winner_nodes.cbegin(), shared_winner_nodes.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
@@ -177,11 +193,19 @@ void HaplotypeConsensus::build_line_path() {
 //            std::cout << "Last shared winners: "; std::copy(back_shared_winner_nodes.crbegin(), back_shared_winner_nodes.crend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
 //            std::cout << std::endl;
 
+            }
+            thread_line_paths[gap_number].emplace_back(n2);
         }
-        line_path.emplace_back(n2);
+
+#pragma omp single
+        {
+            for (uint32_t tid=0; tid < backbone.size()-1; tid++) {
+                final_line_path.insert(final_line_path.end(), thread_line_paths[tid].begin(), thread_line_paths[tid].end());
+            }
+        }
     }
     std::cout << "\n\nFull line_path: ";
-    std::copy(line_path.cbegin(), line_path.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
+    std::copy(final_line_path.cbegin(), final_line_path.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
     std::cout << std::endl;
-    backbone_filled_path = line_path;
+    backbone_filled_path = final_line_path;
 }
