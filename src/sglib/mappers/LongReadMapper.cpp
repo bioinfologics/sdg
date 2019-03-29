@@ -617,7 +617,7 @@ LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMap
             for (int mi2 = 0; mi2 < mbo.size(); mi2++) {
                 if (used[mi2]){continue;}
                 auto m2 = mbo[mi2];
-                if (m.min_offset<m2.max_offset and m2.min_offset < m.min_offset){
+                if (m.min_offset<m2.max_offset and m2.min_offset < m.max_offset){
                     m.min_offset = std::min(m.min_offset,m2.min_offset);
                     m.max_offset = std::max(m.max_offset,m2.max_offset);
                     m.len += m2.len;
