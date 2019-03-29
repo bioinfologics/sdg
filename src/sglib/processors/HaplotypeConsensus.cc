@@ -131,7 +131,7 @@ void HaplotypeConsensus::build_line_path() {
                     std::find(p->second.cbegin(), p->second.cend(), 0) == p->second.cend()) {
                     filled = true;
                     auto it = ++p->second.cbegin();
-                    thread_line_paths[gap_number].insert(thread_line_paths[omp_get_thread_num()].end(), it, p->second.cend());
+                    thread_line_paths[gap_number].insert(thread_line_paths[gap_number].end(), it, p->second.cend());
                     std::cout << " <-- WINNER" << std::endl;
                 } else {
                     std::cout << std::endl;
