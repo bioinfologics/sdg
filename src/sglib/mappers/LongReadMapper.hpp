@@ -333,7 +333,7 @@ public:
 
     std::vector<ReadCacheItem>create_read_paths(const std::vector<sgNodeID_t> &backbone, const ReadPathParams &read_path_params);
 
-    std::vector<sgNodeID_t> create_read_path(uint32_t rid, const ReadPathParams &read_path_params, bool verbose=false, const std::string read_seq="");
+    std::vector<sgNodeID_t> create_read_path(uint32_t rid, const ReadPathParams &read_path_params, bool verbose=false, const std::string& read_seq="");
 
 //    std::vector<sgNodeID_t> create_read_path_fast(uint32_t rid, bool verbose=false, const std::string read_seq="");
     /**
