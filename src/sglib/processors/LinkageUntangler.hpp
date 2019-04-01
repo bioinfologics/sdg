@@ -39,6 +39,7 @@ public:
      * coherently connected among them in order with at least min_links too.
      * @param multi_ldg
      * @param min_links
+     * @param min_transitive_links
      */
     void select_multi_linkage_linear_anchors(const LinkageDiGraph & multi_ldg, int min_links=3, int min_transitive_links=2);
 
@@ -58,16 +59,7 @@ public:
 
     //Linkage improving/filtering methods
     LinkageDiGraph filter_linkage_to_hspnp_duos( uint64_t min_size, float min_ci, float max_ci, const LinkageDiGraph & ldg);
-    /**
-     * Improves a neighbouring_anchors LDG by:
-     * - Eliminating false anchors
-     * - Reconecting line ends
-     * Uses filtered long read mappings and 10x tags too.
-     * @param multi_ldg
-     * @param min_links
-     * @return
-     */
-    //LinkageDiGraph improve_neighbouring_anchors_linkage(const LinkageDiGraph & multi_ldg, int min_links=3);
+
 
     //Graph untangling/modification/local assembly methods
     void expand_trivial_repeats(const LinkageDiGraph &);

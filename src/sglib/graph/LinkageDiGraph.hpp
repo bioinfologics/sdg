@@ -108,9 +108,9 @@ public:
 
     /** @brief returns true if n1 and n2 are connected in the link collection and false otherwise
      *
-     * @param nodeID n1
-     * @param nodeID n2
-     * @return true is the nodes are connected false otherwise
+     * @param n1 nodeID n1
+     * @param n2 nodeID n2
+     * @return true if the nodes are connected false otherwise
      */
     bool are_connected(sgNodeID_t n1, sgNodeID_t n2) const;
     uint32_t link_count(sgNodeID_t n1, sgNodeID_t n2) const;
@@ -137,13 +137,13 @@ public:
     std::vector<sgNodeID_t> find_self_loops(uint32_t min_size=0,uint32_t max_size=1000000, bool include_circles=true) const;
 
     /**
-     * Dumps the LinkageDiGraph (links) to <filename>
+     * Dumps the LinkageDiGraph (links) to filename
      * @param filename
      */
     void dump_to_text(std::string filename);
 
     /**
-     * Loads the LinkageDiGraph (links) from <filename>
+     * Loads the LinkageDiGraph (links) from filename
      * @param filename
      */
     void load_from_text(std::string filename);

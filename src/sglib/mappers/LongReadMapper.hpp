@@ -16,6 +16,21 @@
 #include "LinkedReadMapper.hpp"
 #include <memory>
 
+struct ReadPathParams {
+    int default_overlap_distance = 199;
+    float path_distance_multiplier = 1.5;
+    int min_path_distance = 400;
+    int min_negative_path_distance = 500;
+    int max_path_nodes = 40;
+    int max_distinct_paths = 1000;
+    int path_mapping_k = 15;
+    int max_mapping_path_size = 1000;
+    int min_mapping_chain = 2;
+    int max_mapping_jump = 100;
+    int max_mapping_delta_change = 30;
+    float kmer_filter_multiplier = 2;
+};
+
 struct ReadCacheItem {
     uint64_t id;
     std::string seq;
@@ -123,6 +138,7 @@ public:
 
     const SequenceGraph & sg;
 
+    // TODO: Describe exactly what each of these do!!
     uint8_t k=15;
     int min_size=1000;
     int min_chain=50;
@@ -181,10 +197,10 @@ public:
      *  matches[read_kmer][kmer_match].first = node_id for a match of that kmer in the graph, sign indicates orientation
      *  matches[read_kmer][kmer_match].second = offset for a match of that kmer for corresponding node_id (.first), the offsets are always calculated from the begining of the read
      *
-     *  TODO: Change matche type from in32_t to sgNodeId in this function !!!
+     *  TODO: Change match type from in32_t to sgNodeId in this function !!!
      *
-     * @param vetor to store the mappings
-     * @param vector containing read kmers with the orientations
+     * @param matches structure to store kmer mappings
+     * @param read_kmers contains read kmers with orientations
      */
     void get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers);
 
@@ -231,6 +247,7 @@ public:
      *
      * Results are stored in the mappings collection of this object
      *
+     * @param filter_limit
      * @param readIDs
      * @param detailed_log
      */
@@ -314,9 +331,9 @@ public:
         update_indexes();
     }
 
-    std::vector<ReadCacheItem>create_read_paths(std::vector<sgNodeID_t> &backbone);
+    std::vector<ReadCacheItem>create_read_paths(const std::vector<sgNodeID_t> &backbone, const ReadPathParams &read_path_params);
 
-    std::vector<sgNodeID_t> create_read_path(uint32_t rid, bool verbose=false, const std::string read_seq="");
+    std::vector<sgNodeID_t> create_read_path(uint32_t rid, const ReadPathParams &read_path_params, bool verbose=false, const std::string read_seq="");
 
 //    std::vector<sgNodeID_t> create_read_path_fast(uint32_t rid, bool verbose=false, const std::string read_seq="");
     /**

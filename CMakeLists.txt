@@ -270,15 +270,6 @@ add_executable(gfa-extract
 add_executable(bsg-dbg
         src/bsg-dbg.cc)
 
-add_executable(test_improve_read_filtered_mappings
-        src/test_improve_read_filtered_mappings.cc)
-
-add_executable(test_haplotype_consensus
-        src/test_haplotype_consensus.cc)
-
-add_executable(test_haplotype_consensus_parts
-        src/test_haplotype_consensus_parts.cc)
-
 add_executable(build_all_backbones
         src/build_all_backbones.cc)
 
@@ -291,9 +282,6 @@ target_link_libraries(bsg-lhapassembler bsg_static ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract bsg_static)
 target_link_libraries(seq-thread bsg_static)
 target_link_libraries(bsg-dbg bsg_static)
-target_link_libraries(test_improve_read_filtered_mappings bsg_static)
-target_link_libraries(test_haplotype_consensus bsg_static)
-target_link_libraries(test_haplotype_consensus_parts bsg_static)
 target_link_libraries(build_all_backbones bsg_static)
 
 
