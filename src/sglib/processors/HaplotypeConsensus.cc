@@ -6,7 +6,7 @@
 #include <sglib/utilities/omp_safe.hpp>
 #include <sglib/utilities/most_common_helper.hpp>
 
-std::string HaplotypeConsensus::consensus_sequence() {
+std::string HaplotypeConsensus::consensus_sequence(int disconnected_distance, int min_distance) {
     std::string consensus;
     std::vector<sgNodeID_t > current_path;
 
@@ -20,11 +20,11 @@ std::string HaplotypeConsensus::consensus_sequence() {
             current_path.clear();
         }
         if (n == 0 and ni < backbone_filled_path.size()-1){
-            int dist=200;
+            int dist=disconnected_distance;
             for (const auto &fwl: ldg.get_fw_links(backbone_filled_path[ni-1])) {
                 if (fwl.dest == backbone_filled_path[ni+1]) dist=fwl.dist;
             }
-            consensus += std::string(std::max(dist,100), 'N');
+            consensus += std::string(std::max(dist,min_distance), 'N');
         }
     }
     return consensus;
@@ -87,7 +87,7 @@ void HaplotypeConsensus::orient_read_path(uint64_t rid) {
 
 }
 
-void HaplotypeConsensus::build_line_path() {
+void HaplotypeConsensus::build_line_path(int min_votes, int min_path_nodes) {
     std::vector<sgNodeID_t> final_line_path;
     final_line_path.emplace_back(backbone[0]);
     std::vector<std::vector<sgNodeID_t>> thread_line_paths(backbone.size()-1);
@@ -127,7 +127,8 @@ void HaplotypeConsensus::build_line_path() {
                 std::cout << p->first << ": ";
                 std::copy(p->second.cbegin(), p->second.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
 
-                if (!filled and p->first > 1 and
+                // If there's a path with more than min_votes vote and it doesn't contain a gap, then this path is the winner
+                if (!filled and p->first > min_votes and
                     std::find(p->second.cbegin(), p->second.cend(), 0) == p->second.cend()) {
                     filled = true;
                     auto it = ++p->second.cbegin();
@@ -137,10 +138,16 @@ void HaplotypeConsensus::build_line_path() {
                     std::cout << std::endl;
                 }
             }
+
+            // If no path without gaps and more than min_votes was found then collect all the "common" nodes as partial solutions
+            // and place a gap in between the uncommon nodes
             if (!filled) {
                 std::vector<std::vector<sgNodeID_t>> winners;
                 for (const auto &mcp : most_common) {
-                    if (mcp.second.size() > 2) {
+                    // Only consider paths with more than min_path_nodes nodes for partial solutions, typically
+                    // the first shared node is the first node in the backbone and the second is a gap, this if
+                    // avoids those cases but will need to be changed if the path doesn't include the first backbone node
+                    if (mcp.second.size() > min_path_nodes) {
                         winners.emplace_back(mcp.second);
                     }
                 }

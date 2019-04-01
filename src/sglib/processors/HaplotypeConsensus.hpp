@@ -21,22 +21,43 @@
  */
 class HaplotypeConsensus {
 public:
-    HaplotypeConsensus(WorkSpace &_ws, const LinkageDiGraph &_mldg, const LinkageDiGraph &_ldg, std::vector<sgNodeID_t> _backbone):ws(_ws),mldg(_mldg),ldg(_ldg){
-        backbone=_backbone;
-        for (auto n:backbone){
-            for (auto rin:ws.long_read_mappers[0].reads_in_node[llabs(n)]) long_reads_in_backbone.insert(rin);
+    HaplotypeConsensus(WorkSpace &_ws, const LinkageDiGraph &_mldg, const LinkageDiGraph &_ldg, const std::vector<sgNodeID_t> &_backbone, const ReadPathParams &read_path_params):
+    ws(_ws)
+    ,mldg(_mldg)
+    ,ldg(_ldg)
+    ,backbone(_backbone)
+    {
+        auto read_cache = ws.long_read_mappers[0].create_read_paths(backbone,read_path_params);
+        if (!is_sorted(read_cache.begin(), read_cache.end())){
+            sglib::sort(read_cache.begin(), read_cache.end());
         }
+        auto max_rid = read_cache.back();
+        oriented_read_paths.resize(max_rid.id + 1);
+
     }
 
-    void orient_read_paths(std::vector<ReadCacheItem> &useful_reads) {
+    void orient_read_paths() {
 #pragma omp parallel for
-        for (uint32_t read = 0; read < useful_reads.size(); ++read) {
-            orient_read_path(useful_reads[read].id);
+        for (uint32_t read = 0; read < read_cache.size(); ++read) {
+            orient_read_path(read_cache[read].id);
         }
     }
     void orient_read_path(uint64_t rid);
-    void build_line_path();
-    std::string consensus_sequence();
+    void build_line_path(int min_votes, int min_path_nodes);
+    std::string consensus_sequence(int disconnected_distance, int min_distance);
+
+    std::string generate_consensus(int min_votes=1, int min_path_nodes=2, int disconnected_distance=200, int min_distance=100) {
+        sglib::OutputLog() << "Created read paths for " << read_cache.size() << " reads" << std::endl;
+        std::cout << "Read ids: ";
+        std::copy(read_cache.cbegin(), read_cache.cend(), std::ostream_iterator<ReadCacheItem>(std::cout, ", "));
+        orient_read_paths();
+        sglib::OutputLog() << "Done orienting " << read_cache.size() << " read paths" << std::endl;
+
+        build_line_path(min_votes, min_path_nodes);
+
+        return consensus_sequence(disconnected_distance, min_distance);
+
+    }
 
     void use_long_reads_from_file(std::string filename);
 
@@ -54,12 +75,12 @@ public:
     std::vector<std::vector<sgNodeID_t >> oriented_read_paths;
 
     std::map<uint64_t,std::string> read_seqs;
-    std::vector<sgNodeID_t> backbone;
     std::vector<sgNodeID_t> backbone_filled_path;
-    std::set<uint64_t> long_reads_in_backbone;
     WorkSpace &ws;
     const LinkageDiGraph &mldg;
     const LinkageDiGraph &ldg;
+    std::vector<ReadCacheItem> read_cache;
+    const std::vector<sgNodeID_t> &backbone;
 };
 
 

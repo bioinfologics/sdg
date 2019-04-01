@@ -755,7 +755,7 @@ std::vector<LongReadMapping> LongReadMapper::improve_read_filtered_mappings(uint
     return new_mappings;
 }
 
-std::vector<ReadCacheItem> LongReadMapper::create_read_paths(std::vector<sgNodeID_t> &backbone) {
+std::vector<ReadCacheItem> LongReadMapper::create_read_paths(const std::vector<sgNodeID_t> &backbone, const ReadPathParams &read_path_params) {
     std::unordered_set<uint64_t> useful_read;
     std::vector<ReadCacheItem> read_cache;
     BufferedSequenceGetter sequenceGetter(datastore);
@@ -777,13 +777,13 @@ std::vector<ReadCacheItem> LongReadMapper::create_read_paths(std::vector<sgNodeI
 
 #pragma omp parallel for
     for (uint32_t rcp = 0; rcp < read_cache.size(); rcp++) {
-        read_paths[read_cache[rcp].id] = create_read_path(read_cache[rcp].id, false, read_cache[rcp].seq);
+        read_paths[read_cache[rcp].id] = create_read_path(read_cache[rcp].id, read_path_params, false, read_cache[rcp].seq);
     }
 
     return read_cache;
 }
 
-std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verbose, const std::string read_seq) {
+std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, const ReadPathParams &read_path_params, bool verbose, const std::string read_seq) {
     const std::vector<LongReadMapping> &mappings = filtered_read_mappings[rid];
 
     std::vector<sgNodeID_t> read_path;
@@ -807,13 +807,13 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
         int32_t ad;
         if (need_pathing){
             ad = (m2.qStart-m2.nStart)-(m1.qEnd+sg.nodes[std::abs(m1.node)].sequence.size()-m1.nEnd);
-            auto pd = ad+199*2;
-            auto max_path_size = std::max((int32_t)(pd*1.5),pd+400);
+            auto pd = ad+read_path_params.default_overlap_distance*2; // default_overlap_distance
+            auto max_path_size = std::max((int32_t)(pd*read_path_params.path_distance_multiplier),pd+read_path_params.min_path_distance); // path_distance_multiplier, min_path_distance
             if (max_path_size < 0) {
                 // TODO: Some mappings have negative distances, needs fixing at mapping stage?
 
-                // XXX: For now simply accept negative distances lower than 500
-                if (std::abs(max_path_size) > 500) {
+                // XXX: For now simply accept negative distances lower than min_negative_path_distance
+                if (std::abs(max_path_size) > read_path_params.min_negative_path_distance) {
                     read_path.emplace_back(0);
                     continue;
                 } else {
@@ -829,14 +829,15 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
                 paths = place_in_map->second;
             } else {
                 if (verbose) std::cout <<"Adding backbone to collecion!!" <<std::endl;
-                paths = sg.find_all_paths_between(m1.node, m2.node, max_path_size, 40, false);
+                paths = sg.find_all_paths_between(m1.node, m2.node, max_path_size, read_path_params.max_path_nodes, false); // max_path_nodes
 #pragma omp critical
                 {
                     all_paths_between[std::make_pair(m1.node,m2.node)] = paths; // Add path to structure if not there!
                 }
             }
 
-            if (paths.size()>1000) {
+            // Max number of paths before giving up
+            if (paths.size()>read_path_params.max_distinct_paths) {
                 if (verbose) std::cout << "Too many paths" << std::endl;
                 read_path.emplace_back(0);
                 continue;
@@ -854,12 +855,12 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
 
                 //Create, parametrise and index a mapper to the paths SG
                 auto pm = LongReadMapper(psg, datastore);
-                pm.k = 15;
-                pm.min_size = std::min(int(ad / 2), 1000);
-                pm.min_chain = 2;
-                pm.max_jump = 100;
-                pm.max_delta_change = 30;
-                pm.update_graph_index(paths.size() * 2 + 1, false);
+                pm.k = read_path_params.path_mapping_k;
+                pm.min_size = std::min(int(ad / 2), read_path_params.max_mapping_path_size); //
+                pm.min_chain = read_path_params.min_mapping_chain;
+                pm.max_jump = read_path_params.max_mapping_jump;
+                pm.max_delta_change = read_path_params.max_mapping_delta_change;
+                pm.update_graph_index(paths.size() * read_path_params.kmer_filter_multiplier + 1, false);
 
                 //Align the read to the paths SG and pick the best(s) alignement(s)
                 std::string seq = read_seq;
@@ -867,7 +868,7 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, bool verb
                     BufferedSequenceGetter sequenceGetter(datastore);
                     seq = sequenceGetter.get_read_sequence(rid);
                 }
-                auto subs_string = seq.substr(m1.qEnd - 199, m2.qStart + 15 + 199 - m1.qEnd + 199);
+                auto subs_string = seq.substr(m1.qEnd - 199, m2.qStart + read_path_params.path_mapping_k + 199 - m1.qEnd + 199);
                 auto path_mappings = pm.map_sequence(subs_string.data());
                 std::sort(path_mappings.begin(), path_mappings.end(),
                           [](const LongReadMapping &a, const LongReadMapping &b) { return a.score > b.score; });
