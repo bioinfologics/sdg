@@ -90,7 +90,7 @@ void HaplotypeConsensus::orient_read_path(uint64_t rid) {
 void HaplotypeConsensus::build_line_path(int min_votes, int min_path_nodes) {
     std::vector<sgNodeID_t> final_line_path;
     final_line_path.emplace_back(backbone[0]);
-    std::vector<std::vector<sgNodeID_t>> thread_line_paths(backbone.size()-1);
+    std::vector<std::vector<sgNodeID_t>> thread_line_paths(backbone.size());
 #pragma omp parallel
     { // Parallel section for all gaps
 #pragma omp for
