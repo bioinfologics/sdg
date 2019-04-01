@@ -770,11 +770,10 @@ std::vector<ReadCacheItem> LongReadMapper::create_read_paths(const std::vector<s
 
         }
     }
-
-//    __gnu_parallel::for_each(useful_read.cbegin(), useful_read.cend(), [&](const uint64_t read){
-//        read_paths[read] = create_read_path(read, false);
-//    });
-
+    
+    // TODO: HACK! Move this to somewhere it makes more sense
+    read_paths.resize(filtered_read_mappings.size());
+    
 #pragma omp parallel for
     for (uint32_t rcp = 0; rcp < read_cache.size(); rcp++) {
         read_paths[read_cache[rcp].id] = create_read_path(read_cache[rcp].id, read_path_params, false, read_cache[rcp].seq);
@@ -783,7 +782,7 @@ std::vector<ReadCacheItem> LongReadMapper::create_read_paths(const std::vector<s
     return read_cache;
 }
 
-std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, const ReadPathParams &read_path_params, bool verbose, const std::string read_seq) {
+std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, const ReadPathParams &read_path_params, bool verbose, const std::string& read_seq) {
     const std::vector<LongReadMapping> &mappings = filtered_read_mappings[rid];
 
     std::vector<sgNodeID_t> read_path;
