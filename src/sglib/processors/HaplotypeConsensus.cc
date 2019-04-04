@@ -206,7 +206,7 @@ void HaplotypeConsensus::build_line_path(int min_votes, int min_path_nodes) {
 
 #pragma omp single
         {
-            for (uint32_t tid=0; tid < backbone.size()-1; tid++) {
+            for (uint32_t tid=1; tid < backbone.size(); tid++) {
                 final_line_path.insert(final_line_path.end(), thread_line_paths[tid].begin(), thread_line_paths[tid].end());
             }
         }
