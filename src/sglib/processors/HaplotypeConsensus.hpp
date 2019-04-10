@@ -21,13 +21,21 @@
  */
 class HaplotypeConsensus {
 public:
-    HaplotypeConsensus(WorkSpace &_ws, const LinkageDiGraph &_mldg, const LinkageDiGraph &_ldg, const std::vector<sgNodeID_t> &_backbone, const ReadPathParams &read_path_params):
+    HaplotypeConsensus(WorkSpace &_ws, const LinkageDiGraph &_mldg, const LinkageDiGraph &_ldg, const std::vector<sgNodeID_t> _backbone, const ReadPathParams &read_path_params):
     ws(_ws)
     ,mldg(_mldg)
     ,ldg(_ldg)
     ,backbone(_backbone)
     {
-        auto read_cache = ws.long_read_mappers[0].create_read_paths(backbone,read_path_params);
+        std::cout << "Backbone nodes: " << std::endl;
+        for (const auto &n: backbone) {
+            if (n != 0){
+                std::cout << "seq"<<std::abs(n)<<",";
+            }
+        }
+        std::cout << std::endl;
+    
+        read_cache = ws.long_read_mappers[0].create_read_paths(backbone,read_path_params);
         if (!is_sorted(read_cache.begin(), read_cache.end())){
             sglib::sort(read_cache.begin(), read_cache.end());
         }
@@ -47,6 +55,15 @@ public:
     std::string consensus_sequence(int disconnected_distance, int min_distance);
 
     std::string generate_consensus(int min_votes=1, int min_path_nodes=2, int disconnected_distance=200, int min_distance=100) {
+        std::cout << "Backbone nodes: " << std::endl;
+        for (const auto &n: backbone) {
+            if (n != 0){
+                std::cout << "seq"<<std::abs(n)<<",";
+            }
+        }
+        std::cout << std::endl;
+        
+
         sglib::OutputLog() << "Created read paths for " << read_cache.size() << " reads" << std::endl;
         std::cout << "Read ids: ";
         std::copy(read_cache.cbegin(), read_cache.cend(), std::ostream_iterator<ReadCacheItem>(std::cout, ", "));
@@ -80,7 +97,7 @@ public:
     const LinkageDiGraph &mldg;
     const LinkageDiGraph &ldg;
     std::vector<ReadCacheItem> read_cache;
-    const std::vector<sgNodeID_t> &backbone;
+    const std::vector<sgNodeID_t> backbone;
 };
 
 

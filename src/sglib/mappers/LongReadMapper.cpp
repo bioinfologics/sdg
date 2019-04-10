@@ -770,11 +770,10 @@ std::vector<ReadCacheItem> LongReadMapper::create_read_paths(const std::vector<s
 
         }
     }
-
-//    __gnu_parallel::for_each(useful_read.cbegin(), useful_read.cend(), [&](const uint64_t read){
-//        read_paths[read] = create_read_path(read, false);
-//    });
-
+    
+    // TODO: HACK! Move this to somewhere it makes more sense
+    read_paths.resize(filtered_read_mappings.size());
+    
 #pragma omp parallel for
     for (uint32_t rcp = 0; rcp < read_cache.size(); rcp++) {
         read_paths[read_cache[rcp].id] = create_read_path(read_cache[rcp].id, read_path_params, false, read_cache[rcp].seq);
@@ -783,7 +782,7 @@ std::vector<ReadCacheItem> LongReadMapper::create_read_paths(const std::vector<s
     return read_cache;
 }
 
-std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, const ReadPathParams &read_path_params, bool verbose, const std::string read_seq) {
+std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, const ReadPathParams &read_path_params, bool verbose, const std::string& read_seq) {
     const std::vector<LongReadMapping> &mappings = filtered_read_mappings[rid];
 
     std::vector<sgNodeID_t> read_path;
@@ -803,7 +802,6 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, const Rea
             if (l.dest == m2.node) need_pathing = false;
         }
 
-        std::vector<SequenceGraphPath> paths;
         int32_t ad;
         if (need_pathing){
             ad = (m2.qStart-m2.nStart)-(m1.qEnd+sg.nodes[std::abs(m1.node)].sequence.size()-m1.nEnd);
@@ -823,14 +821,20 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, const Rea
 //            max_path_size = 20000;
             if (verbose) std::cout << "\n\nJumping between "<<m1<<" and "<<m2<<std::endl<<"Alignment distance: " << ad << " bp, path distance " << pd << ", looking for paths of up to " << max_path_size << " bp" << std::endl;
 
-            const auto place_in_map = all_paths_between.find(std::make_pair(m1.node, m2.node));
-            if (place_in_map != all_paths_between.end()){
-                if (verbose) std::cout <<"Backbone found in collection!!" <<std::endl;
-                paths = place_in_map->second;
-            } else {
+            std::unordered_map<std::pair<sgNodeID_t,sgNodeID_t>, std::vector<SequenceGraphPath>>::const_iterator place_in_map;
+#pragma omp critical (paths_map)
+            {
+                place_in_map = all_paths_between.find(std::make_pair(m1.node, m2.node));
+            }
+
+            bool found_in_map = place_in_map != all_paths_between.end();
+            const std::vector<SequenceGraphPath>& paths = ( found_in_map ?
+                    place_in_map->second :
+                    sg.find_all_paths_between(m1.node, m2.node, max_path_size, read_path_params.max_path_nodes, false));
+
+            if (!found_in_map) {
                 if (verbose) std::cout <<"Adding backbone to collecion!!" <<std::endl;
-                paths = sg.find_all_paths_between(m1.node, m2.node, max_path_size, read_path_params.max_path_nodes, false); // max_path_nodes
-#pragma omp critical
+#pragma omp critical (paths_map)
                 {
                     all_paths_between[std::make_pair(m1.node,m2.node)] = paths; // Add path to structure if not there!
                 }

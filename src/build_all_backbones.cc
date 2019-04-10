@@ -9,6 +9,9 @@ int main(int argc, char **argv) {
     WorkSpace ws;
 
     std::string workspace_file;
+    std::string mappings_file;
+    std::string neighbours_file;
+    bool use_checkpoints=false;
     std::string output_prefix;
     uint32_t from(0), to(0);
 
@@ -17,6 +20,10 @@ int main(int argc, char **argv) {
     {
         options.add_options()
             ("help", "Print help")
+            ("w,workspace", "Load workspace", cxxopts::value(workspace_file))
+            ("m,mappings", "Filtered mappings file", cxxopts::value(mappings_file))
+            ("n,neighbours", "Pre-computed tag neighbours file", cxxopts::value(neighbours_file))
+            ("c,checkpoints", "Enables the use of precomputed read paths if present", cxxopts::value(use_checkpoints)->default_value("false"))
             ("from", "backbone range start", cxxopts::value<uint32_t>(from))
             ("to", "backbone range end", cxxopts::value<uint32_t>(to));
 
@@ -37,10 +44,10 @@ int main(int argc, char **argv) {
     if (from != 0 or to != 0)
         sglib::OutputLog() << "Building backbones from " << from << " to " << to << std::endl;
 
-    ws.load_from_disk("nano10x_rg_lmpLR10x_mapped.bsgws");
+    ws.load_from_disk(workspace_file);
 
-    ws.long_read_mappers[0].read_filtered_mappings("fm_10K3_filtered.bsgfrm");
-    ws.linked_read_mappers[0].read_tag_neighbours("tag_neighbours_1000_0.03.data");
+    ws.long_read_mappers[0].read_filtered_mappings(mappings_file);
+    ws.linked_read_mappers[0].read_tag_neighbours(neighbours_file);
     ws.long_read_mappers[0].update_indexes();
 
     sglib::OutputLog() << "Selecting backbones" << std::endl;
@@ -53,8 +60,6 @@ int main(int argc, char **argv) {
     auto backbones=ldg.get_all_lines(2,10000);
 
     sglib::OutputLog() << "Done selecting backbones" << std::endl;
-
-    ws.long_read_mappers[0].read_paths.resize(ws.long_read_mappers[0].filtered_read_mappings.size());
 
     if (to == 0) {
         to = backbones.size();
@@ -70,23 +75,24 @@ int main(int argc, char **argv) {
         }
         std::cout << std::endl;
 
-//        bool read_paths_in_file=false;
-//        if(false)
-//        {
-//            std::ifstream orp_file("oriented_read_paths_backbone_"+std::to_string(backbone)+".orp");
-//            if (orp_file.good()){
-//                read_paths_in_file=true;
-//            }
-//        }
-//
-//        if (!read_paths_in_file) {
-            ReadPathParams readPathParams;
-            HaplotypeConsensus haplotypeConsensus(ws, mldg, ldg, backbones[backbone], readPathParams);
-            int min_votes=1;
-            int min_path_nodes=2;
-            int disconnected_distance=200;
-            int min_distance=100;
-            auto consensus = haplotypeConsensus.generate_consensus(min_votes, min_path_nodes, disconnected_distance, min_distance);
+        bool read_paths_in_file=false;
+        {
+            std::ifstream orp_file("oriented_read_paths_backbone_"+std::to_string(backbone)+".orp");
+            if (orp_file.good()){
+                read_paths_in_file=true;
+            }
+        }
+
+        ReadPathParams readPathParams;
+        int min_votes=1;
+        int min_path_nodes=2;
+        int disconnected_distance=200;
+        int min_distance=100;
+
+        HaplotypeConsensus haplotypeConsensus(ws, mldg, ldg, backbones[backbone], readPathParams);
+        std::string consensus;
+        if (!read_paths_in_file or !use_checkpoints) {
+            consensus = haplotypeConsensus.generate_consensus(min_votes, min_path_nodes, disconnected_distance, min_distance);
 
             haplotypeConsensus.write_read_paths("oriented_read_paths_backbone_" + std::to_string(backbone) + ".orp");
 
@@ -94,9 +100,11 @@ int main(int argc, char **argv) {
             ws.long_read_mappers[0].all_paths_between.clear();
             sglib::OutputLog() << "Done clearing structures" << std::endl;
 
-//        } else {
-//            haplotypeConsensus.read_read_paths("oriented_read_paths_backbone_"+std::to_string(backbone)+".orp");
-//        }
+        } else {
+            haplotypeConsensus.read_read_paths("oriented_read_paths_backbone_"+std::to_string(backbone)+".orp");
+            haplotypeConsensus.build_line_path(min_votes, min_path_nodes);
+            consensus = haplotypeConsensus.consensus_sequence(disconnected_distance, min_distance);
+        }
 
 
         sglib::OutputLog() << "Backbone " << backbone << " consensus: " << std::endl;
