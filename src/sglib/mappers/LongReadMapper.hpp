@@ -259,7 +259,7 @@ public:
      * @param query_sequence_ptr
      * @return
      */
-    std::vector<LongReadMapping> map_sequence(const char * query_sequence_ptr);
+    std::vector<LongReadMapping> map_sequence(const char * query_sequence_ptr, sgNodeID_t seq_id=0);
     //void map_reads(std::string detailed_log){map_reads({},detailed_log);};
 
     void read(std::string filename);
