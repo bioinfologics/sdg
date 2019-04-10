@@ -52,6 +52,7 @@ public:
     SequenceGraph(const SequenceGraph &sg) = delete; // Avoid implicit generation of the copy constructor.
     //=== I/O functions ===
     void load_from_gfa(std::string filename);
+    void load_from_fasta(std::string filename);
     void write_to_gfa(std::string filename, const std::vector<std::vector<Link>> &arg_links={},
                           const std::vector<sgNodeID_t> &selected_nodes={}, const std::vector<sgNodeID_t> &mark_red={},
                           const std::vector<double> &depths={});
