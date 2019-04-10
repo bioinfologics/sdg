@@ -716,6 +716,14 @@ LinkageDiGraph LinkageUntangler::make_nextselected_linkage(const LinkageDiGraph 
     return ldg;
 }
 
+LinkageDiGraph LinkageUntangler::make_and_simplify_anchor_linkage(const LinkageDiGraph &multi_ldg, int anchor_links, int transitive_links) {
+    select_multi_linkage_linear_anchors(multi_ldg, anchor_links,transitive_links);
+    auto ldg1=make_nextselected_linkage(multi_ldg,anchor_links);
+    //TODO: cleanup the double-Ys and such?
+
+    return std::move(ldg1);
+}
+
 std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<LongReadMapping> &lorm_mappings, uint32_t read_size, int32_t unmapped_end) {
     std::vector<Link> linkage;
     std::unordered_map<sgNodeID_t,uint64_t> total_bp;
