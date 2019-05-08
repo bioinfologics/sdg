@@ -539,6 +539,51 @@ void SequenceGraph::load_from_gfa(std::string filename) {
     sglib::OutputLog(sglib::LogLevels::INFO) << nodes.size() - 1 << " nodes after connecting with " << lcount << " links." << std::endl;
 }
 
+void SequenceGraph::load_from_fasta(std::string filename) {
+    std::string line;
+    this->filename=filename;
+    this->fasta_filename=filename;
+
+    std::ifstream fastaf(fasta_filename);
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Graph fasta filesname: " << fasta_filename << std::endl;
+    if (!fastaf) throw std::invalid_argument("Can't read graph fasta file");
+    if (fastaf.peek() == std::ifstream::traits_type::eof()) throw std::invalid_argument("Empty fasta file");
+
+    //load all sequences from fasta file if they're not canonical, flip and remember they're flipped
+    sglib::OutputLog(sglib::LogLevels::INFO) << "Loading sequences from " << fasta_filename << std::endl;
+
+    std::string name, seq = "";
+    seq.reserve(10000000); //stupid hack but probably useful to reserve
+    oldnames_to_ids.clear();
+    oldnames.push_back("");
+    nodes.clear();
+    links.clear();
+    add_node(Node("",sgNodeStatus_t::sgNodeDeleted)); //an empty deleted node on 0, just to skip the space
+    uint64_t rcnodes=0;
+    while(!fastaf.eof()){
+        std::getline(fastaf,line);
+        if (fastaf.eof() or line[0] == '>'){
+
+            if (!name.empty()) {
+                //rough ansi C and C++ mix but it works
+                if (oldnames_to_ids.find(name) != oldnames_to_ids.end())
+                    throw std::logic_error("sequence " + name + " is already defined");
+                oldnames_to_ids[name] = add_node(Node(seq));
+                oldnames.push_back(name);
+            }
+
+            // Clear the name and set name to the new name, this is a new sequence!
+            name.clear();
+            for (auto i = 1; i < line.size() and line[i] != ' '; ++i) name += line[i];
+            seq = "";
+        } else {
+            seq += line;
+
+        }
+    }
+    sglib::OutputLog(sglib::LogLevels::INFO) << nodes.size()-1 << " nodes loaded " << std::endl;
+}
+
 void SequenceGraph::write_to_gfa(std::string filename, const std::vector<std::vector<Link>> &arg_links,
                                  const std::vector<sgNodeID_t> &selected_nodes, const std::vector<sgNodeID_t> &mark_red,
                                  const std::vector<double> &depths) {

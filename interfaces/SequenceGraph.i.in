@@ -37,6 +37,7 @@
 #include "sglib/processors/Untangler.hpp"
 #include "sglib/graph/LinkageDiGraph.hpp"
 #include "sglib/processors/LinkageUntangler.hpp"
+#include "sglib/factories/KMerCountFactory.hpp"
 
 #include "sglib/processors/HaplotypeConsensus.hpp"
 
@@ -70,6 +71,7 @@ namespace std {
    %template(vectorFloat) vector<float>;
    %template(vectorString) vector<string>;
    %template(vectorLink) vector<Link>;
+   %template(vectorvectorLink) vector<vector<Link>>;
    %template(vectorSGNode) vector<sgNodeID_t>;
    %template(vectorvectorSGNode) vector<vector<sgNodeID_t>>;
    %template(vectorNode) vector<Node>;
@@ -203,3 +205,4 @@ namespace std {
 %include "sglib/graph/LinkageDiGraph.hpp"
 
 %include "sglib/processors/HaplotypeConsensus.hpp"
+%include "sglib/factories/KMerFactory.hpp"

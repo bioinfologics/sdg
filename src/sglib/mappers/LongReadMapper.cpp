@@ -396,7 +396,7 @@ void LongReadMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> re
     update_indexes();
 }
 
-std::vector<LongReadMapping> LongReadMapper::map_sequence(const char * query_sequence_ptr) {
+std::vector<LongReadMapping> LongReadMapper::map_sequence(const char * query_sequence_ptr, sgNodeID_t seq_id) {
     std::vector<LongReadMapping> private_results;
 
     StreamKmerFactory skf(k);
@@ -413,7 +413,7 @@ std::vector<LongReadMapping> LongReadMapper::map_sequence(const char * query_seq
 
     //========== 3. Create alignment blocks from candidates ==========
 
-    return alignment_blocks(0,node_matches,read_kmers.size(),candidates);
+    return alignment_blocks(seq_id,node_matches,read_kmers.size(),candidates);
 
 }
 
