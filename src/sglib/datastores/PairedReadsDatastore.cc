@@ -122,6 +122,10 @@ void PairedReadsDatastore::read(std::ifstream &input_file) {
 
 void PairedReadsDatastore::load_index(){
     fd=fopen(filename.c_str(),"r");
+    if (!fd) {
+        std::cerr << "Failed to open " << filename <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + filename);
+    }
     bsgMagic_t magic;
     bsgVersion_t version;
     BSG_FILETYPE type;
@@ -151,6 +155,10 @@ void PairedReadsDatastore::load_from_stream(std::string _filename,std::ifstream 
     uint64_t s;
     filename=_filename;
     fd=fopen(filename.c_str(),"r");
+    if (!fd) {
+        std::cerr << "Failed to open " << filename <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + filename);
+    }
     bsgMagic_t magic;
     bsgVersion_t version;
     BSG_FILETYPE type;
@@ -163,7 +171,7 @@ void PairedReadsDatastore::load_from_stream(std::string _filename,std::ifstream 
     }
 
     if (version < min_compat) {
-        throw std::runtime_error(filename + "has an ncompatible version");
+        throw std::runtime_error(filename + "has an incompatible version");
     }
 
     if (type != PairedDS_FT) {
