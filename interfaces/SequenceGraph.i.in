@@ -40,7 +40,7 @@
 #include "sglib/factories/KMerCountFactory.hpp"
 
 #include "sglib/processors/HaplotypeConsensus.hpp"
-
+#include "sglib/readers/FileReader.hpp"
 %}
 
 #define MADE_DOCS "@DOXYGEN_FOUND@"
@@ -53,10 +53,19 @@
 %include <stl.i>
 %include "std_set.i"
 %include "std_unordered_set.i"
+%include "exception.i"
 
+%exception {
+  try {
+    $action
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+}
 %include "sglib/types/KmerTypes.hpp"
 %include "sglib/types/GenericTypes.hpp"
 %include "sglib/datastores/LinkedReadsDatastore.hpp"
+%include "sglib/readers/FileReader.hpp"
 
    %template(vectorInt) std::vector<int>;
    %template(vectorDouble) std::vector<double>;
@@ -124,13 +133,14 @@
    %template(intSGNodePair) std::pair<int, sgNodeID_t>;
    %template(vectorintSGNodePair) std::vector<std::pair<int, sgNodeID_t>>;
 
-#ifndef SWIGR
    %template(set10xTag) std::set<bsg10xTag>;
    %template(setSGNodePair) std::set<std::pair<sgNodeID_t, sgNodeID_t>>;
    %template(setSGNode) std::set<sgNodeID_t>;
-#endif
+
    %template(usetUINT64) std::unordered_set<uint64_t>;
    %template(usetUINT128) std::unordered_set<__uint128_t, int128_hash>;
+
+   %template(fastaReader) FastaReader<FastaRecord>;
 
 #ifdef SWIGPYTHON
     %feature("python:tp_hash") Link "std::hash<Link>";
@@ -166,14 +176,12 @@
         __REPR__();
     };
 
-    //TODO: Make sure this changes on new releases
     %pythoncode %{
     __version__ = "@bsg_VERSION@"
     __branch__ = "@GIT_BRANCH@"
     __commit__ = "@GIT_COMMIT_HASH@"
     %}
 #endif
-
 
 %include "sglib/types/MappingTypes.hpp"
 %include "sglib/graph/SequenceGraphPath.hpp"

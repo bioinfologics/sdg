@@ -38,7 +38,7 @@ public:
         gz_file = gzopen(filepath.c_str(), "r");
         if (gz_file == Z_NULL || gz_file == NULL) {
             sglib::OutputLog(sglib::LogLevels::WARN) << "Error opening FASTA " << filepath << ": " << std::strerror(errno) << std::endl;
-            exit(1);
+            throw std::runtime_error("Error opening " + filepath + ": " + std::strerror(errno));
         }
         ks = new kstream<gzFile, FunctorZlib>(gz_file, gzr);
     }
@@ -111,7 +111,7 @@ public:
         gz_file = gzopen(filepath.c_str(), "r");
         if (gz_file == Z_NULL) {
             std::cout << "Error opening FASTQ " << filepath << ": " << std::strerror(errno) << std::endl;
-            exit(1);
+            throw std::runtime_error("Error opening " + filepath + ": " + std::strerror(errno));
         }
         ks = new kstream<gzFile, FunctorZlib>(gz_file, gzr);
     }
