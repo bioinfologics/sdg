@@ -50,7 +50,10 @@
     #endif
 #endif
 
-%include <stl.i>
+%include "stl.i"
+%include "std_common.i"
+%include "std_container.i"
+%include "stdint.i"
 %include "std_set.i"
 %include "std_unordered_set.i"
 %include "exception.i"
@@ -122,7 +125,6 @@
 
    %template(SGNodePair) std::pair<sgNodeID_t, sgNodeID_t>;
    %template(vectorSGNodePair) std::vector<std::pair<sgNodeID_t, sgNodeID_t>>;
-   %template(vectorvectorLink) std::vector<std::vector<Link>>;
 
    %ignore std::vector<SequenceGraphPath>::vector(size_type);
    %ignore std::vector<SequenceGraphPath>::resize;
