@@ -48,96 +48,89 @@
     #if MADE_DOCS=="YES"
         %include "python_docs.i"
     #endif
-    %include "std_unordered_set.i"
 #endif
 
-%include "stdint.i"
-%include "inttypes.i"
-%include "std_string.i"
-%include "std_vector.i"
-%include "std_pair.i"
-
-#ifndef SWIGR
-    %include "std_set.i"
-#endif
+%include <stl.i>
+%include "std_set.i"
+%include "std_unordered_set.i"
 
 %include "sglib/types/KmerTypes.hpp"
 %include "sglib/types/GenericTypes.hpp"
 %include "sglib/datastores/LinkedReadsDatastore.hpp"
 
-namespace std {
-   %template(vectorInt) vector<int>;
-   %template(vectorDouble) vector<double>;
-   %template(vectorFloat) vector<float>;
-   %template(vectorString) vector<string>;
-   %template(vectorLink) vector<Link>;
-   %template(vectorvectorLink) vector<vector<Link>>;
-   %template(vectorSGNode) vector<sgNodeID_t>;
-   %template(vectorvectorSGNode) vector<vector<sgNodeID_t>>;
-   %template(vectorNode) vector<Node>;
-   %template(vectorNodeVisitor) vector<nodeVisitor>;
-   %template(vectorUINT16) vector<uint16_t >;
-   %template(vectorUINT64) vector<uint64_t>;
-   %template(vectorVectorUINT16) vector< vector <uint16_t > >;
-   %template(vectorVectorUINT64) vector< vector <uint64_t > >;
-   %template(vectorBool) vector<bool>;
-   %template(vectorMinPosIDX) vector<MinPosIDX>;
-   %template(vectorReadPosSize) vector< ReadPosSize >;
-   %template(vectorReadMapping) vector<ReadMapping>;
-   %template(vectorvectorReadMapping) vector<vector<ReadMapping>>;
-   %template(vectorLongReadMapping) vector<LongReadMapping>;
-   %template(vectorvectorLongReadMapping) vector<vector<LongReadMapping>>;
-   %template(vectorTagNeighbour) vector<TagNeighbour>;
-   %template(vectorvectorTagNeighbour) vector<vector<TagNeighbour>>;
-   %template(vectorHaplotypeScore) vector<HaplotypeScore>;
+   %template(vectorInt) std::vector<int>;
+   %template(vectorDouble) std::vector<double>;
+   %template(vectorFloat) std::vector<float>;
+   %template(vectorString) std::vector<std::string>;
+   %template(vectorLink) std::vector<Link>;
+   %template(vectorvectorLink) std::vector<std::vector<Link>>;
+   %template(vectorSGNode) std::vector<sgNodeID_t>;
+   %template(vectorvectorSGNode) std::vector<std::vector<sgNodeID_t>>;
+   %template(vectorNode) std::vector<Node>;
+   %template(vectorNodeVisitor) std::vector<nodeVisitor>;
+   %template(vectorUINT16) std::vector<uint16_t >;
+   %template(vectorUINT64) std::vector<uint64_t>;
+   %template(vectorVectorUINT16) std::vector< std::vector <uint16_t > >;
+   %template(vectorVectorUINT64) std::vector< std::vector <uint64_t > >;
+   %template(vectorBool) std::vector<bool>;
+   %template(vectorMinPosIDX) std::vector<MinPosIDX>;
+   %template(vectorReadPosSize) std::vector< ReadPosSize >;
+   %template(vectorReadMapping) std::vector<ReadMapping>;
+   %template(vectorvectorReadMapping) std::vector<std::vector<ReadMapping>>;
+   %template(vectorLongReadMapping) std::vector<LongReadMapping>;
+   %template(vectorvectorLongReadMapping) std::vector<std::vector<LongReadMapping>>;
+   %template(vectorTagNeighbour) std::vector<TagNeighbour>;
+   %template(vectorvectorTagNeighbour) std::vector<std::vector<TagNeighbour>>;
+   %template(vectorHaplotypeScore) std::vector<HaplotypeScore>;
 
-   %ignore vector<LongReadMapper>::vector(size_type);
-   %ignore vector<LongReadMapper>::resize;
-   %template(vectorLongReadMapper) vector<LongReadMapper>;
+   %ignore std::vector<LongReadMapper>::vector(size_type);
+   %ignore std::vector<LongReadMapper>::resize;
+   %template(vectorLongReadMapper) std::vector<LongReadMapper>;
 
-   %ignore vector<LinkedReadMapper>::vector(size_type);
-   %ignore vector<LinkedReadMapper>::resize;
-   %template(vectorLinkedReadMapper) vector<LinkedReadMapper>;
+   %ignore std::vector<LinkedReadMapper>::vector(size_type);
+   %ignore std::vector<LinkedReadMapper>::resize;
+   %template(vectorLinkedReadMapper) std::vector<LinkedReadMapper>;
 
-   %ignore vector<PairedReadMapper>::vector(size_type);
-   %ignore vector<PairedReadMapper>::resize;
-   %template(vectorPairedReadMapper) vector<PairedReadMapper>;
+   %ignore std::vector<PairedReadMapper>::vector(size_type);
+   %ignore std::vector<PairedReadMapper>::resize;
+   %template(vectorPairedReadMapper) std::vector<PairedReadMapper>;
 
-   %ignore vector<PairedReadsDatastore>::vector(size_type);
-   %ignore vector<PairedReadsDatastore>::resize;
-   %template(vectorPairedReadsDatastore) vector<PairedReadsDatastore>;
+   %ignore std::vector<PairedReadsDatastore>::vector(size_type);
+   %ignore std::vector<PairedReadsDatastore>::resize;
+   %template(vectorPairedReadsDatastore) std::vector<PairedReadsDatastore>;
 
-   %ignore vector<LinkedReadsDatastore>::vector(size_type);
-   %ignore vector<LinkedReadsDatastore>::resize;
-   %template(vectorLinkedReadsDatastore) vector<LinkedReadsDatastore>;
+   %ignore std::vector<LinkedReadsDatastore>::vector(size_type);
+   %ignore std::vector<LinkedReadsDatastore>::resize;
+   %template(vectorLinkedReadsDatastore) std::vector<LinkedReadsDatastore>;
 
-   %ignore vector<LongReadsDatastore>::vector(size_type);
-   %ignore vector<LongReadsDatastore>::resize;
-   %template(vectorLongReadsDatastore) vector<LongReadsDatastore>;
+   %ignore std::vector<LongReadsDatastore>::vector(size_type);
+   %ignore std::vector<LongReadsDatastore>::resize;
+   %template(vectorLongReadsDatastore) std::vector<LongReadsDatastore>;
 
-   %ignore vector<PathsDatastore>::vector(size_type);
-   %ignore vector<PathsDatastore>::resize;
-   %template(vectorPathsDatastore) vector<PathsDatastore>;
+   %ignore std::vector<PathsDatastore>::vector(size_type);
+   %ignore std::vector<PathsDatastore>::resize;
+   %template(vectorPathsDatastore) std::vector<PathsDatastore>;
 
-   %template(SGNodePair) pair<sgNodeID_t, sgNodeID_t>;
-   %template(vectorSGNodePair) vector<pair<sgNodeID_t, sgNodeID_t>>;
-   %template(vectorvectorLink) vector<std::vector<Link>>;
+   %template(SGNodePair) std::pair<sgNodeID_t, sgNodeID_t>;
+   %template(vectorSGNodePair) std::vector<std::pair<sgNodeID_t, sgNodeID_t>>;
+   %template(vectorvectorLink) std::vector<std::vector<Link>>;
 
-   %ignore vector<SequenceGraphPath>::vector(size_type);
-   %ignore vector<SequenceGraphPath>::resize;
+   %ignore std::vector<SequenceGraphPath>::vector(size_type);
+   %ignore std::vector<SequenceGraphPath>::resize;
 
-   %template(vectorPath) vector<SequenceGraphPath>;
-   %template(vectorKmerCount) vector<KmerCount>;
+   %template(vectorPath) std::vector<SequenceGraphPath>;
+   %template(vectorKmerCount) std::vector<KmerCount>;
 
-   %template(intSGNodePair) pair<int, sgNodeID_t>;
-   %template(vectorintSGNodePair) vector<pair<int, sgNodeID_t>>;
+   %template(intSGNodePair) std::pair<int, sgNodeID_t>;
+   %template(vectorintSGNodePair) std::vector<std::pair<int, sgNodeID_t>>;
 
 #ifndef SWIGR
-   %template(set10xTag) set<bsg10xTag>;
-   %template(setSGNodePair) set<pair<sgNodeID_t, sgNodeID_t>>;
-   %template(setSGNode) set<sgNodeID_t>;
+   %template(set10xTag) std::set<bsg10xTag>;
+   %template(setSGNodePair) std::set<std::pair<sgNodeID_t, sgNodeID_t>>;
+   %template(setSGNode) std::set<sgNodeID_t>;
 #endif
-};
+   %template(usetUINT64) std::unordered_set<uint64_t>;
+   %template(usetUINT128) std::unordered_set<__uint128_t, int128_hash>;
 
 #ifdef SWIGPYTHON
     %feature("python:tp_hash") Link "std::hash<Link>";
