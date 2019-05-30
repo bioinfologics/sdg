@@ -33,9 +33,6 @@ struct ReadPosSize {
 };
 
 class LongReadsDatastore {
-    int lr_sequence_fd = 0;
-    std::string file_containing_long_read_sequence;
-
     void load_index(std::string &file);
 
 
@@ -89,7 +86,7 @@ public:
 
     ~BufferedSequenceGetter(){
         free(buffer);
-        close(fd);
+        if(fd) close(fd);
     }
 
     void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids);

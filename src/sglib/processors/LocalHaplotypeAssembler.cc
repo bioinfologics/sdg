@@ -2,6 +2,8 @@
 // Created by Bernardo Clavijo (EI) on 18/07/2018.
 //
 
+#include <iostream>
+#include <string>
 #include "LocalHaplotypeAssembler.hpp"
 #include "GraphMaker.hpp"
 
@@ -661,6 +663,11 @@ void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
     std::cout<<"Loading LocalHaplotypeAssembler problem from file: "<<full_file<<std::endl;
 
     std::ifstream input_file(full_file);
+    if (!input_file) {
+        std::cerr << "Failed to open " << full_file << ": " << strerror(errno);
+        throw std::runtime_error("Could not open " + full_file);
+    }
+
     bsgMagic_t magic;
     bsgVersion_t version;
     BSG_FILETYPE type;

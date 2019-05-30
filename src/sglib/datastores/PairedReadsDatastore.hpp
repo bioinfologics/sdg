@@ -29,6 +29,11 @@ class BufferedPairedSequenceGetter;
 class PairedReadsDatastore {
 public:
     PairedReadsDatastore(){};
+    ~PairedReadsDatastore(){
+        if (fd) {
+            fclose(fd);
+        }
+    }
     PairedReadsDatastore(std::string _filename){
         filename=_filename;
         load_index();

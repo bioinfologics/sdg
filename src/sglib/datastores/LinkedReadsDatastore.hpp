@@ -51,6 +51,11 @@ std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16);
 class LinkedReadsDatastore {
 public:
     LinkedReadsDatastore(){};
+    ~LinkedReadsDatastore(){
+        if (fd) {
+            fclose(fd);
+        }
+    }
     LinkedReadsDatastore(std::string filename){
         load_index(filename);
     };
@@ -98,7 +103,7 @@ public:
     const char * get_read_sequence(uint64_t readID);
     ~BufferedLRSequenceGetter(){
         free(buffer);
-        close(fd);
+        if(fd) close(fd);
     }
 private:
     const LinkedReadsDatastore &datastore;

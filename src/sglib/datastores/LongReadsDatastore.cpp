@@ -12,6 +12,11 @@ void LongReadsDatastore::load_index(std::string &file) {
     filename = file;
 
     std::ifstream input_file(file, std::ios_base::binary);
+    if (!input_file) {
+        std::cerr << "Failed to open " << file <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + file);
+
+    }
 
     uint32_t nReads(0);
     std::streampos fPos;
@@ -48,11 +53,11 @@ void LongReadsDatastore::load_index(std::string &file) {
 uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, std::string long_read_file) {
     // open the file
     uint32_t numRecords(0);
-    int infile = ::open(long_read_file.c_str(), O_RDONLY);
-    if (!infile) {
-        return 0;
-    }
     std::ifstream fastq_ifstream(long_read_file);
+    if (!fastq_ifstream) {
+        std::cerr << "Failed to open " << long_read_file <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + long_read_file);
+    }
     std::string name,seq,p,qual;
     while(fastq_ifstream.good()) {
         std::getline(fastq_ifstream, name);
@@ -121,6 +126,10 @@ LongReadsDatastore::LongReadsDatastore(std::string long_read_file, std::string o
 
     uint32_t nReads(0);
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
+    if (!ofs) {
+        std::cerr << "Failed to open " << output_file <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + output_file);
+    }
     std::streampos fPos;
     ofs.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
     ofs.write((const char *) &BSG_VN, sizeof(BSG_VN));
@@ -137,23 +146,9 @@ LongReadsDatastore::LongReadsDatastore(std::string long_read_file, std::string o
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
     ofs.flush();                                    // Make sure everything has been written
     sglib::OutputLog(sglib::LogLevels::INFO)<<"Built datastore with "<<size()-1<<" reads"<<std::endl;
-    lr_sequence_fd = ::open(output_file.c_str(), O_RDONLY);
-    if (lr_sequence_fd == -1) {
-        perror("fstat");
-        throw std::runtime_error("Cannot open "+output_file);
-    }
-
 }
 
 void LongReadsDatastore::load_from_stream(std::string file_name, std::ifstream &input_file) {
-    file_containing_long_read_sequence = file_name;
-
-    lr_sequence_fd = ::open(file_containing_long_read_sequence.c_str(), O_RDONLY);
-    if (lr_sequence_fd == -1) {
-        perror("fstat");
-        throw std::runtime_error("Cannot open " + file_containing_long_read_sequence);
-    }
-
     bsgMagic_t magic;
     bsgVersion_t version;
     BSG_FILETYPE type;
