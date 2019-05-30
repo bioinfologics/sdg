@@ -49,10 +49,6 @@ struct KmerCount {
         return os;
     }
 
-    friend std::istream& operator>>(std::istream& is, const KmerCount& kmer) {
-        is.read((char*)&kmer, sizeof(kmer));
-        return is;
-    }
     uint64_t kmer;
     uint8_t count;
     struct KmerCount_hash {

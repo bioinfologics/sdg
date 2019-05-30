@@ -43,11 +43,6 @@ struct KmerIDX {
         return os;
     }
 
-    friend std::istream& operator>>(std::istream& is, const KmerIDX& kmer) {
-        is.read((char*)&kmer, sizeof(kmer));
-        return is;
-    }
-
     friend class byCtgPos;
     struct byCtgPos {
         bool operator()(const KmerIDX &a, const KmerIDX &b) {
@@ -100,11 +95,6 @@ struct KmerIDX128 {
     friend std::ostream& operator<<(std::ostream& os, const KmerIDX128& kmer) {
         os << kmer.contigID << "\t" << kmer.pos;
         return os;
-    }
-
-    friend std::istream& operator>>(std::istream& is, const KmerIDX128& kmer) {
-        is.read((char*)&kmer, sizeof(kmer));
-        return is;
     }
 
     friend class byCtgPos;

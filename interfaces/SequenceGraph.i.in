@@ -144,61 +144,58 @@
 
    %template(fastaReader) FastaReader<FastaRecord>;
 
-#ifdef SWIGPYTHON
-    %feature("python:tp_hash") Link "std::hash<Link>";
 
-    %define __STR__()
-    std::string __str__() {
-      std::ostringstream out;
-      out << *$self;
-      return out.str().c_str();
-    }
-    %enddef
+%define __STR__()
+std::string __str__() {
+  std::ostringstream out;
+  out << *$self;
+  return out.str().c_str();
+}
+%enddef
 
-    %define __REPR__()
-    std::string __repr__() {
-      std::ostringstream out;
-      out << "<" << *$self << ">";
-      return out.str().c_str();
-    }
-    %enddef
+%define __REPR__()
+std::string __repr__() {
+  std::ostringstream out;
+  out << "<" << *$self << ">";
+  return out.str().c_str();
+}
+%enddef
 
-    %extend Link{
-        __STR__();
-        __REPR__();
-    }
+%extend Link{
+    __STR__();
+    __REPR__();
+}
 
-    %extend Node{
-        __STR__();
-        __REPR__();
-    }
+%extend Node{
+    __STR__();
+    __REPR__();
+}
 
-    %extend LongReadMapping{
-        __STR__();
-        __REPR__();
-    };
+%extend LongReadMapping{
+    __STR__();
+    __REPR__();
+};
 
-    %extend KmerIDX{
-        __STR__();
-        __REPR__();
-    };
+%extend KmerIDX{
+    __STR__();
+    __REPR__();
+};
 
-    %extend MinPosIDX{
-        __STR__();
-        __REPR__();
-    };
+%extend MinPosIDX{
+    __STR__();
+    __REPR__();
+};
 
-    %extend nodeVisitor{
-        __STR__();
-        __REPR__();
-    };
+%extend nodeVisitor{
+    __STR__();
+    __REPR__();
+};
 
-    %pythoncode %{
-    __version__ = "@bsg_VERSION@"
-    __branch__ = "@GIT_BRANCH@"
-    __commit__ = "@GIT_COMMIT_HASH@"
-    %}
-#endif
+%pythoncode %{
+__version__ = "@bsg_VERSION@"
+__branch__ = "@GIT_BRANCH@"
+__commit__ = "@GIT_COMMIT_HASH@"
+%}
 
 %include "sglib/types/MappingTypes.hpp"
 %include "sglib/graph/SequenceGraphPath.hpp"
