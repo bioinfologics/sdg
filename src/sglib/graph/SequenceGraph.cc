@@ -66,6 +66,17 @@ void Node::make_rc() {
     std::swap(sequence,rseq);
 };
 
+std::string SequenceGraph::get_node_sequence(sgNodeID_t n){
+    if (n>0) return nodes[n].sequence;
+    Node rc(nodes[n].sequence);
+    rc.make_rc();
+    return rc.sequence;
+}
+
+uint64_t SequenceGraph::get_node_size(sgNodeID_t n) {
+    return nodes[llabs(n)].sequence.size();
+}
+
 bool SequenceGraph::is_sane() const {
     for (auto n=0;n<nodes.size();++n){
         for (auto l:links[n]){

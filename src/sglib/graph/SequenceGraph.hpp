@@ -59,15 +59,10 @@ public:
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
 
-    //=== graph operations ===
-    /**
-     * Adds a new node to the graph
-     * @param n Node object to add
-     * @return
-     * Returns the ID of the added node
-     */
-    sgNodeID_t add_node(Node n);
-    void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
+    //=== read operations ===
+
+    std::string get_node_sequence(sgNodeID_t n);
+    uint64_t get_node_size(sgNodeID_t n);
 
     /**
      *
@@ -125,6 +120,18 @@ public:
         }
         return std::vector<sgNodeID_t > (result.begin(), result.end());
     }
+
+    //=== graph operations ===
+    /**
+     * Adds a new node to the graph
+     * @param n Node object to add
+     * @return
+     * Returns the ID of the added node
+     */
+    sgNodeID_t add_node(Node n);
+    void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
+
+
 
     /**
      * Graph sanity check, makes sure the graph abides to the expected structure
