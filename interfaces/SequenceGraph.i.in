@@ -21,6 +21,7 @@
 #include "sglib/readers/SequenceGraphReader.hpp"
 #include "sglib/processors/KmerCompressionIndex.hpp"
 #include "sglib/workspace/WorkSpace.hpp"
+#include "sglib/factories/KMerFactory.hpp"
 #include "sglib/factories/KMerCountFactory.hpp"
 
 #include "sglib/indexers/UniqueKmerIndex.hpp"
@@ -37,7 +38,6 @@
 #include "sglib/processors/Untangler.hpp"
 #include "sglib/graph/LinkageDiGraph.hpp"
 #include "sglib/processors/LinkageUntangler.hpp"
-#include "sglib/factories/KMerCountFactory.hpp"
 
 #include "sglib/processors/HaplotypeConsensus.hpp"
 #include "sglib/readers/FileReader.hpp"
@@ -178,6 +178,21 @@
         __REPR__();
     };
 
+    %extend KmerIDX{
+        __STR__();
+        __REPR__();
+    };
+
+    %extend MinPosIDX{
+        __STR__();
+        __REPR__();
+    };
+
+    %extend nodeVisitor{
+        __STR__();
+        __REPR__();
+    };
+
     %pythoncode %{
     __version__ = "@bsg_VERSION@"
     __branch__ = "@GIT_BRANCH@"
@@ -192,6 +207,7 @@
 %include "sglib/indexers/UniqueKmerIndex.hpp"
 %include "sglib/processors/KmerCompressionIndex.hpp"
 %include "sglib/workspace/WorkSpace.hpp"
+%include "sglib/factories/KMerFactory.hpp"
 %include "sglib/factories/KMerCountFactory.hpp"
 
 %include "sglib/processors/Untangler.hpp"
@@ -208,4 +224,3 @@
 %include "sglib/graph/LinkageDiGraph.hpp"
 
 %include "sglib/processors/HaplotypeConsensus.hpp"
-%include "sglib/factories/KMerFactory.hpp"
