@@ -193,9 +193,9 @@ public:
      * The index is a filtered set of kmers from the graph constructed using update_graph_index() or similar.
      * A match is a perfect Kmer match between the read and the graph index
      *
-     * matches are stored as read_kmer->kmer_match->match_description:
-     *  matches[read_kmer][kmer_match].first = node_id for a match of that kmer in the graph, sign indicates orientation
-     *  matches[read_kmer][kmer_match].second = offset for a match of that kmer for corresponding node_id (.first), the offsets are always calculated from the begining of the read
+     * matches are stored as kmer_index_in_read->kmer_match->match_description:
+     *  matches[kmer_index_in_read][kmer_match].first = node_id for a match of that kmer in the graph, sign indicates orientation
+     *  matches[kmer_index_in_read][kmer_match].second = offset for a match of that kmer for corresponding node_id (.first), the offsets are always calculated from the begining of the read
      *
      *  TODO: Change match type from in32_t to sgNodeId in this function !!!
      *
