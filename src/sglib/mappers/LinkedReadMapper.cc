@@ -485,50 +485,67 @@ void LinkedReadMapper::compute_all_tag_neighbours(int min_size, float min_score)
     sglib::OutputLog()<<"...DONE!"<<std::endl;
 }
 
-void LinkedReadMapper::compute_all_tag_neighbours2(int min_size, float min_score) {
+void LinkedReadMapper::compute_all_tag_neighbours2(int min_size, float min_score, int min_mapped_reads_per_tag) {
+    //TODO: parallel for this needs to be done by tag, but tag start-end needs to be computed before
+
+    //first - create start-end for tags that have > X reads
+    std::vector<std::pair<uint64_t,uint64_t>> tag_start_end;
+    bsg10xTag current_tag=0;
+    uint64_t mapped_reads=0, tag_firstpost=0;
+    for (size_t i=1;i<read_to_node.size();++i){
+        if (datastore.get_read_tag(i)!=current_tag){
+            if (current_tag!=0 and mapped_reads>=min_mapped_reads_per_tag){
+                tag_start_end.emplace_back(tag_firstpost,i);
+            }
+            mapped_reads=0;
+            current_tag=datastore.get_read_tag(i);
+            tag_firstpost=i;
+        }
+        if (read_to_node[i]!=0) ++mapped_reads;
+    }
+    if (current_tag!=0 and mapped_reads>=min_mapped_reads_per_tag){
+        tag_start_end.emplace_back(tag_firstpost,read_to_node.size());
+    }
+
+
     //scores[source][dest]= count of reads of source which have tags also present in dest
     std::vector<std::unordered_map<sgNodeID_t,uint32_t>> scores(sg.nodes.size());
-
-    //make a map with counts of how many times the tag appears on every node
-    std::unordered_map<sgNodeID_t, uint32_t > node_readcount; //is it not easier to use a vector? - it is sparse
-
-    sglib::OutputLog()<<"Counting into individual maps..."<<std::endl;
-    //this loop goes through the reads, which are ordered by tag, and accumulates the nodes and their readcount for a single tag
-    bsg10xTag current_tag=0;
-    for (size_t i=0;i<read_to_node.size();++i){
-        if (datastore.get_read_tag(i)==0) continue;//skip tag 0
-        // This is because the reads are stored sorted by  tags
-        if (datastore.get_read_tag(i)!=current_tag){ //process results for a tag when all reads are counted
-            //analyse tag per tag -> add this count on the shared set of this (check min_size for both)
+    sglib::OutputLog()<<"Counting into individual maps (parallel)..."<<std::endl;
+#pragma omp parallel
+    {
+        //local tally
+        std::vector<std::unordered_map<sgNodeID_t,uint32_t>> local_scores(sg.nodes.size());
+        //map with counts of how many times the tag appears on every node
+        std::unordered_map<sgNodeID_t, uint32_t > node_readcount; //is it not easier to use a vector? - it is sparse
+#pragma omp for
+        for(auto tidx=0;tidx<tag_start_end.size();++tidx){ //for each tag's reads
+            for(auto i=tag_start_end[tidx].first;tag_start_end[tidx].second;++i) {
+                if (read_to_node[i] != 0) {
+                    ++node_readcount[llabs(read_to_node[i])];
+                }
+            }
             if (node_readcount.size()<500) { //tag has reads in less than 500 nodes
                 for (auto &n1:node_readcount) {
                     if (sg.nodes[n1.first].sequence.size() >= min_size) {
                         for (auto &n2:node_readcount) {
                             if (sg.nodes[n2.first].sequence.size() >= min_size) {
-                                scores[n1.first][n2.first] += n1.second;
+                                scores[n1.first][n2.first] += n1.second; //add the number of reads shared in this tag to the total score
                             }
                         }
                     }
                 }
             }
-            //reset for next cycle
-            current_tag=datastore.get_read_tag(i);
             node_readcount.clear();
         }
-        if (read_to_node[i]!=0) {
-            ++node_readcount[llabs(read_to_node[i])];
+#pragma omp critical(score_aggregation)
+        {
+            for (auto n=0;n<local_scores.size();++n)
+                for (auto ns:local_scores[n])
+                    scores[n][ns.first]+=ns.second;
+
         }
     }
-    //last tag
-    for (auto &n1:node_readcount) {
-        if (sg.nodes[n1.first].sequence.size()>=min_size) {
-            for (auto &n2:node_readcount) {
-                if (sg.nodes[n2.first].sequence.size() >= min_size) {
-                    scores[n1.first][n2.first]+=n1.second;
-                }
-            }
-        }
-    }
+
     sglib::OutputLog()<<"... copying to result vector..."<<std::endl;
     //now flatten the map into its first dimension.
     tag_neighbours.clear();
