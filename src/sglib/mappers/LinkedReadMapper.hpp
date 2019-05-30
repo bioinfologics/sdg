@@ -139,6 +139,7 @@ public:
      * @param min_score
      */
     void compute_all_tag_neighbours(int min_size,float min_score);
+    void compute_all_tag_neighbours2(int min_size,float min_score);
 
     void write_tag_neighbours(std::string filename);
     void read_tag_neighbours(std::string filename);
