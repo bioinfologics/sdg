@@ -26,20 +26,43 @@ public:
         assembly_kmers.reserve(100000000);
 
         if (verbose) sglib::OutputLog() << "Updating mapping index for k=" << std::to_string(k) << std::endl;
-        StringKMerFactory skf(k);
-        std::vector<std::pair<bool,uint64_t > > contig_kmers;
+#pragma omp parallel
+        {
+            StringKMerFactory skf(k);
+            std::vector<kmerPos> local_kmers;
+            local_kmers.reserve(10000000);
+            std::vector<std::pair<bool,uint64_t > > contig_kmers;
+            contig_kmers.reserve(1000000);
+#pragma omp for
+            for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
+                if (sg.nodes[n].sequence.size() >= k) {
+                    contig_kmers.clear();
+                    skf.create_kmers(sg.nodes[n].sequence, contig_kmers);
+                    int k_i(0);
+                    for (const auto &kmer:contig_kmers) {
+                        local_kmers.emplace_back(kmer.second, n, kmer.first ? k_i + 1 : -(k_i + 1));
+                        k_i++;
+                    }
+                }
 
-        for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
-            if (sg.nodes[n].sequence.size() >= k) {
-                contig_kmers.clear();
-                skf.create_kmers(sg.nodes[n].sequence, contig_kmers);
-                int k_i(0);
-                for (const auto &kmer:contig_kmers) {
-                    assembly_kmers.emplace_back(kmer.second, n, kmer.first ? k_i+1 : -(k_i+1));
-                    k_i++;
+                if (local_kmers.size() > 8000000) {
+#pragma omp critical(push_kmers)
+                    {
+                        assembly_kmers.insert(assembly_kmers.end(), local_kmers.begin(), local_kmers.end());
+                        local_kmers.clear();
+                    }
+                }
+            }
+            if (!local_kmers.empty()) {
+#pragma omp critical(push_kmers)
+                {
+                    assembly_kmers.insert(assembly_kmers.end(), local_kmers.begin(), local_kmers.end());
+                    local_kmers.clear();
                 }
             }
         }
+
+
 #ifdef _OPENMP
         __gnu_parallel::sort(assembly_kmers.begin(),assembly_kmers.end(), kmerPos::byKmerContigOffset());
 #else
