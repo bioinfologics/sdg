@@ -211,7 +211,8 @@ public:
      * @param read_kmers_size number of kmers in the read
      * @return set of nodeIDs of nodes with more than 50 matches to the read
      */
-    std::set<sgNodeID_t> window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, uint32_t read_kmers_size);
+    const std::set<sgNodeID_t>
+    window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches, uint32_t read_kmers_size);
 
     /**
      * This function will check for continuous blocks of alignments between the read and the window candidates produced by window_candidates() using the matches prudiced by get_allKmer_matches()
@@ -225,7 +226,9 @@ public:
      * @param candidates collection of candidate matches produced by window_candidates()
      * @return collection of readtonode mappings (LongReadMapping)
      */
-    std::vector<LongReadMapping> alignment_blocks(uint32_t readID, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,  uint32_t read_kmers_size, std::set<sgNodeID_t> &candidates);
+    std::vector<LongReadMapping> alignment_blocks(uint32_t readID,
+                                                  std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
+                                                  uint32_t read_kmers_size, const std::set<sgNodeID_t> &candidates);
 
     /**
      * Given a list of blocks the filter will discard overlapping blocks keeping those with the max span and score combination

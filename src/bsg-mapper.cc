@@ -85,7 +85,6 @@ int main(int argc, char * argv[]) {
     }
     for (auto &m: ws.getLongReadMappers()) {
         sglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
-        m.update_graph_index();
         m.map_reads();
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
         sglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;

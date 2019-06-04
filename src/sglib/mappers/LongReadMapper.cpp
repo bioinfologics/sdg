@@ -198,7 +198,8 @@ void LongReadMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int3
 //            <<multi_match<<" ("<< (multi_match*100/read_kmers.size()) << "%) multi match"<<std::endl;
 }
 
-std::set<sgNodeID_t> LongReadMapper::window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, uint32_t read_kmers_size){
+const std::set<sgNodeID_t> LongReadMapper::window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
+                                  uint32_t read_kmers_size){
     //beware you need the size! otherwise there is a size from the matches and not from the reads!
     std::set<sgNodeID_t> candidates;
     std::map<int32_t,uint32_t> candidate_votes;
@@ -211,13 +212,13 @@ std::set<sgNodeID_t> LongReadMapper::window_candidates(std::vector<std::vector<s
     //for (auto cv:candidate_votes) std::cout<<"   "<<cv.first<<": "<<cv.second<<" ("<<candidate_multivotes[cv.first]<<" multi "<<cv.second-candidate_multivotes[cv.first]<<" single)"<<std::endl;
     //std::cout<<std::endl;
     for (auto cv:candidate_votes) if (cv.second>50) candidates.insert(cv.first);
-
     return candidates;
 }
 
-std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,
+std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID,
+                                                              std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
                                                               uint32_t read_kmers_size,
-                                                              std::set<sgNodeID_t> &candidates) {
+                                                              const std::set<sgNodeID_t> &candidates) {
 //    std::cout<<"Alignment block search starting with candidates:";
 //    for (auto c:candidates) std::cout<<" "<<c;
 //    std::cout<<std::endl;
@@ -359,11 +360,11 @@ void LongReadMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> re
 
             //========== 2. Find match candidates in fixed windows ==========
 
-            auto candidates = window_candidates(node_matches,read_kmers.size());
+            auto candidates(window_candidates(node_matches,read_kmers.size()));
 
             //========== 3. Create alignment blocks from candidates ==========
 
-            auto blocks = alignment_blocks(readID,node_matches,read_kmers.size(),candidates);
+            auto blocks(alignment_blocks(readID,node_matches,read_kmers.size(),candidates));
 
             //========== 4. Construct mapping path ==========
             if (blocks.empty()) ++no_matches;
@@ -372,7 +373,7 @@ void LongReadMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> re
             //TODO: align blocks that occupy the same space as longer/better blocks should be thrown away.
 
             //auto fblocks=filter_blocks(blocks,node_matches,read_kmers.size());
-            auto fblocks=blocks;
+            const auto &fblocks = blocks;
 
 //            std::cout<<"After FILTERING:"<<std::endl;
 //            for (auto b:fblocks)
@@ -409,7 +410,7 @@ std::vector<LongReadMapping> LongReadMapper::map_sequence(const char * query_seq
 
     //========== 2. Find match candidates in fixed windows ==========
 
-    auto candidates = window_candidates(node_matches,read_kmers.size());
+    auto candidates(window_candidates(node_matches,read_kmers.size()));
 
     //========== 3. Create alignment blocks from candidates ==========
 
