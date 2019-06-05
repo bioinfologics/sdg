@@ -173,7 +173,7 @@ std::vector<LongReadMapping> LongReadMapper::get_raw_mappings_from_read(uint64_t
     return std::move(r);
 }
 
-void LongReadMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers){
+void LongReadMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers) {
     if (matches.size() < read_kmers.size()) matches.resize(read_kmers.size());
     uint64_t no_match=0,single_match=0,multi_match=0; //DEBUG
     for (auto i=0;i<read_kmers.size();++i){
@@ -198,15 +198,15 @@ void LongReadMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int3
 //            <<multi_match<<" ("<< (multi_match*100/read_kmers.size()) << "%) multi match"<<std::endl;
 }
 
-const std::set<sgNodeID_t> LongReadMapper::window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
+const std::unordered_set<sgNodeID_t> LongReadMapper::window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
                                   uint32_t read_kmers_size){
     //beware you need the size! otherwise there is a size from the matches and not from the reads!
-    std::set<sgNodeID_t> candidates;
-    std::map<int32_t,uint32_t> candidate_votes;
-    std::map<int32_t,uint32_t> candidate_multivotes;
+    std::unordered_set<sgNodeID_t> candidates;
+    candidates.reserve(10000);
+    std::unordered_map<int32_t,uint32_t> candidate_votes;
+    candidate_votes.reserve(10000);
     for (auto i=0;i<read_kmers_size;++i) {
         for (auto m:matches[i]) ++candidate_votes[m.first];
-        if (matches[i].size()>1) for (auto m:matches[i]) ++candidate_multivotes[m.first];
     }
     //std::cout<<"From window_candidates, hit nodes:"<<std::endl;
     //for (auto cv:candidate_votes) std::cout<<"   "<<cv.first<<": "<<cv.second<<" ("<<candidate_multivotes[cv.first]<<" multi "<<cv.second-candidate_multivotes[cv.first]<<" single)"<<std::endl;
@@ -218,14 +218,14 @@ const std::set<sgNodeID_t> LongReadMapper::window_candidates(std::vector<std::ve
 std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID,
                                                               std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
                                                               uint32_t read_kmers_size,
-                                                              const std::set<sgNodeID_t> &candidates) {
+                                                              const std::unordered_set<sgNodeID_t> &candidates) {
 //    std::cout<<"Alignment block search starting with candidates:";
 //    for (auto c:candidates) std::cout<<" "<<c;
 //    std::cout<<std::endl;
     std::vector<LongReadMapping> blocks;
     //transform to matches per candidate;
-    std::map<int32_t , std::vector<std::pair<int32_t,int32_t>>> candidate_hits;
-
+    std::unordered_map<int32_t , std::vector<std::pair<int32_t,int32_t>>> candidate_hits;
+    candidate_hits.reserve(candidates.size());
     for (auto p=0;p<read_kmers_size;++p){
         for (auto m:matches[p]) {
             if (candidates.count(m.first)){
@@ -295,7 +295,6 @@ std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID,
                 b.score=chain;
                 blocks.push_back(b);
             }
-
         }
     }
     std::sort(blocks.begin(),blocks.end());
@@ -375,13 +374,13 @@ void LongReadMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> re
             //auto fblocks=filter_blocks(blocks,node_matches,read_kmers.size());
             const auto &fblocks = blocks;
 
-//            std::cout<<"After FILTERING:"<<std::endl;
-//            for (auto b:fblocks)
-//                std::cout << "Target: " << b.node << " (" << sg.nodes[llabs(b.node)].sequence.size() << " bp)  "
-//                          << b.qStart << ":" << b.qEnd << " -> " << b.nStart << ":" << b.nEnd
-//                          << " (" << b.score << " chained hits, " << b.qEnd - b.qStart + k << "bp, "
-//                          << b.score * 100 / (b.qEnd - b.qStart) << "%)"
-//                          << std::endl;
+            std::cout<<"READ " << readID << " mappings, after FILTERING:"<<std::endl;
+            for (auto b:fblocks)
+                std::cout << "READ\tTarget: " << b.node << " (" << sg.nodes[llabs(b.node)].sequence.size() << " bp)  "
+                          << b.qStart << ":" << b.qEnd << " -> " << b.nStart << ":" << b.nEnd
+                          << " (" << b.score << " chained hits, " << b.qEnd - b.qStart + k << "bp, "
+                          << b.score * 100 / (b.qEnd - b.qStart) << "%)"
+                          << std::endl;
 
             private_results.insert(private_results.end(),fblocks.begin(),fblocks.end());
 

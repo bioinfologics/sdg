@@ -31,12 +31,15 @@ public:
                 ++ritr;
             }
             if (ritr - bitr < max_kmer_repeat) {
+                // TODO: Check if the kmer exists many times in the same node, this is done afterwards when creating blocks
+                // on the LongReadMapper
                 while (bitr != ritr) {
                     *witr = *bitr;
                     ++witr;
                     ++bitr;
                 }
             }
+
         }
         kmers.resize(witr-kmers.begin());
         return witr;
