@@ -374,13 +374,13 @@ void LongReadMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> re
             //auto fblocks=filter_blocks(blocks,node_matches,read_kmers.size());
             const auto &fblocks = blocks;
 
-            std::cout<<"READ " << readID << " mappings, after FILTERING:"<<std::endl;
-            for (auto b:fblocks)
-                std::cout << "READ\tTarget: " << b.node << " (" << sg.nodes[llabs(b.node)].sequence.size() << " bp)  "
-                          << b.qStart << ":" << b.qEnd << " -> " << b.nStart << ":" << b.nEnd
-                          << " (" << b.score << " chained hits, " << b.qEnd - b.qStart + k << "bp, "
-                          << b.score * 100 / (b.qEnd - b.qStart) << "%)"
-                          << std::endl;
+//            std::cout<<"READ " << readID << " mappings, after FILTERING:"<<std::endl;
+//            for (auto b:fblocks)
+//                std::cout << "READ\tTarget: " << b.node << " (" << sg.nodes[llabs(b.node)].sequence.size() << " bp)  "
+//                          << b.qStart << ":" << b.qEnd << " -> " << b.nStart << ":" << b.nEnd
+//                          << " (" << b.score << " chained hits, " << b.qEnd - b.qStart + k << "bp, "
+//                          << b.score * 100 / (b.qEnd - b.qStart) << "%)"
+//                          << std::endl;
 
             private_results.insert(private_results.end(),fblocks.begin(),fblocks.end());
 
