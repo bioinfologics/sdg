@@ -27,7 +27,7 @@ public:
             auto array_position(vector_position / dataSz);
             auto bit_push((7 - vector_position % dataSz));
             auto byte_position_value(1 << bit_push);
-#pragma atomic update
+#pragma omp atomic
             data[array_position] |= byte_position_value;
         }
     }
@@ -37,7 +37,7 @@ public:
         auto array_position(vector_position / dataSz);
         auto bit_push((7 - vector_position % dataSz));
         auto byte_position_value(1 << bit_push);
-#pragma atomic update
+#pragma omp atomic
         data[array_position] |= byte_position_value;
     }
 

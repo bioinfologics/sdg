@@ -94,7 +94,10 @@ public:
 
         if (verbose) sglib::OutputLog() << "Filtering kmers appearing less than " << filter_limit << " from " << assembly_kmers.size() << " initial kmers" << std::endl;
         filter_kmers(assembly_kmers, filter_limit);
-        sglib::for_each(assembly_kmers.cbegin(), assembly_kmers.cend(), [&](const kmerPos &kmer) {filter.add(kmer.kmer);});
+#pragma omp parallel for
+        for (uint64_t kidx = 0; kidx < assembly_kmers.size(); ++kidx) {
+            filter.add(assembly_kmers[kidx].kmer);
+        }
 
         if (verbose) sglib::OutputLog() << "Kmers for mapping " << assembly_kmers.size() << std::endl;
         if (verbose) sglib::OutputLog() << "Number of elements in bloom " << filter.number_bits_set() << std::endl;

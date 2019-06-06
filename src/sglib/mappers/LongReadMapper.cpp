@@ -204,7 +204,7 @@ void LongReadMapper::count_candidates(std::vector<unsigned char> &candidates, st
     for (auto i=0;i<read_kmers_size;++i) {
         for (auto m:matches[i]) {
             uint16_t so_far = candidates[m.first]+1;
-            if (so_far < std::numeric_limits<uint8_t>::max()) candidates[m.first]++;
+            candidates[m.first] = std::min(uint16_t(255), so_far);
         }
     }
 }
@@ -225,6 +225,7 @@ std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID,
             if (candidates[m.first]>50){
                 //std::cout<<"adding hit for candidate "<<m.first<<" "<<p<<" -> "<<m.second<<std::endl;
                 candidate_hits[m.first].emplace_back(p,m.second);
+                candidate_hits[m.first].reserve(1000);
             }
         }
     }
