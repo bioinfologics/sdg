@@ -35,6 +35,27 @@ class SequenceSubGraph;
  */
 class SequenceGraph : public LinkageDiGraph {
 public:
+    //SWIG's version of "supporting inheritance" :'(
+    using LinkageDiGraph::links;
+    using LinkageDiGraph::add_link;
+    using LinkageDiGraph::add_links;
+    using LinkageDiGraph::remove_link;
+    using LinkageDiGraph::get_fw_links;
+    using LinkageDiGraph::get_fw_nodes;
+    using LinkageDiGraph::get_bw_links;
+    using LinkageDiGraph::get_bw_nodes;
+    using LinkageDiGraph::disconnect_node;
+    using LinkageDiGraph::fw_reached_nodes;
+    using LinkageDiGraph::fw_neighbours_by_distance;
+    using LinkageDiGraph::get_connected_nodes;
+    using LinkageDiGraph::remove_transitive_links;
+    using LinkageDiGraph::report_connectivity;
+    using LinkageDiGraph::are_connected;
+    using LinkageDiGraph::link_count;
+    using LinkageDiGraph::get_all_lines;
+    using LinkageDiGraph::find_bubbles;
+    using LinkageDiGraph::find_tips;
+    using LinkageDiGraph::find_self_loops;
 
     SequenceGraph():LinkageDiGraph(*this) { //sg gets initialised through LDG
         add_node(Node("",sgNodeDeleted)); //an empty deleted node on 0, just to skip the space
