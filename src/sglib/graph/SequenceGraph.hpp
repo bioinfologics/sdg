@@ -20,6 +20,7 @@
 #include <sglib/graph/SequenceSubGraph.hpp>
 #include <sglib/graph/SequenceGraphPath.hpp>
 #include <sglib/logger/OutputLog.hpp>
+#include "LinkageDiGraph.hpp"
 
 class SequenceGraphPath;
 class SequenceSubGraph;
@@ -32,24 +33,29 @@ class SequenceSubGraph;
  *      - Nodes are signed to represent the direction in which they are being considered.
  *      - Nodes are saved in canonical form.
  */
-class SequenceGraph {
+class SequenceGraph : public LinkageDiGraph {
 public:
-    //=== internal variables ===
 
-    std::vector<Node> nodes;    /// Contains the actual nodes from the graph, nodes are generally accesed using its IDs on to this structure.
-    std::vector<std::vector<Link>> links;   /// List of all links, links are stored in their canonical from (-1 -> 2)
-    std::string filename,fasta_filename;    /// Name of the files containing the graph and the fasta.
-    std::vector<std::string> oldnames;      /// Mapping structure IDs to input names
-    std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids; /// Mapping structure from input names -> IDs
+    SequenceGraph():LinkageDiGraph(*this) { //sg gets initialised through LDG
+        add_node(Node("",sgNodeDeleted)); //an empty deleted node on 0, just to skip the space
+    };
 
     bool operator==(const SequenceGraph &o) const {
         return nodes == o.nodes;
     }
 
-    SequenceGraph() {
-        add_node(Node("",sgNodeDeleted)); //an empty deleted node on 0, just to skip the space
-    };
+    SequenceGraph& operator=(const SequenceGraph& other){
+        nodes=other.nodes;
+        links=other.links;
+        filename=other.filename;
+        fasta_filename=other.fasta_filename;
+        oldnames=other.oldnames;
+        oldnames_to_ids=other.oldnames_to_ids;
+    }
+
+
     SequenceGraph(const SequenceGraph &sg) = delete; // Avoid implicit generation of the copy constructor.
+
     //=== I/O functions ===
     void load_from_gfa(std::string filename);
     void load_from_fasta(std::string filename);
@@ -71,36 +77,6 @@ public:
      * @return
      */
     Link get_link(sgNodeID_t source, sgNodeID_t dest);
-
-    /**
-     * Get list of Links from a node
-     * @param n Node to search links for
-     * @return
-     * Returns a vector of Links leaving from n
-     */
-    std::vector<Link> get_fw_links( sgNodeID_t n) const ;
-    /**
-     * Get list of links to a node
-     * @param n Node to search links for
-     * @return
-     * Returns a vector of Links going to n
-     */
-    std::vector<Link> get_bw_links( sgNodeID_t n) const ;
-
-    /**
-     * Find node IDs for forward nodes of n
-     * @param n Node to search neighbours for
-     * @return
-     * Returns a vector of forward node IDs
-     */
-    std::vector<sgNodeID_t> get_fw_nodes(sgNodeID_t n) const;
-    /**
-     * Find node IDs for backward nodes of n
-     * @param n Node to search neighbours for
-     * @return
-     * Returns a vector of backward node IDs
-     */
-    std::vector<sgNodeID_t> get_bw_nodes(sgNodeID_t n) const;
 
     /**
      * Find node IDs for neighbouring nodes of n
@@ -129,7 +105,6 @@ public:
      * Returns the ID of the added node
      */
     sgNodeID_t add_node(Node n);
-    void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
 
 
 
@@ -144,9 +119,6 @@ public:
      * Connected components, (TODO) optionally breaking up in repeats, nodes that class as repeats will be returned on their own
      */
     std::vector<std::vector<sgNodeID_t>> connected_components (int max_nr_totalinks=0, int max_nr_dirlinks=0, int min_rsize=0); //TODO: --> enable extra breaks in repeats
-
-    // find bubbles in component of graph
-    std::vector<std::vector<sgNodeID_t >> find_bubbles(std::vector<sgNodeID_t>);
 
     /**
      * This function returns all nodes that can be reached again if following the links of the next
@@ -204,14 +176,6 @@ public:
      * @param n ID of the node
      */
     void remove_node(sgNodeID_t n);
-    // remove_link
-    /**
-     * Delete a link
-     * @param source source
-     * @param dest  destination
-     * Returns true if a link was removed, false otherwise
-     */
-    bool remove_link(sgNodeID_t source, sgNodeID_t dest);
     //These two need to mark expanded edges, and transfer read maps and unique kmers for non-expanded, but just read map for expanded.
 
     void join_path(const SequenceGraphPath p, bool consume_nodes=true);
@@ -277,5 +241,14 @@ public:
     size_t count_active_nodes();
     std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes=20, bool abort_on_loops=true) const;
     void print_status();
+
+    //=== internal variables ===
+
+    std::vector<Node> nodes;    /// Contains the actual nodes from the graph, nodes are generally accesed using its IDs on to this structure.
+    std::string filename,fasta_filename;    /// Name of the files containing the graph and the fasta.
+    std::vector<std::string> oldnames;      /// Mapping structure IDs to input names
+    std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids; /// Mapping structure from input names -> IDs
+private:
+    SequenceGraph & sg;
 };
 #endif //SG_SEQUENCEGRAPH_HPP

@@ -5,6 +5,8 @@
 #include <sglib/logger/OutputLog.hpp>
 #include <fstream>
 #include "LinkageDiGraph.hpp"
+#include "SequenceGraph.hpp"
+
 void LinkageDiGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, uint64_t rid) {
     if (llabs(source)>=links.size()) links.resize(llabs(source)+1);
     if (llabs(dest)>=links.size()) links.resize(llabs(dest)+1);
@@ -18,13 +20,15 @@ void LinkageDiGraph::add_links(const LinkageDiGraph &other) {
     for (auto &lv:other.links) for (auto l:lv) add_link(l.source,l.dest,l.dist,l.read_id);
 }
 
-void LinkageDiGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
-    if (llabs(source)>=links.size() or llabs(dest)>=links.size()) return;
+bool LinkageDiGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
     auto & slinks = links[(source > 0 ? source : -source)];
+    auto slinksLen = slinks.size();
     slinks.erase(std::remove(slinks.begin(), slinks.end(), Link(source,dest,0)), slinks.end());
     auto & dlinks = links[(dest > 0 ? dest : -dest)];
+    auto dlinksLen = dlinks.size();
     dlinks.erase(std::remove(dlinks.begin(), dlinks.end(), Link(dest,source,0)), dlinks.end());
-
+    if (slinks.size() != slinksLen or dlinks.size() != dlinksLen) return true;
+    return false;
 }
 
 void LinkageDiGraph::disconnect_node(sgNodeID_t node) {
@@ -41,6 +45,16 @@ std::vector<Link> LinkageDiGraph::get_fw_links( sgNodeID_t n) const {
 
 std::vector<Link> LinkageDiGraph::get_bw_links(sgNodeID_t n) const {
     return get_fw_links (-n);
+}
+
+std::vector<sgNodeID_t> LinkageDiGraph::get_fw_nodes(sgNodeID_t n) const {
+    std::vector<sgNodeID_t > r;
+    for (auto&  l:links[(n>0 ? n : -n)]) if (l.source==-n) r.emplace_back(std::abs(l.dest));
+    return r;
+}
+
+std::vector<sgNodeID_t> LinkageDiGraph::get_bw_nodes(sgNodeID_t n) const {
+    return get_fw_nodes (-n);
 }
 
 //returns a list of all fw nodes up to radius jumps away.

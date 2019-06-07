@@ -4,9 +4,23 @@
 
 #ifndef BSG_LINKAGEDIGRAPH_HPP
 #define BSG_LINKAGEDIGRAPH_HPP
+#include <vector>
+#include <algorithm>
+#include <string>
+#include <map>
+#include <unordered_map>
+#include <set>
+#include <iostream>
+#include <array>
+#include <unordered_set>
+#include <iosfwd>
+#include <sglib/types/KmerTypes.hpp>
+#include <sglib/types/GenericTypes.hpp>
+#include <sglib/graph/SequenceSubGraph.hpp>
+#include <sglib/graph/SequenceGraphPath.hpp>
+#include <sglib/logger/OutputLog.hpp>
 
-#include <sglib/graph/SequenceGraph.hpp>
-
+class SequenceGraph;//fwd declaration (to break circular dependence)
 /**
  * This is a description of the graph creating new linkage, the nodes are referenced from the original graph.
  *
@@ -43,7 +57,7 @@ public:
      * @param source
      * @param dest
      */
-    void remove_link(sgNodeID_t source, sgNodeID_t dest);
+    bool remove_link(sgNodeID_t source, sgNodeID_t dest);
 
     /** @brief Removes all the links in the collection from and to a given nodeID
      * TODO: check this one
@@ -68,6 +82,22 @@ public:
      * @return vector of links backwards of the provided node
      */
     std::vector<Link> get_bw_links( sgNodeID_t n) const;
+
+    /**
+     * Find node IDs for forward nodes of n
+     * @param n Node to search neighbours for
+     * @return
+     * Returns a vector of forward node IDs
+     */
+    std::vector<sgNodeID_t> get_fw_nodes(sgNodeID_t n) const;
+
+    /**
+     * Find node IDs for backward nodes of n
+     * @param n Node to search neighbours for
+     * @return
+     * Returns a vector of backward node IDs
+     */
+    std::vector<sgNodeID_t> get_bw_nodes(sgNodeID_t n) const;
 
     /** @brief Given a nodeID returns a set of all fw nodes present up to radius (# jump) away
      * TODO: merge with DFS in sequence graph (?)
