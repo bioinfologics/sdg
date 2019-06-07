@@ -202,23 +202,11 @@ void LongReadMapper::count_candidates(std::vector<unsigned char> &candidate_coun
                                       std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
                                   uint32_t read_kmers_size){
     //beware you need the size! otherwise there is a size from the matches and not from the reads!
-    std::unordered_set<sgNodeID_t> candidates;
-    candidates.reserve(10000);
     for (auto i=0;i<read_kmers_size;++i) {
         for (auto m:matches[i]) {
             uint32_t linear_node = (m.first>0) ? m.first : sg.nodes.size()+std::abs(m.first);
             uint16_t count_so_far=candidate_counts[ linear_node ]+1;
             candidate_counts[ linear_node ] = (count_so_far > UINT8_MAX) ? UINT8_MAX : count_so_far;
-        }
-    }
-
-    for (int64_t cidx=0; cidx < candidate_counts.size(); cidx++) {
-        if (candidate_counts[cidx]>50) {
-            if (cidx > sg.nodes.size()) {
-                candidates.insert(sg.nodes.size()-cidx);
-            } else {
-                candidates.insert(cidx);
-            }
         }
     }
 }
@@ -239,7 +227,6 @@ std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID,
             uint32_t linear_node = (m.first>0) ? m.first : sg.nodes.size()+std::abs(m.first);
             if (candidate_counts[linear_node] > 50) {
                 candidate_hits[m.first].emplace_back(p,m.second);
-
             }
         }
     }
