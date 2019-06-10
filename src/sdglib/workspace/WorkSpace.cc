@@ -32,7 +32,7 @@ void WorkSpace::dump_to_disk(std::string filename) {
 
     }
     //dump main graph
-    sg.write(of);
+    sdg.write(of);
     //dump KCI
     kci.write(of);
 
@@ -123,8 +123,8 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     }
     if (log_only) return;
     //read element type, then use that element's read
-    sg.read(wsfile);
-    sdglib::OutputLog() <<"Loaded graph with "<<sg.nodes.size()-1<<" nodes" <<std::endl;
+    sdg.read(wsfile);
+    sdglib::OutputLog() <<"Loaded graph with "<<sdg.nodes.size()-1<<" nodes" <<std::endl;
     kci.read(wsfile);
     //todo: read all datastores and mappers!!!
 //    if (format>1) {
@@ -132,7 +132,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
 //        for (auto i=0;i<count;++i){
 //            paired_read_datastores.emplace_back();
 //            paired_read_datastores.back().read(wsfile);
-//            paired_read_mappers.emplace_back(sg,linked_read_datastores.back());
+//            paired_read_mappers.emplace_back(sdg,linked_read_datastores.back());
 //            paired_read_mappers.back().read(wsfile);
 //        }
 //    }
@@ -142,7 +142,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     for (auto i=0;i<count;++i) {
         paired_read_datastores.emplace_back();
         paired_read_datastores.back().read(wsfile);
-        paired_read_mappers.emplace_back(sg,paired_read_datastores[i],uniqueKmerIndex, unique63merIndex);
+        paired_read_mappers.emplace_back(sdg,paired_read_datastores[i],uniqueKmerIndex, unique63merIndex);
         paired_read_mappers.back().read(wsfile);
     }
     wsfile.read((char *) &count,sizeof(count));
@@ -151,7 +151,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     for (auto i=0;i<count;++i) {
         linked_read_datastores.emplace_back();
         linked_read_datastores.back().read(wsfile);
-        linked_read_mappers.emplace_back(sg,linked_read_datastores[i],uniqueKmerIndex, unique63merIndex);
+        linked_read_mappers.emplace_back(sdg,linked_read_datastores[i],uniqueKmerIndex, unique63merIndex);
         linked_read_mappers.back().read(wsfile);
     }
 
@@ -161,7 +161,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     for (auto i=0;i<count;++i) {
         long_read_datastores.emplace_back();
         long_read_datastores.back().read(wsfile);
-        long_read_mappers.emplace_back(sg,long_read_datastores[i]);
+        long_read_mappers.emplace_back(sdg,long_read_datastores[i]);
         long_read_mappers.back().read(wsfile);
     }
 
@@ -169,7 +169,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     if (!wsfile.eof()){
         wsfile.read((char *) &count,sizeof(count));
         for (auto i=0;i<count;++i){
-            path_datastores.emplace_back(sg);
+            path_datastores.emplace_back(sdg);
             path_datastores.back().read(wsfile);
         }
     }
@@ -199,15 +199,15 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
     sdglib::OutputLog()<<"Selecting nodes: " << min_size << "-" << max_size << " bp " <<
                       min_tags << "-" << max_tags << " tags " << min_ci << "-" << max_ci << " CI"<<std::endl;
     uint64_t tnodes=0,tbp=0;
-    nodes.reserve(sg.nodes.size());
+    nodes.reserve(sdg.nodes.size());
 #pragma omp parallel
     {
         std::vector<sgNodeID_t> thread_nodes;
         uint64_t ttbp=0;
 #pragma omp for schedule(static, 100)
-        for (auto n=1;n<sg.nodes.size();++n) {
-            if (sg.nodes[n].sequence.size() < min_size) continue;
-            if (sg.nodes[n].sequence.size() > max_size) continue;
+        for (auto n=1;n<sdg.nodes.size();++n) {
+            if (sdg.nodes[n].sequence.size() < min_size) continue;
+            if (sdg.nodes[n].sequence.size() > max_size) continue;
             if (!linked_read_mappers.empty()) {
                 auto ntags = linked_read_mappers[0].get_node_tags(n);
                 if (ntags.size() < min_tags or ntags.size() > max_tags) continue;
@@ -219,7 +219,7 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
             ++tnodes;
             thread_nodes.emplace_back(n);
 
-            ttbp += sg.nodes[n].sequence.size();
+            ttbp += sdg.nodes[n].sequence.size();
         }
 
 #pragma omp critical(collect_selected_nodes)
@@ -229,7 +229,7 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
         }
 
     }
-    sdglib::OutputLog()<< "Selected "<<tnodes<<" / "<<sg.nodes.size()<<" with a total "<<tbp<<"bp"<< std::endl;
+    sdglib::OutputLog()<< "Selected "<<tnodes<<" / "<<sdg.nodes.size()<<" with a total "<<tbp<<"bp"<< std::endl;
     return nodes;
 }
 

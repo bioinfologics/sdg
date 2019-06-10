@@ -26,7 +26,7 @@ void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backb
     //std::cout<<"Backbone nodes:";
     //for (auto n:backbone) std::cout<<" "<<n;
     //std::cout<<std::endl;
-    for (auto n:backbone) backbone_nodes.emplace_back(ws.sg.nodes[llabs(n)].sequence);
+    for (auto n:backbone) backbone_nodes.emplace_back(ws.sdg.nodes[llabs(n)].sequence);
 
     //std::cout<<"Filling Candidate Tag Set..."<<std::endl;
     //Get tag reads in the nodes, and how many nodes with reads counts.
@@ -108,7 +108,7 @@ void LocalHaplotypeAssembler::init_from_file(std::string problem_file) {
     input_file.read((char *)&count,sizeof(count));
     backbone.resize(count);
     input_file.read((char *)backbone.data(),count*sizeof(backbone[0]));
-    for (auto n:backbone) backbone_nodes.emplace_back(ws.sg.nodes[llabs(n)].sequence);
+    for (auto n:backbone) backbone_nodes.emplace_back(ws.sdg.nodes[llabs(n)].sequence);
 
     //load 10x tags;
     input_file.read((char *)&count,sizeof(count));

@@ -60,24 +60,24 @@ int main(int argc, char * argv[]) {
     ws.add_log_entry("Workspace created with bsg-dbg");
     ws.add_log_entry("Origin datastore: "+pr_file);
     ws.paired_read_datastores.emplace_back(pr_file);
-    ws.paired_read_mappers.emplace_back(ws.sg,ws.paired_read_datastores.back(), ws.uniqueKmerIndex, ws.unique63merIndex);
-    GraphMaker gm(ws.sg);
+    ws.paired_read_mappers.emplace_back(ws.sdg,ws.paired_read_datastores.back(), ws.uniqueKmerIndex, ws.unique63merIndex);
+    GraphMaker gm(ws.sdg);
     //counting kmers...
     sdglib::OutputLog()<<"Creating "<<k<<"-mer set from datastore..."<<std::endl;
     auto kmers=ws.paired_read_datastores.back().get_all_kmers128(k,min_coverage);
     sdglib::OutputLog()<<"DONE! "<<kmers.size()<<" "<<k<<"-mers with coverage >="<<min_coverage<<std::endl;
     sdglib::OutputLog()<<"Creating DBG..."<<std::endl;
     gm.new_graph_from_kmerset_trivial128(kmers,k);
-    sdglib::OutputLog()<<"DONE! "<<ws.sg.count_active_nodes()<<" nodes in graph"<<std::endl;
+    sdglib::OutputLog()<<"DONE! "<<ws.sdg.count_active_nodes()<<" nodes in graph"<<std::endl;
 
     gm.tip_clipping(200);
 
-    sdglib::OutputLog()<<"DONE! "<<ws.sg.count_active_nodes()<<" nodes in graph"<<std::endl;
+    sdglib::OutputLog()<<"DONE! "<<ws.sdg.count_active_nodes()<<" nodes in graph"<<std::endl;
     ws.kci.index_graph();
     ws.kci.start_new_count();
     ws.kci.add_counts_from_datastore(ws.paired_read_datastores.back());
 
-    ws.sg.write_to_gfa(output_prefix+"_DBG.gfa");
+    ws.sdg.write_to_gfa(output_prefix+"_DBG.gfa");
     ws.dump_to_disk(output_prefix+".bsgws");
 }
 

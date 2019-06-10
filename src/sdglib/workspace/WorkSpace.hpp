@@ -29,9 +29,9 @@ class WorkSpace {
 
 public:
     WorkSpace() :
-    kci(sg),
-    uniqueKmerIndex(sg, 31),
-    unique63merIndex(sg){};
+    kci(sdg),
+    uniqueKmerIndex(sdg, 31),
+    unique63merIndex(sdg){};
     WorkSpace(const WorkSpace& that) = delete; //we definitely do not want copy constructors here, thank you
     void print_log();
 
@@ -43,8 +43,8 @@ public:
 
     //general operations
 
-    void create_index(bool verbose = true) { uniqueKmerIndex.generate_index(sg,verbose); }
-    void create_63mer_index(bool verbose = true) { unique63merIndex.generate_index(sg,verbose); }
+    void create_index(bool verbose = true) { uniqueKmerIndex.generate_index(sdg,verbose); }
+    void create_63mer_index(bool verbose = true) { unique63merIndex.generate_index(sdg,verbose); }
     void remap_all();
     void remap_all63();
     //Projected operations with info from the graph
@@ -53,11 +53,11 @@ public:
     select_from_all_nodes(uint32_t min_size, uint32_t max_size, uint32_t min_tags, uint32_t max_tags, float min_ci, float max_ci);
 
     KmerCompressionIndex& getKCI() {return kci;}
-    SequenceDistanceGraph& getGraph() {return sg;}
+    SequenceDistanceGraph& getGraph() {return sdg;}
     std::vector<LogEntry> log;
 
     //All status classes are public, treat them with care anyway ;)
-    SequenceDistanceGraph sg;
+    SequenceDistanceGraph sdg;
     UniqueKmerIndex uniqueKmerIndex;
     Unique63merIndex unique63merIndex;
     std::vector<PairedReadsDatastore> paired_read_datastores;

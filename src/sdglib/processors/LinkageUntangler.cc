@@ -157,19 +157,19 @@ size_t intersection_size_fast(const std::vector<bsg10xTag>& v1, const std::vecto
 
 void LinkageUntangler::clear_node_selection() {
     selected_nodes.clear();
-    selected_nodes.resize(ws.sg.nodes.size());
+    selected_nodes.resize(ws.sdg.nodes.size());
     frontier_nodes.clear();
-    frontier_nodes.resize(ws.sg.nodes.size());
+    frontier_nodes.resize(ws.sdg.nodes.size());
 }
 
 void LinkageUntangler::report_node_selection() {
     uint64_t total_bp=0,total_count=0,selected_bp=0,selected_count=0;
-    for (auto n=1;n<ws.sg.nodes.size();++n) {
-        if (ws.sg.nodes[n].status == sgNodeDeleted) continue;
-        total_bp+=ws.sg.nodes[n].sequence.size();
+    for (auto n=1;n<ws.sdg.nodes.size();++n) {
+        if (ws.sdg.nodes[n].status == sgNodeDeleted) continue;
+        total_bp+=ws.sdg.nodes[n].sequence.size();
         ++total_count;
         if (selected_nodes[n]) {
-            selected_bp += ws.sg.nodes[n].sequence.size();
+            selected_bp += ws.sdg.nodes[n].sequence.size();
             ++selected_count;
         }
     }
@@ -184,9 +184,9 @@ void LinkageUntangler::select_nodes_by_size_and_ci( uint64_t min_size, float min
 #pragma omp parallel
     {
 #pragma omp for schedule(static, 100) reduction(+:deleted,small,cifail,selected)
-        for (auto n=1;n<ws.sg.nodes.size();++n) {
-            if (ws.sg.nodes[n].status==sgNodeDeleted) { ++deleted; continue; }
-            if (ws.sg.nodes[n].sequence.size() < min_size) { ++small; continue; }
+        for (auto n=1;n<ws.sdg.nodes.size();++n) {
+            if (ws.sdg.nodes[n].status==sgNodeDeleted) { ++deleted; continue; }
+            if (ws.sdg.nodes[n].sequence.size() < min_size) { ++small; continue; }
             auto ci = ws.kci.compute_compression_for_node(n, 1);
             if (std::isnan(ci) or ci < min_ci or ci > max_ci) { ++cifail; continue;}
             #pragma omp critical(collect_selected_nodes)
@@ -202,21 +202,21 @@ std::set<std::pair<sgNodeID_t, sgNodeID_t >> LinkageUntangler::get_HSPNPs(uint64
                                                                           float max_ci) {
     std::set<std::pair<sgNodeID_t, sgNodeID_t >> hspnps;
 #pragma omp parallel for schedule(static, 100)
-    for (sgNodeID_t n = 1; n < ws.sg.nodes.size(); ++n) {
-        if (ws.sg.nodes[n].status == sgNodeDeleted) continue;
-        if (ws.sg.nodes[n].sequence.size() < min_size) continue;
+    for (sgNodeID_t n = 1; n < ws.sdg.nodes.size(); ++n) {
+        if (ws.sdg.nodes[n].status == sgNodeDeleted) continue;
+        if (ws.sdg.nodes[n].sequence.size() < min_size) continue;
         //FW check
-        auto fwl = ws.sg.get_fw_links(n);
+        auto fwl = ws.sdg.get_fw_links(n);
         if (fwl.size() != 1) continue;
         auto post = fwl[0].dest;
-        auto post_bwl = ws.sg.get_bw_links(post);
+        auto post_bwl = ws.sdg.get_bw_links(post);
         if (post_bwl.size() != 2) continue;
         if (llabs(post_bwl[0].dest)==llabs(post_bwl[1].dest))continue;
         //BW check
-        auto bwl = ws.sg.get_bw_links(n);
+        auto bwl = ws.sdg.get_bw_links(n);
         if (bwl.size() != 1) continue;
         auto prev = bwl[0].dest;
-        auto prev_fwl = ws.sg.get_bw_links(prev);
+        auto prev_fwl = ws.sdg.get_bw_links(prev);
         if (prev_fwl.size() != 2) continue;
 
         if ((prev_fwl[0].dest == -post_bwl[0].dest and prev_fwl[1].dest == -post_bwl[1].dest)
@@ -253,8 +253,8 @@ void LinkageUntangler::select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, f
 }
 
 void LinkageUntangler::select_multi_linkage_linear_anchors(const DistanceGraph &multi_ldg, int min_links, int min_transitive_links) {
-    for (auto n=1;n<ws.sg.nodes.size();++n){
-        if (ws.sg.nodes[n].status == sgNodeDeleted) continue;
+    for (auto n=1;n<ws.sdg.nodes.size();++n){
+        if (ws.sdg.nodes[n].status == sgNodeDeleted) continue;
         bool anchor=true;
         auto fw_sorted=multi_ldg.fw_neighbours_by_distance(n,min_links);
         if (fw_sorted.size()>1) {
@@ -284,15 +284,15 @@ void LinkageUntangler::select_multi_linkage_linear_anchors(const DistanceGraph &
 }
 
 DistanceGraph LinkageUntangler::make_topology_linkage(int radius) {
-    DistanceGraph ldg(ws.sg);
-    for (auto m=1;m<ws.sg.nodes.size();++m) {
+    DistanceGraph ldg(ws.sdg);
+    for (auto m=1;m<ws.sdg.nodes.size();++m) {
         if (!selected_nodes[m]) continue;
         for (auto n:{m,-m}) {
             std::set<sgNodeID_t> reached, last = {n};
             for (auto i = 0; i < radius; ++i) {
                 std::set<sgNodeID_t> new_last;
                 for (auto l:last) {
-                    for (auto fwl:ws.sg.get_fw_links(l)) {
+                    for (auto fwl:ws.sdg.get_fw_links(l)) {
                         if (selected_nodes[llabs(fwl.dest)]) {
                             ldg.add_link(-n, fwl.dest, 0);
                         } else {
@@ -309,7 +309,7 @@ DistanceGraph LinkageUntangler::make_topology_linkage(int radius) {
 }
 
 DistanceGraph LinkageUntangler::make_paired_linkage(int min_reads) {
-    DistanceGraph ldg(ws.sg);
+    DistanceGraph ldg(ws.sdg);
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
     sdglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
     //use all libraries collect votes on each link
@@ -328,7 +328,7 @@ DistanceGraph LinkageUntangler::make_paired_linkage(int min_reads) {
     }
 
     sdglib::OutputLog()<<"adding links with "<<min_reads<<" votes"<<std::endl;
-    //std::vector<std::vector<std::pair<sgNodeID_t ,uint64_t>>> nodelinks(ws.sg.nodes.size());
+    //std::vector<std::vector<std::pair<sgNodeID_t ,uint64_t>>> nodelinks(ws.sdg.nodes.size());
     for (auto l:lv) {
         if (l.second>=min_reads){
             //todo: size, appropriate linkage handling, etc
@@ -349,7 +349,7 @@ DistanceGraph LinkageUntangler::make_paired_linkage(int min_reads) {
 }
 
 DistanceGraph LinkageUntangler::make_paired_linkage_pe(int min_reads) {
-    DistanceGraph ldg(ws.sg);
+    DistanceGraph ldg(ws.sdg);
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
     sdglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
     //use all libraries collect votes on each link
@@ -366,7 +366,7 @@ DistanceGraph LinkageUntangler::make_paired_linkage_pe(int min_reads) {
 
 
     sdglib::OutputLog()<<"adding links with "<<min_reads<<" votes"<<std::endl;
-    //std::vector<std::vector<std::pair<sgNodeID_t ,uint64_t>>> nodelinks(ws.sg.nodes.size());
+    //std::vector<std::vector<std::pair<sgNodeID_t ,uint64_t>>> nodelinks(ws.sdg.nodes.size());
     for (auto l:lv) {
         if (l.second>=min_reads){
             //todo: size, appropriate linkage handling, etc
@@ -490,7 +490,7 @@ std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> LinkageUntangler::shared_r
 DistanceGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_paths) {
 
     //STEP 1 - identify candidates by simple tag-sharing.
-    DistanceGraph ldg(ws.sg);
+    DistanceGraph ldg(ws.sdg);
 
     //Step 1 - tag neighbours.
 
@@ -576,23 +576,23 @@ DistanceGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_pa
     //STEP 3 - Looking at disconnected ends on 1-0 and N-0 nodes
     std::vector<sgNodeID_t> one_end_only;
     uint64_t disc=0,ldisc=0,single=0,lsingle=0,both=0,lboth=0;
-    for (sgNodeID_t n=1;n<ws.sg.nodes.size();++n) {
+    for (sgNodeID_t n=1;n<ws.sdg.nodes.size();++n) {
         if (!selected_nodes[n]) continue;
         auto blc=ldg.get_bw_links(n).size();
         auto flc=ldg.get_fw_links(n).size();
 
         if (blc==0 and flc==0){
             ++disc;
-            if (ws.sg.nodes[n].sequence.size()>2000) ++ldisc;
+            if (ws.sdg.nodes[n].sequence.size()>2000) ++ldisc;
         }
         else if (blc==0 or flc==0){
             if (blc==0) one_end_only.push_back(-n);
             else one_end_only.push_back(n);
             ++single;
-            if (ws.sg.nodes[n].sequence.size()>2000) ++lsingle;
+            if (ws.sdg.nodes[n].sequence.size()>2000) ++lsingle;
         } else {
             ++both;
-            if (ws.sg.nodes[n].sequence.size()>2000) ++lboth;
+            if (ws.sdg.nodes[n].sequence.size()>2000) ++lboth;
         }
     }
     /*sdglib::OutputLog()<<both<<" nodes with both-sides linkage ( "<<lboth<<" >2kbp )"<<std::endl;
@@ -628,8 +628,8 @@ DistanceGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_pa
                               std::inserter(shared_tags, shared_tags.end()));
         uint64_t n1_front_in = 0, n1_front_total = 0, n1_back_in = 0, n1_back_total = 0;
         uint64_t n2_front_in = 0, n2_front_total = 0, n2_back_in = 0, n2_back_total = 0;
-        uint64_t n1first30point = ws.sg.nodes[n1].sequence.size() * end_perc;
-        uint64_t n1last30point = ws.sg.nodes[n1].sequence.size() * (1 - end_perc);
+        uint64_t n1first30point = ws.sdg.nodes[n1].sequence.size() * end_perc;
+        uint64_t n1last30point = ws.sdg.nodes[n1].sequence.size() * (1 - end_perc);
         std::set<bsg10xTag> t1f,t1b,t2f,t2b,t1ft,t1bt,t2ft,t2bt;
         for (auto rm:ws.linked_read_mappers[0].reads_in_node[n1]) {
             if (rm.first_pos < n1first30point) {
@@ -651,8 +651,8 @@ DistanceGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_pa
         }
         auto n1f = (100.0 * n1_front_in / n1_front_total);
         auto n1b = (100.0 * n1_back_in / n1_back_total);
-        uint64_t n2first30point = ws.sg.nodes[n2].sequence.size() * end_perc;
-        uint64_t n2last30point = ws.sg.nodes[n2].sequence.size() * (1 - end_perc);
+        uint64_t n2first30point = ws.sdg.nodes[n2].sequence.size() * end_perc;
+        uint64_t n2last30point = ws.sdg.nodes[n2].sequence.size() * (1 - end_perc);
         for (auto rm:ws.linked_read_mappers[0].reads_in_node[n2]) {
             if (rm.first_pos < n2first30point) {
                 ++n2_front_total;
@@ -673,7 +673,7 @@ DistanceGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_pa
         }
         auto n2f = (100.0 * n2_front_in / n2_front_total);
         auto n2b = (100.0 * n2_back_in / n2_back_total);
-        if ( (ws.sg.nodes[llabs(n1)].sequence.size()>10000 and ws.sg.nodes[llabs(n2)].sequence.size()>10000) ){
+        if ( (ws.sdg.nodes[llabs(n1)].sequence.size()>10000 and ws.sdg.nodes[llabs(n2)].sequence.size()>10000) ){
             std::cout<<"connection between "<<n1<<" and "<<n2<<" with "<<shared_tags.size()<<" tags: "<<n1f<<"("<<t1f.size()<<"):"<< n1b <<"("<<t1b.size()<<") <-> "<<n2f<<"("<<t2f.size()<<"):"<< n2b <<"("<<t2b.size()<<")"<<std::endl;
             std::cout<<"F<->F: "<<intersection_size(t1f,t2f)<<" / "<<t1ft.size()<<":"<<t2ft.size();
             std::cout<<"  F<->B: "<<intersection_size(t1f,t2b)<<" / "<<t1ft.size()<<":"<<t2bt.size();
@@ -691,9 +691,9 @@ DistanceGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_pa
 }
 
 DistanceGraph LinkageUntangler::make_nextselected_linkage(const DistanceGraph &multi_ldg, int min_links) {
-    DistanceGraph ldg(ws.sg);
-    for (auto n=1;n<ws.sg.nodes.size();++n) {
-        if (ws.sg.nodes[n].status == sgNodeDeleted or !selected_nodes[n]) continue;
+    DistanceGraph ldg(ws.sdg);
+    for (auto n=1;n<ws.sdg.nodes.size();++n) {
+        if (ws.sdg.nodes[n].status == sgNodeDeleted or !selected_nodes[n]) continue;
         auto fw_sorted = multi_ldg.fw_neighbours_by_distance(n, min_links);
         for (auto &fwl:fw_sorted) {
             if (selected_nodes[llabs(fwl.second)]) {
@@ -733,7 +733,7 @@ std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<L
     if (read_size==0) for (auto &m:lorm_mappings) if (m.qEnd>read_size) read_size=m.qEnd;
     for (int i=0; i<lorm_mappings.size();++i){
         auto &m=lorm_mappings[i];
-        auto ns=ws.sg.nodes[llabs(m.node)].sequence.size();
+        auto ns=ws.sdg.nodes[llabs(m.node)].sequence.size();
         if ( (i==0 and m.qStart<unmapped_end) or (i==lorm_mappings.size()-1 and m.qEnd+unmapped_end>=read_size) or total_bp[m.node]>=.7*ns) {
             //If a node has mode than one consecutive mapping, merge them.
             if (mfilt_total.size()>0 and mfilt_total.back().node==m.node and mfilt_total.back().nStart<m.nStart and mfilt_total.back().nEnd<m.nEnd and mfilt_total.back().nEnd<m.nStart+500) {
@@ -746,7 +746,7 @@ std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<L
     //Now remove all mappings that do not cover 80% of the node
     for (int i=0; i<mfilt_total.size();++i){
         auto &m=mfilt_total[i];
-        auto ns=ws.sg.nodes[llabs(m.node)].sequence.size();
+        auto ns=ws.sdg.nodes[llabs(m.node)].sequence.size();
         if ( (i==0 and m.nEnd>.9*ns and m.qStart<unmapped_end) or (i==mfilt_total.size()-1 and m.nStart<.1*ns and m.qEnd+unmapped_end>read_size) or m.nEnd-m.nStart+1>=.8*ns) {
             mmergedfilt.push_back(m);
         }
@@ -754,7 +754,7 @@ std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<L
     //now compute starts and ends for 0% and 100%
     std::vector<std::pair<sgNodeID_t, std::pair<int32_t, int32_t>>> node_ends;
     for (auto &m:mmergedfilt) {
-        node_ends.emplace_back(m.node, std::make_pair(m.qStart-m.nStart,m.qEnd+ws.sg.nodes[llabs(m.node)].sequence.size()-m.nEnd));
+        node_ends.emplace_back(m.node, std::make_pair(m.qStart-m.nStart,m.qEnd+ws.sdg.nodes[llabs(m.node)].sequence.size()-m.nEnd));
     }
     //for every nodeA:
     for (int nA=0;nA+1<node_ends.size();++nA) {
@@ -786,7 +786,7 @@ DistanceGraph LinkageUntangler::make_longRead_multilinkage(const LongReadMapper 
 
 DistanceGraph LinkageUntangler::make_paired10x_multilinkage(const PairedReadMapper &prm, const LinkedReadMapper &lirm, float min_tnscore, bool fr,
                                                              uint64_t read_offset) {
-    DistanceGraph ldg(ws.sg);
+    DistanceGraph ldg(ws.sdg);
     uint64_t unmapped(0),same(0),non_neighbours(0),used(0);
     for (uint64_t rid1=1; rid1<prm.read_to_node.size()-1; rid1+=2){
         uint64_t rid2=rid1+1;
@@ -834,7 +834,7 @@ DistanceGraph LinkageUntangler::filter_linkage_to_hspnp_duos(uint64_t min_size, 
                                                               const DistanceGraph &ldg_old) {
     std::unordered_map<sgNodeID_t,sgNodeID_t> node_to_parallel;
     //1- get all hspnps -> create a map of parallels
-    DistanceGraph ldg_new(ws.sg);
+    DistanceGraph ldg_new(ws.sdg);
     auto hspnps=get_HSPNPs(min_size,min_ci,max_ci);
     for (auto h:hspnps) {
         node_to_parallel[h.first]=h.second;
@@ -867,12 +867,12 @@ DistanceGraph LinkageUntangler::filter_linkage_to_hspnp_duos(uint64_t min_size, 
 
 void LinkageUntangler::expand_trivial_repeats(const DistanceGraph & ldg) {
     uint64_t aa=0,ab=0,unsolved=0;
-    for (auto n=1;n<ws.sg.nodes.size();++n) {
-        if (ws.sg.nodes[n].status == sgNodeDeleted) continue;
+    for (auto n=1;n<ws.sdg.nodes.size();++n) {
+        if (ws.sdg.nodes[n].status == sgNodeDeleted) continue;
         //check node is 2-2
-        auto bwl=ws.sg.get_bw_links(n);
+        auto bwl=ws.sdg.get_bw_links(n);
         if (bwl.size()!=2) continue;
-        auto fwl=ws.sg.get_fw_links(n);
+        auto fwl=ws.sdg.get_fw_links(n);
         if (fwl.size()!=2) continue;
         auto p1=-bwl[0].dest;
         auto p2=-bwl[1].dest;
@@ -884,11 +884,11 @@ void LinkageUntangler::expand_trivial_repeats(const DistanceGraph & ldg) {
         auto p2ll=ldg.get_fw_links(p2);
         if (p2ll.size()!=1) continue;
         if (p1ll[0].dest==n1 and p2ll[0].dest==n2){
-            ws.sg.expand_node(n,{{-p1},{-p2}},{{n1},{n2}});
+            ws.sdg.expand_node(n,{{-p1},{-p2}},{{n1},{n2}});
             ++aa;
         }
         else if (p2ll[0].dest==n1 and p1ll[0].dest==n2) {
-            ws.sg.expand_node(n,{{-p1},{-p2}},{{n2},{n1}});
+            ws.sdg.expand_node(n,{{-p1},{-p2}},{{n2},{n1}});
             ++ab;
         }
         else ++unsolved;
@@ -950,7 +950,7 @@ void LinkageUntangler::expand_linear_regions(const DistanceGraph & ldg) {
             evaluated++;
             auto from = l[i];
             auto to = l[i + 1];
-            auto paths = ws.sg.find_all_paths_between(from, to, 400000, 20);
+            auto paths = ws.sdg.find_all_paths_between(from, to, 400000, 20);
             if (paths.size()>0) found++;
             alternatives.back().emplace_back(paths);
             total_paths+=paths.size();
@@ -981,14 +981,14 @@ void LinkageUntangler::expand_linear_regions(const DistanceGraph & ldg) {
 //            size_t t=0;
 //            for (auto &alts:alternatives[i]) {
 //                for (auto &a:alts) {
-//                    for (auto n:a.nodes) t += ws.sg.nodes[llabs(n)].sequence.size();
+//                    for (auto n:a.nodes) t += ws.sdg.nodes[llabs(n)].sequence.size();
 //                }
 //            }
 //            kmercoverages.reserve(t);
             for (auto &alts:alternatives[i]) {
                 for (auto &a:alts) {
                     for (auto n:a.nodes) {
-                        km_create.create_all_kmers(ws.sg.nodes[llabs(n)].sequence.c_str(), kmercoverages);
+                        km_create.create_all_kmers(ws.sdg.nodes[llabs(n)].sequence.c_str(), kmercoverages);
                     }
                 }
             }
@@ -1018,7 +1018,7 @@ void LinkageUntangler::expand_linear_regions(const DistanceGraph & ldg) {
             for (auto j=0;j<alternatives[i][ia].size();++j){
                 uint64_t missed=0;
                 for (auto n:alternatives[i][ia][j].nodes) {
-                    for (auto x:kvc.count_all_kmers(ws.sg.nodes[llabs(n)].sequence.c_str())) {
+                    for (auto x:kvc.count_all_kmers(ws.sdg.nodes[llabs(n)].sequence.c_str())) {
                         if (linekmercoverages[i][x] < 8) ++missed;//TODO: maybe ask for more than 1 read coverage?
                     }
                 }
@@ -1049,7 +1049,7 @@ void LinkageUntangler::expand_linear_regions(const DistanceGraph & ldg) {
             }
             else {
                 ++solved;
-                sols.emplace_back(ws.sg);
+                sols.emplace_back(ws.sdg);
                 sols.back().nodes.emplace_back(lines[i][ia]);
                 for (auto n:alternatives[i][ia][best].nodes) sols.back().nodes.emplace_back(n);
                 sols.back().nodes.emplace_back(lines[i][ia+1]);
@@ -1195,8 +1195,8 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const DistanceGraph & l
         for (auto i = 0; i < lines.size(); ++i) {
             //sdglib::OutputLog()<<"Line #"<<i<<std::endl;
             for (auto li = 0; li < lines[i].size() - 1; ++li) {
-                auto n1 = ws.sg.nodes[llabs(lines[i][li])];
-                auto n2 = ws.sg.nodes[llabs(lines[i][li + 1])];
+                auto n1 = ws.sdg.nodes[llabs(lines[i][li])];
+                auto n2 = ws.sdg.nodes[llabs(lines[i][li + 1])];
                 const size_t ENDS_SIZE = 1000;
                 if (n1.sequence.size() > ENDS_SIZE)
                     n1.sequence = n1.sequence.substr(n1.sequence.size() - ENDS_SIZE - 1, ENDS_SIZE);
@@ -1218,20 +1218,20 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const DistanceGraph & l
 #pragma omp critical
                     //patches.emplace_back(std::make_pair(lines[i][li],lines[i][li+1]),matches[0]);
 //                    //std::cout<<" Patching between "<<lines[i][li]<<" and "<<lines[i][li+1]<<std::endl;
-//                    auto prevn = ws.sg.nodes.size();
+//                    auto prevn = ws.sdg.nodes.size();
                     auto patch_code = ge.patch_between(lines[i][li], lines[i][li + 1], matches[0]);
 ////                    patchfile << ">patch_" << lines[i][li] << "_" << lines[i][li + 1] << "_"
 ////                              << (ws.sg.nodes.size() > prevn ? "APPLIED_" : "FAILED_")
 ////                              << patch_code << std::endl << matches[0] << std::endl;
 //                    //std::cout<<" Patched!!!"<<std::endl;
-//                    if (ws.sg.nodes.size() > prevn) ++patched;
+//                    if (ws.sdg.nodes.size() > prevn) ++patched;
 //                    else ++not_patched;
                 }
 
             }
         }
     sdglib::OutputLog()<<"Joining unitigs"<<std::endl;
-    auto ujc=ws.sg.join_all_unitigs();
+    auto ujc=ws.sdg.join_all_unitigs();
     sdglib::OutputLog()<<"Unitigs joined after patching: "<<ujc<<std::endl;
 
 }
@@ -1315,7 +1315,7 @@ void LinkageUntangler::expand_linear_regions_skating(const DistanceGraph & ldg, 
                             continue;
                         }
                         //std::cout<<" expanding fw from node "<<p.back()<<std::endl;
-                        for (auto fwl:ws.sg.get_fw_links(p.back())) {
+                        for (auto fwl:ws.sdg.get_fw_links(p.back())) {
                             //std::cout<<"  considering fwl to "<<fwl.dest<<std::endl;
                             if (std::count(p.begin(),p.end(),fwl.dest)>0 or std::count(p.begin(),p.end(),-fwl.dest)>0){
                                 loop=true;
@@ -1323,8 +1323,8 @@ void LinkageUntangler::expand_linear_regions_skating(const DistanceGraph & ldg, 
                                 break;
                             }
 
-                            auto u=ukc.count_uncovered(ws.sg.nodes[llabs(fwl.dest)].sequence.c_str());
-                            //std::cout<<"  Uncovered kmers in "<<fwl.dest<<" ("<<ws.sg.nodes[llabs(fwl.dest)].sequence.size()<<" bp): "
+                            auto u=ukc.count_uncovered(ws.sdg.nodes[llabs(fwl.dest)].sequence.c_str());
+                            //std::cout<<"  Uncovered kmers in "<<fwl.dest<<" ("<<ws.sdg.nodes[llabs(fwl.dest)].sequence.size()<<" bp): "
                             //                                                                                                <<u<<std::endl;
                             if ( u == 0) {
                                 //check for a path that reaches a selected node that is not connected here
@@ -1348,7 +1348,7 @@ void LinkageUntangler::expand_linear_regions_skating(const DistanceGraph & ldg, 
                     if (p.back()==to) ++complete;
                     else ++incomplete;
                 }
-                if (complete==1 and incomplete==0) tsols.emplace_back(SequenceGraphPath(ws.sg,skated_paths[0]));
+                if (complete==1 and incomplete==0) tsols.emplace_back(SequenceGraphPath(ws.sdg,skated_paths[0]));
                 //std::cout<<"Skating line #"<<i+1<<" junction #"<<j+1<<" produced "<<complete<<" complete paths and "<<incomplete<<" possibly incomplete paths"<<std::endl;
             }
             if (++donelines%100==0) std::cout<<"."<<std::flush;
@@ -1408,7 +1408,7 @@ void LinkageUntangler::fill_linkage_line(std::vector<sgNodeID_t> nodes) {
     std::ofstream anchf("local_dbg_" + std::to_string(nodes[0]) + "_anchors.fasta");
     for (auto n:nodes){
         anchf<<">seq"<<llabs(n)<<std::endl;
-        anchf<<ws.sg.nodes[llabs(n)].sequence<<std::endl;
+        anchf<<ws.sdg.nodes[llabs(n)].sequence<<std::endl;
 
     }
     dbg.write_to_gfa("local_dbg_"+std::to_string(nodes[0])+"_uncleaned.gfa");
@@ -1427,14 +1427,14 @@ void LinkageUntangler::fill_linkage_line(std::vector<sgNodeID_t> nodes) {
 }
 
 DistanceGraph LinkageUntangler::make_and_simplify_linkage(int min_shared_tags) {
-    DistanceGraph tag_ldg(ws.sg);
+    DistanceGraph tag_ldg(ws.sdg);
     std::unordered_set<sgNodeID_t> selnodes;
-    for (sgNodeID_t n = 1; n < ws.sg.nodes.size(); ++n) if (selected_nodes[n]) selnodes.insert(n);
+    for (sgNodeID_t n = 1; n < ws.sdg.nodes.size(); ++n) if (selected_nodes[n]) selnodes.insert(n);
     auto pre_tag_ldg = make_tag_linkage(min_shared_tags, false);
     pre_tag_ldg.remove_transitive_links(10);
     sdglib::OutputLog() << "Eliminating N-N nodes..." << std::endl;
     uint64_t remNN = 0;
-    for (auto n = 1; n < ws.sg.nodes.size(); ++n) {
+    for (auto n = 1; n < ws.sdg.nodes.size(); ++n) {
         if (selected_nodes[n]) {
             if (pre_tag_ldg.get_fw_links(n).size() > 1 and pre_tag_ldg.get_bw_links(n).size() > 1) {
                 selected_nodes[n] = false;
@@ -1455,7 +1455,7 @@ DistanceGraph LinkageUntangler::make_and_simplify_linkage(int min_shared_tags) {
     uint64_t untransitive=0;
     for (auto bubble:tag_ldg.find_bubbles(0, 4000)) {
         if (full_tag_ldg.are_connected(tag_ldg.get_bw_links(bubble.first)[0].dest,tag_ldg.get_fw_links(bubble.first)[0].dest)){
-            if (ws.sg.nodes[llabs(bubble.first)].sequence.size()<ws.sg.nodes[llabs(bubble.second)].sequence.size())
+            if (ws.sdg.nodes[llabs(bubble.first)].sequence.size()<ws.sdg.nodes[llabs(bubble.second)].sequence.size())
                 to_remove.emplace_back(llabs(bubble.first));
             else
                 to_remove.emplace_back(llabs(bubble.second));

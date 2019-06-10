@@ -142,7 +142,7 @@ void log_workspace(int argc, char **argv){
     w.print_log();
     std::cout<<std::endl<<"---=== Workspace current status ===---"<<std::endl;
     //graph
-    w.sg.print_status();
+    w.sdg.print_status();
     //kci
     w.kci.print_status();
     //PR datastores and mappings
@@ -207,7 +207,7 @@ void dump_workspace(int argc, char **argv){
     WorkSpace w;
     w.load_from_disk(filename);
     if (!w.getGraph().is_sane()) {
-        sdglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
+        sdglib::OutputLog()<<"ERROR: sdg.is_sane() = false"<<std::endl;
         //return 1;
     }
     std::cout << "Done ... " << std::endl;
@@ -256,7 +256,7 @@ void node_kci_dump_workspace(int argc,char **argv){
         //if (not seqfilename.empty()) {
         //    std::ofstream sof(seqfilename + ".fasta");
         //    for (auto n:w.select_from_all_nodes(min_size,max_size,0,UINT32_MAX, minKCI, maxKCI)){
-        //        sof<<">seq"<<n<<std::endl<<w.sg.nodes[n].sequence<<std::endl;
+        //        sof<<">seq"<<n<<std::endl<<w.sdg.nodes[n].sequence<<std::endl;
         //    }
         //}
 
@@ -392,7 +392,7 @@ void merge_workspace(int argc, char **argv){
     base.load_from_disk(base_filename);
     merge.load_from_disk(merge_filename);
     out.kci = base.kci;
-    out.sg = base.sg;
+    out.sdg = base.sdg;
     std::set<int> lr_filter(lr_datastores.begin(), lr_datastores.end());
     std::set<int> pr_filter(pr_datastores.begin(), pr_datastores.end());
     std::set<int> Lr_filter(Lr_datastores.begin(), Lr_datastores.end());
@@ -425,7 +425,7 @@ void merge_workspace(int argc, char **argv){
         }
     }
 
-    if (base.sg == merge.sg or force) {
+    if (base.sdg == merge.sdg or force) {
         for (int i = 0; i < merge.paired_read_datastores.size(); ++i) {
             if (base_datastores.find(merge.paired_read_datastores[i].filename) == base_datastores.end()) {
                 sdglib::OutputLog()<< "Adding " << merge.paired_read_datastores[i].filename << std::endl;
@@ -454,21 +454,21 @@ void merge_workspace(int argc, char **argv){
             if (base_datastores.find(merge.paired_read_datastores[i].filename) == base_datastores.end()) {
                 sdglib::OutputLog()<< "Adding " << merge.paired_read_datastores[i].filename << " without mappings" << std::endl;
                 out.paired_read_datastores.push_back(merge.paired_read_datastores[i]);
-                out.paired_read_mappers.emplace_back(merge.sg,merge.paired_read_datastores[i], out.uniqueKmerIndex, out.unique63merIndex);
+                out.paired_read_mappers.emplace_back(merge.sdg,merge.paired_read_datastores[i], out.uniqueKmerIndex, out.unique63merIndex);
             }
         }
         for (int i = 0; i < merge.linked_read_datastores.size(); ++i) {
             if (base_datastores.find(merge.linked_read_datastores[i].filename) == base_datastores.end()) {
                 sdglib::OutputLog()<< "Adding " << merge.linked_read_datastores[i].filename << " without mappings" << std::endl;
                 out.linked_read_datastores.push_back(merge.linked_read_datastores[i]);
-                out.linked_read_mappers.emplace_back(merge.sg,merge.linked_read_datastores[i], out.uniqueKmerIndex, out.unique63merIndex);
+                out.linked_read_mappers.emplace_back(merge.sdg,merge.linked_read_datastores[i], out.uniqueKmerIndex, out.unique63merIndex);
             }
         }
         for (int i = 0; i < merge.long_read_datastores.size(); ++i) {
             if (base_datastores.find(merge.long_read_datastores[i].filename) == base_datastores.end()) {
                 sdglib::OutputLog()<< "Adding " << merge.long_read_datastores[i].filename << " without mappings" << std::endl;
                 out.long_read_datastores.push_back(merge.long_read_datastores[i]);
-                out.long_read_mappers.emplace_back(merge.sg,merge.long_read_datastores[i]);
+                out.long_read_mappers.emplace_back(merge.sdg,merge.long_read_datastores[i]);
             }
         }
     }
@@ -509,7 +509,7 @@ void add_datastores(int argc, char **argv) {
 
     base.load_from_disk(base_filename);
     out.kci = base.kci;
-    out.sg = base.sg;
+    out.sdg = base.sdg;
 
     /* Copy BASE datastores and mappers */
     for (int i = 0; i < base.paired_read_datastores.size(); ++i){

@@ -784,7 +784,7 @@ std::vector<SequenceSubGraph> SequenceDistanceGraph::get_all_bubbly_subgraphs(ui
             subgraphs.push_back(subgraph);
             if (subgraphs.size()==maxsubgraphs) break;
             //std::cout<<"Bubbly path found: ";
-            //for (auto &n:subgraph) std::cout<<"  "<<n<<" ("<<sg.nodes[(n>0?n:-n)].sequence.size()<<"bp)";
+            //for (auto &n:subgraph) std::cout<<"  "<<n<<" ("<<sdg.nodes[(n>0?n:-n)].sequence.size()<<"bp)";
             //std::cout<<std::endl;
         }
     }

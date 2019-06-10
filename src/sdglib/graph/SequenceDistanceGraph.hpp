@@ -57,7 +57,7 @@ public:
     using DistanceGraph::find_tips;
     using DistanceGraph::find_self_loops;
 
-    SequenceDistanceGraph():DistanceGraph(*this) { //sg gets initialised through LDG
+    SequenceDistanceGraph():DistanceGraph(*this) { //sdg gets initialised through LDG
         add_node(Node("",sgNodeDeleted)); //an empty deleted node on 0, just to skip the space
     };
 

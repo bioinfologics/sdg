@@ -376,7 +376,7 @@ void LongReadMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> re
 
 //            std::cout<<"After FILTERING:"<<std::endl;
 //            for (auto b:fblocks)
-//                std::cout << "Target: " << b.node << " (" << sg.nodes[llabs(b.node)].sequence.size() << " bp)  "
+//                std::cout << "Target: " << b.node << " (" << sdg.nodes[llabs(b.node)].sequence.size() << " bp)  "
 //                          << b.qStart << ":" << b.qEnd << " -> " << b.nStart << ":" << b.nEnd
 //                          << " (" << b.score << " chained hits, " << b.qEnd - b.qStart + k << "bp, "
 //                          << b.score * 100 / (b.qEnd - b.qStart) << "%)"
