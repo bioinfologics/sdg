@@ -80,10 +80,9 @@ public:
         }
 
         if (verbose) sglib::OutputLog() << "Filtering kmers appearing less than " << filter_limit << " from " << total_kmers << " initial kmers" << std::endl;
-        auto [num_kmers, num_elements] = filter_kmers(filter_limit);
-
-        if (verbose) sglib::OutputLog() << "Kmers for mapping " << num_kmers << std::endl;
-        if (verbose) sglib::OutputLog() << "Elements in structure " << num_elements << std::endl;
+        auto pair = filter_kmers(filter_limit);
+        if (verbose) sglib::OutputLog() << "Kmers for mapping " << pair.first << std::endl;
+        if (verbose) sglib::OutputLog() << "Elements in structure " << pair.second << std::endl;
         if (verbose) sglib::OutputLog() << "DONE" << std::endl;
     }
 
@@ -136,10 +135,9 @@ public:
         }
 
         if (verbose) sglib::OutputLog() << "Filtering kmers appearing less than " << filter_limit << " from " << total_kmers << " initial kmers" << std::endl;
-        auto [num_kmers, num_elements] = filter_kmers(filter_limit);
-
-        if (verbose) sglib::OutputLog() << "Kmers for mapping " << num_kmers << std::endl;
-        if (verbose) sglib::OutputLog() << "Elements in structure " << num_elements << std::endl;
+        auto pair = filter_kmers(filter_limit);
+        if (verbose) sglib::OutputLog() << "Kmers for mapping " << pair.first << std::endl;
+        if (verbose) sglib::OutputLog() << "Elements in structure " << pair.second << std::endl;
         if (verbose) sglib::OutputLog() << "DONE" << std::endl;
     }
 
