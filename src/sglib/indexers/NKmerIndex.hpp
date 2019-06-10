@@ -22,7 +22,8 @@ public:
 
     explicit NKmerIndex(uint8_t k) : k(k), filter(70*1024*1024) {}
 
-    std::vector<kmerPos>::iterator filter_kmers(std::vector<kmerPos> &kmers, int max_kmer_repeat) {
+    uint64_t filter_kmers(std::vector<kmerPos> &kmers, int max_kmer_repeat) {
+        uint64_t total_kmers(0);
         auto witr = kmers.begin();
         auto ritr = witr;
         for (; ritr != kmers.end();) {
@@ -31,16 +32,16 @@ public:
                 ++ritr;
             }
             if (ritr - bitr < max_kmer_repeat) {
+                total_kmers+=1;
                 while (bitr != ritr) {
                     *witr = *bitr;
                     ++witr;
                     ++bitr;
                 }
             }
-
         }
         kmers.resize(witr-kmers.begin());
-        return witr;
+        return total_kmers;
     }
 
     void generate_index(const SequenceGraph &sg, int filter_limit = 200, bool verbose=true) {
@@ -91,13 +92,14 @@ public:
         sglib::sort(assembly_kmers.begin(),assembly_kmers.end(), kmerPos::byKmerContigOffset());
 
         if (verbose) sglib::OutputLog() << "Filtering kmers appearing less than " << filter_limit << " from " << assembly_kmers.size() << " initial kmers" << std::endl;
-        filter_kmers(assembly_kmers, filter_limit);
+        auto total_kmers(filter_kmers(assembly_kmers, filter_limit));
 #pragma omp parallel for
         for (uint64_t kidx = 0; kidx < assembly_kmers.size(); ++kidx) {
             filter.add(assembly_kmers[kidx].kmer);
         }
 
-        if (verbose) sglib::OutputLog() << "Kmers for mapping " << assembly_kmers.size() << std::endl;
+        if (verbose) sglib::OutputLog() << "Elements for mapping " << assembly_kmers.size() << std::endl;
+        if (verbose) sglib::OutputLog() << "Total distinct kmers " << total_kmers << std::endl;
         if (verbose) sglib::OutputLog() << "Number of elements in bloom " << filter.number_bits_set() << std::endl;
         if (verbose) sglib::OutputLog() << "Filter FPR " << filter.false_positive_rate() << std::endl;
         if (verbose) sglib::OutputLog() << "DONE" << std::endl;
