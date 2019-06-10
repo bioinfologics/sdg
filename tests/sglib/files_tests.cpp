@@ -3,8 +3,8 @@
 //
 
 #include <catch.hpp>
-#include <sglib/readers/FileReader.hpp>
-#include <sglib/workspace/WorkSpace.hpp>
+#include <sdglib/readers/FileReader.hpp>
+#include <sdglib/workspace/WorkSpace.hpp>
 #include <random>
 
 TEST_CASE("Workspace create, read, write") {
@@ -214,7 +214,7 @@ TEST_CASE("Fasta file reader") {
 }
 
 TEST_CASE("Load GFA") {
-    sglib::OutputLogLevel = sglib::DEBUG;
+    sdglib::OutputLogLevel = sdglib::DEBUG;
     SequenceGraph sg;
     sg.load_from_gfa("../tests/datasets/tgraph.gfa");
     REQUIRE(sg.nodes.size() > 1);

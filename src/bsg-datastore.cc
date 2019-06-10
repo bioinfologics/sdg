@@ -1,8 +1,8 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/datastores/LinkedReadsDatastore.hpp>
-#include <sglib/datastores/PairedReadsDatastore.hpp>
-#include <sglib/datastores/LongReadsDatastore.hpp>
+#include <sdglib/datastores/LinkedReadsDatastore.hpp>
+#include <sdglib/datastores/PairedReadsDatastore.hpp>
+#include <sdglib/datastores/LongReadsDatastore.hpp>
 #include "cxxopts.hpp"
 
 

@@ -4,11 +4,11 @@
 
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/const_array.hpp"
-#include <sglib/graph/SequenceGraph.hpp>
-#include <sglib/workspace/WorkSpace.hpp>
-#include <sglib/processors/LinkageUntangler.hpp>
-#include <sglib/mappers/PairedReadMapper.hpp>
-#include <sglib/graph/LinkageDiGraph.hpp>
+#include <sdglib/graph/SequenceDistanceGraph.hpp>
+#include <sdglib/workspace/WorkSpace.hpp>
+#include <sdglib/processors/LinkageUntangler.hpp>
+#include <sdglib/mappers/PairedReadMapper.hpp>
+#include <sdglib/graph/DistanceGraph.hpp>
 
 namespace jlcxx {
     template<> struct IsBits<sgNodeStatus_t> : std::true_type {};

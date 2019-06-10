@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/workspace/WorkSpace.hpp>
-#include "sglib/logger/OutputLog.hpp"
+#include <sdglib/workspace/WorkSpace.hpp>
+#include "sdglib/logger/OutputLog.hpp"
 #include "cxxopts.hpp"
 
 int main(int argc, char * argv[]) {
@@ -14,7 +14,7 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<std::endl;
 
     std::string workspace_file,output_prefix;
-    sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
+    sdglib::OutputLogLevel=sdglib::LogLevels::DEBUG;
     try
     {
         cxxopts::Options options("bsg-mapper", "reads-to-graph mapper for bsg worskpaces");
@@ -50,22 +50,22 @@ int main(int argc, char * argv[]) {
 
     std::cout<<std::endl;
     WorkSpace ws;
-    sglib::OutputLog()<<"Loading Workspace..."<<std::endl;
+    sdglib::OutputLog()<<"Loading Workspace..."<<std::endl;
     ws.load_from_disk(workspace_file);
     ws.add_log_entry("bsg-mapper run started");
-    sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
-    sglib::OutputLog()<<"Mapping reads..."<<std::endl;
+    sdglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
+    sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
     auto pri=0;
     if (!ws.paired_read_datastores.empty() or !ws.linked_read_datastores.empty()) {
         if (!use63mers) ws.create_index();
         else ws.create_63mer_index();
     }
     for (auto &m:ws.paired_read_mappers) {
-        sglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
+        sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         if (!use63mers) m.remap_all_reads();
         else m.remap_all_reads63();
         m.print_status();
-        sglib::OutputLog()<<"Computing size distribution..."<<std::endl;
+        sdglib::OutputLog()<<"Computing size distribution..."<<std::endl;
         auto sdist=m.size_distribution();
         std::ofstream df("prdist_"+std::to_string(pri++)+".csv");
         for (auto i=0;i<sdist.size();i+=10){
@@ -74,27 +74,27 @@ int main(int argc, char * argv[]) {
             if (t>0) df<<i<<", "<<t<<std::endl;
         }
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
-        sglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
+        sdglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
     }
     for (auto &m:ws.linked_read_mappers) {
-        sglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
+        sdglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
         if (!use63mers) m.remap_all_reads();
         else m.remap_all_reads63();
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
-        sglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
+        sdglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }
     for (auto &m: ws.getLongReadMappers()) {
-        sglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
+        sdglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
         m.update_graph_index();
         m.map_reads();
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
-        sglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
+        sdglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
     }
     ws.getPathsDatastore().clear();
     ws.add_log_entry("path_datastores cleared");
     ws.add_log_entry("bsg-mapper run finished");
     ws.dump_to_disk(output_prefix+".bsgws");
-    sglib::OutputLog()<<"Mapping reads DONE."<<std::endl;
+    sdglib::OutputLog()<<"Mapping reads DONE."<<std::endl;
     return 0;
 }
 

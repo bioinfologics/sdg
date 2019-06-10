@@ -3,15 +3,15 @@
 //
 
 #include <catch.hpp>
-#include <sglib/SMR.hpp>
-#include <sglib/types/KmerTypes.hpp>
-#include <sglib/readers/FileReader.hpp>
-#include <sglib/readers/SequenceGraphReader.hpp>
-#include <sglib/factories/KMerIDXFactory.hpp>
-#include <sglib/graph/SequenceGraph.hpp>
+#include <sdglib/SMR.hpp>
+#include <sdglib/types/KmerTypes.hpp>
+#include <sdglib/readers/FileReader.hpp>
+#include <sdglib/readers/SequenceGraphReader.hpp>
+#include <sdglib/factories/KMerIDXFactory.hpp>
+#include <sdglib/graph/SequenceDistanceGraph.hpp>
 
 TEST_CASE("Test SMR from fasta"){
-    sglib::OutputLogLevel = sglib::DEBUG;
+    sdglib::OutputLogLevel = sdglib::DEBUG;
     SMR<KmerIDX,
         kmerIDXFactory<FastaRecord>,
         FastaReader<FastaRecord>,
@@ -23,7 +23,7 @@ TEST_CASE("Test SMR from fasta"){
 }
 
 TEST_CASE("Test SMR from fastq"){
-    sglib::OutputLogLevel = sglib::DEBUG;
+    sdglib::OutputLogLevel = sdglib::DEBUG;
     SMR<KmerIDX,
             kmerIDXFactory<FastqRecord>,
             FastqReader<FastqRecord>,
@@ -35,7 +35,7 @@ TEST_CASE("Test SMR from fastq"){
 }
 
 TEST_CASE("Test SMR from memory"){
-    sglib::OutputLogLevel = sglib::DEBUG;
+    sdglib::OutputLogLevel = sdglib::DEBUG;
     SequenceGraph sg;
     sg.load_from_gfa("../tests/datasets/tgraph.gfa");
     SMR<KmerIDX,
