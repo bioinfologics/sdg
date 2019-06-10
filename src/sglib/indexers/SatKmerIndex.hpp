@@ -66,7 +66,7 @@ public:
         StringKMerFactory skf(k);
         std::vector<std::pair<bool,uint64_t > > contig_kmers;
         contig_kmers.reserve(10000);
-       for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
+        for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
             if (sg.nodes[n].sequence.size() >= k) {
                 contig_kmers.clear();
                 skf.create_kmers(sg.nodes[n].sequence, contig_kmers);
