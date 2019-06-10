@@ -252,6 +252,10 @@ add_executable(bsg-mapper
         src/bsg-mapper.cc
         )
 
+add_executable(bsg-lrmapper
+               src/bsg-lrmapper.cc
+               )
+
 add_executable(bsg-untangler
         src/bsg-untangler.cc
         )
@@ -277,6 +281,7 @@ target_link_libraries(bsg-workspace bsg_static)
 target_link_libraries(bsg-datastore bsg_static)
 target_link_libraries(bsg-kmerspectra bsg_static)
 target_link_libraries(bsg-mapper bsg_static ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bsg-lrmapper bsg_static ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-untangler bsg_static ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(bsg-lhapassembler bsg_static ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(gfa-extract bsg_static)
