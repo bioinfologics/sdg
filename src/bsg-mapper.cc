@@ -83,14 +83,14 @@ int main(int argc, char * argv[]) {
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }
-    for (auto &m: ws.getLongReadMappers()) {
+    for (auto &m: ws.long_read_mappers) {
         sdglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
         m.update_graph_index();
         m.map_reads();
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
     }
-    ws.getPathsDatastore().clear();
+    ws.path_datastores.clear();
     ws.add_log_entry("path_datastores cleared");
     ws.add_log_entry("bsg-mapper run finished");
     ws.dump_to_disk(output_prefix+".bsgws");

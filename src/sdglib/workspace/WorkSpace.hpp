@@ -73,13 +73,6 @@ public:
     std::string verbose_log="";
 
     static const bsgVersion_t min_compat;
-    std::vector<LinkedReadMapper>& getLinkedReadMappers() {return linked_read_mappers;}
-    std::vector<LinkedReadsDatastore>& getLinkedReadDatastores() {return linked_read_datastores;}
-    std::vector<PairedReadMapper>& getPairedReadMappers() {return paired_read_mappers;}
-    std::vector<PairedReadsDatastore>& getPairedReadDatastores() {return paired_read_datastores;}
-    std::vector<LongReadMapper>& getLongReadMappers() {return long_read_mappers;}
-    std::vector<LongReadsDatastore>& getLongReadDatastores() {return long_read_datastores;}
-    std::vector<PathsDatastore>& getPathsDatastore() {return path_datastores;}
     std::vector<std::string> read_counts_header;
 };
 

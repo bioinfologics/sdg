@@ -82,28 +82,28 @@ void make_workspace(int argc, char** argv){
 
     for (auto prds:pr_datastores) {
         //create and load the datastore, and the mapper!
-        w.getPairedReadDatastores().emplace_back(prds);
-        w.getPairedReadMappers().emplace_back(w.getGraph(), w.getPairedReadDatastores().back(),
+        w.paired_read_datastores.emplace_back(prds);
+        w.paired_read_mappers.emplace_back(w.getGraph(), w.paired_read_datastores.back(),
                                               w.uniqueKmerIndex, w.unique63merIndex);
         w.add_log_entry("PairedReadDatastore imported from " + prds + " (" +
-                        std::to_string(w.getPairedReadDatastores().back().size()) + " reads)");
+                        std::to_string(w.paired_read_datastores.back().size()) + " reads)");
     }
 
     for (auto lrds:lr_datastores) {
         //create and load the datastore, and the mapper!
-        w.getLinkedReadDatastores().emplace_back(lrds);
-        w.getLinkedReadMappers().emplace_back(w.getGraph(), w.getLinkedReadDatastores().back(),
+        w.linked_read_datastores.emplace_back(lrds);
+        w.linked_read_mappers.emplace_back(w.getGraph(), w.linked_read_datastores.back(),
                                               w.uniqueKmerIndex, w.unique63merIndex);
         w.add_log_entry("LinkedReadDatastore imported from " + lrds + " (" +
-                        std::to_string(w.getLinkedReadDatastores().back().size()) + " reads)");
+                        std::to_string(w.linked_read_datastores.back().size()) + " reads)");
     }
 
     for (auto Lrds:Lr_datastores) {
         //create and load the datastore, and the mapper!
-        w.getLongReadDatastores().emplace_back(Lrds);
-        w.getLongReadMappers().emplace_back(w.getGraph(), w.getLongReadDatastores().back());
+        w.long_read_datastores.emplace_back(Lrds);
+        w.long_read_mappers.emplace_back(w.getGraph(), w.long_read_datastores.back());
         w.add_log_entry("LongReadDatastore imported from " + Lrds + " (" +
-                        std::to_string(w.getLongReadDatastores().back().size()) + " reads)");
+                        std::to_string(w.long_read_datastores.back().size()) + " reads)");
     }
 
     w.dump_to_disk(output + ".bsgws");
