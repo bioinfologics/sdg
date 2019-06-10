@@ -24,10 +24,11 @@ struct ContigOffset {
 
 class SatKmerIndex {
     std::vector<std::vector<ContigOffset>> assembly_kmers;
-    uint8_t k;
+    uint8_t k=15;
 public:
     using const_iterator = std::vector<ContigOffset>::const_iterator;
 
+    SatKmerIndex(){}
     explicit SatKmerIndex(uint8_t k) : k(k) {
         if (k > 15) {
             throw std::runtime_error(
@@ -87,16 +88,11 @@ public:
     }
 
     void generate_index(const SequenceGraph &sg, int filter_limit = 200, bool verbose=true) {
-        uint64_t total_kmers=0;
-        uint64_t total_length=0;
-#pragma omp parallel for reduction(+:total_length)
-        for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
-            total_length+=sg.nodes[n].sequence.size();
-        }
-        assembly_kmers.reserve(total_length);
+        uint64_t total_kmers(0);
+        assembly_kmers.resize(std::pow(4,k));
         if (verbose) {
             sglib::OutputLog() << "Updating mapping index for k=" << std::to_string(k) << std::endl;
-            sglib::OutputLog() << "Number of kmers to store " << std::to_string(std::pow(4,k)) << std::endl;
+            sglib::OutputLog() << "Number of kmers to store " << std::to_string(uint64_t (std::pow(4,k))) << std::endl;
         }
 #pragma omp parallel reduction(+:total_kmers)
         {

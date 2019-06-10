@@ -16,10 +16,11 @@
 class NKmerIndex {
     BloomFilter filter;
     std::vector<kmerPos> assembly_kmers;
-    uint8_t k;
+    uint8_t k=15;
 public:
     using const_iterator = std::vector<kmerPos>::const_iterator;
 
+    NKmerIndex(){}
     explicit NKmerIndex(uint8_t k) : k(k), filter(70*1024*1024) {}
 
     uint64_t filter_kmers(std::vector<kmerPos> &kmers, int max_kmer_repeat) {

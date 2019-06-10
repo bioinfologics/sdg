@@ -12,6 +12,7 @@
 #include <sglib/graph/SequenceGraph.hpp>
 #include <sglib/types/MappingTypes.hpp>
 #include <sglib/indexers/NKmerIndex.hpp>
+#include <sglib/indexers/SatKmerIndex.hpp>
 #include <sglib/utilities/hashing_helpers.hpp>
 #include "LinkedReadMapper.hpp"
 #include <memory>
@@ -118,8 +119,6 @@ public:
     BufferedSequenceGetter * lrbsgp;
     std::vector<sgNodeID_t> nodeset;
 
-
-
 };
 
 enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage};
@@ -133,7 +132,8 @@ enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage
  */
 class LongReadMapper {
     NKmerIndex assembly_kmers;
-
+    SatKmerIndex sat_assembly_kmers;
+    bool sat_kmer_index = false;
 public:
 
     const SequenceGraph & sg;
@@ -145,7 +145,7 @@ public:
     int max_jump=500;
     int max_delta_change=60;
 
-    LongReadMapper(const SequenceGraph &sg, const LongReadsDatastore &ds, uint8_t k=15);
+    LongReadMapper(const SequenceGraph &sg, const LongReadsDatastore &ds, uint8_t k=15, bool sat_kmer_index=false);
     ~LongReadMapper();
 
     LongReadMapper operator=(const LongReadMapper &other);
@@ -188,6 +188,22 @@ public:
      */
     std::vector<LongReadMapping> get_raw_mappings_from_read(uint64_t read_id) const;
 
+
+    /**
+     * Populates the matches container with the matches between all kmers from one read and the *saturated* index of the graph.
+     * The index is a filtered set of kmers from the graph constructed using update_graph_index() or similar.
+     * A match is a perfect Kmer match between the read and the graph index
+     *
+     * matches are stored as kmer_index_in_read->kmer_match->match_description:
+     *  matches[kmer_index_in_read][kmer_match].first = node_id for a match of that kmer in the graph, sign indicates orientation
+     *  matches[kmer_index_in_read][kmer_match].second = offset for a match of that kmer for corresponding node_id (.first), the offsets are always calculated from the begining of the read
+     *
+     *  TODO: Change match type from in32_t to sgNodeId in this function !!!
+     *
+     * @param matches structure to store kmer mappings
+     * @param read_kmers contains read kmers with orientations
+     */
+    void get_sat_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches, std::vector<std::pair<bool, uint64_t>> &read_kmers);
     /**
      * Populates the matches container with the matches between all kmers from one read and the index of the graph.
      * The index is a filtered set of kmers from the graph constructed using update_graph_index() or similar.
@@ -372,8 +388,6 @@ public:
      *
      */
     std::vector<std::vector<uint64_t>> reads_in_node;
-
-
 
 
     static const bsgVersion_t min_compat;

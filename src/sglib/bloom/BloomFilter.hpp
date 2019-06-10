@@ -15,6 +15,7 @@ class BloomFilter {
     short dataSz = sizeof(data[0])*8;
     std::vector<unsigned char> data;
 public:
+    BloomFilter(){}
     BloomFilter(uint64_t estimated_size, uint32_t num_hashes=1) :
     estimated_size(estimated_size),
     numHashes(num_hashes),
