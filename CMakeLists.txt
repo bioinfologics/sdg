@@ -133,36 +133,6 @@ if (BZIP2_FOUND)
     set(DEPENDENCY_LIBS ${DEPENDENCY_LIBS} ${BZIP2_LIBRARIES})
 endif()
 
-# check if Doxygen is installed
-IF(BUILD_DOC)
-    find_package(Doxygen)
-    if (DOXYGEN_FOUND)
-        # set input and output files
-        set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in)
-        set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-
-        # request to configure the file
-        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-        message("Doxygen build started")
-
-        # note the option ALL which allows to build the docs together with the application
-        add_custom_target(doc_doxygen ALL
-                COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-                COMMENT "Generating API documentation with Doxygen"
-                VERBATIM)
-
-        add_custom_target (
-                doxy2swig
-                COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py --quiet docs/xml/index.xml ${CMAKE_BINARY_DIR}/python_docs.i
-                COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
-                VERBATIM
-        )
-
-        add_dependencies(doxy2swig doc_doxygen)
-    else (DOXYGEN_FOUND)
-        message("Doxygen need to be installed to generate the doxygen documentation")
-    endif (DOXYGEN_FOUND)
-ENDIF()
 
 ## Include directories
 include_directories("src/")
@@ -304,6 +274,81 @@ target_link_libraries(build_all_backbones bsg_static)
 #    add_test(basicTests runBasicTests)
 #ENDIF()
 
+# check if Doxygen is installed
+IF(BUILD_DOC)
+    find_package(Doxygen REQUIRED)
+    if (DOXYGEN_FOUND)
+        get_target_property(BSG_PUBLIC_HEADER_DIR bsg INTERFACE_INCLUDE_DIRECTORIES)
+        file(GLOB_RECURSE BSG_PUBLIC_HEADERS ${BSG_PUBLIC_HEADER_DIR}/*.h)
+        # set input and output files
+        set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR})
+        set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/docs)
+        set(DOXYGEN_IN ${PROJECT_SOURCE_DIR}/doc/Doxyfile.in)
+        set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+        set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/xml/index.xml)
+
+        # request to configure the file
+        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+        message("Doxygen build started")
+        # note the option ALL which allows to build the docs together with the application
+        add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
+                           DEPENDS ${BSG_PUBLIC_HEADERS} README.md src/sglib/README.md src/sglib/workspace/README.md
+                           COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+                           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                           MAIN_DEPENDENCY Doxyfile
+                           COMMENT "Generating docs")
+        add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
+
+        add_custom_command(
+                COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py --quiet docs/xml/index.xml ${CMAKE_BINARY_DIR}/python_docs.i
+                OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
+                COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
+                MAIN_DEPENDENCY ${DOXYGEN_INDEX_FILE}
+        )
+        add_custom_target(doxy2swig ALL DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
+
+        find_package(Sphinx REQUIRED)
+
+        set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx)
+        set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/doc/sphinx)
+        set(SPHINX_INDEX_FILE ${SPHINX_BUILD}/index.html)
+
+        file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR})
+        file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}/src)
+        file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}/src/sglib)
+        file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}/src/sglib/mappers)
+        file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}/src/sglib/indexers)
+        file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}/src/sglib/workspace)
+
+        configure_file(README.md ${DOXYGEN_OUTPUT_DIR} COPYONLY)
+        #        configure_file(src/README.md ${DOXYGEN_OUTPUT_DIR}/src COPYONLY)
+        configure_file(src/sglib/README.md ${DOXYGEN_OUTPUT_DIR}/src/sglib COPYONLY)
+        #        configure_file(src/sglib/mappers/README.md ${DOXYGEN_OUTPUT_DIR}/src/sglib/mappers COPYONLY)
+        #        configure_file(src/sglib/indexers/README.md ${DOXYGEN_OUTPUT_DIR}/src/sglib/indexers COPYONLY)
+        configure_file(src/sglib/workspace/README.md ${DOXYGEN_OUTPUT_DIR}/src/sglib/workspace COPYONLY)
+
+        add_custom_command(OUTPUT ${SPHINX_INDEX_FILE}
+                           COMMAND
+                           ${SPHINX_EXECUTABLE} -b html
+                           # Tell Breathe where to find the Doxygen output
+                           -Dbreathe_projects.BSG=${DOXYGEN_OUTPUT_DIR}/xml
+                           ${SPHINX_SOURCE} ${SPHINX_BUILD}
+                           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                           DEPENDS
+                           # Other docs files you want to track should go here (or in some variable)
+                           ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/index.rst
+                           ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/bsg/*
+                           ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/bsg/sglib/*
+                           ${DOXYGEN_INDEX_FILE}
+                           MAIN_DEPENDENCY ${SPHINX_SOURCE}/conf.py
+                           COMMENT "Generating documentation with Sphinx, WD: ${CMAKE_CURRENT_BINARY_DIR}")
+        add_custom_target(Sphinx ALL DEPENDS ${SPHINX_INDEX_FILE})
+
+    else (DOXYGEN_FOUND)
+        message("Doxygen need to be installed to generate the doxygen documentation")
+    endif (DOXYGEN_FOUND)
+ENDIF()
+
 IF(BUILD_PYTHON_INTERFACE)
     MESSAGE("Building python interface")
     FIND_PACKAGE(SWIG REQUIRED)
@@ -395,3 +440,5 @@ IF (BUILD_JULIA_INTERFACE)
         target_link_libraries(bsgjl JlCxx::cxxwrap_julia)
     install(TARGETS bsgjl LIBRARY DESTINATION bsgjl ARCHIVE DESTINATION bsgjl RUNTIME DESTINATION bsgjl)
 ENDIF()
+
+
