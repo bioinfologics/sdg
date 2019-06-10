@@ -307,43 +307,29 @@ IF(BUILD_DOC)
         )
         add_custom_target(doxy2swig ALL DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
 
-        find_package(Sphinx REQUIRED)
+        find_package(Sphinx)
+        if(SPHINX_FOUND)
+            set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx)
+            set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/doc/sphinx)
+            set(SPHINX_INDEX_FILE ${SPHINX_BUILD}/index.html)
 
-        set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx)
-        set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/doc/sphinx)
-        set(SPHINX_INDEX_FILE ${SPHINX_BUILD}/index.html)
-
-        file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR})
-        file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}/src)
-        file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}/src/sglib)
-        file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}/src/sglib/mappers)
-        file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}/src/sglib/indexers)
-        file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}/src/sglib/workspace)
-
-        configure_file(README.md ${DOXYGEN_OUTPUT_DIR} COPYONLY)
-        #        configure_file(src/README.md ${DOXYGEN_OUTPUT_DIR}/src COPYONLY)
-        configure_file(src/sglib/README.md ${DOXYGEN_OUTPUT_DIR}/src/sglib COPYONLY)
-        #        configure_file(src/sglib/mappers/README.md ${DOXYGEN_OUTPUT_DIR}/src/sglib/mappers COPYONLY)
-        #        configure_file(src/sglib/indexers/README.md ${DOXYGEN_OUTPUT_DIR}/src/sglib/indexers COPYONLY)
-        configure_file(src/sglib/workspace/README.md ${DOXYGEN_OUTPUT_DIR}/src/sglib/workspace COPYONLY)
-
-        add_custom_command(OUTPUT ${SPHINX_INDEX_FILE}
-                           COMMAND
-                           ${SPHINX_EXECUTABLE} -b html
-                           # Tell Breathe where to find the Doxygen output
-                           -Dbreathe_projects.BSG=${DOXYGEN_OUTPUT_DIR}/xml
-                           ${SPHINX_SOURCE} ${SPHINX_BUILD}
-                           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                           DEPENDS
-                           # Other docs files you want to track should go here (or in some variable)
-                           ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/index.rst
-                           ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/bsg/*
-                           ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/bsg/sglib/*
-                           ${DOXYGEN_INDEX_FILE}
-                           MAIN_DEPENDENCY ${SPHINX_SOURCE}/conf.py
-                           COMMENT "Generating documentation with Sphinx, WD: ${CMAKE_CURRENT_BINARY_DIR}")
-        add_custom_target(Sphinx ALL DEPENDS ${SPHINX_INDEX_FILE})
-
+            add_custom_command(OUTPUT ${SPHINX_INDEX_FILE}
+                               COMMAND
+                               ${SPHINX_EXECUTABLE} -b html
+                               # Tell Breathe where to find the Doxygen output
+                               -Dbreathe_projects.BSG=${DOXYGEN_OUTPUT_DIR}/xml
+                               ${SPHINX_SOURCE} ${SPHINX_BUILD}
+                               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                               DEPENDS
+                               # Other docs files you want to track should go here (or in some variable)
+                               ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/index.rst
+                               ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/bsg/*
+                               ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/bsg/sglib/*
+                               ${DOXYGEN_INDEX_FILE}
+                               MAIN_DEPENDENCY ${SPHINX_SOURCE}/conf.py
+                               COMMENT "Generating documentation with Sphinx, WD: ${CMAKE_CURRENT_BINARY_DIR}")
+            add_custom_target(Sphinx ALL DEPENDS ${SPHINX_INDEX_FILE})
+        endif(Sphinx_FOUND)
     else (DOXYGEN_FOUND)
         message("Doxygen need to be installed to generate the doxygen documentation")
     endif (DOXYGEN_FOUND)
