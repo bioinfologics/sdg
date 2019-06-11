@@ -67,7 +67,7 @@ public:
                 skf.create_kmers(sg.nodes[n].sequence, contig_kmers);
                 int k_i(0);
                 for (const auto &kmer:contig_kmers) {
-                    assembly_kmers[kmer.second].emplace_back(n, kmer.first ? k_i + 1 : -(k_i + 1));
+                    if (assembly_kmers.size()<filter_limit+1) assembly_kmers[kmer.second].emplace_back(n, kmer.first ? k_i + 1 : -(k_i + 1));
                     k_i++;
                 }
                 total_kmers+=contig_kmers.size();
