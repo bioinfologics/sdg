@@ -298,7 +298,7 @@ IF(BUILD_DOC)
                            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                            MAIN_DEPENDENCY Doxyfile
                            COMMENT "Generating docs")
-        add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
+        add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE} ${DOXYGEN_OUT})
 
         add_custom_command(
                 COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py --quiet docs/xml/index.xml ${CMAKE_BINARY_DIR}/python_docs.i
