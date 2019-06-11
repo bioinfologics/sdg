@@ -7,18 +7,13 @@ Welcome to BSG's documentation!
 ===============================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
    bsg/README.md
    bsg/sglib/README.md
    bsg/sglib/workspace/README.md
-
-Docs
-====
-
-.. doxygenclass:: SequenceGraph
-   :members:
+   bsg/_sglib_toc.rst
 
 Indices and tables
 ==================
