@@ -50,14 +50,9 @@ public:
         return {num_kmers, num_elements};
     }
 
-    void generate_index_sequential(const SequenceGraph &sg, int filter_limit = 200, bool verbose=true) {
-        uint64_t total_kmers=0;
-        uint64_t total_length=0;
-#pragma omp parallel for reduction(+:total_length)
-        for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
-            total_length+=sg.nodes[n].sequence.size();
-        }
-        assembly_kmers.reserve(total_length);
+    void generate_index(const SequenceGraph &sg, int filter_limit = 200, bool verbose=true) {
+        uint64_t total_kmers(0);
+        assembly_kmers.resize(std::pow(4,k));
         if (verbose) {
             sglib::OutputLog() << "Updating mapping index for k=" << std::to_string(k) << std::endl;
             sglib::OutputLog() << "Number of kmers to store " << std::to_string(std::pow(4,k)) << std::endl;
@@ -86,7 +81,7 @@ public:
         if (verbose) sglib::OutputLog() << "DONE" << std::endl;
     }
 
-    void generate_index(const SequenceGraph &sg, int filter_limit = 200, bool verbose=true) {
+    void generate_index_parallel(const SequenceGraph &sg, int filter_limit = 200, bool verbose=true) {
         uint64_t total_kmers(0);
         assembly_kmers.resize(std::pow(4,k));
         if (verbose) {
