@@ -331,7 +331,7 @@ IF(BUILD_DOC)
                                    ${DOXYGEN_INDEX_FILE}
                                    MAIN_DEPENDENCY ${SPHINX_SOURCE}/conf.py
                                    COMMENT "Generating documentation with Sphinx, WD: ${CMAKE_CURRENT_BINARY_DIR}")
-                add_custom_target(Sphinx ALL DEPENDS ${SPHINX_INDEX_FILE})
+                add_custom_target(Sphinx ALL DEPENDS ${SPHINX_INDEX_FILE} ${DOXYGEN_INDEX_FILE})
             endif(PY_BREATHE)
         endif(SPHINX_FOUND)
     else (DOXYGEN_FOUND)
