@@ -12,7 +12,6 @@
 #include <sdglib/mappers/PairedReadMapper.hpp>
 #include <sdglib/datastores/LongReadsDatastore.hpp>
 #include <sdglib/mappers/LongReadMapper.hpp>
-#include <sdglib/datastores/PathsDatastore.hpp>
 #include "sdglib/graph/SequenceDistanceGraph.hpp"
 #include "sdglib/processors/KmerCompressionIndex.hpp"
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
@@ -66,7 +65,6 @@ public:
     std::vector<LinkedReadMapper> linked_read_mappers;
     std::vector<LongReadsDatastore> long_read_datastores;
     std::vector<LongReadMapper> long_read_mappers;
-    std::vector<PathsDatastore> path_datastores;
 
 
     KmerCompressionIndex kci;

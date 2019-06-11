@@ -168,6 +168,7 @@ ENDIF()
 include_directories("src/")
 include_directories("deps/cxxopts/")
 include_directories("deps/kseqcpp/")
+include_directories("deps/xxhash/")
 ## Set sources variables
 
 ## Libraries
@@ -180,11 +181,8 @@ add_library(bsg SHARED
         src/sdglib/logger/OutputLog.cc
         src/sdglib/datastores/PairedReadsDatastore.cc
         src/sdglib/datastores/LinkedReadsDatastore.cc
-        src/sdglib/datastores/PathsDatastore.cc
         src/sdglib/datastores/LongReadsDatastore.cpp
         src/sdglib/mappers/LongReadMapper.cpp
-        src/sdglib/mappers/threader/NodeMapper.cpp
-        src/sdglib/mappers/threader/MappingThreader.cpp
         src/sdglib/mappers/LinkedReadMapper.cc
         src/sdglib/mappers/PairedReadMapper.cc
         src/sdglib/processors/Untangler.cc
@@ -196,7 +194,7 @@ add_library(bsg SHARED
         src/sdglib/processors/GraphMaker.cc
         src/sdglib/processors/LocalHaplotypeAssembler.cc
         src/sdglib/processors/HaplotypeConsensus.cc
-        src/sdglib/hash/xxhash.c
+        deps/xxhash/xxhash.c
         )
 
 add_library(bsg_static STATIC
@@ -208,11 +206,8 @@ add_library(bsg_static STATIC
         src/sdglib/logger/OutputLog.cc
         src/sdglib/datastores/PairedReadsDatastore.cc
         src/sdglib/datastores/LinkedReadsDatastore.cc
-        src/sdglib/datastores/PathsDatastore.cc
         src/sdglib/datastores/LongReadsDatastore.cpp
         src/sdglib/mappers/LongReadMapper.cpp
-        src/sdglib/mappers/threader/NodeMapper.cpp
-        src/sdglib/mappers/threader/MappingThreader.cpp
         src/sdglib/mappers/LinkedReadMapper.cc
         src/sdglib/mappers/PairedReadMapper.cc
         src/sdglib/processors/Untangler.cc
@@ -224,7 +219,7 @@ add_library(bsg_static STATIC
         src/sdglib/processors/GraphMaker.cc
         src/sdglib/processors/LocalHaplotypeAssembler.cc
         src/sdglib/processors/HaplotypeConsensus.cc
-        src/sdglib/hash/xxhash.c
+        deps/xxhash/xxhash.c
         )
 
 target_link_libraries(bsg ${DEPENDENCY_LIBS})

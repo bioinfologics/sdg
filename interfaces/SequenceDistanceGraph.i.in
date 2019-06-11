@@ -29,10 +29,6 @@
 #include "sdglib/datastores/LongReadsDatastore.hpp"
 #include "sdglib/mappers/PairedReadMapper.hpp"
 #include "sdglib/datastores/PairedReadsDatastore.hpp"
-#include "sdglib/datastores/PathsDatastore.hpp"
-
-#include "sdglib/mappers/threader/NodeMapper.hpp"
-#include "sdglib/mappers/threader/MappingThreader.hpp"
 
 #include "sdglib/processors/Untangler.hpp"
 #include "sdglib/graph/DistanceGraph.hpp"
@@ -115,10 +111,6 @@ namespace std {
    %ignore vector<LongReadsDatastore>::resize;
    %template(vectorLongReadsDatastore) vector<LongReadsDatastore>;
 
-   %ignore vector<PathsDatastore>::vector(size_type);
-   %ignore vector<PathsDatastore>::resize;
-   %template(vectorPathsDatastore) vector<PathsDatastore>;
-
    %template(SGNodePair) pair<sgNodeID_t, sgNodeID_t>;
    %template(vectorSGNodePair) vector<pair<sgNodeID_t, sgNodeID_t>>;
    %template(vectorvectorLink) vector<std::vector<Link>>;
@@ -195,12 +187,9 @@ namespace std {
 
 %include "sdglib/datastores/LongReadsDatastore.hpp"
 %include "sdglib/datastores/PairedReadsDatastore.hpp"
-%include "sdglib/datastores/PathsDatastore.hpp"
 %include "sdglib/mappers/LongReadMapper.hpp"
 %include "sdglib/mappers/LinkedReadMapper.hpp"
 %include "sdglib/mappers/PairedReadMapper.hpp"
-%include "sdglib/mappers/threader/NodeMapper.hpp"
-%include "sdglib/mappers/threader/MappingThreader.hpp"
 %include "sdglib/processors/LinkageUntangler.hpp"
 %include "sdglib/graph/DistanceGraph.hpp"
 

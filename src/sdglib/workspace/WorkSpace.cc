@@ -59,12 +59,6 @@ void WorkSpace::dump_to_disk(std::string filename) {
         long_read_datastores[i].write(of);
         long_read_mappers[i].write(of);
     }
-
-    count=path_datastores.size();
-    of.write((char *) &count,sizeof(count));
-    for (auto i=0;i<count;++i){
-        path_datastores[i].write(of);
-    }
     //dump element type then use that element's own dump to dump it to this file
 
 //    //[GONZA]
@@ -165,24 +159,6 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
         long_read_mappers.back().read(wsfile);
     }
 
-
-    if (!wsfile.eof()){
-        wsfile.read((char *) &count,sizeof(count));
-        for (auto i=0;i<count;++i){
-            path_datastores.emplace_back(sdg);
-            path_datastores.back().read(wsfile);
-        }
-    }
-//    //[GONZA]
-//    int v;
-//    wsfile.read((char *) &v, sizeof(v));
-//    read_counts_header.resize(v);
-//    for (int i=0; i<read_counts_header.size(); ++i){
-//        int hs;
-//        wsfile.read((char *) &hs, sizeof(hs));
-//        read_counts_header[i].resize(hs);
-//        wsfile.read((char *) read_counts_header[i].data(), hs*sizeof(char));
-//    }
 }
 
 void WorkSpace::print_log() {
