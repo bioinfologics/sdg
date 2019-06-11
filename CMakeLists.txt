@@ -306,7 +306,7 @@ IF(BUILD_DOC)
                 COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
                 MAIN_DEPENDENCY ${DOXYGEN_INDEX_FILE}
         )
-        add_custom_target(doxy2swig ALL DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i)
+        add_custom_target(doxy2swig ALL DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i ${DOXYGEN_INDEX_FILE})
 
         find_package(Sphinx)
         if(SPHINX_FOUND)
