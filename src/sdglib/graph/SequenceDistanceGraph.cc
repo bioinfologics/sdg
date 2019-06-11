@@ -109,12 +109,7 @@ void SequenceDistanceGraph::remove_node(sgNodeID_t n) {
     //TODO: remove read mappings
 }
 
-Link SequenceDistanceGraph::get_link(sgNodeID_t source, sgNodeID_t dest) {
-    for (auto l:links[(source > 0 ? source : -source)]) {
-        if (l.source==source,l.dest==dest) return l;
-    }
-    return Link(0,0,0);
-}
+
 
 size_t SequenceDistanceGraph::count_active_nodes() {
     size_t t = 0;
@@ -124,7 +119,7 @@ size_t SequenceDistanceGraph::count_active_nodes() {
     return t;
 }
 
-bool Link::operator==(const Link a){
+bool Link::operator==(const Link a) const {
     if (a.source == this->source && a.dest == this->dest){
         return true;
     }
@@ -531,139 +526,6 @@ void SequenceDistanceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
     }
 }
 
-std::vector<nodeVisitor>
-SequenceDistanceGraph::breath_first_search(const nodeVisitor seed, unsigned int size_limit, unsigned int edge_limit, std::set<nodeVisitor> tabu) {
-    std::queue<nodeVisitor> to_visit;
-    to_visit.push(seed);
-    std::set<nodeVisitor> visited_set;
-    for (const auto &n:tabu) {
-        visited_set.insert(n);
-    }
-
-    while (!to_visit.empty()) {
-        const auto activeNode(to_visit.front());
-        to_visit.pop();
-        auto looker = nodeVisitor(activeNode.node,0,0);
-        auto visitedNode(visited_set.find( looker ) );
-        if (visitedNode == visited_set.end() and    // Active node has not been visited
-            (activeNode.path_length < edge_limit or edge_limit==0) and  // Is within path limits
-            (activeNode.dist < size_limit or size_limit==0) ) // Is within sequence limits
-        {
-            visited_set.insert(nodeVisitor(activeNode.node, activeNode.dist, activeNode.path_length));  // Mark as visited
-            for (const auto &l: get_fw_links(activeNode.node)) {    // Visit all its neighbours
-                to_visit.push(nodeVisitor(l.dest,
-                                          static_cast<uint>(activeNode.dist + nodes[l.dest > 0 ? l.dest : -l.dest].sequence.length()),
-                                          activeNode.path_length+1));
-            }
-        } else if (visitedNode != visited_set.end() and // If the node has been visited
-                   (visitedNode->path_length > activeNode.path_length or visitedNode->dist > activeNode.dist)) // but is closer than the last time I saw it
-        {
-            visited_set.erase(visitedNode); // Remove it from the visited nodes and
-            to_visit.push(nodeVisitor(activeNode.node, activeNode.dist, activeNode.path_length)); // add it to the list of nodes to visit
-        }
-    }
-
-    std::vector<nodeVisitor > result;
-    for (const auto &v:visited_set) {
-        if (v.path_length == 0) continue; // If node is seed, do not add it
-        result.push_back(v);
-    }
-    return result;
-}
-
-std::vector<nodeVisitor>
-SequenceDistanceGraph::depth_first_search(const nodeVisitor seed, unsigned int size_limit, unsigned int edge_limit, std::set<nodeVisitor> tabu) {
-    // Create a stack with the nodes and the path length
-
-    std::stack<nodeVisitor> to_visit;
-    to_visit.push(seed);
-    std::set<nodeVisitor> visited_set;
-    for (const auto &n:tabu) {
-        visited_set.insert(n);
-    }
-
-    while (!to_visit.empty()) {
-        const auto activeNode(to_visit.top());
-        to_visit.pop();
-        auto looker = nodeVisitor(activeNode.node,0,0);
-        auto visitedNode(visited_set.find( looker ) );
-        if (visitedNode == visited_set.end() and    // Active node has not been visited
-                (activeNode.path_length < edge_limit or edge_limit==0) and  // Is within path limits
-                (activeNode.dist < size_limit or size_limit==0) ) // Is within sequence limits
-        {
-            visited_set.insert(nodeVisitor(activeNode.node, activeNode.dist, activeNode.path_length));  // Mark as visited
-            for (const auto &l: get_fw_links(activeNode.node)) {    // Visit all its neighbours
-                to_visit.push(nodeVisitor(l.dest,
-                                 static_cast<uint>(activeNode.dist + nodes[l.dest > 0 ? l.dest : -l.dest].sequence.length()),
-                                 activeNode.path_length+1));
-            }
-        } else if (visitedNode != visited_set.end() and // If the node has been visited
-                (visitedNode->path_length > activeNode.path_length or visitedNode->dist > activeNode.dist)) // but is closer than the last time I saw it
-        {
-            visited_set.erase(visitedNode); // Remove it from the visited nodes and
-            to_visit.push(nodeVisitor(activeNode.node, activeNode.dist, activeNode.path_length)); // add it to the list of nodes to visit
-        }
-    }
-
-    std::vector<nodeVisitor > result;
-    for (const auto &v:visited_set) {
-        if (v.path_length == 0) continue; // If node is seed, do not add it
-        result.push_back(v);
-    }
-    return result;
-}
-
-std::vector<nodeVisitor>
-SequenceDistanceGraph::explore_nodes(std::vector<std::string> &nodes, unsigned int size_limit, unsigned int edge_limit) {
-    std::set<nodeVisitor> resultNodes;
-    // For each node in the list
-    for (const auto &n:nodes) {
-        auto id = oldnames_to_ids.at(n);
-        std::set<nodeVisitor> results;
-        results.emplace(id, 0, 0);
-        results.emplace(-id, 0, 0);
-        do {
-            sdglib::OutputLog(sdglib::DEBUG,false) << "Nodes to visit:" << std::endl;
-            std::copy(results.begin(), results.end(), std::ostream_iterator<nodeVisitor>(sdglib::OutputLog(sdglib::DEBUG, false), ","));
-            sdglib::OutputLog(sdglib::DEBUG,false) << std::endl;
-            sdglib::OutputLog(sdglib::DEBUG,false) << "Nodes visited:" << std::endl;
-            std::copy(resultNodes.begin(), resultNodes.end(), std::ostream_iterator<nodeVisitor>(sdglib::OutputLog(sdglib::DEBUG, false), ","));
-            sdglib::OutputLog(sdglib::DEBUG,false) << std::endl;
-            auto toVisit = *results.begin();
-            results.erase(toVisit);
-            // Explore node forward
-            auto visitedNodes = depth_first_search(toVisit, size_limit, edge_limit, resultNodes);
-
-            // For each visited node
-            for (const auto &node:visitedNodes) {
-                // If is the same as the node I am visiting, do nothing
-                if (node == toVisit) continue;
-
-                auto visitedNode(resultNodes.find(node));
-
-                // If was in previous results
-                if (visitedNode != resultNodes.end()) {
-                    // If now has a shorter path or closer distance
-                    if (node.path_length > visitedNode->path_length or node.dist > visitedNode->dist) {
-                        resultNodes.erase(visitedNode);
-                    } else {
-                        continue;
-                    }
-                }
-                results.insert(node);
-                nodeVisitor rev = nodeVisitor(-1*node.node, node.dist, node.path_length);
-                results.insert(rev);
-                resultNodes.emplace(node);
-            }
-            // While exploration results > 0 explore resulting nodes
-        } while (!results.empty());
-    }
-    return std::vector<nodeVisitor>(resultNodes.begin(), resultNodes.end());
-}
-
-
-
-
 
 void SequenceDistanceGraph::expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNodeID_t>> bw,
                                 std::vector<std::vector<sgNodeID_t>> fw) {
@@ -703,38 +565,6 @@ void SequenceDistanceGraph::expand_node(sgNodeID_t nodeID, std::vector<std::vect
     }
     remove_node(nodeID);
 
-}
-
-std::vector<std::pair<sgNodeID_t,int64_t>> SequenceDistanceGraph::get_distances_to(sgNodeID_t n,
-                                                                            std::set<sgNodeID_t> destinations,
-                                                                            int64_t max_dist) {
-    std::vector<std::pair<sgNodeID_t,int64_t>> current_nodes,next_nodes,final_nodes;
-    current_nodes.push_back({n,-nodes[llabs(n)].sequence.size()});
-    int rounds=20;
-    while (not current_nodes.empty() and --rounds>0){
-        //std::cout<<"starting round of context expansion, current nodes:  ";
-        //for (auto cn:current_nodes) std::cout<<cn.first<<"("<<cn.second<<")  ";
-        //std::cout<<std::endl;
-        next_nodes.clear();
-        for (auto nd:current_nodes){
-            //if node is a destination add it to final nodes
-            if (destinations.count(nd.first)>0 or destinations.count(-nd.first)>0){
-                final_nodes.push_back(nd);
-            }
-            //else get fw links, compute distances for each, and if not >max_dist add to nodes
-            else {
-                for (auto l:get_fw_links(nd.first)){
-                    int64_t dist=nd.second;
-                    dist+=nodes[llabs(nd.first)].sequence.size();
-                    dist+=l.dist;
-                    //std::cout<<"candidate next node "<<l.dest<<" at distance "<<dist<<std::endl;
-                    if (dist<=max_dist) next_nodes.push_back({l.dest,dist});
-                }
-            }
-        }
-        current_nodes=next_nodes;
-    }
-    return final_nodes;
 }
 
 std::vector<SequenceSubGraph> SequenceDistanceGraph::get_all_bubbly_subgraphs(uint32_t maxsubgraphs) {
@@ -845,132 +675,6 @@ void SequenceDistanceGraph::print_bubbly_subgraph_stats(const std::vector<Sequen
     }
     log_no_date<<std::endl;
 
-}
-
-std::vector<SequenceGraphPath> SequenceDistanceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes, bool abort_on_loops) const {
-    typedef struct T {
-        int64_t prev;
-        sgNodeID_t node;
-        int node_count;
-        int64_t partial_size;
-        T(uint64_t a, sgNodeID_t b, int c, int64_t d) : prev(a),node(b),node_count(c),partial_size(d){};
-    } pathNodeEntry_t;
-
-    std::vector<pathNodeEntry_t> node_entries;
-    node_entries.reserve(100000);
-    std::vector<SequenceGraphPath> final_paths;
-    std::vector<sgNodeID_t> pp;
-
-    for(auto &fl:get_fw_links(from)) {
-        if (nodes[llabs(fl.dest)].sequence.size()<=max_size) {
-            node_entries.emplace_back(-1, fl.dest, 1, nodes[llabs(fl.dest)].sequence.size());
-        }
-    }
-
-
-    // XXX: This loop is growing forever on node 2083801 for backbone 58, the limits are heuristics to cap the complexity of regions captured
-    for (uint64_t current_index=0;current_index<node_entries.size() and node_entries.size() < 1000001 and final_paths.size() < 1001;++current_index){
-        auto current_entry=node_entries[current_index];
-        auto fwl=get_fw_links(current_entry.node);
-        for(auto &fl:fwl) {
-            if (fl.dest==to){
-                //reconstruct path backwards
-                pp.resize(current_entry.node_count);
-
-                for (uint64_t ei=current_index;ei!=-1;ei=node_entries[ei].prev){
-                    pp[node_entries[ei].node_count-1]=node_entries[ei].node;
-                }
-                //check if there are any loops
-                if (abort_on_loops) {
-                    for (auto i1 = 0; i1 < pp.size(); ++i1) {
-                        for (auto i2 = 0; i2 < pp.size(); ++i2) {
-                            if (pp[i1]==pp[i2]) {
-                                return {};
-                            }
-                        }
-                    }
-                }
-                //add to solutions
-                final_paths.emplace_back(*this,pp);
-            }
-            else {
-                uint64_t new_size=current_entry.partial_size+fl.dist+nodes[llabs(fl.dest)].sequence.size();
-                if (new_size<=max_size and current_entry.node_count<=max_nodes) {
-                    node_entries.emplace_back(current_index, fl.dest, current_entry.node_count+1, new_size);
-                }
-            }
-        }
-
-    }
-
-    bool early_exit=false;
-    if (node_entries.size() == 1000000) {
-        std::cout << "From " << from << " to " << to << " with max_size " << max_size << " and max_nodes " << max_nodes << " there were too many nodes!"<< std::endl;
-        early_exit = true;
-    }
-
-    if (final_paths.size() == 1000) {
-        std::cout << "From " << from << " to " << to << " with max_size " << max_size << " and max_nodes " << max_nodes << " there were too many paths!"<< std::endl;
-        early_exit = true;
-    }
-
-    if (early_exit) return {};
-    return final_paths;
-}
-
-bool SequenceDistanceGraph::is_loop(std::array<sgNodeID_t, 4> nodes) {
-    for (auto j = 0; j < 3; ++j)
-        for (auto i = j + 1; i < 4; ++i)
-            if (nodes[i] == nodes[j] or nodes[i] == -nodes[j]) return true; //looping node
-    return false;
-}
-
-std::vector<sgNodeID_t> SequenceDistanceGraph::get_loopy_nodes(int complexity) {
-    std::vector<sgNodeID_t> result;
-
-#pragma omp parallel for
-    for (sgNodeID_t n=1; n < nodes.size(); ++n) {
-        auto fw_neigh_nodes = depth_first_search({n,0,0},0,complexity);
-        auto bw_neigh_nodes = depth_first_search({-n,0,0},0,complexity);
-
-        std::set<sgNodeID_t > fwd;
-        std::set<sgNodeID_t > bwd;
-        for (const auto &vn:fw_neigh_nodes) fwd.insert(std::abs(vn.node));
-        for (const auto &vn:bw_neigh_nodes) bwd.insert(std::abs(vn.node));
-        std::set<sgNodeID_t > tIntersect;
-        std::set_intersection(fwd.begin(),fwd.end(),bwd.begin(),bwd.end(),std::inserter(tIntersect,tIntersect.begin()));
-        if (!tIntersect.empty()) {
-            auto fwds=get_fw_nodes(n);
-            auto bwds=get_bw_nodes(n);
-            std::unordered_set<sgNodeID_t> s;
-            for (auto i : fwds)
-                s.insert( (i>0?i:-i) );
-            for (auto i : bwds)
-                s.insert( (i>0?i:-i) );
-
-            std::vector<sgNodeID_t > loop_neighbour_nodes( s.begin(), s.end() );
-            std::sort( loop_neighbour_nodes.begin(), loop_neighbour_nodes.end() );
-            if (loop_neighbour_nodes.size()>1) {
-#pragma omp critical (loopy_nodes)
-                result.push_back(n);
-            }
-        }
-    }
-
-    return result;
-}
-
-std::vector<sgNodeID_t> SequenceDistanceGraph::get_flanking_nodes(sgNodeID_t loopy_node) {
-    auto neighs = get_neighbour_nodes(loopy_node);
-    std::unordered_set<sgNodeID_t> neigh_set;
-    for (const auto &n:neighs){
-        auto neigh_neighs(get_neighbour_nodes(n));
-        auto fwns(get_fw_nodes(n));
-        auto bwns(get_bw_nodes(n));
-        if (fwns == bwns and std::find(fwns.begin(), fwns.end(), loopy_node)!=fwns.end() and std::find(bwns.begin(), bwns.end(), loopy_node)!=bwns.end()) continue;
-        neigh_set.insert(std::abs(n));
-    }
-    return std::vector<sgNodeID_t> (neigh_set.begin(), neigh_set.end());
 }
 
 void SequenceDistanceGraph::print_status() {

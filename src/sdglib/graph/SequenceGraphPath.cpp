@@ -71,24 +71,6 @@ std::string SequenceGraphPath::get_sequence() const {
     return s;
 }
 
-bool SequenceGraphPath::append_to_path(const sgNodeID_t newnode) {
-    if (nodes.empty()) {
-        sdglib::OutputLog(sdglib::LogLevels::DEBUG) << "Path is new and empty." << std::endl;
-        nodes.emplace_back(newnode);
-        sdglib::OutputLog(sdglib::LogLevels::DEBUG) << "Size of path is now: " << nodes.size() << std::endl;
-        return true;
-    }
-    sgNodeID_t from = -(nodes.back());
-    sdglib::OutputLog(sdglib::LogLevels::DEBUG) << "Path is not new and empty: trying to append." << std::endl;
-    bool append_possible = sg.link_exists(from, newnode);
-    if (append_possible) {
-        sdglib::OutputLog(sdglib::LogLevels::DEBUG) << "Append is possible, adding node to the back." << std::endl;
-        nodes.emplace_back(newnode);
-        sdglib::OutputLog(sdglib::LogLevels::DEBUG) << "Size of path is now: " << nodes.size() << std::endl;
-    }
-    return append_possible;
-}
-
 void SequenceGraphPath::reverse(){
     std::vector<sgNodeID_t> newn;
     for (auto n=nodes.rbegin();n<nodes.rend();++n) newn.emplace_back(-*n);

@@ -32,7 +32,7 @@ class SequenceDistanceGraph;//fwd declaration (to break circular dependence)
  */
 class DistanceGraph {
 public:
-    DistanceGraph(SequenceDistanceGraph & _sg): sg(_sg){};
+    DistanceGraph(SequenceDistanceGraph & _sdg): sdg(_sdg){};
 
     /** @brief Adds a link between source and destination in the links collection.
      * Each link is added from both ends in the collection (see links vector)
@@ -50,10 +50,10 @@ public:
      *
      * @param other LDG instance
      */
-    void add_links(const DistanceGraph &other);
+    void copy_links(const DistanceGraph &other);
 
     /** @brief If the link between source and dest exists removes the link from the link collection
-     *
+     * TODO: this is broken in a Multi-Distance Graph
      * @param source
      * @param dest
      */
@@ -83,24 +83,35 @@ public:
      */
     std::vector<Link> get_bw_links( sgNodeID_t n) const;
 
+    /** DEPRECATED!!!!!!!!!!
+     * TODO: delete
+     *
+     * @param source
+     * @param dest
+     * @return
+     */
+    Link get_link(sgNodeID_t source, sgNodeID_t dest);
+
     /**
      * Find node IDs for forward nodes of n
+     * TODO: sort-uniq (for multi distances)
      * @param n Node to search neighbours for
      * @return
      * Returns a vector of forward node IDs
      */
-    std::vector<sgNodeID_t> get_fw_nodes(sgNodeID_t n) const;
+    std::vector<sgNodeID_t> get_next_nodes(sgNodeID_t n) const;
 
     /**
      * Find node IDs for backward nodes of n
+     * TODO: sort-uniq (for multi_distances)
      * @param n Node to search neighbours for
      * @return
      * Returns a vector of backward node IDs
      */
-    std::vector<sgNodeID_t> get_bw_nodes(sgNodeID_t n) const;
+    std::vector<sgNodeID_t> get_prev_nodes(sgNodeID_t n) const;
 
     /** @brief Given a nodeID returns a set of all fw nodes present up to radius (# jump) away
-     * TODO: merge with DFS in sequence graph (?)
+     * TODO: merge with other similar functions and deprecate
      *
      * @param n nodeID
      * @param radius number of jumps to consider
@@ -121,6 +132,17 @@ public:
      * @return set of nodeIDs
      */
     std::unordered_set<sgNodeID_t>  get_connected_nodes() const;
+
+    /**
+     * Explore in a growing radius and returns all possible paths within limits between 2 node ends.
+     * @param from
+     * @param to
+     * @param max_size
+     * @param max_nodes
+     * @param abort_on_loops
+     * @return
+     */
+    std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes=20, bool abort_on_loops=true) const;
 
     /** @brief Removes transitive connections form the link collection
      *
@@ -178,7 +200,7 @@ public:
      */
     void load_from_text(std::string filename);
 
-    SequenceDistanceGraph & sg;
+    SequenceDistanceGraph & sdg;
 
     /**
      * Collection of links for each node of the graph

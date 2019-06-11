@@ -16,7 +16,7 @@ void DistanceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, uint
     links[llabs(dest)].emplace_back(l);
 }
 
-void DistanceGraph::add_links(const DistanceGraph &other) {
+void DistanceGraph::copy_links(const DistanceGraph &other) {
     for (auto &lv:other.links) for (auto l:lv) add_link(l.source,l.dest,l.dist,l.read_id);
 }
 
@@ -47,14 +47,23 @@ std::vector<Link> DistanceGraph::get_bw_links(sgNodeID_t n) const {
     return get_fw_links (-n);
 }
 
-std::vector<sgNodeID_t> DistanceGraph::get_fw_nodes(sgNodeID_t n) const {
+Link DistanceGraph::get_link(sgNodeID_t source, sgNodeID_t dest) {
+    for (auto l:links[(source > 0 ? source : -source)]) {
+        if (l.source==source,l.dest==dest) return l;
+    }
+    return Link(0,0,0);
+}
+
+std::vector<sgNodeID_t> DistanceGraph::get_next_nodes(sgNodeID_t n) const {
     std::vector<sgNodeID_t > r;
-    for (auto&  l:links[(n>0 ? n : -n)]) if (l.source==-n) r.emplace_back(std::abs(l.dest));
+    for (auto&  l:links[llabs(n)]) if (l.source==-n) r.emplace_back(l.dest);
     return r;
 }
 
-std::vector<sgNodeID_t> DistanceGraph::get_bw_nodes(sgNodeID_t n) const {
-    return get_fw_nodes (-n);
+std::vector<sgNodeID_t> DistanceGraph::get_prev_nodes(sgNodeID_t n) const {
+    std::vector<sgNodeID_t > r;
+    for (auto&  l:links[llabs(n)]) if (l.source==n) r.emplace_back(-l.dest);
+    return r;
 }
 
 //returns a list of all fw nodes up to radius jumps away.
@@ -143,8 +152,8 @@ void DistanceGraph::remove_transitive_links(int radius) {
 
 void DistanceGraph::report_connectivity() {
     uint64_t solved=0,solved_complex=0,solved_disconnected=0,complex=0,complex_disconected=0;
-    for (auto n=1;n<sg.nodes.size();++n){
-        if (sg.nodes[n].status==sgNodeDeleted) continue;
+    for (auto n=1;n<sdg.nodes.size();++n){
+        if (sdg.nodes[n].status==sgNodeDeleted) continue;
         auto fc=get_fw_links(n).size();
         auto bc=get_bw_links(n).size();
         if (fc<bc) std::swap(fc,bc);
@@ -165,10 +174,10 @@ void DistanceGraph::report_connectivity() {
 
 std::vector<std::vector<sgNodeID_t>> DistanceGraph::get_all_lines(uint16_t min_nodes, uint64_t min_total_size) const {
     std::vector<std::vector<sgNodeID_t>> unitigs;
-    std::vector<bool> used(sg.nodes.size(),false);
+    std::vector<bool> used(sdg.nodes.size(),false);
 
-    for (auto n=1;n<sg.nodes.size();++n){
-        if (used[n] or sg.nodes[n].status==sgNodeDeleted) continue;
+    for (auto n=1;n<sdg.nodes.size();++n){
+        if (used[n] or sdg.nodes[n].status==sgNodeDeleted) continue;
         used[n]=true;
         std::vector<sgNodeID_t> path={n};
 
@@ -187,7 +196,7 @@ std::vector<std::vector<sgNodeID_t>> DistanceGraph::get_all_lines(uint16_t min_n
         }
         if (path.size()<min_nodes) continue;
         uint64_t total_size=0;
-        for (auto n:path) total_size+=sg.nodes[llabs(n)].sequence.size();
+        for (auto n:path) total_size+=sdg.nodes[llabs(n)].sequence.size();
         if (total_size<min_total_size) continue;
         unitigs.push_back(path);
     }
@@ -198,6 +207,77 @@ std::unordered_set<sgNodeID_t> DistanceGraph::get_connected_nodes() const {
     std::unordered_set<sgNodeID_t> r;
     for (auto n=1;n<links.size();++n) if (!links[n].empty()) r.insert(n);
     return std::move(r);
+}
+
+std::vector<SequenceGraphPath> DistanceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes, bool abort_on_loops) const {
+    typedef struct T {
+        int64_t prev;
+        sgNodeID_t node;
+        int node_count;
+        int64_t partial_size;
+        T(uint64_t a, sgNodeID_t b, int c, int64_t d) : prev(a),node(b),node_count(c),partial_size(d){};
+    } pathNodeEntry_t;
+
+    std::vector<pathNodeEntry_t> node_entries;
+    node_entries.reserve(100000);
+    std::vector<SequenceGraphPath> final_paths;
+    std::vector<sgNodeID_t> pp;
+
+    for(auto &fl:get_fw_links(from)) {
+        if (sdg.nodes[llabs(fl.dest)].sequence.size()<=max_size) {
+            node_entries.emplace_back(-1, fl.dest, 1, sdg.nodes[llabs(fl.dest)].sequence.size());
+        }
+    }
+
+
+    // XXX: This loop is growing forever on node 2083801 for backbone 58, the limits are heuristics to cap the complexity of regions captured
+    for (uint64_t current_index=0;current_index<node_entries.size() and node_entries.size() < 1000001 and final_paths.size() < 1001;++current_index){
+        auto current_entry=node_entries[current_index];
+        auto fwl=get_fw_links(current_entry.node);
+        for(auto &fl:fwl) {
+            if (fl.dest==to){
+                //reconstruct path backwards
+                pp.resize(current_entry.node_count);
+
+                for (uint64_t ei=current_index;ei!=-1;ei=node_entries[ei].prev){
+                    pp[node_entries[ei].node_count-1]=node_entries[ei].node;
+                }
+                //check if there are any loops
+                if (abort_on_loops) {
+                    for (auto i1 = 0; i1 < pp.size(); ++i1) {
+                        for (auto i2 = 0; i2 < pp.size(); ++i2) {
+                            if (pp[i1]==pp[i2]) {
+                                return {};
+                            }
+                        }
+                    }
+                }
+                //add to solutions
+                final_paths.emplace_back(sdg,pp);
+            }
+            else {
+                uint64_t new_size=current_entry.partial_size+fl.dist+sdg.nodes[llabs(fl.dest)].sequence.size();
+                if (new_size<=max_size and current_entry.node_count<=max_nodes) {
+                    node_entries.emplace_back(current_index, fl.dest, current_entry.node_count+1, new_size);
+                }
+            }
+        }
+
+    }
+
+    bool early_exit=false;
+    if (node_entries.size() == 1000000) {
+        std::cout << "From " << from << " to " << to << " with max_size " << max_size << " and max_nodes " << max_nodes << " there were too many nodes!"<< std::endl;
+        early_exit = true;
+    }
+
+    if (final_paths.size() == 1000) {
+        std::cout << "From " << from << " to " << to << " with max_size " << max_size << " and max_nodes " << max_nodes << " there were too many paths!"<< std::endl;
+        early_exit = true;
+    }
+
+    if (early_exit) return {};
+    return final_paths;
 }
 
 void DistanceGraph::dump_to_text(std::string filename) {
@@ -221,13 +301,13 @@ void DistanceGraph::load_from_text(std::string filename) {
 
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> DistanceGraph::find_bubbles(uint32_t min_size,uint32_t max_size) const {
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> r;
-    std::vector<bool> used(sg.nodes.size(),false);
+    std::vector<bool> used(sdg.nodes.size(),false);
     sgNodeID_t n1,n2;
     size_t s1,s2;
-    for (n1=1;n1<sg.nodes.size();++n1){
+    for (n1=1;n1<sdg.nodes.size();++n1){
         if (used[n1]) continue;
         //get "topologically correct" bubble: prev -> [n1 | n2] -> next
-        s1=sg.nodes[n1].sequence.size();
+        s1=sdg.nodes[n1].sequence.size();
         if (s1<min_size or s1>max_size) continue;
 
         auto fwl=get_fw_links(n1);
@@ -245,7 +325,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> DistanceGraph::find_bubbles(uint32
         else n2=parlp[1].dest;
 
         if (n2!=-parln[0].dest and n2!=-parln[1].dest) continue;
-        s2=sg.nodes[llabs(n2)].sequence.size();
+        s2=sdg.nodes[llabs(n2)].sequence.size();
         if (s2<min_size or s2>max_size) continue;
 
         used[n1]=true;
@@ -259,7 +339,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> DistanceGraph::find_bubbles(uint32
 std::vector<sgNodeID_t> DistanceGraph::find_tips(uint32_t min_size, uint32_t max_size) const {
     std::vector<sgNodeID_t> r;
     for (auto &l:links){
-        if (l.size()==1 and sg.nodes[llabs(l[0].source)].sequence.size()>=min_size and sg.nodes[llabs(l[0].source)].sequence.size()<=max_size){
+        if (l.size()==1 and sdg.nodes[llabs(l[0].source)].sequence.size()>=min_size and sdg.nodes[llabs(l[0].source)].sequence.size()<=max_size){
             for (auto &ol:links[llabs(l[0].dest)]){
                 if (ol.source==l[0].dest and ol.dest!=l[0].source){
                     r.emplace_back(l[0].source);

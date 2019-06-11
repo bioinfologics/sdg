@@ -30,7 +30,7 @@ public:
     std::set<sgNodeID_t> make_set_of_nodes() const;
     bool operator==(const SequenceGraphPath& rhs) const;
     bool operator<(const SequenceGraphPath& rhs) const;
-    bool append_to_path(sgNodeID_t newnode);
+
     bool extend_if_coherent(SequenceGraphPath s){};
     void clear() {
         nodes.clear();

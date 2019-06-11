@@ -62,7 +62,7 @@ public:
     int32_t dist = 0;
     int64_t read_id;
 
-    bool operator==( const  Link);
+    bool operator==( const  Link) const;
     bool operator<(const Link)const;
 
     friend std::ostream &operator<<(std::ostream &os, const Link &link) {
