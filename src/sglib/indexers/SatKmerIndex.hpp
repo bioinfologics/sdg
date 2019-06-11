@@ -42,7 +42,7 @@ public:
 #pragma omp parallel for reduction(+:num_kmers, num_elements)
         for (uint64_t kidx=0; kidx < assembly_kmers.size(); ++kidx) {
             if (assembly_kmers[kidx].size() >= max_kmer_repeat) {
-                assembly_kmers[kidx].clear();
+                std::vector<ContigOffset>().swap(assembly_kmers[kidx]);
             }
             if (!assembly_kmers[kidx].empty()){num_kmers++; num_elements+=assembly_kmers[kidx].size();}
         }
