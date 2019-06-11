@@ -27,6 +27,7 @@ endif (APPLE)
 PROJECT (bsg VERSION 0.1)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+INCLUDE(FindPythonModule)
 ENABLE_TESTING()
 OPTION(BUILD_TESTING "Build tests." ON)
 OPTION(BUILD_DOC "Build documentation" OFF)
@@ -309,27 +310,30 @@ IF(BUILD_DOC)
 
         find_package(Sphinx)
         if(SPHINX_FOUND)
-            set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx)
-            set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/doc/sphinx)
-            set(SPHINX_INDEX_FILE ${SPHINX_BUILD}/index.html)
+            find_python_module(breathe)
+            if(PY_BREATHE)
+                set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx)
+                set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/doc/sphinx)
+                set(SPHINX_INDEX_FILE ${SPHINX_BUILD}/index.html)
 
-            add_custom_command(OUTPUT ${SPHINX_INDEX_FILE}
-                               COMMAND
-                               ${SPHINX_EXECUTABLE} -b html
-                               # Tell Breathe where to find the Doxygen output
-                               -Dbreathe_projects.BSG=${DOXYGEN_OUTPUT_DIR}/xml
-                               ${SPHINX_SOURCE} ${SPHINX_BUILD}
-                               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                               DEPENDS
-                               # Other docs files you want to track should go here (or in some variable)
-                               ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/index.rst
-                               ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/bsg/*
-                               ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/bsg/sglib/*
-                               ${DOXYGEN_INDEX_FILE}
-                               MAIN_DEPENDENCY ${SPHINX_SOURCE}/conf.py
-                               COMMENT "Generating documentation with Sphinx, WD: ${CMAKE_CURRENT_BINARY_DIR}")
-            add_custom_target(Sphinx ALL DEPENDS ${SPHINX_INDEX_FILE})
-        endif(Sphinx_FOUND)
+                add_custom_command(OUTPUT ${SPHINX_INDEX_FILE}
+                                   COMMAND
+                                   ${SPHINX_EXECUTABLE} -b html
+                                   # Tell Breathe where to find the Doxygen output
+                                   -Dbreathe_projects.BSG=${DOXYGEN_OUTPUT_DIR}/xml
+                                   ${SPHINX_SOURCE} ${SPHINX_BUILD}
+                                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                                   DEPENDS
+                                   # Other docs files you want to track should go here (or in some variable)
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/index.rst
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/bsg/*
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/bsg/sglib/*
+                                   ${DOXYGEN_INDEX_FILE}
+                                   MAIN_DEPENDENCY ${SPHINX_SOURCE}/conf.py
+                                   COMMENT "Generating documentation with Sphinx, WD: ${CMAKE_CURRENT_BINARY_DIR}")
+                add_custom_target(Sphinx ALL DEPENDS ${SPHINX_INDEX_FILE})
+            endif(PY_BREATHE)
+        endif(SPHINX_FOUND)
     else (DOXYGEN_FOUND)
         message("Doxygen need to be installed to generate the doxygen documentation")
     endif (DOXYGEN_FOUND)
