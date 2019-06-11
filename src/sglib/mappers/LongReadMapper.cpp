@@ -387,7 +387,7 @@ void LongReadMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> re
             //========== 3. Create alignment blocks from candidates ==========
 
             auto blocks(alignment_blocks(readID,node_matches,read_kmers.size(), candidate_counts));
-            std::fill(candidate_counts.begin(), candidate_counts.end(), 0);
+            std::memset(candidate_counts.data(), 0, candidate_counts.size());
 
             //========== 4. Construct mapping path ==========
             if (blocks.empty()) ++no_matches;
