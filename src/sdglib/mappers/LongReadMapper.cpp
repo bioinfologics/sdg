@@ -11,6 +11,7 @@
 #include <atomic>
 #include <cmath>
 #include <iomanip>      // std::setprecision
+#include <iterator>
 
 
 const bsgVersion_t LongReadMapper::min_compat = 0x0001;

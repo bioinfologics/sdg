@@ -11,7 +11,6 @@
 #include "sdglib/types/MappingTypes.hpp"
 #include "sdglib/factories/KMerIDXFactory.hpp"
 #include "sdglib/readers/SequenceGraphReader.hpp"
-#include "sdglib/SMR.hpp"
 #include <sdglib/datastores/PairedReadsDatastore.hpp>
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
 

@@ -8,7 +8,6 @@
 #include <sdglib/factories/KMerCountFactory.hpp>
 #include <sdglib/readers/SequenceGraphReader.hpp>
 #include <sdglib/datastores/PairedReadsDatastore.hpp>
-#include "sdglib/SMR.hpp"
 #include "sdglib/graph/SequenceDistanceGraph.hpp"
 
 class CStringKMerFactory : protected KMerFactory {

@@ -8,6 +8,7 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/graph/DistanceGraph.hpp>
 #include <sdglib/utilities/io_helpers.hpp>
+#include <iterator>
 
 /**
  * This class creates a haplotype consensus from a backbone.

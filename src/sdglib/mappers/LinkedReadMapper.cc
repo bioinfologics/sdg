@@ -8,7 +8,6 @@
 
 
 #include "LinkedReadMapper.hpp"
-#include "sdglib/SMR.hpp"
 #include "sdglib/factories/KMerIDXFactory.hpp"
 #include "sdglib/readers/SequenceGraphReader.hpp"
 #include <sdglib/utilities/omp_safe.hpp>

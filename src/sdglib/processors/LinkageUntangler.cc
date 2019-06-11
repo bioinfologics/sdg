@@ -5,6 +5,7 @@
 #include "LinkageUntangler.hpp"
 #include "GraphEditor.hpp"
 #include "GraphMaker.hpp"
+#include <atomic>
 
 class KmerMapCreator : public  KMerFactory {
 public:
