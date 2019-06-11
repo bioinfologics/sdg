@@ -471,11 +471,17 @@ void LongReadMapper::update_indexes() {
     sglib::OutputLog() << "LongReadMapper index updated with " << mappings.size() << " mappings and "<< frmcount << " filtered mappings (over "<< reads_with_filtered_mappings << " reads)"<< std::endl;
 }
 
-LongReadMapper::LongReadMapper(const SequenceGraph &sg, const LongReadsDatastore &ds, uint8_t k, bool sat_kmer_index)
-        : sg(sg), k(k), datastore(ds), sat_kmer_index(sat_kmer_index) {
+LongReadMapper::LongReadMapper(const SequenceGraph &sg, const LongReadsDatastore &ds, uint8_t k, bool sat_index)
+        : sg(sg), k(k), datastore(ds), sat_kmer_index(sat_index) {
 
-    if (sat_kmer_index) sat_assembly_kmers = SatKmerIndex(k);
-    else assembly_kmers = NKmerIndex(k);
+    if (sat_kmer_index) {
+        sglib::OutputLog() << "Creating satindex" << std::endl;
+        sat_assembly_kmers = SatKmerIndex(k);
+    }
+    else {
+        sglib::OutputLog() << "Creating nkindex" << std::endl;
+        assembly_kmers = NKmerIndex(k);
+    }
     reads_in_node.resize(sg.nodes.size());
 }
 
@@ -537,17 +543,19 @@ LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
     if (&other == this) {
         return *this;
     }
+    sat_kmer_index = other.sat_kmer_index;
     mappings = other.mappings;
     update_indexes();
     return *this;
 }
 
 void LongReadMapper::update_graph_index(int filter_limit, bool verbose) {
-    if (verbose) std::cout<<"updating index with k="<<std::to_string(k)<<std::endl;
     if (sat_kmer_index) {
+        if (verbose) std::cout<<"updating satindex with k="<<std::to_string(k)<<std::endl;
         sat_assembly_kmers=SatKmerIndex(k);
         sat_assembly_kmers.generate_index(sg, filter_limit, verbose);
     } else {
+        if (verbose) std::cout<<"updating nkindex with k="<<std::to_string(k)<<std::endl;
         assembly_kmers = NKmerIndex(k);
         assembly_kmers.generate_index(sg, filter_limit, verbose);
     }

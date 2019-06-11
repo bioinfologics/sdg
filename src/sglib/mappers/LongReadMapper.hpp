@@ -133,7 +133,6 @@ enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage
 class LongReadMapper {
     NKmerIndex assembly_kmers;
     SatKmerIndex sat_assembly_kmers;
-    bool sat_kmer_index = false;
 public:
 
     const SequenceGraph & sg;
@@ -145,7 +144,7 @@ public:
     int max_jump=500;
     int max_delta_change=60;
 
-    LongReadMapper(const SequenceGraph &sg, const LongReadsDatastore &ds, uint8_t k=15, bool sat_kmer_index=false);
+    LongReadMapper(const SequenceGraph &sg, const LongReadsDatastore &ds, uint8_t k=15, bool sat_index=false);
     ~LongReadMapper();
 
     LongReadMapper operator=(const LongReadMapper &other);
@@ -392,6 +391,7 @@ public:
 
     static const bsgVersion_t min_compat;
 
+    bool sat_kmer_index = false;
 };
 
 

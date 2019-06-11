@@ -27,7 +27,7 @@ int main(int argc, char * argv[]) {
                 ("o,output", "output file prefix", cxxopts::value(output_prefix))
                 ("k","long read indexing/mapping kmer size", cxxopts::value(k)->default_value("15"))
                 ("m,max_kmer_repeat", "maximum number of times a kmer appears (LongReadMapper)", cxxopts::value(max_filter)->default_value("200"))
-                ("s,use_sat-index", "Use saturated small-k index", cxxopts::value(sat_kmer_index)->default_value("false"));
+                ("s,use_sat-index", "Use saturated small-k index", cxxopts::value(sat_kmer_index)->default_value("false")->implicit_value("true"));
 
 
 
@@ -61,12 +61,7 @@ int main(int argc, char * argv[]) {
     sglib::OutputLog()<<"Mapping reads..."<<std::endl;
     for (uint32_t lrds_idx=0; lrds_idx < ws.long_read_datastores.size(); lrds_idx++) {
         sglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
-
-        sglib::OutputLog()<<"File: " << ws.long_read_datastores[lrds_idx].filename << std::endl;
-        sglib::OutputLog()<<"K: " << int(k) << std::endl;
-        sglib::OutputLog()<<"sat_kmer_index: " << sat_kmer_index << std::endl;
         ws.long_read_mappers[lrds_idx] = LongReadMapper(ws.sg, ws.long_read_datastores[lrds_idx], k, sat_kmer_index);
-
         ws.long_read_mappers[lrds_idx].map_reads(max_filter);
         ws.add_log_entry("reads from "+ws.long_read_mappers[lrds_idx].datastore.filename+" re-mapped to current graph");
         sglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
