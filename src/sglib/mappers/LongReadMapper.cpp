@@ -539,11 +539,12 @@ void LongReadMapper::read_read_paths(std::string filename) {
 }
 
 LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
-    if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceGraph"); }
+    if (&sg != &other.sg and &datastore != &other.datastore) { throw std::runtime_error("Graph or Datastores do not match"); }
     if (&other == this) {
         return *this;
     }
     sat_kmer_index = other.sat_kmer_index;
+    k = other.k;
     mappings = other.mappings;
     update_indexes();
     return *this;
