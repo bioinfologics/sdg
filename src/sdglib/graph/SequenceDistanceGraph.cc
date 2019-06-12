@@ -396,53 +396,6 @@ void SequenceDistanceGraph::load_from_fasta(std::string filename) {
     sdglib::OutputLog(sdglib::LogLevels::INFO) << nodes.size()-1 << " nodes loaded " << std::endl;
 }
 
-void SequenceDistanceGraph::write_to_gfa(std::string filename, const std::vector<std::vector<Link>> &arg_links,
-                                 const std::vector<sgNodeID_t> &selected_nodes, const std::vector<sgNodeID_t> &mark_red,
-                                 const std::vector<double> &depths) {
-    std::unordered_set<sgNodeID_t> output_mark_red(mark_red.begin(), mark_red.end());
-    std::unordered_set<sgNodeID_t > output_nodes(selected_nodes.begin(), selected_nodes.end());
-    std::string fasta_filename;
-    //check the filename ends in .gfa
-    if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
-        fasta_filename=filename.substr(0,filename.size()-4)+".fasta";
-    }
-    else throw std::invalid_argument("filename of the gfa input does not end in gfa, it ends in '"+filename.substr(filename.size()-4,4)+"'");
-
-    std::ofstream gfaf(filename);
-    if (!gfaf) throw std::invalid_argument("Can't write to gfa file");
-    gfaf<<"H\tVN:Z:1.0"<<std::endl;
-
-    std::ofstream fastaf(fasta_filename);
-    if (!fastaf) throw std::invalid_argument("Can't write to fasta file");
-
-
-    //load all sequences from fasta file if they're not canonical, flip and remember they're flipped
-    //std::cout<<"Writing sequences to "<<fasta_filename<<std::endl;
-
-    for (sgNodeID_t i=1;i<nodes.size();++i){
-        if (nodes[i].status==sgNodeDeleted) continue;
-        if (!output_nodes.empty() and output_nodes.count(i)==0 and output_nodes.count(-i)==0) continue;
-        fastaf<<">seq"<<i<<std::endl<<nodes[i].sequence<<std::endl;
-        gfaf<<"S\tseq"<<i<<"\t*\tLN:i:"<<nodes[i].sequence.size()<<"\tUR:Z:"<<fasta_filename
-                <<(output_mark_red.count(i)?"\tCL:Z:red":"")<<(depths.empty() or std::isnan(depths[i])?"":"\tDP:f:"+std::to_string(depths[i]))<<std::endl;
-    }
-
-    for (auto &ls:(arg_links.size()>0? arg_links:links)){
-        for (auto &l:ls)
-            if (l.source<=l.dest and (output_nodes.empty() or
-                    output_nodes.count(l.source)>0 or output_nodes.count(-l.source)>0 or
-                    output_nodes.count(l.dest)>0 or output_nodes.count(-l.dest)>0)) {
-                gfaf<<"L\t";
-                if (l.source>0) gfaf<<"seq"<<l.source<<"\t-\t";
-                else gfaf<<"seq"<<-l.source<<"\t+\t";
-                if (l.dest>0) gfaf<<"seq"<<l.dest<<"\t+\t";
-                else gfaf<<"seq"<<-l.dest<<"\t-\t";
-                gfaf<<(l.dist<0 ? -l.dist : 0)<<"M"<<std::endl;
-            }
-    }
-
-}
-
 std::vector<sgNodeID_t> SequenceDistanceGraph::oldnames_to_nodes(std::string _oldnames) {
     std::vector<sgNodeID_t> nv;
     const char * s = _oldnames.c_str();

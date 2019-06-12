@@ -200,6 +200,10 @@ public:
      */
     void load_from_text(std::string filename);
 
+    void write_to_gfa(std::string filename, const std::vector<std::vector<Link>> &arg_links={},
+                      const std::vector<sgNodeID_t> &selected_nodes={}, const std::vector<sgNodeID_t> &mark_red={},
+                      const std::vector<double> &depths={});
+
     SequenceDistanceGraph & sdg;
 
     /**
