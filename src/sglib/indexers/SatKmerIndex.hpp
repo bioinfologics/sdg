@@ -109,10 +109,12 @@ public:
         assembly_kmers.clear();
         assembly_kmers.reserve(k_usage.size());
         for (auto &count:k_usage){
-            assembly_kmers.emplace_back();
-            if (count<=filter_limit) {
-                assembly_kmers.back().reserve(count); //Already accounts for the filter
+            if (count<=filter_limit) { //Already accounts for the filter
+                assembly_kmers.emplace_back(count);
                 ++indexed_kmers;
+            }
+            else{
+                assembly_kmers.emplace_back();
             }
         }
         if (verbose) sglib::OutputLog() << "Space reserved to index "<< indexed_kmers <<" k-mers with less than "<<filter_limit+1<<" copies..." << std::endl;
