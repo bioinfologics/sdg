@@ -109,7 +109,7 @@ public:
         assembly_kmers.clear();
         assembly_kmers.reserve(k_usage.size());
         for (auto &count:k_usage){
-            if (count<=filter_limit) { //Already accounts for the filter
+            if (count<filter_limit) { //Already accounts for the filter
                 assembly_kmers.emplace_back(count);
                 ++indexed_kmers;
             }
@@ -128,7 +128,7 @@ public:
                 skf.create_kmers(sg.nodes[n].sequence, contig_kmers);
                 int k_i(0);
                 for (const auto &kmer:contig_kmers) {
-                    if (k_usage[kmer.second]<=filter_limit){ //filter, only inserts on relevant k-mers, which are already reserved too
+                    if (k_usage[kmer.second]<filter_limit){ //filter, only inserts on relevant k-mers, which are already reserved too
                         assembly_kmers[kmer.second].emplace_back(n, kmer.first ? k_i + 1 : -(k_i + 1)); //is this really how we save the offsets on the indexes?
                         ++indexed_positions;
                     }
