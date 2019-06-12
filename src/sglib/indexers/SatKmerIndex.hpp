@@ -50,7 +50,7 @@ public:
         return {num_kmers, num_elements};
     }
 
-    void generate_index(const SequenceGraph &sg, int filter_limit = 200, bool verbose=true) {
+    void generate_index_vec_allocs(const SequenceGraph &sg, int filter_limit = 200, bool verbose=true) {
         uint64_t total_kmers(0);
         assembly_kmers.resize(std::pow(4,k));
         if (verbose) {
@@ -87,7 +87,7 @@ public:
      * @param filter_limit
      * @param verbose
      */
-    void generate_index_alt(const SequenceGraph &sg, uint8_t filter_limit = 200, bool verbose=true) {
+    void generate_index(const SequenceGraph &sg, uint8_t filter_limit = 200, bool verbose=true) {
         // this can be parallelised by contig by aggregating different k_usage vectors on the first step, second and third steps are trickier
         // This two-pass approach could be easily adapted to a single memory block rather than vector of vectors
         uint64_t indexed_positions(0),indexed_kmers(0),total_kmers(0);
