@@ -150,7 +150,7 @@ public:
         uint64_t indexed_positions(0),filtered_kmers(0),total_kmers(0);
         //---- First Step, count k-mer occupancy ----//
         if (verbose) sglib::OutputLog() << "First pass: Generating {kmer,contig,offset} " <<std::endl;
-        std::vector<uint64_t> kmerEnd(std::pow(4,k));
+        kmerEnd.resize(std::pow(4,k));
         std::vector<kmerPos> all_kmers;
         all_kmers.reserve(100000000);
         std::vector<std::pair<bool,uint64_t > > contig_kmers;
