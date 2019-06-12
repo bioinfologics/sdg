@@ -24,6 +24,8 @@ struct ContigOffset {
 
 class SatKmerIndex {
     std::vector<std::vector<ContigOffset>> assembly_kmers;
+    std::vector<ContigOffset> contig_offsets;
+    std::vector<uint64_t> kmerEnd;
     uint8_t k=15;
 public:
     using const_iterator = std::vector<ContigOffset>::const_iterator;
@@ -87,7 +89,7 @@ public:
      * @param filter_limit
      * @param verbose
      */
-    void generate_index(const SequenceGraph &sg, uint8_t filter_limit = 200, bool verbose=true) {
+    void generate_index_prealloc(const SequenceGraph &sg, uint8_t filter_limit = 200, bool verbose=true) {
         // this can be parallelised by contig by aggregating different k_usage vectors on the first step, second and third steps are trickier
         // This two-pass approach could be easily adapted to a single memory block rather than vector of vectors
         uint64_t indexed_positions(0),indexed_kmers(0),total_kmers(0);
@@ -139,6 +141,68 @@ public:
         }
 
         if (verbose) sglib::OutputLog() << indexed_positions << "/" << total_kmers << " postions indexed by " << indexed_kmers << " kmers" << std::endl;
+
+    }
+
+    void generate_index(const SequenceGraph &sg, uint8_t filter_limit = 200, bool verbose=true) {
+        // this can be parallelised by contig by aggregating different k_usage vectors on the first step, second and third steps are trickier
+        // This two-pass approach could be easily adapted to a single memory block rather than vector of vectors
+        uint64_t indexed_positions(0),filtered_kmers(0),total_kmers(0);
+        //---- First Step, count k-mer occupancy ----//
+        if (verbose) sglib::OutputLog() << "First pass: Generating {kmer,contig,offset} " <<std::endl;
+        std::vector<uint64_t> kmerEnd(std::pow(4,k));
+        std::vector<kmerPos> all_kmers;
+        all_kmers.reserve(100000000);
+        std::vector<std::pair<bool,uint64_t > > contig_kmers;
+        contig_kmers.reserve(1000000); //1Mbp per contig to start with?
+        StringKMerFactory skf(k);
+        for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
+            if (sg.nodes[n].sequence.size() >= k) {
+                contig_kmers.clear();
+                skf.create_kmers(sg.nodes[n].sequence, contig_kmers);
+                int k_i(0);
+                for (const auto &kmer:contig_kmers) {
+                    all_kmers.emplace_back(kmer.second, n, kmer.first ? k_i + 1 : -(k_i + 1));
+                    k_i++;
+                }
+                total_kmers+=contig_kmers.size();
+            }
+        }
+        //---- Second Step, reserve space for each vector in structure (avoiding reallocations and such)----//
+        if (verbose) sglib::OutputLog() << "Sorting, linearising structure and saving positions" << std::endl;
+        sglib::sort(all_kmers.begin(), all_kmers.end(), kmerPos::byKmerContigOffset());
+        assembly_kmers.clear();
+
+        if (verbose) sglib::OutputLog() << "Filtering kmers appearing less than " << filter_limit << " from " << total_kmers << " initial kmers" << std::endl;
+        auto witr = all_kmers.begin();
+        auto ritr = witr;
+        uint64_t ckmer(0);
+        for (; ritr != all_kmers.end();) {
+
+            while (ckmer != ritr->kmer) {
+                kmerEnd[ckmer]=kmerEnd[ckmer-1];
+                ++ckmer;
+            }
+            kmerEnd[ckmer]=kmerEnd[ckmer-1];
+            auto bitr = ritr;
+            while (ritr != all_kmers.end() and bitr->kmer == ritr->kmer) {
+                ++ritr;
+            }
+            if (ritr - bitr < filter_limit) {
+                filtered_kmers+=1;
+                kmerEnd[ckmer] += ritr-bitr;
+                while (bitr != ritr) {
+                    contig_offsets.emplace_back(bitr->contigID, bitr->offset);
+                    ++witr;
+                    ++bitr;
+                }
+            }
+        }
+        std::vector<kmerPos>().swap(all_kmers);
+
+        if (verbose) sglib::OutputLog() << "Kmers for mapping " << filtered_kmers << std::endl;
+        if (verbose) sglib::OutputLog() << "Elements in structure " << contig_offsets.size() << std::endl;
+        if (verbose) sglib::OutputLog() << "DONE" << std::endl;
 
     }
 
@@ -200,6 +264,9 @@ public:
     bool empty(uint64_t kmer) const { return assembly_kmers[kmer].empty(); }
     const_iterator begin(uint64_t kmer) const {return assembly_kmers[kmer].cbegin();}
     const_iterator end(uint64_t kmer) const {return assembly_kmers[kmer].cend();}
+
+    auto beginCO(uint64_t kmer) const { if(kmer==0) return contig_offsets.cbegin(); return contig_offsets.cbegin()+kmerEnd[kmer-1];}
+    auto endCO(uint64_t kmer) const { return contig_offsets.cbegin()+kmerEnd[kmer]; }
 
     /**
      * @brief

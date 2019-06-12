@@ -177,8 +177,7 @@ void LongReadMapper::get_sat_kmer_matches(std::vector<std::vector<std::pair<int3
     uint64_t no_match=0,single_match=0,multi_match=0; //DEBUG
     for (auto i=0;i<read_kmers.size();++i){
         matches[i].clear();
-
-        for (auto it = sat_assembly_kmers.begin(read_kmers[i].second); it != sat_assembly_kmers.end(read_kmers[i].second); ++it) {
+        for (auto it = sat_assembly_kmers.beginCO(read_kmers[i].second); it != sat_assembly_kmers.endCO(read_kmers[i].second); ++it) {
             int32_t offset=it->offset; //so far, this is +1 and the sign indicate direction of kmer in contig
             sgNodeID_t node=it->contigID; //so far, this is always positive
             if (read_kmers[i].first != (offset>0) ) {
