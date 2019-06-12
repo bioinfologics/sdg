@@ -83,7 +83,6 @@ public:
 
     /**
      * This function is a alternative generator of the kmer index, reserving space first in the internal vectors.
-     *
      * @param sg
      * @param filter_limit
      * @param verbose
@@ -102,7 +101,7 @@ public:
             if (sg.nodes[n].sequence.size() >= k) {
                 contig_kmers.clear();
                 skf.create_kmers(sg.nodes[n].sequence, contig_kmers);
-                for (const auto &kmer:contig_kmers) if (kmer.second<=filter_limit) ++k_usage[kmer.second]; //beware of overflow, hence stop counting after reaching limit
+                for (const auto &kmer:contig_kmers) if (k_usage[kmer.second]<=filter_limit) ++k_usage[kmer.second]; //beware of overflow, hence stop counting after reaching limit
             }
         }
         //---- Second Step, reserve space for each vector in structure (avoiding reallocations and such)----//
