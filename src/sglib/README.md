@@ -30,8 +30,6 @@ backtrack of the assembly.
 * Split node: breaks a node, creating many smaller parts.
 * Combine nodes: merges multiple nodes, creating a single, larger, node
 
-
-
 ## Methods highlight
 
 * read_gfa / write_gfa
@@ -53,10 +51,6 @@ the region.
 
 * `n.seq`: the sequence, as a string, canonical.
 * `n.status`: as of now, always 1, meaning it is active.
-
-##
-
-##
 
 ## Using the graph
 
