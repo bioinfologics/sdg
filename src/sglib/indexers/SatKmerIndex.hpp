@@ -5,6 +5,7 @@
 #ifndef BSG_SATKMERINDEX_HPP
 #define BSG_SATKMERINDEX_HPP
 
+#include <cassert>
 #include <vector>
 #include <sglib/utilities/omp_safe.hpp>
 #include <sglib/types/KmerTypes.hpp>
@@ -24,10 +25,10 @@ struct ContigOffset {
 
 class SatKmerIndex {
     std::vector<std::vector<ContigOffset>> assembly_kmers;
-    std::vector<ContigOffset> contig_offsets;
     std::vector<uint64_t> kmerEnd;
     uint8_t k=15;
 public:
+    std::vector<ContigOffset> contig_offsets;
     using const_iterator = std::vector<ContigOffset>::const_iterator;
 
     SatKmerIndex(){}
@@ -180,10 +181,9 @@ public:
         for (; ritr != all_kmers.end();) {
 
             while (ckmer != ritr->kmer) {
-                kmerEnd[ckmer]=kmerEnd[ckmer-1];
                 ++ckmer;
+                kmerEnd[ckmer]=kmerEnd[ckmer-1];
             }
-            kmerEnd[ckmer]=kmerEnd[ckmer-1];
             auto bitr = ritr;
             while (ritr != all_kmers.end() and bitr->kmer == ritr->kmer) {
                 ++ritr;
@@ -198,8 +198,12 @@ public:
                 }
             }
         }
+        while (ckmer < std::pow(4,k)) {
+            ++ckmer;
+            kmerEnd[ckmer] = kmerEnd[ckmer-1];
+        }
+        assert(kmerEnd[std::pow(4,k)-1] == contig_offsets.size());
         std::vector<kmerPos>().swap(all_kmers);
-
         if (verbose) sglib::OutputLog() << "Kmers for mapping " << filtered_kmers << std::endl;
         if (verbose) sglib::OutputLog() << "Elements in structure " << contig_offsets.size() << std::endl;
         if (verbose) sglib::OutputLog() << "DONE" << std::endl;
@@ -265,8 +269,8 @@ public:
     const_iterator begin(uint64_t kmer) const {return assembly_kmers[kmer].cbegin();}
     const_iterator end(uint64_t kmer) const {return assembly_kmers[kmer].cend();}
 
-    auto beginCO(uint64_t kmer) const { if(kmer==0) return contig_offsets.cbegin(); return contig_offsets.cbegin()+kmerEnd[kmer-1];}
-    auto endCO(uint64_t kmer) const { return contig_offsets.cbegin()+kmerEnd[kmer]; }
+    auto beginCO(uint64_t kmer) const { return (0ull==kmer) ? 0ull : kmerEnd[kmer-1];}
+    auto endCO(uint64_t kmer) const { return kmerEnd[kmer]; }
 
     /**
      * @brief
