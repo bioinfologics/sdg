@@ -318,9 +318,21 @@ public:
     std::vector<LongReadMapping>
     filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose=false);
 
+    /**
+     * Eliminates matches that are contained within another bigger better match (more span and more score)
+     * @param matches set of matched to de-shadow, usually all the matches within a read
+     * @param verbose
+     * @return vector of de-shadowed LongReadMappings
+     */
     std::vector<LongReadMapping>
     remove_shadowed_matches(std::vector<LongReadMapping> &matches, bool verbose=false);
 
+    /**
+     * Performs the de-shadowing process for each read
+     * @param rid
+     * @param correct_on_ws
+     * @return
+     */
     std::vector<LongReadMapping> improve_read_filtered_mappings(uint32_t rid, bool correct_on_ws=false);
 
     void improve_filtered_mappings() {
