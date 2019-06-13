@@ -8,8 +8,18 @@
 #include <fstream>
 #include <iostream>
 #include "PairedReadMapper.hpp"
+#include <sdglib/workspace/WorkSpace.hpp>
 
 const bsgVersion_t PairedReadMapper::min_compat = 0x0001;
+
+PairedReadMapper::PairedReadMapper(WorkSpace &_ws, PairedReadsDatastore &_datastore) :
+        sg(_ws.sdg),
+        datastore(_datastore),
+        kmer_to_graphposition(_ws.uniqueKmerIndex),
+        k63mer_to_graphposition(_ws.unique63merIndex)
+{
+    reads_in_node.resize(sg.nodes.size());
+}
 
 void PairedReadMapper::write(std::ofstream &output_file) {
     //read-to-node

@@ -30,10 +30,10 @@ public:
 class PairedReadLinker {
 public:
     PairedReadLinker(WorkSpace & _ws, Untangler & _u): ws(_ws),u(_u) {
-        links.resize(ws.getGraph().nodes.size());
+        links.resize(ws.sdg.nodes.size());
     };
     PairedReadLinker(WorkSpace & _ws, Untangler & _u, PairedReadLinker & original, std::vector<sgNodeID_t> selected_nodes): ws(_ws),u(_u) {
-        links.resize(ws.getGraph().nodes.size());
+        links.resize(ws.sdg.nodes.size());
         std::set<sgNodeID_t> nodeset;
         for (auto n:selected_nodes) nodeset.insert(llabs(n));
         for (auto n:selected_nodes){

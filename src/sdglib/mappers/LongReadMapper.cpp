@@ -444,8 +444,14 @@ void LongReadMapper::update_indexes() {
     sdglib::OutputLog() << "LongReadMapper index updated with " << mappings.size() << " mappings and "<< frmcount << " filtered mappings (over "<< reads_with_filtered_mappings << " reads)"<< std::endl;
 }
 
-LongReadMapper::LongReadMapper(const SequenceDistanceGraph &sg, const LongReadsDatastore &ds, uint8_t k)
-        : sg(sg), k(k), datastore(ds), assembly_kmers(k) {
+LongReadMapper::LongReadMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k)
+        : sg(_ws.sdg), k(k), datastore(ds), assembly_kmers(k) {
+
+    reads_in_node.resize(sg.nodes.size());
+}
+
+LongReadMapper::LongReadMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k)
+        : sg(_sdg), k(k), datastore(ds), assembly_kmers(k) {
 
     reads_in_node.resize(sg.nodes.size());
 }

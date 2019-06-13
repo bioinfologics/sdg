@@ -58,6 +58,7 @@ public:
     using DistanceGraph::find_bubbles;
     using DistanceGraph::find_tips;
     using DistanceGraph::find_self_loops;
+    using DistanceGraph::write_to_gfa;
 
     SequenceDistanceGraph():DistanceGraph(*this) { //sdg gets initialised through LDG
         add_node(Node("",sgNodeDeleted)); //an empty deleted node on 0, just to skip the space

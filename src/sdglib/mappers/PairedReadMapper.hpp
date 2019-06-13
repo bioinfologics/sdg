@@ -17,6 +17,7 @@
 class UniqueKmerIndex;
 class Unique63merIndex;
 class PairedReadConnectivityDetail; //Forward declaration
+class WorkSpace;
 
 /**
  * @brief A mapper for linked reads from a PairedReadsDatastore.
@@ -27,14 +28,7 @@ class PairedReadConnectivityDetail; //Forward declaration
 class PairedReadMapper {
 
 public:
-    PairedReadMapper(SequenceDistanceGraph &_sg, PairedReadsDatastore &_datastore, const UniqueKmerIndex &uki,const Unique63merIndex &u63i) :
-    sg(_sg),
-    datastore(_datastore),
-    kmer_to_graphposition(uki),
-    k63mer_to_graphposition(u63i)
-    {
-        reads_in_node.resize(sg.nodes.size());
-    };
+    PairedReadMapper(WorkSpace &_ws, PairedReadsDatastore &_datastore);
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
     /** @brief Maps each read in the data-store to the nodes using unique kmers form the graph

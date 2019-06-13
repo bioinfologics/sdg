@@ -10,9 +10,20 @@
 #include "LinkedReadMapper.hpp"
 #include "sdglib/factories/KMerIDXFactory.hpp"
 #include "sdglib/readers/SequenceGraphReader.hpp"
+#include <sdglib/datastores/LinkedReadsDatastore.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
+#include <sdglib/workspace/WorkSpace.hpp>
 
 const bsgVersion_t LinkedReadMapper::min_compat = 0x0001;
+
+LinkedReadMapper::LinkedReadMapper(WorkSpace &_ws, LinkedReadsDatastore &_datastore) :
+sg(_ws.sdg),
+datastore(_datastore),
+kmer_to_graphposition(_ws.uniqueKmerIndex),
+k63mer_to_graphposition(_ws.unique63merIndex)
+{
+    reads_in_node.resize(sg.nodes.size());
+}
 
 void LinkedReadMapper::write(std::ofstream &output_file) {
     //read-to-node

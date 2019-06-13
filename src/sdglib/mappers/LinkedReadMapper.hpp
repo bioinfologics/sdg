@@ -2,18 +2,19 @@
 // Created by Bernardo Clavijo (EI) on 11/02/2018.
 //
 
-#ifndef BSG_LINKEDREADMAPPER_HPP
-#define BSG_LINKEDREADMAPPER_HPP
+#pragma once
 
 #include <map>
 
 #include "sdglib/graph/SequenceDistanceGraph.hpp"
-#include <sdglib/datastores/LinkedReadsDatastore.hpp>
 #include <sdglib/types/MappingTypes.hpp>
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
-
+class WorkSpace;
 class UniqueKmerIndex;
 class Unique63merIndex;
+class LinkedReadsDatastore;
+
+
 class TagNeighbour {
 public:
     TagNeighbour(){};
@@ -30,14 +31,7 @@ public:
 class LinkedReadMapper {
 
 public:
-    LinkedReadMapper(SequenceDistanceGraph &_sg, LinkedReadsDatastore &_datastore, const UniqueKmerIndex &uki, const Unique63merIndex &u63i) :
-    sg(_sg),
-    datastore(_datastore),
-    kmer_to_graphposition(uki),
-    k63mer_to_graphposition(u63i)
-    {
-        reads_in_node.resize(sg.nodes.size());
-    };
+    LinkedReadMapper(WorkSpace &_ws, LinkedReadsDatastore &_datastore);
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
 
@@ -178,4 +172,3 @@ public:
 
     static const bsgVersion_t min_compat;
 };
-#endif //BSG_LINKEDREADMAPPER_HPP

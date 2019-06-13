@@ -4,6 +4,9 @@
 
 #include "WorkSpace.hpp"
 
+
+
+
 const bsgVersion_t WorkSpace::min_compat = 0x0001;
 
 void WorkSpace::add_log_entry(std::string text) {
@@ -136,7 +139,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     for (auto i=0;i<count;++i) {
         paired_read_datastores.emplace_back();
         paired_read_datastores.back().read(wsfile);
-        paired_read_mappers.emplace_back(sdg,paired_read_datastores[i],uniqueKmerIndex, unique63merIndex);
+        paired_read_mappers.emplace_back(*this,paired_read_datastores[i]);
         paired_read_mappers.back().read(wsfile);
     }
     wsfile.read((char *) &count,sizeof(count));
@@ -145,7 +148,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     for (auto i=0;i<count;++i) {
         linked_read_datastores.emplace_back();
         linked_read_datastores.back().read(wsfile);
-        linked_read_mappers.emplace_back(sdg,linked_read_datastores[i],uniqueKmerIndex, unique63merIndex);
+        linked_read_mappers.emplace_back(*this,linked_read_datastores[i]);
         linked_read_mappers.back().read(wsfile);
     }
 
@@ -155,7 +158,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     for (auto i=0;i<count;++i) {
         long_read_datastores.emplace_back();
         long_read_datastores.back().read(wsfile);
-        long_read_mappers.emplace_back(sdg,long_read_datastores[i]);
+        long_read_mappers.emplace_back(*this,long_read_datastores[i]);
         long_read_mappers.back().read(wsfile);
     }
 

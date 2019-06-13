@@ -60,7 +60,7 @@ int main(int argc, char * argv[]) {
     ws.add_log_entry("Workspace created with bsg-dbg");
     ws.add_log_entry("Origin datastore: "+pr_file);
     ws.paired_read_datastores.emplace_back(pr_file);
-    ws.paired_read_mappers.emplace_back(ws.sdg,ws.paired_read_datastores.back(), ws.uniqueKmerIndex, ws.unique63merIndex);
+    ws.paired_read_mappers.emplace_back(ws,ws.paired_read_datastores.back());
     GraphMaker gm(ws.sdg);
     //counting kmers...
     sdglib::OutputLog()<<"Creating "<<k<<"-mer set from datastore..."<<std::endl;

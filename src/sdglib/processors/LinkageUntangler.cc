@@ -769,8 +769,7 @@ std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<L
 }
 
 DistanceGraph LinkageUntangler::make_longRead_multilinkage(const LongReadMapper &lorm,bool real_read_size, int32_t unmapped_end) {
-    SequenceDistanceGraph& sg(ws.getGraph());
-    DistanceGraph ldg(sg);
+    DistanceGraph ldg(ws.sdg);
     std::vector<Link> linkage;
     //for each read's filtered mappings:
     for(int64_t rid=0;rid<lorm.filtered_read_mappings.size();++rid) {

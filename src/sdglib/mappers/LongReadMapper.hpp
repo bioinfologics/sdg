@@ -15,6 +15,7 @@
 #include <sdglib/utilities/hashing_helpers.hpp>
 #include "LinkedReadMapper.hpp"
 #include <memory>
+class WorkSpace;
 
 struct ReadPathParams {
     int default_overlap_distance = 199;
@@ -145,7 +146,8 @@ public:
     int max_jump=500;
     int max_delta_change=60;
 
-    LongReadMapper(const SequenceDistanceGraph &sg, const LongReadsDatastore &ds, uint8_t k=15);
+    LongReadMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k=15);
+    LongReadMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k=15);
     ~LongReadMapper();
 
     LongReadMapper operator=(const LongReadMapper &other);

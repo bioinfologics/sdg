@@ -2,19 +2,21 @@
 // Created by Bernardo Clavijo (EI) on 24/02/2018.
 //
 
-#ifndef BSG_WORKSPACE_HPP
-#define BSG_WORKSPACE_HPP
+#pragma once
 
+#include <sdglib/graph/SequenceDistanceGraph.hpp>
 
-#include <sdglib/datastores/LinkedReadsDatastore.hpp>
-#include <sdglib/mappers/LinkedReadMapper.hpp>
 #include <sdglib/datastores/PairedReadsDatastore.hpp>
-#include <sdglib/mappers/PairedReadMapper.hpp>
+#include <sdglib/datastores/LinkedReadsDatastore.hpp>
 #include <sdglib/datastores/LongReadsDatastore.hpp>
+
+#include <sdglib/mappers/PairedReadMapper.hpp>
+#include <sdglib/mappers/LinkedReadMapper.hpp>
 #include <sdglib/mappers/LongReadMapper.hpp>
-#include "sdglib/graph/SequenceDistanceGraph.hpp"
-#include "sdglib/processors/KmerCompressionIndex.hpp"
+
+#include <sdglib/processors/KmerCompressionIndex.hpp>
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
+
 
 class LogEntry{
 public:
@@ -51,14 +53,13 @@ public:
     std::vector<sgNodeID_t>
     select_from_all_nodes(uint32_t min_size, uint32_t max_size, uint32_t min_tags, uint32_t max_tags, float min_ci, float max_ci);
 
-    KmerCompressionIndex& getKCI() {return kci;}
-    SequenceDistanceGraph& getGraph() {return sdg;}
     std::vector<LogEntry> log;
 
     //All status classes are public, treat them with care anyway ;)
     SequenceDistanceGraph sdg;
     UniqueKmerIndex uniqueKmerIndex;
     Unique63merIndex unique63merIndex;
+
     std::vector<PairedReadsDatastore> paired_read_datastores;
     std::vector<PairedReadMapper> paired_read_mappers;
     std::vector<LinkedReadsDatastore> linked_read_datastores;
@@ -68,11 +69,7 @@ public:
 
 
     KmerCompressionIndex kci;
-    std::string verbose_log="";
 
     static const bsgVersion_t min_compat;
     std::vector<std::string> read_counts_header;
 };
-
-
-#endif //BSG_WORKSPACE_HPP

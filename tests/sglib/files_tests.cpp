@@ -24,17 +24,17 @@ TEST_CASE("Workspace create, read, write") {
     PairedReadsDatastore prds(r1_filepath, r2_filepath, prds_output_path);
 
     WorkSpace out, in;
-    out.getGraph().load_from_gfa("../tests/datasets/tgraph.gfa");
+    out.sdg.load_from_gfa("../tests/datasets/tgraph.gfa");
     out.kci.add_counts_from_datastore(prds);
     out.long_read_datastores.emplace_back(Lrds);
-    out.long_read_mappers.emplace_back(out.getGraph(), out.long_read_datastores.back());
+    out.long_read_mappers.emplace_back(out, out.long_read_datastores.back());
 
     out.paired_read_datastores.emplace_back(prds);
-    out.paired_read_mappers.emplace_back(out.getGraph(), out.paired_read_datastores.back(),
+    out.paired_read_mappers.emplace_back(out, out.paired_read_datastores.back(),
             out.uniqueKmerIndex, out.unique63merIndex);
 
     out.linked_read_datastores.emplace_back(lrds);
-    out.linked_read_mappers.emplace_back(out.getGraph(), out.linked_read_datastores.back(),
+    out.linked_read_mappers.emplace_back(out, out.linked_read_datastores.back(),
             out.uniqueKmerIndex, out.unique63merIndex);
 
     out.dump_to_disk("workspace.bsgws");
@@ -42,7 +42,7 @@ TEST_CASE("Workspace create, read, write") {
     in.load_from_disk("workspace.bsgws");
 
 
-    REQUIRE( out.getGraph() == in.getGraph());
+    REQUIRE( out.sdg == in.sdg);
 }
 
 TEST_CASE("Long reads datastore create, read, write") {
