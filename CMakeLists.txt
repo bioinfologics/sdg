@@ -197,7 +197,7 @@ target_link_libraries(sdg ${DEPENDENCY_LIBS})
 target_link_libraries(sdg_static ${DEPENDENCY_LIBS})
 
 if (BUILD_COV)
-    set_target_properties(bsg PROPERTIES
+    set_target_properties(sdg PROPERTIES
             COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
             LINK_FLAGS    "--coverage")
 endif()
@@ -207,7 +207,7 @@ add_executable(sdg-datastore
         )
 
 add_executable(sdg-kmerspectra
-        src/bsg-kmerspectra.cc
+               src/sdg-kmerspectra.cc
         )
 
 add_executable(sdg-workspace
@@ -274,7 +274,7 @@ IF(BUILD_DOC)
         message("Doxygen build started")
         # note the option ALL which allows to build the docs together with the application
         add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
-                           DEPENDS ${SDG_PUBLIC_HEADERS} README.md src/sdglib/README.md src/sglib/workspace/README.md
+                           DEPENDS ${SDG_PUBLIC_HEADERS} README.md src/sdglib/README.md src/sdglib/workspace/README.md
                            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
                            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                            MAIN_DEPENDENCY Doxyfile
@@ -301,7 +301,7 @@ IF(BUILD_DOC)
                                    COMMAND
                                    ${SPHINX_EXECUTABLE} -b html
                                    # Tell Breathe where to find the Doxygen output
-                                   -Dbreathe_projects.BSG=${DOXYGEN_OUTPUT_DIR}/xml
+                                   -Dbreathe_projects.SDG=${DOXYGEN_OUTPUT_DIR}/xml
                                    ${SPHINX_SOURCE} ${SPHINX_BUILD}
                                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                                    DEPENDS
@@ -324,8 +324,8 @@ IF(BUILD_PYTHON_INTERFACE)
     MESSAGE("Building python interface")
     FIND_PACKAGE(SWIG REQUIRED)
     INCLUDE(${SWIG_USE_FILE})
-    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/pybsg)
-    configure_file(interfaces/python/__init__.py.in pybsg/__init__.py)
+    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/pysdg)
+    configure_file(interfaces/python/__init__.py.in pysdg/__init__.py)
     configure_file(interfaces/SequenceDistanceGraph.i.in SequenceDistanceGraph.i)
 
     FIND_PACKAGE(PythonInterp 3 REQUIRED)
@@ -335,7 +335,7 @@ IF(BUILD_PYTHON_INTERFACE)
 
     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
-    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY SWIG_MODULE_NAME pybsg)
+    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY SWIG_MODULE_NAME pysdg)
 
     SET_SOURCE_FILES_PROPERTIES(${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTIES CPLUSPLUS ON)
     if (NOT APPLE)
@@ -348,7 +348,7 @@ IF(BUILD_PYTHON_INTERFACE)
     SWIG_LINK_LIBRARIES(pysdg ${PYTHON_LIBRARIES} sdg_static)
 
     install(TARGETS
-            pybsg
+            pysdg
             RUNTIME DESTINATION pysdg
             ARCHIVE DESTINATION pysdg
             LIBRARY DESTINATION pysdg)
@@ -403,7 +403,7 @@ IF (BUILD_JULIA_INTERFACE)
     set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${JlCxx_location}")
     message(STATUS "Founc JlCxx at ${JlCxx_location}")
         add_library(sdgjl SHARED interfaces/JuliaSDG.cpp)
-        target_link_libraries(sdgjl bsg)
+        target_link_libraries(sdgjl sdg)
         target_link_libraries(sdgjl JlCxx::cxxwrap_julia)
     install(TARGETS sdgjl LIBRARY DESTINATION sdgjl ARCHIVE DESTINATION sdgjl RUNTIME DESTINATION sdgjl)
 ENDIF()

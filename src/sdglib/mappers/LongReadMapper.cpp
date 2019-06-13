@@ -474,20 +474,20 @@ void LongReadMapper::update_indexes() {
 }
 
 LongReadMapper::LongReadMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k, bool sat_index)
-        : sg(_ws.sdg), k(k), datastore(ds), assembly_kmers(k) {
+        : sg(_ws.sdg), k(k), datastore(ds), assembly_kmers(k), sat_kmer_index(sat_index) {
 
     reads_in_node.resize(sg.nodes.size());
 }
 
-LongReadMapper::LongReadMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k)
+LongReadMapper::LongReadMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k, bool sat_index)
         : sg(_sdg), k(k), datastore(ds), sat_kmer_index(sat_index) {
 
     if (sat_kmer_index) {
-        sglib::OutputLog() << "Creating satindex" << std::endl;
+        sdglib::OutputLog() << "Creating satindex" << std::endl;
         sat_assembly_kmers = SatKmerIndex(k);
     }
     else {
-        sglib::OutputLog() << "Creating nkindex" << std::endl;
+        sdglib::OutputLog() << "Creating nkindex" << std::endl;
         assembly_kmers = NKmerIndex(k);
     }
     reads_in_node.resize(sg.nodes.size());

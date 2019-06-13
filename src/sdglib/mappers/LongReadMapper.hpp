@@ -145,7 +145,7 @@ public:
     int max_jump=500;
     int max_delta_change=60;
 
-    LongReadMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k=15);
+    LongReadMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k=15, bool sat_index=false);
     LongReadMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k=15, bool sat_index=false);
     ~LongReadMapper();
 

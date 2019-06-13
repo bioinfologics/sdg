@@ -113,7 +113,6 @@ namespace std {
 
    %template(SGNodePair) pair<sgNodeID_t, sgNodeID_t>;
    %template(vectorSGNodePair) vector<pair<sgNodeID_t, sgNodeID_t>>;
-   %template(vectorvectorLink) vector<std::vector<Link>>;
 
    %ignore vector<SequenceGraphPath>::vector(size_type);
    %ignore vector<SequenceGraphPath>::resize;
@@ -174,6 +173,7 @@ namespace std {
 #endif
 
 
+%include "sdglib/factories/KMerFactory.hpp"
 %include "sdglib/types/MappingTypes.hpp"
 %include "sdglib/graph/SequenceGraphPath.hpp"
 %include "sdglib/graph/SequenceSubGraph.hpp"
@@ -194,4 +194,3 @@ namespace std {
 %include "sdglib/graph/DistanceGraph.hpp"
 
 %include "sdglib/processors/HaplotypeConsensus.hpp"
-%include "sdglib/factories/KMerFactory.hpp"

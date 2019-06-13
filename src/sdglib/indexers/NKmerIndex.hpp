@@ -90,7 +90,7 @@ public:
         }
 
 
-        sglib::sort(assembly_kmers.begin(),assembly_kmers.end(), kmerPos::byKmerContigOffset());
+        sdglib::sort(assembly_kmers.begin(),assembly_kmers.end(), kmerPos::byKmerContigOffset());
 
         if (verbose) sdglib::OutputLog() << "Filtering kmers appearing less than " << filter_limit << " from " << assembly_kmers.size() << " initial kmers" << std::endl;
         auto total_kmers(filter_kmers(assembly_kmers, filter_limit));
@@ -99,8 +99,8 @@ public:
             filter.add(assembly_kmers[kidx].kmer);
         }
 
-        if (verbose) sglib::OutputLog() << "Elements for mapping " << assembly_kmers.size() << std::endl;
-        if (verbose) sglib::OutputLog() << "Total distinct kmers " << total_kmers << std::endl;
+        if (verbose) sdglib::OutputLog() << "Elements for mapping " << assembly_kmers.size() << std::endl;
+        if (verbose) sdglib::OutputLog() << "Total distinct kmers " << total_kmers << std::endl;
         if (verbose) sdglib::OutputLog() << "Number of elements in bloom " << filter.number_bits_set() << std::endl;
         if (verbose) sdglib::OutputLog() << "Filter FPR " << filter.false_positive_rate() << std::endl;
         if (verbose) sdglib::OutputLog() << "DONE" << std::endl;

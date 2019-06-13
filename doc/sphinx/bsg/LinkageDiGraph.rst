@@ -1,5 +1,0 @@
-LinkageDiGraph
-==============
-
-.. doxygenclass:: LinkageDiGraph
-   :members:

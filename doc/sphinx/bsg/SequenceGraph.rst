@@ -1,5 +1,0 @@
-SequenceGraph
-==============
-
-.. doxygenclass:: SequenceGraph
-   :members:

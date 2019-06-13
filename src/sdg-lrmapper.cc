@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/workspace/WorkSpace.hpp>
-#include "sglib/logger/OutputLog.hpp"
+#include <sdglib/workspace/WorkSpace.hpp>
+#include <sdglib/logger/OutputLog.hpp>
 #include "cxxopts.hpp"
 
 int main(int argc, char * argv[]) {
@@ -16,7 +16,7 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<std::endl;
 
     std::string workspace_file,output_prefix;
-    sglib::OutputLogLevel=sglib::LogLevels::DEBUG;
+    sdglib::OutputLogLevel=sdglib::LogLevels::DEBUG;
     try
     {
         cxxopts::Options options("bsg-lrmapper", "Long_reads-to-graph mapper for bsg worskpaces");
@@ -54,21 +54,21 @@ int main(int argc, char * argv[]) {
 
     std::cout<<std::endl;
     WorkSpace ws;
-    sglib::OutputLog()<<"Loading Workspace..."<<std::endl;
+    sdglib::OutputLog()<<"Loading Workspace..."<<std::endl;
     ws.load_from_disk(workspace_file);
     ws.add_log_entry("bsg-lrmapper run started");
-    sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
-    sglib::OutputLog()<<"Mapping reads..."<<std::endl;
+    sdglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
+    sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
     for (uint32_t lrds_idx=0; lrds_idx < ws.long_read_datastores.size(); lrds_idx++) {
-        sglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
-        ws.long_read_mappers[lrds_idx] = LongReadMapper(ws.sg, ws.long_read_datastores[lrds_idx], k, sat_kmer_index);
+        sdglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
+        ws.long_read_mappers[lrds_idx] = LongReadMapper(ws.sdg, ws.long_read_datastores[lrds_idx], k, sat_kmer_index);
         ws.long_read_mappers[lrds_idx].map_reads(max_filter);
         ws.add_log_entry("reads from "+ws.long_read_mappers[lrds_idx].datastore.filename+" re-mapped to current graph");
-        sglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
+        sdglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
     }
     ws.add_log_entry("bsg-lrmapper run finished");
     ws.dump_to_disk(output_prefix+".bsgws");
-    sglib::OutputLog()<<"Mapping reads DONE."<<std::endl;
+    sdglib::OutputLog()<<"Mapping reads DONE."<<std::endl;
     return 0;
 }
 

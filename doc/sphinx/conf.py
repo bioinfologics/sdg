@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'BSG'
+project = 'SDG'
 copyright = '2019, Bernardo J. Clavijo, Gonzalo Garcia, Luis J. Yanes, Benjamin Ward'
 author = 'Bernardo J. Clavijo, Gonzalo Garcia, Luis J. Yanes, Benjamin Ward'
 

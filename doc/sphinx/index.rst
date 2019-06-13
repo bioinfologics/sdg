@@ -3,17 +3,17 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to BSG's documentation!
+Welcome to SDG's documentation!
 ===============================
 
 .. toctree::
    :maxdepth: 3
    :caption: Contents:
 
-   bsg/README.md
-   bsg/sglib/README.md
-   bsg/sglib/workspace/README.md
-   bsg/_sglib_toc.rst
+   sdg/README.md
+   sdg/sdglib/README.md
+   sdg/sdglib/workspace/README.md
+   sdg/_sdglib_toc.rst
 
 Indices and tables
 ==================

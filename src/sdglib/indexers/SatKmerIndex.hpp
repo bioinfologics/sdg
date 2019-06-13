@@ -7,11 +7,11 @@
 
 #include <cassert>
 #include <vector>
-#include <sglib/utilities/omp_safe.hpp>
-#include <sglib/types/KmerTypes.hpp>
-#include <sglib/factories/KMerFactory.hpp>
-#include <sglib/logger/OutputLog.hpp>
-#include <sglib/graph/SequenceGraph.hpp>
+#include <sdglib/utilities/omp_safe.hpp>
+#include <sdglib/types/KmerTypes.hpp>
+#include <sdglib/factories/KMerFactory.hpp>
+#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/graph/SequenceDistanceGraph.hpp>
 
 struct ContigOffset {
     ContigOffset() = default;
@@ -53,12 +53,12 @@ public:
         return {num_kmers, num_elements};
     }
 
-    void generate_index_vec_allocs(const SequenceGraph &sg, int filter_limit = 200, bool verbose=true) {
+    void generate_index_vec_allocs(const SequenceDistanceGraph &sg, int filter_limit = 200, bool verbose=true) {
         uint64_t total_kmers(0);
         assembly_kmers.resize(std::pow(4,k));
         if (verbose) {
-            sglib::OutputLog() << "Updating mapping index for k=" << std::to_string(k) << std::endl;
-            sglib::OutputLog() << "Number of kmers to store " << std::to_string(std::pow(4,k)) << std::endl;
+            sdglib::OutputLog() << "Updating mapping index for k=" << std::to_string(k) << std::endl;
+            sdglib::OutputLog() << "Number of kmers to store " << std::to_string(std::pow(4,k)) << std::endl;
         }
 
         StringKMerFactory skf(k);
@@ -77,11 +77,11 @@ public:
             }
         }
 
-        if (verbose) sglib::OutputLog() << "Filtering kmers appearing less than " << filter_limit << " from " << total_kmers << " initial kmers" << std::endl;
+        if (verbose) sdglib::OutputLog() << "Filtering kmers appearing less than " << filter_limit << " from " << total_kmers << " initial kmers" << std::endl;
         auto pair = filter_kmers(filter_limit);
-        if (verbose) sglib::OutputLog() << "Kmers for mapping " << pair.first << std::endl;
-        if (verbose) sglib::OutputLog() << "Elements in structure " << pair.second << std::endl;
-        if (verbose) sglib::OutputLog() << "DONE" << std::endl;
+        if (verbose) sdglib::OutputLog() << "Kmers for mapping " << pair.first << std::endl;
+        if (verbose) sdglib::OutputLog() << "Elements in structure " << pair.second << std::endl;
+        if (verbose) sdglib::OutputLog() << "DONE" << std::endl;
     }
 
     /**
@@ -90,12 +90,12 @@ public:
      * @param filter_limit
      * @param verbose
      */
-    void generate_index_prealloc(const SequenceGraph &sg, uint8_t filter_limit = 200, bool verbose=true) {
+    void generate_index_prealloc(const SequenceDistanceGraph &sg, uint8_t filter_limit = 200, bool verbose=true) {
         // this can be parallelised by contig by aggregating different k_usage vectors on the first step, second and third steps are trickier
         // This two-pass approach could be easily adapted to a single memory block rather than vector of vectors
         uint64_t indexed_positions(0),indexed_kmers(0),total_kmers(0);
         //---- First Step, count k-mer occupancy ----//
-        if (verbose) sglib::OutputLog() << "First pass: analysing usage over " << std::to_string(uint64_t (std::pow(4,k))) << " k-mers..."<<std::endl;
+        if (verbose) sdglib::OutputLog() << "First pass: analysing usage over " << std::to_string(uint64_t (std::pow(4,k))) << " k-mers..."<<std::endl;
         std::vector<uint8_t> k_usage(std::pow(4,k));
         std::vector<std::pair<bool,uint64_t > > contig_kmers;
         contig_kmers.reserve(1000000); //1Mbp per contig to start with?
@@ -108,7 +108,7 @@ public:
             }
         }
         //---- Second Step, reserve space for each vector in structure (avoiding reallocations and such)----//
-        if (verbose) sglib::OutputLog() << "Reserving space on internal vectors..." << std::endl;
+        if (verbose) sdglib::OutputLog() << "Reserving space on internal vectors..." << std::endl;
         assembly_kmers.clear();
         assembly_kmers.reserve(k_usage.size());
         for (auto &count:k_usage){
@@ -120,10 +120,10 @@ public:
                 assembly_kmers.emplace_back();
             }
         }
-        if (verbose) sglib::OutputLog() << "Space reserved to index "<< indexed_kmers <<" k-mers with less than "<<filter_limit+1<<" copies..." << std::endl;
+        if (verbose) sdglib::OutputLog() << "Space reserved to index "<< indexed_kmers <<" k-mers with less than "<<filter_limit+1<<" copies..." << std::endl;
 
         //---- Third step, actually save the positions ---//
-        if (verbose) sglib::OutputLog() << "Second pass: filling index..." << std::endl;
+        if (verbose) sdglib::OutputLog() << "Second pass: filling index..." << std::endl;
         contig_kmers.reserve(10000);
         for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
             if (sg.nodes[n].sequence.size() >= k) {
@@ -141,16 +141,16 @@ public:
             }
         }
 
-        if (verbose) sglib::OutputLog() << indexed_positions << "/" << total_kmers << " postions indexed by " << indexed_kmers << " kmers" << std::endl;
+        if (verbose) sdglib::OutputLog() << indexed_positions << "/" << total_kmers << " postions indexed by " << indexed_kmers << " kmers" << std::endl;
 
     }
 
-    void generate_index(const SequenceGraph &sg, uint8_t filter_limit = 200, bool verbose=true) {
+    void generate_index(const SequenceDistanceGraph &sg, uint8_t filter_limit = 200, bool verbose=true) {
         // this can be parallelised by contig by aggregating different k_usage vectors on the first step, second and third steps are trickier
         // This two-pass approach could be easily adapted to a single memory block rather than vector of vectors
         uint64_t indexed_positions(0),filtered_kmers(0),total_kmers(0);
         //---- First Step, count k-mer occupancy ----//
-        if (verbose) sglib::OutputLog() << "First pass: Generating {kmer,contig,offset} " <<std::endl;
+        if (verbose) sdglib::OutputLog() << "First pass: Generating {kmer,contig,offset} " <<std::endl;
         kmerEnd.resize(std::pow(4,k));
         std::vector<kmerPos> all_kmers;
         all_kmers.reserve(100000000);
@@ -170,11 +170,11 @@ public:
             }
         }
         //---- Second Step, reserve space for each vector in structure (avoiding reallocations and such)----//
-        if (verbose) sglib::OutputLog() << "Sorting, linearising structure and saving positions" << std::endl;
-        sglib::sort(all_kmers.begin(), all_kmers.end(), kmerPos::byKmerContigOffset());
+        if (verbose) sdglib::OutputLog() << "Sorting, linearising structure and saving positions" << std::endl;
+        sdglib::sort(all_kmers.begin(), all_kmers.end(), kmerPos::byKmerContigOffset());
         assembly_kmers.clear();
 
-        if (verbose) sglib::OutputLog() << "Filtering kmers appearing less than " << filter_limit << " from " << total_kmers << " initial kmers" << std::endl;
+        if (verbose) sdglib::OutputLog() << "Filtering kmers appearing less than " << filter_limit << " from " << total_kmers << " initial kmers" << std::endl;
         auto witr = all_kmers.begin();
         auto ritr = witr;
         uint64_t ckmer(0);
@@ -204,18 +204,18 @@ public:
         }
         assert(kmerEnd[std::pow(4,k)-1] == contig_offsets.size());
         std::vector<kmerPos>().swap(all_kmers);
-        if (verbose) sglib::OutputLog() << "Kmers for mapping " << filtered_kmers << std::endl;
-        if (verbose) sglib::OutputLog() << "Elements in structure " << contig_offsets.size() << std::endl;
-        if (verbose) sglib::OutputLog() << "DONE" << std::endl;
+        if (verbose) sdglib::OutputLog() << "Kmers for mapping " << filtered_kmers << std::endl;
+        if (verbose) sdglib::OutputLog() << "Elements in structure " << contig_offsets.size() << std::endl;
+        if (verbose) sdglib::OutputLog() << "DONE" << std::endl;
 
     }
 
-    void generate_index_parallel(const SequenceGraph &sg, int filter_limit = 200, bool verbose=true) {
+    void generate_index_parallel(const SequenceDistanceGraph &sg, int filter_limit = 200, bool verbose=true) {
         uint64_t total_kmers(0);
         assembly_kmers.resize(std::pow(4,k));
         if (verbose) {
-            sglib::OutputLog() << "Updating mapping index for k=" << std::to_string(k) << std::endl;
-            sglib::OutputLog() << "Number of kmers to store " << std::to_string(uint64_t (std::pow(4,k))) << std::endl;
+            sdglib::OutputLog() << "Updating mapping index for k=" << std::to_string(k) << std::endl;
+            sdglib::OutputLog() << "Number of kmers to store " << std::to_string(uint64_t (std::pow(4,k))) << std::endl;
         }
 #pragma omp parallel reduction(+:total_kmers)
         {
@@ -258,11 +258,11 @@ public:
             }
         }
 
-        if (verbose) sglib::OutputLog() << "Filtering kmers appearing less than " << filter_limit << " from " << total_kmers << " initial kmers" << std::endl;
+        if (verbose) sdglib::OutputLog() << "Filtering kmers appearing less than " << filter_limit << " from " << total_kmers << " initial kmers" << std::endl;
         auto pair = filter_kmers(filter_limit);
-        if (verbose) sglib::OutputLog() << "Kmers for mapping " << pair.first << std::endl;
-        if (verbose) sglib::OutputLog() << "Elements in structure " << pair.second << std::endl;
-        if (verbose) sglib::OutputLog() << "DONE" << std::endl;
+        if (verbose) sdglib::OutputLog() << "Kmers for mapping " << pair.first << std::endl;
+        if (verbose) sdglib::OutputLog() << "Elements in structure " << pair.second << std::endl;
+        if (verbose) sdglib::OutputLog() << "DONE" << std::endl;
     }
 
     bool empty(uint64_t kmer) const { return assembly_kmers[kmer].empty(); }
