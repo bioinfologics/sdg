@@ -1,7 +1,7 @@
 #include <iostream>
-#include <sglib/workspace/WorkSpace.hpp>
-#include <sglib/processors/LinkageUntangler.hpp>
-#include <sglib/processors/HaplotypeConsensus.hpp>
+#include <sdglib/workspace/WorkSpace.hpp>
+#include <sdglib/processors/LinkageUntangler.hpp>
+#include <sdglib/processors/HaplotypeConsensus.hpp>
 #include "cxxopts.hpp"
 
 
@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
     }
 
     if (from != 0 or to != 0)
-        sglib::OutputLog() << "Building backbones from " << from << " to " << to << std::endl;
+        sdglib::OutputLog() << "Building backbones from " << from << " to " << to << std::endl;
 
     ws.load_from_disk(workspace_file);
 
@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
     ws.linked_read_mappers[0].read_tag_neighbours(neighbours_file);
     ws.long_read_mappers[0].update_indexes();
 
-    sglib::OutputLog() << "Selecting backbones" << std::endl;
+    sdglib::OutputLog() << "Selecting backbones" << std::endl;
 
     auto u=LinkageUntangler(ws);
     auto mldg=u.make_longRead_multilinkage(ws.long_read_mappers[0]);
@@ -59,14 +59,14 @@ int main(int argc, char **argv) {
 
     auto backbones=ldg.get_all_lines(2,10000);
 
-    sglib::OutputLog() << "Done selecting backbones" << std::endl;
+    sdglib::OutputLog() << "Done selecting backbones" << std::endl;
 
     if (to == 0) {
         to = backbones.size();
     }
-    sglib::OutputLog() << "Building backbones from " << from << " to " << to << std::endl;
+    sdglib::OutputLog() << "Building backbones from " << from << " to " << to << std::endl;
     for (uint32_t backbone=from; backbone <= to and backbone < backbones.size(); ++backbone) {
-        sglib::OutputLog() << "Starting consensus for backbone " << backbone << std::endl;
+        sdglib::OutputLog() << "Starting consensus for backbone " << backbone << std::endl;
 
         for (const auto &n: backbones[backbone]) {
             if (n != 0){
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
 
             // Clear temp structures
             ws.long_read_mappers[0].all_paths_between.clear();
-            sglib::OutputLog() << "Done clearing structures" << std::endl;
+            sdglib::OutputLog() << "Done clearing structures" << std::endl;
 
         } else {
             haplotypeConsensus.read_read_paths("oriented_read_paths_backbone_"+std::to_string(backbone)+".orp");
@@ -107,20 +107,20 @@ int main(int argc, char **argv) {
         }
 
 
-        sglib::OutputLog() << "Backbone " << backbone << " consensus: " << std::endl;
+        sdglib::OutputLog() << "Backbone " << backbone << " consensus: " << std::endl;
         for (const auto &n: haplotypeConsensus.backbone_filled_path) {
             if (n != 0){
                 std::cout << "seq"<<std::abs(n)<<",";
             }
         }
         std::cout << std::endl;
-        sglib::OutputLog() << "Done building line path" << std::endl;
+        sdglib::OutputLog() << "Done building line path" << std::endl;
 
 
         std::ofstream backbone_consensus_fasta("consensus"+std::to_string(backbone)+".fasta");
         backbone_consensus_fasta << ">backbone_consensus_" << backbone << std::endl;
         backbone_consensus_fasta << consensus << std::endl;
-        sglib::OutputLog() << "Done consensus for backbone " << backbone << std::endl;
+        sdglib::OutputLog() << "Done consensus for backbone " << backbone << std::endl;
     }
 
     return 0;

@@ -24,7 +24,7 @@ if (APPLE)
 endif (APPLE)
 
 
-PROJECT (bsg VERSION 0.1)
+PROJECT (sdg VERSION 0.1)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 INCLUDE(FindPythonModule)
@@ -139,67 +139,62 @@ endif()
 include_directories("src/")
 include_directories("deps/cxxopts/")
 include_directories("deps/kseqcpp/")
+include_directories("deps/xxhash/")
 ## Set sources variables
 
 ## Libraries
-add_library(bsg SHARED
-            src/sglib/graph/SequenceGraph.cc
-            src/sglib/graph/SequenceSubGraph.cpp
-            src/sglib/graph/SequenceGraphPath.cpp
-            src/sglib/graph/LinkageDiGraph.cc
-            src/sglib/filesystem/helpers.cc
-            src/sglib/logger/OutputLog.cc
-            src/sglib/datastores/PairedReadsDatastore.cc
-            src/sglib/datastores/LinkedReadsDatastore.cc
-            src/sglib/datastores/PathsDatastore.cc
-            src/sglib/datastores/LongReadsDatastore.cpp
-            src/sglib/mappers/LongReadMapper.cpp
-            src/sglib/mappers/threader/NodeMapper.cpp
-            src/sglib/mappers/threader/MappingThreader.cpp
-            src/sglib/mappers/LinkedReadMapper.cc
-            src/sglib/mappers/PairedReadMapper.cc
-            src/sglib/processors/Untangler.cc
-            src/sglib/processors/PathExplorer.cpp
-            src/sglib/processors/LinkageUntangler.cc
-            src/sglib/workspace/WorkSpace.cc
-            src/sglib/processors/KmerCompressionIndex.cc
-            src/sglib/processors/GraphEditor.cc
-            src/sglib/processors/GraphMaker.cc
-            src/sglib/processors/LocalHaplotypeAssembler.cc
-            src/sglib/processors/HaplotypeConsensus.cc
-            src/sglib/hash/xxhash.c
+add_library(sdg SHARED
+        src/sdglib/graph/SequenceDistanceGraph.cc
+        src/sdglib/graph/SequenceSubGraph.cpp
+        src/sdglib/graph/SequenceGraphPath.cpp
+        src/sdglib/graph/DistanceGraph.cc
+        src/sdglib/filesystem/helpers.cc
+        src/sdglib/logger/OutputLog.cc
+        src/sdglib/datastores/PairedReadsDatastore.cc
+        src/sdglib/datastores/LinkedReadsDatastore.cc
+        src/sdglib/datastores/LongReadsDatastore.cpp
+        src/sdglib/mappers/LongReadMapper.cpp
+        src/sdglib/mappers/LinkedReadMapper.cc
+        src/sdglib/mappers/PairedReadMapper.cc
+        src/sdglib/processors/Untangler.cc
+        src/sdglib/processors/PathExplorer.cpp
+        src/sdglib/processors/LinkageUntangler.cc
+        src/sdglib/workspace/WorkSpace.cc
+        src/sdglib/processors/KmerCompressionIndex.cc
+        src/sdglib/processors/GraphEditor.cc
+        src/sdglib/processors/GraphMaker.cc
+        src/sdglib/processors/LocalHaplotypeAssembler.cc
+        src/sdglib/processors/HaplotypeConsensus.cc
+        deps/xxhash/xxhash.c
         )
 
-add_library(bsg_static STATIC
-        src/sglib/graph/SequenceGraph.cc
-        src/sglib/graph/SequenceSubGraph.cpp
-        src/sglib/graph/SequenceGraphPath.cpp
-        src/sglib/graph/LinkageDiGraph.cc
-        src/sglib/filesystem/helpers.cc
-        src/sglib/logger/OutputLog.cc
-        src/sglib/datastores/PairedReadsDatastore.cc
-        src/sglib/datastores/LinkedReadsDatastore.cc
-        src/sglib/datastores/PathsDatastore.cc
-        src/sglib/datastores/LongReadsDatastore.cpp
-        src/sglib/mappers/LongReadMapper.cpp
-        src/sglib/mappers/threader/NodeMapper.cpp
-        src/sglib/mappers/threader/MappingThreader.cpp
-        src/sglib/mappers/LinkedReadMapper.cc
-        src/sglib/mappers/PairedReadMapper.cc
-        src/sglib/processors/Untangler.cc
-        src/sglib/processors/PathExplorer.cpp
-        src/sglib/processors/LinkageUntangler.cc
-        src/sglib/workspace/WorkSpace.cc
-        src/sglib/processors/KmerCompressionIndex.cc
-        src/sglib/processors/GraphEditor.cc
-        src/sglib/processors/GraphMaker.cc
-        src/sglib/processors/LocalHaplotypeAssembler.cc
-        src/sglib/processors/HaplotypeConsensus.cc
-        src/sglib/hash/xxhash.c
+add_library(sdg_static STATIC
+        src/sdglib/graph/SequenceDistanceGraph.cc
+        src/sdglib/graph/SequenceSubGraph.cpp
+        src/sdglib/graph/SequenceGraphPath.cpp
+        src/sdglib/graph/DistanceGraph.cc
+        src/sdglib/filesystem/helpers.cc
+        src/sdglib/logger/OutputLog.cc
+        src/sdglib/datastores/PairedReadsDatastore.cc
+        src/sdglib/datastores/LinkedReadsDatastore.cc
+        src/sdglib/datastores/LongReadsDatastore.cpp
+        src/sdglib/mappers/LongReadMapper.cpp
+        src/sdglib/mappers/LinkedReadMapper.cc
+        src/sdglib/mappers/PairedReadMapper.cc
+        src/sdglib/processors/Untangler.cc
+        src/sdglib/processors/PathExplorer.cpp
+        src/sdglib/processors/LinkageUntangler.cc
+        src/sdglib/workspace/WorkSpace.cc
+        src/sdglib/processors/KmerCompressionIndex.cc
+        src/sdglib/processors/GraphEditor.cc
+        src/sdglib/processors/GraphMaker.cc
+        src/sdglib/processors/LocalHaplotypeAssembler.cc
+        src/sdglib/processors/HaplotypeConsensus.cc
+        deps/xxhash/xxhash.c
         )
 
-target_link_libraries(bsg ${DEPENDENCY_LIBS})
-target_link_libraries(bsg_static ${DEPENDENCY_LIBS})
+target_link_libraries(sdg ${DEPENDENCY_LIBS})
+target_link_libraries(sdg_static ${DEPENDENCY_LIBS})
 
 if (BUILD_COV)
     set_target_properties(bsg PROPERTIES
@@ -207,69 +202,50 @@ if (BUILD_COV)
             LINK_FLAGS    "--coverage")
 endif()
 
-add_executable(bsg-datastore
-        src/bsg-datastore.cc
+add_executable(sdg-datastore
+        src/sdg-datastore.cc
         )
 
-add_executable(bsg-kmerspectra
+add_executable(sdg-kmerspectra
         src/bsg-kmerspectra.cc
         )
 
-add_executable(bsg-workspace
-        src/bsg-workspace.cc
+add_executable(sdg-workspace
+        src/sdg-workspace.cc
         )
 
-add_executable(bsg-mapper
-        src/bsg-mapper.cc
+add_executable(sdg-mapper
+        src/sdg-mapper.cc
         )
 
-add_executable(bsg-lrmapper
-               src/bsg-lrmapper.cc
+add_executable(sdg-lrmapper
+               src/sdg-lrmapper.cc
                )
 
-add_executable(bsg-untangler
-        src/bsg-untangler.cc
-        )
-
-add_executable(bsg-lhapassembler
-        src/bsg-lhapassembler.cc
-        )
-
-add_executable(seq-thread
-        src/seq-thread.cpp
-        )
-
-add_executable(gfa-extract
-        src/gfa-extract.cc)
-
-add_executable(bsg-dbg
-        src/bsg-dbg.cc)
+add_executable(sdg-dbg
+        src/sdg-dbg.cc)
 
 add_executable(build_all_backbones
         src/build_all_backbones.cc)
 
-target_link_libraries(bsg-workspace bsg_static)
-target_link_libraries(bsg-datastore bsg_static)
-target_link_libraries(bsg-kmerspectra bsg_static)
-target_link_libraries(bsg-mapper bsg_static ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-lrmapper bsg_static ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-untangler bsg_static ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bsg-lhapassembler bsg_static ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(gfa-extract bsg_static)
-target_link_libraries(seq-thread bsg_static)
-target_link_libraries(bsg-dbg bsg_static)
-target_link_libraries(build_all_backbones bsg_static)
+target_link_libraries(sdg-workspace sdg_static)
+target_link_libraries(sdg-datastore sdg_static)
+target_link_libraries(sdg-kmerspectra sdg_static)
+target_link_libraries(sdg-mapper sdg_static ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(sdg-lrmapper sdg_static ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(sdg-dbg sdg_static)
+target_link_libraries(build_all_backbones sdg_static)
 
 
 #IF(BUILD_TESTING)
 #    include_directories("tests/include")
-#    add_library( CatchMain OBJECT tests/sglib/catch-main.cpp tests/include/catch.hpp )
+#    add_library( CatchMain OBJECT tests/sdglib/catch-main.cpp tests/include/catch.hpp )
 #    add_executable(runBasicTests
 #            $<TARGET_OBJECTS:CatchMain>
-#            tests/sglib/files_tests.cpp
-#            tests/sglib/smr_tests.cpp
-#            tests/sglib/kmerfactory_tests.cpp
-#            tests/sglib/index_tests.cpp
+#            tests/sdglib/files_tests.cpp
+#            tests/sdglib/smr_tests.cpp
+#            tests/sdglib/kmerfactory_tests.cpp
+#            tests/sdglib/index_tests.cpp
 #            )
 #    IF(BUILD_COV)
 #        set_target_properties(runBasicTests PROPERTIES
@@ -284,8 +260,8 @@ target_link_libraries(build_all_backbones bsg_static)
 IF(BUILD_DOC)
     find_package(Doxygen REQUIRED)
     if (DOXYGEN_FOUND)
-        get_target_property(BSG_PUBLIC_HEADER_DIR bsg INTERFACE_INCLUDE_DIRECTORIES)
-        file(GLOB_RECURSE BSG_PUBLIC_HEADERS ${BSG_PUBLIC_HEADER_DIR}/*.h)
+        get_target_property(SDG_PUBLIC_HEADER_DIR sdg INTERFACE_INCLUDE_DIRECTORIES)
+        file(GLOB_RECURSE SDG_PUBLIC_HEADERS ${SDG_PUBLIC_HEADER_DIR}/*.h)
         # set input and output files
         set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR})
         set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/docs)
@@ -298,7 +274,7 @@ IF(BUILD_DOC)
         message("Doxygen build started")
         # note the option ALL which allows to build the docs together with the application
         add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
-                           DEPENDS ${BSG_PUBLIC_HEADERS} README.md src/sglib/README.md src/sglib/workspace/README.md
+                           DEPENDS ${SDG_PUBLIC_HEADERS} README.md src/sdglib/README.md src/sglib/workspace/README.md
                            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
                            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                            MAIN_DEPENDENCY Doxyfile
@@ -331,8 +307,8 @@ IF(BUILD_DOC)
                                    DEPENDS
                                    # Other docs files you want to track should go here (or in some variable)
                                    ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/index.rst
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/bsg/*
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/bsg/sglib/*
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/sdg/*
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/sdg/sdglib/*
                                    ${DOXYGEN_INDEX_FILE}
                                    MAIN_DEPENDENCY ${SPHINX_SOURCE}/conf.py
                                    COMMENT "Generating documentation with Sphinx, WD: ${CMAKE_CURRENT_BINARY_DIR}")
@@ -350,7 +326,7 @@ IF(BUILD_PYTHON_INTERFACE)
     INCLUDE(${SWIG_USE_FILE})
     set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/pybsg)
     configure_file(interfaces/python/__init__.py.in pybsg/__init__.py)
-    configure_file(interfaces/SequenceGraph.i.in SequenceGraph.i)
+    configure_file(interfaces/SequenceDistanceGraph.i.in SequenceDistanceGraph.i)
 
     FIND_PACKAGE(PythonInterp 3 REQUIRED)
     FIND_PACKAGE(PythonLibs 3 REQUIRED)
@@ -359,23 +335,23 @@ IF(BUILD_PYTHON_INTERFACE)
 
     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
-    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY SWIG_MODULE_NAME pybsg)
+    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY SWIG_MODULE_NAME pybsg)
 
-    SET_SOURCE_FILES_PROPERTIES(${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTIES CPLUSPLUS ON)
+    SET_SOURCE_FILES_PROPERTIES(${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTIES CPLUSPLUS ON)
     if (NOT APPLE)
-        set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
-        set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
+        set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
+        set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
     endif()
 
-    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY DEPENDS doxy2swig)
-    SWIG_ADD_LIBRARY(pybsg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
-    SWIG_LINK_LIBRARIES(pybsg ${PYTHON_LIBRARIES} bsg_static)
+    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY DEPENDS doxy2swig)
+    SWIG_ADD_LIBRARY(pysdg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i)
+    SWIG_LINK_LIBRARIES(pysdg ${PYTHON_LIBRARIES} sdg_static)
 
     install(TARGETS
             pybsg
-            RUNTIME DESTINATION pybsg
-            ARCHIVE DESTINATION pybsg
-            LIBRARY DESTINATION pybsg)
+            RUNTIME DESTINATION pysdg
+            ARCHIVE DESTINATION pysdg
+            LIBRARY DESTINATION pysdg)
 
 ENDIF()
 
@@ -386,38 +362,34 @@ IF(BUILD_R_INTERFACE)
     FIND_PACKAGE(R REQUIRED)
     INCLUDE_DIRECTORIES(${R_INCLUDE_DIR})
     INCLUDE(${SWIG_USE_FILE})
-    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/rbsg)
-    configure_file(interfaces/SequenceGraph.i.in SequenceGraph.i)
+    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/rsdg)
+    configure_file(interfaces/SequenceDistanceGraph.i.in SequenceDistanceGraph.i)
 
     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-    SET_SOURCE_FILES_PROPERTIES(${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTIES CPLUSPLUS ON)
-    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceGraph.i PROPERTY SWIG_MODULE_NAME rbsg)
-    SWIG_ADD_LIBRARY(rbsg LANGUAGE r SOURCES ${CMAKE_BINARY_DIR}/SequenceGraph.i)
-    SWIG_LINK_LIBRARIES(rbsg ${R_LIBRARIES} bsg_static)
+    SET_SOURCE_FILES_PROPERTIES(${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTIES CPLUSPLUS ON)
+    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY SWIG_MODULE_NAME rsdg)
+    SWIG_ADD_LIBRARY(rsdg LANGUAGE r SOURCES ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i)
+    SWIG_LINK_LIBRARIES(rsdg ${R_LIBRARIES} sdg_static)
 
     install(TARGETS
-            rbsg
-            RUNTIME DESTINATION rbsg
-            ARCHIVE DESTINATION rbsg
-            LIBRARY DESTINATION rbsg)
+            rsdg
+            RUNTIME DESTINATION rsdg
+            ARCHIVE DESTINATION rsdg
+            LIBRARY DESTINATION rsdg)
 ENDIF()
 
 install(TARGETS
-        bsg-workspace
-        bsg-datastore
-        bsg-kmerspectra
-        bsg-mapper
-        bsg-untangler
-        bsg-lhapassembler
-        gfa-extract
-        seq-thread
-        bsg
-        bsg_static
+        sdg-workspace
+        sdg-datastore
+        sdg-kmerspectra
+        sdg-mapper
+        sdg
+        sdg_static
 #        runBasicTests
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib)
-install(DIRECTORY src/sglib
+install(DIRECTORY src/sdglib
         DESTINATION include)
 
 IF (BUILD_JULIA_INTERFACE)
@@ -430,10 +402,8 @@ IF (BUILD_JULIA_INTERFACE)
     get_filename_component(JlCxx_location ${JlCxx_location} DIRECTORY)
     set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${JlCxx_location}")
     message(STATUS "Founc JlCxx at ${JlCxx_location}")
-        add_library(bsgjl SHARED interfaces/JuliaBSG.cpp)
-        target_link_libraries(bsgjl bsg)
-        target_link_libraries(bsgjl JlCxx::cxxwrap_julia)
-    install(TARGETS bsgjl LIBRARY DESTINATION bsgjl ARCHIVE DESTINATION bsgjl RUNTIME DESTINATION bsgjl)
+        add_library(sdgjl SHARED interfaces/JuliaSDG.cpp)
+        target_link_libraries(sdgjl bsg)
+        target_link_libraries(sdgjl JlCxx::cxxwrap_julia)
+    install(TARGETS sdgjl LIBRARY DESTINATION sdgjl ARCHIVE DESTINATION sdgjl RUNTIME DESTINATION sdgjl)
 ENDIF()
-
-

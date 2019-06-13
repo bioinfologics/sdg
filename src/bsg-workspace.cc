@@ -1,8 +1,8 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <sglib/processors/KmerCompressionIndex.hpp>
-#include <sglib/workspace/WorkSpace.hpp>
+#include <sdglib/processors/KmerCompressionIndex.hpp>
+#include <sdglib/workspace/WorkSpace.hpp>
 #include "cxxopts.hpp"
 
 enum WorkspaceFunctions{
@@ -71,39 +71,37 @@ void make_workspace(int argc, char** argv){
     //===== LOAD GRAPH =====
     WorkSpace w;
     w.add_log_entry("Created with bsg-makeworkspace");
-    w.getGraph().load_from_gfa(gfa_filename);
-    w.add_log_entry("GFA imported from " + gfa_filename + " (" + std::to_string(w.getGraph().nodes.size() - 1) +
+    w.sdg.load_from_gfa(gfa_filename);
+    w.add_log_entry("GFA imported from " + gfa_filename + " (" + std::to_string(w.sdg.nodes.size() - 1) +
                     " nodes)");
 
     if (kci_filename != "") {
-        w.getKCI().load_from_disk(kci_filename);
+        w.kci.load_from_disk(kci_filename);
         w.add_log_entry("KCI kmer spectra imported from " + kci_filename);
     }
 
     for (auto prds:pr_datastores) {
         //create and load the datastore, and the mapper!
-        w.getPairedReadDatastores().emplace_back(prds);
-        w.getPairedReadMappers().emplace_back(w.getGraph(), w.getPairedReadDatastores().back(),
-                                              w.uniqueKmerIndex, w.unique63merIndex);
+        w.paired_read_datastores.emplace_back(prds);
+        w.paired_read_mappers.emplace_back(w, w.paired_read_datastores.back());
         w.add_log_entry("PairedReadDatastore imported from " + prds + " (" +
-                        std::to_string(w.getPairedReadDatastores().back().size()) + " reads)");
+                        std::to_string(w.paired_read_datastores.back().size()) + " reads)");
     }
 
     for (auto lrds:lr_datastores) {
         //create and load the datastore, and the mapper!
-        w.getLinkedReadDatastores().emplace_back(lrds);
-        w.getLinkedReadMappers().emplace_back(w.getGraph(), w.getLinkedReadDatastores().back(),
-                                              w.uniqueKmerIndex, w.unique63merIndex);
+        w.linked_read_datastores.emplace_back(lrds);
+        w.linked_read_mappers.emplace_back(w, w.linked_read_datastores.back());
         w.add_log_entry("LinkedReadDatastore imported from " + lrds + " (" +
-                        std::to_string(w.getLinkedReadDatastores().back().size()) + " reads)");
+                        std::to_string(w.linked_read_datastores.back().size()) + " reads)");
     }
 
     for (auto Lrds:Lr_datastores) {
         //create and load the datastore, and the mapper!
-        w.getLongReadDatastores().emplace_back(Lrds);
-        w.getLongReadMappers().emplace_back(w.getGraph(), w.getLongReadDatastores().back());
+        w.long_read_datastores.emplace_back(Lrds);
+        w.long_read_mappers.emplace_back(w, w.long_read_datastores.back());
         w.add_log_entry("LongReadDatastore imported from " + Lrds + " (" +
-                        std::to_string(w.getLongReadDatastores().back().size()) + " reads)");
+                        std::to_string(w.long_read_datastores.back().size()) + " reads)");
     }
 
     w.dump_to_disk(output + ".bsgws");
@@ -142,24 +140,24 @@ void log_workspace(int argc, char **argv){
     w.print_log();
     std::cout<<std::endl<<"---=== Workspace current status ===---"<<std::endl;
     //graph
-    w.sg.print_status();
+    w.sdg.print_status();
     //kci
     w.kci.print_status();
     //PR datastores and mappings
-    sglib::OutputLog()<<"Workspace contains "<< w.paired_read_datastores.size() << " paired reads datastores" <<std::endl;
+    sdglib::OutputLog()<<"Workspace contains "<< w.paired_read_datastores.size() << " paired reads datastores" <<std::endl;
     for (auto di=0;di<w.paired_read_datastores.size();++di){
         w.paired_read_datastores[di].print_status();
         w.paired_read_mappers[di].print_status();
 
     }
     //10x datastores and mappings
-    sglib::OutputLog()<<"Workspace contains "<< w.linked_read_datastores.size() << " linked reads datastores" <<std::endl;
+    sdglib::OutputLog()<<"Workspace contains "<< w.linked_read_datastores.size() << " linked reads datastores" <<std::endl;
     for (auto di=0;di<w.linked_read_datastores.size();++di){
         w.linked_read_datastores[di].print_status();
         w.linked_read_mappers[di].print_status();
     }
     //LR datastores and mappings
-    sglib::OutputLog()<<"Workspace contains "<< w.long_read_datastores.size() << " long reads datastores" <<std::endl;
+    sdglib::OutputLog()<<"Workspace contains "<< w.long_read_datastores.size() << " long reads datastores" <<std::endl;
     for (auto di=0;di<w.long_read_datastores.size();++di){
         w.long_read_datastores[di].print_status();
         w.long_read_mappers[di].print_status();
@@ -206,22 +204,22 @@ void dump_workspace(int argc, char **argv){
     std::cout << "Loading workspace " << std::endl;
     WorkSpace w;
     w.load_from_disk(filename);
-    if (!w.getGraph().is_sane()) {
-        sglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
+    if (!w.sdg.is_sane()) {
+        sdglib::OutputLog()<<"ERROR: sdg.is_sane() = false"<<std::endl;
         //return 1;
     }
     std::cout << "Done ... " << std::endl;
     std::cout << "Dumping gfa workspace " << std::endl;
     if (not gfafilename.empty()){
-        w.getGraph().write_to_gfa(gfafilename + ".gfa");
+        w.sdg.write_to_gfa(gfafilename + ".gfa");
     }
     std::cout << "Done... " << std::endl;
     if (not nodeinfofilename.empty()){
         std::ofstream nif(nodeinfofilename+".csv");
         nif<<"ID, lenght, kci"<<std::endl;
-        for (auto n=1;n<w.getGraph().nodes.size();++n){
-            if (w.getGraph().nodes[n].status==sgNodeStatus_t::sgNodeDeleted) continue;
-            nif<<n<<", "<<w.getGraph().nodes[n].sequence.size()<<", "<<w.getKCI().compute_compression_for_node(n,1)<<std::endl;
+        for (auto n=1;n<w.sdg.nodes.size();++n){
+            if (w.sdg.nodes[n].status==sgNodeStatus_t::sgNodeDeleted) continue;
+            nif<<n<<", "<<w.sdg.nodes[n].sequence.size()<<", "<<w.kci.compute_compression_for_node(n,1)<<std::endl;
         }
     }
 }
@@ -256,7 +254,7 @@ void node_kci_dump_workspace(int argc,char **argv){
         //if (not seqfilename.empty()) {
         //    std::ofstream sof(seqfilename + ".fasta");
         //    for (auto n:w.select_from_all_nodes(min_size,max_size,0,UINT32_MAX, minKCI, maxKCI)){
-        //        sof<<">seq"<<n<<std::endl<<w.sg.nodes[n].sequence<<std::endl;
+        //        sof<<">seq"<<n<<std::endl<<w.sdg.nodes[n].sequence<<std::endl;
         //    }
         //}
 
@@ -282,13 +280,13 @@ void node_kci_dump_workspace(int argc,char **argv){
         std::ofstream assm_ofl("assmcn_profile"+std::to_string(cnode)+".cvg", std::ios_base::app);
 
         std::cout << "Profiling node:" << cnode << std::endl;
-        std::string sequence = w.getGraph().nodes[cnode].sequence;
+        std::string sequence = w.sdg.nodes[cnode].sequence;
 
-        std::cout << "Coverage for: " << w.getKCI().read_counts.size() << "," << w.read_counts_header.size() << std::endl;
+        std::cout << "Coverage for: " << w.kci.read_counts.size() << "," << w.read_counts_header.size() << std::endl;
         for (auto ri=0; ri<w.read_counts_header.size(); ++ri){
 
             // One extraction per set
-            auto read_coverage = w.getKCI().compute_node_coverage_profile(sequence, ri);
+            auto read_coverage = w.kci.compute_node_coverage_profile(sequence, ri);
             reads_ofl << ">Reads_"<< prefix << "_"<< cnode << "_"<< w.read_counts_header[ri] << "|";
             for (auto c: read_coverage[0]){
                 reads_ofl << c << " ";
@@ -296,7 +294,7 @@ void node_kci_dump_workspace(int argc,char **argv){
             reads_ofl << std::endl;
         }
 
-        auto coverages = w.getKCI().compute_node_coverage_profile(sequence, 0);
+        auto coverages = w.kci.compute_node_coverage_profile(sequence, 0);
         unique_ofl << ">Uniqueness_"<< prefix << "_" << cnode << "|";
         for (auto c: coverages[1]){
             unique_ofl << c << " ";
@@ -350,7 +348,7 @@ void kci_profile_workspace(int argc,char **argv){
     WorkSpace w;
     w.load_from_disk(filename);
     std::cout << "Sacando" << std::endl;
-    w.getKCI().compute_kci_profiles(prefix);
+    w.kci.compute_kci_profiles(prefix);
 }
 
 void merge_workspace(int argc, char **argv){
@@ -392,7 +390,7 @@ void merge_workspace(int argc, char **argv){
     base.load_from_disk(base_filename);
     merge.load_from_disk(merge_filename);
     out.kci = base.kci;
-    out.sg = base.sg;
+    out.sdg = base.sdg;
     std::set<int> lr_filter(lr_datastores.begin(), lr_datastores.end());
     std::set<int> pr_filter(pr_datastores.begin(), pr_datastores.end());
     std::set<int> Lr_filter(Lr_datastores.begin(), Lr_datastores.end());
@@ -401,7 +399,7 @@ void merge_workspace(int argc, char **argv){
     for (int i = 0; i < base.paired_read_datastores.size(); ++i) {
         base_datastores.insert(base.paired_read_datastores[i].filename);
         if (pr_filter.empty() or pr_filter.count(i) == 0) {
-            sglib::OutputLog()<< "Adding " << base.paired_read_datastores[i].filename << std::endl;
+            sdglib::OutputLog()<< "Adding " << base.paired_read_datastores[i].filename << std::endl;
             out.paired_read_datastores.push_back(base.paired_read_datastores[i]);
             out.paired_read_mappers.push_back(base.paired_read_mappers[i]);
         }
@@ -410,7 +408,7 @@ void merge_workspace(int argc, char **argv){
     for (int i = 0; i < base.linked_read_datastores.size(); ++i) {
         base_datastores.insert(base.linked_read_datastores[i].filename);
         if (lr_filter.empty() or lr_filter.count(i) == 0) {
-            sglib::OutputLog()<< "Adding " << base.linked_read_datastores[i].filename << std::endl;
+            sdglib::OutputLog()<< "Adding " << base.linked_read_datastores[i].filename << std::endl;
             out.linked_read_datastores.push_back(base.linked_read_datastores[i]);
             out.linked_read_mappers.push_back(base.linked_read_mappers[i]);
         }
@@ -419,56 +417,56 @@ void merge_workspace(int argc, char **argv){
     for (int i = 0; i < base.long_read_datastores.size(); ++i) {
         base_datastores.insert(base.long_read_datastores[i].filename);
         if (Lr_filter.empty() or Lr_filter.count(i) == 0) {
-            sglib::OutputLog()<< "Adding " << base.long_read_datastores[i].filename << std::endl;
+            sdglib::OutputLog()<< "Adding " << base.long_read_datastores[i].filename << std::endl;
             out.long_read_datastores.push_back(base.long_read_datastores[i]);
             out.long_read_mappers.push_back(base.long_read_mappers[i]);
         }
     }
 
-    if (base.sg == merge.sg or force) {
+    if (base.sdg == merge.sdg or force) {
         for (int i = 0; i < merge.paired_read_datastores.size(); ++i) {
             if (base_datastores.find(merge.paired_read_datastores[i].filename) == base_datastores.end()) {
-                sglib::OutputLog()<< "Adding " << merge.paired_read_datastores[i].filename << std::endl;
+                sdglib::OutputLog()<< "Adding " << merge.paired_read_datastores[i].filename << std::endl;
                 out.paired_read_datastores.push_back(merge.paired_read_datastores[i]);
                 out.paired_read_mappers.push_back(merge.paired_read_mappers[i]);
             }
         }
         for (int i = 0; i < merge.linked_read_datastores.size(); ++i) {
             if (base_datastores.find(merge.linked_read_datastores[i].filename) == base_datastores.end()) {
-                sglib::OutputLog()<< "Adding " << merge.linked_read_datastores[i].filename << std::endl;
+                sdglib::OutputLog()<< "Adding " << merge.linked_read_datastores[i].filename << std::endl;
                 out.linked_read_datastores.push_back(merge.linked_read_datastores[i]);
                 out.linked_read_mappers.push_back(merge.linked_read_mappers[i]);
             }
         }
         for (int i = 0; i < merge.long_read_datastores.size(); ++i) {
             if (base_datastores.find(merge.long_read_datastores[i].filename) == base_datastores.end()) {
-                sglib::OutputLog()<< "Adding " << merge.long_read_datastores[i].filename << std::endl;
+                sdglib::OutputLog()<< "Adding " << merge.long_read_datastores[i].filename << std::endl;
                 out.long_read_datastores.push_back(merge.long_read_datastores[i]);
                 out.long_read_mappers.push_back(merge.long_read_mappers[i]);
             }
         }
     } else {
-        sglib::OutputLog() << "The graphs in the base and merge datastores are different, not merging mappers"
+        sdglib::OutputLog() << "The graphs in the base and merge datastores are different, not merging mappers"
                            << std::endl;
         for (int i = 0; i < merge.paired_read_datastores.size(); ++i) {
             if (base_datastores.find(merge.paired_read_datastores[i].filename) == base_datastores.end()) {
-                sglib::OutputLog()<< "Adding " << merge.paired_read_datastores[i].filename << " without mappings" << std::endl;
+                sdglib::OutputLog()<< "Adding " << merge.paired_read_datastores[i].filename << " without mappings" << std::endl;
                 out.paired_read_datastores.push_back(merge.paired_read_datastores[i]);
-                out.paired_read_mappers.emplace_back(merge.sg,merge.paired_read_datastores[i], out.uniqueKmerIndex, out.unique63merIndex);
+                out.paired_read_mappers.emplace_back(out,merge.paired_read_datastores[i]);
             }
         }
         for (int i = 0; i < merge.linked_read_datastores.size(); ++i) {
             if (base_datastores.find(merge.linked_read_datastores[i].filename) == base_datastores.end()) {
-                sglib::OutputLog()<< "Adding " << merge.linked_read_datastores[i].filename << " without mappings" << std::endl;
+                sdglib::OutputLog()<< "Adding " << merge.linked_read_datastores[i].filename << " without mappings" << std::endl;
                 out.linked_read_datastores.push_back(merge.linked_read_datastores[i]);
-                out.linked_read_mappers.emplace_back(merge.sg,merge.linked_read_datastores[i], out.uniqueKmerIndex, out.unique63merIndex);
+                out.linked_read_mappers.emplace_back(out,merge.linked_read_datastores[i]);
             }
         }
         for (int i = 0; i < merge.long_read_datastores.size(); ++i) {
             if (base_datastores.find(merge.long_read_datastores[i].filename) == base_datastores.end()) {
-                sglib::OutputLog()<< "Adding " << merge.long_read_datastores[i].filename << " without mappings" << std::endl;
+                sdglib::OutputLog()<< "Adding " << merge.long_read_datastores[i].filename << " without mappings" << std::endl;
                 out.long_read_datastores.push_back(merge.long_read_datastores[i]);
-                out.long_read_mappers.emplace_back(merge.sg,merge.long_read_datastores[i]);
+                out.long_read_mappers.emplace_back(out,merge.long_read_datastores[i]);
             }
         }
     }
@@ -509,7 +507,7 @@ void add_datastores(int argc, char **argv) {
 
     base.load_from_disk(base_filename);
     out.kci = base.kci;
-    out.sg = base.sg;
+    out.sdg = base.sdg;
 
     /* Copy BASE datastores and mappers */
     for (int i = 0; i < base.paired_read_datastores.size(); ++i){

@@ -1,0 +1,197 @@
+#ifdef SWIGR
+    %module rbsg
+#endif
+
+#ifdef SWIGPYTHON
+    %module pybsg
+#endif
+
+%ignore Backbone;
+%ignore PairedReadLinker;
+%{
+/* Includes the header in the wrapper code */
+#include <cstdint>
+#include <sstream>
+#include "sdglib/types/KmerTypes.hpp"
+#include "sdglib/types/GenericTypes.hpp"
+#include "sdglib/types/MappingTypes.hpp"
+#include "sdglib/graph/SequenceGraphPath.hpp"
+#include "sdglib/graph/SequenceSubGraph.hpp"
+#include "sdglib/graph/SequenceDistanceGraph.hpp"
+#include "sdglib/readers/SequenceGraphReader.hpp"
+#include "sdglib/processors/KmerCompressionIndex.hpp"
+#include "sdglib/workspace/WorkSpace.hpp"
+#include "sdglib/factories/KMerCountFactory.hpp"
+
+#include "sdglib/indexers/UniqueKmerIndex.hpp"
+#include "sdglib/mappers/LinkedReadMapper.hpp"
+#include "sdglib/mappers/LongReadMapper.hpp"
+#include "sdglib/datastores/LongReadsDatastore.hpp"
+#include "sdglib/mappers/PairedReadMapper.hpp"
+#include "sdglib/datastores/PairedReadsDatastore.hpp"
+
+#include "sdglib/processors/Untangler.hpp"
+#include "sdglib/graph/DistanceGraph.hpp"
+#include "sdglib/processors/LinkageUntangler.hpp"
+#include "sdglib/factories/KMerCountFactory.hpp"
+
+#include "sdglib/processors/HaplotypeConsensus.hpp"
+
+%}
+
+#define MADE_DOCS "@DOXYGEN_FOUND@"
+#ifdef SWIGPYTHON
+    #if MADE_DOCS=="YES"
+        %include "python_docs.i"
+    #endif
+    %include "std_unordered_set.i"
+#endif
+
+%include "stdint.i"
+%include "inttypes.i"
+%include "std_string.i"
+%include "std_vector.i"
+%include "std_pair.i"
+
+#ifndef SWIGR
+    %include "std_set.i"
+#endif
+
+%include "sdglib/types/KmerTypes.hpp"
+%include "sdglib/types/GenericTypes.hpp"
+%include "sdglib/datastores/LinkedReadsDatastore.hpp"
+
+namespace std {
+   %template(vectorInt) vector<int>;
+   %template(vectorDouble) vector<double>;
+   %template(vectorFloat) vector<float>;
+   %template(vectorString) vector<string>;
+   %template(vectorLink) vector<Link>;
+   %template(vectorvectorLink) vector<vector<Link>>;
+   %template(vectorSGNode) vector<sgNodeID_t>;
+   %template(vectorvectorSGNode) vector<vector<sgNodeID_t>>;
+   %template(vectorNode) vector<Node>;
+   %template(vectorNodeVisitor) vector<nodeVisitor>;
+   %template(vectorUINT16) vector<uint16_t >;
+   %template(vectorUINT64) vector<uint64_t>;
+   %template(vectorVectorUINT16) vector< vector <uint16_t > >;
+   %template(vectorVectorUINT64) vector< vector <uint64_t > >;
+   %template(vectorBool) vector<bool>;
+   %template(vectorMinPosIDX) vector<MinPosIDX>;
+   %template(vectorReadPosSize) vector< ReadPosSize >;
+   %template(vectorReadMapping) vector<ReadMapping>;
+   %template(vectorvectorReadMapping) vector<vector<ReadMapping>>;
+   %template(vectorLongReadMapping) vector<LongReadMapping>;
+   %template(vectorvectorLongReadMapping) vector<vector<LongReadMapping>>;
+   %template(vectorTagNeighbour) vector<TagNeighbour>;
+   %template(vectorvectorTagNeighbour) vector<vector<TagNeighbour>>;
+   %template(vectorHaplotypeScore) vector<HaplotypeScore>;
+
+   %ignore vector<LongReadMapper>::vector(size_type);
+   %ignore vector<LongReadMapper>::resize;
+   %template(vectorLongReadMapper) vector<LongReadMapper>;
+
+   %ignore vector<LinkedReadMapper>::vector(size_type);
+   %ignore vector<LinkedReadMapper>::resize;
+   %template(vectorLinkedReadMapper) vector<LinkedReadMapper>;
+
+   %ignore vector<PairedReadMapper>::vector(size_type);
+   %ignore vector<PairedReadMapper>::resize;
+   %template(vectorPairedReadMapper) vector<PairedReadMapper>;
+
+   %ignore vector<PairedReadsDatastore>::vector(size_type);
+   %ignore vector<PairedReadsDatastore>::resize;
+   %template(vectorPairedReadsDatastore) vector<PairedReadsDatastore>;
+
+   %ignore vector<LinkedReadsDatastore>::vector(size_type);
+   %ignore vector<LinkedReadsDatastore>::resize;
+   %template(vectorLinkedReadsDatastore) vector<LinkedReadsDatastore>;
+
+   %ignore vector<LongReadsDatastore>::vector(size_type);
+   %ignore vector<LongReadsDatastore>::resize;
+   %template(vectorLongReadsDatastore) vector<LongReadsDatastore>;
+
+   %template(SGNodePair) pair<sgNodeID_t, sgNodeID_t>;
+   %template(vectorSGNodePair) vector<pair<sgNodeID_t, sgNodeID_t>>;
+   %template(vectorvectorLink) vector<std::vector<Link>>;
+
+   %ignore vector<SequenceGraphPath>::vector(size_type);
+   %ignore vector<SequenceGraphPath>::resize;
+
+   %template(vectorPath) vector<SequenceGraphPath>;
+   %template(vectorKmerCount) vector<KmerCount>;
+
+   %template(intSGNodePair) pair<int, sgNodeID_t>;
+   %template(vectorintSGNodePair) vector<pair<int, sgNodeID_t>>;
+
+#ifndef SWIGR
+   %template(set10xTag) set<bsg10xTag>;
+   %template(setSGNodePair) set<pair<sgNodeID_t, sgNodeID_t>>;
+   %template(setSGNode) set<sgNodeID_t>;
+#endif
+};
+
+#ifdef SWIGPYTHON
+    %feature("python:tp_hash") Link "std::hash<Link>";
+
+    %define __STR__()
+    std::string __str__() {
+      std::ostringstream out;
+      out << *$self;
+      return out.str().c_str();
+    }
+    %enddef
+
+    %define __REPR__()
+    std::string __repr__() {
+      std::ostringstream out;
+      out << "<" << *$self << ">";
+      return out.str().c_str();
+    }
+    %enddef
+
+    %extend Link{
+        __STR__();
+        __REPR__();
+    }
+
+    %extend Node{
+        __STR__();
+        __REPR__();
+    }
+
+    %extend LongReadMapping{
+        __STR__();
+        __REPR__();
+    };
+
+    //TODO: Make sure this changes on new releases
+    %pythoncode %{
+    __version__ = "@bsg_VERSION@"
+    __branch__ = "@GIT_BRANCH@"
+    __commit__ = "@GIT_COMMIT_HASH@"
+    %}
+#endif
+
+
+%include "sdglib/types/MappingTypes.hpp"
+%include "sdglib/graph/SequenceGraphPath.hpp"
+%include "sdglib/graph/SequenceSubGraph.hpp"
+%include "sdglib/graph/SequenceDistanceGraph.hpp"
+%include "sdglib/indexers/UniqueKmerIndex.hpp"
+%include "sdglib/processors/KmerCompressionIndex.hpp"
+%include "sdglib/workspace/WorkSpace.hpp"
+%include "sdglib/factories/KMerCountFactory.hpp"
+
+%include "sdglib/processors/Untangler.hpp"
+
+%include "sdglib/datastores/LongReadsDatastore.hpp"
+%include "sdglib/datastores/PairedReadsDatastore.hpp"
+%include "sdglib/mappers/LongReadMapper.hpp"
+%include "sdglib/mappers/LinkedReadMapper.hpp"
+%include "sdglib/mappers/PairedReadMapper.hpp"
+%include "sdglib/processors/LinkageUntangler.hpp"
+%include "sdglib/graph/DistanceGraph.hpp"
+
+%include "sdglib/processors/HaplotypeConsensus.hpp"
+%include "sdglib/factories/KMerFactory.hpp"

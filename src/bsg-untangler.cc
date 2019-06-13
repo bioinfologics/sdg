@@ -1,11 +1,11 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/workspace/WorkSpace.hpp>
-#include <sglib/processors/Untangler.hpp>
-#include <sglib/processors/LinkageUntangler.hpp>
-#include <sglib/processors/LocalHaplotypeAssembler.hpp>
-#include <sglib/processors/GraphEditor.hpp>
-#include "sglib/logger/OutputLog.hpp"
+#include <sdglib/workspace/WorkSpace.hpp>
+#include <sdglib/processors/Untangler.hpp>
+#include <sdglib/processors/LinkageUntangler.hpp>
+#include <sdglib/processors/LocalHaplotypeAssembler.hpp>
+#include <sdglib/processors/GraphEditor.hpp>
+#include "sdglib/logger/OutputLog.hpp"
 #include "cxxopts.hpp"
 
 
@@ -18,7 +18,7 @@ int main(int argc, char * argv[]) {
     std::cout<<std::endl<<std::endl;
 
     std::string workspace_file,output_prefix;
-    sglib::OutputLogLevel=sglib::LogLevels::INFO;
+    sdglib::OutputLogLevel=sdglib::LogLevels::INFO;
     bool repeat_expansion=false, neighbour_connection_graph=false, bubbly_paths=false;
     bool unroll_loops=false,pop_errors=false, paired_scaff=false, select_hspnps=false;
     bool explore_homopolymers=false;
@@ -120,18 +120,18 @@ int main(int argc, char * argv[]) {
 
     //======= WORKSPACE LOAD AND CHECKS ======
     WorkSpace ws;
-    sglib::OutputLog()<<"Loading Workspace..."<<std::endl;
+    sdglib::OutputLog()<<"Loading Workspace..."<<std::endl;
     ws.load_from_disk(workspace_file);
     if (!ws.sg.is_sane()) {
-        sglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
+        sdglib::OutputLog()<<"ERROR: sg.is_sane() = false"<<std::endl;
         return 1;
     }
     //TODO: other checks? reads mapped to valid nodes and such?
 
     ws.add_log_entry("bsg-untangler run started");
-    sglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
-    if (remap_reads) sglib::OutputLog()<<"This run WILL remap reads at the end"<<std::endl;
-    else sglib::OutputLog()<<"This run will NOT remap reads at the end"<<std::endl;
+    sdglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
+    if (remap_reads) sdglib::OutputLog()<<"This run WILL remap reads at the end"<<std::endl;
+    else sdglib::OutputLog()<<"This run will NOT remap reads at the end"<<std::endl;
     //======= FUNCTIONS FOR REAL-LIFE USE ======
 
     if (unroll_loops){
@@ -187,17 +187,17 @@ int main(int argc, char * argv[]) {
     }
 
     if (dev_dump_local_problems_from>-1 and dev_dump_local_problems_from<dev_dump_local_problems_to){
-        sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
+        sdglib::OutputLog()<<"Analysing connectivity"<<std::endl;
         tag_ldg.report_connectivity();
-        sglib::OutputLog()<<"Creating local assembly problems..."<<std::endl;
+        sdglib::OutputLog()<<"Creating local assembly problems..."<<std::endl;
         auto lines=tag_ldg.get_all_lines(dev_min_nodes);
         if (dev_max_lines) {
-            sglib::OutputLog()<<"dev_max_lines set, solving only "<<dev_max_lines<<" / "<<lines.size()<<std::endl;
+            sdglib::OutputLog()<<"dev_max_lines set, solving only "<<dev_max_lines<<" / "<<lines.size()<<std::endl;
             lines.resize(dev_max_lines);
         }
         uint64_t li=0;
         uint64_t i=0;
-        sglib::OutputLog()<<"Dumping from "<< dev_dump_local_problems_from <<" to "<< dev_dump_local_problems_to << " of " <<lines.size()<<" local assembly problems..."<<std::endl;
+        sdglib::OutputLog()<<"Dumping from "<< dev_dump_local_problems_from <<" to "<< dev_dump_local_problems_to << " of " <<lines.size()<<" local assembly problems..."<<std::endl;
         for (auto li=dev_dump_local_problems_from;li<lines.size() and li<=dev_dump_local_problems_to;++li) {
             auto &l = lines[li];
             LocalHaplotypeAssembler lha(ws);
@@ -210,17 +210,17 @@ int main(int argc, char * argv[]) {
     if (!make_patches.empty()) {
         std::vector<std::string> full_patched_backbones;
         std::vector<std::vector<std::string>> patched_backbone_parts;
-        sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
+        sdglib::OutputLog()<<"Analysing connectivity"<<std::endl;
         tag_ldg.report_connectivity();
-        sglib::OutputLog()<<"Creating local assembly problems..."<<std::endl;
+        sdglib::OutputLog()<<"Creating local assembly problems..."<<std::endl;
         auto lines=tag_ldg.get_all_lines(dev_min_nodes);
         if (dev_max_lines) {
-            sglib::OutputLog()<<"dev_max_lines set, solving only "<<dev_max_lines<<" / "<<lines.size()<<std::endl;
+            sdglib::OutputLog()<<"dev_max_lines set, solving only "<<dev_max_lines<<" / "<<lines.size()<<std::endl;
             lines.resize(dev_max_lines);
         }
         uint64_t li=0;
         uint64_t i=0;
-        sglib::OutputLog()<<"Solving "<<lines.size()<<" local assembly problems..."<<std::endl;
+        sdglib::OutputLog()<<"Solving "<<lines.size()<<" local assembly problems..."<<std::endl;
 #pragma omp parallel for schedule(dynamic,10)
         for (auto li=0;li<lines.size();++li) {
             auto &l=lines[li];
@@ -242,7 +242,7 @@ int main(int argc, char * argv[]) {
 #pragma omp critical(patch_collection)
             {
                 patches.insert(patches.end(),lha.patches.begin(),lha.patches.end());
-                sglib::OutputLog() << "Local assembly #"<<li<<" from " << l.size() << " anchors done in "
+                sdglib::OutputLog() << "Local assembly #"<<li<<" from " << l.size() << " anchors done in "
                                    << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count()
                                    << " seconds, produced " << lha.patches.size() << " patches" << std::endl;
             }
@@ -259,7 +259,7 @@ int main(int argc, char * argv[]) {
 
         }
 
-        sglib::OutputLog()<<patches.size()<<" patches found"<<std::endl;
+        sdglib::OutputLog()<<patches.size()<<" patches found"<<std::endl;
         std::ofstream patchf(make_patches);
         for (auto &p:patches){
             patchf << ">patch_" << -p.first.first << "_" << p.first.second << std::endl;
@@ -299,7 +299,7 @@ int main(int argc, char * argv[]) {
 
     if (!dev_linkage_stats.empty()) {
         LinkageUntangler lu(ws);
-        sglib::OutputLog()<<"Analysing connectivity"<<std::endl;
+        sdglib::OutputLog()<<"Analysing connectivity"<<std::endl;
         tag_ldg.report_connectivity();
         auto lines=tag_ldg.get_all_lines(dev_min_nodes);
         if (dev_max_lines) lines.resize(dev_max_lines);
@@ -308,13 +308,13 @@ int main(int argc, char * argv[]) {
         for (auto l:lines) {
             for (auto ln:l) lu2.selected_nodes[llabs(ln)]=true;
         }
-        sglib::OutputLog()<<"---NODES CONNECTED ON GLOBAL PROBLEM: "<<std::endl;
+        sdglib::OutputLog()<<"---NODES CONNECTED ON GLOBAL PROBLEM: "<<std::endl;
         for (auto n=1;n<ws.sg.nodes.size();++n) {
             if (tag_ldg.get_fw_links(n).size()>0 or tag_ldg.get_bw_links(n).size()>0) lu.selected_nodes[n]=true;
         }
         lu.report_node_selection();
-        sglib::OutputLog()<<"Bubbles in the linkage digraph: "<<tag_ldg.find_bubbles(0,10000000).size()<<std::endl;
-        sglib::OutputLog()<<"---NODES USED ON LOCAL PROBLEMS ("<<lines.size()<<" lines): "<<std::endl;
+        sdglib::OutputLog()<<"Bubbles in the linkage digraph: "<<tag_ldg.find_bubbles(0,10000000).size()<<std::endl;
+        sdglib::OutputLog()<<"---NODES USED ON LOCAL PROBLEMS ("<<lines.size()<<" lines): "<<std::endl;
         lu2.report_node_selection();
         exit(0);
     }
@@ -336,7 +336,7 @@ int main(int argc, char * argv[]) {
             {
                 patches.clear();
                 auto lines = tag_ldg.get_all_lines(dev_min_nodes);
-                sglib::OutputLog() << "Solving " << lines.size() << " local assembly problems..." << std::endl;
+                sdglib::OutputLog() << "Solving " << lines.size() << " local assembly problems..." << std::endl;
 #pragma omp parallel for schedule(dynamic, 10)
                 for (auto li = 0; li < lines.size(); ++li) {
                     auto &l = lines[li];
@@ -358,7 +358,7 @@ int main(int argc, char * argv[]) {
 #pragma omp critical(patch_collection)
                     {
                         patches.insert(patches.end(), lha.patches.begin(), lha.patches.end());
-                        sglib::OutputLog() << "Local assembly #" << li << " from " << l.size() << " anchors done in "
+                        sdglib::OutputLog() << "Local assembly #" << li << " from " << l.size() << " anchors done in "
                                            << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count()
                                            << " seconds, produced " << lha.patches.size() << " patches" << std::endl;
                     }
@@ -366,19 +366,19 @@ int main(int argc, char * argv[]) {
             }
             //now apply patches
             {
-                sglib::OutputLog() << "Patching workspace!!!" << std::endl;
+                sdglib::OutputLog() << "Patching workspace!!!" << std::endl;
                 GraphEditor ge(ws);
                 uint64_t patch_results[6]={0,0,0,0,0,0};
                 for (auto p:patches) {
                     auto r=ge.patch_between(p.first.first,p.first.second,p.second);
                     ++patch_results[r];
                 }
-                sglib::OutputLog() << "Patches with no anchor ends:         "<< patch_results[1] <<std::endl;
-                sglib::OutputLog() << "Patches with no SG paths:            "<< patch_results[2] <<std::endl;
-                sglib::OutputLog() << "Patches with failed expansion:       "<< patch_results[5] <<std::endl;
-                sglib::OutputLog() << "Patches correctly applied:           "<< patch_results[0] <<std::endl;
+                sdglib::OutputLog() << "Patches with no anchor ends:         "<< patch_results[1] <<std::endl;
+                sdglib::OutputLog() << "Patches with no SG paths:            "<< patch_results[2] <<std::endl;
+                sdglib::OutputLog() << "Patches with failed expansion:       "<< patch_results[5] <<std::endl;
+                sdglib::OutputLog() << "Patches correctly applied:           "<< patch_results[0] <<std::endl;
                 auto juc=ws.sg.join_all_unitigs();
-                sglib::OutputLog() << juc << " unitigs joined after patching"<<std::endl;
+                sdglib::OutputLog() << juc << " unitigs joined after patching"<<std::endl;
                 //ws.sg.write_to_gfa(patch_workspace);
             }
             ws.sg.write_to_gfa(output_prefix+"fulllocal_cycle_"+std::to_string(cycle)+".gfa");
@@ -400,7 +400,7 @@ int main(int argc, char * argv[]) {
         //TODO:dump linkage maybe?
         patches.clear();
         auto lines = tag_ldg.get_all_lines(dev_min_nodes);
-        sglib::OutputLog() << "Solving 1/25 of " << lines.size() << " local assembly problems..." << std::endl;
+        sdglib::OutputLog() << "Solving 1/25 of " << lines.size() << " local assembly problems..." << std::endl;
         uint64_t all_patches=0,assembled_patches=0;
 #pragma omp parallel for schedule(dynamic, 10) reduction(+:all_patches,assembled_patches)
         for (auto li = 0; li < lines.size(); li+=25) {
@@ -430,15 +430,15 @@ int main(int argc, char * argv[]) {
 #pragma omp critical(patch_collection)
             {
                 patches.insert(patches.end(), lha.patches.begin(), lha.patches.end());
-                sglib::OutputLog() << "Local assembly #" << li << " from " << l.size() << " anchors done in "
+                sdglib::OutputLog() << "Local assembly #" << li << " from " << l.size() << " anchors done in "
                                    << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count()
                                    << " seconds, produced " << lha.patches.size() << " patches" << std::endl;
             }
         }
-        sglib::OutputLog() << "Local assembly produced "<<assembled_patches<<" / "<<all_patches<<" patches"<<std::endl;
+        sdglib::OutputLog() << "Local assembly produced "<<assembled_patches<<" / "<<all_patches<<" patches"<<std::endl;
         //now apply patches
         {
-            sglib::OutputLog() << "Patching workspace!!!" << std::endl;
+            sdglib::OutputLog() << "Patching workspace!!!" << std::endl;
             GraphEditor ge(ws);
             std::ofstream pstatsf(output_prefix+"_patching_stats.csv");
             pstatsf<<"from,to,size,code,fromfw_before,fromfw_after,tobw_before,tobw_after"<<std::endl;
@@ -453,13 +453,13 @@ int main(int argc, char * argv[]) {
                 //TODO: check the collection of unitigs has changed.
                 pstatsf<<-p.first.first<<","<<p.first.second<<","<<p.second.size()<<","<<r<<","<<fromfw_before<<","<<fromfw_after<<","<<tobw_before<<","<<tobw_after<<std::endl;
             }
-            sglib::OutputLog() << "Patches with no anchor ends:         "<< patch_results[1] <<std::endl;
-            sglib::OutputLog() << "Patches with no SG paths:            "<< patch_results[2] <<std::endl;
-            sglib::OutputLog() << "Patches with failed expansion:       "<< patch_results[5] <<std::endl;
-            sglib::OutputLog() << "Patches correctly applied:           "<< patch_results[0] <<std::endl;
+            sdglib::OutputLog() << "Patches with no anchor ends:         "<< patch_results[1] <<std::endl;
+            sdglib::OutputLog() << "Patches with no SG paths:            "<< patch_results[2] <<std::endl;
+            sdglib::OutputLog() << "Patches with failed expansion:       "<< patch_results[5] <<std::endl;
+            sdglib::OutputLog() << "Patches correctly applied:           "<< patch_results[0] <<std::endl;
             ws.sg.write_to_gfa(output_prefix+"_patched_notjoined.gfa");
             auto juc=ws.sg.join_all_unitigs();
-            sglib::OutputLog() << juc << " unitigs joined after patching"<<std::endl;
+            sdglib::OutputLog() << juc << " unitigs joined after patching"<<std::endl;
             //ws.sg.write_to_gfa(patch_workspace);
         }
         ws.sg.write_to_gfa(output_prefix+"_patched.gfa");
@@ -469,12 +469,12 @@ int main(int argc, char * argv[]) {
 
     if (!patch_backbones.empty()) {
         std::ofstream patched_backbones_file(patch_backbones);
-        sglib::OutputLog() << "Analysing connectivity" << std::endl;
+        sdglib::OutputLog() << "Analysing connectivity" << std::endl;
         tag_ldg.report_connectivity();
-        sglib::OutputLog() << "Creating local assembly problems..." << std::endl;
+        sdglib::OutputLog() << "Creating local assembly problems..." << std::endl;
         auto lines = tag_ldg.get_all_lines(dev_min_nodes);
         if (dev_max_lines) {
-            sglib::OutputLog() << "dev_max_lines set, solving only " << dev_max_lines << " / " << lines.size()
+            sdglib::OutputLog() << "dev_max_lines set, solving only " << dev_max_lines << " / " << lines.size()
                                << std::endl;
             lines.resize(dev_max_lines);
         }
@@ -482,7 +482,7 @@ int main(int argc, char * argv[]) {
         uint64_t i = 0;
         std::map<std::pair<sgNodeID_t, sgNodeID_t>, std::string> patchmap;
         for (auto p:patches) patchmap[p.first]=p.second;
-        sglib::OutputLog() << "Patching in " << lines.size() << " local assembly problems from " << patches.size() << " patches..." << std::endl;
+        sdglib::OutputLog() << "Patching in " << lines.size() << " local assembly problems from " << patches.size() << " patches..." << std::endl;
         int endsize=200;
         for (auto li = 0; li < lines.size(); ++li) {
             auto &l = lines[li];
@@ -518,7 +518,7 @@ int main(int argc, char * argv[]) {
     }
 
     if (!patch_workspace.empty()) {
-        sglib::OutputLog() << "Patching workspace!!!" << std::endl;
+        sdglib::OutputLog() << "Patching workspace!!!" << std::endl;
         GraphEditor ge(ws);
         std::ofstream pstatsf(output_prefix+"_patching_stats.csv");
         pstatsf<<"from,to,size,code,fromfw_before,fromfw_after,tobw_before,tobw_after"<<std::endl;
@@ -534,12 +534,12 @@ int main(int argc, char * argv[]) {
             pstatsf<<-p.first.first<<","<<p.first.second<<","<<p.second.size()<<","<<r<<","<<fromfw_before<<","<<fromfw_after<<","<<tobw_before<<","<<tobw_after<<std::endl;
 
         }
-        sglib::OutputLog() << "Patches with no anchor ends:         "<< patch_results[1] <<std::endl;
-        sglib::OutputLog() << "Patches with no SG paths:            "<< patch_results[2] <<std::endl;
-        sglib::OutputLog() << "Patches with failed expansion:       "<< patch_results[5] <<std::endl;
-        sglib::OutputLog() << "Patches correctly applied:           "<< patch_results[0] <<std::endl;
+        sdglib::OutputLog() << "Patches with no anchor ends:         "<< patch_results[1] <<std::endl;
+        sdglib::OutputLog() << "Patches with no SG paths:            "<< patch_results[2] <<std::endl;
+        sdglib::OutputLog() << "Patches with failed expansion:       "<< patch_results[5] <<std::endl;
+        sdglib::OutputLog() << "Patches correctly applied:           "<< patch_results[0] <<std::endl;
         auto juc=ws.sg.join_all_unitigs();
-        sglib::OutputLog() << juc << " unitigs joined after patching"<<std::endl;
+        sdglib::OutputLog() << juc << " unitigs joined after patching"<<std::endl;
         ws.sg.write_to_gfa(patch_workspace);
     }
     if (small_component_cleanup) {

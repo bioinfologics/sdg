@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <sglib/processors/KmerCompressionIndex.hpp>
+#include <sdglib/processors/KmerCompressionIndex.hpp>
 #include "cxxopts.hpp"
 
 
@@ -49,7 +49,7 @@ int main(int argc, char * argv[]) {
         }
 
         //===== LOAD GRAPH =====
-        SequenceGraph sg;
+        SequenceDistanceGraph sg;
         KmerCompressionIndex kci(sg);
         sg.load_from_gfa(gfa_filename);
         kci.index_graph();
@@ -89,10 +89,10 @@ int main(int argc, char * argv[]) {
                       << "Use option --help to check command line arguments." << std::endl;
             exit(1);
         }
-        SequenceGraph sg;
+        SequenceDistanceGraph sg;
         KmerCompressionIndex kci(sg);
         kci.load_from_disk(filename);
-        sglib::OutputLog()<<kci.graph_kmers.size()<<" kmers in spectra loaded from disk"<<std::endl;
+        sdglib::OutputLog()<<kci.graph_kmers.size()<<" kmers in spectra loaded from disk"<<std::endl;
         kci.compute_compression_stats();
 
 
@@ -131,11 +131,11 @@ int main(int argc, char * argv[]) {
                       << "Use option --help to check command line arguments." << std::endl;
             exit(1);
         }
-        SequenceGraph sg;
+        SequenceDistanceGraph sg;
         KmerCompressionIndex kci(sg);
         sg.load_from_gfa(gfa_filename);
         kci.load_from_disk(kci_filename);
-        sglib::OutputLog()<<kci.graph_kmers.size()<<" kmers in spectra loaded from disk"<<std::endl;
+        sdglib::OutputLog()<<kci.graph_kmers.size()<<" kmers in spectra loaded from disk"<<std::endl;
         if (reindex) kci.reindex_graph();
         kci.compute_compression_stats();
         kci.compute_all_nodes_kci(maxfreq);
@@ -174,7 +174,7 @@ int main(int argc, char * argv[]) {
 
 
         std::ifstream kci_file(kci_filename);
-        SequenceGraph sg;
+        SequenceDistanceGraph sg;
         KmerCompressionIndex kci(sg);
         uint64_t kcount;
         kci_file.read(( char *) &kcount,sizeof(kcount));

@@ -3,8 +3,8 @@
 //
 
 #include <catch.hpp>
-#include <sglib/indexers/UniqueKmerIndex.hpp>
-#include <sglib/indexers/NKmerIndex.hpp>
+#include <sdglib/indexers/UniqueKmerIndex.hpp>
+#include <sdglib/indexers/NKmerIndex.hpp>
 
 TEST_CASE("UniqueKmerIndex create and lookup") {
     unsigned int K(15);
