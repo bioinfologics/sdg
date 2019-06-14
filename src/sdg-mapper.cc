@@ -10,6 +10,7 @@ int main(int argc, char * argv[]) {
     std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
     std::cout << "Executed command:"<<std::endl;
     bool use63mers=false;
+    unsigned int max_filter=200;
     for (auto i=0;i<argc;i++) std::cout<<argv[i]<<" ";
     std::cout<<std::endl<<std::endl;
 
@@ -23,6 +24,7 @@ int main(int argc, char * argv[]) {
                 ("help", "Print help")
                 ("w,workspace", "input workspace", cxxopts::value<std::string>(workspace_file))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
+                ("m,max_kmer_repeat", "maximum number of times a kmer appears (LongReadMapper)", cxxopts::value(max_filter)->default_value("200"))
                 ("use_63-mers", "mapping based on 63-mers", cxxopts::value<bool>(use63mers));
 
 
@@ -85,8 +87,7 @@ int main(int argc, char * argv[]) {
     }
     for (auto &m: ws.long_read_mappers) {
         sdglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
-        m.update_graph_index();
-        m.map_reads();
+        m.map_reads(max_filter);
         ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
     }

@@ -195,6 +195,7 @@ struct kmerPos {
     };
 
     inline bool operator<(uint32_t const &rhs) const { return kmer < rhs; }
+    const bool operator==(const kmerPos &a) const { return std::tie(kmer, contigID, offset) == std::tie(a.kmer, a.contigID, a.offset);}
 };
 
 #endif //BSG_KMERTYPES_HPP

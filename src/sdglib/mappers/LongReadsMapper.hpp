@@ -13,6 +13,7 @@
 #include <sdglib/types/MappingTypes.hpp>
 #include <sdglib/indexers/NKmerIndex.hpp>
 #include <sdglib/utilities/hashing_helpers.hpp>
+#include <sdglib/indexers/SatKmerIndex.hpp>
 #include "LinkedReadsMapper.hpp"
 #include <memory>
 class WorkSpace;
@@ -119,8 +120,6 @@ public:
     BufferedSequenceGetter * lrbsgp;
     std::vector<sgNodeID_t> nodeset;
 
-
-
 };
 
 enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage};
@@ -134,7 +133,7 @@ enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage
  */
 class LongReadsMapper {
     NKmerIndex assembly_kmers;
-
+    SatKmerIndex sat_assembly_kmers;
 public:
 
     const SequenceDistanceGraph & sg;
@@ -146,8 +145,8 @@ public:
     int max_jump=500;
     int max_delta_change=60;
 
-    LongReadsMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k=15);
-    LongReadsMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k=15);
+    LongReadsMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k=15, bool sat_index=false);
+    LongReadsMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k=15, bool sat_index=false);
     ~LongReadsMapper();
 
     LongReadsMapper operator=(const LongReadsMapper &other);
@@ -190,6 +189,22 @@ public:
      */
     std::vector<LongReadMapping> get_raw_mappings_from_read(uint64_t read_id) const;
 
+
+    /**
+     * Populates the matches container with the matches between all kmers from one read and the *saturated* index of the graph.
+     * The index is a filtered set of kmers from the graph constructed using update_graph_index() or similar.
+     * A match is a perfect Kmer match between the read and the graph index
+     *
+     * matches are stored as kmer_index_in_read->kmer_match->match_description:
+     *  matches[kmer_index_in_read][kmer_match].first = node_id for a match of that kmer in the graph, sign indicates orientation
+     *  matches[kmer_index_in_read][kmer_match].second = offset for a match of that kmer for corresponding node_id (.first), the offsets are always calculated from the begining of the read
+     *
+     *  TODO: Change match type from in32_t to sgNodeId in this function !!!
+     *
+     * @param matches structure to store kmer mappings
+     * @param read_kmers contains read kmers with orientations
+     */
+    void get_sat_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches, std::vector<std::pair<bool, uint64_t>> &read_kmers);
     /**
      * Populates the matches container with the matches between all kmers from one read and the index of the graph.
      * The index is a filtered set of kmers from the graph constructed using update_graph_index() or similar.
@@ -213,7 +228,10 @@ public:
      * @param read_kmers_size number of kmers in the read
      * @return set of nodeIDs of nodes with more than 50 matches to the read
      */
-    std::set<sgNodeID_t> window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, uint32_t read_kmers_size);
+    void
+    count_candidates(std::vector<unsigned char> &candidate_counts,
+                     std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
+                     uint32_t read_kmers_size);
 
     /**
      * This function will check for continuous blocks of alignments between the read and the window candidates produced by window_candidates() using the matches prudiced by get_allKmer_matches()
@@ -227,7 +245,9 @@ public:
      * @param candidates collection of candidate matches produced by window_candidates()
      * @return collection of readtonode mappings (LongReadMapping)
      */
-    std::vector<LongReadMapping> alignment_blocks(uint32_t readID, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,  uint32_t read_kmers_size, std::set<sgNodeID_t> &candidates);
+    std::vector<LongReadMapping> alignment_blocks(uint32_t readID,
+                                                  std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
+                                                  uint32_t read_kmers_size, const std::vector<unsigned char> &candidate_counts);
 
     /**
      * Given a list of blocks the filter will discard overlapping blocks keeping those with the max span and score combination
@@ -371,10 +391,9 @@ public:
     std::vector<std::vector<uint64_t>> reads_in_node;
 
 
-
-
     static const bsgVersion_t min_compat;
 
+    bool sat_kmer_index = false;
 };
 
 

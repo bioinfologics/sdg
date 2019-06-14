@@ -22,14 +22,23 @@ namespace sdglib {
     void inline sort(RItr first, RItr last, Comp comp_fn) {
         __gnu_parallel::sort(first, last, comp_fn);
     }
+
+    template<typename RItr, class Comp>
+    void inline for_each(RItr first, RItr last, Comp comp_fn) {
+        __gnu_parallel::for_each(first, last, comp_fn);
+    }
+
+
 }
 #else
 constexpr static inline int omp_get_max_threads();
+constexpr static inline int omp_get_num_threads();
 static inline int omp_get_thread_num();
 #endif
 
 #ifndef _OPENMP
 constexpr int omp_get_max_threads() {return 1u;}
+constexpr int omp_get_num_threads() {return 1u;}
 int omp_get_thread_num() {return 0u;}
 
 #include <algorithm>
@@ -42,7 +51,10 @@ namespace sdglib {
     void inline sort(RItr first, RItr last, Comp comp_fn) {
         std::sort(first, last, comp_fn);
     }
-
+    template<typename RItr, class Comp>
+    void inline for_each(RItr first, RItr last, Comp comp_fn) {
+        std::for_each(first, last, comp_fn);
+    }
 }
 
 #endif

@@ -19,8 +19,7 @@ const bsgVersion_t LongReadsMapper::min_compat = 0x0001;
 LongReadHaplotypeMappingsFilter::LongReadHaplotypeMappingsFilter (const LongReadsMapper & _lorm, const LinkedReadsMapper & _lirm):
         lorm(_lorm),lirm(_lirm){
     lrbsgp=new BufferedSequenceGetter(lorm.datastore);
-};
-
+}
 
 void LongReadHaplotypeMappingsFilter::set_read(uint64_t _read_id) {
     read_id=_read_id;
@@ -174,7 +173,30 @@ std::vector<LongReadMapping> LongReadsMapper::get_raw_mappings_from_read(uint64_
     return std::move(r);
 }
 
-void LongReadsMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers){
+void LongReadMapper::get_sat_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches, std::vector<std::pair<bool, uint64_t>> &read_kmers) {
+    if (matches.size() < read_kmers.size()) matches.resize(read_kmers.size());
+    uint64_t no_match=0,single_match=0,multi_match=0; //DEBUG
+    for (auto i=0;i<read_kmers.size();++i){
+        matches[i].clear();
+        auto start(sat_assembly_kmers.beginCO(read_kmers[i].second));
+        auto end(sat_assembly_kmers.endCO(read_kmers[i].second));
+        for (auto it = start; it < end; ++it) {
+            int32_t offset=sat_assembly_kmers.contig_offsets[it].offset; //so far, this is +1 and the sign indicate direction of kmer in contig
+            sgNodeID_t node= sat_assembly_kmers.contig_offsets[it].contigID; //so far, this is always positive
+            if (read_kmers[i].first != (offset>0) ) {
+                node=-node;
+                offset=( (int) sg.nodes[std::llabs(sat_assembly_kmers.contig_offsets[it].contigID)].sequence.size() ) - std::abs(offset);
+            }
+            else offset=std::abs(offset)-1;
+            matches[i].emplace_back(node, offset);
+        }
+        if (matches[i].empty()) ++no_match; //DEBUG
+        else if (matches[i].size()==1) ++single_match; //DEBUG
+        else ++multi_match; //DEBUG
+    }
+}
+
+void LongReadsMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers) {
     if (matches.size() < read_kmers.size()) matches.resize(read_kmers.size());
     uint64_t no_match=0,single_match=0,multi_match=0; //DEBUG
     for (auto i=0;i<read_kmers.size();++i){
@@ -199,37 +221,34 @@ void LongReadsMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int
 //            <<multi_match<<" ("<< (multi_match*100/read_kmers.size()) << "%) multi match"<<std::endl;
 }
 
-std::set<sgNodeID_t> LongReadsMapper::window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, uint32_t read_kmers_size){
+void LongReadsMapper::count_candidates(std::vector<unsigned char> &candidate_counts,
+                                      std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
+                                  uint32_t read_kmers_size){
     //beware you need the size! otherwise there is a size from the matches and not from the reads!
-    std::set<sgNodeID_t> candidates;
-    std::map<int32_t,uint32_t> candidate_votes;
-    std::map<int32_t,uint32_t> candidate_multivotes;
     for (auto i=0;i<read_kmers_size;++i) {
-        for (auto m:matches[i]) ++candidate_votes[m.first];
-        if (matches[i].size()>1) for (auto m:matches[i]) ++candidate_multivotes[m.first];
+        for (auto m:matches[i]) {
+            uint32_t linear_node = (m.first>0) ? m.first : sg.nodes.size()+std::abs(m.first);
+            uint16_t count_so_far=candidate_counts[ linear_node ]+1;
+            candidate_counts[ linear_node ] = (count_so_far > UINT8_MAX) ? UINT8_MAX : count_so_far;
+        }
     }
-    //std::cout<<"From window_candidates, hit nodes:"<<std::endl;
-    //for (auto cv:candidate_votes) std::cout<<"   "<<cv.first<<": "<<cv.second<<" ("<<candidate_multivotes[cv.first]<<" multi "<<cv.second-candidate_multivotes[cv.first]<<" single)"<<std::endl;
-    //std::cout<<std::endl;
-    for (auto cv:candidate_votes) if (cv.second>50) candidates.insert(cv.first);
-
-    return candidates;
 }
 
-std::vector<LongReadMapping> LongReadsMapper::alignment_blocks(uint32_t readID, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,
+std::vector<LongReadMapping> LongReadsMapper::alignment_blocks(uint32_t readID,
+                                                              std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
                                                               uint32_t read_kmers_size,
-                                                              std::set<sgNodeID_t> &candidates) {
+                                                              const std::vector<unsigned char> &candidate_counts) {
 //    std::cout<<"Alignment block search starting with candidates:";
 //    for (auto c:candidates) std::cout<<" "<<c;
 //    std::cout<<std::endl;
     std::vector<LongReadMapping> blocks;
     //transform to matches per candidate;
-    std::map<int32_t , std::vector<std::pair<int32_t,int32_t>>> candidate_hits;
-
+    std::unordered_map<int32_t , std::vector<std::pair<int32_t,int32_t>>> candidate_hits;
+    candidate_hits.reserve(matches.size()/2);
     for (auto p=0;p<read_kmers_size;++p){
         for (auto m:matches[p]) {
-            if (candidates.count(m.first)){
-                //std::cout<<"adding hit for candidate "<<m.first<<" "<<p<<" -> "<<m.second<<std::endl;
+            uint32_t linear_node = (m.first>0) ? m.first : sg.nodes.size()+std::abs(m.first);
+            if (candidate_counts[linear_node] > 50) {
                 candidate_hits[m.first].emplace_back(p,m.second);
             }
         }
@@ -295,7 +314,6 @@ std::vector<LongReadMapping> LongReadsMapper::alignment_blocks(uint32_t readID, 
                 b.score=chain;
                 blocks.push_back(b);
             }
-
         }
     }
     std::sort(blocks.begin(),blocks.end());
@@ -336,9 +354,11 @@ void LongReadsMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> r
         BufferedSequenceGetter sequenceGetter(datastore);
         std::vector<std::vector<std::pair<int32_t, int32_t>>> node_matches; //node, offset
         const char * query_sequence_ptr;
+
+        std::vector<unsigned char> candidate_counts(sg.nodes.size()*2);
+
 #pragma omp for schedule(static,1000) reduction(+:no_matches,single_matches,multi_matches,num_reads_done)
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
-
             if (++num_reads_done%1000 == 0) {
                 sdglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" processing its read #" << num_reads_done << std::endl;
             }
@@ -356,15 +376,20 @@ void LongReadsMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> r
                 continue;
             }
 
-            get_all_kmer_matches(node_matches,read_kmers);
+            if (sat_kmer_index) {
+                get_sat_kmer_matches(node_matches, read_kmers);
+            } else {
+                get_all_kmer_matches(node_matches,read_kmers);
+            }
 
             //========== 2. Find match candidates in fixed windows ==========
 
-            auto candidates = window_candidates(node_matches,read_kmers.size());
+            count_candidates(candidate_counts, node_matches,read_kmers.size());
 
             //========== 3. Create alignment blocks from candidates ==========
 
-            auto blocks = alignment_blocks(readID,node_matches,read_kmers.size(),candidates);
+            auto blocks(alignment_blocks(readID,node_matches,read_kmers.size(), candidate_counts));
+            std::memset(candidate_counts.data(), 0, candidate_counts.size());
 
             //========== 4. Construct mapping path ==========
             if (blocks.empty()) ++no_matches;
@@ -373,18 +398,17 @@ void LongReadsMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> r
             //TODO: align blocks that occupy the same space as longer/better blocks should be thrown away.
 
             //auto fblocks=filter_blocks(blocks,node_matches,read_kmers.size());
-            auto fblocks=blocks;
+            const auto &fblocks = blocks;
 
-//            std::cout<<"After FILTERING:"<<std::endl;
+//            std::cout<<"READ " << readID << " mappings, after FILTERING:"<<std::endl;
 //            for (auto b:fblocks)
-//                std::cout << "Target: " << b.node << " (" << sdg.nodes[llabs(b.node)].sequence.size() << " bp)  "
+//                std::cout << "READ\tTarget: " << b.node << " (" << sdg.nodes[llabs(b.node)].sequence.size() << " bp)  "
 //                          << b.qStart << ":" << b.qEnd << " -> " << b.nStart << ":" << b.nEnd
 //                          << " (" << b.score << " chained hits, " << b.qEnd - b.qStart + k << "bp, "
 //                          << b.score * 100 / (b.qEnd - b.qStart) << "%)"
 //                          << std::endl;
 
             private_results.insert(private_results.end(),fblocks.begin(),fblocks.end());
-
         }
     }
     //TODO: report read and win coverage by winners vs. by loosers
@@ -405,16 +429,21 @@ std::vector<LongReadMapping> LongReadsMapper::map_sequence(const char * query_se
     std::vector<std::vector<std::pair<int32_t, int32_t>>> node_matches; //node, offset
     read_kmers.clear();
 
+    std::vector<unsigned char> candidate_counts(sg.nodes.size()*2);
     skf.produce_all_kmers(query_sequence_ptr, read_kmers);
-    get_all_kmer_matches(node_matches,read_kmers);
+    if (sat_kmer_index) {
+        get_sat_kmer_matches(node_matches, read_kmers);
+    } else {
+        get_all_kmer_matches(node_matches,read_kmers);
+    }
 
     //========== 2. Find match candidates in fixed windows ==========
 
-    auto candidates = window_candidates(node_matches,read_kmers.size());
+    count_candidates(candidate_counts, node_matches,read_kmers.size());
 
     //========== 3. Create alignment blocks from candidates ==========
 
-    return alignment_blocks(seq_id,node_matches,read_kmers.size(),candidates);
+    return alignment_blocks(seq_id,node_matches,read_kmers.size(), candidate_counts);
 
 }
 
@@ -444,15 +473,23 @@ void LongReadsMapper::update_indexes() {
     sdglib::OutputLog() << "LongReadsMapper index updated with " << mappings.size() << " mappings and "<< frmcount << " filtered mappings (over "<< reads_with_filtered_mappings << " reads)"<< std::endl;
 }
 
-LongReadsMapper::LongReadsMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k)
-        : sg(_ws.sdg), k(k), datastore(ds), assembly_kmers(k) {
+LongReadsMapper::LongReadsMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k, bool sat_index)
+        : sg(_ws.sdg), k(k), datastore(ds), assembly_kmers(k), sat_kmer_index(sat_index) {
 
     reads_in_node.resize(sg.nodes.size());
 }
 
-LongReadsMapper::LongReadsMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k)
-        : sg(_sdg), k(k), datastore(ds), assembly_kmers(k) {
+LongReadsMapper::LongReadsMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k, bool sat_index)
+        : sg(_sdg), k(k), datastore(ds), sat_kmer_index(sat_index) {
 
+    if (sat_kmer_index) {
+        sdglib::OutputLog() << "Creating satindex" << std::endl;
+        sat_assembly_kmers = SatKmerIndex(k);
+    }
+    else {
+        sdglib::OutputLog() << "Creating nkindex" << std::endl;
+        assembly_kmers = NKmerIndex(k);
+    }
     reads_in_node.resize(sg.nodes.size());
 }
 
@@ -514,15 +551,23 @@ LongReadsMapper LongReadsMapper::operator=(const LongReadsMapper &other) {
     if (&other == this) {
         return *this;
     }
+    sat_kmer_index = other.sat_kmer_index;
+    k = other.k;
     mappings = other.mappings;
     update_indexes();
     return *this;
 }
 
 void LongReadsMapper::update_graph_index(int filter_limit, bool verbose) {
-    if (verbose) std::cout<<"updating index with k="<<std::to_string(k)<<std::endl;
-    assembly_kmers=NKmerIndex(k);
-    assembly_kmers.generate_index(sg,filter_limit, verbose);
+    if (sat_kmer_index) {
+        if (verbose) std::cout<<"updating satindex with k="<<std::to_string(k)<<std::endl;
+        sat_assembly_kmers=SatKmerIndex(k);
+        sat_assembly_kmers.generate_index(sg, filter_limit, verbose);
+    } else {
+        if (verbose) std::cout<<"updating nkindex with k="<<std::to_string(k)<<std::endl;
+        assembly_kmers = NKmerIndex(k);
+        assembly_kmers.generate_index(sg, filter_limit, verbose);
+    }
 }
 
 void LongReadsMapper::filter_mappings_with_linked_reads(const LinkedReadsMapper &lrm, uint32_t min_size,  float min_tnscore, uint64_t first_id, uint64_t last_id) {

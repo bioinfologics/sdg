@@ -15,6 +15,7 @@ class BloomFilter {
     short dataSz = sizeof(data[0])*8;
     std::vector<unsigned char> data;
 public:
+    BloomFilter(){}
     BloomFilter(uint64_t estimated_size, uint32_t num_hashes=1) :
     estimated_size(estimated_size),
     numHashes(num_hashes),
@@ -27,7 +28,7 @@ public:
             auto array_position(vector_position / dataSz);
             auto bit_push((7 - vector_position % dataSz));
             auto byte_position_value(1 << bit_push);
-#pragma atomic update
+#pragma omp atomic
             data[array_position] |= byte_position_value;
         }
     }
@@ -37,7 +38,7 @@ public:
         auto array_position(vector_position / dataSz);
         auto bit_push((7 - vector_position % dataSz));
         auto byte_position_value(1 << bit_push);
-#pragma atomic update
+#pragma omp atomic
         data[array_position] |= byte_position_value;
     }
 
