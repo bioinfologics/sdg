@@ -52,4 +52,4 @@ html_static_path = ['_static']
 
 
 # Breathe Configuration
-breathe_default_project = "BSG"
+breathe_default_project = "SDG"

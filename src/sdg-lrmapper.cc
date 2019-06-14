@@ -61,7 +61,7 @@ int main(int argc, char * argv[]) {
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
     for (uint32_t lrds_idx=0; lrds_idx < ws.long_read_datastores.size(); lrds_idx++) {
         sdglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
-        ws.long_read_mappers[lrds_idx] = LongReadMapper(ws.sdg, ws.long_read_datastores[lrds_idx], k, sat_kmer_index);
+        ws.long_read_mappers[lrds_idx] = LongReadsMapper(ws.sdg, ws.long_read_datastores[lrds_idx], k, sat_kmer_index);
         ws.long_read_mappers[lrds_idx].map_reads(max_filter);
         ws.add_log_entry("reads from "+ws.long_read_mappers[lrds_idx].datastore.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;

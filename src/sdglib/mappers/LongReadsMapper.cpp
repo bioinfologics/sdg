@@ -173,7 +173,7 @@ std::vector<LongReadMapping> LongReadsMapper::get_raw_mappings_from_read(uint64_
     return std::move(r);
 }
 
-void LongReadMapper::get_sat_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches, std::vector<std::pair<bool, uint64_t>> &read_kmers) {
+void LongReadsMapper::get_sat_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches, std::vector<std::pair<bool, uint64_t>> &read_kmers) {
     if (matches.size() < read_kmers.size()) matches.resize(read_kmers.size());
     uint64_t no_match=0,single_match=0,multi_match=0; //DEBUG
     for (auto i=0;i<read_kmers.size();++i){

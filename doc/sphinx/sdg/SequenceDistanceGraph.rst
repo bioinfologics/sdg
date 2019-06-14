@@ -1,5 +1,5 @@
 SequenceDistanceGraph
-==============
+=======================
 
 .. doxygenclass:: SequenceDistanceGraph
    :members:
