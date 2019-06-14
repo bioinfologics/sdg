@@ -2,11 +2,12 @@
 // Created by Bernardo Clavijo (EI) on 10/02/2018.
 //
 
+#include "LinkedReadsDatastore.hpp"
 #include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/mappers/LinkedReadsMapper.hpp>
 #include <fstream>
 #include <strings.h>
 #include <cstring>
-#include "LinkedReadsDatastore.hpp"
 
 const bsgVersion_t LinkedReadsDatastore::min_compat = 0x0001;
 
@@ -492,6 +493,17 @@ std::unordered_set<__uint128_t, int128_hash> LinkedReadsDatastore::get_tags_kmer
         ri=nri;
     }
     return std::move(kset);
+}
+
+LinkedReadsDatastore::LinkedReadsDatastore() {}
+
+LinkedReadsDatastore::LinkedReadsDatastore(std::string filename) {
+    load_index(filename);
+}
+
+LinkedReadsDatastore::LinkedReadsDatastore(std::string read1_filename, std::string read2_filename,
+                                           std::string output_filename, LinkedReadsFormat format, int readsize) {
+    build_from_fastq(read1_filename,read2_filename,output_filename,format,readsize);
 }
 
 const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {

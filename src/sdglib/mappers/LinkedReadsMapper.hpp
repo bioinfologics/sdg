@@ -143,12 +143,12 @@ public:
     /**
      * Index of unique kmers in the graph see UniqueKmerIndex
      */
-    const UniqueKmerIndex& kmer_to_graphposition;
+    const std::shared_ptr<UniqueKmerIndex> kmer_to_graphposition;
 
     /**
      * Index of unique kmers in the graph see UniqueKmerIndex same with k63
      */
-    const Unique63merIndex& k63mer_to_graphposition;
+    const std::shared_ptr<Unique63merIndex> k63mer_to_graphposition;
     LinkedReadsDatastore &datastore;
 
     /**

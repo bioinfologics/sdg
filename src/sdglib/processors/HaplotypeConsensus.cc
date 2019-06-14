@@ -57,7 +57,7 @@ void HaplotypeConsensus::use_long_reads_from_file(std::string filename) {
 void HaplotypeConsensus::orient_read_path(uint64_t rid) {
     std::set<sgNodeID_t > l(backbone.cbegin(), backbone.cend());
 
-    const auto &original_path = ws.long_read_mappers[0].read_paths[rid];
+    const auto &original_path = ws.long_read_datastores[0].mapper->read_paths[rid];
 //    std::cout << "Original read path " << rid << ": " << std::endl;
 //    std::copy(original_path.cbegin(), original_path.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
 //    std::cout << std::endl;
@@ -79,7 +79,7 @@ void HaplotypeConsensus::orient_read_path(uint64_t rid) {
     if (count_reversed > count_forward) {
         oriented_read_paths[rid] = reversed_path;
     } else {
-        oriented_read_paths[rid] = ws.long_read_mappers[0].read_paths[rid];
+        oriented_read_paths[rid] = ws.long_read_datastores[0].mapper->read_paths[rid];
     }
 //    std::cout << "Oriented read path " << rid << ": " << std::endl;
 //    std::copy(oriented_read_paths[rid].cbegin(), oriented_read_paths[rid].cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
@@ -215,4 +215,29 @@ void HaplotypeConsensus::build_line_path(int min_votes, int min_path_nodes) {
     std::copy(final_line_path.cbegin(), final_line_path.cend(), std::ostream_iterator<sgNodeID_t>(std::cout, ", "));
     std::cout << std::endl;
     backbone_filled_path = final_line_path;
+}
+
+HaplotypeConsensus::HaplotypeConsensus(WorkSpace &_ws, const DistanceGraph &_mldg, const DistanceGraph &_ldg,
+                                       const std::vector<sgNodeID_t> _backbone, const ReadPathParams &read_path_params)
+        :
+        ws(_ws)
+        ,mldg(_mldg)
+        ,ldg(_ldg)
+        ,backbone(_backbone)
+{
+    std::cout << "Backbone nodes: " << std::endl;
+    for (const auto &n: backbone) {
+        if (n != 0){
+            std::cout << "seq"<<std::abs(n)<<",";
+        }
+    }
+    std::cout << std::endl;
+
+    read_cache = ws.long_read_datastores[0].mapper->create_read_paths(backbone,read_path_params);
+    if (!is_sorted(read_cache.begin(), read_cache.end())){
+        sdglib::sort(read_cache.begin(), read_cache.end());
+    }
+    auto max_rid = read_cache.back();
+    oriented_read_paths.resize(max_rid.id + 1);
+
 }

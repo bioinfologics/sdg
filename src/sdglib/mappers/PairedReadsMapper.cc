@@ -131,8 +131,8 @@ void PairedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_r
                     ++nokmers;
                 }
                 for (auto &rk:readkmers) {
-                    auto nk = kmer_to_graphposition.find(rk.kmer);
-                    if (kmer_to_graphposition.end()!=nk) {
+                    auto nk = kmer_to_graphposition->find(rk.kmer);
+                    if (kmer_to_graphposition->end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation
@@ -248,8 +248,8 @@ void PairedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
                     ++nokmers;
                 }
                 for (auto &rk:readkmers) {
-                    auto nk = k63mer_to_graphposition.find(rk.kmer);
-                    if (k63mer_to_graphposition.end()!=nk) {
+                    auto nk = k63mer_to_graphposition->find(rk.kmer);
+                    if (k63mer_to_graphposition->end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation

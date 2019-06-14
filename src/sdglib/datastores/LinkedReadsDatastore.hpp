@@ -2,10 +2,9 @@
 // Created by Bernardo Clavijo (EI) on 10/02/2018.
 //
 
-#ifndef BSG_LINKEDREADSDATASTORE_HPP
-#define BSG_LINKEDREADSDATASTORE_HPP
+#pragma once
 
-#include <sdglib/mappers/PairedReadsMapper.hpp>
+#include <memory>
 #include <cstdint>
 #include <iostream>
 #include <string>
@@ -20,7 +19,7 @@
 #include <sdglib/factories/KMerFactory.hpp>
 #include <sdglib/Version.hpp>
 
-
+class LinkedReadsMapper;
 using bsg10xTag = uint32_t;
 enum class LinkedReadsFormat {UCDavis,raw,seq};
 struct LinkedReadData {
@@ -50,13 +49,9 @@ std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16);
  */
 class LinkedReadsDatastore {
 public:
-    LinkedReadsDatastore(){};
-    LinkedReadsDatastore(std::string filename){
-        load_index(filename);
-    };
-    LinkedReadsDatastore(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250){
-        build_from_fastq(read1_filename,read2_filename,output_filename,format,readsize);
-    };
+    LinkedReadsDatastore();;
+    LinkedReadsDatastore(std::string filename);;
+    LinkedReadsDatastore(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250);;
     void print_status();
     void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250,size_t chunksize=10000000);
     void write(std::ofstream & output_file);
@@ -79,6 +74,7 @@ public:
 
     uint64_t readsize;
     uint64_t readpos_offset;
+    std::unique_ptr<LinkedReadsMapper> mapper;
 private:
     std::vector<uint32_t> read_tag;
     FILE * fd=NULL;
@@ -165,6 +161,4 @@ private:
 private:
     std::vector<uint64_t> counts;
 };
-
-#endif //BSG_LINKEDREADSDATASTORE_HPP
 

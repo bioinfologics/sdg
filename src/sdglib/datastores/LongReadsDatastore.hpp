@@ -2,9 +2,9 @@
 // Created by Luis Yanes (EI) on 23/03/2018.
 //
 
-#ifndef BSG_LONGREADSDATASTORE_HPP
-#define BSG_LONGREADSDATASTORE_HPP
+#pragma once
 
+#include <memory>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -19,6 +19,8 @@
 #include <sys/stat.h>
 #include <limits>
 #include <sdglib/Version.hpp>
+
+class LongReadsMapper;
 
 struct ReadPosSize {
     off_t offset = 0;
@@ -67,6 +69,8 @@ public:
     void load_from_stream(std::string file_name, std::ifstream &input_file);
     std::string filename;
     static const bsgVersion_t min_compat;
+
+    std::unique_ptr<LongReadsMapper> mapper;
 };
 
 // Check if this needs to be page size aware
@@ -102,5 +106,3 @@ private:
     int fd;
     off_t total_size=0;
 };
-
-#endif //BSG_LONGREADSDATASTORE_HPP

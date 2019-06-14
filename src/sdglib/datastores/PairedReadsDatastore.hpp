@@ -2,9 +2,9 @@
 // Created by Bernardo Clavijo (EI) on 10/05/2018.
 //
 
-#ifndef BSG_PAIREDEDREADSDATASTORE_HPP
-#define BSG_PAIREDEDREADSDATASTORE_HPP
+#pragma once
 
+#include <memory>
 #include <cstdint>
 #include <iostream>
 #include <string>
@@ -19,7 +19,7 @@
 #include <sdglib/factories/KMerFactory.hpp>
 #include "sdglib/Version.hpp"
 
-
+class PairedReadsMapper;
 struct PairedReadData {
     std::string seq1,seq2;
 };
@@ -28,14 +28,9 @@ class BufferedPairedSequenceGetter;
 
 class PairedReadsDatastore {
 public:
-    PairedReadsDatastore(){};
-    PairedReadsDatastore(std::string _filename){
-        filename=_filename;
-        load_index();
-    };
-    PairedReadsDatastore(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250){
-        build_from_fastq(read1_filename,read2_filename,output_filename,min_readsize,max_readsize);
-    };
+    PairedReadsDatastore();;
+    PairedReadsDatastore(std::string _filename);;
+    PairedReadsDatastore(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250);;
     void print_status();
     void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250, size_t chunksize=10000000);
     void write(std::ofstream & output_file);
@@ -43,14 +38,16 @@ public:
     void read(std::ifstream & input_file);
     void load_index();
     void load_from_stream(std::string filename,std::ifstream & input_file);
-    uint64_t size()const {return _size;};
+    uint64_t size()const;;
     std::string get_read_sequence(size_t readID);
     std::unordered_set<__uint128_t, int128_hash> get_all_kmers128(int k, int min_tag_cov);
     std::unordered_set<__uint128_t, int128_hash> get_reads_kmers128(int k, int min_tag_cov, std::vector<uint64_t> reads);
-    std::string filename; //if store is in single file bsg format these two are the same as the index file.
 
+
+    std::string filename; //if store is in single file bsg format these two are the same as the index file.
     uint64_t readsize;
     uint64_t readpos_offset;
+    std::unique_ptr<PairedReadsMapper> mapper;
 private:
     //TODO: save size
     uint64_t _size;
@@ -80,6 +77,4 @@ private:
     size_t buffer_offset;
     int fd;
 };
-
-#endif //BSG_LINKEDREADSDATASTORE_HPP
 

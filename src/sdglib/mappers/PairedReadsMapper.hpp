@@ -96,8 +96,8 @@ public:
     std::vector<uint64_t> get_node_readpairs_ids(sgNodeID_t nodeID);
 
     const SequenceDistanceGraph & sg;
-    const UniqueKmerIndex& kmer_to_graphposition;
-    const Unique63merIndex& k63mer_to_graphposition;
+    const std::shared_ptr<UniqueKmerIndex> kmer_to_graphposition;
+    const std::shared_ptr<Unique63merIndex> k63mer_to_graphposition;
     const PairedReadsDatastore & datastore;
     /**
      * reads_in_node[i] contains all the read ids from the data-store mapped to node i

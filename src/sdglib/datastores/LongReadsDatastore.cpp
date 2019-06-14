@@ -2,9 +2,10 @@
 // Created by Luis Yanes (EI) on 23/03/2018.
 //
 
-#include <sdglib/logger/OutputLog.hpp>
-#include <algorithm>
 #include "LongReadsDatastore.hpp"
+#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/mappers/LongReadsMapper.hpp>
+#include <algorithm>
 
 const bsgVersion_t LongReadsDatastore::min_compat = 0x0002;
 

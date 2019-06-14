@@ -4,10 +4,12 @@
 
 
 #include "KmerCompressionIndex.hpp"
-#include <atomic>
-#include <sstream>
 #include <sdglib/readers/FileReader.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
+#include <sdglib/Version.hpp>
+#include <atomic>
+#include <sstream>
+#include <sdglib/datastores/PairedReadsDatastore.hpp>
 
 const bsgVersion_t KmerCompressionIndex::min_compat = 0x0001;
 

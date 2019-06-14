@@ -34,7 +34,7 @@ void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backb
     for (auto &ln:backbone) {
         //partial counts in a single node
         std::map<bsg10xTag ,uint32_t> ntagcounts;
-        for (auto rm:ws.linked_read_mappers[0].reads_in_node[llabs(ln)]){
+        for (auto rm:ws.linked_read_datastores[0].mapper->reads_in_node[llabs(ln)]){
             auto tag=ws.linked_read_datastores[0].get_read_tag(rm.read_id);
             if (tag==0) continue;
             ++ntagcounts[tag];
@@ -58,19 +58,19 @@ void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backb
     }
     //std::cout<<"Local tags: "<<tagSet.size()<<" reads: "<<total_reads<<std::endl;
     //std::cout<<"Creating set of relevant paired reads..."<<std::endl;
-    for (auto prl=0;prl<ws.paired_read_mappers.size();++prl) {
+    for (auto prl=0;prl<ws.paired_read_datastores.size();++prl) {
         paired_reads.emplace_back(std::make_pair(prl,std::vector<uint64_t>()));
         for (auto &ln:backbone) {
-            auto nreads=ws.paired_read_mappers[prl].get_node_readpairs_ids(ln);
+            auto nreads=ws.paired_read_datastores[prl].mapper->get_node_readpairs_ids(ln);
             paired_reads.back().second.insert(paired_reads.back().second.end(),nreads.begin(),nreads.end());
         }
         if (paired_reads.back().second.empty()) paired_reads.pop_back();
         //else std::cout<<paired_reads.back().second.size()<<" reads from "<<ws.paired_read_datastores[prl].filename<<std::endl;
     }
-    for (auto lrl = 0; ws.long_read_mappers.size(); ++lrl) {
+    for (auto lrl = 0; ws.long_read_datastores.size(); ++lrl) {
         long_reads.emplace_back(std::make_pair(lrl, std::vector<uint64_t>()));
         for (auto &ln:backbone) {
-            auto nreads = ws.long_read_mappers[lrl].reads_in_node[llabs(ln)];
+            auto nreads = ws.long_read_datastores[lrl].mapper->reads_in_node[llabs(ln)];
             std::sort(nreads.begin(),nreads.end());
             long_reads.back().second.insert(long_reads.back().second.end(), nreads.begin(), nreads.end());
         }

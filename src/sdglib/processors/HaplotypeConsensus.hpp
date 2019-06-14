@@ -22,28 +22,7 @@
  */
 class HaplotypeConsensus {
 public:
-    HaplotypeConsensus(WorkSpace &_ws, const DistanceGraph &_mldg, const DistanceGraph &_ldg, const std::vector<sgNodeID_t> _backbone, const ReadPathParams &read_path_params):
-    ws(_ws)
-    ,mldg(_mldg)
-    ,ldg(_ldg)
-    ,backbone(_backbone)
-    {
-        std::cout << "Backbone nodes: " << std::endl;
-        for (const auto &n: backbone) {
-            if (n != 0){
-                std::cout << "seq"<<std::abs(n)<<",";
-            }
-        }
-        std::cout << std::endl;
-    
-        read_cache = ws.long_read_mappers[0].create_read_paths(backbone,read_path_params);
-        if (!is_sorted(read_cache.begin(), read_cache.end())){
-            sdglib::sort(read_cache.begin(), read_cache.end());
-        }
-        auto max_rid = read_cache.back();
-        oriented_read_paths.resize(max_rid.id + 1);
-
-    }
+    HaplotypeConsensus(WorkSpace &_ws, const DistanceGraph &_mldg, const DistanceGraph &_ldg, const std::vector<sgNodeID_t> _backbone, const ReadPathParams &read_path_params);
 
     void orient_read_paths() {
 #pragma omp parallel for

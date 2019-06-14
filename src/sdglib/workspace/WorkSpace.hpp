@@ -30,9 +30,7 @@ class WorkSpace {
 
 public:
     WorkSpace() :
-    kci(sdg),
-    uniqueKmerIndex(sdg, 31),
-    unique63merIndex(sdg){};
+    kci(sdg){}
     WorkSpace(const WorkSpace& that) = delete; //we definitely do not want copy constructors here, thank you
     void print_log();
 
@@ -44,8 +42,8 @@ public:
 
     //general operations
 
-    void create_index(bool verbose = true) { uniqueKmerIndex.generate_index(sdg,verbose); }
-    void create_63mer_index(bool verbose = true) { unique63merIndex.generate_index(sdg,verbose); }
+    void create_index(bool verbose = true);
+    void create_63mer_index(bool verbose = true);
     void remap_all();
     void remap_all63();
     //Projected operations with info from the graph
@@ -57,15 +55,12 @@ public:
 
     //All status classes are public, treat them with care anyway ;)
     SequenceDistanceGraph sdg;
-    UniqueKmerIndex uniqueKmerIndex;
-    Unique63merIndex unique63merIndex;
+    std::shared_ptr<UniqueKmerIndex> uniqueKmerIndex;
+    std::shared_ptr<Unique63merIndex> unique63merIndex;
 
     std::vector<PairedReadsDatastore> paired_read_datastores;
-    std::vector<PairedReadsMapper> paired_read_mappers;
     std::vector<LinkedReadsDatastore> linked_read_datastores;
-    std::vector<LinkedReadsMapper> linked_read_mappers;
     std::vector<LongReadsDatastore> long_read_datastores;
-    std::vector<LongReadsMapper> long_read_mappers;
 
 
     KmerCompressionIndex kci;

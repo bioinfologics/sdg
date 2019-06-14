@@ -22,7 +22,7 @@ public:
     using Map = std::unordered_map<uint64_t, graphStrandPos>;
     using pair = std::pair<uint64_t, graphStrandPos>;
     using const_iterator = std::unordered_map<uint64_t, graphStrandPos>::const_iterator;
-    explicit UniqueKmerIndex(uint k) : k(k) {}
+    explicit UniqueKmerIndex(uint k = 31) : k(k) {}
 
     UniqueKmerIndex(const SequenceDistanceGraph &sg, uint8_t k) :
             k(k) { }
@@ -195,7 +195,7 @@ public:
     const Map& getMap() const {return kmer_to_graphposition; }
 private:
     Map kmer_to_graphposition;
-    uint8_t k;
+    uint8_t k = 31;
     std::vector<uint64_t> unique_kmers_per_node;
     std::vector<uint64_t> total_kmers_per_node;
 

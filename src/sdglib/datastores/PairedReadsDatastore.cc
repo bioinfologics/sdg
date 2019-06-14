@@ -2,12 +2,14 @@
 // Created by Bernardo Clavijo (EI) on 10/02/2018.
 //
 
+#include "PairedReadsDatastore.hpp"
+#include <sdglib/mappers/PairedReadsMapper.hpp>
 #include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/types/GenericTypes.hpp>
 #include <fstream>
 #include <strings.h>
 #include <cstring>
-#include "PairedReadsDatastore.hpp"
-#include <sdglib/types/GenericTypes.hpp>
+
 
 void PairedReadsDatastore::print_status() {
     sdglib::OutputLog()<<"PairedRead Datastore from "<<filename<<" contains "<<size()-1<<" reads."<<std::endl;
@@ -323,3 +325,17 @@ std::unordered_set<__uint128_t, int128_hash> PairedReadsDatastore::get_reads_kme
     }
     return std::move(kset);
 }
+
+PairedReadsDatastore::PairedReadsDatastore() {}
+
+PairedReadsDatastore::PairedReadsDatastore(std::string _filename) {
+    filename=_filename;
+    load_index();
+}
+
+PairedReadsDatastore::PairedReadsDatastore(std::string read1_filename, std::string read2_filename,
+                                           std::string output_filename, int min_readsize, int max_readsize) {
+    build_from_fastq(read1_filename,read2_filename,output_filename,min_readsize,max_readsize);
+}
+
+uint64_t PairedReadsDatastore::size() const {return _size;}

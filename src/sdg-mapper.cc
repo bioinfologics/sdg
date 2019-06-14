@@ -62,33 +62,33 @@ int main(int argc, char * argv[]) {
         if (!use63mers) ws.create_index();
         else ws.create_63mer_index();
     }
-    for (auto &m:ws.paired_read_mappers) {
+    for (auto &ds:ws.paired_read_datastores) {
         sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
-        if (!use63mers) m.remap_all_reads();
-        else m.remap_all_reads63();
-        m.print_status();
+        if (!use63mers) ds.mapper->remap_all_reads();
+        else ds.mapper->remap_all_reads63();
+        ds.mapper->print_status();
         sdglib::OutputLog()<<"Computing size distribution..."<<std::endl;
-        auto sdist=m.size_distribution();
+        auto sdist=ds.mapper->size_distribution();
         std::ofstream df("prdist_"+std::to_string(pri++)+".csv");
         for (auto i=0;i<sdist.size();i+=10){
             uint64_t t=0;
             for (auto j=i;j<i+10;++j) t+=sdist[j];
             if (t>0) df<<i<<", "<<t<<std::endl;
         }
-        ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
+        ws.add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
     }
-    for (auto &m:ws.linked_read_mappers) {
+    for (auto &ds:ws.linked_read_datastores) {
         sdglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
-        if (!use63mers) m.remap_all_reads();
-        else m.remap_all_reads63();
-        ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
+        if (!use63mers) ds.mapper->remap_all_reads();
+        else ds.mapper->remap_all_reads63();
+        ws.add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }
-    for (auto &m: ws.long_read_mappers) {
+    for (auto &ds: ws.long_read_datastores) {
         sdglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
-        m.map_reads(max_filter);
-        ws.add_log_entry("reads from "+m.datastore.filename+" re-mapped to current graph");
+        ds.mapper->map_reads(max_filter);
+        ws.add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
     }
     ws.add_log_entry("bsg-mapper run finished");
