@@ -2,7 +2,7 @@
 // Created by Luis Yanes (EI) on 22/03/2018.
 //
 
-#include "LongReadMapper.hpp"
+#include "LongReadsMapper.hpp"
 #include <sdglib/logger/OutputLog.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/utilities/io_helpers.hpp>
@@ -14,9 +14,9 @@
 #include <iterator>
 
 
-const bsgVersion_t LongReadMapper::min_compat = 0x0001;
+const bsgVersion_t LongReadsMapper::min_compat = 0x0001;
 
-LongReadHaplotypeMappingsFilter::LongReadHaplotypeMappingsFilter (const LongReadMapper & _lorm, const LinkedReadMapper & _lirm):
+LongReadHaplotypeMappingsFilter::LongReadHaplotypeMappingsFilter (const LongReadsMapper & _lorm, const LinkedReadsMapper & _lirm):
         lorm(_lorm),lirm(_lirm){
     lrbsgp=new BufferedSequenceGetter(lorm.datastore);
 };
@@ -155,7 +155,7 @@ void LongReadHaplotypeMappingsFilter::rank(uint64_t read_id, float coverage_weig
     score_coverage(coverage_weight);
 }
 
-void LongReadMapper::print_status() {
+void LongReadsMapper::print_status() {
     uint64_t fm_rcount=0,fm_count=0;
     for (auto &fm:filtered_read_mappings){
         if (!fm.empty()) {
@@ -166,7 +166,7 @@ void LongReadMapper::print_status() {
     sdglib::OutputLog()<<"Long read mappings:  Raw: "<<mappings.size()<<"  Filtered: "<<fm_count<<" on "<<fm_rcount<<" / "<< filtered_read_mappings.size() <<" reads"<<std::endl;
 }
 
-std::vector<LongReadMapping> LongReadMapper::get_raw_mappings_from_read(uint64_t read_id) const {
+std::vector<LongReadMapping> LongReadsMapper::get_raw_mappings_from_read(uint64_t read_id) const {
     std::vector<LongReadMapping> r;
     if (first_mapping[read_id]!=-1) {
         for (auto i = first_mapping[read_id];i<mappings.size() and mappings[i].read_id==read_id;++i) r.emplace_back(mappings[i]);
@@ -174,7 +174,7 @@ std::vector<LongReadMapping> LongReadMapper::get_raw_mappings_from_read(uint64_t
     return std::move(r);
 }
 
-void LongReadMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers){
+void LongReadsMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers){
     if (matches.size() < read_kmers.size()) matches.resize(read_kmers.size());
     uint64_t no_match=0,single_match=0,multi_match=0; //DEBUG
     for (auto i=0;i<read_kmers.size();++i){
@@ -199,7 +199,7 @@ void LongReadMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int3
 //            <<multi_match<<" ("<< (multi_match*100/read_kmers.size()) << "%) multi match"<<std::endl;
 }
 
-std::set<sgNodeID_t> LongReadMapper::window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, uint32_t read_kmers_size){
+std::set<sgNodeID_t> LongReadsMapper::window_candidates(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, uint32_t read_kmers_size){
     //beware you need the size! otherwise there is a size from the matches and not from the reads!
     std::set<sgNodeID_t> candidates;
     std::map<int32_t,uint32_t> candidate_votes;
@@ -216,7 +216,7 @@ std::set<sgNodeID_t> LongReadMapper::window_candidates(std::vector<std::vector<s
     return candidates;
 }
 
-std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,
+std::vector<LongReadMapping> LongReadsMapper::alignment_blocks(uint32_t readID, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,
                                                               uint32_t read_kmers_size,
                                                               std::set<sgNodeID_t> &candidates) {
 //    std::cout<<"Alignment block search starting with candidates:";
@@ -302,7 +302,7 @@ std::vector<LongReadMapping> LongReadMapper::alignment_blocks(uint32_t readID, s
     return blocks;
 }
 
-std::vector<LongReadMapping> LongReadMapper::filter_blocks(std::vector<LongReadMapping> &blocks,
+std::vector<LongReadMapping> LongReadsMapper::filter_blocks(std::vector<LongReadMapping> &blocks,
                                                            std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
                                                            uint32_t read_kmers_size) {
     std::vector<LongReadMapping> fblocks;
@@ -320,7 +320,7 @@ std::vector<LongReadMapping> LongReadMapper::filter_blocks(std::vector<LongReadM
     return fblocks;
 }
 
-void LongReadMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> readIDs, std::string detailed_log) {
+void LongReadsMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> readIDs, std::string detailed_log) {
     update_graph_index(filter_limit);
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
     uint32_t num_reads_done(0);
@@ -397,7 +397,7 @@ void LongReadMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> re
     update_indexes();
 }
 
-std::vector<LongReadMapping> LongReadMapper::map_sequence(const char * query_sequence_ptr, sgNodeID_t seq_id) {
+std::vector<LongReadMapping> LongReadsMapper::map_sequence(const char * query_sequence_ptr, sgNodeID_t seq_id) {
     std::vector<LongReadMapping> private_results;
 
     StreamKmerFactory skf(k);
@@ -418,7 +418,7 @@ std::vector<LongReadMapping> LongReadMapper::map_sequence(const char * query_seq
 
 }
 
-void LongReadMapper::update_indexes() {
+void LongReadsMapper::update_indexes() {
     if (!std::is_sorted(mappings.begin(), mappings.end())) {
         sdglib::OutputLog() << "Sorting mappings" << std::endl;
         sdglib::sort(mappings.begin(), mappings.end());
@@ -441,29 +441,29 @@ void LongReadMapper::update_indexes() {
                 reads_in_node[std::abs(m.node)].push_back(m.read_id);
         }
     }
-    sdglib::OutputLog() << "LongReadMapper index updated with " << mappings.size() << " mappings and "<< frmcount << " filtered mappings (over "<< reads_with_filtered_mappings << " reads)"<< std::endl;
+    sdglib::OutputLog() << "LongReadsMapper index updated with " << mappings.size() << " mappings and "<< frmcount << " filtered mappings (over "<< reads_with_filtered_mappings << " reads)"<< std::endl;
 }
 
-LongReadMapper::LongReadMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k)
+LongReadsMapper::LongReadsMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k)
         : sg(_ws.sdg), k(k), datastore(ds), assembly_kmers(k) {
 
     reads_in_node.resize(sg.nodes.size());
 }
 
-LongReadMapper::LongReadMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k)
+LongReadsMapper::LongReadsMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k)
         : sg(_sdg), k(k), datastore(ds), assembly_kmers(k) {
 
     reads_in_node.resize(sg.nodes.size());
 }
 
-LongReadMapper::~LongReadMapper() {}
+LongReadsMapper::~LongReadsMapper() {}
 
-void LongReadMapper::read(std::string filename) {
+void LongReadsMapper::read(std::string filename) {
     std::ifstream inf(filename, std::ios_base::binary);
     read(inf);
 }
 
-void LongReadMapper::read(std::ifstream &inf) {
+void LongReadsMapper::read(std::ifstream &inf) {
     sdglib::OutputLog() << "Reading long read mappings" << std::endl;
     auto mapSize(mappings.size());
     inf.read(reinterpret_cast<char *>(&k), sizeof(k));
@@ -475,12 +475,12 @@ void LongReadMapper::read(std::ifstream &inf) {
     sdglib::OutputLog() << "Done!" << std::endl;
 }
 
-void LongReadMapper::write(std::string filename) {
+void LongReadsMapper::write(std::string filename) {
     std::ofstream ofs(filename, std::ios_base::binary);
     write(ofs);
 }
 
-void LongReadMapper::write(std::ofstream &ofs) {
+void LongReadsMapper::write(std::ofstream &ofs) {
     sdglib::OutputLog() << "Dumping long read mappings" << std::endl;
     auto mapSize(mappings.size());
     ofs.write(reinterpret_cast<const char *>(&k), sizeof(k));
@@ -489,27 +489,27 @@ void LongReadMapper::write(std::ofstream &ofs) {
     sdglib::OutputLog() << "Done!" << std::endl;
 }
 
-void LongReadMapper::write_filtered_mappings(std::string filename) {
+void LongReadsMapper::write_filtered_mappings(std::string filename) {
     std::ofstream ofs(filename, std::ios_base::binary);
     sdglib::write_flat_vectorvector(ofs,filtered_read_mappings);
 }
 
-void LongReadMapper::read_filtered_mappings(std::string filename) {
+void LongReadsMapper::read_filtered_mappings(std::string filename) {
     std::ifstream ifs(filename, std::ios_base::binary);
     sdglib::read_flat_vectorvector(ifs,filtered_read_mappings);
 }
 
-void LongReadMapper::write_read_paths(std::string filename) {
+void LongReadsMapper::write_read_paths(std::string filename) {
     std::ofstream ofs(filename, std::ios_base::binary);
     sdglib::write_flat_vectorvector(ofs, read_paths);
 }
 
-void LongReadMapper::read_read_paths(std::string filename) {
+void LongReadsMapper::read_read_paths(std::string filename) {
     std::ifstream ifs(filename, std::ios_base::binary);
     sdglib::read_flat_vectorvector(ifs,read_paths);
 }
 
-LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
+LongReadsMapper LongReadsMapper::operator=(const LongReadsMapper &other) {
     if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceDistanceGraph"); }
     if (&other == this) {
         return *this;
@@ -519,15 +519,15 @@ LongReadMapper LongReadMapper::operator=(const LongReadMapper &other) {
     return *this;
 }
 
-void LongReadMapper::update_graph_index(int filter_limit, bool verbose) {
+void LongReadsMapper::update_graph_index(int filter_limit, bool verbose) {
     if (verbose) std::cout<<"updating index with k="<<std::to_string(k)<<std::endl;
     assembly_kmers=NKmerIndex(k);
     assembly_kmers.generate_index(sg,filter_limit, verbose);
 }
 
-void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size,  float min_tnscore, uint64_t first_id, uint64_t last_id) {
+void LongReadsMapper::filter_mappings_with_linked_reads(const LinkedReadsMapper &lrm, uint32_t min_size,  float min_tnscore, uint64_t first_id, uint64_t last_id) {
     if (lrm.tag_neighbours.empty()) {
-        sdglib::OutputLog()<<"Can't filter mappings because there are no tag_neighbours on the LinkedReadMapper"<<std::endl;
+        sdglib::OutputLog()<<"Can't filter mappings because there are no tag_neighbours on the LinkedReadsMapper"<<std::endl;
         return;
     }
     sdglib::OutputLog()<<"Filtering mappings"<<std::endl;
@@ -570,7 +570,7 @@ void LongReadMapper::filter_mappings_with_linked_reads(const LinkedReadMapper &l
     sdglib::OutputLog()<<"too short: "<<rshort<<"  no mappings: "<<runmapped<<"  no winner: "<<rnoresult<<"  filtered: "<<rfiltered<<std::endl;
 }
 
-void LongReadMapper::filter_mappings_by_size_and_id(int64_t size, float id) {
+void LongReadsMapper::filter_mappings_by_size_and_id(int64_t size, float id) {
     filtered_read_mappings.clear();
     filtered_read_mappings.resize(datastore.size());
     for (auto &m:mappings){
@@ -581,7 +581,7 @@ void LongReadMapper::filter_mappings_by_size_and_id(int64_t size, float id) {
 }
 
 std::vector<LongReadMapping>
-LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose) {
+LongReadsMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose) {
 
     const int32_t OFFSET_BANDWITDH=200;
     if (verbose){
@@ -693,7 +693,7 @@ LongReadMapper::filter_and_chain_matches_by_offset_group(std::vector<LongReadMap
     return filtered_matches;
 }
 
-std::vector<LongReadMapping> LongReadMapper::remove_shadowed_matches(std::vector<LongReadMapping> &matches,
+std::vector<LongReadMapping> LongReadsMapper::remove_shadowed_matches(std::vector<LongReadMapping> &matches,
                                                                      bool verbose) {
     std::vector<LongReadMapping> filtered_matches;
 
@@ -711,7 +711,7 @@ std::vector<LongReadMapping> LongReadMapper::remove_shadowed_matches(std::vector
 
     return filtered_matches;
 }
-std::vector<LongReadMapping> LongReadMapper::improve_read_filtered_mappings(uint32_t rid, bool correct_on_ws) {
+std::vector<LongReadMapping> LongReadsMapper::improve_read_filtered_mappings(uint32_t rid, bool correct_on_ws) {
 
     std::vector<LongReadMapping> new_mappings;
     auto mappings = remove_shadowed_matches(filtered_read_mappings[rid]); // This has to be a copy and can be a bit expensive!
@@ -762,7 +762,7 @@ std::vector<LongReadMapping> LongReadMapper::improve_read_filtered_mappings(uint
     return new_mappings;
 }
 
-std::vector<ReadCacheItem> LongReadMapper::create_read_paths(const std::vector<sgNodeID_t> &backbone, const ReadPathParams &read_path_params) {
+std::vector<ReadCacheItem> LongReadsMapper::create_read_paths(const std::vector<sgNodeID_t> &backbone, const ReadPathParams &read_path_params) {
     std::unordered_set<uint64_t> useful_read;
     std::vector<ReadCacheItem> read_cache;
     BufferedSequenceGetter sequenceGetter(datastore);
@@ -789,7 +789,7 @@ std::vector<ReadCacheItem> LongReadMapper::create_read_paths(const std::vector<s
     return read_cache;
 }
 
-std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, const ReadPathParams &read_path_params, bool verbose, const std::string& read_seq) {
+std::vector<sgNodeID_t> LongReadsMapper::create_read_path(uint32_t rid, const ReadPathParams &read_path_params, bool verbose, const std::string& read_seq) {
     const std::vector<LongReadMapping> &mappings = filtered_read_mappings[rid];
 
     std::vector<sgNodeID_t> read_path;
@@ -865,7 +865,7 @@ std::vector<sgNodeID_t> LongReadMapper::create_read_path(uint32_t rid, const Rea
                 }
 
                 //Create, parametrise and index a mapper to the paths SG
-                auto pm = LongReadMapper(psg, datastore);
+                auto pm = LongReadsMapper(psg, datastore);
                 pm.k = read_path_params.path_mapping_k;
                 pm.min_size = std::min(int(ad / 2), read_path_params.max_mapping_path_size); //
                 pm.min_chain = read_path_params.min_mapping_chain;

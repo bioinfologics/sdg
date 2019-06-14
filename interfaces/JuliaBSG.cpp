@@ -7,7 +7,7 @@
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/processors/LinkageUntangler.hpp>
-#include <sdglib/mappers/PairedReadMapper.hpp>
+#include <sdglib/mappers/PairedReadsMapper.hpp>
 #include <sdglib/graph/DistanceGraph.hpp>
 
 namespace jlcxx {

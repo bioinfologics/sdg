@@ -2,8 +2,8 @@
 // Created by Bernardo Clavijo (EI) on 12/05/2018.
 //
 
-#ifndef BSG_PAIREDREADMAPPER_HPP
-#define BSG_PAIREDREADMAPPER_HPP
+#ifndef BSG_PAIREDREADSMAPPER_HPP
+#define BSG_PAIREDREADSMAPPER_HPP
 
 #include <map>
 #include <fstream>
@@ -25,10 +25,10 @@ class WorkSpace;
  * Supports partial remapping of unmapped reads or of a selection list.
  */
 
-class PairedReadMapper {
+class PairedReadsMapper {
 
 public:
-    PairedReadMapper(WorkSpace &_ws, PairedReadsDatastore &_datastore);
+    PairedReadsMapper(WorkSpace &_ws, PairedReadsDatastore &_datastore);
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
     /** @brief Maps each read in the data-store to the nodes using unique kmers form the graph
@@ -86,7 +86,7 @@ public:
      */
     void print_status();
 
-    PairedReadMapper operator=(const PairedReadMapper &other);
+    PairedReadsMapper operator=(const PairedReadsMapper &other);
 
     /** @brief Returns a collection of read ids that have both ends mapped to the nodeID.
      *
@@ -134,7 +134,7 @@ public:
 class PairedReadConnectivityDetail {
 public:
     PairedReadConnectivityDetail(){};
-    PairedReadConnectivityDetail(const PairedReadMapper & prm, sgNodeID_t source, sgNodeID_t dest);
+    PairedReadConnectivityDetail(const PairedReadsMapper & prm, sgNodeID_t source, sgNodeID_t dest);
     PairedReadConnectivityDetail& operator+=(const PairedReadConnectivityDetail& rhs){
         this->orientation_paircount[0] += rhs.orientation_paircount[0];
         this->orientation_paircount[1] += rhs.orientation_paircount[1];
@@ -146,4 +146,4 @@ public:
     uint64_t orientation_paircount[4]={0,0,0,0};
 };
 
-#endif //BSG_PAIREDREADMAPPER_HPP
+#endif //BSG_PAIREDREADSMAPPER_HPP

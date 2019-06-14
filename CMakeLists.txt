@@ -182,9 +182,9 @@ add_library(bsg SHARED
         src/sdglib/datastores/PairedReadsDatastore.cc
         src/sdglib/datastores/LinkedReadsDatastore.cc
         src/sdglib/datastores/LongReadsDatastore.cpp
-        src/sdglib/mappers/LongReadMapper.cpp
-        src/sdglib/mappers/LinkedReadMapper.cc
-        src/sdglib/mappers/PairedReadMapper.cc
+        src/sdglib/mappers/LongReadsMapper.cpp
+        src/sdglib/mappers/LinkedReadsMapper.cc
+        src/sdglib/mappers/PairedReadsMapper.cc
         src/sdglib/processors/Untangler.cc
         src/sdglib/processors/PathExplorer.cpp
         src/sdglib/processors/LinkageUntangler.cc
@@ -207,9 +207,9 @@ add_library(bsg_static STATIC
         src/sdglib/datastores/PairedReadsDatastore.cc
         src/sdglib/datastores/LinkedReadsDatastore.cc
         src/sdglib/datastores/LongReadsDatastore.cpp
-        src/sdglib/mappers/LongReadMapper.cpp
-        src/sdglib/mappers/LinkedReadMapper.cc
-        src/sdglib/mappers/PairedReadMapper.cc
+        src/sdglib/mappers/LongReadsMapper.cpp
+        src/sdglib/mappers/LinkedReadsMapper.cc
+        src/sdglib/mappers/PairedReadsMapper.cc
         src/sdglib/processors/Untangler.cc
         src/sdglib/processors/PathExplorer.cpp
         src/sdglib/processors/LinkageUntangler.cc

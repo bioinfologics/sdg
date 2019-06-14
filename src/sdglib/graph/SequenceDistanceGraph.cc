@@ -14,7 +14,7 @@
 #include <tuple>
 #include <functional>
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
-#include <sdglib/mappers/LinkedReadMapper.hpp>
+#include <sdglib/mappers/LinkedReadsMapper.hpp>
 
 bool Node::is_canonical() {
     for (size_t i=0,j=sequence.size()-1;i<j;++i,--j){

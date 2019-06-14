@@ -11,7 +11,7 @@
 #include <sdglib/factories/KMerIDXFactory.hpp>
 #include <sdglib/readers/SequenceGraphReader.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
-#include <sdglib/mappers/PairedReadMapper.hpp>
+#include <sdglib/mappers/PairedReadsMapper.hpp>
 #include <sdglib/datastores/LinkedReadsDatastore.hpp>
 #include <sdglib/types/KmerTypes.hpp>
 #include <sdglib/readers/FileReader.hpp>

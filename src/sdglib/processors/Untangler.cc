@@ -4,11 +4,11 @@
 
 #include "Untangler.hpp"
 #include <sdglib/datastores/LinkedReadsDatastore.hpp>
-#include <sdglib/mappers/LinkedReadMapper.hpp>
+#include <sdglib/mappers/LinkedReadsMapper.hpp>
 #include <sdglib/datastores/PairedReadsDatastore.hpp>
-#include <sdglib/mappers/PairedReadMapper.hpp>
+#include <sdglib/mappers/PairedReadsMapper.hpp>
 #include <sdglib/datastores/LongReadsDatastore.hpp>
-#include <sdglib/mappers/LongReadMapper.hpp>
+#include <sdglib/mappers/LongReadsMapper.hpp>
 #include "sdglib/processors/KmerCompressionIndex.hpp"
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
 

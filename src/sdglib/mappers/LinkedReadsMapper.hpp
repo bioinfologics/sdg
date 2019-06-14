@@ -28,10 +28,10 @@ public:
  *
  * Supports partial remapping of unmapped reads or of a selection list.
  */
-class LinkedReadMapper {
+class LinkedReadsMapper {
 
 public:
-    LinkedReadMapper(WorkSpace &_ws, LinkedReadsDatastore &_datastore);
+    LinkedReadsMapper(WorkSpace &_ws, LinkedReadsDatastore &_datastore);
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
 
@@ -57,7 +57,7 @@ public:
      * @param other
      * @return
      */
-    LinkedReadMapper operator=(const LinkedReadMapper &other);
+    LinkedReadsMapper operator=(const LinkedReadsMapper &other);
 
     /**
      * This is the same as map_reads() but using k63

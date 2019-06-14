@@ -5,7 +5,7 @@
 #ifndef BSG_LINKEDREADSDATASTORE_HPP
 #define BSG_LINKEDREADSDATASTORE_HPP
 
-#include <sdglib/mappers/PairedReadMapper.hpp>
+#include <sdglib/mappers/PairedReadsMapper.hpp>
 #include <cstdint>
 #include <iostream>
 #include <string>
@@ -83,6 +83,7 @@ private:
     std::vector<uint32_t> read_tag;
     FILE * fd=NULL;
     static const bsgVersion_t min_compat;
+
 
     //TODO: read sequence cache (std::map with a limit of elements and use count)
 };

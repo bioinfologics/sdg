@@ -13,7 +13,7 @@
 #include <sdglib/types/MappingTypes.hpp>
 #include <sdglib/indexers/NKmerIndex.hpp>
 #include <sdglib/utilities/hashing_helpers.hpp>
-#include "LinkedReadMapper.hpp"
+#include "LinkedReadsMapper.hpp"
 #include <memory>
 class WorkSpace;
 
@@ -73,7 +73,7 @@ public:
     }
 };
 
-class LongReadMapper;
+class LongReadsMapper;
 
 /**
  * This class groups all methods to filter long read mappings to  haplotype solutions within a long read
@@ -90,7 +90,7 @@ class LongReadHaplotypeMappingsFilter {
     std::vector<uint8_t> coverage;
     std::vector<std::vector<bool>> kmer_hits_by_node;
 public:
-    LongReadHaplotypeMappingsFilter (const LongReadMapper & _lorm, const LinkedReadMapper & _lirm);
+    LongReadHaplotypeMappingsFilter (const LongReadsMapper & _lorm, const LinkedReadsMapper & _lirm);
     ~LongReadHaplotypeMappingsFilter(){
         delete(lrbsgp);
     }
@@ -114,8 +114,8 @@ public:
     std::string read_seq;
     std::vector<LongReadMapping> mappings;
     std::vector<HaplotypeScore> haplotype_scores;
-    const LongReadMapper & lorm;
-    const LinkedReadMapper & lirm;
+    const LongReadsMapper & lorm;
+    const LinkedReadsMapper & lirm;
     BufferedSequenceGetter * lrbsgp;
     std::vector<sgNodeID_t> nodeset;
 
@@ -132,7 +132,7 @@ enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage
  * this->filtered_read_mappings is filled by calling one of the filter_mappings_* methods, which can use extra data.
  * the reads_in_node index is populated by update_indexes() from this->filtered_read_mappings data.
  */
-class LongReadMapper {
+class LongReadsMapper {
     NKmerIndex assembly_kmers;
 
 public:
@@ -146,11 +146,11 @@ public:
     int max_jump=500;
     int max_delta_change=60;
 
-    LongReadMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k=15);
-    LongReadMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k=15);
-    ~LongReadMapper();
+    LongReadsMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k=15);
+    LongReadsMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k=15);
+    ~LongReadsMapper();
 
-    LongReadMapper operator=(const LongReadMapper &other);
+    LongReadsMapper operator=(const LongReadsMapper &other);
 
     void print_status();
 
@@ -301,7 +301,7 @@ public:
      * @param first_id
      * @param last_id
      */
-    void filter_mappings_with_linked_reads(const LinkedReadMapper &lrm, uint32_t min_size=10000, float min_tnscore=0.03, uint64_t first_id=0, uint64_t last_id=0);
+    void filter_mappings_with_linked_reads(const LinkedReadsMapper &lrm, uint32_t min_size=10000, float min_tnscore=0.03, uint64_t first_id=0, uint64_t last_id=0);
 
     void filter_mappings_by_size_and_id(int64_t size, float id);
     /**
@@ -341,7 +341,7 @@ public:
     /**
      * This updates the filtered mappings by taking the elements from the path mapping that have the right size and neighbourhood conditions
      */
-    //void update_filtered_mappings_from_paths(const LinkedReadMapper &lrm,uint32_t min_size=10000, float min_tnscore=0.03);
+    //void update_filtered_mappings_from_paths(const LinkedReadsMapper &lrm,uint32_t min_size=10000, float min_tnscore=0.03);
 
     //void update_filtered_mappings_from_paths(uint32_t min_size=10000, float min_tnscore=0.03);
 

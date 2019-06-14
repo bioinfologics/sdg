@@ -48,8 +48,8 @@ public:
     //Multi-Linkage creation methods: multiple evidence-supported links between any nodes
 
     DistanceGraph make_topology_linkage(int radius);
-    DistanceGraph make_longRead_multilinkage(const LongReadMapper &lorm,bool real_read_size=true, int32_t unmapped_end=1000);
-    DistanceGraph make_paired10x_multilinkage(const PairedReadMapper &prm, const LinkedReadMapper &lirm, float min_tnscore=0.2, bool fr=false, uint64_t read_offset=0);
+    DistanceGraph make_longRead_multilinkage(const LongReadsMapper &lorm,bool real_read_size=true, int32_t unmapped_end=1000);
+    DistanceGraph make_paired10x_multilinkage(const PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore=0.2, bool fr=false, uint64_t read_offset=0);
 
 
     //supporting methods

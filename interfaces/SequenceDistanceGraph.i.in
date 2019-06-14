@@ -24,10 +24,10 @@
 #include "sdglib/factories/KMerCountFactory.hpp"
 
 #include "sdglib/indexers/UniqueKmerIndex.hpp"
-#include "sdglib/mappers/LinkedReadMapper.hpp"
-#include "sdglib/mappers/LongReadMapper.hpp"
+#include "sdglib/mappers/LinkedReadsMapper.hpp"
+#include "sdglib/mappers/LongReadsMapper.hpp"
 #include "sdglib/datastores/LongReadsDatastore.hpp"
-#include "sdglib/mappers/PairedReadMapper.hpp"
+#include "sdglib/mappers/PairedReadsMapper.hpp"
 #include "sdglib/datastores/PairedReadsDatastore.hpp"
 
 #include "sdglib/processors/Untangler.hpp"
@@ -87,17 +87,17 @@ namespace std {
    %template(vectorvectorTagNeighbour) vector<vector<TagNeighbour>>;
    %template(vectorHaplotypeScore) vector<HaplotypeScore>;
 
-   %ignore vector<LongReadMapper>::vector(size_type);
-   %ignore vector<LongReadMapper>::resize;
-   %template(vectorLongReadMapper) vector<LongReadMapper>;
+   %ignore vector<LongReadsMapper>::vector(size_type);
+   %ignore vector<LongReadsMapper>::resize;
+   %template(vectorLongReadMapper) vector<LongReadsMapper>;
 
-   %ignore vector<LinkedReadMapper>::vector(size_type);
-   %ignore vector<LinkedReadMapper>::resize;
-   %template(vectorLinkedReadMapper) vector<LinkedReadMapper>;
+   %ignore vector<LinkedReadsMapper>::vector(size_type);
+   %ignore vector<LinkedReadsMapper>::resize;
+   %template(vectorLinkedReadMapper) vector<LinkedReadsMapper>;
 
-   %ignore vector<PairedReadMapper>::vector(size_type);
-   %ignore vector<PairedReadMapper>::resize;
-   %template(vectorPairedReadMapper) vector<PairedReadMapper>;
+   %ignore vector<PairedReadsMapper>::vector(size_type);
+   %ignore vector<PairedReadsMapper>::resize;
+   %template(vectorPairedReadMapper) vector<PairedReadsMapper>;
 
    %ignore vector<PairedReadsDatastore>::vector(size_type);
    %ignore vector<PairedReadsDatastore>::resize;
@@ -187,9 +187,9 @@ namespace std {
 
 %include "sdglib/datastores/LongReadsDatastore.hpp"
 %include "sdglib/datastores/PairedReadsDatastore.hpp"
-%include "sdglib/mappers/LongReadMapper.hpp"
-%include "sdglib/mappers/LinkedReadMapper.hpp"
-%include "sdglib/mappers/PairedReadMapper.hpp"
+%include "sdglib/mappers/LongReadsMapper.hpp"
+%include "sdglib/mappers/LinkedReadsMapper.hpp"
+%include "sdglib/mappers/PairedReadsMapper.hpp"
 %include "sdglib/processors/LinkageUntangler.hpp"
 %include "sdglib/graph/DistanceGraph.hpp"
 

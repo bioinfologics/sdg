@@ -7,12 +7,12 @@
 #include <sdglib/utilities/omp_safe.hpp>
 #include <fstream>
 #include <iostream>
-#include "PairedReadMapper.hpp"
+#include "PairedReadsMapper.hpp"
 #include <sdglib/workspace/WorkSpace.hpp>
 
-const bsgVersion_t PairedReadMapper::min_compat = 0x0001;
+const bsgVersion_t PairedReadsMapper::min_compat = 0x0001;
 
-PairedReadMapper::PairedReadMapper(WorkSpace &_ws, PairedReadsDatastore &_datastore) :
+PairedReadsMapper::PairedReadsMapper(WorkSpace &_ws, PairedReadsDatastore &_datastore) :
         sg(_ws.sdg),
         datastore(_datastore),
         kmer_to_graphposition(_ws.uniqueKmerIndex),
@@ -21,7 +21,7 @@ PairedReadMapper::PairedReadMapper(WorkSpace &_ws, PairedReadsDatastore &_datast
     reads_in_node.resize(sg.nodes.size());
 }
 
-void PairedReadMapper::write(std::ofstream &output_file) {
+void PairedReadsMapper::write(std::ofstream &output_file) {
     //read-to-node
     uint64_t count=read_to_node.size();
     output_file.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
@@ -41,7 +41,7 @@ void PairedReadMapper::write(std::ofstream &output_file) {
     }
 }
 
-void PairedReadMapper::read(std::ifstream &input_file) {
+void PairedReadsMapper::read(std::ifstream &input_file) {
     uint64_t count;
     bsgMagic_t magic;
     bsgVersion_t version;
@@ -51,15 +51,15 @@ void PairedReadMapper::read(std::ifstream &input_file) {
     input_file.read((char *) &type, sizeof(type));
 
     if (magic != BSG_MAGIC) {
-        throw std::runtime_error("PairedReadMapper file appears to be corrupted");
+        throw std::runtime_error("PairedReadsMapper file appears to be corrupted");
     }
 
     if (version < min_compat) {
-        throw std::runtime_error("PairedReadMapper file Incompatible version");
+        throw std::runtime_error("PairedReadsMapper file Incompatible version");
     }
 
     if (type != PairedMap_FT) {
-        throw std::runtime_error("PairedReadMapper file Incompatible file type");
+        throw std::runtime_error("PairedReadsMapper file Incompatible file type");
     }
 
     input_file.read(( char *) &count,sizeof(count));
@@ -76,13 +76,13 @@ void PairedReadMapper::read(std::ifstream &input_file) {
     populate_orientation();
 }
 
-void PairedReadMapper::remap_all_reads() {
+void PairedReadsMapper::remap_all_reads() {
     for (auto &rtn:read_to_node) rtn=0;
     for (auto &rin:reads_in_node) rin.clear();
     map_reads();
 }
 
-void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
+void PairedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 31;
     std::atomic<int64_t> nokmers(0);
     reads_in_node.resize(sg.nodes.size());
@@ -193,13 +193,13 @@ void PairedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
     populate_orientation();
 }
 
-void PairedReadMapper::remap_all_reads63() {
+void PairedReadsMapper::remap_all_reads63() {
     for (auto &rtn:read_to_node) rtn=0;
     for (auto &rin:reads_in_node) rin.clear();
     map_reads63();
 }
 
-void PairedReadMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_remap) {
+void PairedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 63;
     std::atomic<int64_t> nokmers(0);
     reads_in_node.resize(sg.nodes.size());
@@ -322,7 +322,7 @@ void PairedReadMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_
 // * @todo support other kind of indexes and variable k-mer size
 // */
 
-void PairedReadMapper::remove_obsolete_mappings(){
+void PairedReadsMapper::remove_obsolete_mappings(){
     uint64_t nodes=0,reads=0;
     std::set<sgNodeID_t> updated_nodes;
     for (auto n=1;n<sg.nodes.size();++n) {
@@ -342,7 +342,7 @@ void PairedReadMapper::remove_obsolete_mappings(){
     sdglib::OutputLog(sdglib::INFO, false) << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
 }
 
-void PairedReadMapper::print_status(){
+void PairedReadsMapper::print_status(){
     uint64_t none=0,single=0,both=0,same=0;
     for (uint64_t r1=1;r1<read_to_node.size();r1+=2){
         if (read_to_node[r1]==0) {
@@ -358,7 +358,7 @@ void PairedReadMapper::print_status(){
     sdglib::OutputLog()<<"Mapped pairs from "<<datastore.filename<<": None: "<<none<<"  Single: "<<single<<"  Both: "<<both<<" ("<<same<<" same)"<<std::endl;
 }
 
-std::vector<uint64_t> PairedReadMapper::size_distribution() {
+std::vector<uint64_t> PairedReadsMapper::size_distribution() {
     frdist.clear();
     frdist.resize(70000);
     rfdist.clear();
@@ -402,7 +402,7 @@ std::vector<uint64_t> PairedReadMapper::size_distribution() {
     } else return rfdist;
 }
 
-void PairedReadMapper::populate_orientation() {
+void PairedReadsMapper::populate_orientation() {
     read_direction_in_node.clear();
     read_direction_in_node.resize(read_to_node.size());
     for (auto & nreads:reads_in_node){
@@ -412,7 +412,7 @@ void PairedReadMapper::populate_orientation() {
     }
 }
 
-PairedReadMapper PairedReadMapper::operator=(const PairedReadMapper &other) {
+PairedReadsMapper PairedReadsMapper::operator=(const PairedReadsMapper &other) {
     if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceDistanceGraph"); }
     if (&other == this) {
         return *this;
@@ -422,7 +422,7 @@ PairedReadMapper PairedReadMapper::operator=(const PairedReadMapper &other) {
     return *this;
 }
 
-PairedReadConnectivityDetail::PairedReadConnectivityDetail(const PairedReadMapper &prm, sgNodeID_t source,
+PairedReadConnectivityDetail::PairedReadConnectivityDetail(const PairedReadsMapper &prm, sgNodeID_t source,
                                                            sgNodeID_t dest) {
     /*std::set<uint64_t> connecting_reads_s;
     std::set<uint64_t> connecting_reads_d;
@@ -461,7 +461,7 @@ PairedReadConnectivityDetail::PairedReadConnectivityDetail(const PairedReadMappe
 
 }
 
-std::vector<uint64_t> PairedReadMapper::get_node_readpairs_ids(sgNodeID_t nodeID) {
+std::vector<uint64_t> PairedReadsMapper::get_node_readpairs_ids(sgNodeID_t nodeID) {
     std::vector<uint64_t> rpin;
     nodeID=llabs(nodeID);
     rpin.reserve(reads_in_node[nodeID].size()*2);

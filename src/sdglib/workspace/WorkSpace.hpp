@@ -10,9 +10,9 @@
 #include <sdglib/datastores/LinkedReadsDatastore.hpp>
 #include <sdglib/datastores/LongReadsDatastore.hpp>
 
-#include <sdglib/mappers/PairedReadMapper.hpp>
-#include <sdglib/mappers/LinkedReadMapper.hpp>
-#include <sdglib/mappers/LongReadMapper.hpp>
+#include <sdglib/mappers/PairedReadsMapper.hpp>
+#include <sdglib/mappers/LinkedReadsMapper.hpp>
+#include <sdglib/mappers/LongReadsMapper.hpp>
 
 #include <sdglib/processors/KmerCompressionIndex.hpp>
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
@@ -61,11 +61,11 @@ public:
     Unique63merIndex unique63merIndex;
 
     std::vector<PairedReadsDatastore> paired_read_datastores;
-    std::vector<PairedReadMapper> paired_read_mappers;
+    std::vector<PairedReadsMapper> paired_read_mappers;
     std::vector<LinkedReadsDatastore> linked_read_datastores;
-    std::vector<LinkedReadMapper> linked_read_mappers;
+    std::vector<LinkedReadsMapper> linked_read_mappers;
     std::vector<LongReadsDatastore> long_read_datastores;
-    std::vector<LongReadMapper> long_read_mappers;
+    std::vector<LongReadsMapper> long_read_mappers;
 
 
     KmerCompressionIndex kci;

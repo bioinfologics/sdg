@@ -7,16 +7,16 @@
 #include <atomic>
 
 
-#include "LinkedReadMapper.hpp"
+#include "LinkedReadsMapper.hpp"
 #include "sdglib/factories/KMerIDXFactory.hpp"
 #include "sdglib/readers/SequenceGraphReader.hpp"
 #include <sdglib/datastores/LinkedReadsDatastore.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 
-const bsgVersion_t LinkedReadMapper::min_compat = 0x0001;
+const bsgVersion_t LinkedReadsMapper::min_compat = 0x0001;
 
-LinkedReadMapper::LinkedReadMapper(WorkSpace &_ws, LinkedReadsDatastore &_datastore) :
+LinkedReadsMapper::LinkedReadsMapper(WorkSpace &_ws, LinkedReadsDatastore &_datastore) :
 sg(_ws.sdg),
 datastore(_datastore),
 kmer_to_graphposition(_ws.uniqueKmerIndex),
@@ -25,7 +25,7 @@ k63mer_to_graphposition(_ws.unique63merIndex)
     reads_in_node.resize(sg.nodes.size());
 }
 
-void LinkedReadMapper::write(std::ofstream &output_file) {
+void LinkedReadsMapper::write(std::ofstream &output_file) {
     //read-to-node
     uint64_t count=read_to_node.size();
     output_file.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
@@ -45,7 +45,7 @@ void LinkedReadMapper::write(std::ofstream &output_file) {
     }
 }
 
-void LinkedReadMapper::read(std::ifstream &input_file) {
+void LinkedReadsMapper::read(std::ifstream &input_file) {
     uint64_t count;
 
     bsgMagic_t magic;
@@ -81,13 +81,13 @@ void LinkedReadMapper::read(std::ifstream &input_file) {
     }
 }
 
-void LinkedReadMapper::remap_all_reads() {
+void LinkedReadsMapper::remap_all_reads() {
     for (auto &rtn:read_to_node) rtn=0;
     for (auto &rin:reads_in_node) rin.clear();
     map_reads();
 }
 
-void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
+void LinkedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 31;
     reads_in_node.resize(sg.nodes.size());
     read_to_node.resize(datastore.size()+1);
@@ -191,13 +191,13 @@ void LinkedReadMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_re
     }
 }
 
-void LinkedReadMapper::remap_all_reads63() {
+void LinkedReadsMapper::remap_all_reads63() {
     for (auto &rtn:read_to_node) rtn=0;
     for (auto &rin:reads_in_node) rin.clear();
     map_reads63();
 }
 
-void LinkedReadMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_remap) {
+void LinkedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 63;
     reads_in_node.resize(sg.nodes.size());
     read_to_node.resize(datastore.size()+1);
@@ -313,7 +313,7 @@ void LinkedReadMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_
 // * @todo add distribution computing on the fly
 // * @todo support other kind of indexes and variable k-mer size
 // */
-//void LinkedReadMapper::map_reads(std::string filename1, std::string filename2, prmReadType read_type, uint64_t max_mem) {
+//void LinkedReadsMapper::map_reads(std::string filename1, std::string filename2, prmReadType read_type, uint64_t max_mem) {
 //    read1filename=std::move(filename1);
 //    read2filename=std::move(filename2);
 //    readType=read_type;
@@ -321,7 +321,7 @@ void LinkedReadMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_
 //    remap_reads();
 //}
 
-void LinkedReadMapper::remove_obsolete_mappings(){
+void LinkedReadsMapper::remove_obsolete_mappings(){
     uint64_t nodes=0,reads=0;
     std::set<sgNodeID_t> updated_nodes;
     for (auto n=1;n<sg.nodes.size();++n) {
@@ -341,7 +341,7 @@ void LinkedReadMapper::remove_obsolete_mappings(){
     std::cout << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
 }
 
-void LinkedReadMapper::print_status() {
+void LinkedReadsMapper::print_status() {
     uint64_t none=0,single=0,both=0,same=0;
     for (uint64_t r1=1;r1<read_to_node.size();r1+=2){
         if (read_to_node[r1]==0) {
@@ -357,7 +357,7 @@ void LinkedReadMapper::print_status() {
     sdglib::OutputLog()<<"Mapped pairs from "<<datastore.filename<<": None: "<<none<<"  Single: "<<single<<"  Both: "<<both<<" ("<<same<<" same)"<<std::endl;
 }
 
-std::set<bsg10xTag> LinkedReadMapper::get_node_tags(sgNodeID_t n) {
+std::set<bsg10xTag> LinkedReadsMapper::get_node_tags(sgNodeID_t n) {
     std::set<bsg10xTag> tags;
     for (auto &rm:reads_in_node[(n>0?n:-n)])
         tags.insert(datastore.get_read_tag(rm.read_id));
@@ -365,7 +365,7 @@ std::set<bsg10xTag> LinkedReadMapper::get_node_tags(sgNodeID_t n) {
     return tags;
 }
 
-std::map<bsg10xTag, std::vector<sgNodeID_t>> LinkedReadMapper::get_tag_nodes(uint32_t min_nodes,
+std::map<bsg10xTag, std::vector<sgNodeID_t>> LinkedReadsMapper::get_tag_nodes(uint32_t min_nodes,
                                                                              const std::vector<bool> &selected_nodes) {
     //Approach: node->tags->nodes (checks how many different tags join this node to every other node).
 
@@ -401,7 +401,7 @@ std::map<bsg10xTag, std::vector<sgNodeID_t>> LinkedReadMapper::get_tag_nodes(uin
     return tag_nodes;
 }
 
-std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadMapper::get_tag_neighbour_nodes(uint32_t min_shared,
+std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadsMapper::get_tag_neighbour_nodes(uint32_t min_shared,
                                                                                            const std::vector<bool> &selected_nodes) {
     std::vector<std::pair<sgNodeID_t , sgNodeID_t >> tns;
 
@@ -437,7 +437,7 @@ std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadMapper::get_tag_neigh
     return tns;
 }
 
-void LinkedReadMapper::compute_all_tag_neighbours(int min_size, float min_score) {
+void LinkedReadsMapper::compute_all_tag_neighbours(int min_size, float min_score) {
     //scores[source][dest]= count of reads of source which have tags also present in dest
     std::vector<std::unordered_map<sgNodeID_t,uint32_t>> scores(sg.nodes.size());
 
@@ -495,7 +495,7 @@ void LinkedReadMapper::compute_all_tag_neighbours(int min_size, float min_score)
     sdglib::OutputLog()<<"...DONE!"<<std::endl;
 }
 
-void LinkedReadMapper::compute_all_tag_neighbours2(int min_size, float min_score, int min_mapped_reads_per_tag) {
+void LinkedReadsMapper::compute_all_tag_neighbours2(int min_size, float min_score, int min_mapped_reads_per_tag) {
     //TODO: parallel for this needs to be done by tag, but tag start-end needs to be computed before
 
     //first - create start-end for tags that have > X reads
@@ -570,7 +570,7 @@ void LinkedReadMapper::compute_all_tag_neighbours2(int min_size, float min_score
     sdglib::OutputLog()<<"...DONE!"<<std::endl;
 }
 
-LinkedReadMapper LinkedReadMapper::operator=(const LinkedReadMapper &other) {
+LinkedReadsMapper LinkedReadsMapper::operator=(const LinkedReadsMapper &other) {
     if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceDistanceGraph"); }
     if (&other == this) {
         return *this;
@@ -581,7 +581,7 @@ LinkedReadMapper LinkedReadMapper::operator=(const LinkedReadMapper &other) {
 }
 
 
-void LinkedReadMapper::write_tag_neighbours(std::string filename) {
+void LinkedReadsMapper::write_tag_neighbours(std::string filename) {
     std::ofstream output_file(filename.c_str());
     uint64_t count;
     count =tag_neighbours.size();
@@ -593,7 +593,7 @@ void LinkedReadMapper::write_tag_neighbours(std::string filename) {
     }
 }
 
-void LinkedReadMapper::read_tag_neighbours(std::string filename) {
+void LinkedReadsMapper::read_tag_neighbours(std::string filename) {
     std::ifstream input_file(filename.c_str());
     uint64_t count;
     input_file.read(( char *) &count,sizeof(count));
