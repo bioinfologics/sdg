@@ -54,6 +54,12 @@ public:
     LinkedReadsDatastore(WorkSpace &ws,std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250);
     LinkedReadsDatastore(WorkSpace &ws, const LinkedReadsDatastore &o);
 
+    ~LinkedReadsDatastore(){
+        if (fd) {
+            fclose(fd);
+        }
+    }
+
     LinkedReadsDatastore& operator=(LinkedReadsDatastore const &o);
 
     void print_status();
@@ -99,7 +105,7 @@ public:
     const char * get_read_sequence(uint64_t readID);
     ~BufferedLRSequenceGetter(){
         free(buffer);
-        close(fd);
+        if(fd) close(fd);
     }
 private:
     const LinkedReadsDatastore &datastore;

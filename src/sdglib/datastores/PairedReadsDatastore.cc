@@ -25,7 +25,15 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     uint64_t _size(0);
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Creating Datastore from "<<read1_filename<<" | "<<read2_filename<<std::endl;
     auto fd1=fopen(read1_filename.c_str(),"r");
+    if (!fd1) {
+        std::cerr << "Failed to open " << read1_filename <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + read1_filename);
+    }
     auto fd2=fopen(read2_filename.c_str(),"r");
+    if (!fd2) {
+        std::cerr << "Failed to open " << read2_filename <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + read2_filename);
+    }
     char readbuffer[3000];
     memset(readbuffer, 0, 3000);
     //first, build an index of tags and offsets
@@ -125,6 +133,10 @@ void PairedReadsDatastore::read(std::ifstream &input_file) {
 
 void PairedReadsDatastore::load_index(){
     fd=fopen(filename.c_str(),"r");
+    if (!fd) {
+        std::cerr << "Failed to open " << filename <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + filename);
+    }
     bsgMagic_t magic;
     bsgVersion_t version;
     BSG_FILETYPE type;

@@ -100,7 +100,7 @@ public:
 
     ~BufferedSequenceGetter(){
         free(buffer);
-        close(fd);
+        if(fd) close(fd);
     }
 
     void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids);

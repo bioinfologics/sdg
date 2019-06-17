@@ -53,7 +53,16 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     //read each read, put it on the index and on the appropriate tag
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Creating Datastore Index from "<<read1_filename<<" | "<<read2_filename<<std::endl;
     auto fd1=fopen(read1_filename.c_str(),"r");
+    if (!fd1) {
+        std::cerr << "Failed to open " << read1_filename <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + read1_filename);
+    }
     auto fd2=fopen(read2_filename.c_str(),"r");
+
+    if (!fd2) {
+        std::cerr << "Failed to open " << read2_filename <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + read2_filename);
+    }
     char readbuffer[1000];
     uint64_t r1offset,r2offset;
     uint64_t tagged_reads=0;
@@ -125,6 +134,13 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
             //dump
             std::ofstream ofile("sorted_chunk_"+std::to_string(chunkfiles.size())+".data");
             sdglib::OutputLog()<<readdatav.size()<<" pairs dumping on chunk "<<chunkfiles.size()<<std::endl;
+            if (!ofile) {
+                std::cerr << "Failed to open " << ("sorted_chunk_" + std::to_string(chunkfiles.size()) + ".data") <<": " << strerror(errno);
+                throw std::runtime_error("Could not open " + ("sorted_chunk_" + std::to_string(chunkfiles.size()) + ".data") );
+
+            }
+
+            sdglib::OutputLog()<<readdatav.size()<<" pairs dumping on chunk "<<chunkfiles.size()<<std::endl;
             //add file to vector of files
             char buffer[2*_rs+2];
             for (auto &r:readdatav){
@@ -136,6 +152,10 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
             }
             ofile.close();
             chunkfiles.emplace_back("sorted_chunk_"+std::to_string(chunkfiles.size())+".data");
+            if (!chunkfiles.back()) {
+                std::cerr << "Failed to open " << ("sorted_chunk_"+std::to_string(chunkfiles.size())+".data") <<": " << strerror(errno);
+                throw std::runtime_error("Could not open " + ("sorted_chunk_"+std::to_string(chunkfiles.size())+".data") );
+            }
             readdatav.clear();
             sdglib::OutputLog()<<"dumped!"<<std::endl;
         }
@@ -145,6 +165,12 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
         std::sort(readdatav.begin(), readdatav.end());
         //dump
         std::ofstream ofile("sorted_chunk_" + std::to_string(chunkfiles.size()) + ".data");
+        sdglib::OutputLog() << readdatav.size() << " pairs dumping on chunk " << chunkfiles.size() << std::endl;
+        if (!ofile) {
+            std::cerr << "Failed to open " << ("sorted_chunk_" + std::to_string(chunkfiles.size()) + ".data") <<": " << strerror(errno);
+            throw std::runtime_error("Could not open " + ("sorted_chunk_" + std::to_string(chunkfiles.size()) + ".data") );
+
+        }
         sdglib::OutputLog() << readdatav.size() << " pairs dumping on chunk " << chunkfiles.size() << std::endl;
         //add file to vector of files
         char buffer[2 * _rs + 2];
@@ -157,12 +183,20 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
         }
         ofile.close();
         chunkfiles.emplace_back("sorted_chunk_" + std::to_string(chunkfiles.size()) + ".data");
+        if (!chunkfiles.back()) {
+            std::cerr << "Failed to open " << ("sorted_chunk_" + std::to_string(chunkfiles.size()) + ".data") <<": " << strerror(errno);
+            throw std::runtime_error("Could not open " + ("sorted_chunk_" + std::to_string(chunkfiles.size()) + ".data"));
+        }
         readdatav.clear();
         sdglib::OutputLog() << "dumped!" << std::endl;
     }
     sdglib::OutputLog() << "performing merge from disk" << std::endl;
     //TODO: save space first for the tag index!!!
     std::ofstream output(output_filename.c_str());
+    if (!output) {
+        std::cerr << "Failed to open " << output_filename <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + output_filename);
+    }
 
     output.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
     output.write((const char *) &BSG_VN, sizeof(BSG_VN));
@@ -215,6 +249,8 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     for (auto i=0;i<chunkfiles.size();++i) ::unlink(("sorted_chunk_"+std::to_string(i)+".data").c_str());
     //DONE!
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Datastore with "<<(read_tag.size())*2<<" reads, "<<tagged_reads<<" reads with tags"<<std::endl; //and "<<reads_in_tag.size()<<"tags"<<std::endl;
+    fclose(fd1);
+    fclose(fd2);
 }
 
 void LinkedReadsDatastore::read(std::ifstream &input_file) {
@@ -230,6 +266,10 @@ void LinkedReadsDatastore::load_index(std::string _filename){
     uint64_t s;
     filename=_filename;
     fd=fopen(filename.c_str(),"r");
+    if (!fd) {
+        std::cerr << "Failed to open " << filename <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + filename);
+    }
     bsgMagic_t magic;
     bsgVersion_t version;
     BSG_FILETYPE type;

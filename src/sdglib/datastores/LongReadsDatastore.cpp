@@ -14,6 +14,11 @@ void LongReadsDatastore::load_index(std::string &file) {
     filename = file;
 
     std::ifstream input_file(file, std::ios_base::binary);
+    if (!input_file) {
+        std::cerr << "Failed to open " << file <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + file);
+
+    }
 
     uint32_t nReads(0);
     std::streampos fPos;
@@ -51,6 +56,10 @@ void LongReadsDatastore::build_from_fastq(std::string output_file, std::string l
     uint32_t nReads(0);
     std::vector<ReadPosSize> read_to_file_record;
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
+    if (!ofs) {
+        std::cerr << "Failed to open " << output_file <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + output_file);
+    }
     std::streampos fPos;
     ofs.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
     ofs.write((const char *) &BSG_VN, sizeof(BSG_VN));
@@ -91,11 +100,11 @@ void LongReadsDatastore::build_from_fastq(std::string output_file, std::string l
 uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, std::string long_read_file) {
     // open the file
     uint32_t numRecords(0);
-    int infile = ::open(long_read_file.c_str(), O_RDONLY);
-    if (!infile) {
-        return 0;
-    }
     std::ifstream fastq_ifstream(long_read_file);
+    if (!fastq_ifstream) {
+        std::cerr << "Failed to open " << long_read_file <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + long_read_file);
+    }
     std::string name,seq,p,qual;
     while(fastq_ifstream.good()) {
         std::getline(fastq_ifstream, name);
@@ -166,6 +175,10 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string long_read_file
 
     uint32_t nReads(0);
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
+    if (!ofs) {
+        std::cerr << "Failed to open " << output_file <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + output_file);
+    }
     std::streampos fPos;
     ofs.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
     ofs.write((const char *) &BSG_VN, sizeof(BSG_VN));
