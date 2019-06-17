@@ -33,6 +33,7 @@ public:
     PairedReadsDatastore(const WorkSpace &ws, std::string filename, std::ifstream &infile);
     PairedReadsDatastore(const WorkSpace &ws, std::string _filename);
     PairedReadsDatastore(const WorkSpace &ws, std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250);
+    PairedReadsDatastore(const WorkSpace &ws, PairedReadsDatastore &ds);
     void print_status();
     static void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250, size_t chunksize=10000000);
     void write(std::ofstream & output_file);

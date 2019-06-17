@@ -14,6 +14,7 @@
 
 void PairedReadsDatastore::print_status() {
     sdglib::OutputLog()<<"PairedRead Datastore from "<<filename<<" contains "<<size()-1<<" reads."<<std::endl;
+    mapper.print_status();
 }
 
 void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int _min_rs, int _rs, size_t chunksize) {
@@ -342,4 +343,18 @@ PairedReadsDatastore::PairedReadsDatastore(const WorkSpace &ws, std::string _fil
     input_file.seekg(_size*(readsize+1),std::ios_base::cur);
     sdglib::OutputLog()<<"PairedReadsDatastore open: "<<_filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
 
+}
+
+PairedReadsDatastore::PairedReadsDatastore(const WorkSpace &ws, PairedReadsDatastore &o) : ws(ws), mapper(ws, *this) {
+    this->readsize = o.readsize;
+    this->filename = o.filename;
+    this->readpos_offset = o.readpos_offset;
+    this->_size = o._size;
+    this->fd = fopen(o.filename.c_str(), "r");
+
+    this->mapper.reads_in_node = o.mapper.reads_in_node;
+    this->mapper.read_to_node = o.mapper.read_to_node;
+    this->mapper.frdist = o.mapper.frdist;
+    this->mapper.rfdist = o.mapper.rfdist;
+    this->mapper.read_direction_in_node = o.mapper.read_direction_in_node;
 }

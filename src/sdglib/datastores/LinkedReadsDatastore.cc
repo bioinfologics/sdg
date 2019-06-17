@@ -42,6 +42,8 @@ void LinkedReadsDatastore::print_status() {
         t=prevtag;
     }
     sdglib::OutputLog()<<"LinkedRead Datastore from "<<filename<<" contains "<<size()-1<<" reads in "<< tagcount <<" tags."<<std::endl;
+
+    mapper.print_status();
 }
 
 void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int _rs, size_t chunksize) {
@@ -503,6 +505,12 @@ LinkedReadsDatastore::LinkedReadsDatastore(const WorkSpace &ws, std::string file
     fseek(fd,readpos_offset,SEEK_SET);
     infile.seekg(2*s*(readsize+1),std::ios_base::cur);
     sdglib::OutputLog()<<"LinkedReadsDatastore open: "<<filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
+}
+
+LinkedReadsDatastore::LinkedReadsDatastore(const WorkSpace &ws, const LinkedReadsDatastore &o) : ws(ws), mapper(ws, *this) {
+    mapper.read_to_node = o.mapper.read_to_node;
+    mapper.reads_in_node = o.mapper.reads_in_node;
+    mapper.tag_neighbours = o.mapper.tag_neighbours;
 }
 
 const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {

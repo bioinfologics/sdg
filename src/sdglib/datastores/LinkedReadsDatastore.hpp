@@ -51,7 +51,9 @@ public:
     LinkedReadsDatastore(const WorkSpace &ws,std::string filename);
     LinkedReadsDatastore(const WorkSpace &ws,std::string filename, std::ifstream &infile);
     LinkedReadsDatastore(const WorkSpace &ws, std::ifstream &infile);
-    LinkedReadsDatastore(const WorkSpace &ws,std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250);;
+    LinkedReadsDatastore(const WorkSpace &ws,std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250);
+    LinkedReadsDatastore(const WorkSpace &ws, const LinkedReadsDatastore &o);
+
     void print_status();
     static void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250,size_t chunksize=10000000);
     void write(std::ofstream & output_file);

@@ -3,6 +3,7 @@
 #include <sdglib/datastores/LinkedReadsDatastore.hpp>
 #include <sdglib/datastores/PairedReadsDatastore.hpp>
 #include <sdglib/datastores/LongReadsDatastore.hpp>
+#include <sdglib/workspace/WorkSpace.hpp>
 #include "cxxopts.hpp"
 
 
@@ -73,7 +74,7 @@ int main(int argc, char * argv[]) {
             //ds.dump_index_to_disk(output+".lrIdx");
         }
         else if (read_type == "long") {
-            LongReadsDatastore ds(long_reads, output+".loseq");
+            LongReadsDatastore::build_from_fastq(long_reads, output+".loseq");
         }
         else {
             std::cout << "read_type '" << read_type << "' is not supported (yet?)" << std::endl;
@@ -140,10 +141,12 @@ int main(int argc, char * argv[]) {
                       << "Use option --help to check command line arguments." << std::endl;
             exit(1);
         }
+
+        WorkSpace ws;
         std::unordered_map<bsg10xTag, std::vector<uint64_t>> tag_occupancy;
         std::vector<LinkedReadsDatastore> datastores;
         for (auto i=0;i<filenames.size();++i){
-            datastores.emplace_back(filenames[i]);
+            datastores.emplace_back(ws, filenames[i]);
             for (auto rc:datastores.back().get_tag_readcount()){
                 if (rc.second>5) {
                     if (tag_occupancy.count(rc.first)==0) tag_occupancy[rc.first].resize(filenames.size());

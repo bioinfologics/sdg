@@ -37,7 +37,7 @@ struct ReadPosSize {
 };
 
 class LongReadsDatastore {
-    int lr_sequence_fd = 0;
+
     std::string file_containing_long_read_sequence;
 
     void load_index(std::string &file);
@@ -47,6 +47,8 @@ public:
     std::vector< ReadPosSize > read_to_fileRecord{ReadPosSize(0,0)};
     LongReadsDatastore(const WorkSpace &ws, std::ifstream &infile);
     LongReadsDatastore(const WorkSpace &ws, std::string filename, std::ifstream &input_file);
+
+    LongReadsDatastore(const WorkSpace &ws, LongReadsDatastore &o);
     /**
      * Initialize from already created index
      * @param filename
@@ -62,7 +64,8 @@ public:
      * Initialises the memory mapping of the reads file
      */
     LongReadsDatastore(const WorkSpace &ws, std::string long_read_file, std::string output_file);
-    static void build_from_fastq(std::ofstream &outf, std::string long_read_file);
+    uint32_t build_from_fastq(std::ofstream &outf, std::string long_read_file);
+    static void build_from_fastq(std::string outf, std::string long_read_file);
     void print_status();
     void read(std::ifstream &ifs);
     void write(std::ofstream &output_file);
