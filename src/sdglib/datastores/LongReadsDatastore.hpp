@@ -19,7 +19,9 @@
 #include <sys/stat.h>
 #include <limits>
 #include <sdglib/Version.hpp>
+#include <sdglib/mappers/LongReadsMapper.hpp>
 
+class WorkSpace;
 class LongReadsMapper;
 
 struct ReadPosSize {
@@ -43,14 +45,15 @@ class LongReadsDatastore {
 
 public:
     std::vector< ReadPosSize > read_to_fileRecord{ReadPosSize(0,0)};
+    LongReadsDatastore(const WorkSpace &ws, std::ifstream &infile);
+    LongReadsDatastore(const WorkSpace &ws, std::string filename, std::ifstream &input_file);
     /**
      * Initialize from already created index
      * @param filename
      *
      * Initialises the memory mapping of the reads file
      */
-    explicit LongReadsDatastore(std::string filename);
-    LongReadsDatastore() = default;
+    LongReadsDatastore(const WorkSpace &ws, std::string filename);
     /**
      * Initialize from long_read_file then store the index
      * @param long_read_file
@@ -58,19 +61,19 @@ public:
      *
      * Initialises the memory mapping of the reads file
      */
-    LongReadsDatastore(std::string long_read_file, std::string output_file);
-    uint32_t build_from_fastq(std::ofstream &outf, std::string long_read_file);
+    LongReadsDatastore(const WorkSpace &ws, std::string long_read_file, std::string output_file);
+    static void build_from_fastq(std::ofstream &outf, std::string long_read_file);
     void print_status();
     void read(std::ifstream &ifs);
     void write(std::ofstream &output_file);
 
     size_t size() const { return read_to_fileRecord.size(); }
 
-    void load_from_stream(std::string file_name, std::ifstream &input_file);
     std::string filename;
     static const bsgVersion_t min_compat;
 
-    std::unique_ptr<LongReadsMapper> mapper;
+    LongReadsMapper mapper;
+    const WorkSpace &ws;
 };
 
 // Check if this needs to be page size aware

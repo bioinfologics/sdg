@@ -6,16 +6,17 @@
 #define BSG_LONGREADMAPPER_H
 
 
+#include "LongReadsMapper.hpp"
 #include <iostream>
+#include <memory>
+#include <sdglib/mappers/LinkedReadsMapper.hpp>
 #include <sdglib/factories/KMerIDXFactory.hpp>
-#include <sdglib/datastores/LongReadsDatastore.hpp>
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
 #include <sdglib/types/MappingTypes.hpp>
 #include <sdglib/indexers/NKmerIndex.hpp>
 #include <sdglib/utilities/hashing_helpers.hpp>
 #include <sdglib/indexers/SatKmerIndex.hpp>
-#include "LinkedReadsMapper.hpp"
-#include <memory>
+
 class WorkSpace;
 
 struct ReadPathParams {
@@ -75,6 +76,8 @@ public:
 };
 
 class LongReadsMapper;
+class LongReadsDatastore;
+class BufferedSequenceGetter;
 
 /**
  * This class groups all methods to filter long read mappings to  haplotype solutions within a long read

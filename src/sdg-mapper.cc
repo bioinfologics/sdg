@@ -64,11 +64,11 @@ int main(int argc, char * argv[]) {
     }
     for (auto &ds:ws.paired_read_datastores) {
         sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
-        if (!use63mers) ds.mapper->remap_all_reads();
-        else ds.mapper->remap_all_reads63();
-        ds.mapper->print_status();
+        if (!use63mers) ds.mapper.remap_all_reads();
+        else ds.mapper.remap_all_reads63();
+        ds.mapper.print_status();
         sdglib::OutputLog()<<"Computing size distribution..."<<std::endl;
-        auto sdist=ds.mapper->size_distribution();
+        auto sdist=ds.mapper.size_distribution();
         std::ofstream df("prdist_"+std::to_string(pri++)+".csv");
         for (auto i=0;i<sdist.size();i+=10){
             uint64_t t=0;
@@ -80,14 +80,14 @@ int main(int argc, char * argv[]) {
     }
     for (auto &ds:ws.linked_read_datastores) {
         sdglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
-        if (!use63mers) ds.mapper->remap_all_reads();
-        else ds.mapper->remap_all_reads63();
+        if (!use63mers) ds.mapper.remap_all_reads();
+        else ds.mapper.remap_all_reads63();
         ws.add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }
     for (auto &ds: ws.long_read_datastores) {
         sdglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
-        ds.mapper->map_reads(max_filter);
+        ds.mapper.map_reads(max_filter);
         ws.add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
     }

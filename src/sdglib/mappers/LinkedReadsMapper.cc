@@ -16,11 +16,10 @@
 
 const bsgVersion_t LinkedReadsMapper::min_compat = 0x0001;
 
-LinkedReadsMapper::LinkedReadsMapper(WorkSpace &_ws, LinkedReadsDatastore &_datastore) :
+LinkedReadsMapper::LinkedReadsMapper(const WorkSpace &_ws, LinkedReadsDatastore &_datastore) :
+ws(_ws),
 sg(_ws.sdg),
-datastore(_datastore),
-kmer_to_graphposition(_ws.uniqueKmerIndex),
-k63mer_to_graphposition(_ws.unique63merIndex)
+datastore(_datastore)
 {
     reads_in_node.resize(sg.nodes.size());
 }
@@ -133,8 +132,8 @@ void LinkedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_r
                 skf.produce_all_kmers(seq,readkmers);
 
                 for (auto &rk:readkmers) {
-                    auto nk = kmer_to_graphposition->find(rk.kmer);
-                    if (kmer_to_graphposition->end()!=nk) {
+                    auto nk = ws.uniqueKmerIndex.find(rk.kmer);
+                    if (ws.uniqueKmerIndex.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node); // nk->second is the graphStrandPosition node is the node id of that
                         //TODO: sort out the sign/orientation representation
@@ -243,8 +242,8 @@ void LinkedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
                 skf.produce_all_kmers(seq,readkmers);
 
                 for (auto &rk:readkmers) {
-                    auto nk = k63mer_to_graphposition->find(rk.kmer);
-                    if (k63mer_to_graphposition->end()!=nk) {
+                    auto nk = ws.unique63merIndex.find(rk.kmer);
+                    if (ws.unique63merIndex.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation

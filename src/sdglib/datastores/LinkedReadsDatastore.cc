@@ -45,10 +45,9 @@ void LinkedReadsDatastore::print_status() {
 }
 
 void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int _rs, size_t chunksize) {
-
+    std::vector<uint32_t> read_tag;
     //std::cout<<"Memory used by every read's entry:"<< sizeof(LinkedRead)<<std::endl;
     //read each read, put it on the index and on the appropriate tag
-    readsize=_rs;
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Creating Datastore Index from "<<read1_filename<<" | "<<read2_filename<<std::endl;
     auto fd1=fopen(read1_filename.c_str(),"r");
     auto fd2=fopen(read2_filename.c_str(),"r");
@@ -124,13 +123,13 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
             std::ofstream ofile("sorted_chunk_"+std::to_string(chunkfiles.size())+".data");
             sdglib::OutputLog()<<readdatav.size()<<" pairs dumping on chunk "<<chunkfiles.size()<<std::endl;
             //add file to vector of files
-            char buffer[2*readsize+2];
+            char buffer[2*_rs+2];
             for (auto &r:readdatav){
                 ofile.write((const char * ) &r.tag,sizeof(r.tag));
-                bzero(buffer,2*readsize+2);
-                memcpy(buffer,r.seq1.data(),(r.seq1.size()>readsize ? readsize : r.seq1.size()));
-                memcpy(buffer+readsize+1,r.seq2.data(),(r.seq2.size()>readsize ? readsize : r.seq2.size()));
-                ofile.write(buffer,2*readsize+2);
+                bzero(buffer,2*_rs+2);
+                memcpy(buffer,r.seq1.data(),(r.seq1.size()>_rs ? _rs : r.seq1.size()));
+                memcpy(buffer+_rs+1,r.seq2.data(),(r.seq2.size()>_rs ? _rs : r.seq2.size()));
+                ofile.write(buffer,2*_rs+2);
             }
             ofile.close();
             chunkfiles.emplace_back("sorted_chunk_"+std::to_string(chunkfiles.size())+".data");
@@ -145,13 +144,13 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
         std::ofstream ofile("sorted_chunk_" + std::to_string(chunkfiles.size()) + ".data");
         sdglib::OutputLog() << readdatav.size() << " pairs dumping on chunk " << chunkfiles.size() << std::endl;
         //add file to vector of files
-        char buffer[2 * readsize + 2];
+        char buffer[2 * _rs + 2];
         for (auto &r:readdatav) {
             ofile.write((const char *) &r.tag, sizeof(r.tag));
-            bzero(buffer, 2 * readsize + 2);
-            memcpy(buffer, r.seq1.data(), (r.seq1.size() > readsize ? readsize : r.seq1.size()));
-            memcpy(buffer + readsize + 1, r.seq2.data(), (r.seq2.size() > readsize ? readsize : r.seq2.size()));
-            ofile.write(buffer, 2 * readsize + 2);
+            bzero(buffer, 2 * _rs + 2);
+            memcpy(buffer, r.seq1.data(), (r.seq1.size() > _rs ? _rs : r.seq1.size()));
+            memcpy(buffer + _rs + 1, r.seq2.data(), (r.seq2.size() > _rs ? _rs : r.seq2.size()));
+            ofile.write(buffer, 2 * _rs + 2);
         }
         ofile.close();
         chunkfiles.emplace_back("sorted_chunk_" + std::to_string(chunkfiles.size()) + ".data");
@@ -167,7 +166,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     BSG_FILETYPE type(LinkedDS_FT);
     output.write((char *) &type, sizeof(type));
 
-    output.write((const char *) &readsize,sizeof(readsize));
+    output.write((const char *) &_rs,sizeof(readsize));
     read_tag.resize(pairs);
     sdglib::OutputLog() << "leaving space for " <<pairs<<" read_tag entries"<< std::endl;
     uint64_t rts=read_tag.size();
@@ -176,7 +175,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     //multi_way merge of the chunks
     int openfiles=chunkfiles.size();
     bsg10xTag next_tags[chunkfiles.size()];
-    char buffer[2 * readsize + 2];
+    char buffer[2 * _rs + 2];
     //read a bit from each file
     for (auto i=0;i<chunkfiles.size();++i) chunkfiles[i].read((char *)&next_tags[i],sizeof(bsg10xTag));
     read_tag.clear();
@@ -188,8 +187,8 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
         for (auto i=0;i<chunkfiles.size();++i){
             while (!chunkfiles[i].eof() and next_tags[i]==mintag){
                 //read buffer from file and write to final file
-                chunkfiles[i].read(buffer,2*readsize+2);
-                output.write(buffer,2*readsize+2);
+                chunkfiles[i].read(buffer,2*_rs+2);
+                output.write(buffer,2*_rs+2);
                 read_tag.push_back(mintag);
                 //read next tag... eof? tag=UINT32_MAX
                 chunkfiles[i].read((char *)&next_tags[i],sizeof(bsg10xTag));
@@ -213,8 +212,6 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     for (auto i=0;i<chunkfiles.size();++i) ::unlink(("sorted_chunk_"+std::to_string(i)+".data").c_str());
     //DONE!
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Datastore with "<<(read_tag.size())*2<<" reads, "<<tagged_reads<<" reads with tags"<<std::endl; //and "<<reads_in_tag.size()<<"tags"<<std::endl;
-    filename=output_filename;
-    fd=fopen(filename.c_str(),"r");
 }
 
 void LinkedReadsDatastore::read(std::ifstream &input_file) {
@@ -253,39 +250,6 @@ void LinkedReadsDatastore::load_index(std::string _filename){
     fread(&s,sizeof(s),1,fd); read_tag.resize(s);
     fread(read_tag.data(),sizeof(read_tag[0]),read_tag.size(),fd);
     readpos_offset=ftell(fd);
-    sdglib::OutputLog()<<"LinkedReadsDatastore open: "<<_filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
-}
-
-void LinkedReadsDatastore::load_from_stream(std::string _filename,std::ifstream & input_file){
-    uint64_t s;
-    filename=_filename;
-    fd=fopen(filename.c_str(),"r");
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
-    fread((char *) &magic, sizeof(magic),1,fd);
-    fread((char *) &version, sizeof(version),1,fd);
-    fread((char *) &type, sizeof(type),1,fd);
-
-    if (magic != BSG_MAGIC) {
-        throw std::runtime_error("Magic number not present in " + _filename);
-    }
-
-    if (version < min_compat) {
-        throw std::runtime_error("LinkedDS file version: " + std::to_string(version) + " is not compatible with " + std::to_string(min_compat));
-    }
-
-    if (type != LinkedDS_FT) {
-        throw std::runtime_error("File type supplied: " + std::to_string(type) + " is not compatible with LinkedDS_FT");
-    }
-
-    input_file.read( (char *) &readsize,sizeof(readsize));
-    input_file.read( (char *) &s,sizeof(s));
-    read_tag.resize(s);
-    input_file.read( (char *) read_tag.data(),sizeof(read_tag[0])*s);
-    readpos_offset=input_file.tellg();
-    fseek(fd,readpos_offset,SEEK_SET);
-    input_file.seekg(2*s*(readsize+1),std::ios_base::cur);
     sdglib::OutputLog()<<"LinkedReadsDatastore open: "<<_filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
 }
 
@@ -495,15 +459,50 @@ std::unordered_set<__uint128_t, int128_hash> LinkedReadsDatastore::get_tags_kmer
     return std::move(kset);
 }
 
-LinkedReadsDatastore::LinkedReadsDatastore() {}
-
-LinkedReadsDatastore::LinkedReadsDatastore(std::string filename) {
+LinkedReadsDatastore::LinkedReadsDatastore(const WorkSpace &ws, std::string filename) : ws(ws), mapper(ws, *this){
     load_index(filename);
 }
 
-LinkedReadsDatastore::LinkedReadsDatastore(std::string read1_filename, std::string read2_filename,
-                                           std::string output_filename, LinkedReadsFormat format, int readsize) {
+LinkedReadsDatastore::LinkedReadsDatastore(const WorkSpace &ws, std::string read1_filename, std::string read2_filename,
+                                           std::string output_filename, LinkedReadsFormat format, int readsize) : ws(ws), mapper(ws, *this) {
     build_from_fastq(read1_filename,read2_filename,output_filename,format,readsize);
+}
+
+LinkedReadsDatastore::LinkedReadsDatastore(const WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper(ws, *this) {
+    read(infile);
+}
+
+LinkedReadsDatastore::LinkedReadsDatastore(const WorkSpace &ws, std::string filename, std::ifstream &infile) : ws(ws), mapper(ws, *this) {
+    uint64_t s;
+    filename=filename;
+    fd=fopen(filename.c_str(),"r");
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    BSG_FILETYPE type;
+    fread((char *) &magic, sizeof(magic),1,fd);
+    fread((char *) &version, sizeof(version),1,fd);
+    fread((char *) &type, sizeof(type),1,fd);
+
+    if (magic != BSG_MAGIC) {
+        throw std::runtime_error("Magic number not present in " + filename);
+    }
+
+    if (version < min_compat) {
+        throw std::runtime_error("LinkedDS file version: " + std::to_string(version) + " is not compatible with " + std::to_string(min_compat));
+    }
+
+    if (type != LinkedDS_FT) {
+        throw std::runtime_error("File type supplied: " + std::to_string(type) + " is not compatible with LinkedDS_FT");
+    }
+
+    infile.read( (char *) &readsize,sizeof(readsize));
+    infile.read( (char *) &s,sizeof(s));
+    read_tag.resize(s);
+    infile.read( (char *) read_tag.data(),sizeof(read_tag[0])*s);
+    readpos_offset=infile.tellg();
+    fseek(fd,readpos_offset,SEEK_SET);
+    infile.seekg(2*s*(readsize+1),std::ios_base::cur);
+    sdglib::OutputLog()<<"LinkedReadsDatastore open: "<<filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
 }
 
 const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {

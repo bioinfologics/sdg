@@ -11,9 +11,10 @@
 #include "sdglib/types/MappingTypes.hpp"
 #include "sdglib/factories/KMerIDXFactory.hpp"
 #include "sdglib/readers/SequenceGraphReader.hpp"
-#include <sdglib/datastores/PairedReadsDatastore.hpp>
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
+#include <sdglib/Version.hpp>
 
+class PairedReadsDatastore;
 class UniqueKmerIndex;
 class Unique63merIndex;
 class PairedReadConnectivityDetail; //Forward declaration
@@ -28,7 +29,7 @@ class WorkSpace;
 class PairedReadsMapper {
 
 public:
-    PairedReadsMapper(WorkSpace &_ws, PairedReadsDatastore &_datastore);
+    PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore &_datastore);
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
     /** @brief Maps each read in the data-store to the nodes using unique kmers form the graph
@@ -96,8 +97,7 @@ public:
     std::vector<uint64_t> get_node_readpairs_ids(sgNodeID_t nodeID);
 
     const SequenceDistanceGraph & sg;
-    const std::shared_ptr<UniqueKmerIndex> kmer_to_graphposition;
-    const std::shared_ptr<Unique63merIndex> k63mer_to_graphposition;
+    const WorkSpace &ws;
     const PairedReadsDatastore & datastore;
     /**
      * reads_in_node[i] contains all the read ids from the data-store mapped to node i

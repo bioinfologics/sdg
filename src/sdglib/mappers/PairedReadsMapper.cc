@@ -12,11 +12,10 @@
 
 const bsgVersion_t PairedReadsMapper::min_compat = 0x0001;
 
-PairedReadsMapper::PairedReadsMapper(WorkSpace &_ws, PairedReadsDatastore &_datastore) :
+PairedReadsMapper::PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore &_datastore) :
+        ws(ws),
         sg(_ws.sdg),
-        datastore(_datastore),
-        kmer_to_graphposition(_ws.uniqueKmerIndex),
-        k63mer_to_graphposition(_ws.unique63merIndex)
+        datastore(_datastore)
 {
     reads_in_node.resize(sg.nodes.size());
 }
@@ -131,8 +130,8 @@ void PairedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_r
                     ++nokmers;
                 }
                 for (auto &rk:readkmers) {
-                    auto nk = kmer_to_graphposition->find(rk.kmer);
-                    if (kmer_to_graphposition->end()!=nk) {
+                    auto nk = ws.uniqueKmerIndex.find(rk.kmer);
+                    if (ws.uniqueKmerIndex.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation
@@ -248,8 +247,8 @@ void PairedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
                     ++nokmers;
                 }
                 for (auto &rk:readkmers) {
-                    auto nk = k63mer_to_graphposition->find(rk.kmer);
-                    if (k63mer_to_graphposition->end()!=nk) {
+                    auto nk = ws.unique63merIndex.find(rk.kmer);
+                    if (ws.unique63merIndex.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation

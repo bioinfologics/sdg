@@ -18,9 +18,8 @@
 #include <algorithm>
 #include <sdglib/factories/KMerFactory.hpp>
 #include <sdglib/Version.hpp>
+#include <sdglib/mappers/LinkedReadsMapper.hpp>
 
-class LinkedReadsMapper;
-using bsg10xTag = uint32_t;
 enum class LinkedReadsFormat {UCDavis,raw,seq};
 struct LinkedReadData {
     bsg10xTag tag;
@@ -49,16 +48,16 @@ std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16);
  */
 class LinkedReadsDatastore {
 public:
-    LinkedReadsDatastore();;
-    LinkedReadsDatastore(std::string filename);;
-    LinkedReadsDatastore(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250);;
+    LinkedReadsDatastore(const WorkSpace &ws,std::string filename);
+    LinkedReadsDatastore(const WorkSpace &ws,std::string filename, std::ifstream &infile);
+    LinkedReadsDatastore(const WorkSpace &ws, std::ifstream &infile);
+    LinkedReadsDatastore(const WorkSpace &ws,std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250);;
     void print_status();
-    void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250,size_t chunksize=10000000);
+    static void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250,size_t chunksize=10000000);
     void write(std::ofstream & output_file);
     void write_selection(std::ofstream & output_file, const std::set<bsg10xTag> & tagSet);
     void read(std::ifstream & input_file);
     void load_index(std::string _filename);
-    void load_from_stream(std::string _filename, std::ifstream & input_file);
     //void read_index(std::ifstream & input_file);
 
     size_t size() const {return read_tag.size()*2;};
@@ -74,7 +73,8 @@ public:
 
     uint64_t readsize;
     uint64_t readpos_offset;
-    std::unique_ptr<LinkedReadsMapper> mapper;
+    LinkedReadsMapper mapper;
+    const WorkSpace &ws;
 private:
     std::vector<uint32_t> read_tag;
     FILE * fd=NULL;

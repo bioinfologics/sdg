@@ -17,9 +17,10 @@
 #include <unistd.h>
 #include <algorithm>
 #include <sdglib/factories/KMerFactory.hpp>
+#include <sdglib/mappers/PairedReadsMapper.hpp>
 #include "sdglib/Version.hpp"
 
-class PairedReadsMapper;
+class WorkSpace;
 struct PairedReadData {
     std::string seq1,seq2;
 };
@@ -28,16 +29,16 @@ class BufferedPairedSequenceGetter;
 
 class PairedReadsDatastore {
 public:
-    PairedReadsDatastore();;
-    PairedReadsDatastore(std::string _filename);;
-    PairedReadsDatastore(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250);;
+    PairedReadsDatastore(const WorkSpace &ws, std::ifstream &infile);
+    PairedReadsDatastore(const WorkSpace &ws, std::string filename, std::ifstream &infile);
+    PairedReadsDatastore(const WorkSpace &ws, std::string _filename);
+    PairedReadsDatastore(const WorkSpace &ws, std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250);
     void print_status();
-    void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250, size_t chunksize=10000000);
+    static void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250, size_t chunksize=10000000);
     void write(std::ofstream & output_file);
     void write_selection(std::ofstream &output_file, std::vector<uint64_t> read_ids);
     void read(std::ifstream & input_file);
     void load_index();
-    void load_from_stream(std::string filename,std::ifstream & input_file);
     uint64_t size()const;;
     std::string get_read_sequence(size_t readID);
     std::unordered_set<__uint128_t, int128_hash> get_all_kmers128(int k, int min_tag_cov);
@@ -47,12 +48,14 @@ public:
     std::string filename; //if store is in single file bsg format these two are the same as the index file.
     uint64_t readsize;
     uint64_t readpos_offset;
-    std::unique_ptr<PairedReadsMapper> mapper;
+    PairedReadsMapper mapper;
 private:
     //TODO: save size
     uint64_t _size;
     FILE * fd=NULL;
     static const bsgVersion_t min_compat = 0x0001;
+
+    const WorkSpace &ws;
 
     //TODO: read sequence cache (std::map with a limit of elements and use count)
 };

@@ -9,11 +9,13 @@
 #include "sdglib/graph/SequenceDistanceGraph.hpp"
 #include <sdglib/types/MappingTypes.hpp>
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
+#include <sdglib/Version.hpp>
 class WorkSpace;
 class UniqueKmerIndex;
 class Unique63merIndex;
 class LinkedReadsDatastore;
 
+using bsg10xTag = uint32_t;
 
 class TagNeighbour {
 public:
@@ -31,7 +33,7 @@ public:
 class LinkedReadsMapper {
 
 public:
-    LinkedReadsMapper(WorkSpace &_ws, LinkedReadsDatastore &_datastore);
+    LinkedReadsMapper(const WorkSpace &_ws, LinkedReadsDatastore &_datastore);
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
 
@@ -138,17 +140,9 @@ public:
     void write_tag_neighbours(std::string filename);
     void read_tag_neighbours(std::string filename);
 
-    SequenceDistanceGraph & sg;
+    const SequenceDistanceGraph & sg;
+    const WorkSpace &ws;
 
-    /**
-     * Index of unique kmers in the graph see UniqueKmerIndex
-     */
-    const std::shared_ptr<UniqueKmerIndex> kmer_to_graphposition;
-
-    /**
-     * Index of unique kmers in the graph see UniqueKmerIndex same with k63
-     */
-    const std::shared_ptr<Unique63merIndex> k63mer_to_graphposition;
     LinkedReadsDatastore &datastore;
 
     /**

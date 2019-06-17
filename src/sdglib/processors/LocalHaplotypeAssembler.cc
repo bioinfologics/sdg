@@ -34,7 +34,7 @@ void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backb
     for (auto &ln:backbone) {
         //partial counts in a single node
         std::map<bsg10xTag ,uint32_t> ntagcounts;
-        for (auto rm:ws.linked_read_datastores[0].mapper->reads_in_node[llabs(ln)]){
+        for (auto rm:ws.linked_read_datastores[0].mapper.reads_in_node[llabs(ln)]){
             auto tag=ws.linked_read_datastores[0].get_read_tag(rm.read_id);
             if (tag==0) continue;
             ++ntagcounts[tag];
@@ -61,7 +61,7 @@ void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backb
     for (auto prl=0;prl<ws.paired_read_datastores.size();++prl) {
         paired_reads.emplace_back(std::make_pair(prl,std::vector<uint64_t>()));
         for (auto &ln:backbone) {
-            auto nreads=ws.paired_read_datastores[prl].mapper->get_node_readpairs_ids(ln);
+            auto nreads=ws.paired_read_datastores[prl].mapper.get_node_readpairs_ids(ln);
             paired_reads.back().second.insert(paired_reads.back().second.end(),nreads.begin(),nreads.end());
         }
         if (paired_reads.back().second.empty()) paired_reads.pop_back();
@@ -70,7 +70,7 @@ void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backb
     for (auto lrl = 0; ws.long_read_datastores.size(); ++lrl) {
         long_reads.emplace_back(std::make_pair(lrl, std::vector<uint64_t>()));
         for (auto &ln:backbone) {
-            auto nreads = ws.long_read_datastores[lrl].mapper->reads_in_node[llabs(ln)];
+            auto nreads = ws.long_read_datastores[lrl].mapper.reads_in_node[llabs(ln)];
             std::sort(nreads.begin(),nreads.end());
             long_reads.back().second.insert(long_reads.back().second.end(), nreads.begin(), nreads.end());
         }
@@ -705,14 +705,12 @@ void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
     }
 
     //write the condensation of the 10x workspace
-    ws.linked_read_datastores.emplace_back();
-    ws.linked_read_datastores[0].load_from_stream(full_file,input_file);
+    ws.linked_read_datastores.emplace_back(ws, full_file, input_file);
     //ws.linked_read_datastores[0].write_selection(output_file,tagSet);
     //write the condensation of the paired reads workspace.
     input_file.read((char *)&count,sizeof(count));
     for (auto n=0;n<count;++n){
-        ws.paired_read_datastores.emplace_back();
-        ws.paired_read_datastores.back().load_from_stream(full_file,input_file);
+        ws.paired_read_datastores.emplace_back(ws, full_file, input_file);
         std::vector<uint64_t> read_ids;
         read_ids.reserve(ws.paired_read_datastores.back().size());
         for(uint64_t i=0;i<ws.paired_read_datastores.back().size();++i) read_ids.emplace_back(i);
@@ -722,8 +720,7 @@ void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
 
     input_file.read((char *)&count,sizeof(count));
     for (auto n=0;n<count;++n){
-        ws.long_read_datastores.emplace_back();
-        ws.long_read_datastores.back().load_from_stream(full_file,input_file);
+        ws.long_read_datastores.emplace_back(ws, full_file, input_file);
         std::vector<uint64_t> read_ids;
         read_ids.reserve(ws.long_read_datastores.back().size());
         for(uint64_t i=0;i<ws.long_read_datastores.back().size();++i) read_ids.emplace_back(i);

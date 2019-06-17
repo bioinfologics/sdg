@@ -113,11 +113,11 @@ void LongReadsDatastore::write(std::ofstream &output_file) {
     output_file.write((char *)filename.data(),s*sizeof(filename[0]));
 }
 
-LongReadsDatastore::LongReadsDatastore(std::string filename) {
+LongReadsDatastore::LongReadsDatastore(const WorkSpace &ws, std::string filename) : ws(ws), mapper(ws, *this) {
     load_index(filename);
 }
 
-LongReadsDatastore::LongReadsDatastore(std::string long_read_file, std::string output_file) {
+LongReadsDatastore::LongReadsDatastore(const WorkSpace &ws, std::string long_read_file, std::string output_file) : ws(ws), mapper(ws, *this) {
     filename = output_file;
 
     uint32_t nReads(0);
@@ -146,7 +146,11 @@ LongReadsDatastore::LongReadsDatastore(std::string long_read_file, std::string o
 
 }
 
-void LongReadsDatastore::load_from_stream(std::string file_name, std::ifstream &input_file) {
+LongReadsDatastore::LongReadsDatastore(const WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper(ws, *this) {
+    read(infile);
+}
+
+LongReadsDatastore::LongReadsDatastore(const WorkSpace &ws, std::string file_name, std::ifstream &input_file) : ws(ws), mapper(ws, *this) {
     file_containing_long_read_sequence = file_name;
 
     lr_sequence_fd = ::open(file_containing_long_read_sequence.c_str(), O_RDONLY);

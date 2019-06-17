@@ -44,7 +44,7 @@ void WorkSpace::dump_to_disk(std::string filename) {
     of.write((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
         paired_read_datastores[i].write(of);
-        paired_read_datastores[i].mapper->write(of);
+        paired_read_datastores[i].mapper.write(of);
     }
 
     //linker read datastores
@@ -52,7 +52,7 @@ void WorkSpace::dump_to_disk(std::string filename) {
     of.write((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
         linked_read_datastores[i].write(of);
-        linked_read_datastores[i].mapper->write(of);
+        linked_read_datastores[i].mapper.write(of);
     }
 
     //long read datastores
@@ -60,7 +60,7 @@ void WorkSpace::dump_to_disk(std::string filename) {
     of.write((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
         long_read_datastores[i].write(of);
-        long_read_datastores[i].mapper->write(of);
+        long_read_datastores[i].mapper.write(of);
     }
     //dump element type then use that element's own dump to dump it to this file
 
@@ -136,28 +136,19 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     wsfile.read((char *) &count,sizeof(count));
     paired_read_datastores.reserve(count);
     for (auto i=0;i<count;++i) {
-        paired_read_datastores.emplace_back();
-        paired_read_datastores.back().read(wsfile);
-        paired_read_datastores.back().mapper = std::make_unique<PairedReadsMapper>(*this, paired_read_datastores[i]);
-        paired_read_datastores.back().mapper->read(wsfile);
+        paired_read_datastores.emplace_back(*this, wsfile);
     }
     wsfile.read((char *) &count,sizeof(count));
     linked_read_datastores.reserve(count);
 
     for (auto i=0;i<count;++i) {
-        linked_read_datastores.emplace_back();
-        linked_read_datastores.back().read(wsfile);
-        linked_read_datastores.back().mapper = std::make_unique<LinkedReadsMapper>(*this,linked_read_datastores[i]);
-        linked_read_datastores.back().mapper->read(wsfile);
+        linked_read_datastores.emplace_back(*this, wsfile);
     }
 
     wsfile.read((char *) &count,sizeof(count));
     long_read_datastores.reserve(count);
     for (auto i=0;i<count;++i) {
-        long_read_datastores.emplace_back();
-        long_read_datastores.back().read(wsfile);
-        long_read_datastores.back().mapper = std::make_unique<LongReadsMapper>(*this,long_read_datastores[i]);
-        long_read_datastores.back().mapper->read(wsfile);
+        long_read_datastores.emplace_back(*this, wsfile);
     }
 
 }
@@ -186,7 +177,7 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
             if (sdg.nodes[n].sequence.size() < min_size) continue;
             if (sdg.nodes[n].sequence.size() > max_size) continue;
             if (!linked_read_datastores.empty()) {
-                auto ntags = linked_read_datastores[0].mapper->get_node_tags(n);
+                auto ntags = linked_read_datastores[0].mapper.get_node_tags(n);
                 if (ntags.size() < min_tags or ntags.size() > max_tags) continue;
             }
             if (!kci.graph_kmers.empty()) {
@@ -216,7 +207,7 @@ void WorkSpace::remap_all() {
     create_index();
     for (auto &ds:paired_read_datastores) {
         sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
-        ds.mapper->remap_all_reads();
+        ds.mapper.remap_all_reads();
         ds.print_status();
         sdglib::OutputLog()<<"Computing size distribution..."<<std::endl;
         //auto sdist=m.size_distribution();
@@ -231,7 +222,7 @@ void WorkSpace::remap_all() {
     }
     for (auto &ds:linked_read_datastores) {
         sdglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
-        ds.mapper->remap_all_reads();
+        ds.mapper.remap_all_reads();
         add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }
@@ -242,28 +233,23 @@ void WorkSpace::remap_all63() {
     create_63mer_index();
     for (auto &ds:paired_read_datastores) {
         sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
-        ds.mapper->remap_all_reads63();
+        ds.mapper.remap_all_reads63();
         ds.print_status();
         add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
     }
     for (auto &ds:linked_read_datastores) {
         sdglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
-        ds.mapper->remap_all_reads63();
+        ds.mapper.remap_all_reads63();
         add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }
 }
 
 void WorkSpace::create_index(bool verbose) {
-    if (!uniqueKmerIndex) {
-        uniqueKmerIndex = std::make_shared<UniqueKmerIndex>();
-    }
-    uniqueKmerIndex->generate_index(sdg,verbose);
+    uniqueKmerIndex.generate_index(sdg,verbose);
 }
 
 void WorkSpace::create_63mer_index(bool verbose) {
-    if (!unique63merIndex) {
-        unique63merIndex = std::make_shared<Unique63merIndex>();
-    } unique63merIndex->generate_index(sdg,verbose);
+    unique63merIndex.generate_index(sdg,verbose);
 }

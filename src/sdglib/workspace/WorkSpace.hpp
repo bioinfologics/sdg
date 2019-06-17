@@ -55,8 +55,8 @@ public:
 
     //All status classes are public, treat them with care anyway ;)
     SequenceDistanceGraph sdg;
-    std::shared_ptr<UniqueKmerIndex> uniqueKmerIndex;
-    std::shared_ptr<Unique63merIndex> unique63merIndex;
+    UniqueKmerIndex uniqueKmerIndex;
+    Unique63merIndex unique63merIndex;
 
     std::vector<PairedReadsDatastore> paired_read_datastores;
     std::vector<LinkedReadsDatastore> linked_read_datastores;

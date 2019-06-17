@@ -3,6 +3,7 @@
 //
 
 #include "PairedReadsDatastore.hpp"
+#include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/mappers/PairedReadsMapper.hpp>
 #include <sdglib/logger/OutputLog.hpp>
 #include <sdglib/types/GenericTypes.hpp>
@@ -19,7 +20,8 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
 
     //std::cout<<"Memory used by every read's entry:"<< sizeof(PairedRead)<<std::endl;
     //read each read, put it on the index and on the appropriate tag
-    readsize=_rs;
+
+    uint64_t _size(0);
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Creating Datastore from "<<read1_filename<<" | "<<read2_filename<<std::endl;
     auto fd1=fopen(read1_filename.c_str(),"r");
     auto fd2=fopen(read2_filename.c_str(),"r");
@@ -41,7 +43,7 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     BSG_FILETYPE type(PairedDS_FT);
     output.write((char *) &type, sizeof(type));
 
-    output.write((const char *) &readsize,sizeof(readsize));
+    output.write((const char *) &_rs,sizeof(readsize));
     auto size_pos=output.tellp();
     output.write((const char *) &_size, sizeof(_size));//just to save the space!
     while (!feof(fd1) and !feof(fd2)) {
@@ -76,13 +78,13 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
         readdatav.push_back(currrent_read);
         if (readdatav.size()==chunksize){
             //dump
-            char buffer[2*readsize+2];
-            bzero(buffer,2*readsize+2);
+            char buffer[2*_rs+2];
+            bzero(buffer,2*_rs+2);
             for (auto &r:readdatav){
-                bzero(buffer,2*readsize+2);
-                memcpy(buffer,r.seq1.data(),(r.seq1.size()>readsize ? readsize : r.seq1.size()));
-                memcpy(buffer+readsize+1,r.seq2.data(),(r.seq2.size()>readsize ? readsize : r.seq2.size()));
-                output.write(buffer,2*readsize+2);
+                bzero(buffer,2*_rs+2);
+                memcpy(buffer,r.seq1.data(),(r.seq1.size()>_rs ? _rs : r.seq1.size()));
+                memcpy(buffer+_rs+1,r.seq2.data(),(r.seq2.size()>_rs ? _rs : r.seq2.size()));
+                output.write(buffer,2*_rs+2);
             }
             sdglib::OutputLog()<<readdatav.size()<<" pairs dumped..."<<std::endl;
             readdatav.clear();
@@ -90,13 +92,13 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     }
     if (readdatav.size()>0) {
         //dump
-        char buffer[2*readsize+2];
-        bzero(buffer,2*readsize+2);
+        char buffer[2*_rs+2];
+        bzero(buffer,2*_rs+2);
         for (auto &r:readdatav){
-            bzero(buffer,2*readsize+2);
-            memcpy(buffer,r.seq1.data(),(r.seq1.size()>readsize ? readsize : r.seq1.size()));
-            memcpy(buffer+readsize+1,r.seq2.data(),(r.seq2.size()>readsize ? readsize : r.seq2.size()));
-            output.write(buffer,2*readsize+2);
+            bzero(buffer,2*_rs+2);
+            memcpy(buffer,r.seq1.data(),(r.seq1.size()>_rs ? _rs : r.seq1.size()));
+            memcpy(buffer+_rs+1,r.seq2.data(),(r.seq2.size()>_rs ? _rs : r.seq2.size()));
+            output.write(buffer,2*_rs+2);
         }
         sdglib::OutputLog()<<readdatav.size()<<" pairs dumped..."<<std::endl;
         readdatav.clear();
@@ -109,8 +111,6 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<discarded<<" pairs discarded due to short reads"<<std::endl;
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<truncated<<" reads where truncated to "<<_rs<<"bp"<<std::endl;
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Datastore with "<<_size<<" reads ("<<pairs<<" pairs)"<<std::endl;
-    filename=output_filename;
-    fd=fopen(filename.c_str(),"r");
 }
 
 void PairedReadsDatastore::read(std::ifstream &input_file) {
@@ -147,37 +147,6 @@ void PairedReadsDatastore::load_index(){
     fread( &_size,sizeof(_size),1,fd);
     readpos_offset=ftell(fd);
     sdglib::OutputLog()<<"PairedReadsDatastore open: "<<filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
-}
-
-void PairedReadsDatastore::load_from_stream(std::string _filename,std::ifstream & input_file){
-    uint64_t s;
-    filename=_filename;
-    fd=fopen(filename.c_str(),"r");
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
-    input_file.read((char *) &magic, sizeof(magic));
-    input_file.read((char *) &version, sizeof(version));
-    input_file.read((char *) &type, sizeof(type));
-
-    if (magic != BSG_MAGIC) {
-        throw std::runtime_error(filename + " appears to be corrupted");
-    }
-
-    if (version < min_compat) {
-        throw std::runtime_error(filename + "has an ncompatible version");
-    }
-
-    if (type != PairedDS_FT) {
-        throw std::runtime_error(filename + " has an incompatible file type");
-    }
-
-    input_file.read( (char *) &readsize,sizeof(readsize));
-    input_file.read( (char *) &_size,sizeof(_size));
-    readpos_offset=input_file.tellg();
-    fseek(fd,readpos_offset,SEEK_SET);
-    input_file.seekg(_size*(readsize+1),std::ios_base::cur);
-    sdglib::OutputLog()<<"PairedReadsDatastore open: "<<_filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
 }
 
 void PairedReadsDatastore::write(std::ofstream &output_file) {
@@ -326,16 +295,51 @@ std::unordered_set<__uint128_t, int128_hash> PairedReadsDatastore::get_reads_kme
     return std::move(kset);
 }
 
-PairedReadsDatastore::PairedReadsDatastore() {}
-
-PairedReadsDatastore::PairedReadsDatastore(std::string _filename) {
+PairedReadsDatastore::PairedReadsDatastore(const WorkSpace &ws, std::string _filename) : ws(ws), mapper(ws, *this) {
     filename=_filename;
     load_index();
 }
 
-PairedReadsDatastore::PairedReadsDatastore(std::string read1_filename, std::string read2_filename,
-                                           std::string output_filename, int min_readsize, int max_readsize) {
+PairedReadsDatastore::PairedReadsDatastore(const WorkSpace &ws, std::string read1_filename, std::string read2_filename,
+                                           std::string output_filename, int min_readsize, int max_readsize) : ws(ws), mapper(ws, *this) {
     build_from_fastq(read1_filename,read2_filename,output_filename,min_readsize,max_readsize);
 }
 
 uint64_t PairedReadsDatastore::size() const {return _size;}
+
+PairedReadsDatastore::PairedReadsDatastore(const WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper{ws, *this} {
+    read(infile);
+    mapper.read(infile);
+}
+
+PairedReadsDatastore::PairedReadsDatastore(const WorkSpace &ws, std::string _filename, std::ifstream &input_file) : ws(ws), mapper(ws, *this) {
+    uint64_t s;
+    filename=_filename;
+    fd=fopen(filename.c_str(),"r");
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    BSG_FILETYPE type;
+    input_file.read((char *) &magic, sizeof(magic));
+    input_file.read((char *) &version, sizeof(version));
+    input_file.read((char *) &type, sizeof(type));
+
+    if (magic != BSG_MAGIC) {
+        throw std::runtime_error(filename + " appears to be corrupted");
+    }
+
+    if (version < min_compat) {
+        throw std::runtime_error(filename + "has an ncompatible version");
+    }
+
+    if (type != PairedDS_FT) {
+        throw std::runtime_error(filename + " has an incompatible file type");
+    }
+
+    input_file.read( (char *) &readsize,sizeof(readsize));
+    input_file.read( (char *) &_size,sizeof(_size));
+    readpos_offset=input_file.tellg();
+    fseek(fd,readpos_offset,SEEK_SET);
+    input_file.seekg(_size*(readsize+1),std::ios_base::cur);
+    sdglib::OutputLog()<<"PairedReadsDatastore open: "<<_filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
+
+}
