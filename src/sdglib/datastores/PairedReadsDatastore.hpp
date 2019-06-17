@@ -29,18 +29,20 @@ class BufferedPairedSequenceGetter;
 
 class PairedReadsDatastore {
 public:
-    PairedReadsDatastore(const WorkSpace &ws, std::ifstream &infile);
-    PairedReadsDatastore(const WorkSpace &ws, std::string filename, std::ifstream &infile);
-    PairedReadsDatastore(const WorkSpace &ws, std::string _filename);
-    PairedReadsDatastore(const WorkSpace &ws, std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250);
-    PairedReadsDatastore(const WorkSpace &ws, PairedReadsDatastore &ds);
+    PairedReadsDatastore(WorkSpace &ws, std::ifstream &infile);
+    PairedReadsDatastore(WorkSpace &ws, std::string filename, std::ifstream &infile);
+    PairedReadsDatastore(WorkSpace &ws, std::string _filename);
+    PairedReadsDatastore(WorkSpace &ws, std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250);
+    PairedReadsDatastore(WorkSpace &ws, PairedReadsDatastore &ds);
+
+    PairedReadsDatastore& operator=(PairedReadsDatastore const &o);
     void print_status();
     static void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250, size_t chunksize=10000000);
     void write(std::ofstream & output_file);
     void write_selection(std::ofstream &output_file, std::vector<uint64_t> read_ids);
     void read(std::ifstream & input_file);
     void load_index();
-    uint64_t size()const;;
+    uint64_t size()const;
     std::string get_read_sequence(size_t readID);
     std::unordered_set<__uint128_t, int128_hash> get_all_kmers128(int k, int min_tag_cov);
     std::unordered_set<__uint128_t, int128_hash> get_reads_kmers128(int k, int min_tag_cov, std::vector<uint64_t> reads);
@@ -56,7 +58,7 @@ private:
     FILE * fd=NULL;
     static const bsgVersion_t min_compat = 0x0001;
 
-    const WorkSpace &ws;
+    WorkSpace &ws;
 
     //TODO: read sequence cache (std::map with a limit of elements and use count)
 };

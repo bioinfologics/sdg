@@ -48,11 +48,13 @@ std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16);
  */
 class LinkedReadsDatastore {
 public:
-    LinkedReadsDatastore(const WorkSpace &ws,std::string filename);
-    LinkedReadsDatastore(const WorkSpace &ws,std::string filename, std::ifstream &infile);
-    LinkedReadsDatastore(const WorkSpace &ws, std::ifstream &infile);
-    LinkedReadsDatastore(const WorkSpace &ws,std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250);
-    LinkedReadsDatastore(const WorkSpace &ws, const LinkedReadsDatastore &o);
+    LinkedReadsDatastore(WorkSpace &ws,std::string filename);
+    LinkedReadsDatastore(WorkSpace &ws,std::string filename, std::ifstream &infile);
+    LinkedReadsDatastore(WorkSpace &ws, std::ifstream &infile);
+    LinkedReadsDatastore(WorkSpace &ws,std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250);
+    LinkedReadsDatastore(WorkSpace &ws, const LinkedReadsDatastore &o);
+
+    LinkedReadsDatastore& operator=(LinkedReadsDatastore const &o);
 
     void print_status();
     static void build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250,size_t chunksize=10000000);
@@ -76,11 +78,11 @@ public:
     uint64_t readsize;
     uint64_t readpos_offset;
     LinkedReadsMapper mapper;
-    const WorkSpace &ws;
 private:
     std::vector<uint32_t> read_tag;
     FILE * fd=NULL;
     static const bsgVersion_t min_compat;
+    WorkSpace &ws;
 
 
     //TODO: read sequence cache (std::map with a limit of elements and use count)

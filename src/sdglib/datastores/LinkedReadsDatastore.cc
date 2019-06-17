@@ -5,6 +5,7 @@
 #include "LinkedReadsDatastore.hpp"
 #include <sdglib/logger/OutputLog.hpp>
 #include <sdglib/mappers/LinkedReadsMapper.hpp>
+#include <sdglib/workspace/WorkSpace.hpp>
 #include <fstream>
 #include <strings.h>
 #include <cstring>
@@ -461,20 +462,20 @@ std::unordered_set<__uint128_t, int128_hash> LinkedReadsDatastore::get_tags_kmer
     return std::move(kset);
 }
 
-LinkedReadsDatastore::LinkedReadsDatastore(const WorkSpace &ws, std::string filename) : ws(ws), mapper(ws, *this){
+LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::string filename) : ws(ws), mapper(ws, *this){
     load_index(filename);
 }
 
-LinkedReadsDatastore::LinkedReadsDatastore(const WorkSpace &ws, std::string read1_filename, std::string read2_filename,
+LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::string read1_filename, std::string read2_filename,
                                            std::string output_filename, LinkedReadsFormat format, int readsize) : ws(ws), mapper(ws, *this) {
     build_from_fastq(read1_filename,read2_filename,output_filename,format,readsize);
 }
 
-LinkedReadsDatastore::LinkedReadsDatastore(const WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper(ws, *this) {
+LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper(ws, *this) {
     read(infile);
 }
 
-LinkedReadsDatastore::LinkedReadsDatastore(const WorkSpace &ws, std::string filename, std::ifstream &infile) : ws(ws), mapper(ws, *this) {
+LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::string filename, std::ifstream &infile) : ws(ws), mapper(ws, *this) {
     uint64_t s;
     filename=filename;
     fd=fopen(filename.c_str(),"r");
@@ -507,10 +508,22 @@ LinkedReadsDatastore::LinkedReadsDatastore(const WorkSpace &ws, std::string file
     sdglib::OutputLog()<<"LinkedReadsDatastore open: "<<filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
 }
 
-LinkedReadsDatastore::LinkedReadsDatastore(const WorkSpace &ws, const LinkedReadsDatastore &o) : ws(ws), mapper(ws, *this) {
+LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, const LinkedReadsDatastore &o) : ws(ws), mapper(ws, *this) {
     mapper.read_to_node = o.mapper.read_to_node;
     mapper.reads_in_node = o.mapper.reads_in_node;
     mapper.tag_neighbours = o.mapper.tag_neighbours;
+}
+
+LinkedReadsDatastore &LinkedReadsDatastore::operator=(LinkedReadsDatastore const &o) {
+    if ( &o == this) return *this;
+
+    this->filename = o.filename;
+    this->ws = o.ws;
+    this->readsize = o.readsize;
+    this->readpos_offset = o.readpos_offset;
+    this->mapper = o.mapper;
+    this->read_tag = o.read_tag;
+    this->fd = fopen(filename.c_str(), "r");
 }
 
 const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {

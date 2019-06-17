@@ -5,6 +5,7 @@
 #include "LongReadsDatastore.hpp"
 #include <sdglib/logger/OutputLog.hpp>
 #include <sdglib/mappers/LongReadsMapper.hpp>
+#include <sdglib/workspace/WorkSpace.hpp>
 #include <algorithm>
 
 const bsgVersion_t LongReadsDatastore::min_compat = 0x0002;
@@ -156,11 +157,11 @@ void LongReadsDatastore::write(std::ofstream &output_file) {
     output_file.write((char *)filename.data(),s*sizeof(filename[0]));
 }
 
-LongReadsDatastore::LongReadsDatastore(const WorkSpace &ws, std::string filename) : ws(ws), mapper(ws, *this) {
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string filename) : ws(ws), mapper(ws, *this) {
     load_index(filename);
 }
 
-LongReadsDatastore::LongReadsDatastore(const WorkSpace &ws, std::string long_read_file, std::string output_file) : ws(ws), mapper(ws, *this) {
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string long_read_file, std::string output_file) : ws(ws), mapper(ws, *this) {
     filename = output_file;
 
     uint32_t nReads(0);
@@ -183,11 +184,11 @@ LongReadsDatastore::LongReadsDatastore(const WorkSpace &ws, std::string long_rea
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<size()-1<<" reads"<<std::endl;
 }
 
-LongReadsDatastore::LongReadsDatastore(const WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper(ws, *this) {
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper(ws, *this) {
     read(infile);
 }
 
-LongReadsDatastore::LongReadsDatastore(const WorkSpace &ws, std::string file_name, std::ifstream &input_file) : ws(ws), mapper(ws, *this) {
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string file_name, std::ifstream &input_file) : ws(ws), mapper(ws, *this) {
     file_containing_long_read_sequence = file_name;
 
     bsgMagic_t magic;
@@ -224,7 +225,7 @@ LongReadsDatastore::LongReadsDatastore(const WorkSpace &ws, std::string file_nam
     }
 }
 
-LongReadsDatastore::LongReadsDatastore(const WorkSpace &ws, LongReadsDatastore &o) : ws(ws), mapper(ws, *this) {
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : ws(ws), mapper(ws, *this) {
     this->filename = o.filename;
     this->file_containing_long_read_sequence = o.file_containing_long_read_sequence;
     this->read_to_fileRecord = o.read_to_fileRecord;
@@ -234,6 +235,18 @@ LongReadsDatastore::LongReadsDatastore(const WorkSpace &ws, LongReadsDatastore &
     this->mapper.first_mapping = o.mapper.first_mapping;
     this->mapper.read_paths = o.mapper.read_paths;
     this->mapper.all_paths_between = o.mapper.all_paths_between;
+}
+
+LongReadsDatastore &LongReadsDatastore::operator=(LongReadsDatastore const &o) {
+    if (&o == this) return *this;
+
+    this->filename = o.filename;
+    this->ws = o.ws;
+    this->read_to_fileRecord = o.read_to_fileRecord;
+    this->file_containing_long_read_sequence = o.file_containing_long_read_sequence;
+
+    this->mapper = o.mapper;
+    return *this;
 }
 
 void BufferedSequenceGetter::write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids) {

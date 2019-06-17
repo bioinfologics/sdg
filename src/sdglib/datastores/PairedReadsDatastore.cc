@@ -296,24 +296,24 @@ std::unordered_set<__uint128_t, int128_hash> PairedReadsDatastore::get_reads_kme
     return std::move(kset);
 }
 
-PairedReadsDatastore::PairedReadsDatastore(const WorkSpace &ws, std::string _filename) : ws(ws), mapper(ws, *this) {
+PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string _filename) : ws(ws), mapper(ws, *this) {
     filename=_filename;
     load_index();
 }
 
-PairedReadsDatastore::PairedReadsDatastore(const WorkSpace &ws, std::string read1_filename, std::string read2_filename,
+PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string read1_filename, std::string read2_filename,
                                            std::string output_filename, int min_readsize, int max_readsize) : ws(ws), mapper(ws, *this) {
     build_from_fastq(read1_filename,read2_filename,output_filename,min_readsize,max_readsize);
 }
 
 uint64_t PairedReadsDatastore::size() const {return _size;}
 
-PairedReadsDatastore::PairedReadsDatastore(const WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper{ws, *this} {
+PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper{ws, *this} {
     read(infile);
     mapper.read(infile);
 }
 
-PairedReadsDatastore::PairedReadsDatastore(const WorkSpace &ws, std::string _filename, std::ifstream &input_file) : ws(ws), mapper(ws, *this) {
+PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string _filename, std::ifstream &input_file) : ws(ws), mapper(ws, *this) {
     uint64_t s;
     filename=_filename;
     fd=fopen(filename.c_str(),"r");
@@ -345,7 +345,7 @@ PairedReadsDatastore::PairedReadsDatastore(const WorkSpace &ws, std::string _fil
 
 }
 
-PairedReadsDatastore::PairedReadsDatastore(const WorkSpace &ws, PairedReadsDatastore &o) : ws(ws), mapper(ws, *this) {
+PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, PairedReadsDatastore &o) : ws(ws), mapper(ws, *this) {
     this->readsize = o.readsize;
     this->filename = o.filename;
     this->readpos_offset = o.readpos_offset;
@@ -357,4 +357,17 @@ PairedReadsDatastore::PairedReadsDatastore(const WorkSpace &ws, PairedReadsDatas
     this->mapper.frdist = o.mapper.frdist;
     this->mapper.rfdist = o.mapper.rfdist;
     this->mapper.read_direction_in_node = o.mapper.read_direction_in_node;
+}
+
+PairedReadsDatastore& PairedReadsDatastore::operator=(PairedReadsDatastore const &o) {
+    if (&o == this) return *this;
+
+    this->mapper = o.mapper;
+    this->filename = o.filename;
+    this->_size = o._size;
+    this->readpos_offset = o.readpos_offset;
+    this->readsize = o.readsize;
+    this->ws = o.ws;
+    this->fd = fopen(filename.c_str(), "r");
+    return *this;
 }

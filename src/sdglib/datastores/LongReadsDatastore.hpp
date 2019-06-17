@@ -42,20 +42,20 @@ class LongReadsDatastore {
 
     void load_index(std::string &file);
 
+    WorkSpace &ws;
 
 public:
     std::vector< ReadPosSize > read_to_fileRecord{ReadPosSize(0,0)};
-    LongReadsDatastore(const WorkSpace &ws, std::ifstream &infile);
-    LongReadsDatastore(const WorkSpace &ws, std::string filename, std::ifstream &input_file);
-
-    LongReadsDatastore(const WorkSpace &ws, LongReadsDatastore &o);
+    LongReadsDatastore(WorkSpace &ws, std::ifstream &infile);
+    LongReadsDatastore(WorkSpace &ws, std::string filename, std::ifstream &input_file);
+    LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o);
     /**
      * Initialize from already created index
      * @param filename
      *
      * Initialises the memory mapping of the reads file
      */
-    LongReadsDatastore(const WorkSpace &ws, std::string filename);
+    LongReadsDatastore(WorkSpace &ws, std::string filename);
     /**
      * Initialize from long_read_file then store the index
      * @param long_read_file
@@ -63,7 +63,9 @@ public:
      *
      * Initialises the memory mapping of the reads file
      */
-    LongReadsDatastore(const WorkSpace &ws, std::string long_read_file, std::string output_file);
+    LongReadsDatastore(WorkSpace &ws, std::string long_read_file, std::string output_file);
+
+    LongReadsDatastore& operator=(LongReadsDatastore const &o);
     uint32_t build_from_fastq(std::ofstream &outf, std::string long_read_file);
     static void build_from_fastq(std::string outf, std::string long_read_file);
     void print_status();
@@ -76,7 +78,6 @@ public:
     static const bsgVersion_t min_compat;
 
     LongReadsMapper mapper;
-    const WorkSpace &ws;
 };
 
 // Check if this needs to be page size aware
