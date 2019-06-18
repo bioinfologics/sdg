@@ -1,0 +1,5 @@
+SequenceDistanceGraph
+=======================
+
+.. doxygenclass:: SequenceDistanceGraph
+   :members:
