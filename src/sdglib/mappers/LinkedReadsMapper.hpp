@@ -140,7 +140,6 @@ public:
     void write_tag_neighbours(std::string filename);
     void read_tag_neighbours(std::string filename);
 
-    const SequenceDistanceGraph & sg;
     const WorkSpace &ws;
 
     LinkedReadsDatastore &datastore;

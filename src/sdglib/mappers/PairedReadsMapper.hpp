@@ -96,7 +96,6 @@ public:
      */
     std::vector<uint64_t> get_node_readpairs_ids(sgNodeID_t nodeID);
 
-    const SequenceDistanceGraph & sg;
     const WorkSpace &ws;
     const PairedReadsDatastore & datastore;
     /**

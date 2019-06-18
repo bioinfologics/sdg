@@ -14,10 +14,9 @@ const bsgVersion_t PairedReadsMapper::min_compat = 0x0001;
 
 PairedReadsMapper::PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore &_datastore) :
         ws(ws),
-        sg(_ws.sdg),
         datastore(_datastore)
 {
-    reads_in_node.resize(sg.nodes.size());
+    reads_in_node.resize(ws.sdg.nodes.size());
 }
 
 void PairedReadsMapper::write(std::ofstream &output_file) {
@@ -84,7 +83,7 @@ void PairedReadsMapper::remap_all_reads() {
 void PairedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 31;
     std::atomic<int64_t> nokmers(0);
-    reads_in_node.resize(sg.nodes.size());
+    reads_in_node.resize(ws.sdg.nodes.size());
     read_to_node.resize(datastore.size()+1);
     if (not reads_to_remap.empty())
         sdglib::OutputLog()<<reads_to_remap.size()<<" selected reads / "<<read_to_node.size()-1<<" total"<<std::endl;
@@ -201,7 +200,7 @@ void PairedReadsMapper::remap_all_reads63() {
 void PairedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 63;
     std::atomic<int64_t> nokmers(0);
-    reads_in_node.resize(sg.nodes.size());
+    reads_in_node.resize(ws.sdg.nodes.size());
     read_to_node.resize(datastore.size()+1);
     if (not reads_to_remap.empty())
         sdglib::OutputLog()<<reads_to_remap.size()<<" selected reads / "<<read_to_node.size()-1<<" total"<<std::endl;
@@ -324,8 +323,8 @@ void PairedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
 void PairedReadsMapper::remove_obsolete_mappings(){
     uint64_t nodes=0,reads=0;
     std::set<sgNodeID_t> updated_nodes;
-    for (auto n=1;n<sg.nodes.size();++n) {
-        if (sg.nodes[n].status==sgNodeDeleted) {
+    for (auto n=1;n<ws.sdg.nodes.size();++n) {
+        if (ws.sdg.nodes[n].status==sgNodeDeleted) {
             updated_nodes.insert(n);
             updated_nodes.insert(-n);
             reads_in_node[n > 0 ? n : -n].clear();
@@ -365,7 +364,7 @@ std::vector<uint64_t> PairedReadsMapper::size_distribution() {
     uint64_t frcount=0,rfcount=0;
     std::vector<int32_t> read_firstpos(read_to_node.size()),read_lastpos(read_to_node.size());
     std::vector<bool> read_rev(read_to_node.size());
-    for (auto n=1;n<sg.nodes.size();++n) {
+    for (auto n=1;n<ws.sdg.nodes.size();++n) {
         for (auto &rm:reads_in_node[n]) {
             read_firstpos[rm.read_id]=rm.first_pos;
             read_lastpos[rm.read_id]=rm.last_pos;
@@ -412,7 +411,7 @@ void PairedReadsMapper::populate_orientation() {
 }
 
 PairedReadsMapper PairedReadsMapper::operator=(const PairedReadsMapper &other) {
-    if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceDistanceGraph"); }
+    if (&ws.sdg != &other.ws.sdg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceDistanceGraph"); }
     if (&other == this) {
         return *this;
     }

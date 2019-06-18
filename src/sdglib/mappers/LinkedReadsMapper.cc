@@ -18,10 +18,9 @@ const bsgVersion_t LinkedReadsMapper::min_compat = 0x0001;
 
 LinkedReadsMapper::LinkedReadsMapper(const WorkSpace &_ws, LinkedReadsDatastore &_datastore) :
 ws(_ws),
-sg(_ws.sdg),
 datastore(_datastore)
 {
-    reads_in_node.resize(sg.nodes.size());
+    reads_in_node.resize(ws.sdg.nodes.size());
 }
 
 void LinkedReadsMapper::write(std::ofstream &output_file) {
@@ -88,7 +87,7 @@ void LinkedReadsMapper::remap_all_reads() {
 
 void LinkedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 31;
-    reads_in_node.resize(sg.nodes.size());
+    reads_in_node.resize(ws.sdg.nodes.size());
     read_to_node.resize(datastore.size()+1);
     if (not reads_to_remap.empty())
         sdglib::OutputLog()<<reads_to_remap.size()<<" selected reads / "<<read_to_node.size()-1<<" total"<<std::endl;
@@ -198,7 +197,7 @@ void LinkedReadsMapper::remap_all_reads63() {
 
 void LinkedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 63;
-    reads_in_node.resize(sg.nodes.size());
+    reads_in_node.resize(ws.sdg.nodes.size());
     read_to_node.resize(datastore.size()+1);
     if (not reads_to_remap.empty())
         sdglib::OutputLog()<<reads_to_remap.size()<<" selected reads / "<<read_to_node.size()-1<<" total"<<std::endl;
@@ -323,8 +322,8 @@ void LinkedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
 void LinkedReadsMapper::remove_obsolete_mappings(){
     uint64_t nodes=0,reads=0;
     std::set<sgNodeID_t> updated_nodes;
-    for (auto n=1;n<sg.nodes.size();++n) {
-        if (sg.nodes[n].status==sgNodeDeleted) {
+    for (auto n=1;n<ws.sdg.nodes.size();++n) {
+        if (ws.sdg.nodes[n].status==sgNodeDeleted) {
             updated_nodes.insert(n);
             updated_nodes.insert(-n);
             reads_in_node[n > 0 ? n : -n].clear();
@@ -415,10 +414,10 @@ std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadsMapper::get_tag_neig
     sdglib::OutputLog()<<"all structures ready"<<std::endl;
 #pragma omp parallel firstprivate(tags_in_node,nodes_in_tags)
     {
-        std::vector<uint32_t> shared_with(sg.nodes.size());
+        std::vector<uint32_t> shared_with(ws.sdg.nodes.size());
         std::vector<std::pair<sgNodeID_t, sgNodeID_t >> tnsl;
 #pragma omp for schedule(static,100)
-        for (auto n = 1; n < sg.nodes.size(); ++n) {
+        for (auto n = 1; n < ws.sdg.nodes.size(); ++n) {
             if (!selected_nodes[n]) continue;
             if (tags_in_node[n].size()<min_shared) continue;
 
@@ -438,7 +437,7 @@ std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadsMapper::get_tag_neig
 
 void LinkedReadsMapper::compute_all_tag_neighbours(int min_size, float min_score) {
     //scores[source][dest]= count of reads of source which have tags also present in dest
-    std::vector<std::unordered_map<sgNodeID_t,uint32_t>> scores(sg.nodes.size());
+    std::vector<std::unordered_map<sgNodeID_t,uint32_t>> scores(ws.sdg.nodes.size());
 
     //make a map with counts of how many times the tag appears on every node
     std::unordered_map<sgNodeID_t, uint32_t > node_readcount; //is it not easier to use a vector? - it is sparse
@@ -453,9 +452,9 @@ void LinkedReadsMapper::compute_all_tag_neighbours(int min_size, float min_score
             //analyse tag per tag -> add this count on the shared set of this (check min_size for both)
             if (node_readcount.size()<500) { //tag has reads in less than 500 nodes
                 for (auto &n1:node_readcount) {
-                    if (sg.nodes[n1.first].sequence.size() >= min_size and n1.second > 2) {
+                    if (ws.sdg.nodes[n1.first].sequence.size() >= min_size and n1.second > 2) {
                         for (auto &n2:node_readcount) {
-                            if (sg.nodes[n2.first].sequence.size() >= min_size and n2.second > 2) {
+                            if (ws.sdg.nodes[n2.first].sequence.size() >= min_size and n2.second > 2) {
                                 scores[n1.first][n2.first] += n1.second;
                             }
                         }
@@ -472,9 +471,9 @@ void LinkedReadsMapper::compute_all_tag_neighbours(int min_size, float min_score
     }
     //last tag
     for (auto &n1:node_readcount) {
-        if (sg.nodes[n1.first].sequence.size()>=min_size and n1.second > 2) {
+        if (ws.sdg.nodes[n1.first].sequence.size()>=min_size and n1.second > 2) {
             for (auto &n2:node_readcount) {
-                if (sg.nodes[n2.first].sequence.size() >= min_size and n2.second > 2) {
+                if (ws.sdg.nodes[n2.first].sequence.size() >= min_size and n2.second > 2) {
                     scores[n1.first][n2.first]+=n1.second;
                 }
             }
@@ -483,8 +482,8 @@ void LinkedReadsMapper::compute_all_tag_neighbours(int min_size, float min_score
     sdglib::OutputLog()<<"... copying to result vector..."<<std::endl;
     //now flatten the map into its first dimension.
     tag_neighbours.clear();
-    tag_neighbours.resize(sg.nodes.size());
-    for (auto i=1;i<sg.nodes.size();++i){
+    tag_neighbours.resize(ws.sdg.nodes.size());
+    for (auto i=1;i<ws.sdg.nodes.size();++i){
         for (auto &s:scores[i]) {
             float tag_score = ((float) s.second) / scores[i][i];
             if (tag_score >= min_score)
@@ -518,12 +517,12 @@ void LinkedReadsMapper::compute_all_tag_neighbours2(int min_size, float min_scor
 
 
     //scores[source][dest]= count of reads of source which have tags also present in dest
-    std::vector<std::unordered_map<sgNodeID_t,uint32_t>> scores(sg.nodes.size());
+    std::vector<std::unordered_map<sgNodeID_t,uint32_t>> scores(ws.sdg.nodes.size());
     sdglib::OutputLog()<<"Counting into individual maps (parallel)..."<<std::endl;
 #pragma omp parallel
     {
         //local tally
-        std::vector<std::unordered_map<sgNodeID_t,uint32_t>> local_scores(sg.nodes.size());
+        std::vector<std::unordered_map<sgNodeID_t,uint32_t>> local_scores(ws.sdg.nodes.size());
         //map with counts of how many times the tag appears on every node
         std::unordered_map<sgNodeID_t, uint32_t > node_readcount; //is it not easier to use a vector? - it is sparse
 #pragma omp for
@@ -535,9 +534,9 @@ void LinkedReadsMapper::compute_all_tag_neighbours2(int min_size, float min_scor
             }
             if (node_readcount.size()<500) { //tag has reads in less than 500 nodes
                 for (auto &n1:node_readcount) {
-                    if (sg.nodes[n1.first].sequence.size() >= min_size) {
+                    if (ws.sdg.nodes[n1.first].sequence.size() >= min_size) {
                         for (auto &n2:node_readcount) {
-                            if (sg.nodes[n2.first].sequence.size() >= min_size) {
+                            if (ws.sdg.nodes[n2.first].sequence.size() >= min_size) {
                                 scores[n1.first][n2.first] += n1.second; //add the number of reads shared in this tag to the total score
                             }
                         }
@@ -558,8 +557,8 @@ void LinkedReadsMapper::compute_all_tag_neighbours2(int min_size, float min_scor
     sdglib::OutputLog()<<"... copying to result vector..."<<std::endl;
     //now flatten the map into its first dimension.
     tag_neighbours.clear();
-    tag_neighbours.resize(sg.nodes.size());
-    for (auto i=1;i<sg.nodes.size();++i){
+    tag_neighbours.resize(ws.sdg.nodes.size());
+    for (auto i=1;i<ws.sdg.nodes.size();++i){
         for (auto &s:scores[i]) {
             float tag_score = ((float) s.second) / scores[i][i];
             if (tag_score >= min_score)
@@ -570,7 +569,7 @@ void LinkedReadsMapper::compute_all_tag_neighbours2(int min_size, float min_scor
 }
 
 LinkedReadsMapper LinkedReadsMapper::operator=(const LinkedReadsMapper &other) {
-    if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceDistanceGraph"); }
+    if (&ws.sdg != &other.ws.sdg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceDistanceGraph"); }
     if (&other == this) {
         return *this;
     }
