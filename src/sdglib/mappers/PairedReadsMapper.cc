@@ -13,7 +13,7 @@
 const bsgVersion_t PairedReadsMapper::min_compat = 0x0001;
 
 PairedReadsMapper::PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore &_datastore) :
-        ws(ws),
+        ws(_ws),
         datastore(_datastore)
 {
     reads_in_node.resize(ws.sdg.nodes.size());
