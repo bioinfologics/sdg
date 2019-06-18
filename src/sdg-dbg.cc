@@ -7,7 +7,7 @@
 
 
 int main(int argc, char * argv[]) {
-    std::cout << "Welcome to bsg-dbg"<<std::endl<<std::endl;
+    std::cout << "Welcome to sdg-dbg"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
     std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
     std::cout << "Executed command:"<<std::endl;
@@ -19,7 +19,7 @@ int main(int argc, char * argv[]) {
     sdglib::OutputLogLevel=sdglib::LogLevels::INFO;
     try
     {
-        cxxopts::Options options("bsg-dbg", "create a DBG graph from a short-read datastore, and populate KCI");
+        cxxopts::Options options("sdg-dbg", "create a DBG graph from a short-read datastore, and populate KCI");
 
         options.add_options()
                 ("help", "Print help")
@@ -57,7 +57,7 @@ int main(int argc, char * argv[]) {
 
     std::cout<<std::endl;
     WorkSpace ws;
-    ws.add_log_entry("Workspace created with bsg-dbg");
+    ws.add_log_entry("Workspace created with sdg-dbg");
     ws.add_log_entry("Origin datastore: "+pr_file);
     ws.paired_read_datastores.emplace_back(ws, pr_file);
     GraphMaker gm(ws.sdg);

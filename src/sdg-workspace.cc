@@ -36,7 +36,7 @@ void make_workspace(int argc, char** argv){
     std::string output = "";
     std::string gfa_filename = "", kci_filename = "";
     try {
-        cxxopts::Options options("bsg-workspace make", "BSG make workspace");
+        cxxopts::Options options("sdg-workspace make", "BSG make workspace");
 
         options.add_options()
                 ("help", "Print help")
@@ -70,7 +70,7 @@ void make_workspace(int argc, char** argv){
 
     //===== LOAD GRAPH =====
     WorkSpace w;
-    w.add_log_entry("Created with bsg-makeworkspace");
+    w.add_log_entry("Created with sdg-makeworkspace");
     w.sdg.load_from_gfa(gfa_filename);
     w.add_log_entry("GFA imported from " + gfa_filename + " (" + std::to_string(w.sdg.nodes.size() - 1) +
                     " nodes)");
@@ -108,7 +108,7 @@ void log_workspace(int argc, char **argv){
     std::string filename;
     try {
 
-        cxxopts::Options options("bsg-workspace log", "BSG workspace log");
+        cxxopts::Options options("sdg-workspace log", "BSG workspace log");
 
         options.add_options()
                 ("help", "Print help")
@@ -164,7 +164,7 @@ void dump_workspace(int argc, char **argv){
     size_t min_size=2000,max_size=100000000;
     try {
 
-        cxxopts::Options options("bsg-workspace dump", "BSG workspace dump");
+        cxxopts::Options options("sdg-workspace dump", "BSG workspace dump");
 
         options.add_options()
                 ("help", "Print help")
@@ -225,7 +225,7 @@ void node_kci_dump_workspace(int argc,char **argv){
     std::string prefix;
 
     try {
-        cxxopts::Options options("bsg-workspace node_kci-dump", "BSG workspace node_kci-dump");
+        cxxopts::Options options("sdg-workspace node_kci-dump", "BSG workspace node_kci-dump");
 
         options.add_options()
                 ("help", "Print help")
@@ -312,7 +312,7 @@ void kci_profile_workspace(int argc,char **argv){
     std::string prefix;
     std::string backbone_whitelist;
     try {
-        cxxopts::Options options("bsg-workspace kci-profile", "BSG workspace kci-profile");
+        cxxopts::Options options("sdg-workspace kci-profile", "BSG workspace kci-profile");
 
         options.add_options()
                 ("help", "Print help")
@@ -351,7 +351,7 @@ void merge_workspace(int argc, char **argv){
     std::string base_filename="",merge_filename="";
     bool force(false);
     try {
-        cxxopts::Options options("bsg-workspace merge", "BSG workspace merge");
+        cxxopts::Options options("sdg-workspace merge", "BSG workspace merge");
 
         options.add_options()
                 ("help", "Print help")
@@ -463,7 +463,7 @@ void add_datastores(int argc, char **argv) {
     std::string base_filename;
     std::vector<std::string> add_filenames;
     try {
-        cxxopts::Options options("bsg-workspace add", "BSG workspace add, adds workspaces to a base workspace in the order they are passed in to an output workspace.");
+        cxxopts::Options options("sdg-workspace add", "BSG workspace add, adds workspaces to a base workspace in the order they are passed in to an output workspace.");
 
         options.add_options()
                 ("help", "Print help")
@@ -526,7 +526,7 @@ void add_datastores(int argc, char **argv) {
 }
 
 int main(int argc, char * argv[]) {
-    std::cout << "bsg-workspace"<<std::endl<<std::endl;
+    std::cout << "sdg-workspace"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
     std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
     std::cout << "Executed command:"<<std::endl;

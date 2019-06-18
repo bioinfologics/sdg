@@ -5,7 +5,7 @@
 #include "cxxopts.hpp"
 
 int main(int argc, char * argv[]) {
-    std::cout << "Welcome to bsg-lrmapper"<<std::endl<<std::endl;
+    std::cout << "Welcome to sdg-lrmapper"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
     std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
     std::cout << "Executed command:"<<std::endl;
@@ -19,7 +19,7 @@ int main(int argc, char * argv[]) {
     sdglib::OutputLogLevel=sdglib::LogLevels::DEBUG;
     try
     {
-        cxxopts::Options options("bsg-lrmapper", "Long_reads-to-graph mapper for bsg worskpaces");
+        cxxopts::Options options("sdg-lrmapper", "Long_reads-to-graph mapper for sdg worskpaces");
 
         options.add_options()
                 ("h,help", "Print help")
@@ -56,7 +56,7 @@ int main(int argc, char * argv[]) {
     WorkSpace ws;
     sdglib::OutputLog()<<"Loading Workspace..."<<std::endl;
     ws.load_from_disk(workspace_file);
-    ws.add_log_entry("bsg-lrmapper run started");
+    ws.add_log_entry("sdg-lrmapper run started");
     sdglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
     for (uint32_t lrds_idx=0; lrds_idx < ws.long_read_datastores.size(); lrds_idx++) {
@@ -65,7 +65,7 @@ int main(int argc, char * argv[]) {
         ws.add_log_entry("reads from "+ws.long_read_datastores[lrds_idx].filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
     }
-    ws.add_log_entry("bsg-lrmapper run finished");
+    ws.add_log_entry("sdg-lrmapper run finished");
     ws.dump_to_disk(output_prefix+".bsgws");
     sdglib::OutputLog()<<"Mapping reads DONE."<<std::endl;
     return 0;

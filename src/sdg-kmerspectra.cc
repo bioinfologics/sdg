@@ -5,7 +5,7 @@
 
 
 int main(int argc, char * argv[]) {
-    std::cout << "bsg-kmerspectra"<<std::endl<<std::endl;
+    std::cout << "sdg-kmerspectra"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
     std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
     std::cout << "Executed command:"<<std::endl;
@@ -22,7 +22,7 @@ int main(int argc, char * argv[]) {
         std::string output;
         std::string gfa_filename;
         try {
-            cxxopts::Options options("bsg-kmerspectra make", "BSG make kmers pectra");
+            cxxopts::Options options("sdg-kmerspectra make", "BSG make kmers pectra");
 
             options.add_options()
                     ("help", "Print help")
@@ -65,7 +65,7 @@ int main(int argc, char * argv[]) {
         std::string filename;
         try {
 
-            cxxopts::Options options("bsg-kmerspectra stats", "BSG kmer spectra stats");
+            cxxopts::Options options("sdg-kmerspectra stats", "BSG kmer spectra stats");
 
             options.add_options()
                     ("help", "Print help")
@@ -103,7 +103,7 @@ int main(int argc, char * argv[]) {
         bool reindex=false;
         try {
 
-            cxxopts::Options options("bsg-kmerspectra apply", "BSG kmer spectra apply");
+            cxxopts::Options options("sdg-kmerspectra apply", "BSG kmer spectra apply");
 
             options.add_options()
                     ("help", "Print help")
@@ -146,7 +146,7 @@ int main(int argc, char * argv[]) {
 
         try {
 
-            cxxopts::Options options("bsg-kmerspectra transform", "BSG kmer spectra transform");
+            cxxopts::Options options("sdg-kmerspectra transform", "BSG kmer spectra transform");
 
             options.add_options()
                     ("help", "Print help")

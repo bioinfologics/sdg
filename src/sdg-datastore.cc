@@ -8,7 +8,7 @@
 
 
 int main(int argc, char * argv[]) {
-    std::cout << "bsg-datastore"<<std::endl<<std::endl;
+    std::cout << "sdg-datastore"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
     std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
     std::cout << "Executed command:"<<std::endl;
@@ -24,7 +24,7 @@ int main(int argc, char * argv[]) {
         std::string read1, read2, long_reads, read_type, output;
         uint16_t min_readsize=0,max_readsize=150;
         try {
-            cxxopts::Options options("bsg-datastore make", "BSG make datastore");
+            cxxopts::Options options("sdg-datastore make", "BSG make datastore");
 
             options.add_options()
                     ("help", "Print help")
@@ -85,7 +85,7 @@ int main(int argc, char * argv[]) {
         std::vector<std::string> filenames;
         try {
 
-            cxxopts::Options options("bsg-datastore view", "BSG view datastore");
+            cxxopts::Options options("sdg-datastore view", "BSG view datastore");
 
             options.add_options()
                     ("help", "Print help")
@@ -117,7 +117,7 @@ int main(int argc, char * argv[]) {
         std::vector<std::string> filenames;
         try {
 
-            cxxopts::Options options("bsg-datastore compare", "BSG compare linked reads datastores");
+            cxxopts::Options options("sdg-datastore compare", "BSG compare linked reads datastores");
 
             options.add_options()
                     ("help", "Print help")

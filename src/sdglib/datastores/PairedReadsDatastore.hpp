@@ -54,7 +54,7 @@ public:
     std::unordered_set<__uint128_t, int128_hash> get_reads_kmers128(int k, int min_tag_cov, std::vector<uint64_t> reads);
 
 
-    std::string filename; //if store is in single file bsg format these two are the same as the index file.
+    std::string filename; //if store is in single file sdg format these two are the same as the index file.
     uint64_t readsize;
     uint64_t readpos_offset;
     PairedReadsMapper mapper;

@@ -79,7 +79,7 @@ public:
     std::vector<uint64_t> get_tag_reads(bsg10xTag tag) const;
     std::vector<std::pair<bsg10xTag, uint32_t>> get_tag_readcount();
     void dump_tag_occupancy_histogram(std::string filename);
-    std::string filename; //if store is in single file bsg format these two are the same as the index file.
+    std::string filename; //if store is in single file sdg format these two are the same as the index file.
 
     uint64_t readsize;
     uint64_t readpos_offset;

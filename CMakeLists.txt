@@ -252,7 +252,7 @@ target_link_libraries(build_all_backbones sdg_static)
 #                COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
 #                LINK_FLAGS    "--coverage -lgcov")
 #    ENDIF()
-#    target_link_libraries(runBasicTests bsg)
+#    target_link_libraries(runBasicTests sdg)
 #    add_test(basicTests runBasicTests)
 #ENDIF()
 

@@ -1,9 +1,9 @@
 #ifdef SWIGR
-    %module rbsg
+    %module rsdg
 #endif
 
 #ifdef SWIGPYTHON
-    %module pybsg
+    %module pysdg
 #endif
 
 %ignore Backbone;

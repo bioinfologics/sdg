@@ -5,7 +5,7 @@
 #include "cxxopts.hpp"
 
 int main(int argc, char * argv[]) {
-    std::cout << "Welcome to bsg-mapper"<<std::endl<<std::endl;
+    std::cout << "Welcome to sdg-mapper"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
     std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
     std::cout << "Executed command:"<<std::endl;
@@ -18,7 +18,7 @@ int main(int argc, char * argv[]) {
     sdglib::OutputLogLevel=sdglib::LogLevels::DEBUG;
     try
     {
-        cxxopts::Options options("bsg-mapper", "reads-to-graph mapper for bsg worskpaces");
+        cxxopts::Options options("sdg-mapper", "reads-to-graph mapper for sdg worskpaces");
 
         options.add_options()
                 ("help", "Print help")
@@ -54,7 +54,7 @@ int main(int argc, char * argv[]) {
     WorkSpace ws;
     sdglib::OutputLog()<<"Loading Workspace..."<<std::endl;
     ws.load_from_disk(workspace_file);
-    ws.add_log_entry("bsg-mapper run started");
+    ws.add_log_entry("sdg-mapper run started");
     sdglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
     auto pri=0;
@@ -91,7 +91,7 @@ int main(int argc, char * argv[]) {
         ws.add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
     }
-    ws.add_log_entry("bsg-mapper run finished");
+    ws.add_log_entry("sdg-mapper run finished");
     ws.dump_to_disk(output_prefix+".bsgws");
     sdglib::OutputLog()<<"Mapping reads DONE."<<std::endl;
     return 0;

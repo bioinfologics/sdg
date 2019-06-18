@@ -10,7 +10,7 @@
 
 
 int main(int argc, char * argv[]) {
-    std::cout << "Welcome to bsg-untangler"<<std::endl<<std::endl;
+    std::cout << "Welcome to sdg-untangler"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
     std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
     std::cout << "Executed command:"<<std::endl;
@@ -45,7 +45,7 @@ int main(int argc, char * argv[]) {
     bool small_component_cleanup=false;
     try
     {
-        cxxopts::Options options("bsg-untangler", "graph-based haplotype separation");
+        cxxopts::Options options("sdg-untangler", "graph-based haplotype separation");
 
         options.add_options()
                 ("help", "Print help")
@@ -128,7 +128,7 @@ int main(int argc, char * argv[]) {
     }
     //TODO: other checks? reads mapped to valid nodes and such?
 
-    ws.add_log_entry("bsg-untangler run started");
+    ws.add_log_entry("sdg-untangler run started");
     sdglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     if (remap_reads) sdglib::OutputLog()<<"This run WILL remap reads at the end"<<std::endl;
     else sdglib::OutputLog()<<"This run will NOT remap reads at the end"<<std::endl;
