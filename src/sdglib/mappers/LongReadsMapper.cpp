@@ -55,7 +55,7 @@ void LongReadHaplotypeMappingsFilter::generate_haplotypes_from_linkedreads(float
         }
     }
     std::sort(all_nsets.begin(),all_nsets.end());
-    for (auto ns:all_nsets) {
+    for (const auto &ns:all_nsets) {
         if (ns.empty()) continue;
         bool dup=false;
         for (auto &hs:haplotype_scores) if (ns==hs.haplotype_nodes) {dup=true;break;}
@@ -112,7 +112,7 @@ void LongReadHaplotypeMappingsFilter::score_window_winners(float weight, int k, 
         kmer_hits_by_node[ni].resize(rkmers.size());
         for (auto &nk:nkmers) {
             auto rkhit=rkmerpos.find(nk);
-            if (rkhit!=rkmerpos.end() and rkhit->second!=-1) kmer_hits_by_node[ni][rkhit->second]=1;
+            if (rkhit!=rkmerpos.end() and rkhit->second!=-1) kmer_hits_by_node[ni][rkhit->second]=true;
         }
         /*for (auto i=0;i<rkmers.size();++i){
             auto nklb=std::lower_bound(nkmers.begin(),nkmers.end(),rkmers[i]);
@@ -338,7 +338,7 @@ std::vector<LongReadMapping> LongReadsMapper::filter_blocks(std::vector<LongRead
     return fblocks;
 }
 
-void LongReadsMapper::map_reads(int filter_limit, std::unordered_set<uint32_t> readIDs, std::string detailed_log) {
+void LongReadsMapper::map_reads(int filter_limit, const std::unordered_set<uint32_t> &readIDs, std::string detailed_log) {
     update_graph_index(filter_limit);
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
     uint32_t num_reads_done(0);
@@ -546,8 +546,8 @@ void LongReadsMapper::read_read_paths(std::string filename) {
     sdglib::read_flat_vectorvector(ifs,read_paths);
 }
 
-LongReadsMapper LongReadsMapper::operator=(const LongReadsMapper &other) {
-    if (&sg != &other.sg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceDistanceGraph"); }
+LongReadsMapper& LongReadsMapper::operator=(const LongReadsMapper &other) {
+    if (&sg != &other.sg and &datastore != &other.datastore) { throw std::runtime_error("Can only copy paths from the same SequenceDistanceGraph"); }
     if (&other == this) {
         return *this;
     }

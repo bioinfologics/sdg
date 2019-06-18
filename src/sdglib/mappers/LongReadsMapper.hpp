@@ -152,7 +152,7 @@ public:
     LongReadsMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k=15, bool sat_index=false);
     ~LongReadsMapper();
 
-    LongReadsMapper operator=(const LongReadsMapper &other);
+    LongReadsMapper& operator=(const LongReadsMapper &other);
 
     void print_status();
 
@@ -276,7 +276,8 @@ public:
      * @param readIDs
      * @param detailed_log
      */
-    void map_reads(int filter_limit=200, std::unordered_set<uint32_t> readIDs = {},std::string detailed_log="");
+    void map_reads(int filter_limit = 200, const std::unordered_set<uint32_t> &readIDs = {},
+                   std::string detailed_log = "");
 
     /**
      * This function maps any sequence to the graph, index needs to be already updated!
