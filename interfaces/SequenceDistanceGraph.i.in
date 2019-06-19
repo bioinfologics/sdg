@@ -21,7 +21,7 @@
 #include "sdglib/readers/SequenceGraphReader.hpp"
 #include "sdglib/processors/KmerCompressionIndex.hpp"
 #include "sdglib/workspace/WorkSpace.hpp"
-#include "sglib/factories/KMerFactory.hpp"
+#include "sdglib/factories/KMerFactory.hpp"
 #include "sdglib/factories/KMerCountFactory.hpp"
 
 #include "sdglib/indexers/UniqueKmerIndex.hpp"
@@ -92,18 +92,6 @@
    %template(vectorTagNeighbour) std::vector<TagNeighbour>;
    %template(vectorvectorTagNeighbour) std::vector<std::vector<TagNeighbour>>;
    %template(vectorHaplotypeScore) std::vector<HaplotypeScore>;
-
-   %ignore std::vector<LongReadMapper>::vector(size_type);
-   %ignore std::vector<LongReadMapper>::resize;
-   %template(vectorLongReadMapper) std::vector<LongReadMapper>;
-
-   %ignore std::vector<LinkedReadsMapper>::vector(size_type);
-   %ignore std::vector<LinkedReadsMapper>::resize;
-   %template(vectorLinkedReadMapper) std::vector<LinkedReadsMapper>;
-
-   %ignore std::vector<PairedReadsMapper>::vector(size_type);
-   %ignore std::vector<PairedReadsMapper>::resize;
-   %template(vectorPairedReadMapper) std::vector<PairedReadsMapper>;
 
    %ignore std::vector<LinkedReadsDatastore>::vector(size_type);
    %ignore std::vector<LinkedReadsDatastore>::resize;
