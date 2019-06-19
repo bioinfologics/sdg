@@ -131,15 +131,15 @@ int main(int argc, char * argv[]) {
                       << "Use option --help to check command line arguments." << std::endl;
             exit(1);
         }
-        SequenceDistanceGraph sg;
-        KmerCompressionIndex kci(sg);
-        sg.load_from_gfa(gfa_filename);
+        SequenceDistanceGraph sdg;
+        KmerCompressionIndex kci(sdg);
+        sdg.load_from_gfa(gfa_filename);
         kci.load_from_disk(kci_filename);
         sdglib::OutputLog()<<kci.graph_kmers.size()<<" kmers in spectra loaded from disk"<<std::endl;
         if (reindex) kci.reindex_graph();
         kci.compute_compression_stats();
         kci.compute_all_nodes_kci(maxfreq);
-        sg.write_to_gfa(output, {}, {}, {}, kci.nodes_depth);
+        sdg.write_to_gfa(output, {}, {}, {}, kci.nodes_depth);
     }
     else if (0==strcmp(argv[1],"transform")) {
         std::string kci_filename,gfa_filename,output;
