@@ -119,7 +119,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
                 }
             }
             currrent_read.tag=newtag;
-            currrent_read.seq1=std::string(readbuffer+16);
+            currrent_read.seq1=std::string(readbuffer + 16 + 7);
             if (currrent_read.seq1.back()=='\n') currrent_read.seq1.resize(currrent_read.seq1.size()-1);
             if (NULL == fgets(readbuffer, 999, fd2)) continue;
             currrent_read.seq2=std::string(readbuffer);
