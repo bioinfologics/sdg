@@ -101,7 +101,7 @@ bool SequenceGraphPath::operator<(const SequenceGraphPath& rhs) const {
 }
 
 SequenceGraphPath &SequenceGraphPath::operator=(const SequenceGraphPath &other) {
-    if (&sg != &other.sg) { throw ("Can only copy paths from the same SequenceDistanceGraph"); }
+    if (&sg != &other.sg) { throw std::runtime_error("Can only copy paths from the same SequenceDistanceGraph"); }
     if (&other == this) {
         return *this;
     }
