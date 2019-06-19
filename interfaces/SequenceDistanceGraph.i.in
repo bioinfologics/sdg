@@ -1,0 +1,207 @@
+#ifdef SWIGR
+    %module rsdg
+#endif
+
+#ifdef SWIGPYTHON
+    %module pysdg
+#endif
+
+%ignore Backbone;
+%ignore PairedReadLinker;
+%{
+/* Includes the header in the wrapper code */
+#include <cstdint>
+#include <sstream>
+#include "sdglib/types/KmerTypes.hpp"
+#include "sdglib/types/GenericTypes.hpp"
+#include "sdglib/types/MappingTypes.hpp"
+#include "sdglib/graph/SequenceGraphPath.hpp"
+#include "sdglib/graph/SequenceSubGraph.hpp"
+#include "sdglib/graph/SequenceDistanceGraph.hpp"
+#include "sdglib/readers/SequenceGraphReader.hpp"
+#include "sdglib/processors/KmerCompressionIndex.hpp"
+#include "sdglib/workspace/WorkSpace.hpp"
+#include "sglib/factories/KMerFactory.hpp"
+#include "sdglib/factories/KMerCountFactory.hpp"
+
+#include "sdglib/indexers/UniqueKmerIndex.hpp"
+#include "sdglib/mappers/LinkedReadsMapper.hpp"
+#include "sdglib/mappers/LongReadsMapper.hpp"
+#include "sdglib/datastores/LongReadsDatastore.hpp"
+#include "sdglib/mappers/PairedReadsMapper.hpp"
+#include "sdglib/datastores/PairedReadsDatastore.hpp"
+
+#include "sdglib/processors/Untangler.hpp"
+#include "sdglib/graph/DistanceGraph.hpp"
+#include "sdglib/processors/LinkageUntangler.hpp"
+#include "sdglib/factories/KMerCountFactory.hpp"
+
+#include "sdglib/processors/HaplotypeConsensus.hpp"
+#include "sdglib/readers/FileReader.hpp"
+
+%}
+
+#define MADE_DOCS "@DOXYGEN_FOUND@"
+#ifdef SWIGPYTHON
+    #if MADE_DOCS=="YES"
+        %include "python_docs.i"
+    #endif
+#endif
+
+%include "stl.i"
+%include "std_common.i"
+%include "std_container.i"
+%include "stdint.i"
+%include "std_set.i"
+%include "std_unordered_set.i"
+%include "exception.i"
+
+%exception {
+  try {
+    $action
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+}
+%include "sdglib/types/KmerTypes.hpp"
+%include "sdglib/types/GenericTypes.hpp"
+%include "sdglib/datastores/LinkedReadsDatastore.hpp"
+%include "sdglib/readers/FileReader.hpp"
+
+   %template(vectorInt) std::vector<int>;
+   %template(vectorDouble) std::vector<double>;
+   %template(vectorFloat) std::vector<float>;
+   %template(vectorString) std::vector<std::string>;
+   %template(vectorLink) std::vector<Link>;
+   %template(vectorvectorLink) std::vector<std::vector<Link>>;
+   %template(vectorSGNode) std::vector<sgNodeID_t>;
+   %template(vectorvectorSGNode) std::vector<std::vector<sgNodeID_t>>;
+   %template(vectorNode) std::vector<Node>;
+   %template(vectorNodeVisitor) std::vector<nodeVisitor>;
+   %template(vectorUINT16) std::vector<uint16_t >;
+   %template(vectorUINT64) std::vector<uint64_t>;
+   %template(vectorVectorUINT16) std::vector< std::vector <uint16_t > >;
+   %template(vectorVectorUINT64) std::vector< std::vector <uint64_t > >;
+   %template(vectorBool) std::vector<bool>;
+   %template(vectorMinPosIDX) std::vector<MinPosIDX>;
+   %template(vectorReadPosSize) std::vector< ReadPosSize >;
+   %template(vectorReadMapping) std::vector<ReadMapping>;
+   %template(vectorvectorReadMapping) std::vector<std::vector<ReadMapping>>;
+   %template(vectorLongReadMapping) std::vector<LongReadMapping>;
+   %template(vectorvectorLongReadMapping) std::vector<std::vector<LongReadMapping>>;
+   %template(vectorTagNeighbour) std::vector<TagNeighbour>;
+   %template(vectorvectorTagNeighbour) std::vector<std::vector<TagNeighbour>>;
+   %template(vectorHaplotypeScore) std::vector<HaplotypeScore>;
+
+   %ignore std::vector<LongReadMapper>::vector(size_type);
+   %ignore std::vector<LongReadMapper>::resize;
+   %template(vectorLongReadMapper) std::vector<LongReadMapper>;
+
+   %ignore std::vector<LinkedReadsMapper>::vector(size_type);
+   %ignore std::vector<LinkedReadsMapper>::resize;
+   %template(vectorLinkedReadMapper) std::vector<LinkedReadsMapper>;
+
+   %ignore std::vector<PairedReadsMapper>::vector(size_type);
+   %ignore std::vector<PairedReadsMapper>::resize;
+   %template(vectorPairedReadMapper) std::vector<PairedReadsMapper>;
+
+   %ignore std::vector<LinkedReadsDatastore>::vector(size_type);
+   %ignore std::vector<LinkedReadsDatastore>::resize;
+   %template(vectorLinkedReadsDatastore) std::vector<LinkedReadsDatastore>;
+
+   %ignore std::vector<LongReadsDatastore>::vector(size_type);
+   %ignore std::vector<LongReadsDatastore>::resize;
+   %template(vectorLongReadsDatastore) std::vector<LongReadsDatastore>;
+
+   %ignore std::vector<LongReadsDatastore>::vector(size_type);
+   %ignore std::vector<LongReadsDatastore>::resize;
+   %template(vectorLongReadsDatastore) std::vector<LongReadsDatastore>;
+
+   %template(SGNodePair) std::pair<sgNodeID_t, sgNodeID_t>;
+   %template(vectorSGNodePair) std::vector<std::pair<sgNodeID_t, sgNodeID_t>>;
+
+   %template(vectorKmerCount) std::vector<KmerCount>;
+
+   %template(set10xTag) std::set<bsg10xTag>;
+   %template(setSGNodePair) std::set<std::pair<sgNodeID_t, sgNodeID_t>>;
+   %template(setSGNode) std::set<sgNodeID_t>;
+
+   %template(usetUINT64) std::unordered_set<uint64_t>;
+   %template(usetUINT128) std::unordered_set<__uint128_t, int128_hash>;
+
+   %template(fastaReader) FastaReader<FastaRecord>;
+
+
+%define __STR__()
+std::string __str__() {
+  std::ostringstream out;
+  out << *$self;
+  return out.str().c_str();
+}
+%enddef
+
+%define __REPR__()
+std::string __repr__() {
+  std::ostringstream out;
+  out << "<" << *$self << ">";
+  return out.str().c_str();
+}
+%enddef
+
+%extend Link{
+    __STR__();
+    __REPR__();
+}
+
+%extend Node{
+    __STR__();
+    __REPR__();
+}
+
+%extend LongReadMapping{
+    __STR__();
+    __REPR__();
+};
+
+%extend KmerIDX{
+    __STR__();
+    __REPR__();
+};
+
+%extend MinPosIDX{
+    __STR__();
+    __REPR__();
+};
+
+%extend nodeVisitor{
+    __STR__();
+    __REPR__();
+};
+
+%pythoncode %{
+__version__ = "@bsg_VERSION@"
+__branch__ = "@GIT_BRANCH@"
+__commit__ = "@GIT_COMMIT_HASH@"
+%}
+
+%include "sdglib/factories/KMerFactory.hpp"
+%include "sdglib/types/MappingTypes.hpp"
+%include "sdglib/graph/SequenceGraphPath.hpp"
+%include "sdglib/graph/SequenceSubGraph.hpp"
+%include "sdglib/graph/SequenceDistanceGraph.hpp"
+%include "sdglib/indexers/UniqueKmerIndex.hpp"
+%include "sdglib/processors/KmerCompressionIndex.hpp"
+%include "sdglib/workspace/WorkSpace.hpp"
+%include "sdglib/factories/KMerCountFactory.hpp"
+
+%include "sdglib/processors/Untangler.hpp"
+
+%include "sdglib/datastores/LongReadsDatastore.hpp"
+%include "sdglib/datastores/PairedReadsDatastore.hpp"
+%include "sdglib/mappers/LongReadsMapper.hpp"
+%include "sdglib/mappers/LinkedReadsMapper.hpp"
+%include "sdglib/mappers/PairedReadsMapper.hpp"
+%include "sdglib/processors/LinkageUntangler.hpp"
+%include "sdglib/graph/DistanceGraph.hpp"
+
+%include "sdglib/processors/HaplotypeConsensus.hpp"

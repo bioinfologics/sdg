@@ -3,7 +3,7 @@
 //
 
 #include <catch.hpp>
-#include <sglib/factories/KMerIDXFactory.hpp>
+#include <sdglib/factories/KMerIDXFactory.hpp>
 
 TEST_CASE("StreamKmerIDXFactory generates all kmers") {
     unsigned int K(15);
