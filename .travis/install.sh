@@ -21,5 +21,5 @@ if [ "${TRAVIS_OS_NAME}" == linux ]; then
     export CMAKE_VER=cmake-${CMAKE_VERSION}
     export CMAKE_TAR=${CMAKE_VER}-Linux-x86_64.tar.gz
     export CMAKE_URL="https://cmake.org/files/v3.14/${CMAKE_TAR}"
-    wget -O cmake.tar.gz "${CMAKE_URL}" && mkdir cmake && cd cmake && tar xf ${HOME}/cmake.tar.gz --strip-components=1
+    mkdir -p ${HOME}/cmake && cd ${HOME}/cmake && wget -O - "${CMAKE_URL}" && tar xf --strip-components=1
 fi
