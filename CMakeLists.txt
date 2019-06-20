@@ -12,12 +12,16 @@ if (POLICY CMP0074)
     cmake_policy(SET CMP0074 NEW)
 endif (POLICY CMP0074)
 if (POLICY CMP0028)
-    cmake_policy(SET CMP0028 OLD)
+    cmake_policy(SET CMP0028 NEW)
 endif (POLICY CMP0028)
 
 if (POLICY CMP0078)
     cmake_policy(SET CMP0078 NEW)
 endif (POLICY CMP0078)
+
+if (POLICY CMP0086)
+    cmake_policy(SET CMP0086 OLD)
+endif (POLICY CMP0086)
 
 if (APPLE)
     set(CMAKE_MACOSX_RPATH ON)
@@ -344,9 +348,13 @@ IF(BUILD_PYTHON_INTERFACE)
     endif()
 
     set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY DEPENDS doxy2swig)
-    SWIG_ADD_LIBRARY(pysdg LANGUAGE python SOURCES ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i)
+    SWIG_ADD_LIBRARY(pysdg
+                     LANGUAGE python
+                     SOURCES ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i
+                     )
     SWIG_LINK_LIBRARIES(pysdg ${PYTHON_LIBRARIES} sdg_static)
-
+    set_target_properties(pysdg PROPERTIES
+                          LIBRARY_OUTPUT_DIRECTORY pysdg)
     install(TARGETS
             pysdg
             RUNTIME DESTINATION pysdg
