@@ -6,11 +6,11 @@ make sure to execute the cmake configuration with the BUILD_PYTHON_INTERFACE var
 
 `cmake -DBUILD_PYTHON_INTERFACE=ON`
 
-This will generate the `_pybsg.so` and `pybsg.py` files linked to the `libbsg` c++ library.
+This will generate the `_pysdg.so` and `pysdg.py` files under the `pysdg` directory linked to the `libsdg` c++ library.
 
 ## Using the python interface
 
-To use the interface in a python interpreter, make sure to make the `_bsg.so, libbsg and bsg.py`  files
+To use the interface in a python interpreter, make sure to make the `_pysdg.so, libsdg and pysdg.py`  files
 available to the interpreter either by `LD_LIBRARY_PATH` or `DYLIB_LIBRARY_PATH` (depending on your OS) or
 by copying the files to the working directory of the interpreter.
 
@@ -18,19 +18,19 @@ Another option is to append the location of the compiled `bsg` objects to the py
 
 ```python
 import sys
-sys.path.append("~/git_sources/bsg/build")
+sys.path.append("~/git_sources/sdg/build")
 ```
 
 The library should be available and can be loaded using, this command prints the library version:
 
 ```python
-import pybsg
+import pysdg as sdg
 ```
 
 Documentation for the functions is available to the user by doing:
 
 ```python
-bsg.SequenceGraph?
+sdg.SequenceDistanceGraph?
 ```
 
 as done usually within a python environment.

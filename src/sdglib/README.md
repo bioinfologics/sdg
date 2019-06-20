@@ -1,5 +1,5 @@
 # sdglib
-A basic sequence graph library.
+A sequence distance graph library.
 
 ## Design choices
 
