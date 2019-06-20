@@ -355,11 +355,11 @@ IF(BUILD_PYTHON_INTERFACE)
     SWIG_LINK_LIBRARIES(pysdg ${PYTHON_LIBRARIES} sdg_static)
     set_target_properties(pysdg PROPERTIES
                           LIBRARY_OUTPUT_DIRECTORY pysdg)
-    install(TARGETS
-            pysdg
-            RUNTIME DESTINATION pysdg
-            ARCHIVE DESTINATION pysdg
-            LIBRARY DESTINATION pysdg)
+#    install(TARGETS
+#            pysdg
+#            RUNTIME DESTINATION pysdg
+#            ARCHIVE DESTINATION pysdg
+#            LIBRARY DESTINATION pysdg)
 
 ENDIF()
 
