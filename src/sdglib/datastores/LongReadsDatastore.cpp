@@ -262,6 +262,14 @@ LongReadsDatastore &LongReadsDatastore::operator=(LongReadsDatastore const &o) {
     return *this;
 }
 
+LongReadsDatastore::LongReadsDatastore(const LongReadsDatastore &o) :
+    ws(o.ws),
+    mapper(*this, o.mapper),
+    read_to_fileRecord(o.read_to_fileRecord),
+    filename(o.filename),
+    file_containing_long_read_sequence(o.file_containing_long_read_sequence)
+    {}
+
 void BufferedSequenceGetter::write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids) {
     unsigned long size(read_ids.size());
 

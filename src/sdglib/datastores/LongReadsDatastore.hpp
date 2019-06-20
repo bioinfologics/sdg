@@ -46,9 +46,11 @@ class LongReadsDatastore {
 
 public:
     std::vector< ReadPosSize > read_to_fileRecord{ReadPosSize(0,0)};
+
     LongReadsDatastore(WorkSpace &ws, std::ifstream &infile);
     LongReadsDatastore(WorkSpace &ws, std::string filename, std::ifstream &input_file);
     LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o);
+    LongReadsDatastore(const LongReadsDatastore &o);
     /**
      * Initialize from already created index
      * @param filename
