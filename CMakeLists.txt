@@ -257,7 +257,7 @@ IF(BUILD_TESTING)
                 LINK_FLAGS    "--coverage -lgcov")
     ENDIF()
     target_link_libraries(runBasicTests sdg)
-    add_test(NAME basicTests COMMAND $<TARGET_FILE:${runBasicTests}>)
+    add_test(NAME basicTests COMMAND $<TARGET_FILE:runBasicTests>)
 ENDIF()
 
 # check if Doxygen is installed
