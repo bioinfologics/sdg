@@ -65,12 +65,14 @@ int main(int argc, char * argv[]) {
 
         //===== DATASTORE CREATION =====
         if (read_type == "10x" or read_type == "10xseq") {
-            LinkedReadsDatastore::build_from_fastq(read1, read2, output+".lrseq",(read_type == "10xseq" ? LinkedReadsFormat::seq
-                                                                                         : LinkedReadsFormat::UCDavis),max_readsize);
+            LinkedReadsDatastore::build_from_fastq(output + ".lrseq", read1, read2,
+                                                   (read_type == "10xseq" ? LinkedReadsFormat::seq
+                                                                          : LinkedReadsFormat::UCDavis), max_readsize,
+                                                   0);
             //ds.dump_index_to_disk(output+".lrIdx");
         }
         else if (read_type == "paired") {
-            PairedReadsDatastore::build_from_fastq(read1, read2, output+".prseq",min_readsize,max_readsize);
+            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, min_readsize, max_readsize, 0);
             //ds.dump_index_to_disk(output+".lrIdx");
         }
         else if (read_type == "long") {
