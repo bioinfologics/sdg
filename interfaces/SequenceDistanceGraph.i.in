@@ -93,13 +93,13 @@
    %template(vectorvectorTagNeighbour) std::vector<std::vector<TagNeighbour>>;
    %template(vectorHaplotypeScore) std::vector<HaplotypeScore>;
 
+   %ignore std::vector<PairedReadsDatastore>::vector(size_type);
+   %ignore std::vector<PairedReadsDatastore>::resize;
+   %template(vectorPairedReadsDatastore) std::vector<PairedReadsDatastore>;
+
    %ignore std::vector<LinkedReadsDatastore>::vector(size_type);
    %ignore std::vector<LinkedReadsDatastore>::resize;
    %template(vectorLinkedReadsDatastore) std::vector<LinkedReadsDatastore>;
-
-   %ignore std::vector<LongReadsDatastore>::vector(size_type);
-   %ignore std::vector<LongReadsDatastore>::resize;
-   %template(vectorLongReadsDatastore) std::vector<LongReadsDatastore>;
 
    %ignore std::vector<LongReadsDatastore>::vector(size_type);
    %ignore std::vector<LongReadsDatastore>::resize;

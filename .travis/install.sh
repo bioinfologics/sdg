@@ -16,4 +16,10 @@ if [ "${TRAVIS_OS_NAME}" == linux ]; then
     export DOXYGEN_URL="https://sourceforge.net/projects/doxygen/files/rel-${DOXYGEN_VERSION}/${DOXYGEN_TAR}/download"
     wget -O - "${DOXYGEN_URL}" | tar xz -C ${HOME} ${DOXYGEN_VER}/bin/doxygen &&
     mkdir -p ${HOME}/bin && mv ${HOME}/${DOXYGEN_VER}/bin/* ${HOME}/bin
+
+    export CMAKE_VERSION=3.14.3
+    export CMAKE_VER=cmake-${CMAKE_VERSION}
+    export CMAKE_TAR=${CMAKE_VER}-Linux-x86_64.tar.gz
+    export CMAKE_URL="https://cmake.org/files/v3.14/${CMAKE_TAR}"
+    mkdir -p ${HOME}/cmake && cd ${HOME}/cmake && wget -O - "${CMAKE_URL}" | tar -xzf - --strip-components=1
 fi

@@ -493,8 +493,6 @@ LongReadsMapper::LongReadsMapper(const SequenceDistanceGraph &_sdg, const LongRe
     reads_in_node.resize(sg.nodes.size());
 }
 
-LongReadsMapper::~LongReadsMapper() {}
-
 void LongReadsMapper::read(std::string filename) {
     std::ifstream inf(filename, std::ios_base::binary);
     read(inf);
@@ -547,10 +545,10 @@ void LongReadsMapper::read_read_paths(std::string filename) {
 }
 
 LongReadsMapper& LongReadsMapper::operator=(const LongReadsMapper &other) {
-    if (&sg != &other.sg and &datastore != &other.datastore) { throw std::runtime_error("Can only copy paths from the same SequenceDistanceGraph"); }
     if (&other == this) {
         return *this;
     }
+    if (&sg != &other.sg and &datastore != &other.datastore) { throw std::runtime_error("Can only LongReadsMappers from the same SequenceDistanceGraph and LongReadsDatastore"); }
     sat_kmer_index = other.sat_kmer_index;
     k = other.k;
     mappings = other.mappings;
@@ -1030,3 +1028,13 @@ std::vector<sgNodeID_t> LongReadsMapper::create_read_path(uint32_t rid, const Re
     read_path.emplace_back(mappings.back().node);
     return read_path;
 }
+
+LongReadsMapper::LongReadsMapper(const LongReadsDatastore &ds, const LongReadsMapper &o) :
+datastore(ds),
+sg(o.sg),
+reads_in_node(o.reads_in_node),
+read_paths(o.read_paths),
+first_mapping(o.first_mapping),
+k(o.k),
+filtered_read_mappings(o.filtered_read_mappings)
+{}
