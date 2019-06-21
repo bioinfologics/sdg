@@ -53,11 +53,11 @@ void LongReadsDatastore::load_index(std::string &file) {
 }
 
 void LongReadsDatastore::build_from_fastq(std::string output_file, std::string long_read_file) {
-    uint32_t nReads(0);
+    uint64_t nReads(0);
     std::vector<ReadPosSize> read_to_file_record;
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
     if (!ofs) {
-        std::cerr << "Failed to open " << output_file <<": " << strerror(errno);
+        std::cerr << "Failed to open output in " << output_file <<": " << strerror(errno);
         throw std::runtime_error("Could not open " + output_file);
     }
     std::streampos fPos;
@@ -68,12 +68,11 @@ void LongReadsDatastore::build_from_fastq(std::string output_file, std::string l
 
     ofs.write((char*) &nReads, sizeof(nReads));
     ofs.write((char*) &fPos, sizeof(fPos));
-    int infile = ::open(long_read_file.c_str(), O_RDONLY);
-    if (!infile) {
-        std::cerr << "Failed to open " << long_read_file << ": " << strerror(errno);
+    std::ifstream fastq_ifstream(long_read_file);
+    if (!fastq_ifstream) {
+        std::cerr << "Failed to open input in " << long_read_file << ": " << strerror(errno);
         throw std::runtime_error("Could not open " + long_read_file);
     }
-    std::ifstream fastq_ifstream(long_read_file);
     std::string name,seq,p,qual;
     while(fastq_ifstream.good()) {
         std::getline(fastq_ifstream, name);

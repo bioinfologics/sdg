@@ -47,7 +47,9 @@ void LinkedReadsDatastore::print_status() {
     mapper.print_status();
 }
 
-void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int _rs, size_t chunksize) {
+void LinkedReadsDatastore::build_from_fastq(std::string read1_filename, std::string read2_filename,
+                                            std::string output_filename, LinkedReadsFormat format, uint64_t readsize,
+                                            size_t chunksize) {
     std::vector<uint32_t> read_tag;
     //std::cout<<"Memory used by every read's entry:"<< sizeof(LinkedRead)<<std::endl;
     //read each read, put it on the index and on the appropriate tag
@@ -142,13 +144,13 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
 
             sdglib::OutputLog()<<readdatav.size()<<" pairs dumping on chunk "<<chunkfiles.size()<<std::endl;
             //add file to vector of files
-            char buffer[2*_rs+2];
+            char buffer[2*readsize+2];
             for (auto &r:readdatav){
                 ofile.write((const char * ) &r.tag,sizeof(r.tag));
-                bzero(buffer,2*_rs+2);
-                memcpy(buffer,r.seq1.data(),(r.seq1.size()>_rs ? _rs : r.seq1.size()));
-                memcpy(buffer+_rs+1,r.seq2.data(),(r.seq2.size()>_rs ? _rs : r.seq2.size()));
-                ofile.write(buffer,2*_rs+2);
+                bzero(buffer,2*readsize+2);
+                memcpy(buffer,r.seq1.data(),(r.seq1.size()>readsize ? readsize : r.seq1.size()));
+                memcpy(buffer+readsize+1,r.seq2.data(),(r.seq2.size()>readsize ? readsize : r.seq2.size()));
+                ofile.write(buffer,2*readsize+2);
             }
             ofile.close();
             chunkfiles.emplace_back("sorted_chunk_"+std::to_string(chunkfiles.size())+".data");
@@ -173,13 +175,13 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
         }
         sdglib::OutputLog() << readdatav.size() << " pairs dumping on chunk " << chunkfiles.size() << std::endl;
         //add file to vector of files
-        char buffer[2 * _rs + 2];
+        char buffer[2 * readsize + 2];
         for (auto &r:readdatav) {
             ofile.write((const char *) &r.tag, sizeof(r.tag));
-            bzero(buffer, 2 * _rs + 2);
-            memcpy(buffer, r.seq1.data(), (r.seq1.size() > _rs ? _rs : r.seq1.size()));
-            memcpy(buffer + _rs + 1, r.seq2.data(), (r.seq2.size() > _rs ? _rs : r.seq2.size()));
-            ofile.write(buffer, 2 * _rs + 2);
+            bzero(buffer, 2 * readsize + 2);
+            memcpy(buffer, r.seq1.data(), (r.seq1.size() > readsize ? readsize : r.seq1.size()));
+            memcpy(buffer + readsize + 1, r.seq2.data(), (r.seq2.size() > readsize ? readsize : r.seq2.size()));
+            ofile.write(buffer, 2 * readsize + 2);
         }
         ofile.close();
         chunkfiles.emplace_back("sorted_chunk_" + std::to_string(chunkfiles.size()) + ".data");
@@ -203,7 +205,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     BSG_FILETYPE type(LinkedDS_FT);
     output.write((char *) &type, sizeof(type));
 
-    output.write((const char *) &_rs,sizeof(readsize));
+    output.write((const char *) &readsize,sizeof(readsize));
     read_tag.resize(pairs);
     sdglib::OutputLog() << "leaving space for " <<pairs<<" read_tag entries"<< std::endl;
     uint64_t rts=read_tag.size();
@@ -212,7 +214,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     //multi_way merge of the chunks
     int openfiles=chunkfiles.size();
     bsg10xTag next_tags[chunkfiles.size()];
-    char buffer[2 * _rs + 2];
+    char buffer[2 * readsize + 2];
     //read a bit from each file
     for (auto i=0;i<chunkfiles.size();++i) chunkfiles[i].read((char *)&next_tags[i],sizeof(bsg10xTag));
     read_tag.clear();
@@ -224,8 +226,8 @@ void LinkedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
         for (auto i=0;i<chunkfiles.size();++i){
             while (!chunkfiles[i].eof() and next_tags[i]==mintag){
                 //read buffer from file and write to final file
-                chunkfiles[i].read(buffer,2*_rs+2);
-                output.write(buffer,2*_rs+2);
+                chunkfiles[i].read(buffer,2*readsize+2);
+                output.write(buffer,2*readsize+2);
                 read_tag.push_back(mintag);
                 //read next tag... eof? tag=UINT32_MAX
                 chunkfiles[i].read((char *)&next_tags[i],sizeof(bsg10xTag));

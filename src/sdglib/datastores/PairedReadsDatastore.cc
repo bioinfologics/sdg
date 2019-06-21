@@ -17,7 +17,7 @@ void PairedReadsDatastore::print_status() {
     mapper.print_status();
 }
 
-void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, int _min_rs, int _rs, size_t chunksize) {
+void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, uint64_t _min_rs, uint64_t _rs, size_t chunksize) {
 
     //std::cout<<"Memory used by every read's entry:"<< sizeof(PairedRead)<<std::endl;
     //read each read, put it on the index and on the appropriate tag
