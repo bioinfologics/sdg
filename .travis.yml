@@ -36,6 +36,7 @@ script:
   - .travis/build.sh
 
 install:
+  - pip install sphinx breathe
   - .travis/install.sh
 
 after_success:
