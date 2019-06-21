@@ -40,6 +40,7 @@ script:
 install:
   - pip3 install --upgrade pip
   - pip3 install --user virtualenv --upgrade
+  - virtualenv venv
   - source venv/bin/activate
   - pip3 install sphinx breathe recommonmark sphinx-rtd-theme sphinxcontrib-bibtex Pygments
   - .travis/install.sh
