@@ -20,6 +20,7 @@ matrix:
             - r-base
             - r-base-dev
             - python3
+            - python3-pip
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && GCOV=gcov-6 && DEPLOY=true"
         - CMAKE_OPTIONS="-DDOXYGEN_EXECUTABLE=${HOME}/bin/doxygen -DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 -DBUILD_PYTHON_INTERFACE=ON -DBUILD_R_INTERFACE=ON -DBUILD_COV=ON -DBUILD_DOC=ON"
