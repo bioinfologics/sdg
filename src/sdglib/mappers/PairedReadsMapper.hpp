@@ -87,7 +87,7 @@ public:
      */
     void print_status();
 
-    PairedReadsMapper operator=(const PairedReadsMapper &other);
+    PairedReadsMapper& operator=(const PairedReadsMapper &other);
 
     /** @brief Returns a collection of read ids that have both ends mapped to the nodeID.
      *
