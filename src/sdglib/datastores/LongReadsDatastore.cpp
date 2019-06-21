@@ -20,7 +20,7 @@ void LongReadsDatastore::load_index(std::string &file) {
 
     }
 
-    uint32_t nReads(0);
+    uint64_t nReads(0);
     std::streampos fPos;
 
     bsgMagic_t magic;
