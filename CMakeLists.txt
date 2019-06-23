@@ -30,6 +30,7 @@ endif (APPLE)
 
 PROJECT (sdg VERSION 0.1)
 
+SET(CMAKE_RULE_MESSAGES OFF)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 INCLUDE(FindPythonModule)
 ENABLE_TESTING()
@@ -283,18 +284,13 @@ IF(BUILD_DOC)
                            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                            MAIN_DEPENDENCY Doxyfile
                            COMMENT "Generating docs")
-        add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE} ${DOXYGEN_OUT})
+        add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_OUT})
 
-        add_custom_command(
-                COMMAND ${CMAKE_SOURCE_DIR}/doxy2swig.py --quiet docs/xml/index.xml ${CMAKE_BINARY_DIR}/python_docs.i
-                OUTPUT ${CMAKE_BINARY_DIR}/python_docs.i
-                COMMENT "Generating python_docs.i from Doxygen output for use by SWIG"
-                MAIN_DEPENDENCY ${DOXYGEN_INDEX_FILE}
-        )
-        add_custom_target(doxy2swig ALL DEPENDS ${CMAKE_BINARY_DIR}/python_docs.i ${DOXYGEN_INDEX_FILE})
+        FIND_PACKAGE(PythonInterp 3)
+        FIND_PACKAGE(PythonLibs 3)
 
         find_package(Sphinx)
-        if(SPHINX_FOUND)
+        if(SPHINX_FOUND AND NOT PYTHON_EXECUTABLE EQUAL "")
             find_python_module(breathe)
             if(PY_BREATHE)
                 set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx)
@@ -316,24 +312,24 @@ IF(BUILD_DOC)
                                    ${DOXYGEN_INDEX_FILE}
                                    MAIN_DEPENDENCY ${SPHINX_SOURCE}/conf.py
                                    COMMENT "Generating documentation with Sphinx, WD: ${CMAKE_CURRENT_BINARY_DIR}")
-                add_custom_target(Sphinx ALL DEPENDS ${SPHINX_INDEX_FILE} ${DOXYGEN_INDEX_FILE})
+                add_custom_target(Sphinx ALL DEPENDS ${SPHINX_INDEX_FILE})
             endif(PY_BREATHE)
-        endif(SPHINX_FOUND)
+        endif(SPHINX_FOUND AND NOT PYTHON_EXECUTABLE EQUAL "")
     else (DOXYGEN_FOUND)
         message("Doxygen need to be installed to generate the doxygen documentation")
     endif (DOXYGEN_FOUND)
 ENDIF()
 
 IF(BUILD_PYTHON_INTERFACE)
+    FIND_PACKAGE(PythonInterp 3 REQUIRED)
+    FIND_PACKAGE(PythonLibs 3 REQUIRED)
+
     MESSAGE("Building python interface")
     FIND_PACKAGE(SWIG REQUIRED)
     INCLUDE(${SWIG_USE_FILE})
     set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/pysdg)
     configure_file(interfaces/python/__init__.py.in pysdg/__init__.py)
     configure_file(interfaces/SequenceDistanceGraph.i.in SequenceDistanceGraph.i)
-
-    FIND_PACKAGE(PythonInterp 3 REQUIRED)
-    FIND_PACKAGE(PythonLibs 3 REQUIRED)
 
     INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
 
@@ -347,7 +343,7 @@ IF(BUILD_PYTHON_INTERFACE)
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
     endif()
 
-    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY DEPENDS doxy2swig)
+    SET_PROPERTY(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY CMAKE_SWIG_FLAGS "-doxygen")
     SWIG_ADD_LIBRARY(pysdg
                      LANGUAGE python
                      SOURCES ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i
@@ -360,7 +356,6 @@ IF(BUILD_PYTHON_INTERFACE)
             RUNTIME DESTINATION pysdg
             ARCHIVE DESTINATION pysdg
             LIBRARY DESTINATION pysdg)
-
 ENDIF()
 
 IF(BUILD_R_INTERFACE)
