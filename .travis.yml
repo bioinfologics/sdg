@@ -39,6 +39,7 @@ script:
 
 install:
   - pip3 install --upgrade pip
+  - export PATH="${HOME}"/Library/Python/3.7/bin:"${PATH}"
   - pip3 install --user virtualenv --upgrade
   - virtualenv venv
   - source venv/bin/activate
