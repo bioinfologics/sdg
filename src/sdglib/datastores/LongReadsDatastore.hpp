@@ -64,7 +64,7 @@ public:
     std::vector< ReadPosSize > read_to_fileRecord{ReadPosSize(0,0)};
 
     LongReadsDatastore(WorkSpace &ws, std::ifstream &infile);
-    LongReadsDatastore(WorkSpace &ws, std::string filename, std::ifstream &input_file);
+    LongReadsDatastore(WorkSpace &ws, const std::string &filename, std::ifstream &input_file);
     LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o);
     LongReadsDatastore(const LongReadsDatastore &o);
     /**
@@ -81,11 +81,11 @@ public:
      *
      * Initialises the memory mapping of the reads file
      */
-    LongReadsDatastore(WorkSpace &ws, std::string long_read_file, std::string output_file);
+    LongReadsDatastore(WorkSpace &ws, const std::string &long_read_file, const std::string &output_file);
 
     LongReadsDatastore& operator=(LongReadsDatastore const &o);
-    uint32_t build_from_fastq(std::ofstream &outf, std::string long_read_file);
-    static void build_from_fastq(std::string outf, std::string long_read_file);
+    uint32_t build_from_fastq(std::ofstream &outf, const std::string &long_read_file);
+    static void build_from_fastq(const std::string &output_file, const std::string &long_read_file);
     void print_status();
     void read(std::ifstream &ifs);
     void write(std::ofstream &output_file);

@@ -1,3 +1,5 @@
+#include <memory>
+
 //
 // Created by Luis Yanes (EI) on 23/03/2018.
 //
@@ -12,10 +14,10 @@ const bsgVersion_t LongReadsDatastore::min_compat = 0x0002;
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string filename) : filename(filename), ws(ws), mapper(ws, *this) {
     load_index(filename);
-    this->seq_getter.reset(new BufferedSequenceGetter(*this));
+    this->seq_getter = std::make_unique<BufferedSequenceGetter>(*this);
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string long_read_file, std::string output_file) : filename(output_file), ws(ws), mapper(ws, *this) {
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_read_file, const std::string &output_file) : filename(output_file), ws(ws), mapper(ws, *this) {
     uint32_t nReads(0);
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
     if (!ofs) {
@@ -38,16 +40,15 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string long_read_file
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
     ofs.flush();                                    // Make sure everything has been written
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<size()-1<<" reads"<<std::endl;
-    this->seq_getter.reset(new BufferedSequenceGetter(*this));
+    this->seq_getter = std::make_unique<BufferedSequenceGetter>(*this);
 }
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::ifstream &infile) : filename(), ws(ws), mapper(ws, *this) {
     read(infile);
-    this->seq_getter.reset(new BufferedSequenceGetter(*this));
+    this->seq_getter = std::make_unique<BufferedSequenceGetter>(*this);
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string file_name, std::ifstream &input_file) : ws(ws), mapper(ws, *this) {
-    filename = file_name;
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &filename, std::ifstream &input_file) : filename(filename), ws(ws), mapper(ws, *this) {
     bsgMagic_t magic;
     bsgVersion_t version;
     BSG_FILETYPE type;
@@ -56,7 +57,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string file_name, std
     input_file.read((char *) &type, sizeof(type));
 
     if (magic != BSG_MAGIC) {
-        throw std::runtime_error(file_name + " appears to be corrupted");
+        throw std::runtime_error(filename + " appears to be corrupted");
     }
 
     if (version < min_compat) {
@@ -81,7 +82,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string file_name, std
         read_to_fileRecord[i].record_size=readSize;
     }
 
-    this->seq_getter.reset(new BufferedSequenceGetter(*this));
+    this->seq_getter = std::make_unique<BufferedSequenceGetter>(*this);
 
 }
 
@@ -94,7 +95,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : f
     this->mapper.read_paths = o.mapper.read_paths;
     this->mapper.all_paths_between = o.mapper.all_paths_between;
 
-    this->seq_getter.reset(new BufferedSequenceGetter(*this));
+    this->seq_getter = std::make_unique<BufferedSequenceGetter>(*this);
 
 }
 
@@ -106,7 +107,7 @@ LongReadsDatastore &LongReadsDatastore::operator=(LongReadsDatastore const &o) {
     this->read_to_fileRecord = o.read_to_fileRecord;
 
     this->mapper = o.mapper;
-    this->seq_getter.reset(new BufferedSequenceGetter(*this));
+    this->seq_getter = std::make_unique<BufferedSequenceGetter>(*this);
     return *this;
 }
 
@@ -116,7 +117,6 @@ LongReadsDatastore::LongReadsDatastore(const LongReadsDatastore &o) :
         read_to_fileRecord(o.read_to_fileRecord),
         filename(o.filename)
 {
-
 }
 
 void LongReadsDatastore::load_index(std::string &file) {
@@ -161,7 +161,7 @@ void LongReadsDatastore::load_index(std::string &file) {
     sdglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()-1<<std::endl;
 }
 
-void LongReadsDatastore::build_from_fastq(std::string output_file, std::string long_read_file) {
+void LongReadsDatastore::build_from_fastq(const std::string &output_file, const std::string &long_read_file) {
     uint64_t nReads(0);
     std::vector<ReadPosSize> read_to_file_record;
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
@@ -203,9 +203,8 @@ void LongReadsDatastore::build_from_fastq(std::string output_file, std::string l
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<read_to_file_record.size()-1<<" reads"<<std::endl;
 }
 
-uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, std::string long_read_file) {
+uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, const std::string &long_read_file) {
     // open the file
-    uint32_t numRecords(0);
     std::ifstream fastq_ifstream(long_read_file);
     if (!fastq_ifstream) {
         std::cerr << "Failed to open " << long_read_file <<": " << strerror(errno);
@@ -280,7 +279,7 @@ BufferedSequenceGetter::BufferedSequenceGetter(const LongReadsDatastore &_ds, si
         perror(msg.c_str());
         throw std::runtime_error("Cannot open " + datastore.filename);
     }
-    struct stat f_stat;
+    struct stat f_stat{};
     stat(_ds.filename.c_str(), &f_stat);
     total_size = f_stat.st_size;
     buffer=(char *)malloc(bufsize);
@@ -303,8 +302,8 @@ void BufferedSequenceGetter::write_selection(std::ofstream &output_file, const s
 
     output_file.write((char *) &size, sizeof(size)); // How many reads we will write in the file
     const char* seq_ptr;
-    for (auto i=0;i<read_ids.size();i++) {
-        seq_ptr = get_read_sequence(read_ids[i]);
+    for (unsigned long long read_id : read_ids) {
+        seq_ptr = get_read_sequence(read_id);
         std::string seq(seq_ptr);
         size=seq.size();
         output_file.write((char *) &size,sizeof(size)); // Read length
