@@ -22,7 +22,7 @@ export CMAKE_VER=cmake-${CMAKE_VERSION}
 if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
     export CMAKE_TAR=${CMAKE_VER}-Darwin-x86_64.tar.gz
     export CMAKE_URL="https://cmake.org/files/v3.14/${CMAKE_TAR}"
-    mkdir -p ${HOME}/cmake && cd ${HOME}/cmake && wget -O - "${CMAKE_URL}" | tar --strip-components=3 -xzf - ${CMAKE_VER}-Darwin-x86_64/CMake.app/Contents/bin/
+    mkdir -p ${HOME}/cmake && cd ${HOME}/cmake && wget -O - "${CMAKE_URL}" | tar --strip-components=3 -xzf - ${CMAKE_VER}-Darwin-x86_64/CMake.app/Contents/
 else
     export CMAKE_TAR=${CMAKE_VER}-Linux-x86_64.tar.gz
     export CMAKE_URL="https://cmake.org/files/v3.14/${CMAKE_TAR}"
