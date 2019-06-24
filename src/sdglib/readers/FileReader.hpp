@@ -14,7 +14,7 @@
 #include "kseq.hpp"
 
 struct FastxReaderParams {
-    uint32_t min_length;
+    uint32_t min_length=0;
 };
 
 struct FastaRecord {

@@ -10,6 +10,111 @@
 
 const bsgVersion_t LongReadsDatastore::min_compat = 0x0002;
 
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string filename) : ws(ws), mapper(ws, *this), seq_getter(*this) {
+    load_index(filename);
+}
+
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string long_read_file, std::string output_file) : ws(ws), mapper(ws, *this), seq_getter(*this) {
+    filename = output_file;
+
+    uint32_t nReads(0);
+    std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
+    if (!ofs) {
+        std::cerr << "Failed to open " << output_file <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + output_file);
+    }
+    std::streampos fPos;
+    ofs.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
+    ofs.write((const char *) &BSG_VN, sizeof(BSG_VN));
+    BSG_FILETYPE type(LongDS_FT);
+    ofs.write((char *) &type, sizeof(type));
+
+    ofs.write((char*) &nReads, sizeof(nReads));
+    ofs.write((char*) &fPos, sizeof(fPos));
+    nReads = build_from_fastq(ofs, long_read_file); // Build read_to_fileRecord
+    fPos = ofs.tellp();                             // Write position after reads
+    ofs.write((char *)read_to_fileRecord.data(),read_to_fileRecord.size()*sizeof(read_to_fileRecord[0]));
+    ofs.seekp(sizeof(BSG_MAGIC)+sizeof(BSG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
+    ofs.write((char*) &nReads, sizeof(nReads));     // Dump # of reads
+    ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
+    ofs.flush();                                    // Make sure everything has been written
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<size()-1<<" reads"<<std::endl;
+}
+
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper(ws, *this), seq_getter(*this) {
+    read(infile);
+}
+
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string file_name, std::ifstream &input_file) : ws(ws), mapper(ws, *this), seq_getter(*this) {
+    file_containing_long_read_sequence = file_name;
+    bsgMagic_t magic;
+    bsgVersion_t version;
+    BSG_FILETYPE type;
+    input_file.read((char *) &magic, sizeof(magic));
+    input_file.read((char *) &version, sizeof(version));
+    input_file.read((char *) &type, sizeof(type));
+
+    if (magic != BSG_MAGIC) {
+        throw std::runtime_error(file_name + " appears to be corrupted");
+    }
+
+    if (version < min_compat) {
+        throw std::runtime_error("Incompatible version");
+    }
+
+    if (type != LongDS_FT) {
+        throw std::runtime_error("Incompatible file type");
+    }
+
+    // Equivalente de read_rtfr
+    size_t numReads(0);
+    input_file.read((char *) numReads, sizeof(numReads));
+    read_to_fileRecord.resize(numReads);
+    for (auto i=0; i<numReads; i++) {
+        read_to_fileRecord[i].offset=input_file.tellg();
+        uint32_t readSize(0);
+        input_file.read((char *) &readSize, sizeof(readSize));
+        std::string seq;
+        seq.resize(readSize);
+        input_file.read(&seq[0], readSize);
+        read_to_fileRecord[i].record_size=readSize;
+    }
+}
+
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : ws(ws), mapper(ws, *this), seq_getter(*this) {
+    this->filename = o.filename;
+    this->file_containing_long_read_sequence = o.file_containing_long_read_sequence;
+    this->read_to_fileRecord = o.read_to_fileRecord;
+
+    this->mapper.reads_in_node = o.mapper.reads_in_node;
+    this->mapper.filtered_read_mappings = o.mapper.filtered_read_mappings;
+    this->mapper.first_mapping = o.mapper.first_mapping;
+    this->mapper.read_paths = o.mapper.read_paths;
+    this->mapper.all_paths_between = o.mapper.all_paths_between;
+}
+
+LongReadsDatastore &LongReadsDatastore::operator=(LongReadsDatastore const &o) {
+    if (&o == this) return *this;
+
+    this->filename = o.filename;
+    this->ws = o.ws;
+    this->read_to_fileRecord = o.read_to_fileRecord;
+    this->file_containing_long_read_sequence = o.file_containing_long_read_sequence;
+
+    this->mapper = o.mapper;
+    return *this;
+}
+
+LongReadsDatastore::LongReadsDatastore(const LongReadsDatastore &o) :
+        ws(o.ws),
+        mapper(*this, o.mapper),
+        read_to_fileRecord(o.read_to_fileRecord),
+        filename(o.filename),
+        file_containing_long_read_sequence(o.file_containing_long_read_sequence),
+        seq_getter(*this)
+{
+}
+
 void LongReadsDatastore::load_index(std::string &file) {
     filename = file;
 
@@ -73,18 +178,15 @@ void LongReadsDatastore::build_from_fastq(std::string output_file, std::string l
         std::cerr << "Failed to open input in " << long_read_file << ": " << strerror(errno);
         throw std::runtime_error("Could not open " + long_read_file);
     }
-    std::string name,seq,p,qual;
-    while(fastq_ifstream.good()) {
-        std::getline(fastq_ifstream, name);
-        std::getline(fastq_ifstream, seq);
-        if (!seq.empty()) {
-            uint32_t size = seq.size();
+    FastqReader<FastqRecord> reader({}, long_read_file);
+    FastqRecord rec;
+    while(reader.next_record(rec)) {
+        if (!rec.seq.empty()) {
+            uint32_t size = rec.seq.size();
             auto offset = ofs.tellp();
             read_to_file_record.emplace_back((off_t)offset,size);
-            ofs.write((char*)seq.c_str(), size+1);//+1 writes the \0
+            ofs.write((char*)rec.seq.c_str(), size+1);//+1 writes the \0
         }
-        std::getline(fastq_ifstream, p);
-        std::getline(fastq_ifstream, qual);
         ++nReads;
     }
     read_to_file_record.pop_back();
@@ -96,6 +198,7 @@ void LongReadsDatastore::build_from_fastq(std::string output_file, std::string l
     ofs.flush();                                    // Make sure everything has been written
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<read_to_file_record.size()-1<<" reads"<<std::endl;
 }
+
 uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, std::string long_read_file) {
     // open the file
     uint32_t numRecords(0);
@@ -104,19 +207,15 @@ uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, std::string l
         std::cerr << "Failed to open " << long_read_file <<": " << strerror(errno);
         throw std::runtime_error("Could not open " + long_read_file);
     }
-    std::string name,seq,p,qual;
-    while(fastq_ifstream.good()) {
-        std::getline(fastq_ifstream, name);
-        std::getline(fastq_ifstream, seq);
-        if (!seq.empty()) {
-            uint32_t size = seq.size();
+    FastqReader<FastqRecord> reader({}, long_read_file);
+    FastqRecord rec;
+    while(reader.next_record(rec)) {
+        if (!rec.seq.empty()) {
+            uint32_t size = rec.seq.size();
             auto offset = outf.tellp();
             read_to_fileRecord.emplace_back((off_t)offset,size);
-            outf.write((char*)seq.c_str(), size+1);//+1 writes the \0
+            outf.write((char*)rec.seq.c_str(), size+1);//+1 writes the \0
         }
-        std::getline(fastq_ifstream, p);
-        std::getline(fastq_ifstream, qual);
-        ++numRecords;
     }
     read_to_fileRecord.pop_back();
     return static_cast<uint32_t>(read_to_fileRecord.size());
@@ -165,109 +264,29 @@ void LongReadsDatastore::write(std::ofstream &output_file) {
     output_file.write((char *)filename.data(),s*sizeof(filename[0]));
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string filename) : ws(ws), mapper(ws, *this) {
-    load_index(filename);
+std::string LongReadsDatastore::get_read_sequence(size_t readID) {
+    return seq_getter.get_read_sequence(readID);
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string long_read_file, std::string output_file) : ws(ws), mapper(ws, *this) {
-    filename = output_file;
-
-    uint32_t nReads(0);
-    std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
-    if (!ofs) {
-        std::cerr << "Failed to open " << output_file <<": " << strerror(errno);
-        throw std::runtime_error("Could not open " + output_file);
+BufferedSequenceGetter::BufferedSequenceGetter(const LongReadsDatastore &_ds, size_t _bufsize, size_t _chunk_size):
+        datastore(_ds),bufsize(_bufsize),chunk_size(_chunk_size){
+    fd=open(datastore.filename.c_str(),O_RDONLY);
+    if (fd == -1) {
+        std::string msg("Cannot open file " + datastore.filename);
+        perror(msg.c_str());
+        throw std::runtime_error("Cannot open " + datastore.filename);
     }
-    std::streampos fPos;
-    ofs.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    ofs.write((const char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(LongDS_FT);
-    ofs.write((char *) &type, sizeof(type));
-
-    ofs.write((char*) &nReads, sizeof(nReads));
-    ofs.write((char*) &fPos, sizeof(fPos));
-    nReads = build_from_fastq(ofs, long_read_file); // Build read_to_fileRecord
-    fPos = ofs.tellp();                             // Write position after reads
-    ofs.write((char *)read_to_fileRecord.data(),read_to_fileRecord.size()*sizeof(read_to_fileRecord[0]));
-    ofs.seekp(sizeof(BSG_MAGIC)+sizeof(BSG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
-    ofs.write((char*) &nReads, sizeof(nReads));     // Dump # of reads
-    ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
-    ofs.flush();                                    // Make sure everything has been written
-    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<size()-1<<" reads"<<std::endl;
+    struct stat f_stat;
+    stat(_ds.filename.c_str(), &f_stat);
+    total_size = f_stat.st_size;
+    buffer=(char *)malloc(bufsize);
 }
+const char * get_read_sequence(uint64_t readID);
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper(ws, *this) {
-    read(infile);
+BufferedSequenceGetter::~BufferedSequenceGetter(){
+    free(buffer);
+    if(fd) close(fd);
 }
-
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string file_name, std::ifstream &input_file) : ws(ws), mapper(ws, *this) {
-    file_containing_long_read_sequence = file_name;
-
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
-    input_file.read((char *) &magic, sizeof(magic));
-    input_file.read((char *) &version, sizeof(version));
-    input_file.read((char *) &type, sizeof(type));
-
-    if (magic != BSG_MAGIC) {
-        throw std::runtime_error(file_name + " appears to be corrupted");
-    }
-
-    if (version < min_compat) {
-        throw std::runtime_error("Incompatible version");
-    }
-
-    if (type != LongDS_FT) {
-        throw std::runtime_error("Incompatible file type");
-    }
-
-    // Equivalente de read_rtfr
-    size_t numReads(0);
-    input_file.read((char *) numReads, sizeof(numReads));
-    read_to_fileRecord.resize(numReads);
-    for (auto i=0; i<numReads; i++) {
-        read_to_fileRecord[i].offset=input_file.tellg();
-        uint32_t readSize(0);
-        input_file.read((char *) &readSize, sizeof(readSize));
-        std::string seq;
-        seq.resize(readSize);
-        input_file.read(&seq[0], readSize);
-        read_to_fileRecord[i].record_size=readSize;
-    }
-}
-
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : ws(ws), mapper(ws, *this) {
-    this->filename = o.filename;
-    this->file_containing_long_read_sequence = o.file_containing_long_read_sequence;
-    this->read_to_fileRecord = o.read_to_fileRecord;
-
-    this->mapper.reads_in_node = o.mapper.reads_in_node;
-    this->mapper.filtered_read_mappings = o.mapper.filtered_read_mappings;
-    this->mapper.first_mapping = o.mapper.first_mapping;
-    this->mapper.read_paths = o.mapper.read_paths;
-    this->mapper.all_paths_between = o.mapper.all_paths_between;
-}
-
-LongReadsDatastore &LongReadsDatastore::operator=(LongReadsDatastore const &o) {
-    if (&o == this) return *this;
-
-    this->filename = o.filename;
-    this->ws = o.ws;
-    this->read_to_fileRecord = o.read_to_fileRecord;
-    this->file_containing_long_read_sequence = o.file_containing_long_read_sequence;
-
-    this->mapper = o.mapper;
-    return *this;
-}
-
-LongReadsDatastore::LongReadsDatastore(const LongReadsDatastore &o) :
-    ws(o.ws),
-    mapper(*this, o.mapper),
-    read_to_fileRecord(o.read_to_fileRecord),
-    filename(o.filename),
-    file_containing_long_read_sequence(o.file_containing_long_read_sequence)
-    {}
 
 void BufferedSequenceGetter::write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids) {
     unsigned long size(read_ids.size());

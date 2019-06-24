@@ -36,6 +36,23 @@ struct ReadPosSize {
     }
 };
 
+// Check if this needs to be page size aware
+class BufferedSequenceGetter{
+public:
+    BufferedSequenceGetter(const LongReadsDatastore &_ds, size_t _bufsize = (1024*1024*30ul), size_t _chunk_size = (1024*1024*4ul));
+    const char * get_read_sequence(uint64_t readID);
+    ~BufferedSequenceGetter();
+    void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids);
+
+private:
+    const LongReadsDatastore &datastore;
+    char * buffer;
+    size_t bufsize,chunk_size;
+    off_t buffer_offset = std::numeric_limits<off_t>::max();
+    int fd;
+    off_t total_size=0;
+};
+
 class LongReadsDatastore {
 
     std::string file_containing_long_read_sequence;
@@ -73,45 +90,13 @@ public:
     void print_status();
     void read(std::ifstream &ifs);
     void write(std::ofstream &output_file);
-
     size_t size() const { return read_to_fileRecord.size(); }
+
+    std::string get_read_sequence(size_t readID);
 
     std::string filename;
     static const bsgVersion_t min_compat;
 
     LongReadsMapper mapper;
-};
-
-// Check if this needs to be page size aware
-class BufferedSequenceGetter{
-public:
-    BufferedSequenceGetter(const LongReadsDatastore &_ds, size_t _bufsize = (1024*1024*30ul), size_t _chunk_size = (1024*1024*4ul)):
-            datastore(_ds),bufsize(_bufsize),chunk_size(_chunk_size){
-        fd=open(datastore.filename.c_str(),O_RDONLY);
-        if (fd == -1) {
-            std::string msg("Cannot open file " + datastore.filename);
-            perror(msg.c_str());
-            throw std::runtime_error("Cannot open " + datastore.filename);
-        }
-        struct stat f_stat;
-        stat(_ds.filename.c_str(), &f_stat);
-        total_size = f_stat.st_size;
-        buffer=(char *)malloc(bufsize);
-    }
-    const char * get_read_sequence(uint64_t readID);
-
-    ~BufferedSequenceGetter(){
-        free(buffer);
-        if(fd) close(fd);
-    }
-
-    void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids);
-
-private:
-    const LongReadsDatastore &datastore;
-    char * buffer;
-    size_t bufsize,chunk_size;
-    off_t buffer_offset = std::numeric_limits<off_t>::max();
-    int fd;
-    off_t total_size=0;
+    BufferedSequenceGetter seq_getter;
 };
