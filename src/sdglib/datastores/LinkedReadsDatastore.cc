@@ -47,9 +47,9 @@ void LinkedReadsDatastore::print_status() {
     mapper.print_status();
 }
 
-void LinkedReadsDatastore::build_from_fastq(std::string read1_filename, std::string read2_filename,
-                                            std::string output_filename, LinkedReadsFormat format, uint64_t readsize,
-                                            size_t chunksize) {
+void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::string read1_filename,
+                                            std::string read2_filename,
+                                            LinkedReadsFormat format, uint64_t readsize, size_t chunksize) {
     std::vector<uint32_t> read_tag;
     //std::cout<<"Memory used by every read's entry:"<< sizeof(LinkedRead)<<std::endl;
     //read each read, put it on the index and on the appropriate tag
@@ -510,11 +510,12 @@ LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::string filename) 
 
 LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::string read1_filename, std::string read2_filename,
                                            std::string output_filename, LinkedReadsFormat format, int readsize) : ws(ws), mapper(ws, *this) {
-    build_from_fastq(read1_filename,read2_filename,output_filename,format,readsize);
+    build_from_fastq(output_filename, read1_filename, read2_filename, format, readsize, 0);
 }
 
 LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper(ws, *this) {
     read(infile);
+    mapper.read(infile);
 }
 
 LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::string filename, std::ifstream &infile) : ws(ws), mapper(ws, *this) {

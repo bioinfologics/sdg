@@ -17,7 +17,9 @@ void PairedReadsDatastore::print_status() {
     mapper.print_status();
 }
 
-void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::string read2_filename, std::string output_filename, uint64_t _min_rs, uint64_t _rs, size_t chunksize) {
+void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::string read1_filename,
+                                            std::string read2_filename,
+                                            uint64_t min_readsize, uint64_t max_readsize, size_t chunksize) {
 
     //std::cout<<"Memory used by every read's entry:"<< sizeof(PairedRead)<<std::endl;
     //read each read, put it on the index and on the appropriate tag
@@ -52,7 +54,7 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     BSG_FILETYPE type(PairedDS_FT);
     output.write((char *) &type, sizeof(type));
 
-    output.write((const char *) &_rs,sizeof(readsize));
+    output.write((const char *) &max_readsize,sizeof(readsize));
     auto size_pos=output.tellp();
     output.write((const char *) &_size, sizeof(_size));//just to save the space!
     while (!feof(fd1) and !feof(fd2)) {
@@ -71,29 +73,29 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
         if (NULL == fgets(readbuffer, 2999, fd2)) continue;
         if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
         else {std::cout<<"READ IS LONGER THAN 2998bp. ABORTING!!!! Get your act together and choose the right datastore"<<std::endl; exit(1);};
-        if (currrent_read.seq1.size()<_min_rs or currrent_read.seq2.size()<_min_rs) {
+        if (currrent_read.seq1.size()<min_readsize or currrent_read.seq2.size()<min_readsize) {
             ++discarded;
             continue;
         }
-        if (currrent_read.seq1.size()>_rs) {
+        if (currrent_read.seq1.size()>max_readsize) {
             ++truncated;
-            currrent_read.seq1.resize(_rs);
+            currrent_read.seq1.resize(max_readsize);
         }
-        if (currrent_read.seq2.size()>_rs) {
+        if (currrent_read.seq2.size()>max_readsize) {
             ++truncated;
-            currrent_read.seq2.resize(_rs);
+            currrent_read.seq2.resize(max_readsize);
         }
         ++pairs;
         readdatav.push_back(currrent_read);
         if (readdatav.size()==chunksize){
             //dump
-            char buffer[2*_rs+2];
-            bzero(buffer,2*_rs+2);
+            char buffer[2*max_readsize+2];
+            bzero(buffer,2*max_readsize+2);
             for (auto &r:readdatav){
-                bzero(buffer,2*_rs+2);
-                memcpy(buffer,r.seq1.data(),(r.seq1.size()>_rs ? _rs : r.seq1.size()));
-                memcpy(buffer+_rs+1,r.seq2.data(),(r.seq2.size()>_rs ? _rs : r.seq2.size()));
-                output.write(buffer,2*_rs+2);
+                bzero(buffer,2*max_readsize+2);
+                memcpy(buffer,r.seq1.data(),(r.seq1.size()>max_readsize ? max_readsize : r.seq1.size()));
+                memcpy(buffer+max_readsize+1,r.seq2.data(),(r.seq2.size()>max_readsize ? max_readsize : r.seq2.size()));
+                output.write(buffer,2*max_readsize+2);
             }
             sdglib::OutputLog()<<readdatav.size()<<" pairs dumped..."<<std::endl;
             readdatav.clear();
@@ -101,13 +103,13 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     }
     if (readdatav.size()>0) {
         //dump
-        char buffer[2*_rs+2];
-        bzero(buffer,2*_rs+2);
+        char buffer[2*max_readsize+2];
+        bzero(buffer,2*max_readsize+2);
         for (auto &r:readdatav){
-            bzero(buffer,2*_rs+2);
-            memcpy(buffer,r.seq1.data(),(r.seq1.size()>_rs ? _rs : r.seq1.size()));
-            memcpy(buffer+_rs+1,r.seq2.data(),(r.seq2.size()>_rs ? _rs : r.seq2.size()));
-            output.write(buffer,2*_rs+2);
+            bzero(buffer,2*max_readsize+2);
+            memcpy(buffer,r.seq1.data(),(r.seq1.size()>max_readsize ? max_readsize : r.seq1.size()));
+            memcpy(buffer+max_readsize+1,r.seq2.data(),(r.seq2.size()>max_readsize ? max_readsize : r.seq2.size()));
+            output.write(buffer,2*max_readsize+2);
         }
         sdglib::OutputLog()<<readdatav.size()<<" pairs dumped..."<<std::endl;
         readdatav.clear();
@@ -118,7 +120,7 @@ void PairedReadsDatastore::build_from_fastq(std::string read1_filename,std::stri
     output.close();
     //DONE!
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<discarded<<" pairs discarded due to short reads"<<std::endl;
-    sdglib::OutputLog(sdglib::LogLevels::INFO)<<truncated<<" reads where truncated to "<<_rs<<"bp"<<std::endl;
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<truncated<<" reads where truncated to "<<max_readsize<<"bp"<<std::endl;
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Datastore with "<<_size<<" reads ("<<pairs<<" pairs)"<<std::endl;
 }
 
@@ -315,7 +317,7 @@ PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string _filename)
 
 PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string read1_filename, std::string read2_filename,
                                            std::string output_filename, int min_readsize, int max_readsize) : ws(ws), mapper(ws, *this) {
-    build_from_fastq(read1_filename,read2_filename,output_filename,min_readsize,max_readsize);
+    build_from_fastq(output_filename, read1_filename, read2_filename, min_readsize, max_readsize, 0);
 }
 
 uint64_t PairedReadsDatastore::size() const {return _size;}

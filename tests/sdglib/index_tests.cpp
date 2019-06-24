@@ -12,7 +12,7 @@ TEST_CASE("UniqueKmerIndex create and lookup") {
     StreamKmerIDXFactory skf(K);
     std::string seqMissing = "AAAAAAAAAAAAAAA";
     std::string seqPresent = "CTTGCGGGTTTCCAG";
-    SequenceGraph sg;
+    SequenceDistanceGraph sg;
     sg.load_from_gfa("../tests/datasets/tgraph.gfa");
     UniqueKmerIndex ukm(sg, K);
     ukm.generate_index(sg, true);
@@ -32,7 +32,7 @@ TEST_CASE("UniqueKmerIndex63 create and lookup") {
     StreamKmerIDXFactory128 skf(63);
     std::string seqMissing = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
     std::string seqPresent = "CTTGCGGGTTTCCAGGAACTGGCTGTCCTCGGCGTTCAGCGCCATCGACTTCCAGTCCAGCCC";
-    SequenceGraph sg;
+    SequenceDistanceGraph sg;
     sg.load_from_gfa("../tests/datasets/tgraph.gfa");
     Unique63merIndex ukm(sg);
     ukm.generate_index(sg, true);
@@ -55,7 +55,7 @@ TEST_CASE("NKmerIndex create and lookup") {
     StreamKmerFactory skf(k);
     std::string seqMissing = "AAAAAAAAAAAAAAA";
     std::string seqPresent = "CTTGCGGGTTTCCAG";
-    SequenceGraph sg;
+    SequenceDistanceGraph sg;
     sg.load_from_gfa("../tests/datasets/tgraph.gfa");
     assembly_kmers.generate_index(sg);
 

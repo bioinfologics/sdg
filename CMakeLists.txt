@@ -241,24 +241,24 @@ target_link_libraries(sdg-dbg sdg_static)
 target_link_libraries(build_all_backbones sdg_static)
 
 
-#IF(BUILD_TESTING)
-#    include_directories("tests/include")
-#    add_library( CatchMain OBJECT tests/sdglib/catch-main.cpp tests/include/catch.hpp )
-#    add_executable(runBasicTests
-#            $<TARGET_OBJECTS:CatchMain>
-#            tests/sdglib/files_tests.cpp
-#            tests/sdglib/smr_tests.cpp
-#            tests/sdglib/kmerfactory_tests.cpp
-#            tests/sdglib/index_tests.cpp
-#            )
-#    IF(BUILD_COV)
-#        set_target_properties(runBasicTests PROPERTIES
-#                COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
-#                LINK_FLAGS    "--coverage -lgcov")
-#    ENDIF()
-#    target_link_libraries(runBasicTests sdg)
-#    add_test(basicTests runBasicTests)
-#ENDIF()
+IF(BUILD_TESTING)
+    enable_testing()
+    include_directories("tests/include")
+    add_library( CatchMain OBJECT tests/sdglib/catch-main.cpp tests/include/catch.hpp )
+    add_executable(runBasicTests
+            $<TARGET_OBJECTS:CatchMain>
+            tests/sdglib/files_tests.cpp
+            tests/sdglib/kmerfactory_tests.cpp
+            tests/sdglib/index_tests.cpp
+            )
+    IF(BUILD_COV)
+        set_target_properties(runBasicTests PROPERTIES
+                COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
+                LINK_FLAGS    "--coverage -lgcov")
+    ENDIF()
+    target_link_libraries(runBasicTests sdg)
+    add_test(NAME basicTests COMMAND $<TARGET_FILE:runBasicTests>)
+ENDIF()
 
 # check if Doxygen is installed
 IF(BUILD_DOC)

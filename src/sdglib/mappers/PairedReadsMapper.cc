@@ -410,8 +410,8 @@ void PairedReadsMapper::populate_orientation() {
     }
 }
 
-PairedReadsMapper PairedReadsMapper::operator=(const PairedReadsMapper &other) {
-    if (&ws.sdg != &other.ws.sdg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceDistanceGraph"); }
+PairedReadsMapper& PairedReadsMapper::operator=(const PairedReadsMapper &other) {
+    if (&ws.sdg != &other.ws.sdg and &datastore != &other.datastore) { throw std::runtime_error("Can only copy PairedReadsMapper from the same SequenceDistanceGraph and Datastore"); }
     if (&other == this) {
         return *this;
     }
