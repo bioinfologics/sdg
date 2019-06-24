@@ -16,8 +16,15 @@ export DOXYGEN_URL="https://sourceforge.net/projects/doxygen/files/rel-${DOXYGEN
 wget -O - "${DOXYGEN_URL}" | tar xz -C ${HOME} ${DOXYGEN_VER}/bin/doxygen &&
 mkdir -p ${HOME}/bin && mv ${HOME}/${DOXYGEN_VER}/bin/* ${HOME}/bin
 
+
 export CMAKE_VERSION=3.14.3
 export CMAKE_VER=cmake-${CMAKE_VERSION}
-export CMAKE_TAR=${CMAKE_VER}-Linux-x86_64.tar.gz
-export CMAKE_URL="https://cmake.org/files/v3.14/${CMAKE_TAR}"
-mkdir -p ${HOME}/cmake && cd ${HOME}/cmake && wget -O - "${CMAKE_URL}" | tar -xzf - --strip-components=1
+if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    export CMAKE_TAR=${CMAKE_VER}-Darwin-x86_64.tar.gz
+    export CMAKE_URL="https://cmake.org/files/v3.14/${CMAKE_TAR}"
+    mkdir -p ${HOME}/cmake && cd ${HOME}/cmake && wget -O - "${CMAKE_URL}" | tar --strip-components=3 -xzf - ${CMAKE_VER}-Darwin-x86_64/CMake.app/Contents/bin/
+else
+    export CMAKE_TAR=${CMAKE_VER}-Linux-x86_64.tar.gz
+    export CMAKE_URL="https://cmake.org/files/v3.14/${CMAKE_TAR}"
+    mkdir -p ${HOME}/cmake && cd ${HOME}/cmake && wget -O - "${CMAKE_URL}" | tar -xzf - --strip-components=1
+fi
