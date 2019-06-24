@@ -10,13 +10,12 @@
 
 const bsgVersion_t LongReadsDatastore::min_compat = 0x0002;
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string filename) : ws(ws), mapper(ws, *this), seq_getter(*this) {
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string filename) : filename(filename), ws(ws), mapper(ws, *this) {
     load_index(filename);
+    this->seq_getter.reset(new BufferedSequenceGetter(*this));
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string long_read_file, std::string output_file) : ws(ws), mapper(ws, *this), seq_getter(*this) {
-    filename = output_file;
-
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string long_read_file, std::string output_file) : filename(output_file), ws(ws), mapper(ws, *this) {
     uint32_t nReads(0);
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
     if (!ofs) {
@@ -39,14 +38,16 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string long_read_file
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
     ofs.flush();                                    // Make sure everything has been written
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<size()-1<<" reads"<<std::endl;
+    this->seq_getter.reset(new BufferedSequenceGetter(*this));
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper(ws, *this), seq_getter(*this) {
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::ifstream &infile) : filename(), ws(ws), mapper(ws, *this) {
     read(infile);
+    this->seq_getter.reset(new BufferedSequenceGetter(*this));
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string file_name, std::ifstream &input_file) : ws(ws), mapper(ws, *this), seq_getter(*this) {
-    file_containing_long_read_sequence = file_name;
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string file_name, std::ifstream &input_file) : ws(ws), mapper(ws, *this) {
+    filename = file_name;
     bsgMagic_t magic;
     bsgVersion_t version;
     BSG_FILETYPE type;
@@ -79,11 +80,12 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string file_name, std
         input_file.read(&seq[0], readSize);
         read_to_fileRecord[i].record_size=readSize;
     }
+
+    this->seq_getter.reset(new BufferedSequenceGetter(*this));
+
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : ws(ws), mapper(ws, *this), seq_getter(*this) {
-    this->filename = o.filename;
-    this->file_containing_long_read_sequence = o.file_containing_long_read_sequence;
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : filename(o.filename), ws(ws), mapper(ws, *this) {
     this->read_to_fileRecord = o.read_to_fileRecord;
 
     this->mapper.reads_in_node = o.mapper.reads_in_node;
@@ -91,6 +93,9 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : w
     this->mapper.first_mapping = o.mapper.first_mapping;
     this->mapper.read_paths = o.mapper.read_paths;
     this->mapper.all_paths_between = o.mapper.all_paths_between;
+
+    this->seq_getter.reset(new BufferedSequenceGetter(*this));
+
 }
 
 LongReadsDatastore &LongReadsDatastore::operator=(LongReadsDatastore const &o) {
@@ -99,10 +104,9 @@ LongReadsDatastore &LongReadsDatastore::operator=(LongReadsDatastore const &o) {
     this->filename = o.filename;
     this->ws = o.ws;
     this->read_to_fileRecord = o.read_to_fileRecord;
-    this->file_containing_long_read_sequence = o.file_containing_long_read_sequence;
 
     this->mapper = o.mapper;
-    this->seq_getter = o.seq_getter;
+    this->seq_getter.reset(new BufferedSequenceGetter(*this));
     return *this;
 }
 
@@ -110,10 +114,9 @@ LongReadsDatastore::LongReadsDatastore(const LongReadsDatastore &o) :
         ws(o.ws),
         mapper(*this, o.mapper),
         read_to_fileRecord(o.read_to_fileRecord),
-        filename(o.filename),
-        file_containing_long_read_sequence(o.file_containing_long_read_sequence),
-        seq_getter(*this)
+        filename(o.filename)
 {
+
 }
 
 void LongReadsDatastore::load_index(std::string &file) {
@@ -266,7 +269,7 @@ void LongReadsDatastore::write(std::ofstream &output_file) {
 }
 
 std::string LongReadsDatastore::get_read_sequence(size_t readID) {
-    return seq_getter.get_read_sequence(readID);
+    return seq_getter->get_read_sequence(readID);
 }
 
 BufferedSequenceGetter::BufferedSequenceGetter(const LongReadsDatastore &_ds, size_t _bufsize, size_t _chunk_size):

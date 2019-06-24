@@ -56,8 +56,6 @@ private:
 
 class LongReadsDatastore {
 
-    std::string file_containing_long_read_sequence;
-
     void load_index(std::string &file);
 
     WorkSpace &ws;
@@ -99,5 +97,5 @@ public:
     static const bsgVersion_t min_compat;
 
     LongReadsMapper mapper;
-    BufferedSequenceGetter seq_getter;
+    std::unique_ptr<BufferedSequenceGetter> seq_getter;
 };
