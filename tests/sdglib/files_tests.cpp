@@ -58,7 +58,7 @@ TEST_CASE("Long reads datastore create, read, write") {
     std::mt19937 gen(10); // Always using same seed to get same results
     std::uniform_int_distribution<> dis(1, ds.size());
 
-    std::array<uint64_t, 50> reads_to_check;
+    std::array<uint64_t, 50> reads_to_check{};
     for (auto &r:reads_to_check){
         r = dis(gen);
     }
@@ -106,7 +106,7 @@ TEST_CASE("10x reads datastore create, read, write") {
     std::mt19937 gen(10); // Always using same seed to get same results
     std::uniform_int_distribution<> dis(1, ds.size());
 
-    std::array<uint64_t, 50> reads_to_check;
+    std::array<uint64_t, 50> reads_to_check{};
     for (auto &r:reads_to_check){
         r = dis(gen);
     }
@@ -154,7 +154,7 @@ TEST_CASE("PE reads datastore create, read, write") {
     std::mt19937 gen(10); // Always using same seed to get same results
     std::uniform_int_distribution<> dis(1, ds.size());
 
-    std::array<uint64_t, 50> reads_to_check;
+    std::array<uint64_t, 50> reads_to_check{};
     for (auto &r:reads_to_check){
         r = dis(gen);
     }

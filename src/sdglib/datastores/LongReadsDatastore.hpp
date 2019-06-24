@@ -36,9 +36,26 @@ struct ReadPosSize {
     }
 };
 
-class LongReadsDatastore {
+// Check if this needs to be page size aware
+class BufferedSequenceGetter{
+public:
+    explicit BufferedSequenceGetter(const LongReadsDatastore &_ds, size_t _bufsize = (1024*1024*30ul), size_t _chunk_size = (1024*1024*4ul));
+    const char * get_read_sequence(uint64_t readID);
+    ~BufferedSequenceGetter();
+    void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids);
+    BufferedSequenceGetter& operator=(const BufferedSequenceGetter &o);
 
-    std::string file_containing_long_read_sequence;
+private:
+    const LongReadsDatastore &datastore;
+    char * buffer;
+    size_t bufsize,chunk_size;
+    off_t buffer_offset = std::numeric_limits<off_t>::max();
+    int fd;
+    off_t total_size=0;
+};
+
+class LongReadsDatastore {
+    std::unique_ptr<BufferedSequenceGetter> seq_getter;
 
     void load_index(std::string &file);
 
@@ -48,7 +65,7 @@ public:
     std::vector< ReadPosSize > read_to_fileRecord{ReadPosSize(0,0)};
 
     LongReadsDatastore(WorkSpace &ws, std::ifstream &infile);
-    LongReadsDatastore(WorkSpace &ws, std::string filename, std::ifstream &input_file);
+    LongReadsDatastore(WorkSpace &ws, const std::string &filename, std::ifstream &input_file);
     LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o);
     LongReadsDatastore(const LongReadsDatastore &o);
     /**
@@ -65,53 +82,20 @@ public:
      *
      * Initialises the memory mapping of the reads file
      */
-    LongReadsDatastore(WorkSpace &ws, std::string long_read_file, std::string output_file);
+    LongReadsDatastore(WorkSpace &ws, const std::string &long_read_file, const std::string &output_file);
 
     LongReadsDatastore& operator=(LongReadsDatastore const &o);
-    uint32_t build_from_fastq(std::ofstream &outf, std::string long_read_file);
-    static void build_from_fastq(std::string outf, std::string long_read_file);
+    uint32_t build_from_fastq(std::ofstream &outf, const std::string &long_read_file);
+    static void build_from_fastq(const std::string &output_file, const std::string &long_read_file);
     void print_status();
     void read(std::ifstream &ifs);
     void write(std::ofstream &output_file);
-
     size_t size() const { return read_to_fileRecord.size(); }
+
+    std::string get_read_sequence(size_t readID);
 
     std::string filename;
     static const bsgVersion_t min_compat;
 
     LongReadsMapper mapper;
-};
-
-// Check if this needs to be page size aware
-class BufferedSequenceGetter{
-public:
-    BufferedSequenceGetter(const LongReadsDatastore &_ds, size_t _bufsize = (1024*1024*30ul), size_t _chunk_size = (1024*1024*4ul)):
-            datastore(_ds),bufsize(_bufsize),chunk_size(_chunk_size){
-        fd=open(datastore.filename.c_str(),O_RDONLY);
-        if (fd == -1) {
-            std::string msg("Cannot open file " + datastore.filename);
-            perror(msg.c_str());
-            throw std::runtime_error("Cannot open " + datastore.filename);
-        }
-        struct stat f_stat;
-        stat(_ds.filename.c_str(), &f_stat);
-        total_size = f_stat.st_size;
-        buffer=(char *)malloc(bufsize);
-    }
-    const char * get_read_sequence(uint64_t readID);
-
-    ~BufferedSequenceGetter(){
-        free(buffer);
-        if(fd) close(fd);
-    }
-
-    void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids);
-
-private:
-    const LongReadsDatastore &datastore;
-    char * buffer;
-    size_t bufsize,chunk_size;
-    off_t buffer_offset = std::numeric_limits<off_t>::max();
-    int fd;
-    off_t total_size=0;
 };

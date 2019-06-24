@@ -14,7 +14,7 @@
 #include "kseq.hpp"
 
 struct FastxReaderParams {
-    uint32_t min_length;
+    uint32_t min_length=0;
 };
 
 struct FastaRecord {
@@ -155,6 +155,10 @@ public:
         return stats;
     }
 
+    ~FastqReader() {
+        gzclose(gz_file);
+        delete ks;
+    }
 private:
     kstream<gzFile, FunctorZlib> *ks;
     kseq seq;

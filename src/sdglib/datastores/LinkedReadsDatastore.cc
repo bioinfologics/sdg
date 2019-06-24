@@ -54,12 +54,12 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     //std::cout<<"Memory used by every read's entry:"<< sizeof(LinkedRead)<<std::endl;
     //read each read, put it on the index and on the appropriate tag
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Creating Datastore Index from "<<read1_filename<<" | "<<read2_filename<<std::endl;
-    auto fd1=fopen(read1_filename.c_str(),"r");
+    auto fd1=gzopen(read1_filename.c_str(),"r");
     if (!fd1) {
         std::cerr << "Failed to open " << read1_filename <<": " << strerror(errno);
         throw std::runtime_error("Could not open " + read1_filename);
     }
-    auto fd2=fopen(read2_filename.c_str(),"r");
+    auto fd2=gzopen(read2_filename.c_str(),"r");
 
     if (!fd2) {
         std::cerr << "Failed to open " << read2_filename <<": " << strerror(errno);
@@ -77,11 +77,11 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     LinkedReadData currrent_read;
     //First, create the chunk files
     uint64_t pairs=0;
-    while (!feof(fd1) and !feof(fd2)) {
+    while (!gzeof(fd1) and !gzeof(fd2)) {
         bsg10xTag newtag = 0;
         if (format==LinkedReadsFormat::UCDavis) {
             //LinkedRead r1,r2;
-            if (NULL == fgets(readbuffer, 999, fd1)) continue;
+            if (NULL == gzgets(fd1, readbuffer, 999)) continue;
             //Tag to number from r1's name
             for (auto i = 1; i < 17; ++i) {
                 newtag <<= 2;
@@ -94,21 +94,21 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
                 }
             }
             currrent_read.tag=newtag;
-            if (NULL == fgets(readbuffer, 999, fd1)) continue;
+            if (NULL == gzgets(fd1, readbuffer, 999)) continue;
             currrent_read.seq1=std::string(readbuffer);
             if (currrent_read.seq1.back()=='\n') currrent_read.seq1.resize(currrent_read.seq1.size()-1);
-            if (NULL == fgets(readbuffer, 999, fd1)) continue;
-            if (NULL == fgets(readbuffer, 999, fd1)) continue;
+            if (NULL == gzgets(fd1, readbuffer, 999)) continue;
+            if (NULL == gzgets(fd1, readbuffer, 999)) continue;
 
-            if (NULL == fgets(readbuffer, 999, fd2)) continue;
-            if (NULL == fgets(readbuffer, 999, fd2)) continue;
+            if (NULL == gzgets(fd2, readbuffer, 999)) continue;
+            if (NULL == gzgets(fd2, readbuffer, 999)) continue;
             currrent_read.seq2=std::string(readbuffer);
             if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
-            if (NULL == fgets(readbuffer, 999, fd2)) continue;
-            if (NULL == fgets(readbuffer, 999, fd2)) continue;
+            if (NULL == gzgets(fd2, readbuffer, 999)) continue;
+            if (NULL == gzgets(fd2, readbuffer, 999)) continue;
         }
         else if (format==LinkedReadsFormat::seq){
-            if (NULL == fgets(readbuffer, 999, fd1)) continue;
+            if (NULL == gzgets(fd1, readbuffer, 999)) continue;
             //Tag to number from r1's name
             for (auto i = 0; i < 16; ++i) {
                 newtag <<= 2;
@@ -123,7 +123,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
             currrent_read.tag=newtag;
             currrent_read.seq1=std::string(readbuffer+16);
             if (currrent_read.seq1.back()=='\n') currrent_read.seq1.resize(currrent_read.seq1.size()-1);
-            if (NULL == fgets(readbuffer, 999, fd2)) continue;
+            if (NULL == gzgets(fd2, readbuffer, 999)) continue;
             currrent_read.seq2=std::string(readbuffer);
             if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
         }
@@ -251,8 +251,8 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     for (auto i=0;i<chunkfiles.size();++i) ::unlink(("sorted_chunk_"+std::to_string(i)+".data").c_str());
     //DONE!
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Datastore with "<<(read_tag.size())*2<<" reads, "<<tagged_reads<<" reads with tags"<<std::endl; //and "<<reads_in_tag.size()<<"tags"<<std::endl;
-    fclose(fd1);
-    fclose(fd2);
+    gzclose(fd1);
+    gzclose(fd2);
 }
 
 void LinkedReadsDatastore::read(std::ifstream &input_file) {

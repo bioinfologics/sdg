@@ -6,6 +6,8 @@
     %module pysdg
 #endif
 
+#pragma SWIG nowarn=503,509,325,362,401
+
 %ignore Backbone;
 %ignore PairedReadLinker;
 %{
@@ -44,7 +46,7 @@
 #define MADE_DOCS "@DOXYGEN_FOUND@"
 #ifdef SWIGPYTHON
     #if MADE_DOCS=="YES"
-        %include "python_docs.i"
+//        %include "python_docs.i"
     #endif
 #endif
 
