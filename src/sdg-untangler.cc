@@ -170,7 +170,7 @@ int main(int argc, char * argv[]) {
         tag_ldg.dump_to_text(create_linkage);
         const auto& tag_con_nodes(tag_ldg.get_connected_nodes());
         std::vector<sgNodeID_t> connected_nodes(tag_con_nodes.begin(), tag_con_nodes.end());
-        ws.sg.write_to_gfa(output_prefix+"_linkage.gfa", tag_ldg.links, connected_nodes);
+        tag_ldg.write_to_gfa1(output_prefix+"_linkage.gfa", connected_nodes);
         auto lines=tag_ldg.get_all_lines(dev_min_nodes);
         std::ofstream linesf(output_prefix+"_linkage_lines.txt");
         for (auto l:lines){
@@ -381,7 +381,7 @@ int main(int argc, char * argv[]) {
                 sdglib::OutputLog() << juc << " unitigs joined after patching"<<std::endl;
                 //ws.sg.write_to_gfa(patch_workspace);
             }
-            ws.sg.write_to_gfa(output_prefix+"fulllocal_cycle_"+std::to_string(cycle)+".gfa");
+            ws.sg.write_to_gfa1(output_prefix+"fulllocal_cycle_"+std::to_string(cycle)+".gfa");
             //reindex KCI
             ws.kci.reindex_graph();
             //remap reads (k63)
@@ -457,12 +457,12 @@ int main(int argc, char * argv[]) {
             sdglib::OutputLog() << "Patches with no SG paths:            "<< patch_results[2] <<std::endl;
             sdglib::OutputLog() << "Patches with failed expansion:       "<< patch_results[5] <<std::endl;
             sdglib::OutputLog() << "Patches correctly applied:           "<< patch_results[0] <<std::endl;
-            ws.sg.write_to_gfa(output_prefix+"_patched_notjoined.gfa");
+            ws.sg.write_to_gfa1(output_prefix+"_patched_notjoined.gfa");
             auto juc=ws.sg.join_all_unitigs();
             sdglib::OutputLog() << juc << " unitigs joined after patching"<<std::endl;
             //ws.sg.write_to_gfa(patch_workspace);
         }
-        ws.sg.write_to_gfa(output_prefix+"_patched.gfa");
+        ws.sg.write_to_gfa1(output_prefix+"_patched.gfa");
         exit(0);
     }
 
@@ -540,7 +540,7 @@ int main(int argc, char * argv[]) {
         sdglib::OutputLog() << "Patches correctly applied:           "<< patch_results[0] <<std::endl;
         auto juc=ws.sg.join_all_unitigs();
         sdglib::OutputLog() << juc << " unitigs joined after patching"<<std::endl;
-        ws.sg.write_to_gfa(patch_workspace);
+        ws.sg.write_to_gfa1(patch_workspace);
     }
     if (small_component_cleanup) {
         GraphEditor ge(ws);

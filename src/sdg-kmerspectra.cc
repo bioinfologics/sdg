@@ -139,7 +139,7 @@ int main(int argc, char * argv[]) {
         if (reindex) kci.reindex_graph();
         kci.compute_compression_stats();
         kci.compute_all_nodes_kci(maxfreq);
-        sdg.write_to_gfa(output, {}, {}, {}, kci.nodes_depth);
+        sdg.write_to_gfa1(output, {}, kci.nodes_depth);
     }
     else if (0==strcmp(argv[1],"transform")) {
         std::string kci_filename,gfa_filename,output;

@@ -205,7 +205,7 @@ void dump_workspace(int argc, char **argv){
     std::cout << "Done ... " << std::endl;
     std::cout << "Dumping gfa workspace " << std::endl;
     if (not gfafilename.empty()){
-        w.sdg.write_to_gfa(gfafilename + ".gfa");
+        w.sdg.write_to_gfa1(gfafilename + ".gfa");
     }
     std::cout << "Done... " << std::endl;
     if (not nodeinfofilename.empty()){

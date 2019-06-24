@@ -366,7 +366,7 @@ void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, bool si
         //path_all_reads();
         uniqueKmerIndex.generate_index(assembly,31);
         path_linked_reads();
-        if (!output_prefix.empty()) assembly.write_to_gfa(output_prefix + "pre_repex.gfa");
+        if (!output_prefix.empty()) assembly.write_to_gfa1(output_prefix + "pre_repex.gfa");
         while (expand_canonical_repeats() > 0) {
             assembly.join_all_unitigs();
             //path_all_reads();
@@ -745,7 +745,7 @@ void LocalHaplotypeAssembler::write_anchors(std::string filename) {
 }
 
 void LocalHaplotypeAssembler::write_gfa(std::string filename) {
-    assembly.write_to_gfa(filename);
+    assembly.write_to_gfa1(filename);
 }
 
 void LocalHaplotypeAssembler::construct_patches() {

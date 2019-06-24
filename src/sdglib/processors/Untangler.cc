@@ -867,7 +867,7 @@ std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> Untangler::find_tag_nei
             }
         }
     }
-    tsg.write_to_gfa("tag_neighbours_nodir.gfa");
+    tsg.write_to_gfa1("tag_neighbours_nodir.gfa");
     sdglib::OutputLog()<<"Sorting shared tags"<<std::endl;
     uint64_t with_neighbours=0;
     for (auto &nn:neighbours){
@@ -972,7 +972,7 @@ std::vector<Link>  Untangler::find_tag_neighbours_with_imbalance(uint32_t min_si
             }
         }
     }
-    tsg.write_to_gfa("tag_neighbours_imbdir.gfa");
+    tsg.write_to_gfa1("tag_neighbours_imbdir.gfa");
     BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,200000,1000);
     uint64_t perf_ts=0;
     for (auto n=1;n<tsg.nodes.size();++n){

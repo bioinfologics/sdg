@@ -1411,10 +1411,10 @@ void LinkageUntangler::fill_linkage_line(std::vector<sgNodeID_t> nodes) {
         anchf<<ws.sdg.nodes[llabs(n)].sequence<<std::endl;
 
     }
-    dbg.write_to_gfa("local_dbg_"+std::to_string(nodes[0])+"_uncleaned.gfa");
+    dbg.write_to_gfa1("local_dbg_"+std::to_string(nodes[0])+"_uncleaned.gfa");
     gm.tip_clipping(200);
     gm.remove_small_unconnected(500);
-    dbg.write_to_gfa("local_dbg_"+std::to_string(nodes[0])+".gfa");
+    dbg.write_to_gfa1("local_dbg_"+std::to_string(nodes[0])+".gfa");
 
     std::cout<<"Analising junctions, one by one"<<std::endl;
     for (auto i=0;i<nodes.size()-1;++i){

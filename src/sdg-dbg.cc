@@ -76,7 +76,7 @@ int main(int argc, char * argv[]) {
     ws.kci.start_new_count();
     ws.kci.add_counts_from_datastore(ws.paired_read_datastores.back());
 
-    ws.sdg.write_to_gfa(output_prefix+"_DBG.gfa");
+    ws.sdg.write_to_gfa1(output_prefix+"_DBG.gfa");
     ws.dump_to_disk(output_prefix+".bsgws");
 }
 
