@@ -29,8 +29,10 @@ public:
 class WorkSpace {
 
 public:
-    WorkSpace() :
-    kci(sdg){}
+    WorkSpace() : kci(sdg){}
+    explicit WorkSpace(const std::string & filename) : kci(sdg){
+        load_from_disk(filename);
+    }
     WorkSpace(const WorkSpace& that) = delete; //we definitely do not want copy constructors here, thank you
     void print_log();
 
