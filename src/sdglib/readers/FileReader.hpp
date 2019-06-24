@@ -155,6 +155,10 @@ public:
         return stats;
     }
 
+    ~FastqReader() {
+        gzclose(gz_file);
+        delete ks;
+    }
 private:
     kstream<gzFile, FunctorZlib> *ks;
     kseq seq;
