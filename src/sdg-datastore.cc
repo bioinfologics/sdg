@@ -6,6 +6,23 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include "cxxopts.hpp"
 
+uint32_t detect_read_size(const std::string &read_filename) {
+    std::vector<uint32_t> read_sizes(100);
+
+    FastqRecord rec;
+    FastqReader<FastqRecord> fastqReader({}, read_filename);
+    uint32_t i = 0;
+    while(fastqReader.next_record(rec) and i < read_sizes.size()) {
+        read_sizes[i++] = rec.seq.size();
+    }
+    for (uint32_t i = 100; i < 10000 and fastqReader.next_record(rec); i++) {
+        uint32_t j = std::rand()%i;
+        if (j < 100) {
+            read_sizes[j] = rec.seq.size();
+        }
+    }
+    return (*std::max_element(read_sizes.begin(), read_sizes.end()));
+}
 
 int main(int argc, char * argv[]) {
     std::cout << "sdg-datastore"<<std::endl<<std::endl;
@@ -43,16 +60,16 @@ int main(int argc, char * argv[]) {
                 exit(0);
             }
 
-            if (read_type == "") {
+            if (read_type.empty()) {
                 throw cxxopts::OptionException(" please specify an input type");
             }
-            if (long_reads == "" and (read1 == "" or read2 == "" )) {
+            if (long_reads.empty() and (read1.empty() or read2.empty() )) {
                 throw cxxopts::OptionException(" please specify the paired read files");
             }
-            if (read_type == "long" and long_reads == "") {
+            if (read_type == "long" and long_reads.empty()) {
                 throw cxxopts::OptionException(" please specify the long read files");
             }
-            if (output == "") {
+            if (output.empty()) {
                 throw cxxopts::OptionException(" please specify an output prefix");
             }
 
@@ -65,14 +82,20 @@ int main(int argc, char * argv[]) {
 
         //===== DATASTORE CREATION =====
         if (read_type == "10x" or read_type == "10xseq") {
+            // TODO: Detect read size
+            auto read_size = detect_read_size(read1);
+            sdglib::OutputLog() << "Detected max read size " << read_size << std::endl;
             LinkedReadsDatastore::build_from_fastq(output + ".lrseq", read1, read2,
                                                    (read_type == "10xseq" ? LinkedReadsFormat::seq
-                                                                          : LinkedReadsFormat::UCDavis), max_readsize,
+                                                                          : LinkedReadsFormat::UCDavis), read_size,
                                                    0);
             //ds.dump_index_to_disk(output+".lrIdx");
         }
         else if (read_type == "paired") {
-            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, min_readsize, max_readsize, 0);
+            // TODO: Detect read size
+            auto read_size = detect_read_size(read1);
+            sdglib::OutputLog() << "Detected max read size " << read_size << std::endl;
+            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, min_readsize, read_size, 0);
             //ds.dump_index_to_disk(output+".lrIdx");
         }
         else if (read_type == "long") {
@@ -111,8 +134,6 @@ int main(int argc, char * argv[]) {
                       << "Use option --help to check command line arguments." << std::endl;
             exit(1);
         }
-
-
 
     }
     else if (0==strcmp(argv[1],"compare")) {
@@ -157,7 +178,7 @@ int main(int argc, char * argv[]) {
             }
         }
         std::ofstream tof("tag_occupancies.csv");
-        for (auto tc:tag_occupancy){
+        for (const auto &tc : tag_occupancy){
             tof<<tc.first;
             for (auto c:tc.second) {
                 tof<<","<<c;
