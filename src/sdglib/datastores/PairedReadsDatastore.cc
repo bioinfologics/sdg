@@ -26,12 +26,12 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
 
     uint64_t _size(0);
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Creating Datastore from "<<read1_filename<<" | "<<read2_filename<<std::endl;
-    auto fd1=fopen(read1_filename.c_str(),"r");
+    auto fd1=gzopen(read1_filename.c_str(),"r");
     if (!fd1) {
         std::cerr << "Failed to open " << read1_filename <<": " << strerror(errno);
         throw std::runtime_error("Could not open " + read1_filename);
     }
-    auto fd2=fopen(read2_filename.c_str(),"r");
+    auto fd2=gzopen(read2_filename.c_str(),"r");
     if (!fd2) {
         std::cerr << "Failed to open " << read2_filename <<": " << strerror(errno);
         throw std::runtime_error("Could not open " + read2_filename);
@@ -57,20 +57,20 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     output.write((const char *) &max_readsize,sizeof(readsize));
     auto size_pos=output.tellp();
     output.write((const char *) &_size, sizeof(_size));//just to save the space!
-    while (!feof(fd1) and !feof(fd2)) {
+    while (!gzeof(fd1) and !gzeof(fd2)) {
 
-        if (NULL == fgets(readbuffer, 2999, fd1)) continue;
-        if (NULL == fgets(readbuffer, 2999, fd1)) continue;
+        if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
+        if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
         currrent_read.seq1=std::string(readbuffer);
-        if (NULL == fgets(readbuffer, 2999, fd1)) continue;
-        if (NULL == fgets(readbuffer, 2999, fd1)) continue;
+        if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
+        if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
         if (currrent_read.seq1.back()=='\n') currrent_read.seq1.resize(currrent_read.seq1.size()-1);
         else {std::cout<<"READ IS LONGER THAN 2998bp. ABORTING!!!! Get your act together and choose the right datastore."<<std::endl; exit(1);};
-        if (NULL == fgets(readbuffer, 2999, fd2)) continue;
-        if (NULL == fgets(readbuffer, 2999, fd2)) continue;
+        if (NULL == gzgets(fd2, readbuffer, 2999)) continue;
+        if (NULL == gzgets(fd2, readbuffer, 2999)) continue;
         currrent_read.seq2=std::string(readbuffer);
-        if (NULL == fgets(readbuffer, 2999, fd2)) continue;
-        if (NULL == fgets(readbuffer, 2999, fd2)) continue;
+        if (NULL == gzgets(fd2, readbuffer, 2999)) continue;
+        if (NULL == gzgets(fd2, readbuffer, 2999)) continue;
         if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
         else {std::cout<<"READ IS LONGER THAN 2998bp. ABORTING!!!! Get your act together and choose the right datastore"<<std::endl; exit(1);};
         if (currrent_read.seq1.size()<min_readsize or currrent_read.seq2.size()<min_readsize) {
@@ -122,6 +122,9 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<discarded<<" pairs discarded due to short reads"<<std::endl;
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<truncated<<" reads where truncated to "<<max_readsize<<"bp"<<std::endl;
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Datastore with "<<_size<<" reads ("<<pairs<<" pairs)"<<std::endl;
+
+    gzclose(fd1);
+    gzclose(fd2);
 }
 
 void PairedReadsDatastore::read(std::ifstream &input_file) {

@@ -1,7 +1,7 @@
 #! /bin/bash
 # Bash Script that builds project
 
-export PATH="${HOME}"/swig/bin:"${HOME}"/bin:"${HOME}"/cmake/bin:"${PATH}"
+export PATH="${HOME}"/swig/bin:"${HOME}"/bin:"${HOME}"/cmake/bin:"${PATH}":"${HOME}"/Python/3.7/bin
 
 mkdir build
 cd build
