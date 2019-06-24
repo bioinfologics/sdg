@@ -102,6 +102,7 @@ LongReadsDatastore &LongReadsDatastore::operator=(LongReadsDatastore const &o) {
     this->file_containing_long_read_sequence = o.file_containing_long_read_sequence;
 
     this->mapper = o.mapper;
+    this->seq_getter = o.seq_getter;
     return *this;
 }
 
@@ -281,6 +282,7 @@ BufferedSequenceGetter::BufferedSequenceGetter(const LongReadsDatastore &_ds, si
     total_size = f_stat.st_size;
     buffer=(char *)malloc(bufsize);
 }
+
 const char * get_read_sequence(uint64_t readID);
 
 BufferedSequenceGetter::~BufferedSequenceGetter(){
@@ -333,4 +335,22 @@ const char * BufferedSequenceGetter::get_read_sequence(uint64_t readID) {
         }
     }
     return buffer+(read_offset_in_file-buffer_offset);
+}
+
+BufferedSequenceGetter& BufferedSequenceGetter::operator=(const BufferedSequenceGetter &o){
+    this->total_size = o.total_size;
+    this->chunk_size = o.chunk_size;
+    this->bufsize = o.bufsize;
+    this->buffer_offset = o.buffer_offset;
+
+    buffer=(char *)malloc(bufsize);
+
+    this->fd = ::open(datastore.filename.c_str(), O_RDONLY);
+    if (fd == -1) {
+        std::string msg("Cannot open file " + datastore.filename);
+        perror(msg.c_str());
+        throw std::runtime_error("Cannot open " + datastore.filename);
+    }
+
+    return *this;
 }

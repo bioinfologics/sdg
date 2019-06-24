@@ -39,10 +39,11 @@ struct ReadPosSize {
 // Check if this needs to be page size aware
 class BufferedSequenceGetter{
 public:
-    BufferedSequenceGetter(const LongReadsDatastore &_ds, size_t _bufsize = (1024*1024*30ul), size_t _chunk_size = (1024*1024*4ul));
+    explicit BufferedSequenceGetter(const LongReadsDatastore &_ds, size_t _bufsize = (1024*1024*30ul), size_t _chunk_size = (1024*1024*4ul));
     const char * get_read_sequence(uint64_t readID);
     ~BufferedSequenceGetter();
     void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids);
+    BufferedSequenceGetter& operator=(const BufferedSequenceGetter &o);
 
 private:
     const LongReadsDatastore &datastore;
