@@ -589,8 +589,8 @@ void LinkedReadsMapper::compute_all_tag_neighbours2(int min_size, float min_scor
     sdglib::OutputLog()<<"...DONE!"<<std::endl;
 }
 
-LinkedReadsMapper LinkedReadsMapper::operator=(const LinkedReadsMapper &other) {
-    if (&ws.sdg != &other.ws.sdg and &datastore != &other.datastore) { throw ("Can only copy paths from the same SequenceDistanceGraph"); }
+LinkedReadsMapper& LinkedReadsMapper::operator=(const LinkedReadsMapper &other) {
+    if (&ws.sdg != &other.ws.sdg and &datastore != &other.datastore) { throw std::runtime_error("Can only LinkedReadsMapper from the same SequenceDistanceGraph and LinkedReadsDatastore"); }
     if (&other == this) {
         return *this;
     }

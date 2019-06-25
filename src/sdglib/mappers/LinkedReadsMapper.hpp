@@ -59,7 +59,7 @@ public:
      * @param other
      * @return
      */
-    LinkedReadsMapper operator=(const LinkedReadsMapper &other);
+    LinkedReadsMapper& operator=(const LinkedReadsMapper &other);
 
     /**
      * This is the same as map_reads() but using k63
