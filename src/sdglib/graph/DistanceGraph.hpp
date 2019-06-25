@@ -33,6 +33,7 @@ class SequenceDistanceGraph;//fwd declaration (to break circular dependence)
 class DistanceGraph {
 public:
     explicit DistanceGraph(SequenceDistanceGraph & _sdg): sdg(_sdg){};
+    DistanceGraph(SequenceDistanceGraph& sdg, std::ifstream &input_file);
     DistanceGraph(SequenceDistanceGraph & _sdg, const std::string& name) : name(name), sdg(_sdg){}
 
     /** @brief Adds a link between source and destination in the links collection.
@@ -204,6 +205,9 @@ public:
     void write_to_gfa1(std::string filename, const std::vector<sgNodeID_t> &selected_nodes={}, const std::vector<double> &depths={});
     void write_to_gfa2(std::string filename, const std::vector<sgNodeID_t> &selected_nodes={}, const std::vector<double> &depths={});
 
+
+    void read(std::ifstream &input_file);
+    void write(std::ofstream &output_file);
 
     SequenceDistanceGraph & sdg;
 

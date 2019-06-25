@@ -95,6 +95,7 @@ public:
     std::string get_read_sequence(size_t readID);
 
     std::string filename;
+    std::string name;
     static const bsgVersion_t min_compat;
 
     LongReadsMapper mapper;

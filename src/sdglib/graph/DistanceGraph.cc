@@ -470,3 +470,22 @@ void DistanceGraph::write_to_gfa2(std::string filename, const std::vector<sgNode
     }
 
 }
+
+void DistanceGraph::read(std::ifstream &input_file) {
+    uint64_t s;
+    input_file.read((char *) &s, sizeof(s));
+    name.resize(s);
+    input_file.read((char *) name.data(), name.size());
+    sdglib::read_flat_vectorvector(input_file, links);
+}
+
+void DistanceGraph::write(std::ofstream &output_file) {
+    uint64_t s=name.size();
+    output_file.write((char *) &s,sizeof(s));
+    output_file.write((char *)name.data(),name.size());
+    sdglib::write_flat_vectorvector(output_file, links);
+}
+
+DistanceGraph::DistanceGraph(SequenceDistanceGraph &sdg, std::ifstream &input_file) : sdg(sdg) {
+    read(input_file);
+}

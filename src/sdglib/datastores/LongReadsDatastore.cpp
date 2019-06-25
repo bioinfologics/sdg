@@ -10,7 +10,7 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <algorithm>
 
-const bsgVersion_t LongReadsDatastore::min_compat = 0x0002;
+const bsgVersion_t LongReadsDatastore::min_compat = 0x0003;
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string filename) : filename(filename), ws(ws), mapper(ws, *this) {
     load_index(filename);
@@ -257,6 +257,11 @@ void LongReadsDatastore::read(std::ifstream &ifs) {
     ifs.read((char *) &s, sizeof(s));
     filename.resize(s);
     ifs.read((char *) filename.data(), s*sizeof(filename[0]));
+
+    ifs.read((char *) &s, sizeof(s));
+    name.resize(s);
+    ifs.read((char *) name.data(), name.size());
+
     load_index(filename);
 }
 
@@ -265,6 +270,10 @@ void LongReadsDatastore::write(std::ofstream &output_file) {
     uint64_t s=filename.size();
     output_file.write((char *) &s,sizeof(s));
     output_file.write((char *)filename.data(),s*sizeof(filename[0]));
+
+    s=name.size();
+    output_file.write((char *) &s,sizeof(s));
+    output_file.write((char *)name.data(),s*sizeof(name[0]));
 }
 
 std::string LongReadsDatastore::get_read_sequence(size_t readID) {

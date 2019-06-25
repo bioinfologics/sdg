@@ -5,7 +5,7 @@
 #include "WorkSpace.hpp"
 
 
-const bsgVersion_t WorkSpace::min_compat = 0x0001;
+const bsgVersion_t WorkSpace::min_compat = 0x0002;
 
 void WorkSpace::add_log_entry(std::string text) {
     log.emplace_back(std::time(0),std::string(GIT_COMMIT_HASH),text);
@@ -36,6 +36,12 @@ void WorkSpace::dump_to_disk(std::string filename) {
     sdg.write(of);
     //dump KCI
     kci.write(of);
+
+    count = distance_graphs.size();
+    of.write((char *) &count, sizeof(count));
+    for (auto i=0; i < count; ++i) {
+        distance_graphs[i].write(of);
+    }
 
     //paired read datastores
     count=paired_read_datastores.size();
@@ -121,6 +127,12 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     sdg.read(wsfile);
     sdglib::OutputLog() <<"Loaded graph with "<<sdg.nodes.size()-1<<" nodes" <<std::endl;
     kci.read(wsfile);
+
+    wsfile.read((char *) &count,sizeof(count));
+    distance_graphs.reserve(count);
+    for (auto i=0;i<count;++i) {
+        distance_graphs.emplace_back(sdg, wsfile);
+    }
     //todo: read all datastores and mappers!!!
 //    if (format>1) {
 //        wsfile.read((char *) &count,sizeof(count));

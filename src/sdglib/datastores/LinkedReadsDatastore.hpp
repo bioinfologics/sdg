@@ -85,6 +85,7 @@ public:
     uint64_t readsize;
     uint64_t readpos_offset;
     LinkedReadsMapper mapper;
+    std::string name;
 private:
     std::vector<uint32_t> read_tag;
     FILE * fd=NULL;

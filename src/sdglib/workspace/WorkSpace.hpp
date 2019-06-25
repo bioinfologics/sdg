@@ -60,6 +60,7 @@ public:
     std::vector<LinkedReadsDatastore> linked_read_datastores;
     std::vector<LongReadsDatastore> long_read_datastores;
 
+    std::vector<DistanceGraph> distance_graphs;
 
     KmerCompressionIndex kci;
 

@@ -10,7 +10,7 @@
 #include <strings.h>
 #include <cstring>
 
-const bsgVersion_t LinkedReadsDatastore::min_compat = 0x0001;
+const bsgVersion_t LinkedReadsDatastore::min_compat = 0x0002;
 
 std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k) {
     std::string seq;
@@ -261,6 +261,11 @@ void LinkedReadsDatastore::read(std::ifstream &input_file) {
     input_file.read((char *) &s, sizeof(s));
     filename.resize(s);
     input_file.read((char *) filename.data(), filename.size());
+
+    input_file.read((char *) &s, sizeof(s));
+    name.resize(s);
+    input_file.read((char *) name.data(), name.size());
+
     load_index(filename);
 }
 
@@ -303,6 +308,10 @@ void LinkedReadsDatastore::write(std::ofstream &output_file) {
     uint64_t s=filename.size();
     output_file.write((char *) &s,sizeof(s));
     output_file.write((char *)filename.data(),filename.size());
+
+    s=name.size();
+    output_file.write((char *) &s,sizeof(s));
+    output_file.write((char *)name.data(),name.size());
 }
 
 void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std::set<bsg10xTag> &tagSet) {
