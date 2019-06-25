@@ -32,6 +32,7 @@
 #include "sdglib/datastores/LongReadsDatastore.hpp"
 #include "sdglib/mappers/PairedReadsMapper.hpp"
 #include "sdglib/datastores/PairedReadsDatastore.hpp"
+#include "sdglib/datastores/ReadSequenceBuffer.hpp"
 
 #include "sdglib/processors/Untangler.hpp"
 #include "sdglib/graph/DistanceGraph.hpp"
@@ -193,5 +194,6 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %include "sdglib/mappers/PairedReadsMapper.hpp"
 %include "sdglib/processors/LinkageUntangler.hpp"
 %include "sdglib/graph/DistanceGraph.hpp"
+%include "sdglib/datastores/ReadSequenceBuffer.hpp"
 
 %include "sdglib/processors/HaplotypeConsensus.hpp"

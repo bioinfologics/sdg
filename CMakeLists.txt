@@ -158,6 +158,8 @@ add_library(sdg SHARED
         src/sdglib/datastores/PairedReadsDatastore.cc
         src/sdglib/datastores/LinkedReadsDatastore.cc
         src/sdglib/datastores/LongReadsDatastore.cpp
+        src/sdglib/datastores/KmerCountsDatastore.cc
+        src/sdglib/datastores/ReadSequenceBuffer.cc
         src/sdglib/mappers/LongReadsMapper.cpp
         src/sdglib/mappers/LinkedReadsMapper.cc
         src/sdglib/mappers/PairedReadsMapper.cc
@@ -183,6 +185,8 @@ add_library(sdg_static STATIC
         src/sdglib/datastores/PairedReadsDatastore.cc
         src/sdglib/datastores/LinkedReadsDatastore.cc
         src/sdglib/datastores/LongReadsDatastore.cpp
+        src/sdglib/datastores/KmerCountsDatastore.cc
+        src/sdglib/datastores/ReadSequenceBuffer.cc
         src/sdglib/mappers/LongReadsMapper.cpp
         src/sdglib/mappers/LinkedReadsMapper.cc
         src/sdglib/mappers/PairedReadsMapper.cc

@@ -50,7 +50,7 @@ This tool takes a read datastore as input and constructs a DBG, then maps the re
 
 For this example, you need to first have both the illumina and pacbio reads in datastores, and then create a starting WorkSpace with the DBG of the read sequences:
 
-```{sh, eval=FALSE, size="scriptsize", fig.cap='Creating a workspace with a DBG from the command line'}
+```bash
 sdg-datastore make -t paired -o ecoli_pe -1 ../ecoli_pe_r1.fastq -2 ../ecoli_pe_r2.fastq -s 301
 sdg-datastore make -t long -o ecoli_pb -L ../ecoli_pb_all.fastq
 sdg-dbg -p ecoli_pe.prseq -o ecoli_assm
@@ -90,28 +90,5 @@ nsl_nr.write_to_gfa1('lr_scaffolded_no_repeats.gfa')
 ```
 
 
-
-
-
 ### Example #2: phasing a trio child genome using k-mer counts
 
-
-
-
-
-```
-#create new workspace with graph
-sdg-workspace make -g {input.gfa} -o {wsname}
-
-#create new datastore with linked reads
-sdg-datastore make -t 10x -1 {10x_R1.fastq} -2 {10x_R2.fastq} -o {dsname.sdgds}
-
-#add 10x datastore to ws
-sdg-workspace add -w {wsname.sdgws} -l {dsname.sdgds}
-
-#add KCI spectrum computed from PE files into workspace
-sdg-kmerspectrum make -w {wsname.sdgws} -f {r1.fastq} -f {r2.fastq}
-
-#map reads to graph and save ws to new _mapped file
-sdg-mapper -w {wsname.sdgws} -o {wsname_mapped}
-```
