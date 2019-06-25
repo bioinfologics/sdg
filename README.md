@@ -6,34 +6,98 @@
 
 
 # SDG
-The **S**equence **D**istance **G**raph is a framework to work with genome graphs and raw reads.
+The **S**equence **D**istance **G**raph is a framework to work with genome graphs and sequencing data. It provides a workspace build around a Sequence Distance Graph, datastores for paired, linked and long reads, read mappers, and k-mer counters. It can be used to perform different types of sequence analyses.
 
-It provides a workspace that can contain a graph and datastores for paired, linked and long reads. These reads can be mapped to the graph.
+SDG can be used as a Python module through its SWIG API. R and Julia support are experimental and should not be used at this stage.
 
-A SWIG API enables SDG to be used as a Python module, and there is experimental Julia and R support.
+The documentation is severily lacking right now. We're working on it. There is [SDG API documentation](https://bioinfologics.github.io/sdg/), although again it is lacking right now.
 
-The documentation is severily lacking right now. We're working on it.
+# WARNING
 
-There is [SDG documentation](https://bioinfologics.github.io/sdg/), although again it is lacking right now.
+**SDG is undergoing major changes right now preparing for v1. Please come back in a few weeks for serious usage.**
 
-# Using SDG 
-## Graph simplification/scaffolding using datastores and existing heuristics
+# Installation
 
-**Warning: SDG is undergoing major changes and this master repository is outdated. I will be updated soon with a working version.**
 
-The current version of needs as input:
-- A GFA+fasta graph of the current (input) assembly. Preferably a w2rap-contigger contigs_raw.gfa graph assembled at k=200.
-- An illumina dataset to use as k-mer spectrum for the KCI. This is usually the dataset that generated the input assembly graph.
-- 10x Chromium Illumina and/or LMP and/or Pacbio and/or Nanopore reads.
 
-All read sequence files need to be converted to datastores. These are
-indexed files SDG can use to access every read's sequence
-efficiently.
+# Usage
 
-A full workspace must be created, with all of these components, this can later save other
-pre-computed status data such as read mapping positions.
 
-Some example commands (**warning, SDG is being thoroughly updated right now, this may only be useful as a trivial exaple now**):
+
+## Command line tools
+
+### sdg-datastore
+
+Tool to create datastores from raw reads. It also creates a special type of datastore: the KmerCountsDatastore, which computes frequency of k-mers from a read set. Since the k-mers are only counted if they appear in a WorkSpace's SequenceDistanceGraph, you will need a workspace to create a KmerCountsDatastore.
+
+### sdg-workspace
+
+Tool to create and modify WorSpaces. The WorkSpaces bind together a SequenceDistanceGraph, aditional DistanceGraphs defined over its nodes, read datastores (and their mappings) and k-mer count datastores. You will normally use WorkSpaces to save intermediate status of pipelines and such.
+
+### sdg-mapper
+
+A simple tool to map reads to the SequenceDistanceGraph within a Workspace.
+
+### sdg-dbg
+
+This tool takes a read datastore as input and constructs a DBG, then maps the reads back to it, creates a k-mer count and writes down a neat WorkSpace with all this.
+
+
+
+## Python module examples
+
+### Example #1: short and long read hybrid assembly/scaffolding
+
+For this example, you need to first have both the illumina and pacbio reads in datastores, and then create a starting WorkSpace with the DBG of the read sequences:
+
+```{sh, eval=FALSE, size="scriptsize", fig.cap='Creating a workspace with a DBG from the command line'}
+sdg-datastore make -t paired -o ecoli_pe -1 ../ecoli_pe_r1.fastq -2 ../ecoli_pe_r2.fastq -s 301
+sdg-datastore make -t long -o ecoli_pb -L ../ecoli_pb_all.fastq
+sdg-dbg -p ecoli_pe.prseq -o ecoli_assm
+```
+
+Now the long reads datastore can be added, the reads mapped, the linkage created, and the repeats eliminated, to create a scaffolded assembly that will contain only the non-repetitive nodes with mappings from the original DBG:
+
+```python
+import pysdg as sdg
+
+# Load sdg-dbg's workspace from disk, add the pacbio datastore
+ws=sdg.WorkSpace('ecoli_assm.bsgws')
+ws.long_read_datastores.push_back(sdg.LongReadsDatastore(ws,'ecoli_pb.loseq'))
+
+# Map long reads, filter by 10% id, pick best matches and rechain
+lds=ws.long_read_datastores[0]
+lds.mapper.k=11
+lds.mapper.map_reads()
+lds.mapper.filter_mappings_by_size_and_id(500,10)
+lds.mapper.improve_filtered_mappings()
+
+# Create a LinkageUntangler, with linkage from the mapped long reads
+u=sdg.LinkageUntangler(ws)
+lr_mldg=u.make_longRead_multilinkage(lds.mapper)
+
+# Select large nodes, any CI, create linkage between 1st neighbours on selection
+u.select_nodes_by_size_and_ci(1100,0,100)
+nsl=u.make_nextselected_linkage(lr_mldg)
+nsl.write_to_gfa('lr_scaffolded_with_repeats.gfa')
+
+# Deselect nodes with many inputs or outputs (repeats), create linkage with no repeats
+for n in range(len(ws.sdg.nodes)):
+    if u.selected_nodes[n] and ( len(nsl.get_bw_links(n))>1 or len(nsl.get_fw_links(n))>1):
+      u.selected_nodes[n]=False
+nsl_nr=u.make_nextselected_linkage(lr_mldg)
+nsl_nr.write_to_gfa1('lr_scaffolded_no_repeats.gfa')
+```
+
+
+
+
+
+### Example #2: phasing a trio child genome using k-mer counts
+
+
+
+
 
 ```
 #create new workspace with graph
