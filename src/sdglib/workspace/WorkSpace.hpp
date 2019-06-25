@@ -42,10 +42,19 @@ public:
 
     void load_from_disk(std::string filename,bool log_only=false);
 
+    PairedReadsDatastore& add_paired_reads_datastore(const std::string &name, const std::string &filename);
+    LinkedReadsDatastore& add_linked_reads_datastore(const std::string &name, const std::string &filename);
+    LongReadsDatastore& add_long_reads_datastore(const std::string &name, const std::string &filename);
+    DistanceGraph& add_distance_graph(const std::string &name, const DistanceGraph &dg);
+
+
+    PairedReadsDatastore& get_paired_reads_datastore(const std::string &name);
+    LinkedReadsDatastore& get_linked_reads_datastore(const std::string &name);
+    LongReadsDatastore& get_long_reads_datastore(const std::string &name);
+    DistanceGraph& get_distance_graph(const std::string &name);
+
     //general operations
 
-    void create_index(bool verbose = true);
-    void create_63mer_index(bool verbose = true);
     void remap_all();
     void remap_all63();
     //Projected operations with info from the graph
@@ -57,16 +66,15 @@ public:
 
     //All status classes are public, treat them with care anyway ;)
     SequenceDistanceGraph sdg;
-    UniqueKmerIndex uniqueKmerIndex;
-    Unique63merIndex unique63merIndex;
 
     std::vector<PairedReadsDatastore> paired_read_datastores;
     std::vector<LinkedReadsDatastore> linked_read_datastores;
     std::vector<LongReadsDatastore> long_read_datastores;
 
+    std::vector<DistanceGraph> distance_graphs;
 
     KmerCompressionIndex kci;
 
-    static const bsgVersion_t min_compat;
+    static const sdgVersion_t min_compat;
     std::vector<std::string> read_counts_header;
 };

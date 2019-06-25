@@ -4,12 +4,13 @@
 
 #pragma once
 
+#include <set>
+#include <unordered_set>
 #include <map>
-
-#include "sdglib/graph/SequenceDistanceGraph.hpp"
 #include <sdglib/types/MappingTypes.hpp>
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
 #include <sdglib/Version.hpp>
+
 class WorkSpace;
 class UniqueKmerIndex;
 class Unique63merIndex;
@@ -163,5 +164,5 @@ public:
      */
     std::vector<std::vector<TagNeighbour>> tag_neighbours; //not persisted yet!
 
-    static const bsgVersion_t min_compat;
+    static const sdgVersion_t min_compat;
 };

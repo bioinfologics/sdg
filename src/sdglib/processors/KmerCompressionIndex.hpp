@@ -6,10 +6,9 @@
 #define BSG_KMERCOMPRESSIONINDEX_HPP
 
 #include <sdglib/factories/KMerCountFactory.hpp>
-#include <sdglib/readers/SequenceGraphReader.hpp>
-#include "sdglib/graph/SequenceDistanceGraph.hpp"
 #include <sdglib/Version.hpp>
 
+class SequenceDistanceGraph;
 class PairedReadsDatastore;
 class CStringKMerFactory : protected KMerFactory {
 public:
@@ -129,23 +128,10 @@ public:
 
 class KmerCompressionIndex {
 public:
-    KmerCompressionIndex(SequenceDistanceGraph &_sg, uint64_t _max_mem):sg(_sg){
-        max_mem = _max_mem;
-    };
-    KmerCompressionIndex(SequenceDistanceGraph &_sg):sg(_sg){
-        max_mem = 0;
-    };
+    KmerCompressionIndex(SequenceDistanceGraph &_sg, uint64_t _max_mem);;
+    KmerCompressionIndex(SequenceDistanceGraph &_sg);;
 
-    KmerCompressionIndex& operator=(const KmerCompressionIndex &o) {
-        if (this != &o) {
-            sg = o.sg;
-            graph_kmers = o.graph_kmers;
-            nodes_depth = o.nodes_depth;
-            read_counts = o.read_counts;
-            uniq_mode = o.uniq_mode;
-        }
-        return *this;
-    }
+    KmerCompressionIndex& operator=(const KmerCompressionIndex &o);
 
     void index_graph();
     void reindex_graph();
@@ -248,7 +234,7 @@ public:
      */
     uint16_t uniq_mode=0;
 
-    static const bsgVersion_t min_compat;
+    static const sdgVersion_t min_compat;
 };
 
 

@@ -59,11 +59,12 @@ public:
     uint64_t readsize;
     uint64_t readpos_offset;
     PairedReadsMapper mapper;
+    std::string name;
 private:
     //TODO: save size
     uint64_t _size;
     FILE * fd=NULL;
-    static const bsgVersion_t min_compat = 0x0001;
+    static const sdgVersion_t min_compat = 0x0003;
 
     WorkSpace &ws;
 

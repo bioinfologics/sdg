@@ -49,9 +49,9 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     uint64_t pairs=0,discarded=0,truncated=0;
     std::ofstream output(output_filename.c_str());
 
-    output.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    output.write((const char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(PairedDS_FT);
+    output.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    output.write((const char *) &SDG_VN, sizeof(SDG_VN));
+    SDG_FILETYPE type(PairedDS_FT);
     output.write((char *) &type, sizeof(type));
 
     output.write((const char *) &max_readsize,sizeof(readsize));
@@ -133,6 +133,11 @@ void PairedReadsDatastore::read(std::ifstream &input_file) {
     input_file.read((char *) &s, sizeof(s));
     filename.resize(s);
     input_file.read((char *) filename.data(), filename.size());
+
+    input_file.read((char *) &s, sizeof(s));
+    name.resize(s);
+    input_file.read((char *) name.data(), name.size());
+
     load_index();
 }
 
@@ -142,14 +147,14 @@ void PairedReadsDatastore::load_index(){
         std::cerr << "Failed to open " << filename <<": " << strerror(errno);
         throw std::runtime_error("Could not open " + filename);
     }
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
+    sdgMagic_t magic;
+    sdgVersion_t version;
+    SDG_FILETYPE type;
     fread((char *) &magic, sizeof(magic),1,fd);
     fread((char *) &version, sizeof(version),1,fd);
     fread((char *) &type, sizeof(type),1,fd);
 
-    if (magic != BSG_MAGIC) {
+    if (magic != SDG_MAGIC) {
         throw std::runtime_error(filename + " appears to be corrupted");
     }
 
@@ -172,6 +177,10 @@ void PairedReadsDatastore::write(std::ofstream &output_file) {
     uint64_t s=filename.size();
     output_file.write((char *) &s,sizeof(s));
     output_file.write((char *)filename.data(),filename.size());
+
+    s=name.size();
+    output_file.write((char *) &s,sizeof(s));
+    output_file.write((char *)name.data(),name.size());
 }
 
 void PairedReadsDatastore::write_selection(std::ofstream &output_file, std::vector<uint64_t> read_ids) {
@@ -181,9 +190,9 @@ void PairedReadsDatastore::write_selection(std::ofstream &output_file, std::vect
             return;//exit if not properly paired
         }
     }
-    output_file.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    output_file.write((const char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(PairedDS_FT);
+    output_file.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    output_file.write((const char *) &SDG_VN, sizeof(SDG_VN));
+    SDG_FILETYPE type(PairedDS_FT);
     output_file.write((char *) &type, sizeof(type));
 
     output_file.write((char *) &readsize,sizeof(readsize));
@@ -334,14 +343,14 @@ PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string _filename,
     uint64_t s;
     filename=_filename;
     fd=fopen(filename.c_str(),"r");
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
+    sdgMagic_t magic;
+    sdgVersion_t version;
+    SDG_FILETYPE type;
     input_file.read((char *) &magic, sizeof(magic));
     input_file.read((char *) &version, sizeof(version));
     input_file.read((char *) &type, sizeof(type));
 
-    if (magic != BSG_MAGIC) {
+    if (magic != SDG_MAGIC) {
         throw std::runtime_error(filename + " appears to be corrupted");
     }
 

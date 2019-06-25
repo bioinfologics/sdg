@@ -149,29 +149,32 @@ include_directories("deps/xxhash/")
 
 ## Libraries
 add_library(sdg SHARED
-        src/sdglib/graph/SequenceDistanceGraph.cc
-        src/sdglib/graph/SequenceSubGraph.cpp
-        src/sdglib/graph/SequenceGraphPath.cpp
-        src/sdglib/graph/DistanceGraph.cc
-        src/sdglib/filesystem/helpers.cc
-        src/sdglib/logger/OutputLog.cc
-        src/sdglib/datastores/PairedReadsDatastore.cc
-        src/sdglib/datastores/LinkedReadsDatastore.cc
-        src/sdglib/datastores/LongReadsDatastore.cpp
-        src/sdglib/mappers/LongReadsMapper.cpp
-        src/sdglib/mappers/LinkedReadsMapper.cc
-        src/sdglib/mappers/PairedReadsMapper.cc
-        src/sdglib/processors/Untangler.cc
-        src/sdglib/processors/PathExplorer.cpp
-        src/sdglib/processors/LinkageUntangler.cc
-        src/sdglib/workspace/WorkSpace.cc
-        src/sdglib/processors/KmerCompressionIndex.cc
-        src/sdglib/processors/GraphEditor.cc
-        src/sdglib/processors/GraphMaker.cc
-        src/sdglib/processors/LocalHaplotypeAssembler.cc
-        src/sdglib/processors/HaplotypeConsensus.cc
-        deps/xxhash/xxhash.c
-        )
+            src/sdglib/graph/SequenceDistanceGraph.cc
+            src/sdglib/graph/SequenceSubGraph.cpp
+            src/sdglib/graph/SequenceGraphPath.cpp
+            src/sdglib/graph/DistanceGraph.cc
+            src/sdglib/filesystem/helpers.cc
+            src/sdglib/logger/OutputLog.cc
+            src/sdglib/datastores/PairedReadsDatastore.cc
+            src/sdglib/datastores/LinkedReadsDatastore.cc
+            src/sdglib/datastores/LongReadsDatastore.cpp
+            src/sdglib/mappers/LongReadsMapper.cpp
+            src/sdglib/mappers/LinkedReadsMapper.cc
+            src/sdglib/mappers/PairedReadsMapper.cc
+            src/sdglib/processors/Untangler.cc
+            src/sdglib/processors/PathExplorer.cpp
+            src/sdglib/processors/LinkageUntangler.cc
+            src/sdglib/workspace/WorkSpace.cc
+            src/sdglib/processors/KmerCompressionIndex.cc
+            src/sdglib/processors/GraphEditor.cc
+            src/sdglib/processors/GraphMaker.cc
+            src/sdglib/processors/LocalHaplotypeAssembler.cc
+            src/sdglib/processors/HaplotypeConsensus.cc
+            src/sdglib/indexers/UniqueKmerIndex.cc
+            src/sdglib/indexers/SatKmerIndex.cc
+            src/sdglib/indexers/NKmerIndex.cc
+            deps/xxhash/xxhash.c
+            )
 
 add_library(sdg_static STATIC
         src/sdglib/graph/SequenceDistanceGraph.cc
@@ -195,6 +198,9 @@ add_library(sdg_static STATIC
         src/sdglib/processors/GraphMaker.cc
         src/sdglib/processors/LocalHaplotypeAssembler.cc
         src/sdglib/processors/HaplotypeConsensus.cc
+        src/sdglib/indexers/UniqueKmerIndex.cc
+        src/sdglib/indexers/SatKmerIndex.cc
+        src/sdglib/indexers/NKmerIndex.cc
         deps/xxhash/xxhash.c
         )
 

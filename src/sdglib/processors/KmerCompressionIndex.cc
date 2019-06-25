@@ -4,14 +4,16 @@
 
 
 #include "KmerCompressionIndex.hpp"
+#include <atomic>
+#include <sstream>
 #include <sdglib/readers/FileReader.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/Version.hpp>
-#include <atomic>
-#include <sstream>
 #include <sdglib/datastores/PairedReadsDatastore.hpp>
+#include "sdglib/graph/SequenceDistanceGraph.hpp"
 
-const bsgVersion_t KmerCompressionIndex::min_compat = 0x0001;
+
+const sdgVersion_t KmerCompressionIndex::min_compat = 0x0003;
 
 void KmerCompressionIndex::index_graph(){
     sdglib::OutputLog(sdglib::INFO) << "Indexing graph, Counting..."<<std::endl;
@@ -83,14 +85,14 @@ void KmerCompressionIndex::reindex_graph(){
 
 void KmerCompressionIndex::read(std::ifstream &input_file) {
     uint64_t kcount;
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
+    sdgMagic_t magic;
+    sdgVersion_t version;
+    SDG_FILETYPE type;
     input_file.read((char *) &magic, sizeof(magic));
     input_file.read((char *) &version, sizeof(version));
     input_file.read((char *) &type, sizeof(type));
 
-    if (magic != BSG_MAGIC) {
+    if (magic != SDG_MAGIC) {
         throw std::runtime_error("Magic number not present in the kci file");
     }
 
@@ -125,9 +127,9 @@ void KmerCompressionIndex::load_from_disk(std::string filename) {
 
 void KmerCompressionIndex::write(std::ofstream &output_file) {
     uint64_t kcount=graph_kmers.size();
-    output_file.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    output_file.write((const char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(KCI_FT);
+    output_file.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    output_file.write((const char *) &SDG_VN, sizeof(SDG_VN));
+    SDG_FILETYPE type(KCI_FT);
     output_file.write((char *) &type, sizeof(type));
     output_file.write((const char *) &kcount,sizeof(kcount));
     output_file.write((const char *) graph_kmers.data(),sizeof(KmerCount)*kcount);
@@ -457,4 +459,23 @@ void KmerCompressionIndex::compute_kci_profiles(std::string filename) {
 
 void KmerCompressionIndex::print_status() {
     sdglib::OutputLog()<<"KCI has "<<graph_kmers.size()<<" kmers"<<std::endl;
+}
+
+KmerCompressionIndex &KmerCompressionIndex::operator=(const KmerCompressionIndex &o) {
+    if (this != &o) {
+        sg = o.sg;
+        graph_kmers = o.graph_kmers;
+        nodes_depth = o.nodes_depth;
+        read_counts = o.read_counts;
+        uniq_mode = o.uniq_mode;
+    }
+    return *this;
+}
+
+KmerCompressionIndex::KmerCompressionIndex(SequenceDistanceGraph &_sg, uint64_t _max_mem) :sg(_sg){
+    max_mem = _max_mem;
+}
+
+KmerCompressionIndex::KmerCompressionIndex(SequenceDistanceGraph &_sg) :sg(_sg){
+    max_mem = 0;
 }

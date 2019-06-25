@@ -6,19 +6,19 @@
 #define BSG_LONGREADMAPPER_H
 
 
-#include "LongReadsMapper.hpp"
 #include <iostream>
 #include <memory>
-#include <sdglib/mappers/LinkedReadsMapper.hpp>
-#include <sdglib/factories/KMerIDXFactory.hpp>
-#include <sdglib/graph/SequenceDistanceGraph.hpp>
-#include <sdglib/types/MappingTypes.hpp>
+#include <vector>
+#include <sdglib/types/GenericTypes.hpp>
 #include <sdglib/indexers/NKmerIndex.hpp>
-#include <sdglib/utilities/hashing_helpers.hpp>
 #include <sdglib/indexers/SatKmerIndex.hpp>
+#include <sdglib/types/MappingTypes.hpp>
+#include <sdglib/utilities/hashing_helpers.hpp>
+#include <sdglib/Version.hpp>
+
 
 class WorkSpace;
-
+class LinkedReadsMapper;
 struct ReadPathParams {
     int default_overlap_distance = 199;
     float path_distance_multiplier = 1.5;
@@ -407,7 +407,7 @@ public:
     std::vector<std::vector<uint64_t>> reads_in_node;
 
 
-    static const bsgVersion_t min_compat;
+    static const sdgVersion_t min_compat;
 
     bool sat_kmer_index = false;
 };

@@ -2,10 +2,10 @@
 // Created by Bernardo Clavijo (EI) on 25/05/2018.
 //
 
-#include <sdglib/logger/OutputLog.hpp>
+#include "DistanceGraph.hpp"
 #include <fstream>
 #include <cmath>
-#include "DistanceGraph.hpp"
+#include <sdglib/logger/OutputLog.hpp>
 #include "SequenceDistanceGraph.hpp"
 
 void DistanceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, uint64_t rid) {
@@ -469,4 +469,33 @@ void DistanceGraph::write_to_gfa2(std::string filename, const std::vector<sgNode
             }
     }
 
+}
+
+void DistanceGraph::read(std::ifstream &input_file) {
+    uint64_t s;
+    input_file.read((char *) &s, sizeof(s));
+    name.resize(s);
+    input_file.read((char *) name.data(), name.size());
+    sdglib::read_flat_vectorvector(input_file, links);
+}
+
+void DistanceGraph::write(std::ofstream &output_file) {
+    uint64_t s=name.size();
+    output_file.write((char *) &s,sizeof(s));
+    output_file.write((char *)name.data(),name.size());
+    sdglib::write_flat_vectorvector(output_file, links);
+}
+
+DistanceGraph::DistanceGraph(SequenceDistanceGraph &sdg, std::ifstream &input_file) : sdg(sdg) {
+    read(input_file);
+}
+
+DistanceGraph &DistanceGraph::operator=(const DistanceGraph &o) {
+    if (this == &o) return *this;
+
+    sdg = o.sdg;
+    links = o.links;
+    name = o.name;
+
+    return *this;
 }
