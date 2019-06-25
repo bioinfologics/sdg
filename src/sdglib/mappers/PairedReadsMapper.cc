@@ -1,13 +1,13 @@
 //
 // Created by Bernardo Clavijo (EI) on 03/11/2017.
 //
+#include "PairedReadsMapper.hpp"
 #include <iomanip>
 #include <cassert>
 #include <atomic>
 #include <sdglib/utilities/omp_safe.hpp>
 #include <fstream>
 #include <iostream>
-#include "PairedReadsMapper.hpp"
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/utilities/io_helpers.hpp>
 

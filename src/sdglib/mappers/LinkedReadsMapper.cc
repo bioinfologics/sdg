@@ -1,13 +1,11 @@
 //
 // Created by Bernardo Clavijo (EI) on 03/11/2017.
 //
+#include "LinkedReadsMapper.hpp"
 #include <iostream>
 #include <iomanip>
 #include <cassert>
 #include <atomic>
-
-
-#include "LinkedReadsMapper.hpp"
 #include "sdglib/factories/KMerIDXFactory.hpp"
 #include <sdglib/datastores/LinkedReadsDatastore.hpp>
 #include <sdglib/utilities/omp_safe.hpp>

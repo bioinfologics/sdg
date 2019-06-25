@@ -3,15 +3,15 @@
 //
 
 #include "LongReadsMapper.hpp"
+#include <atomic>
+#include <cmath>
+#include <iomanip>      // std::setprecision
+#include <iterator>
 #include <sdglib/logger/OutputLog.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/utilities/io_helpers.hpp>
 #include <sdglib/utilities/most_common_helper.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
-#include <atomic>
-#include <cmath>
-#include <iomanip>      // std::setprecision
-#include <iterator>
 
 
 const bsgVersion_t LongReadsMapper::min_compat = 0x0001;

@@ -2,10 +2,10 @@
 // Created by Bernardo Clavijo (EI) on 25/05/2018.
 //
 
-#include <sdglib/logger/OutputLog.hpp>
+#include "DistanceGraph.hpp"
 #include <fstream>
 #include <cmath>
-#include "DistanceGraph.hpp"
+#include <sdglib/logger/OutputLog.hpp>
 #include "SequenceDistanceGraph.hpp"
 
 void DistanceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, uint64_t rid) {

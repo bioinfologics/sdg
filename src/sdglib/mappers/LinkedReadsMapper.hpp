@@ -4,12 +4,13 @@
 
 #pragma once
 
+#include <set>
+#include <unordered_set>
 #include <map>
-
-#include "sdglib/graph/SequenceDistanceGraph.hpp"
 #include <sdglib/types/MappingTypes.hpp>
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
 #include <sdglib/Version.hpp>
+
 class WorkSpace;
 class UniqueKmerIndex;
 class Unique63merIndex;
