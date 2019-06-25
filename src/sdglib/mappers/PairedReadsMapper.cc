@@ -9,6 +9,7 @@
 #include <iostream>
 #include "PairedReadsMapper.hpp"
 #include <sdglib/workspace/WorkSpace.hpp>
+#include <sdglib/utilities/io_helpers.hpp>
 
 const bsgVersion_t PairedReadsMapper::min_compat = 0x0001;
 
@@ -21,26 +22,17 @@ PairedReadsMapper::PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore 
 
 void PairedReadsMapper::write(std::ofstream &output_file) {
     //read-to-node
-    uint64_t count=read_to_node.size();
     output_file.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
     output_file.write((char *) &BSG_VN, sizeof(BSG_VN));
     BSG_FILETYPE type(PairedMap_FT);
     output_file.write((char *) &type, sizeof(type));
 
-    output_file.write((const char *) &count,sizeof(count));
-    output_file.write((const char *) read_to_node.data(),sizeof(sgNodeID_t)*count);
+    sdglib::write_flat_vector(output_file, read_to_node);
     //mappings
-    count=reads_in_node.size();
-    output_file.write((const char *) &count,sizeof(count));
-    for (auto i=0;i<count;++i) {
-        uint64_t mcount=reads_in_node[i].size();
-        output_file.write((const char *) &mcount,sizeof(mcount));
-        output_file.write((const char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
-    }
+    sdglib::write_flat_vectorvector(output_file, reads_in_node);
 }
 
 void PairedReadsMapper::read(std::ifstream &input_file) {
-    uint64_t count;
     bsgMagic_t magic;
     bsgVersion_t version;
     BSG_FILETYPE type;
@@ -60,17 +52,10 @@ void PairedReadsMapper::read(std::ifstream &input_file) {
         throw std::runtime_error("PairedReadsMapper file Incompatible file type");
     }
 
-    input_file.read(( char *) &count,sizeof(count));
-    read_to_node.resize(count);
-    input_file.read(( char *) read_to_node.data(),sizeof(sgNodeID_t)*count);
-    input_file.read(( char *) &count,sizeof(count));
-    reads_in_node.resize(count);
-    for (auto i=0;i<count;++i) {
-        uint64_t mcount;
-        input_file.read(( char *) &mcount,sizeof(mcount));
-        reads_in_node[i].resize(mcount);
-        input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
-    }
+    sdglib::read_flat_vector(input_file, read_to_node);
+
+    sdglib::read_flat_vectorvector(input_file, reads_in_node);
+
     populate_orientation();
 }
 

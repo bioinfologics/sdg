@@ -13,6 +13,7 @@
 #include <sdglib/datastores/LinkedReadsDatastore.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
+#include <sdglib/utilities/io_helpers.hpp>
 
 const bsgVersion_t LinkedReadsMapper::min_compat = 0x0002;
 
@@ -31,26 +32,11 @@ void LinkedReadsMapper::write(std::ofstream &output_file) {
     BSG_FILETYPE type(LinkedMap_FT);
     output_file.write((char *) &type, sizeof(type));
 
-    output_file.write((const char *) &count,sizeof(count));
-    output_file.write((const char *) read_to_node.data(),sizeof(sgNodeID_t)*count);
-
-
+    sdglib::write_flat_vector(output_file, read_to_node);
     //mappings
-    count=reads_in_node.size();
-    output_file.write((const char *) &count,sizeof(count));
-    for (auto i=0;i<count;++i) {
-        uint64_t mcount=reads_in_node[i].size();
-        output_file.write((const char *) &mcount,sizeof(mcount));
-        output_file.write((const char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
-    }
+    sdglib::write_flat_vectorvector(output_file, reads_in_node);
 
-    count=tag_neighbours.size();
-    output_file.write((const char *) &count, sizeof(count));
-    for (auto i = 0; i < count;++i) {
-        uint32_t mcount=tag_neighbours[i].size();
-        output_file.write( (const char *) &mcount, sizeof(mcount));
-        output_file.write((const char *) tag_neighbours[i].data(), sizeof(TagNeighbour)*mcount);
-    }
+    sdglib::write_flat_vectorvector(output_file, tag_neighbours);
 }
 
 void LinkedReadsMapper::read(std::ifstream &input_file) {
@@ -76,28 +62,11 @@ void LinkedReadsMapper::read(std::ifstream &input_file) {
     }
 
 
-    input_file.read(( char *) &count,sizeof(count));
-    read_to_node.resize(count);
-    input_file.read(( char *) read_to_node.data(),sizeof(sgNodeID_t)*count);
+    sdglib::read_flat_vector(input_file, read_to_node);
 
-    input_file.read(( char *) &count,sizeof(count));
-    reads_in_node.resize(count);
-    for (auto i=0;i<count;++i) {
-        uint64_t mcount;
-        input_file.read(( char *) &mcount,sizeof(mcount));
-        reads_in_node[i].resize(mcount);
-        input_file.read(( char *) reads_in_node[i].data(), sizeof(ReadMapping) * mcount);
-    }
+    sdglib::read_flat_vectorvector(input_file, reads_in_node);
 
-    input_file.read(( char *) &count,sizeof(count));
-    tag_neighbours.resize(count);
-    for (auto i=0;i<count;++i) {
-        uint64_t mcount;
-        input_file.read(( char *) &mcount,sizeof(mcount));
-        tag_neighbours[i].resize(mcount);
-        input_file.read(( char *) tag_neighbours[i].data(), sizeof(ReadMapping) * mcount);
-    }
-
+    sdglib::read_flat_vectorvector(input_file, tag_neighbours);
 }
 
 void LinkedReadsMapper::remap_all_reads() {
