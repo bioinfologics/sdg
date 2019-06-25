@@ -356,7 +356,7 @@ uint64_t LocalHaplotypeAssembler::unroll_short_loops() {
 }
 
 void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, bool simplify, std::string output_prefix){
-    BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+    ReadSequenceBuffer blrsg(ws.linked_read_datastores[0], 200000, 1000);
     auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(k, min_cov, tagSet, blrsg, tag_cov);
     GraphMaker gm(assembly);
     gm.new_graph_from_kmerset_trivial128(ltkmers128, k);
@@ -430,7 +430,7 @@ void LocalHaplotypeAssembler::path_linked_reads() {
     std::vector<sgNodeID_t> kmernodes;
 
     //BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, 1000);
-    BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0],100000,1000);
+    ReadSequenceBuffer blrsg(ws.linked_read_datastores[0],100000,1000);
     for (auto t:tagSet) {
         for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
             //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
@@ -466,7 +466,7 @@ void LocalHaplotypeAssembler::path_linked_reads_informative_singles() {
     std::vector<sgNodeID_t> kmernodes;
     //std::ofstream crf("chimeric_linkedreads.fasta");
     //BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, 1000);
-    BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0],100000,1000);
+    ReadSequenceBuffer blrsg(ws.linked_read_datastores[0],100000,1000);
     for (auto t:tagSet) {
 //        auto chim=0;
         for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
@@ -537,7 +537,7 @@ void LocalHaplotypeAssembler::path_all_reads() {
     std::vector<sgNodeID_t> kmernodes;
 
     //BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, 1000);
-    BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0],100000,1000);
+    ReadSequenceBuffer blrsg(ws.linked_read_datastores[0],100000,1000);
     for (auto t:tagSet) {
         for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
             //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
@@ -975,7 +975,7 @@ void LocalHaplotypeAssembler::problem_analysis(std::string prefix) {
         ++lmplib;
         std::ofstream lmp_r1file(prefix+"_lmp"+std::to_string(lmplib)+"_R1.fasta");
         std::ofstream lmp_r2file(prefix+"_lmp"+std::to_string(lmplib)+"_R2.fasta");
-        BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lpr.first],100000,ws.paired_read_datastores[lpr.first].readsize*2+2);
+        ReadSequenceBuffer bprsg(ws.paired_read_datastores[lpr.first],100000,ws.paired_read_datastores[lpr.first].readsize*2+2);
         for (auto rid : lpr.second) {
             //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
             if (rid%2!=1) continue;
@@ -985,7 +985,7 @@ void LocalHaplotypeAssembler::problem_analysis(std::string prefix) {
     }
 
     //====== 2) Trivial 31-mer graph
-    BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+    ReadSequenceBuffer blrsg(ws.linked_read_datastores[0], 200000, 1000);
     auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers(31, 5, tagSet, blrsg);
     GraphMaker gm(assembly);
     gm.new_graph_from_kmerset_trivial(ltkmers128, 31);

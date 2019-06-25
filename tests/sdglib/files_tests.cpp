@@ -52,7 +52,7 @@ TEST_CASE("Long reads datastore create, read, write") {
 
     WorkSpace ws;
     LongReadsDatastore ds(ws, "long_reads.loseq");
-    BufferedSequenceGetter bufferedSequenceGetter(ds);
+    ReadSequenceBuffer bufferedSequenceGetter(ds);
 
     //random number engine
     std::mt19937 gen(10); // Always using same seed to get same results
@@ -100,7 +100,7 @@ TEST_CASE("10x reads datastore create, read, write") {
 
     WorkSpace ws;
     const LinkedReadsDatastore ds(ws, "10x.lseq");
-    BufferedLRSequenceGetter bufferedSequenceGetter(ds, 128*1024,260);
+    ReadSequenceBuffer bufferedSequenceGetter(ds, 128*1024,260);
 
     //random number engine
     std::mt19937 gen(10); // Always using same seed to get same results
@@ -148,7 +148,7 @@ TEST_CASE("PE reads datastore create, read, write") {
 
     WorkSpace ws;
     const PairedReadsDatastore ds(ws,"pe.prseq");
-    BufferedPairedSequenceGetter bufferedSequenceGetter(ds, 128*1024,260);
+    ReadSequenceBuffer bufferedSequenceGetter(ds, 128*1024,260);
 
     //random number engine
     std::mt19937 gen(10); // Always using same seed to get same results

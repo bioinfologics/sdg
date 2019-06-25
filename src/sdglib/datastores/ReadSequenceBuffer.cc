@@ -3,6 +3,10 @@
 //
 
 #include "ReadSequenceBuffer.hpp"
+#include "PairedReadsDatastore.hpp"
+#include "LinkedReadsDatastore.hpp"
+#include "LongReadsDatastore.hpp"
+
 
 ReadSequenceBuffer::ReadSequenceBuffer(const PairedReadsDatastore &_ds, size_t _bufsize , size_t _chunk_size):
         paired_datastore(&_ds),bufsize(_bufsize),chunk_size(_chunk_size){

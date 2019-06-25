@@ -19,6 +19,7 @@
 #include <sdglib/factories/KMerFactory.hpp>
 #include <sdglib/Version.hpp>
 #include <sdglib/mappers/LinkedReadsMapper.hpp>
+#include "ReadSequenceBuffer.hpp"
 
 enum class LinkedReadsFormat {UCDavis,raw,seq};
 struct LinkedReadData {
@@ -30,7 +31,6 @@ struct LinkedReadData {
         return false;
     }
 };
-class BufferedLRSequenceGetter;
 
 std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16);
 
@@ -75,8 +75,8 @@ public:
     std::string get_read_sequence(size_t readID);
     //inline std::string get_read_sequence(size_t readID){return get_read_sequence(readID,fd1,fd2);};
     bsg10xTag get_read_tag(size_t readID);
-    std::unordered_set<uint64_t> get_tags_kmers(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg);
-    std::unordered_set<__uint128_t, int128_hash> get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg, bool count_tag_cvg=false);
+    std::unordered_set<uint64_t> get_tags_kmers(int k, int min_tag_cov, std::set<bsg10xTag> tags, ReadSequenceBuffer & blrsg);
+    std::unordered_set<__uint128_t, int128_hash> get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, ReadSequenceBuffer & blrsg, bool count_tag_cvg=false);
     std::vector<uint64_t> get_tag_reads(bsg10xTag tag) const;
     std::vector<std::pair<bsg10xTag, uint32_t>> get_tag_readcount();
     void dump_tag_occupancy_histogram(std::string filename);
@@ -94,27 +94,6 @@ private:
 
 
     //TODO: read sequence cache (std::map with a limit of elements and use count)
-};
-
-class BufferedLRSequenceGetter{
-public:
-    BufferedLRSequenceGetter(const LinkedReadsDatastore &_ds, size_t _bufsize, size_t _chunk_size):
-            datastore(_ds),bufsize(_bufsize),chunk_size(_chunk_size){
-        fd=open(datastore.filename.c_str(),O_RDONLY);
-        buffer=(char *)malloc(bufsize);
-        buffer_offset=SIZE_MAX;
-    }
-    const char * get_read_sequence(uint64_t readID);
-    ~BufferedLRSequenceGetter(){
-        free(buffer);
-        if(fd) close(fd);
-    }
-private:
-    const LinkedReadsDatastore &datastore;
-    char * buffer;
-    size_t bufsize,chunk_size;
-    size_t buffer_offset;
-    int fd;
 };
 
 /**
@@ -167,7 +146,7 @@ private:
 
     const LinkedReadsDatastore & datastore;
     uint8_t K;
-    BufferedLRSequenceGetter bprsg;
+    ReadSequenceBuffer bprsg;
     StreamKmerFactory skf;
 
 private:

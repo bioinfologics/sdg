@@ -4,9 +4,12 @@
 
 #pragma once
 
-#include "PairedReadsDatastore.hpp"
-#include "LinkedReadsDatastore.hpp"
-#include "LongReadsDatastore.hpp"
+#include <cstdint>
+#include <cstdio>
+
+class PairedReadsDatastore;
+class LinkedReadsDatastore;
+class LongReadsDatastore;
 
 /**
  * This class accesses the sequence of the reads of a datastore through an internal buffer.
@@ -22,7 +25,7 @@ public:
     explicit ReadSequenceBuffer(const LinkedReadsDatastore &_ds, size_t _bufsize = (1024*1024*30ul), size_t _chunk_size = (1024*1024*4ul));
     const char * get_read_sequence(uint64_t readID);
     ~ReadSequenceBuffer();
-    ReadSequenceBuffer& operator=(const BufferedPairedSequenceGetter&) = delete;
+    ReadSequenceBuffer& operator=(const ReadSequenceBuffer&) = delete;
 private:
     const PairedReadsDatastore * paired_datastore= nullptr;
     const LinkedReadsDatastore * linked_datastore= nullptr;

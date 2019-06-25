@@ -971,7 +971,7 @@ void LinkageUntangler::expand_linear_regions(const DistanceGraph & ldg) {
     {
         KmerMapCounter km_count(31);
         KmerMapCreator km_create(31);
-        BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+        ReadSequenceBuffer blrsg(ws.linked_read_datastores[0], 200000, 1000);
         std::unordered_map<uint64_t, uint32_t> kmercoverages;
         uint64_t done=0;
 #pragma omp for schedule(static, 100)
@@ -1118,7 +1118,7 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const DistanceGraph & l
     local_unitigs.resize(lines.size());
 #pragma omp parallel
     {
-        BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+        ReadSequenceBuffer blrsg(ws.linked_read_datastores[0], 200000, 1000);
         std::vector<SequenceGraphPath> tsols;
         uint64_t donelines = 0;
 #pragma omp for schedule(dynamic, 1)
@@ -1288,7 +1288,7 @@ void LinkageUntangler::expand_linear_regions_skating(const DistanceGraph & ldg, 
     std::vector<SequenceGraphPath> sols;
 #pragma omp parallel
     {
-        BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+        ReadSequenceBuffer blrsg(ws.linked_read_datastores[0], 200000, 1000);
         std::vector<SequenceGraphPath> tsols;
         uint64_t donelines=0;
 #pragma omp for schedule(dynamic,1)
@@ -1399,7 +1399,7 @@ void LinkageUntangler::fill_linkage_line(std::vector<sgNodeID_t> nodes) {
     }
     std::cout<<"Local tag reads: "<<total_reads<<std::endl;
     std::cout<<"Creating an uncleaned DBG"<<std::endl;
-    BufferedLRSequenceGetter blrsg(ws.linked_read_datastores[0], 200000, 1000);
+    ReadSequenceBuffer blrsg(ws.linked_read_datastores[0], 200000, 1000);
     auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(63, 3, lineTagSet, blrsg, true);
     //std::cout << "creating DBG for line #" << i << std::endl;
     SequenceDistanceGraph dbg;

@@ -11,6 +11,7 @@
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/utilities/io_helpers.hpp>
+#include <sdglib/datastores/ReadSequenceBuffer.hpp>
 
 const sdgVersion_t LinkedReadsMapper::min_compat = 0x0003;
 
@@ -91,7 +92,7 @@ void LinkedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_r
         std::vector<KmerIDX> readkmers;
         StreamKmerIDXFactory skf(31);
         ReadMapping mapping;
-        auto blrs=BufferedLRSequenceGetter(datastore,128*1024,260);
+        auto blrs=ReadSequenceBuffer(datastore,128*1024,260);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
         auto & mapped_count=thread_mapped_count[omp_get_thread_num()];
         auto & total_count=thread_total_count[omp_get_thread_num()];
@@ -201,7 +202,7 @@ void LinkedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
         std::vector<KmerIDX128> readkmers;
         StreamKmerIDXFactory128 skf(63);
         ReadMapping mapping;
-        auto blrs=BufferedLRSequenceGetter(datastore,128*1024,260);
+        auto blrs=ReadSequenceBuffer(datastore,128*1024,260);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
         auto & mapped_count=thread_mapped_count[omp_get_thread_num()];
         auto & total_count=thread_total_count[omp_get_thread_num()];

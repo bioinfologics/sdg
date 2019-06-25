@@ -398,7 +398,7 @@ void LinkedReadsDatastore::dump_tag_occupancy_histogram(std::string filename) {
         if (oh[i]) tohf<<i<<","<<oh[i]<<std::endl;
 }
 
-std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg) {
+std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min_tag_cov, std::set<bsg10xTag> tags, ReadSequenceBuffer & blrsg) {
     class StreamKmerFactory : public  KMerFactory {
     public:
         explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
@@ -450,7 +450,7 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
     return std::move(kset);
 }
 
-std::unordered_set<__uint128_t, int128_hash> LinkedReadsDatastore::get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, BufferedLRSequenceGetter & blrsg, bool count_tag_cvg) {
+std::unordered_set<__uint128_t, int128_hash> LinkedReadsDatastore::get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, ReadSequenceBuffer & blrsg, bool count_tag_cvg) {
     class StreamKmerFactory128 : public  KMerFactory128 {
     public:
         explicit StreamKmerFactory128(uint8_t k) : KMerFactory128(k){}
@@ -576,16 +576,6 @@ LinkedReadsDatastore &LinkedReadsDatastore::operator=(LinkedReadsDatastore const
     this->mapper = o.mapper;
     this->read_tag = o.read_tag;
     this->fd = fopen(filename.c_str(), "r");
-}
-
-const char* BufferedLRSequenceGetter::get_read_sequence(uint64_t readID) {
-        size_t read_offset_in_file=datastore.readpos_offset+(datastore.readsize+1)*(readID-1);
-        if (read_offset_in_file<buffer_offset or read_offset_in_file+chunk_size>buffer_offset+bufsize) {
-            buffer_offset=read_offset_in_file;
-            lseek(fd,read_offset_in_file,SEEK_SET);
-            read(fd,buffer,bufsize);
-        }
-        return buffer+(read_offset_in_file-buffer_offset);
 }
 
 void BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {
