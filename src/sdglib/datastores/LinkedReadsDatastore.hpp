@@ -89,7 +89,7 @@ public:
 private:
     std::vector<uint32_t> read_tag;
     FILE * fd=NULL;
-    static const bsgVersion_t min_compat;
+    static const sdgVersion_t min_compat;
     WorkSpace &ws;
 
 

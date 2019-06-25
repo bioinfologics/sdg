@@ -10,7 +10,7 @@
 #include <strings.h>
 #include <cstring>
 
-const bsgVersion_t LinkedReadsDatastore::min_compat = 0x0003;
+const sdgVersion_t LinkedReadsDatastore::min_compat = 0x0003;
 
 std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k) {
     std::string seq;
@@ -200,9 +200,9 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
         throw std::runtime_error("Could not open " + output_filename);
     }
 
-    output.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    output.write((const char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(LinkedDS_FT);
+    output.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    output.write((const char *) &SDG_VN, sizeof(SDG_VN));
+    SDG_FILETYPE type(LinkedDS_FT);
     output.write((char *) &type, sizeof(type));
 
     output.write((const char *) &readsize,sizeof(readsize));
@@ -240,7 +240,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
         }
     }
     //go back to the beginning of the file and write the read_tag part again
-    output.seekp(sizeof(BSG_MAGIC)+sizeof(BSG_VN)+sizeof(type)+sizeof(readsize));
+    output.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type)+sizeof(readsize));
     sdglib::OutputLog() << "writing down " <<pairs<<" read_tag entries"<< std::endl;
     rts=read_tag.size();
     output.write((const char *) &rts, sizeof(rts));
@@ -277,14 +277,14 @@ void LinkedReadsDatastore::load_index(std::string _filename){
         std::cerr << "Failed to open " << filename <<": " << strerror(errno);
         throw std::runtime_error("Could not open " + filename);
     }
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
+    sdgMagic_t magic;
+    sdgVersion_t version;
+    SDG_FILETYPE type;
     fread((char *) &magic, sizeof(magic),1,fd);
     fread((char *) &version, sizeof(version),1,fd);
     fread((char *) &type, sizeof(type),1,fd);
 
-    if (magic != BSG_MAGIC) {
+    if (magic != SDG_MAGIC) {
         throw std::runtime_error("Magic number not present in " + _filename);
     }
 
@@ -316,9 +316,9 @@ void LinkedReadsDatastore::write(std::ofstream &output_file) {
 
 void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std::set<bsg10xTag> &tagSet) {
     //write readsize
-    output_file.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    output_file.write((const char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(LinkedDS_FT);
+    output_file.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    output_file.write((const char *) &SDG_VN, sizeof(SDG_VN));
+    SDG_FILETYPE type(LinkedDS_FT);
     output_file.write((char *) &type, sizeof(type));
 
     output_file.write((char *) &readsize, sizeof(readsize));
@@ -531,14 +531,14 @@ LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::string filename, 
     uint64_t s;
     filename=filename;
     fd=fopen(filename.c_str(),"r");
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
+    sdgMagic_t magic;
+    sdgVersion_t version;
+    SDG_FILETYPE type;
     fread((char *) &magic, sizeof(magic),1,fd);
     fread((char *) &version, sizeof(version),1,fd);
     fread((char *) &type, sizeof(type),1,fd);
 
-    if (magic != BSG_MAGIC) {
+    if (magic != SDG_MAGIC) {
         throw std::runtime_error("Magic number not present in " + filename);
     }
 

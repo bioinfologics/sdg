@@ -234,7 +234,7 @@ public:
      */
     uint16_t uniq_mode=0;
 
-    static const bsgVersion_t min_compat;
+    static const sdgVersion_t min_compat;
 };
 
 

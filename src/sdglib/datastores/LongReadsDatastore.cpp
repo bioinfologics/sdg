@@ -10,7 +10,7 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <algorithm>
 
-const bsgVersion_t LongReadsDatastore::min_compat = 0x0003;
+const sdgVersion_t LongReadsDatastore::min_compat = 0x0003;
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string filename) : filename(filename), ws(ws), mapper(ws, *this) {
     load_index(filename);
@@ -25,9 +25,9 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_re
         throw std::runtime_error("Could not open " + output_file);
     }
     std::streampos fPos;
-    ofs.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    ofs.write((const char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(LongDS_FT);
+    ofs.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    ofs.write((const char *) &SDG_VN, sizeof(SDG_VN));
+    SDG_FILETYPE type(LongDS_FT);
     ofs.write((char *) &type, sizeof(type));
 
     ofs.write((char*) &nReads, sizeof(nReads));
@@ -35,7 +35,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_re
     nReads = build_from_fastq(ofs, long_read_file); // Build read_to_fileRecord
     fPos = ofs.tellp();                             // Write position after reads
     ofs.write((char *)read_to_fileRecord.data(),read_to_fileRecord.size()*sizeof(read_to_fileRecord[0]));
-    ofs.seekp(sizeof(BSG_MAGIC)+sizeof(BSG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
+    ofs.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
     ofs.write((char*) &nReads, sizeof(nReads));     // Dump # of reads
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
     ofs.flush();                                    // Make sure everything has been written
@@ -49,14 +49,14 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::ifstream &infile) : f
 }
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &filename, std::ifstream &input_file) : filename(filename), ws(ws), mapper(ws, *this) {
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
+    sdgMagic_t magic;
+    sdgVersion_t version;
+    SDG_FILETYPE type;
     input_file.read((char *) &magic, sizeof(magic));
     input_file.read((char *) &version, sizeof(version));
     input_file.read((char *) &type, sizeof(type));
 
-    if (magic != BSG_MAGIC) {
+    if (magic != SDG_MAGIC) {
         throw std::runtime_error(filename + " appears to be corrupted");
     }
 
@@ -132,14 +132,14 @@ void LongReadsDatastore::load_index(std::string &file) {
     uint64_t nReads(0);
     std::streampos fPos;
 
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
+    sdgMagic_t magic;
+    sdgVersion_t version;
+    SDG_FILETYPE type;
     input_file.read((char *) &magic, sizeof(magic));
     input_file.read((char *) &version, sizeof(version));
     input_file.read((char *) &type, sizeof(type));
 
-    if (magic != BSG_MAGIC) {
+    if (magic != SDG_MAGIC) {
         throw std::runtime_error("This file appears to be corrupted: " + file);
     }
 
@@ -170,9 +170,9 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
         throw std::runtime_error("Could not open " + output_file);
     }
     std::streampos fPos;
-    ofs.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    ofs.write((const char *) &BSG_VN, sizeof(min_compat));
-    BSG_FILETYPE type(LongDS_FT);
+    ofs.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    ofs.write((const char *) &SDG_VN, sizeof(min_compat));
+    SDG_FILETYPE type(LongDS_FT);
     ofs.write((char *) &type, sizeof(type));
 
     ofs.write((char*) &nReads, sizeof(nReads));
@@ -196,7 +196,7 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
     read_to_file_record.pop_back();
     fPos = ofs.tellp();                             // Write position after reads
     ofs.write((char *)read_to_file_record.data(),read_to_file_record.size()*sizeof(read_to_fileRecord[0]));
-    ofs.seekp(sizeof(BSG_MAGIC)+sizeof(BSG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
+    ofs.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
     ofs.write((char*) &nReads, sizeof(nReads));     // Dump # of reads
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
     ofs.flush();                                    // Make sure everything has been written
@@ -304,9 +304,9 @@ BufferedSequenceGetter::~BufferedSequenceGetter(){
 void BufferedSequenceGetter::write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids) {
     unsigned long size(read_ids.size());
 
-    output_file.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    output_file.write((const char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(LongDS_FT);
+    output_file.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    output_file.write((const char *) &SDG_VN, sizeof(SDG_VN));
+    SDG_FILETYPE type(LongDS_FT);
     output_file.write((char *) &type, sizeof(type));
 
     output_file.write((char *) &size, sizeof(size)); // How many reads we will write in the file

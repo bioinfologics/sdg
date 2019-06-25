@@ -64,6 +64,6 @@ public:
 
     KmerCompressionIndex kci;
 
-    static const bsgVersion_t min_compat;
+    static const sdgVersion_t min_compat;
     std::vector<std::string> read_counts_header;
 };

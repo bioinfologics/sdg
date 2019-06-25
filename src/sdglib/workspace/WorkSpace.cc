@@ -5,7 +5,7 @@
 #include "WorkSpace.hpp"
 
 
-const bsgVersion_t WorkSpace::min_compat = 0x0002;
+const sdgVersion_t WorkSpace::min_compat = 0x0002;
 
 void WorkSpace::add_log_entry(std::string text) {
     log.emplace_back(std::time(0),std::string(GIT_COMMIT_HASH),text);
@@ -17,9 +17,9 @@ void WorkSpace::dump_to_disk(std::string filename) {
     //dump log
     uint64_t count;
     count=log.size();
-    of.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    of.write((char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(WS_FT);
+    of.write((char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    of.write((char *) &SDG_VN, sizeof(SDG_VN));
+    SDG_FILETYPE type(WS_FT);
     of.write((char *) &type, sizeof(type));
     of.write((char *) &count,sizeof(count));
     for (auto &l:log){
@@ -90,14 +90,14 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     std::string git_version,text;
     std::time_t timestamp;
 
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
+    sdgMagic_t magic;
+    sdgVersion_t version;
+    SDG_FILETYPE type;
     wsfile.read((char *) &magic, sizeof(magic));
     wsfile.read((char *) &version, sizeof(version));
     wsfile.read((char *) &type, sizeof(type));
 
-    if (magic != BSG_MAGIC) {
+    if (magic != SDG_MAGIC) {
         throw std::runtime_error("Magic number not present in the kci file");
     }
 

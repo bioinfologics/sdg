@@ -12,7 +12,7 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/utilities/io_helpers.hpp>
 
-const bsgVersion_t LinkedReadsMapper::min_compat = 0x0002;
+const sdgVersion_t LinkedReadsMapper::min_compat = 0x0002;
 
 LinkedReadsMapper::LinkedReadsMapper(const WorkSpace &_ws, LinkedReadsDatastore &_datastore) :
 ws(_ws),
@@ -24,9 +24,9 @@ datastore(_datastore)
 void LinkedReadsMapper::write(std::ofstream &output_file) {
     //read-to-node
     uint64_t count=read_to_node.size();
-    output_file.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    output_file.write((char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(LinkedMap_FT);
+    output_file.write((char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    output_file.write((char *) &SDG_VN, sizeof(SDG_VN));
+    SDG_FILETYPE type(LinkedMap_FT);
     output_file.write((char *) &type, sizeof(type));
 
     sdglib::write_flat_vector(output_file, read_to_node);
@@ -39,14 +39,14 @@ void LinkedReadsMapper::write(std::ofstream &output_file) {
 void LinkedReadsMapper::read(std::ifstream &input_file) {
     uint64_t count;
 
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
+    sdgMagic_t magic;
+    sdgVersion_t version;
+    SDG_FILETYPE type;
     input_file.read((char *) &magic, sizeof(magic));
     input_file.read((char *) &version, sizeof(version));
     input_file.read((char *) &type, sizeof(type));
 
-    if (magic != BSG_MAGIC) {
+    if (magic != SDG_MAGIC) {
         throw std::runtime_error("Magic number not present in the LinkedReadMap file");
     }
 

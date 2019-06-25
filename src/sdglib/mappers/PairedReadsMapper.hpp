@@ -122,7 +122,7 @@ public:
      */
     std::vector<uint64_t> frdist; /// Forward reverse distance accumulator
 
-    static const bsgVersion_t min_compat;
+    static const sdgVersion_t min_compat;
 
 };
 

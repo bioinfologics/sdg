@@ -6,13 +6,13 @@
 #define BSG_VERSIONING_HPP
 
 #include <cstdint>
-typedef uint16_t bsgVersion_t;
-typedef uint16_t bsgMagic_t;
+typedef uint16_t sdgVersion_t;
+typedef uint16_t sdgMagic_t;
 
-static const bsgMagic_t BSG_MAGIC = 0x0B56;
-static const bsgVersion_t BSG_VN = 0x0003;
+static const sdgMagic_t SDG_MAGIC = 0x05D6;
+static const sdgVersion_t SDG_VN = 0x0003;
 
-enum BSG_FILETYPE : uint16_t{
+enum SDG_FILETYPE : uint16_t{
     WS_FT,
     KCI_FT,
     PairedDS_FT,

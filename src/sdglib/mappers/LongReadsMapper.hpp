@@ -407,7 +407,7 @@ public:
     std::vector<std::vector<uint64_t>> reads_in_node;
 
 
-    static const bsgVersion_t min_compat;
+    static const sdgVersion_t min_compat;
 
     bool sat_kmer_index = false;
 };
