@@ -64,7 +64,7 @@ private:
     //TODO: save size
     uint64_t _size;
     FILE * fd=NULL;
-    static const bsgVersion_t min_compat = 0x0002;
+    static const bsgVersion_t min_compat = 0x0003;
 
     WorkSpace &ws;
 

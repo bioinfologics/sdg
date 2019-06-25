@@ -10,7 +10,7 @@
 #include <strings.h>
 #include <cstring>
 
-const bsgVersion_t LinkedReadsDatastore::min_compat = 0x0002;
+const bsgVersion_t LinkedReadsDatastore::min_compat = 0x0003;
 
 std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k) {
     std::string seq;

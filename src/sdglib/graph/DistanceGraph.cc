@@ -489,3 +489,13 @@ void DistanceGraph::write(std::ofstream &output_file) {
 DistanceGraph::DistanceGraph(SequenceDistanceGraph &sdg, std::ifstream &input_file) : sdg(sdg) {
     read(input_file);
 }
+
+DistanceGraph &DistanceGraph::operator=(const DistanceGraph &o) {
+    if (this == &o) return *this;
+
+    sdg = o.sdg;
+    links = o.links;
+    name = o.name;
+
+    return *this;
+}

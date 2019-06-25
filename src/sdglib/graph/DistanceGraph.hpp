@@ -205,6 +205,7 @@ public:
     void write_to_gfa1(std::string filename, const std::vector<sgNodeID_t> &selected_nodes={}, const std::vector<double> &depths={});
     void write_to_gfa2(std::string filename, const std::vector<sgNodeID_t> &selected_nodes={}, const std::vector<double> &depths={});
 
+    DistanceGraph& operator=(const DistanceGraph &o);
 
     void read(std::ifstream &input_file);
     void write(std::ofstream &output_file);

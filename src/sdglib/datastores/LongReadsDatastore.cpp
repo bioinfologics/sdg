@@ -171,7 +171,7 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
     }
     std::streampos fPos;
     ofs.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    ofs.write((const char *) &BSG_VN, sizeof(BSG_VN));
+    ofs.write((const char *) &BSG_VN, sizeof(min_compat));
     BSG_FILETYPE type(LongDS_FT);
     ofs.write((char *) &type, sizeof(type));
 
