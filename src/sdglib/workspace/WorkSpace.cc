@@ -256,3 +256,55 @@ void WorkSpace::remap_all63() {
     }
 }
 
+PairedReadsDatastore &WorkSpace::add_paired_reads_datastore(const std::string &name, const std::string &filename) {
+    paired_read_datastores.emplace_back(*this, filename);
+    paired_read_datastores.back().name = name;
+    return paired_read_datastores.back();
+}
+
+LinkedReadsDatastore &WorkSpace::add_linked_reads_datastore(const std::string &name, const std::string &filename) {
+    linked_read_datastores.emplace_back(*this, filename);
+    linked_read_datastores.back().name = name;
+    return linked_read_datastores.back();
+}
+
+LongReadsDatastore &WorkSpace::add_long_reads_datastore(const std::string &name, const std::string &filename) {
+    long_read_datastores.emplace_back(*this, filename);
+    long_read_datastores.back().name = name;
+    return long_read_datastores.back();
+}
+
+DistanceGraph &WorkSpace::add_distance_graph(const std::string &name, const DistanceGraph &dg) {
+    distance_graphs.emplace_back(dg);
+    distance_graphs.back().name = name;
+    return distance_graphs.back();
+}
+
+PairedReadsDatastore &WorkSpace::get_paired_reads_datastore(const std::string &name) {
+    for (auto &ds : paired_read_datastores){
+        if (ds.name == name) return ds;
+    }
+    throw std::runtime_error("There are no PairedReadsDatastore named: " + name);
+}
+
+LinkedReadsDatastore &WorkSpace::get_linked_reads_datastore(const std::string &name) {
+    for (auto &ds : linked_read_datastores){
+        if (ds.name == name) return ds;
+    }
+    throw std::runtime_error("There are no LinkedReadsDatastore named: " + name);
+}
+
+LongReadsDatastore &WorkSpace::get_long_reads_datastore(const std::string &name) {
+    for (auto &ds : long_read_datastores){
+        if (ds.name == name) return ds;
+    }
+    throw std::runtime_error("There are no LongReadsDatastore named: " + name);
+
+}
+
+DistanceGraph &WorkSpace::get_distance_graph(const std::string &name) {
+    for (auto &ds : distance_graphs){
+        if (ds.name == name) return ds;
+    }
+    throw std::runtime_error("There are no DistanceGraphs named: " + name);
+}
