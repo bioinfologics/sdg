@@ -697,7 +697,7 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(const DistanceGraph &m
         if (ws.sdg.nodes[n].status == sgNodeDeleted or !selected_nodes[n]) continue;
         auto fw_sorted = multi_ldg.fw_neighbours_by_distance(n, min_links);
         for (auto &fwl:fw_sorted) {
-            if (selected_nodes[llabs(fwl.second)]) {
+            if (llabs(fwl.second)!=n and selected_nodes[llabs(fwl.second)]) {
                 if (!ldg.are_connected(-n, fwl.second)) {
                     ldg.add_link(-n, fwl.second, fwl.first);
                 }
@@ -706,7 +706,7 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(const DistanceGraph &m
         }
         auto bw_sorted = multi_ldg.fw_neighbours_by_distance(-n, min_links);
         for (auto &bwl:bw_sorted) {
-            if (selected_nodes[llabs(bwl.second)]) {
+            if (llabs(bwl.second)!=n and selected_nodes[llabs(bwl.second)]) {
                 if (!ldg.are_connected(n, bwl.second)) {
                     ldg.add_link(n, bwl.second, bwl.first);
                 }
