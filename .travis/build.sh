@@ -8,4 +8,5 @@ cd build
 cmake .. ${CMAKE_OPTIONS}
 make all -j8
 echo "" > ./docs/html/.nojekyll
+echo "" > ./doc/sphinx/.nojekyll
 make test
