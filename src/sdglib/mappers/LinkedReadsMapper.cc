@@ -12,7 +12,7 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/utilities/io_helpers.hpp>
 
-const sdgVersion_t LinkedReadsMapper::min_compat = 0x0002;
+const sdgVersion_t LinkedReadsMapper::min_compat = 0x0003;
 
 LinkedReadsMapper::LinkedReadsMapper(const WorkSpace &_ws, LinkedReadsDatastore &_datastore) :
 ws(_ws),

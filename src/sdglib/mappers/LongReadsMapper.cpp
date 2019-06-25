@@ -14,7 +14,7 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 
 
-const sdgVersion_t LongReadsMapper::min_compat = 0x0001;
+const sdgVersion_t LongReadsMapper::min_compat = 0x0003;
 
 LongReadHaplotypeMappingsFilter::LongReadHaplotypeMappingsFilter (const LongReadsMapper & _lorm, const LinkedReadsMapper & _lirm):
         lorm(_lorm),lirm(_lirm){

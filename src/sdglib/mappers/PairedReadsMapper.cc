@@ -11,7 +11,7 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/utilities/io_helpers.hpp>
 
-const sdgVersion_t PairedReadsMapper::min_compat = 0x0001;
+const sdgVersion_t PairedReadsMapper::min_compat = 0x0003;
 
 PairedReadsMapper::PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore &_datastore) :
         ws(_ws),

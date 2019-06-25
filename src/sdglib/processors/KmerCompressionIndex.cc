@@ -13,7 +13,7 @@
 #include "sdglib/graph/SequenceDistanceGraph.hpp"
 
 
-const sdgVersion_t KmerCompressionIndex::min_compat = 0x0001;
+const sdgVersion_t KmerCompressionIndex::min_compat = 0x0003;
 
 void KmerCompressionIndex::index_graph(){
     sdglib::OutputLog(sdglib::INFO) << "Indexing graph, Counting..."<<std::endl;

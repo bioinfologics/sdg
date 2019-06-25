@@ -5,7 +5,7 @@
 #include "WorkSpace.hpp"
 
 
-const sdgVersion_t WorkSpace::min_compat = 0x0002;
+const sdgVersion_t WorkSpace::min_compat = 0x0003;
 
 void WorkSpace::add_log_entry(std::string text) {
     log.emplace_back(std::time(0),std::string(GIT_COMMIT_HASH),text);
