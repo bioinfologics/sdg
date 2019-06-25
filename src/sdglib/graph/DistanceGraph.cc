@@ -186,9 +186,9 @@ std::vector<std::vector<sgNodeID_t>> DistanceGraph::get_all_lines(uint16_t min_n
         for (auto pass=0; pass<2; ++pass) {
             //walk til a "non-unitig" junction
             for (auto fn = get_fw_links(path.back()); fn.size() == 1; fn = get_fw_links(path.back())) {
-                if (fn[0].dest != n and fn[0].dest != -n and get_bw_links(fn[0].dest).size() == 1) {
+                if (used[llabs(fn[0].dest)]!=true and get_bw_links(fn[0].dest).size() == 1) {
                     path.emplace_back(fn[0].dest);
-                    used[fn[0].dest > 0 ? fn[0].dest : -fn[0].dest] = true;
+                    used[llabs(fn[0].dest)] = true;
                 } else break;
             }
             std::vector<sgNodeID_t> rpath;
