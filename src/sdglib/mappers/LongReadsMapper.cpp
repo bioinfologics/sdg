@@ -500,11 +500,11 @@ void LongReadsMapper::read(std::string filename) {
 
 void LongReadsMapper::read(std::ifstream &inf) {
     sdglib::OutputLog() << "Reading long read mappings" << std::endl;
-    auto mapSize(mappings.size());
+
     inf.read(reinterpret_cast<char *>(&k), sizeof(k));
-    inf.read(reinterpret_cast<char *>(&mapSize), sizeof(mapSize));
-    mappings.resize(mapSize);
-    inf.read(reinterpret_cast<char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+
+    sdglib::read_flat_vector(inf, mappings);
+
     sdglib::OutputLog() << "Updating read mapping indexes!" << std::endl;
     update_indexes();
     sdglib::OutputLog() << "Done!" << std::endl;
@@ -517,10 +517,10 @@ void LongReadsMapper::write(std::string filename) {
 
 void LongReadsMapper::write(std::ofstream &ofs) {
     sdglib::OutputLog() << "Dumping long read mappings" << std::endl;
-    auto mapSize(mappings.size());
+
     ofs.write(reinterpret_cast<const char *>(&k), sizeof(k));
-    ofs.write(reinterpret_cast<const char *>(&mapSize), sizeof(mapSize));
-    ofs.write(reinterpret_cast<const char*>(mappings.data()), mappings.size()*sizeof(LongReadMapping));
+
+    sdglib::write_flat_vector(ofs, mappings);
     sdglib::OutputLog() << "Done!" << std::endl;
 }
 

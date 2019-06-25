@@ -15,6 +15,7 @@
 #include <functional>
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
 #include <sdglib/mappers/LinkedReadsMapper.hpp>
+#include <sdglib/utilities/io_helpers.hpp>
 
 bool Node::is_canonical() {
     for (size_t i=0,j=sequence.size()-1;i<j;++i,--j){
@@ -180,6 +181,7 @@ std::vector<std::vector<sgNodeID_t>> SequenceDistanceGraph::connected_components
 void SequenceDistanceGraph::write(std::ofstream & output_file) {
     uint64_t count;
     count=nodes.size();
+
     output_file.write((char *) &count,sizeof(count));
     for (auto &n:nodes){
         output_file.write((char *) &n.status,sizeof(n.status));
@@ -187,13 +189,8 @@ void SequenceDistanceGraph::write(std::ofstream & output_file) {
         output_file.write((char *) &count,sizeof(count));
         output_file.write((char *) n.sequence.data(),count);
     }
-    count=links.size();
-    output_file.write((char *) &count,sizeof(count));
-    for (auto nl:links) {
-        uint64_t lcount=nl.size();
-        output_file.write((char *) &lcount,sizeof(lcount));
-        output_file.write((char *) nl.data(), sizeof(Link) * lcount);
-    }
+
+    sdglib::write_flat_vectorvector(output_file, links);
 }
 
 void SequenceDistanceGraph::read(std::ifstream & input_file) {
@@ -214,14 +211,8 @@ void SequenceDistanceGraph::read(std::ifstream & input_file) {
         nodes.back().status=status;
         if (nodes.back().status==sgNodeStatus_t::sgNodeActive) ++active;
     }
-    input_file.read((char *) &count,sizeof(count));
-    links.resize(count);
-    for (auto &nl:links) {
-        uint64_t lcount;
-        input_file.read((char *) &lcount,sizeof(lcount));
-        nl.resize(lcount,{0,0,0});
-        input_file.read((char *) nl.data(), sizeof(Link) * lcount);
-    }
+
+    sdglib::read_flat_vectorvector(input_file, links);
 }
 
 void SequenceDistanceGraph::load_from_gfa(std::string filename) {

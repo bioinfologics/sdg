@@ -14,6 +14,7 @@
 #include <sdglib/types/KmerTypes.hpp>
 #include <sdglib/readers/FileReader.hpp>
 #include <sdglib/factories/KmerPosFactory.hpp>
+#include <sdglib/utilities/io_helpers.hpp>
 
 class UniqueKmerIndex {
 public:
@@ -117,21 +118,6 @@ public:
         return total_kmers_per_node[std::abs(node)];
     }
 
-    void write_vector(std::ofstream &outf, std::vector<uint64_t> &vec) {
-        auto vecSize(vec.size());
-        outf.write(reinterpret_cast<const char *>(&vecSize), sizeof(vecSize));
-        outf.write(reinterpret_cast<const char *>(vec.data()),
-                   vecSize * sizeof(uint64_t));
-    }
-
-    void read_vector(std::ifstream &input, std::vector<uint64_t> &v) {
-        auto vSize(v.size());
-        input.read(reinterpret_cast<char *>(&vSize), sizeof(vSize));
-        v.resize(vSize);
-        input.read(reinterpret_cast<char *>(v.data()), vSize * sizeof(uint64_t));
-        //v.insert(v.begin(), std::istream_iterator<uint64_t>(input), std::istream_iterator<uint64_t>());
-    }
-
     void write_to_file(std::string filename) {
         sdglib::OutputLog() << "Dumping index" << std::endl;
         std::ofstream outf(filename, std::ios_base::binary);
@@ -143,8 +129,8 @@ public:
             outf.write(reinterpret_cast<const char *>(&skm.second), sizeof(skm.second));
         }
 
-        write_vector(outf, unique_kmers_per_node);
-        write_vector(outf, total_kmers_per_node);
+        sdglib::write_flat_vector(outf, unique_kmers_per_node);
+        sdglib::write_flat_vector(outf, total_kmers_per_node);
 
         sdglib::OutputLog() << "Done!" << std::endl;
     }
@@ -163,8 +149,8 @@ public:
             kmer_to_graphposition.emplace(skm.first, skm.second);
         }
 
-        read_vector(inf, unique_kmers_per_node);
-        read_vector(inf, total_kmers_per_node);
+        sdglib::read_flat_vector(inf, unique_kmers_per_node);
+        sdglib::read_flat_vector(inf, total_kmers_per_node);
 
         sdglib::OutputLog() << "Done!" << std::endl;
     }
@@ -299,21 +285,6 @@ public:
         return total_kmers_per_node[std::abs(node)];
     }
 
-    void write_vector(std::ofstream &outf, std::vector<uint64_t> &vec) {
-        auto vecSize(vec.size());
-        outf.write(reinterpret_cast<const char *>(&vecSize), sizeof(vecSize));
-        outf.write(reinterpret_cast<const char *>(vec.data()),
-                   vecSize * sizeof(uint64_t));
-    }
-
-    void read_vector(std::ifstream &input, std::vector<uint64_t> &v) {
-        auto vSize(v.size());
-        input.read(reinterpret_cast<char *>(&vSize), sizeof(vSize));
-        v.resize(vSize);
-        input.read(reinterpret_cast<char *>(v.data()), vSize * sizeof(uint64_t));
-        //v.insert(v.begin(), std::istream_iterator<uint64_t>(input), std::istream_iterator<uint64_t>());
-    }
-
     void write_to_file(std::string filename) {
         sdglib::OutputLog() << "Dumping index" << std::endl;
         std::ofstream outf(filename, std::ios_base::binary);
@@ -325,8 +296,8 @@ public:
             outf.write(reinterpret_cast<const char *>(&skm.second), sizeof(skm.second));
         }
 
-        write_vector(outf, unique_kmers_per_node);
-        write_vector(outf, total_kmers_per_node);
+        sdglib::write_flat_vector(outf, unique_kmers_per_node);
+        sdglib::write_flat_vector(outf, total_kmers_per_node);
 
         sdglib::OutputLog() << "Done!" << std::endl;
     }
@@ -345,8 +316,8 @@ public:
             kmer_to_graphposition.emplace(skm.first, skm.second);
         }
 
-        read_vector(inf, unique_kmers_per_node);
-        read_vector(inf, total_kmers_per_node);
+        sdglib::read_flat_vector(inf, unique_kmers_per_node);
+        sdglib::read_flat_vector(inf, total_kmers_per_node);
 
         sdglib::OutputLog() << "Done!" << std::endl;
     }
