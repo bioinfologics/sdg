@@ -18,7 +18,7 @@ const sdgVersion_t LongReadsMapper::min_compat = 0x0003;
 
 LongReadHaplotypeMappingsFilter::LongReadHaplotypeMappingsFilter (const LongReadsMapper & _lorm, const LinkedReadsMapper & _lirm):
         lorm(_lorm),lirm(_lirm){
-    lrbsgp=new BufferedSequenceGetter(lorm.datastore);
+    lrbsgp=new ReadSequenceBuffer(lorm.datastore);
 }
 
 void LongReadHaplotypeMappingsFilter::set_read(uint64_t _read_id) {
@@ -351,7 +351,7 @@ void LongReadsMapper::map_reads(int filter_limit, const std::unordered_set<uint3
         std::vector<std::pair<bool, uint64_t>> read_kmers;
 
         auto & private_results=thread_mappings[omp_get_thread_num()];
-        BufferedSequenceGetter sequenceGetter(datastore);
+        ReadSequenceBuffer sequenceGetter(datastore);
         std::vector<std::vector<std::pair<int32_t, int32_t>>> node_matches; //node, offset
         const char * query_sequence_ptr;
 
@@ -808,7 +808,7 @@ std::vector<LongReadMapping> LongReadsMapper::improve_read_filtered_mappings(uin
 std::vector<ReadCacheItem> LongReadsMapper::create_read_paths(const std::vector<sgNodeID_t> &backbone, const ReadPathParams &read_path_params) {
     std::unordered_set<uint64_t> useful_read;
     std::vector<ReadCacheItem> read_cache;
-    BufferedSequenceGetter sequenceGetter(datastore);
+    ReadSequenceBuffer sequenceGetter(datastore);
     for (uint32_t bn = 0; bn < backbone.size(); bn++) {
         for (const auto &read:reads_in_node[std::abs(backbone[bn])]) {
             const auto find_it = useful_read.find(read);
@@ -919,7 +919,7 @@ std::vector<sgNodeID_t> LongReadsMapper::create_read_path(uint32_t rid, const Re
                 //Align the read to the paths SG and pick the best(s) alignement(s)
                 std::string seq = read_seq;
                 if (read_seq.empty()) {
-                    BufferedSequenceGetter sequenceGetter(datastore);
+                    ReadSequenceBuffer sequenceGetter(datastore);
                     seq = sequenceGetter.get_read_sequence(rid);
                 }
                 auto subs_string = seq.substr(m1.qEnd - 199, m2.qStart + read_path_params.path_mapping_k + 199 - m1.qEnd + 199);

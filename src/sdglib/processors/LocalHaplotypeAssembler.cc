@@ -654,8 +654,8 @@ void LocalHaplotypeAssembler::write_full(std::string prefix) {
     count = long_reads.size();
     output_file.write((char *)&count,sizeof(count));
     for (auto &l:long_reads){
-        BufferedSequenceGetter sequenceGetter(ws.long_read_datastores[l.first]);
-        sequenceGetter.write_selection(output_file,l.second);
+        ReadSequenceBuffer sequenceGetter(ws.long_read_datastores[l.first]);
+        ws.long_read_datastores[l.first].write_selection(output_file,l.second);
     }
 }
 

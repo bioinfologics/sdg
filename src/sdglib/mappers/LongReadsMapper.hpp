@@ -15,6 +15,7 @@
 #include <sdglib/types/MappingTypes.hpp>
 #include <sdglib/utilities/hashing_helpers.hpp>
 #include <sdglib/Version.hpp>
+#include <sdglib/datastores/ReadSequenceBuffer.hpp>
 
 
 class WorkSpace;
@@ -77,7 +78,6 @@ public:
 
 class LongReadsMapper;
 class LongReadsDatastore;
-class BufferedSequenceGetter;
 
 /**
  * This class groups all methods to filter long read mappings to  haplotype solutions within a long read
@@ -120,7 +120,7 @@ public:
     std::vector<HaplotypeScore> haplotype_scores;
     const LongReadsMapper & lorm;
     const LinkedReadsMapper & lirm;
-    BufferedSequenceGetter * lrbsgp;
+    ReadSequenceBuffer * lrbsgp;
     std::vector<sgNodeID_t> nodeset;
 
 };

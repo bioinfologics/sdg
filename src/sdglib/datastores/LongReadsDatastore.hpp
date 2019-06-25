@@ -20,6 +20,7 @@
 #include <limits>
 #include <sdglib/Version.hpp>
 #include <sdglib/mappers/LongReadsMapper.hpp>
+#include "ReadSequenceBuffer.hpp"
 
 class WorkSpace;
 class LongReadsMapper;
@@ -36,26 +37,7 @@ struct ReadPosSize {
     }
 };
 
-// Check if this needs to be page size aware
-class BufferedSequenceGetter{
-public:
-    explicit BufferedSequenceGetter(const LongReadsDatastore &_ds, size_t _bufsize = (1024*1024*30ul), size_t _chunk_size = (1024*1024*4ul));
-    const char * get_read_sequence(uint64_t readID);
-    ~BufferedSequenceGetter();
-    void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids);
-    BufferedSequenceGetter& operator=(const BufferedSequenceGetter &o);
-
-private:
-    const LongReadsDatastore &datastore;
-    char * buffer;
-    size_t bufsize,chunk_size;
-    off_t buffer_offset = std::numeric_limits<off_t>::max();
-    int fd;
-    off_t total_size=0;
-};
-
 class LongReadsDatastore {
-    std::unique_ptr<BufferedSequenceGetter> seq_getter;
 
     void load_index(std::string &file);
 
@@ -90,6 +72,7 @@ public:
     void print_status();
     void read(std::ifstream &ifs);
     void write(std::ofstream &output_file);
+    void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids);
     size_t size() const { return read_to_fileRecord.size(); }
 
     std::string get_read_sequence(size_t readID);

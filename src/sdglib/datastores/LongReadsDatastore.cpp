@@ -14,7 +14,6 @@ const sdgVersion_t LongReadsDatastore::min_compat = 0x0003;
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string filename) : filename(filename), ws(ws), mapper(ws, *this) {
     load_index(filename);
-    this->seq_getter = std::make_unique<BufferedSequenceGetter>(*this);
 }
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_read_file, const std::string &output_file) : filename(output_file), ws(ws), mapper(ws, *this) {
@@ -40,12 +39,10 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_re
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
     ofs.flush();                                    // Make sure everything has been written
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<size()-1<<" reads"<<std::endl;
-    this->seq_getter = std::make_unique<BufferedSequenceGetter>(*this);
 }
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::ifstream &infile) : filename(), ws(ws), mapper(ws, *this) {
     read(infile);
-    this->seq_getter = std::make_unique<BufferedSequenceGetter>(*this);
 }
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &filename, std::ifstream &input_file) : filename(filename), ws(ws), mapper(ws, *this) {
@@ -82,8 +79,6 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &filenam
         read_to_fileRecord[i].record_size=readSize;
     }
 
-    this->seq_getter = std::make_unique<BufferedSequenceGetter>(*this);
-
 }
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : filename(o.filename), ws(ws), mapper(ws, *this) {
@@ -95,8 +90,6 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : f
     this->mapper.read_paths = o.mapper.read_paths;
     this->mapper.all_paths_between = o.mapper.all_paths_between;
 
-    this->seq_getter = std::make_unique<BufferedSequenceGetter>(*this);
-
 }
 
 LongReadsDatastore &LongReadsDatastore::operator=(LongReadsDatastore const &o) {
@@ -107,7 +100,6 @@ LongReadsDatastore &LongReadsDatastore::operator=(LongReadsDatastore const &o) {
     this->read_to_fileRecord = o.read_to_fileRecord;
 
     this->mapper = o.mapper;
-    this->seq_getter = std::make_unique<BufferedSequenceGetter>(*this);
     return *this;
 }
 
@@ -277,33 +269,16 @@ void LongReadsDatastore::write(std::ofstream &output_file) {
 }
 
 std::string LongReadsDatastore::get_read_sequence(size_t readID) {
-    return seq_getter->get_read_sequence(readID);
-}
-
-BufferedSequenceGetter::BufferedSequenceGetter(const LongReadsDatastore &_ds, size_t _bufsize, size_t _chunk_size):
-        datastore(_ds),bufsize(_bufsize),chunk_size(_chunk_size){
-    fd=open(datastore.filename.c_str(),O_RDONLY);
-    if (fd == -1) {
-        std::string msg("Cannot open file " + datastore.filename);
-        perror(msg.c_str());
-        throw std::runtime_error("Cannot open " + datastore.filename);
-    }
-    struct stat f_stat{};
-    stat(_ds.filename.c_str(), &f_stat);
-    total_size = f_stat.st_size;
-    buffer=(char *)malloc(bufsize);
+    //TODO: reprogram this without a Buffer, just straight access to the file, keep an FD in the class.
+    ReadSequenceBuffer seq_getter(*this);
+    return seq_getter.get_read_sequence(readID);
 }
 
 const char * get_read_sequence(uint64_t readID);
 
-BufferedSequenceGetter::~BufferedSequenceGetter(){
-    free(buffer);
-    if(fd) close(fd);
-}
-
-void BufferedSequenceGetter::write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids) {
+void LongReadsDatastore::write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids) {
     unsigned long size(read_ids.size());
-
+    auto rsb=ReadSequenceBuffer(*this);
     output_file.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
     output_file.write((const char *) &SDG_VN, sizeof(SDG_VN));
     SDG_FILETYPE type(LongDS_FT);
@@ -312,7 +287,7 @@ void BufferedSequenceGetter::write_selection(std::ofstream &output_file, const s
     output_file.write((char *) &size, sizeof(size)); // How many reads we will write in the file
     const char* seq_ptr;
     for (unsigned long long read_id : read_ids) {
-        seq_ptr = get_read_sequence(read_id);
+        seq_ptr = rsb.get_read_sequence(read_id);
         std::string seq(seq_ptr);
         size=seq.size();
         output_file.write((char *) &size,sizeof(size)); // Read length
@@ -320,48 +295,3 @@ void BufferedSequenceGetter::write_selection(std::ofstream &output_file, const s
     }
 }
 
-const char * BufferedSequenceGetter::get_read_sequence(uint64_t readID) {
-    off_t read_offset_in_file=datastore.read_to_fileRecord[readID].offset;
-    if (chunk_size < datastore.read_to_fileRecord[readID].record_size) {
-        throw std::runtime_error(
-                "Reading from " + this->datastore.filename +
-                " failed!\nThe size of the buffer chunk is smaller than read " +
-                std::to_string(readID) + " increase the chunk_size so this read fits");
-    }
-    if (read_offset_in_file<buffer_offset or read_offset_in_file+chunk_size>buffer_offset+bufsize) {
-        buffer_offset=read_offset_in_file;
-        lseek(fd,read_offset_in_file,SEEK_SET);
-        size_t sz_read=0, total_left = 0;
-        total_left = std::min((uint64_t) bufsize, (uint64_t) total_size-read_offset_in_file);
-        char * buffer_pointer = buffer;
-        while(total_left>0) {
-            ssize_t current = read(fd, buffer_pointer, total_left);
-            if (current < 0) {
-                throw std::runtime_error("Reading from " + this->datastore.filename + " failed!");
-            } else {
-                sz_read += current;
-                total_left -= current;
-                buffer_pointer += current;
-            }
-        }
-    }
-    return buffer+(read_offset_in_file-buffer_offset);
-}
-
-BufferedSequenceGetter& BufferedSequenceGetter::operator=(const BufferedSequenceGetter &o){
-    this->total_size = o.total_size;
-    this->chunk_size = o.chunk_size;
-    this->bufsize = o.bufsize;
-    this->buffer_offset = o.buffer_offset;
-
-    buffer=(char *)malloc(bufsize);
-
-    this->fd = ::open(datastore.filename.c_str(), O_RDONLY);
-    if (fd == -1) {
-        std::string msg("Cannot open file " + datastore.filename);
-        perror(msg.c_str());
-        throw std::runtime_error("Cannot open " + datastore.filename);
-    }
-
-    return *this;
-}
