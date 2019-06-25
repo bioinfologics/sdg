@@ -85,7 +85,7 @@ void PairedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_r
         std::vector<KmerIDX> readkmers;
         StreamKmerIDXFactory skf(31);
         ReadMapping mapping;
-        auto blrs=BufferedPairedSequenceGetter(datastore,128*1024,datastore.readsize*2+2);
+        auto blrs=ReadSequenceBuffer(datastore,128*1024,datastore.readsize*2+2);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
         auto & mapped_count=thread_mapped_count[omp_get_thread_num()];
         auto & total_count=thread_total_count[omp_get_thread_num()];
@@ -202,7 +202,7 @@ void PairedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
         std::vector<KmerIDX128> readkmers;
         StreamKmerIDXFactory128 skf(63);
         ReadMapping mapping;
-        auto blrs=BufferedPairedSequenceGetter(datastore,128*1024,datastore.readsize*2+2);
+        auto blrs=ReadSequenceBuffer(datastore,128*1024,datastore.readsize*2+2);
         auto & private_results=thread_mapping_results[omp_get_thread_num()];
         auto & mapped_count=thread_mapped_count[omp_get_thread_num()];
         auto & total_count=thread_total_count[omp_get_thread_num()];

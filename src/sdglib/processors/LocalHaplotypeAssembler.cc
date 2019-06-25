@@ -429,7 +429,6 @@ void LocalHaplotypeAssembler::path_linked_reads() {
     std::vector<std::pair<uint64_t,bool>> read1kmers,read2kmers;
     std::vector<sgNodeID_t> kmernodes;
 
-    //BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, 1000);
     ReadSequenceBuffer blrsg(ws.linked_read_datastores[0],100000,1000);
     for (auto t:tagSet) {
         for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
@@ -464,8 +463,6 @@ void LocalHaplotypeAssembler::path_linked_reads_informative_singles() {
     std::vector<std::pair<sgNodeID_t ,sgNodeID_t >> nodeproximity_thread;
     std::vector<std::pair<__uint128_t,bool>> readkmers;
     std::vector<sgNodeID_t> kmernodes;
-    //std::ofstream crf("chimeric_linkedreads.fasta");
-    //BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, 1000);
     ReadSequenceBuffer blrsg(ws.linked_read_datastores[0],100000,1000);
     for (auto t:tagSet) {
 //        auto chim=0;
@@ -498,11 +495,9 @@ void LocalHaplotypeAssembler::path_paired_reads_informative_singles() {
     std::vector<std::pair<sgNodeID_t ,sgNodeID_t >> nodeproximity_thread;
     std::vector<std::pair<uint64_t,bool>> readkmers;
     std::vector<sgNodeID_t> kmernodes;
-    //std::ofstream crf("chimeric_pairedreads.fasta");
-    //BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, 1000);
     for (auto lpr:paired_reads) {
 //        auto chim=0;
-        BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lpr.first],100000,ws.paired_read_datastores[lpr.first].readsize*2+2);
+        ReadSequenceBuffer bprsg(ws.paired_read_datastores[lpr.first],100000,ws.paired_read_datastores[lpr.first].readsize*2+2);
         for (auto rid : lpr.second) {
             readkmers.clear();
             kmernodes.clear();
@@ -536,7 +531,6 @@ void LocalHaplotypeAssembler::path_all_reads() {
     std::vector<std::pair<uint64_t,bool>> read1kmers,read2kmers;
     std::vector<sgNodeID_t> kmernodes;
 
-    //BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, 1000);
     ReadSequenceBuffer blrsg(ws.linked_read_datastores[0],100000,1000);
     for (auto t:tagSet) {
         for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
@@ -562,7 +556,7 @@ void LocalHaplotypeAssembler::path_all_reads() {
 
     //now do the same for each paired library
     for (auto lpr:paired_reads) {
-        BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lpr.first],100000,ws.paired_read_datastores[lpr.first].readsize*2+2);
+        ReadSequenceBuffer bprsg(ws.paired_read_datastores[lpr.first],100000,ws.paired_read_datastores[lpr.first].readsize*2+2);
         for (auto rid : lpr.second) {
             //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
             if (rid%2!=1) continue;

@@ -216,16 +216,6 @@ std::string PairedReadsDatastore::get_read_sequence(size_t readID) {
 }
 
 
-const char* BufferedPairedSequenceGetter::get_read_sequence(uint64_t readID) {
-    size_t read_offset_in_file=datastore.readpos_offset+(datastore.readsize+1)*(readID-1);
-    if (read_offset_in_file<buffer_offset or read_offset_in_file+chunk_size>buffer_offset+bufsize) {
-        buffer_offset=read_offset_in_file;
-        lseek(fd,read_offset_in_file,SEEK_SET);
-        read(fd,buffer,bufsize);
-    }
-    return buffer+(read_offset_in_file-buffer_offset);
-}
-
 std::unordered_set<__uint128_t, int128_hash> PairedReadsDatastore::get_all_kmers128(int k, int min_tag_cov) {
     class StreamKmerFactory128 : public  KMerFactory128 {
     public:
@@ -257,7 +247,7 @@ std::unordered_set<__uint128_t, int128_hash> PairedReadsDatastore::get_all_kmers
 
     //reserve space by counting reads first, save only the integer, do not merge just count and insert in the set
     std::vector<__uint128_t> all_kmers;
-    BufferedPairedSequenceGetter bprsg(*this,100000,1000);
+    ReadSequenceBuffer bprsg(*this,100000,1000);
     for (auto rid=1;rid<=size();++rid) {
         skf.produce_all_kmers(bprsg.get_read_sequence(rid), all_kmers);
     }
@@ -305,7 +295,7 @@ std::unordered_set<__uint128_t, int128_hash> PairedReadsDatastore::get_reads_kme
 
     //reserve space by counting reads first, save only the integer, do not merge just count and insert in the set
     std::vector<__uint128_t> all_kmers;
-    BufferedPairedSequenceGetter bprsg(*this,100000,1000);
+    ReadSequenceBuffer bprsg(*this,100000,1000);
     for (auto rid:reads) {
         skf.produce_all_kmers(bprsg.get_read_sequence(rid), all_kmers);
     }

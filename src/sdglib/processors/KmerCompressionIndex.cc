@@ -10,6 +10,7 @@
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/Version.hpp>
 #include <sdglib/datastores/PairedReadsDatastore.hpp>
+#include <sdglib/datastores/ReadSequenceBuffer.hpp>
 #include "sdglib/graph/SequenceDistanceGraph.hpp"
 
 
@@ -333,7 +334,7 @@ void KmerCompressionIndex::add_counts_from_datastore(const PairedReadsDatastore 
 
 #pragma omp parallel
     {
-        BufferedPairedSequenceGetter bpsg(ds,100000,1000);
+        ReadSequenceBuffer bpsg(ds,100000,1000);
         uint64_t thread_present(0), thread_absent(0), thread_rp(0);
         const size_t local_kmers_size = 2000000;
         std::vector<uint64_t> found_kmers;

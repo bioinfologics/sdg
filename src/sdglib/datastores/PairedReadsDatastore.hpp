@@ -25,8 +25,6 @@ struct PairedReadData {
     std::string seq1,seq2;
 };
 
-class BufferedPairedSequenceGetter;
-
 class PairedReadsDatastore {
 public:
     PairedReadsDatastore(WorkSpace &ws, std::ifstream &infile);
@@ -69,26 +67,5 @@ private:
     WorkSpace &ws;
 
     //TODO: read sequence cache (std::map with a limit of elements and use count)
-};
-
-class BufferedPairedSequenceGetter{
-public:
-    BufferedPairedSequenceGetter(const PairedReadsDatastore &_ds, size_t _bufsize, size_t _chunk_size):
-            datastore(_ds),bufsize(_bufsize),chunk_size(_chunk_size){
-        fd=open(datastore.filename.c_str(),O_RDONLY);
-        buffer=(char *)malloc(bufsize);
-        buffer_offset=SIZE_MAX;
-    }
-    const char * get_read_sequence(uint64_t readID);
-    ~BufferedPairedSequenceGetter(){
-        free(buffer);
-        close(fd);
-    }
-private:
-    const PairedReadsDatastore &datastore;
-    char * buffer;
-    size_t bufsize,chunk_size;
-    size_t buffer_offset;
-    int fd;
 };
 

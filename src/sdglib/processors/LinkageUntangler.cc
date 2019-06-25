@@ -422,7 +422,7 @@ std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> LinkageUntangler::shared_r
             std::vector<std::pair<sgNodeID_t ,sgNodeID_t >> nodeproximity_thread;
             std::vector<std::pair<uint64_t,bool>> read1kmers,read2kmers;
             std::vector<sgNodeID_t> kmernodes;
-            BufferedPairedSequenceGetter bprsg(ws.paired_read_datastores[lib], 1000000, ws.paired_read_datastores[lib].readsize*2+2);
+            ReadSequenceBuffer bprsg(ws.paired_read_datastores[lib], 1000000, ws.paired_read_datastores[lib].readsize*2+2);
 #pragma omp for
             for (auto rid = 1; rid < ws.paired_read_datastores[lib].size(); rid += 2) {
                 //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
