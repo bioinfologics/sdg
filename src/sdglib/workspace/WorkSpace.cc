@@ -5,9 +5,7 @@
 #include "WorkSpace.hpp"
 
 
-
-
-const bsgVersion_t WorkSpace::min_compat = 0x0001;
+const sdgVersion_t WorkSpace::min_compat = 0x0003;
 
 void WorkSpace::add_log_entry(std::string text) {
     log.emplace_back(std::time(0),std::string(GIT_COMMIT_HASH),text);
@@ -19,9 +17,9 @@ void WorkSpace::dump_to_disk(std::string filename) {
     //dump log
     uint64_t count;
     count=log.size();
-    of.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    of.write((char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(WS_FT);
+    of.write((char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    of.write((char *) &SDG_VN, sizeof(SDG_VN));
+    SDG_FILETYPE type(WS_FT);
     of.write((char *) &type, sizeof(type));
     of.write((char *) &count,sizeof(count));
     for (auto &l:log){
@@ -38,6 +36,12 @@ void WorkSpace::dump_to_disk(std::string filename) {
     sdg.write(of);
     //dump KCI
     kci.write(of);
+
+    count = distance_graphs.size();
+    of.write((char *) &count, sizeof(count));
+    for (auto i=0; i < count; ++i) {
+        distance_graphs[i].write(of);
+    }
 
     //paired read datastores
     count=paired_read_datastores.size();
@@ -86,14 +90,14 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     std::string git_version,text;
     std::time_t timestamp;
 
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
+    sdgMagic_t magic;
+    sdgVersion_t version;
+    SDG_FILETYPE type;
     wsfile.read((char *) &magic, sizeof(magic));
     wsfile.read((char *) &version, sizeof(version));
     wsfile.read((char *) &type, sizeof(type));
 
-    if (magic != BSG_MAGIC) {
+    if (magic != SDG_MAGIC) {
         throw std::runtime_error("Magic number not present in the kci file");
     }
 
@@ -123,6 +127,12 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     sdg.read(wsfile);
     sdglib::OutputLog() <<"Loaded graph with "<<sdg.nodes.size()-1<<" nodes" <<std::endl;
     kci.read(wsfile);
+
+    wsfile.read((char *) &count,sizeof(count));
+    distance_graphs.reserve(count);
+    for (auto i=0;i<count;++i) {
+        distance_graphs.emplace_back(sdg, wsfile);
+    }
     //todo: read all datastores and mappers!!!
 //    if (format>1) {
 //        wsfile.read((char *) &count,sizeof(count));
@@ -204,7 +214,7 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
 void WorkSpace::remap_all() {
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
     //auto pri=0;
-    create_index();
+    sdg.create_index();
     for (auto &ds:paired_read_datastores) {
         sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         ds.mapper.remap_all_reads();
@@ -230,7 +240,7 @@ void WorkSpace::remap_all() {
 
 void WorkSpace::remap_all63() {
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
-    create_63mer_index();
+    sdg.create_63mer_index();
     for (auto &ds:paired_read_datastores) {
         sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         ds.mapper.remap_all_reads63();
@@ -246,10 +256,55 @@ void WorkSpace::remap_all63() {
     }
 }
 
-void WorkSpace::create_index(bool verbose) {
-    uniqueKmerIndex.generate_index(sdg,verbose);
+PairedReadsDatastore &WorkSpace::add_paired_reads_datastore(const std::string &name, const std::string &filename) {
+    paired_read_datastores.emplace_back(*this, filename);
+    paired_read_datastores.back().name = name;
+    return paired_read_datastores.back();
 }
 
-void WorkSpace::create_63mer_index(bool verbose) {
-    unique63merIndex.generate_index(sdg,verbose);
+LinkedReadsDatastore &WorkSpace::add_linked_reads_datastore(const std::string &name, const std::string &filename) {
+    linked_read_datastores.emplace_back(*this, filename);
+    linked_read_datastores.back().name = name;
+    return linked_read_datastores.back();
+}
+
+LongReadsDatastore &WorkSpace::add_long_reads_datastore(const std::string &name, const std::string &filename) {
+    long_read_datastores.emplace_back(*this, filename);
+    long_read_datastores.back().name = name;
+    return long_read_datastores.back();
+}
+
+DistanceGraph &WorkSpace::add_distance_graph(const std::string &name, const DistanceGraph &dg) {
+    distance_graphs.emplace_back(dg);
+    distance_graphs.back().name = name;
+    return distance_graphs.back();
+}
+
+PairedReadsDatastore &WorkSpace::get_paired_reads_datastore(const std::string &name) {
+    for (auto &ds : paired_read_datastores){
+        if (ds.name == name) return ds;
+    }
+    throw std::runtime_error("There are no PairedReadsDatastore named: " + name);
+}
+
+LinkedReadsDatastore &WorkSpace::get_linked_reads_datastore(const std::string &name) {
+    for (auto &ds : linked_read_datastores){
+        if (ds.name == name) return ds;
+    }
+    throw std::runtime_error("There are no LinkedReadsDatastore named: " + name);
+}
+
+LongReadsDatastore &WorkSpace::get_long_reads_datastore(const std::string &name) {
+    for (auto &ds : long_read_datastores){
+        if (ds.name == name) return ds;
+    }
+    throw std::runtime_error("There are no LongReadsDatastore named: " + name);
+
+}
+
+DistanceGraph &WorkSpace::get_distance_graph(const std::string &name) {
+    for (auto &ds : distance_graphs){
+        if (ds.name == name) return ds;
+    }
+    throw std::runtime_error("There are no DistanceGraphs named: " + name);
 }

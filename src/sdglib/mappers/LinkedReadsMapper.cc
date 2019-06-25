@@ -1,21 +1,18 @@
 //
 // Created by Bernardo Clavijo (EI) on 03/11/2017.
 //
+#include "LinkedReadsMapper.hpp"
 #include <iostream>
 #include <iomanip>
 #include <cassert>
 #include <atomic>
-
-
-#include "LinkedReadsMapper.hpp"
 #include "sdglib/factories/KMerIDXFactory.hpp"
-#include "sdglib/readers/SequenceGraphReader.hpp"
 #include <sdglib/datastores/LinkedReadsDatastore.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/utilities/io_helpers.hpp>
 
-const bsgVersion_t LinkedReadsMapper::min_compat = 0x0002;
+const sdgVersion_t LinkedReadsMapper::min_compat = 0x0003;
 
 LinkedReadsMapper::LinkedReadsMapper(const WorkSpace &_ws, LinkedReadsDatastore &_datastore) :
 ws(_ws),
@@ -27,9 +24,9 @@ datastore(_datastore)
 void LinkedReadsMapper::write(std::ofstream &output_file) {
     //read-to-node
     uint64_t count=read_to_node.size();
-    output_file.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    output_file.write((char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(LinkedMap_FT);
+    output_file.write((char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    output_file.write((char *) &SDG_VN, sizeof(SDG_VN));
+    SDG_FILETYPE type(LinkedMap_FT);
     output_file.write((char *) &type, sizeof(type));
 
     sdglib::write_flat_vector(output_file, read_to_node);
@@ -42,14 +39,14 @@ void LinkedReadsMapper::write(std::ofstream &output_file) {
 void LinkedReadsMapper::read(std::ifstream &input_file) {
     uint64_t count;
 
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
+    sdgMagic_t magic;
+    sdgVersion_t version;
+    SDG_FILETYPE type;
     input_file.read((char *) &magic, sizeof(magic));
     input_file.read((char *) &version, sizeof(version));
     input_file.read((char *) &type, sizeof(type));
 
-    if (magic != BSG_MAGIC) {
+    if (magic != SDG_MAGIC) {
         throw std::runtime_error("Magic number not present in the LinkedReadMap file");
     }
 
@@ -121,8 +118,8 @@ void LinkedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_r
                 skf.produce_all_kmers(seq,readkmers);
 
                 for (auto &rk:readkmers) {
-                    auto nk = ws.uniqueKmerIndex.find(rk.kmer);
-                    if (ws.uniqueKmerIndex.end()!=nk) {
+                    auto nk = ws.sdg.unique_kmer_index.find(rk.kmer);
+                    if (ws.sdg.unique_kmer_index.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node); // nk->second is the graphStrandPosition node is the node id of that
                         //TODO: sort out the sign/orientation representation
@@ -231,8 +228,8 @@ void LinkedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
                 skf.produce_all_kmers(seq,readkmers);
 
                 for (auto &rk:readkmers) {
-                    auto nk = ws.unique63merIndex.find(rk.kmer);
-                    if (ws.unique63merIndex.end()!=nk) {
+                    auto nk = ws.sdg.unique_63mer_index.find(rk.kmer);
+                    if (ws.sdg.unique_63mer_index.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation

@@ -1,17 +1,17 @@
 //
 // Created by Bernardo Clavijo (EI) on 03/11/2017.
 //
+#include "PairedReadsMapper.hpp"
 #include <iomanip>
 #include <cassert>
 #include <atomic>
 #include <sdglib/utilities/omp_safe.hpp>
 #include <fstream>
 #include <iostream>
-#include "PairedReadsMapper.hpp"
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/utilities/io_helpers.hpp>
 
-const bsgVersion_t PairedReadsMapper::min_compat = 0x0001;
+const sdgVersion_t PairedReadsMapper::min_compat = 0x0003;
 
 PairedReadsMapper::PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore &_datastore) :
         ws(_ws),
@@ -22,9 +22,9 @@ PairedReadsMapper::PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore 
 
 void PairedReadsMapper::write(std::ofstream &output_file) {
     //read-to-node
-    output_file.write((char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    output_file.write((char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(PairedMap_FT);
+    output_file.write((char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    output_file.write((char *) &SDG_VN, sizeof(SDG_VN));
+    SDG_FILETYPE type(PairedMap_FT);
     output_file.write((char *) &type, sizeof(type));
 
     sdglib::write_flat_vector(output_file, read_to_node);
@@ -33,14 +33,14 @@ void PairedReadsMapper::write(std::ofstream &output_file) {
 }
 
 void PairedReadsMapper::read(std::ifstream &input_file) {
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
+    sdgMagic_t magic;
+    sdgVersion_t version;
+    SDG_FILETYPE type;
     input_file.read((char *) &magic, sizeof(magic));
     input_file.read((char *) &version, sizeof(version));
     input_file.read((char *) &type, sizeof(type));
 
-    if (magic != BSG_MAGIC) {
+    if (magic != SDG_MAGIC) {
         throw std::runtime_error("PairedReadsMapper file appears to be corrupted");
     }
 
@@ -114,8 +114,8 @@ void PairedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_r
                     ++nokmers;
                 }
                 for (auto &rk:readkmers) {
-                    auto nk = ws.uniqueKmerIndex.find(rk.kmer);
-                    if (ws.uniqueKmerIndex.end()!=nk) {
+                    auto nk = ws.sdg.unique_kmer_index.find(rk.kmer);
+                    if (ws.sdg.unique_kmer_index.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation
@@ -231,8 +231,8 @@ void PairedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
                     ++nokmers;
                 }
                 for (auto &rk:readkmers) {
-                    auto nk = ws.unique63merIndex.find(rk.kmer);
-                    if (ws.unique63merIndex.end()!=nk) {
+                    auto nk = ws.sdg.unique_63mer_index.find(rk.kmer);
+                    if (ws.sdg.unique_63mer_index.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation

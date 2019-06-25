@@ -87,14 +87,14 @@ void LocalHaplotypeAssembler::init_from_file(std::string problem_file) {
 
     std::ifstream input_file(problem_file);
     uint64_t count;
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
+    sdgMagic_t magic;
+    sdgVersion_t version;
+    SDG_FILETYPE type;
     input_file.read((char *) &magic, sizeof(magic));
     input_file.read((char *) &version, sizeof(version));
     input_file.read((char *) &type, sizeof(type));
 
-    if (magic != BSG_MAGIC) {
+    if (magic != SDG_MAGIC) {
         throw std::runtime_error(problem_file + " appears to be corrupted");
     }
 
@@ -589,9 +589,9 @@ void LocalHaplotypeAssembler::path_all_reads() {
 void LocalHaplotypeAssembler::write_problem(std::string prefix) {
     std::ofstream output_file(prefix+".bsglhap");
     uint64_t count;
-    output_file.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    output_file.write((const char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(HLAP_FT);
+    output_file.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    output_file.write((const char *) &SDG_VN, sizeof(SDG_VN));
+    SDG_FILETYPE type(HLAP_FT);
     output_file.write((char *) &type, sizeof(type));
 
     //write down backbone;
@@ -622,9 +622,9 @@ void LocalHaplotypeAssembler::write_full(std::string prefix) {
     uint64_t count;
     //write down backbone;
     count=backbone.size();
-    output_file.write((const char *) &BSG_MAGIC, sizeof(BSG_MAGIC));
-    output_file.write((const char *) &BSG_VN, sizeof(BSG_VN));
-    BSG_FILETYPE type(HLAF_FT);
+    output_file.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    output_file.write((const char *) &SDG_VN, sizeof(SDG_VN));
+    SDG_FILETYPE type(HLAF_FT);
     output_file.write((char *) &type, sizeof(type));
 
     output_file.write((char *)&count,sizeof(count));
@@ -668,14 +668,14 @@ void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
         throw std::runtime_error("Could not open " + full_file);
     }
 
-    bsgMagic_t magic;
-    bsgVersion_t version;
-    BSG_FILETYPE type;
+    sdgMagic_t magic;
+    sdgVersion_t version;
+    SDG_FILETYPE type;
     input_file.read((char *) &magic, sizeof(magic));
     input_file.read((char *) &version, sizeof(version));
     input_file.read((char *) &type, sizeof(type));
 
-    if (magic != BSG_MAGIC) {
+    if (magic != SDG_MAGIC) {
         throw std::runtime_error(full_file + " appears to be corrupted");
     }
 
