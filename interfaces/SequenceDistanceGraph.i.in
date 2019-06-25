@@ -20,7 +20,6 @@
 #include "sdglib/graph/SequenceGraphPath.hpp"
 #include "sdglib/graph/SequenceSubGraph.hpp"
 #include "sdglib/graph/SequenceDistanceGraph.hpp"
-#include "sdglib/readers/SequenceGraphReader.hpp"
 #include "sdglib/processors/KmerCompressionIndex.hpp"
 #include "sdglib/workspace/WorkSpace.hpp"
 #include "sdglib/factories/KMerFactory.hpp"

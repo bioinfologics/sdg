@@ -5,21 +5,15 @@
 #ifndef SG_SEQUENCEGRAPH_HPP
 #define SG_SEQUENCEGRAPH_HPP
 
-#include <vector>
 #include <algorithm>
-#include <string>
-#include <map>
-#include <unordered_map>
-#include <set>
-#include <iostream>
 #include <array>
+#include <vector>
+#include <string>
+#include <iostream>
+#include <unordered_map>
 #include <unordered_set>
 #include <iosfwd>
-#include <sdglib/types/KmerTypes.hpp>
-#include <sdglib/types/GenericTypes.hpp>
-#include <sdglib/graph/SequenceSubGraph.hpp>
-#include <sdglib/graph/SequenceGraphPath.hpp>
-#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/indexers/UniqueKmerIndex.hpp>
 #include "DistanceGraph.hpp"
 
 class SequenceGraphPath;
@@ -188,5 +182,11 @@ public:
     std::string filename,fasta_filename;    /// Name of the files containing the graph and the fasta.
     std::vector<std::string> oldnames;      /// Mapping structure IDs to input names
     std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids; /// Mapping structure from input names -> IDs
+    UniqueKmerIndex unique_kmer_index;
+    Unique63merIndex unique_63mer_index;
+
+    void create_index(bool verbose = true);
+
+    void create_63mer_index(bool verbose = true);
 };
 #endif //SG_SEQUENCEGRAPH_HPP

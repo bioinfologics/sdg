@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sdglib/processors/KmerCompressionIndex.hpp>
+#include <sdglib/graph/SequenceDistanceGraph.hpp>
 #include "cxxopts.hpp"
 
 

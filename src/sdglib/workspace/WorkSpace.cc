@@ -5,8 +5,6 @@
 #include "WorkSpace.hpp"
 
 
-
-
 const bsgVersion_t WorkSpace::min_compat = 0x0001;
 
 void WorkSpace::add_log_entry(std::string text) {
@@ -204,7 +202,7 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
 void WorkSpace::remap_all() {
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
     //auto pri=0;
-    create_index();
+    sdg.create_index();
     for (auto &ds:paired_read_datastores) {
         sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         ds.mapper.remap_all_reads();
@@ -230,7 +228,7 @@ void WorkSpace::remap_all() {
 
 void WorkSpace::remap_all63() {
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
-    create_63mer_index();
+    sdg.create_63mer_index();
     for (auto &ds:paired_read_datastores) {
         sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         ds.mapper.remap_all_reads63();
@@ -246,10 +244,3 @@ void WorkSpace::remap_all63() {
     }
 }
 
-void WorkSpace::create_index(bool verbose) {
-    uniqueKmerIndex.generate_index(sdg,verbose);
-}
-
-void WorkSpace::create_63mer_index(bool verbose) {
-    unique63merIndex.generate_index(sdg,verbose);
-}

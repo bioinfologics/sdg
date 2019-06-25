@@ -9,7 +9,6 @@
 
 #include "LinkedReadsMapper.hpp"
 #include "sdglib/factories/KMerIDXFactory.hpp"
-#include "sdglib/readers/SequenceGraphReader.hpp"
 #include <sdglib/datastores/LinkedReadsDatastore.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
@@ -121,8 +120,8 @@ void LinkedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_r
                 skf.produce_all_kmers(seq,readkmers);
 
                 for (auto &rk:readkmers) {
-                    auto nk = ws.uniqueKmerIndex.find(rk.kmer);
-                    if (ws.uniqueKmerIndex.end()!=nk) {
+                    auto nk = ws.sdg.unique_kmer_index.find(rk.kmer);
+                    if (ws.sdg.unique_kmer_index.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node); // nk->second is the graphStrandPosition node is the node id of that
                         //TODO: sort out the sign/orientation representation
@@ -231,8 +230,8 @@ void LinkedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
                 skf.produce_all_kmers(seq,readkmers);
 
                 for (auto &rk:readkmers) {
-                    auto nk = ws.unique63merIndex.find(rk.kmer);
-                    if (ws.unique63merIndex.end()!=nk) {
+                    auto nk = ws.sdg.unique_63mer_index.find(rk.kmer);
+                    if (ws.sdg.unique_63mer_index.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation

@@ -4,12 +4,14 @@
 
 
 #include "KmerCompressionIndex.hpp"
+#include <atomic>
+#include <sstream>
 #include <sdglib/readers/FileReader.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/Version.hpp>
-#include <atomic>
-#include <sstream>
 #include <sdglib/datastores/PairedReadsDatastore.hpp>
+#include "sdglib/graph/SequenceDistanceGraph.hpp"
+
 
 const bsgVersion_t KmerCompressionIndex::min_compat = 0x0001;
 
@@ -457,4 +459,23 @@ void KmerCompressionIndex::compute_kci_profiles(std::string filename) {
 
 void KmerCompressionIndex::print_status() {
     sdglib::OutputLog()<<"KCI has "<<graph_kmers.size()<<" kmers"<<std::endl;
+}
+
+KmerCompressionIndex &KmerCompressionIndex::operator=(const KmerCompressionIndex &o) {
+    if (this != &o) {
+        sg = o.sg;
+        graph_kmers = o.graph_kmers;
+        nodes_depth = o.nodes_depth;
+        read_counts = o.read_counts;
+        uniq_mode = o.uniq_mode;
+    }
+    return *this;
+}
+
+KmerCompressionIndex::KmerCompressionIndex(SequenceDistanceGraph &_sg, uint64_t _max_mem) :sg(_sg){
+    max_mem = _max_mem;
+}
+
+KmerCompressionIndex::KmerCompressionIndex(SequenceDistanceGraph &_sg) :sg(_sg){
+    max_mem = 0;
 }

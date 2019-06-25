@@ -6,11 +6,11 @@
 #define BSG_PAIREDREADSMAPPER_HPP
 
 #include <map>
+#include <unordered_set>
 #include <fstream>
 
 #include "sdglib/types/MappingTypes.hpp"
 #include "sdglib/factories/KMerIDXFactory.hpp"
-#include "sdglib/readers/SequenceGraphReader.hpp"
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
 #include <sdglib/Version.hpp>
 

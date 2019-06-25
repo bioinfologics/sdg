@@ -32,7 +32,8 @@ class SequenceDistanceGraph;//fwd declaration (to break circular dependence)
  */
 class DistanceGraph {
 public:
-    DistanceGraph(SequenceDistanceGraph & _sdg): sdg(_sdg){};
+    explicit DistanceGraph(SequenceDistanceGraph & _sdg): sdg(_sdg){};
+    DistanceGraph(SequenceDistanceGraph & _sdg, const std::string& name) : name(name), sdg(_sdg){}
 
     /** @brief Adds a link between source and destination in the links collection.
      * Each link is added from both ends in the collection (see links vector)
@@ -211,6 +212,8 @@ public:
      * links[node] = [link, link....]
      */
     std::vector<std::vector<Link>> links;
+
+    std::string name;
 
 };
 #endif //BSG_DISTANCEGRAPH_HPP

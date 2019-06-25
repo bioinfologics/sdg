@@ -44,8 +44,6 @@ public:
 
     //general operations
 
-    void create_index(bool verbose = true);
-    void create_63mer_index(bool verbose = true);
     void remap_all();
     void remap_all63();
     //Projected operations with info from the graph
@@ -57,8 +55,6 @@ public:
 
     //All status classes are public, treat them with care anyway ;)
     SequenceDistanceGraph sdg;
-    UniqueKmerIndex uniqueKmerIndex;
-    Unique63merIndex unique63merIndex;
 
     std::vector<PairedReadsDatastore> paired_read_datastores;
     std::vector<LinkedReadsDatastore> linked_read_datastores;

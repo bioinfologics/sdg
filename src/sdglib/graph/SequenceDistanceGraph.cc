@@ -3,6 +3,7 @@
 //
 
 
+#include "SequenceDistanceGraph.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -646,4 +647,12 @@ void SequenceDistanceGraph::print_status() {
         if (acc==total_size)  log_no_date<<"N100: "<<s<<"bp  ";
     }
     log_no_date<<std::endl;
+}
+
+void SequenceDistanceGraph::create_index(bool verbose) {
+    unique_kmer_index.generate_index(sdg, verbose);
+}
+
+void SequenceDistanceGraph::create_63mer_index(bool verbose) {
+    unique_63mer_index.generate_index(sdg, verbose);
 }
