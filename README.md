@@ -1,8 +1,8 @@
 
 
-[![MIT license](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/bioinfologics/bsg/blob/master/LICENSE)
-[![codecov](https://codecov.io/gh/bioinfologics/bsg/branch/master/graph/badge.svg)](https://codecov.io/gh/bioinfologics/sdg)
-[![Build Status](https://travis-ci.org/bioinfologics/sdg.svg?branch=master)](https://travis-ci.org/bioinfologics/sdg)
+[![](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/bioinfologics/bsg/blob/master/LICENSE)
+[![](https://codecov.io/gh/bioinfologics/bsg/branch/master/graph/badge.svg)](https://codecov.io/gh/bioinfologics/sdg)
+[![](https://travis-ci.org/bioinfologics/sdg.svg?branch=master)](https://travis-ci.org/bioinfologics/sdg)
 
 
 # SDG
