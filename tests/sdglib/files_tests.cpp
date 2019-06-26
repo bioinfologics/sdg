@@ -6,6 +6,7 @@
 #include <sdglib/readers/FileReader.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <random>
+#include <sdglib/datastores/ReadPathsDatastore.hpp>
 
 TEST_CASE("Workspace create, read, write") {
     // Long reads
@@ -196,4 +197,11 @@ TEST_CASE("Load GFA") {
     SequenceDistanceGraph sg;
     sg.load_from_gfa("../tests/datasets/tgraph.gfa");
     REQUIRE(sg.nodes.size() > 1);
+}
+
+TEST_CASE("Load ReadPaths") {
+
+    ReadPathsDatastore ds("/Users/yanesl/rundir/a.thaliana/contigs/ecoli.D_large_K_patched.paths");
+
+    REQUIRE(ds.read_paths.size() > 0);
 }
