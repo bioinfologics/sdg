@@ -79,7 +79,6 @@
    %template(vectorSGNode) std::vector<sgNodeID_t>;
    %template(vectorvectorSGNode) std::vector<std::vector<sgNodeID_t>>;
    %template(vectorNode) std::vector<Node>;
-   %template(vectorNodeVisitor) std::vector<nodeVisitor>;
    %template(vectorUINT16) std::vector<uint16_t >;
    %template(vectorUINT64) std::vector<uint64_t>;
    %template(vectorVectorUINT16) std::vector< std::vector <uint16_t > >;
@@ -159,11 +158,6 @@ std::string __repr__() {
 };
 
 %extend MinPosIDX{
-    __STR__();
-    __REPR__();
-};
-
-%extend nodeVisitor{
     __STR__();
     __REPR__();
 };

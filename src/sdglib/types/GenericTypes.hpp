@@ -78,27 +78,6 @@ struct link_hash{
     }
 };
 
-/**
- * A node visitor contains the node ID, and distances in terms of NTs and Nodes from the starting node
- * This class is used as a helper for the depth_ and breath_fist_search functions
- */
-struct nodeVisitor {
-    sgNodeID_t node = 0;
-    unsigned int dist = 0;
-    unsigned int path_length = 0;
-    nodeVisitor(sgNodeID_t n, unsigned int d, unsigned int p) : node(n), dist(d), path_length(p) {}
-    nodeVisitor() = default;
-    bool operator<(const nodeVisitor &o) const {return std::tie(node) < std::tie(o.node);}
-    bool operator==(const nodeVisitor &o) const {return node == o.node;}
-    nodeVisitor reverseDirection() const {
-        return {-node, dist, path_length};
-    }
-    friend std::ostream &operator<<(std::ostream &os, const nodeVisitor &visitor) {
-        os << visitor.node << ":" << visitor.path_length;
-        return os;
-    }
-};
-
 
 struct int128_hash {
     size_t operator()( const __int128 &x) const
