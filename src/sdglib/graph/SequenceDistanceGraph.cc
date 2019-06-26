@@ -103,7 +103,7 @@ void SequenceDistanceGraph::remove_node(sgNodeID_t n) {
     sgNodeID_t node=(n>0? n:-n);
     auto oldlinks=links[node];//this creates a copy to allow the iteration
     for (auto &l:oldlinks) remove_link(l.source,l.dest);
-    nodes[node].status=sgNodeDeleted;
+    nodes[node].status=NodeStatus::Deleted;
     //TODO: this is a lazy solution
     nodes[node].sequence.clear();
     //TODO: remove read mappings
@@ -114,7 +114,7 @@ void SequenceDistanceGraph::remove_node(sgNodeID_t n) {
 size_t SequenceDistanceGraph::count_active_nodes() {
     size_t t = 0;
     for (auto &n: nodes) {
-        if (n.status == sgNodeStatus_t::sgNodeActive) ++t;
+        if (n.status == NodeStatus::Active) ++t;
     }
     return t;
 }
@@ -143,7 +143,7 @@ std::vector<std::vector<sgNodeID_t>> SequenceDistanceGraph::connected_components
     //TODO: first find all repeats, add them as independent components and mark them as used.
     size_t max_component = 0;
     for (sgNodeID_t start_node=1;start_node<nodes.size();++start_node){
-        if (nodes[start_node].status==sgNodeDeleted) continue;
+        if (nodes[start_node].status==NodeStatus::Deleted) continue;
         if (false==used[start_node]){
             used[start_node]=true;
             //if start node is repeat, just add a single-node component
@@ -201,14 +201,14 @@ void SequenceDistanceGraph::read(std::ifstream & input_file) {
     for (auto i=0;i<count;++i){
         uint64_t seqsize;
         std::string seq;
-        sgNodeStatus_t status;
+        NodeStatus status;
         input_file.read((char *) &status,sizeof(status));
         input_file.read((char *) &seqsize,sizeof(seqsize));
         seq.resize(seqsize);
         input_file.read((char *) seq.data(),seqsize);
         nodes.emplace_back(seq);
         nodes.back().status=status;
-        if (nodes.back().status==sgNodeStatus_t::sgNodeActive) ++active;
+        if (nodes.back().status==NodeStatus::Active) ++active;
     }
 
     sdglib::read_flat_vectorvector(input_file, links);
@@ -244,7 +244,7 @@ void SequenceDistanceGraph::load_from_gfa(std::string filename) {
     oldnames.push_back("");
     nodes.clear();
     links.clear();
-    add_node(Node("",sgNodeStatus_t::sgNodeDeleted)); //an empty deleted node on 0, just to skip the space
+    add_node(Node("",NodeStatus::Deleted)); //an empty deleted node on 0, just to skip the space
     sgNodeID_t nextid=1;
     uint64_t rcnodes=0;
     while(!fastaf.eof()){
@@ -360,7 +360,7 @@ void SequenceDistanceGraph::load_from_fasta(std::string filename) {
     oldnames.push_back("");
     nodes.clear();
     links.clear();
-    add_node(Node("",sgNodeStatus_t::sgNodeDeleted)); //an empty deleted node on 0, just to skip the space
+    add_node(Node("",NodeStatus::Deleted)); //an empty deleted node on 0, just to skip the space
     uint64_t rcnodes=0;
     while(!fastaf.eof()){
         std::getline(fastaf,line);
@@ -414,7 +414,7 @@ std::vector<SequenceGraphPath> SequenceDistanceGraph::get_all_unitigs(uint16_t m
     std::vector<bool> used(nodes.size(),false);
 
     for (auto n=1;n<nodes.size();++n){
-        if (used[n] or nodes[n].status==sgNodeDeleted) continue;
+        if (used[n] or nodes[n].status==NodeStatus::Deleted) continue;
         used[n]=true;
         SequenceGraphPath path(*this,{n});
 
@@ -519,7 +519,7 @@ std::vector<SequenceSubGraph> SequenceDistanceGraph::get_all_bubbly_subgraphs(ui
      */
     SequenceSubGraph subgraph(*this);
     for (auto n=1;n<nodes.size();++n){
-        if (used[n] or nodes[n].status==sgNodeDeleted) continue;
+        if (used[n] or nodes[n].status==NodeStatus::Deleted) continue;
         subgraph.nodes.clear();
 
         subgraph.nodes.push_back(n);
@@ -625,7 +625,7 @@ void SequenceDistanceGraph::print_status() {
     std::vector<uint64_t> node_sizes;
     uint64_t total_size=0;
     for (auto n:nodes) {
-        if (n.status!=sgNodeDeleted) {
+        if (n.status!=NodeStatus::Deleted) {
             total_size += n.sequence.size();
             node_sizes.push_back(n.sequence.size());
         }

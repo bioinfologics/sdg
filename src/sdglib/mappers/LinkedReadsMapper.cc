@@ -311,7 +311,7 @@ void LinkedReadsMapper::remove_obsolete_mappings(){
     uint64_t nodes=0,reads=0;
     std::set<sgNodeID_t> updated_nodes;
     for (auto n=1;n<ws.sdg.nodes.size();++n) {
-        if (ws.sdg.nodes[n].status==sgNodeDeleted) {
+        if (ws.sdg.nodes[n].status==NodeStatus::Deleted) {
             updated_nodes.insert(n);
             updated_nodes.insert(-n);
             reads_in_node[n > 0 ? n : -n].clear();

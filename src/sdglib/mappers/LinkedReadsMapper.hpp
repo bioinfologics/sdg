@@ -75,7 +75,7 @@ public:
      */
     void remap_all_reads63();
 
-    /** @brief Clears the mappings for the nodes marked as deleted (sg.nodes[n].status==sgNodeDeleted) in the graph
+    /** @brief Clears the mappings for the nodes marked as deleted (sg.nodes[n].status==NodeStatus::Deleted) in the graph
      *
      */
     void remove_obsolete_mappings();

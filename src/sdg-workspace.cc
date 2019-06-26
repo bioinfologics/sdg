@@ -212,7 +212,7 @@ void dump_workspace(int argc, char **argv){
         std::ofstream nif(nodeinfofilename+".csv");
         nif<<"ID, lenght, kci"<<std::endl;
         for (auto n=1;n<w.sdg.nodes.size();++n){
-            if (w.sdg.nodes[n].status==sgNodeStatus_t::sgNodeDeleted) continue;
+            if (w.sdg.nodes[n].status==NodeStatus::Deleted) continue;
             nif<<n<<", "<<w.sdg.nodes[n].sequence.size()<<", "<<w.kci.compute_compression_for_node(n,1)<<std::endl;
         }
     }

@@ -424,7 +424,7 @@ void GraphMaker::tip_clipping(int tip_size) {
     while (true) {
         std::set<sgNodeID_t> to_delete;
         for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
-            if (sg.nodes[n].status == sgNodeDeleted) continue;
+            if (sg.nodes[n].status == NodeStatus::Deleted) continue;
             if (sg.nodes[n].sequence.size() > tip_size) continue;
             //std::cout<<"Evaluating seq"<<n<<": ";
             auto fwl = sg.get_fw_links(n);
@@ -458,7 +458,7 @@ void GraphMaker::tip_clipping(int tip_size) {
 
 void GraphMaker::remove_small_unconnected(int min_size) {
     for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
-        if (sg.nodes[n].status == sgNodeDeleted) continue;
+        if (sg.nodes[n].status == NodeStatus::Deleted) continue;
         if (sg.nodes[n].sequence.size() >= min_size) continue;
         if (sg.get_fw_links(n).size()==0 and sg.get_bw_links(n).size()==0) sg.remove_node(n);
     }

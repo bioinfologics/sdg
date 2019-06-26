@@ -166,7 +166,7 @@ void LinkageUntangler::clear_node_selection() {
 void LinkageUntangler::report_node_selection() {
     uint64_t total_bp=0,total_count=0,selected_bp=0,selected_count=0;
     for (auto n=1;n<ws.sdg.nodes.size();++n) {
-        if (ws.sdg.nodes[n].status == sgNodeDeleted) continue;
+        if (ws.sdg.nodes[n].status == NodeStatus::Deleted) continue;
         total_bp+=ws.sdg.nodes[n].sequence.size();
         ++total_count;
         if (selected_nodes[n]) {
@@ -186,7 +186,7 @@ void LinkageUntangler::select_nodes_by_size_and_ci( uint64_t min_size, float min
     {
 #pragma omp for schedule(static, 100) reduction(+:deleted,small,cifail,selected)
         for (auto n=1;n<ws.sdg.nodes.size();++n) {
-            if (ws.sdg.nodes[n].status==sgNodeDeleted) { ++deleted; continue; }
+            if (ws.sdg.nodes[n].status==NodeStatus::Deleted) { ++deleted; continue; }
             if (ws.sdg.nodes[n].sequence.size() < min_size) { ++small; continue; }
             auto ci = ws.kci.compute_compression_for_node(n, 1);
             if (std::isnan(ci) or ci < min_ci or ci > max_ci) { ++cifail; continue;}
@@ -204,7 +204,7 @@ std::set<std::pair<sgNodeID_t, sgNodeID_t >> LinkageUntangler::get_HSPNPs(uint64
     std::set<std::pair<sgNodeID_t, sgNodeID_t >> hspnps;
 #pragma omp parallel for schedule(static, 100)
     for (sgNodeID_t n = 1; n < ws.sdg.nodes.size(); ++n) {
-        if (ws.sdg.nodes[n].status == sgNodeDeleted) continue;
+        if (ws.sdg.nodes[n].status == NodeStatus::Deleted) continue;
         if (ws.sdg.nodes[n].sequence.size() < min_size) continue;
         //FW check
         auto fwl = ws.sdg.get_fw_links(n);
@@ -255,7 +255,7 @@ void LinkageUntangler::select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, f
 
 void LinkageUntangler::select_multi_linkage_linear_anchors(const DistanceGraph &multi_ldg, int min_links, int min_transitive_links) {
     for (auto n=1;n<ws.sdg.nodes.size();++n){
-        if (ws.sdg.nodes[n].status == sgNodeDeleted) continue;
+        if (ws.sdg.nodes[n].status == NodeStatus::Deleted) continue;
         bool anchor=true;
         auto fw_sorted=multi_ldg.fw_neighbours_by_distance(n,min_links);
         if (fw_sorted.size()>1) {
@@ -694,7 +694,7 @@ DistanceGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_pa
 DistanceGraph LinkageUntangler::make_nextselected_linkage(const DistanceGraph &multi_ldg, int min_links) {
     DistanceGraph ldg(ws.sdg);
     for (auto n=1;n<ws.sdg.nodes.size();++n) {
-        if (ws.sdg.nodes[n].status == sgNodeDeleted or !selected_nodes[n]) continue;
+        if (ws.sdg.nodes[n].status == NodeStatus::Deleted or !selected_nodes[n]) continue;
         auto fw_sorted = multi_ldg.fw_neighbours_by_distance(n, min_links);
         for (auto &fwl:fw_sorted) {
             if (llabs(fwl.second)!=n and selected_nodes[llabs(fwl.second)]) {
@@ -771,21 +771,33 @@ std::vector<Link> LinkageUntangler::mappings_to_multilinkage(const std::vector<L
 DistanceGraph LinkageUntangler::make_longRead_multilinkage(const LongReadsMapper &lorm,bool real_read_size, int32_t unmapped_end) {
     DistanceGraph ldg(ws.sdg);
     std::vector<Link> linkage;
+    auto lormidx=0;
+    for (;lormidx<ws.long_read_datastores.size();++lormidx){
+        if (lorm.datastore.filename==ws.long_read_datastores[lormidx].filename) break;
+    }
     //for each read's filtered mappings:
     for(int64_t rid=0;rid<lorm.filtered_read_mappings.size();++rid) {
         if (lorm.filtered_read_mappings[rid].empty()) continue;
         auto newlinks=mappings_to_multilinkage(lorm.filtered_read_mappings[rid],(real_read_size ? lorm.datastore.read_to_fileRecord[rid].record_size : 0), unmapped_end);
-        for (auto &l:newlinks) l.read_id=rid;
+        for (auto &l:newlinks){
+            l.support.type=SupportType::LongRead;
+            l.support.index=lormidx;
+            l.support.id=rid;
+        }
         linkage.insert(linkage.end(),newlinks.begin(),newlinks.end());
     }
     for (auto l:linkage) {
-        ldg.add_link(l.source,l.dest,l.dist,l.read_id);
+        ldg.add_link(l.source,l.dest,l.dist,l.support);
     }
     return ldg;
 }
 
 DistanceGraph LinkageUntangler::make_paired10x_multilinkage(const PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore, bool fr,
                                                              uint64_t read_offset) {
+    uint16_t prmidx=0;
+    for (;prmidx<ws.paired_read_datastores.size();++prmidx){
+        if (prm.datastore.filename==ws.paired_read_datastores[prmidx].filename) break;
+    }
     DistanceGraph ldg(ws.sdg);
     uint64_t unmapped(0),same(0),non_neighbours(0),used(0);
     for (uint64_t rid1=1; rid1<prm.read_to_node.size()-1; rid1+=2){
@@ -823,7 +835,7 @@ DistanceGraph LinkageUntangler::make_paired10x_multilinkage(const PairedReadsMap
         //orient nodes as per connection ends
         if (fr!=prm.read_direction_in_node[rid1]) n1=-n1;
         if (fr!=prm.read_direction_in_node[rid2]) n2=-n2;
-        ldg.add_link(n1,n2,0,read_offset+rid1);
+        ldg.add_link(n1,n2,0,{SupportType::PairedRead,prmidx,rid1});
         ++used;
     }
     sdglib::OutputLog()<<"From lmp10x: "<<unmapped<<" unmapped,  "<<same<<" same,  "<<non_neighbours<<" non-neighbours,  "<<used<<" used"<<std::endl;
@@ -868,7 +880,7 @@ DistanceGraph LinkageUntangler::filter_linkage_to_hspnp_duos(uint64_t min_size, 
 void LinkageUntangler::expand_trivial_repeats(const DistanceGraph & ldg) {
     uint64_t aa=0,ab=0,unsolved=0;
     for (auto n=1;n<ws.sdg.nodes.size();++n) {
-        if (ws.sdg.nodes[n].status == sgNodeDeleted) continue;
+        if (ws.sdg.nodes[n].status == NodeStatus::Deleted) continue;
         //check node is 2-2
         auto bwl=ws.sdg.get_bw_links(n);
         if (bwl.size()!=2) continue;
@@ -1134,7 +1146,7 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const DistanceGraph & l
             //std::cout << "Starting gruesome tip clipping" << std::endl;
             std::set<sgNodeID_t> to_delete;
             for (sgNodeID_t n = 1; n < dbg.nodes.size(); ++n) {
-                if (dbg.nodes[n].status == sgNodeDeleted) continue;
+                if (dbg.nodes[n].status == NodeStatus::Deleted) continue;
                 if (dbg.nodes[n].sequence.size() > 200) continue;
                 //std::cout<<"Evaluating seq"<<n<<": ";
                 auto fwl = dbg.get_fw_links(n);

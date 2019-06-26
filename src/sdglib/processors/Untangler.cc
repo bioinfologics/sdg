@@ -229,7 +229,7 @@ std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
 #pragma omp parallel for schedule(static, 10)
     for (auto n=1;n<ws.sdg.nodes.size();++n){
         std::pair<sgNodeID_t,sgNodeID_t> hap={0,0};
-        if (ws.sdg.nodes[n].status==sgNodeDeleted) continue;
+        if (ws.sdg.nodes[n].status==NodeStatus::Deleted) continue;
         //auto frontkci=ws.kci.compute_compression_for_node(n);
         //if (frontkci>max_c2 or frontkci<min_c2) continue;
         auto m=n;
@@ -1357,7 +1357,7 @@ std::vector<Backbone> Untangler::create_backbones(uint64_t min_size, float min_c
 void Untangler::unroll_simple_loops() {
     std::vector<bool> used(ws.sdg.nodes.size(),false);
     for (auto i=1;i<ws.sdg.nodes.size();++i){
-        if (ws.sdg.nodes[i].status==sgNodeDeleted) continue;
+        if (ws.sdg.nodes[i].status==NodeStatus::Deleted) continue;
         if (used[i]) continue;
         auto fwl=ws.sdg.get_fw_links(i);
         auto bwl=ws.sdg.get_bw_links(i);

@@ -438,7 +438,7 @@ void KmerCompressionIndex::compute_kci_profiles(std::string filename) {
         // if para chequear que el nodo esta en el grafo
 #pragma omp parallel for schedule(static, 20)
     for (auto n=1; n<sg.nodes.size(); ++n){
-        if (sg.nodes[n].status == sgNodeDeleted) continue;
+        if (sg.nodes[n].status == NodeStatus::Deleted) continue;
         std::stringstream ss;
         ss << "seq" << n <<" | ";
         // TODO: complete this to throw a warning when accessing a deleted node

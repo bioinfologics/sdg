@@ -56,7 +56,7 @@ public:
     using DistanceGraph::write_to_gfa2;
 
     SequenceDistanceGraph():DistanceGraph(*this) { //sdg gets initialised through LDG
-        add_node(Node("",sgNodeDeleted)); //an empty deleted node on 0, just to skip the space
+        add_node(Node("",NodeStatus::Deleted)); //an empty deleted node on 0, just to skip the space
     };
 
     bool operator==(const SequenceDistanceGraph &o) const {

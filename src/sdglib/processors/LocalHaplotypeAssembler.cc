@@ -140,7 +140,7 @@ uint64_t LocalHaplotypeAssembler::expand_canonical_repeats_direct(int max_rep_si
     //Find the repeat nodes
     std::vector<std::pair<sgNodeID_t, Node>> repeats;
     for (auto n=1;n<assembly.nodes.size();++n) {
-        if (assembly.nodes[n].status==sgNodeDeleted or assembly.nodes[n].sequence.size()>max_rep_size) continue;
+        if (assembly.nodes[n].status==NodeStatus::Deleted or assembly.nodes[n].sequence.size()>max_rep_size) continue;
         auto bwl=assembly.get_bw_links(n);
         auto fwl=assembly.get_fw_links(n);
         if (bwl.size()!=2 or fwl.size()!=2) continue;
@@ -227,7 +227,7 @@ uint64_t LocalHaplotypeAssembler::expand_canonical_repeats() {
     const int min_cov_exp=5;
     const float min_diff_exp=3;
     for (auto n=0;n<assembly.nodes.size();++n){
-        if (assembly.nodes[n].status==sgNodeDeleted) continue;
+        if (assembly.nodes[n].status==NodeStatus::Deleted) continue;
         auto bwl=assembly.get_bw_links(n);
         auto fwl=assembly.get_fw_links(n);
         if (bwl.size()!=2 or fwl.size()!=2) continue;
@@ -306,7 +306,7 @@ uint64_t LocalHaplotypeAssembler::expand_canonical_repeats() {
 
 uint64_t LocalHaplotypeAssembler::unroll_short_loops() {
     for (auto n = 0; n < assembly.nodes.size(); ++n) {
-        if (assembly.nodes[n].status == sgNodeDeleted) continue;
+        if (assembly.nodes[n].status == NodeStatus::Deleted) continue;
         auto bwl = assembly.get_bw_links(n);
         auto fwl = assembly.get_fw_links(n);
         if (bwl.size() != 2 or fwl.size() != 2) continue;

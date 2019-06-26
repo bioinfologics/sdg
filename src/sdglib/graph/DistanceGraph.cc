@@ -8,17 +8,17 @@
 #include <sdglib/logger/OutputLog.hpp>
 #include "SequenceDistanceGraph.hpp"
 
-void DistanceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, uint64_t rid) {
+void DistanceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, Support support) {
     if (llabs(source)>=links.size()) links.resize(llabs(source)+1);
     if (llabs(dest)>=links.size()) links.resize(llabs(dest)+1);
-    Link l(source,dest,d,rid);
+    Link l(source,dest,d,support);
     links[llabs(source)].emplace_back(l);
     std::swap(l.source,l.dest);
     links[llabs(dest)].emplace_back(l);
 }
 
 void DistanceGraph::copy_links(const DistanceGraph &other) {
-    for (auto &lv:other.links) for (auto l:lv) add_link(l.source,l.dest,l.dist,l.read_id);
+    for (auto &lv:other.links) for (auto l:lv) add_link(l.source,l.dest,l.dist,l.support);
 }
 
 bool DistanceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
@@ -154,7 +154,7 @@ void DistanceGraph::remove_transitive_links(int radius) {
 void DistanceGraph::report_connectivity() {
     uint64_t solved=0,solved_complex=0,solved_disconnected=0,complex=0,complex_disconected=0;
     for (auto n=1;n<sdg.nodes.size();++n){
-        if (sdg.nodes[n].status==sgNodeDeleted) continue;
+        if (sdg.nodes[n].status==NodeStatus::Deleted) continue;
         auto fc=get_fw_links(n).size();
         auto bc=get_bw_links(n).size();
         if (fc<bc) std::swap(fc,bc);
@@ -178,7 +178,7 @@ std::vector<std::vector<sgNodeID_t>> DistanceGraph::get_all_lines(uint16_t min_n
     std::vector<bool> used(sdg.nodes.size(),false);
 
     for (auto n=1;n<sdg.nodes.size();++n){
-        if (used[n] or sdg.nodes[n].status==sgNodeDeleted) continue;
+        if (used[n] or sdg.nodes[n].status==NodeStatus::Deleted) continue;
         used[n]=true;
         std::vector<sgNodeID_t> path={n};
 
@@ -403,7 +403,7 @@ void DistanceGraph::write_to_gfa1(std::string filename, const std::vector<sgNode
     //std::cout<<"Writing sequences to "<<fasta_filename<<std::endl;
 
     for (sgNodeID_t i=1;i<sdg.nodes.size();++i){
-        if (sdg.nodes[i].status==sgNodeDeleted) continue;
+        if (sdg.nodes[i].status==NodeStatus::Deleted) continue;
         if (!output_nodes.empty() and output_nodes.count(i)==0 and output_nodes.count(-i)==0) continue;
         fastaf<<">seq"<<i<<std::endl<<sdg.nodes[i].sequence<<std::endl;
         gfaf<<"S\tseq"<<i<<"\t*\tLN:i:"<<sdg.nodes[i].sequence.size()<<"\tUR:Z:"<<fasta_filename
@@ -448,7 +448,7 @@ void DistanceGraph::write_to_gfa2(std::string filename, const std::vector<sgNode
     //std::cout<<"Writing sequences to "<<fasta_filename<<std::endl;
 
     for (sgNodeID_t i=1;i<sdg.nodes.size();++i){
-        if (sdg.nodes[i].status==sgNodeDeleted) continue;
+        if (sdg.nodes[i].status==NodeStatus::Deleted) continue;
         if (!output_nodes.empty() and output_nodes.count(i)==0 and output_nodes.count(-i)==0) continue;
         fastaf<<">seq"<<i<<std::endl<<sdg.nodes[i].sequence<<std::endl;
         gfaf<<"S\tseq"<<i<<"\t*\tLN:i:"<<sdg.nodes[i].sequence.size()<<"\tUR:Z:"<<fasta_filename

@@ -16,21 +16,29 @@
 using sgNodeID_t = int64_t; //first node is 1; negatives are RC
 using seqID_t = int32_t; //first sequence is 0;
 
-enum sgNodeStatus_t {sgNodeActive, sgNodeDeleted};
+enum class NodeStatus:uint8_t {Active, Deleted};
+
+enum class SupportType:uint8_t {Undefined,Operation,SequenceDistanceGraph,DistanceGraph,PairedRead,LinkedRead,LinkedTag,LongRead,ReadPath,KmerCoverage};
+
+class Support{
+public:
+    SupportType type=SupportType::Undefined;
+    uint16_t index=0;
+    uint64_t id=0;
+};
 
 /**
  * The Node contains the sequence of a node and its status {Active, Deleted}
  */
 class Node{
 public:
-    Node(std::string _seq, sgNodeStatus_t _status) : sequence(_seq), status(_status){};
-    Node(std::string _seq) : sequence(_seq),status(sgNodeActive){};
+    Node(const std::string &_seq, NodeStatus _status) : sequence(_seq), status(_status){};
+    Node(const std::string &_seq) : sequence(_seq),status(NodeStatus::Active){};
     Node() = default;
     bool operator==(const Node &o) const {
         return std::tie(status,sequence) == std::tie(o.status,o.sequence);
     }
-    std::string sequence = "";
-    sgNodeStatus_t status = sgNodeActive;
+
     bool is_canonical();
     void make_rc();
 
@@ -43,6 +51,9 @@ public:
         return os;
     }
 
+    std::string sequence = "";
+    NodeStatus status = NodeStatus::Active;
+    Support support;
 };
 
 /**
@@ -56,11 +67,7 @@ public:
 class Link{
 public:
     Link(){};
-    Link( sgNodeID_t _src, sgNodeID_t _dst, int32_t _dist, int64_t _read_id=0) : source(_src), dest(_dst), dist(_dist), read_id(_read_id) {};
-    sgNodeID_t source = 0;
-    sgNodeID_t dest = 0;
-    int32_t dist = 0;
-    int64_t read_id;
+    Link( sgNodeID_t _src, sgNodeID_t _dst, int32_t _dist, Support _support = {}) : source(_src), dest(_dst), dist(_dist), support(_support) {};
 
     bool operator==( const  Link) const;
     bool operator<(const Link)const;
@@ -69,7 +76,12 @@ public:
         os << link.source << " -> " << link.dest;
         return os;
     }
+    sgNodeID_t source = 0;
+    sgNodeID_t dest = 0;
+    int32_t dist = 0;
+    Support support;
 };
+
 struct link_hash{
     size_t operator()(const Link& l) const {
         std::tuple<sgNodeID_t , sgNodeID_t , int32_t > tp (l.source,l.dest,l.dist);
