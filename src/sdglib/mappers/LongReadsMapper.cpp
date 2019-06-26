@@ -154,7 +154,7 @@ void LongReadHaplotypeMappingsFilter::rank(uint64_t read_id, float coverage_weig
     score_coverage(coverage_weight);
 }
 
-void LongReadsMapper::print_status() {
+void LongReadsMapper::print_status() const {
     uint64_t fm_rcount=0,fm_count=0;
     for (auto &fm:filtered_read_mappings){
         if (!fm.empty()) {

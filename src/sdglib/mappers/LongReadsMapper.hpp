@@ -154,7 +154,7 @@ public:
     LongReadsMapper& operator=(const LongReadsMapper &other);
     LongReadsMapper(const LongReadsDatastore &ds, const LongReadsMapper &o);
 
-    void print_status();
+    void print_status() const;
 
     /** @brief Getter for the defined datastore
      *

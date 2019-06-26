@@ -42,10 +42,11 @@ class LongReadsDatastore {
     void load_index(std::string &file);
 
     WorkSpace &ws;
-
+    int fd;
 public:
     std::vector< ReadPosSize > read_to_fileRecord{ReadPosSize(0,0)};
 
+    ~LongReadsDatastore();
     LongReadsDatastore(WorkSpace &ws, std::ifstream &infile);
     LongReadsDatastore(WorkSpace &ws, const std::string &filename, std::ifstream &input_file);
     LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o);
@@ -69,13 +70,13 @@ public:
     LongReadsDatastore& operator=(LongReadsDatastore const &o);
     uint32_t build_from_fastq(std::ofstream &outf, const std::string &long_read_file);
     static void build_from_fastq(const std::string &output_file, const std::string &long_read_file);
-    void print_status();
+    void print_status() const;
     void read(std::ifstream &ifs);
     void write(std::ofstream &output_file);
     void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids);
     size_t size() const { return read_to_fileRecord.size(); }
 
-    std::string get_read_sequence(size_t readID);
+    std::string get_read_sequence(size_t readID) const;
 
     std::string filename;
     std::string name;

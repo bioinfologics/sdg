@@ -17,7 +17,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string filename) : fi
 }
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_read_file, const std::string &output_file) : filename(output_file), ws(ws), mapper(ws, *this) {
-    uint32_t nReads(0);
+    uint32_t nReads(1);
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
     if (!ofs) {
         std::cerr << "Failed to open " << output_file <<": " << strerror(errno);
@@ -38,7 +38,13 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_re
     ofs.write((char*) &nReads, sizeof(nReads));     // Dump # of reads
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
     ofs.flush();                                    // Make sure everything has been written
-    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<size()-1<<" reads"<<std::endl;
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<size()<<" reads"<<std::endl;
+    fd = open(filename.data(), O_RDONLY);
+    if (!fd) {
+        std::cerr << "Failed to open " << filename << ": " << strerror(errno);
+        throw std::runtime_error("Could not open " + filename);
+    }
+
 }
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::ifstream &infile) : filename(), ws(ws), mapper(ws, *this) {
@@ -78,28 +84,42 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &filenam
         input_file.read(&seq[0], readSize);
         read_to_fileRecord[i].record_size=readSize;
     }
+    fd = open(filename.data(), O_RDONLY);
+    if (!fd) {
+        std::cerr << "Failed to open " << filename << ": " << strerror(errno);
+        throw std::runtime_error("Could not open " + filename);
+    }
 
 }
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : filename(o.filename), ws(ws), mapper(ws, *this) {
-    this->read_to_fileRecord = o.read_to_fileRecord;
+    read_to_fileRecord = o.read_to_fileRecord;
 
-    this->mapper.reads_in_node = o.mapper.reads_in_node;
-    this->mapper.filtered_read_mappings = o.mapper.filtered_read_mappings;
-    this->mapper.first_mapping = o.mapper.first_mapping;
-    this->mapper.read_paths = o.mapper.read_paths;
-    this->mapper.all_paths_between = o.mapper.all_paths_between;
-
+    mapper.reads_in_node = o.mapper.reads_in_node;
+    mapper.filtered_read_mappings = o.mapper.filtered_read_mappings;
+    mapper.first_mapping = o.mapper.first_mapping;
+    mapper.read_paths = o.mapper.read_paths;
+    mapper.all_paths_between = o.mapper.all_paths_between;
+    fd = open(filename.data(), O_RDONLY);
+    if (!fd) {
+        std::cerr << "Failed to open " << filename << ": " << strerror(errno);
+        throw std::runtime_error("Could not open " + filename);
+    }
 }
 
 LongReadsDatastore &LongReadsDatastore::operator=(LongReadsDatastore const &o) {
     if (&o == this) return *this;
 
-    this->filename = o.filename;
-    this->ws = o.ws;
-    this->read_to_fileRecord = o.read_to_fileRecord;
+    filename = o.filename;
+    ws = o.ws;
+    read_to_fileRecord = o.read_to_fileRecord;
 
-    this->mapper = o.mapper;
+    mapper = o.mapper;
+    fd = open(filename.data(), O_RDONLY);
+    if (!fd) {
+        std::cerr << "Failed to open " << filename <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + filename + " when using the operator= of LongReadsDatastore");
+    }
     return *this;
 }
 
@@ -109,16 +129,16 @@ LongReadsDatastore::LongReadsDatastore(const LongReadsDatastore &o) :
         read_to_fileRecord(o.read_to_fileRecord),
         filename(o.filename)
 {
+    fd = open(filename.data(), O_RDONLY);
 }
 
 void LongReadsDatastore::load_index(std::string &file) {
     filename = file;
-
+    fd = open(filename.data(), O_RDONLY);
     std::ifstream input_file(file, std::ios_base::binary);
     if (!input_file) {
         std::cerr << "Failed to open " << file <<": " << strerror(errno);
         throw std::runtime_error("Could not open " + file);
-
     }
 
     uint64_t nReads(0);
@@ -154,8 +174,8 @@ void LongReadsDatastore::load_index(std::string &file) {
 }
 
 void LongReadsDatastore::build_from_fastq(const std::string &output_file, const std::string &long_read_file) {
-    uint64_t nReads(0);
-    std::vector<ReadPosSize> read_to_file_record;
+    uint64_t nReads(1);
+    std::vector<ReadPosSize> read_to_file_record{ReadPosSize{0,0}};
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
     if (!ofs) {
         std::cerr << "Failed to open output in " << output_file <<": " << strerror(errno);
@@ -185,7 +205,6 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
         }
         ++nReads;
     }
-    read_to_file_record.pop_back();
     fPos = ofs.tellp();                             // Write position after reads
     ofs.write((char *)read_to_file_record.data(),read_to_file_record.size()*sizeof(read_to_fileRecord[0]));
     ofs.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
@@ -212,11 +231,10 @@ uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, const std::st
             outf.write((char*)rec.seq.c_str(), size+1);//+1 writes the \0
         }
     }
-    read_to_fileRecord.pop_back();
     return static_cast<uint32_t>(read_to_fileRecord.size());
 }
 
-void LongReadsDatastore::print_status() {
+void LongReadsDatastore::print_status() const {
     auto &log_no_date=sdglib::OutputLog(sdglib::LogLevels::INFO,false);
     std::vector<uint64_t> read_sizes;
     uint64_t total_size=0;
@@ -255,6 +273,11 @@ void LongReadsDatastore::read(std::ifstream &ifs) {
     ifs.read((char *) name.data(), name.size());
 
     load_index(filename);
+    fd = open(filename.data(), O_RDONLY);
+    if (!fd) {
+        std::cerr << "Failed to open " << filename << ": " << strerror(errno);
+        throw std::runtime_error("Could not open " + filename);
+    }
 }
 
 void LongReadsDatastore::write(std::ofstream &output_file) {
@@ -268,13 +291,13 @@ void LongReadsDatastore::write(std::ofstream &output_file) {
     output_file.write((char *)name.data(),s*sizeof(name[0]));
 }
 
-std::string LongReadsDatastore::get_read_sequence(size_t readID) {
-    //TODO: reprogram this without a Buffer, just straight access to the file, keep an FD in the class.
-    ReadSequenceBuffer seq_getter(*this);
-    return seq_getter.get_read_sequence(readID);
+std::string LongReadsDatastore::get_read_sequence(size_t readID) const {
+    char buffer[read_to_fileRecord[readID].record_size+1];
+    size_t read_offset_in_file=read_to_fileRecord[readID].offset;
+    ::lseek(fd,read_offset_in_file,SEEK_SET);
+    ::read(fd, buffer,sizeof(buffer));
+    return std::string(buffer);
 }
-
-const char * get_read_sequence(uint64_t readID);
 
 void LongReadsDatastore::write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids) {
     unsigned long size(read_ids.size());
@@ -293,5 +316,9 @@ void LongReadsDatastore::write_selection(std::ofstream &output_file, const std::
         output_file.write((char *) &size,sizeof(size)); // Read length
         output_file.write(seq.data(),seq.size());       // Read sequence
     }
+}
+
+LongReadsDatastore::~LongReadsDatastore() {
+    close(fd);
 }
 
