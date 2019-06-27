@@ -502,5 +502,5 @@ DistanceGraph &DistanceGraph::operator=(const DistanceGraph &o) {
 }
 
 NodeView DistanceGraph::get_nodeview(sgNodeID_t n) {
-    return NodeView(*this,n);
+    return NodeView(this,n);
 }

@@ -10,9 +10,10 @@ class NodeDistanceView;
 
 class NodeView {
 public:
-    NodeView(DistanceGraph &_dg,sgNodeID_t _n):dg(_dg),node_id(_n){};
-    NodeView& operator=(NodeView const &o);
+    NodeView(DistanceGraph * _dg,sgNodeID_t _n):dg(_dg),node_id(_n){};
+    NodeView(NodeView const &o):dg(o.dg), node_id(o.node_id) {};
     friend std::ostream &operator<<(std::ostream &os, const NodeView &n);
+    const DistanceGraph graph() const;
     std::string sequence() const;
     uint64_t size() const;
     std::vector<NodeDistanceView> next() const;
@@ -31,14 +32,15 @@ public:
 //    std::vector<seqID_t> loreads(std::string lords_name) const;
 //    std::vector<seqID_t> readpaths(int rpds_idx=0) const;
 //    std::vector<seqID_t> readpaths(std::string rpds_name) const;
-    DistanceGraph &dg;
     sgNodeID_t node_id;
+private:
+    const DistanceGraph * dg;
 };
 
 class NodeDistanceView {
 public:
     NodeDistanceView(const NodeView &nv,const int32_t &d, const Support &s):node(nv),distance(d),support(s){};
-    NodeDistanceView& operator=(NodeDistanceView const &o);
+    NodeDistanceView(NodeDistanceView const &o):node(o.node),distance(o.distance),support(o.support) {};
     friend std::ostream &operator<<(std::ostream &os, const NodeDistanceView &ndv);
     NodeView node;
     int32_t distance;
