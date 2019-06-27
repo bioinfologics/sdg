@@ -5,19 +5,21 @@
 #pragma once
 
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
+#include <sdglib/types/GenericTypes.hpp>
 
 class NodeDistanceView;
 
 class NodeView {
 public:
-    NodeView(DistanceGraph * _dg,sgNodeID_t _n):dg(_dg),node_id(_n){};
-    NodeView(NodeView const &o):dg(o.dg), node_id(o.node_id) {};
+    NodeView(DistanceGraph * _dg,sgNodeID_t _n):dg(_dg),id(_n){};
+    NodeView(NodeView const &o):dg(o.dg), id(o.id) {};
     friend std::ostream &operator<<(std::ostream &os, const NodeView &n);
-    const DistanceGraph graph() const;
-    std::string sequence() const;
-    uint64_t size() const;
-    std::vector<NodeDistanceView> next() const;
-    std::vector<NodeDistanceView> prev() const;
+    DistanceGraph graph() const;
+    const std::string sequence() const;
+    const uint64_t size() const;
+    const std::vector<NodeDistanceView> next() const;
+    const std::vector<NodeDistanceView> prev() const;
+    const sgNodeID_t node_id() const {return sgNodeID_t(id);};
 //    std::vector<uint16_t> kmer_coverage(std::string kcovds_name,int kcovds_count_name) const;
 //    std::vector<uint16_t> kmer_coverage(int kcovds_idx,int kcovds_count_idx) const;
 //    std::vector<seqID_t> preads(int prds_idx=0) const;
@@ -32,17 +34,22 @@ public:
 //    std::vector<seqID_t> loreads(std::string lords_name) const;
 //    std::vector<seqID_t> readpaths(int rpds_idx=0) const;
 //    std::vector<seqID_t> readpaths(std::string rpds_name) const;
-    sgNodeID_t node_id;
+
 private:
+    sgNodeID_t id;
     DistanceGraph * dg;
 };
 
 class NodeDistanceView {
 public:
-    NodeDistanceView(const NodeView &nv,const int32_t &d, const Support &s):node(nv),distance(d),support(s){};
-    NodeDistanceView(NodeDistanceView const &o):node(o.node),distance(o.distance),support(o.support) {};
+    NodeDistanceView(const NodeView &nv,const int32_t &d, const Support &s):node_view(nv),dist(d),sup(s){};
+    NodeDistanceView(NodeDistanceView const &o):node_view(o.node_view),dist(o.dist),sup(o.sup) {};
     friend std::ostream &operator<<(std::ostream &os, const NodeDistanceView &ndv);
-    NodeView node;
-    int32_t distance;
-    Support support;
+    const NodeView node() const {return NodeView(node_view);};
+    const int32_t distance() const {return dist; };
+    const Support support() const {return Support(sup);};
+private:
+    NodeView node_view;
+    int32_t dist;
+    Support sup;
 };
