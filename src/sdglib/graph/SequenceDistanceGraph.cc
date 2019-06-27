@@ -68,9 +68,26 @@ void Node::make_rc() {
 
 std::string SequenceDistanceGraph::get_node_sequence(sgNodeID_t n){
     if (n>0) return nodes[n].sequence;
-    Node rc(nodes[n].sequence);
-    rc.make_rc();
-    return rc.sequence;
+    n=-n;
+    std::string rseq;
+    rseq.resize(nodes[n].sequence.size());
+    for (size_t i=0,j=nodes[n].sequence.size()-1;i<nodes[n].sequence.size();++i,--j){
+        switch(nodes[n].sequence[j]){
+            case 'A':
+                rseq[i]='T';
+                break;
+            case 'C':
+                rseq[i]='G';
+                break;
+            case 'G':
+                rseq[i]='C';
+                break;
+            case 'T':
+                rseq[i]='A';
+                break;
+        }
+    }
+    return rseq;
 }
 
 uint64_t SequenceDistanceGraph::get_node_size(sgNodeID_t n) {
