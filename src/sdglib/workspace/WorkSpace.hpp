@@ -16,6 +16,7 @@
 
 #include <sdglib/processors/KmerCompressionIndex.hpp>
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
+#include <sdglib/journal/OperationJournal.hpp>
 
 
 class LogEntry{
@@ -37,6 +38,8 @@ public:
     void print_log();
 
     void add_log_entry(std::string text);
+
+    void add_operation(const std::string &name, const std::string &tool, const std::string &detail);
 
     void dump_to_disk(std::string filename);
 
@@ -77,4 +80,6 @@ public:
 
     static const sdgVersion_t min_compat;
     std::vector<std::string> read_counts_header;
+
+    std::vector<OperationJournal> operation_journals;
 };

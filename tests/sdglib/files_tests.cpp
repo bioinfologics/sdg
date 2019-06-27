@@ -34,11 +34,14 @@ TEST_CASE("Workspace create, read, write") {
 
     out.kci.add_counts_from_datastore(out.paired_read_datastores[0]);
 
+    out.add_operation("test","test","test");
+
     out.dump_to_disk("workspace.bsgws");
 
     in.load_from_disk("workspace.bsgws");
 
 
+    REQUIRE( out.operation_journals == in.operation_journals);
     REQUIRE( out.sdg == in.sdg);
 
 
