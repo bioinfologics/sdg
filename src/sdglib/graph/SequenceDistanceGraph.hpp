@@ -30,30 +30,30 @@ class SequenceSubGraph;
 class SequenceDistanceGraph : public DistanceGraph {
 public:
     //SWIG's version of "supporting inheritance" :'(
-//    using DistanceGraph::links;
-//    using DistanceGraph::add_link;
-//    using DistanceGraph::copy_links;
-//    using DistanceGraph::remove_link;
-//    using DistanceGraph::disconnect_node;
-//    using DistanceGraph::get_fw_links;
-//    using DistanceGraph::get_bw_links;
-//    using DistanceGraph::get_link;
-//    using DistanceGraph::get_next_nodes;
-//    using DistanceGraph::get_prev_nodes;
-//    using DistanceGraph::fw_reached_nodes;
-//    using DistanceGraph::fw_neighbours_by_distance;
-//    using DistanceGraph::get_connected_nodes;
-//    using DistanceGraph::find_all_paths_between;
-//    using DistanceGraph::remove_transitive_links;
-//    using DistanceGraph::report_connectivity;
-//    using DistanceGraph::are_connected;
-//    using DistanceGraph::link_count;
-//    using DistanceGraph::get_all_lines;
-//    using DistanceGraph::find_bubbles;
-//    using DistanceGraph::find_tips;
-//    using DistanceGraph::find_self_loops;
-//    using DistanceGraph::write_to_gfa1;
-//    using DistanceGraph::write_to_gfa2;
+    using DistanceGraph::links;
+    using DistanceGraph::add_link;
+    using DistanceGraph::copy_links;
+    using DistanceGraph::remove_link;
+    using DistanceGraph::disconnect_node;
+    using DistanceGraph::get_fw_links;
+    using DistanceGraph::get_bw_links;
+    using DistanceGraph::get_link;
+    using DistanceGraph::get_next_nodes;
+    using DistanceGraph::get_prev_nodes;
+    using DistanceGraph::fw_reached_nodes;
+    using DistanceGraph::fw_neighbours_by_distance;
+    using DistanceGraph::get_connected_nodes;
+    using DistanceGraph::find_all_paths_between;
+    using DistanceGraph::remove_transitive_links;
+    using DistanceGraph::report_connectivity;
+    using DistanceGraph::are_connected;
+    using DistanceGraph::link_count;
+    using DistanceGraph::get_all_lines;
+    using DistanceGraph::find_bubbles;
+    using DistanceGraph::find_tips;
+    using DistanceGraph::find_self_loops;
+    using DistanceGraph::write_to_gfa1;
+    using DistanceGraph::write_to_gfa2;
 
     SequenceDistanceGraph():DistanceGraph(*this) { //sdg gets initialised through LDG
         add_node(Node("",NodeStatus::Deleted)); //an empty deleted node on 0, just to skip the space
