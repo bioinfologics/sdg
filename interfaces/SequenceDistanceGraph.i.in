@@ -20,6 +20,7 @@
 #include "sdglib/graph/SequenceGraphPath.hpp"
 #include "sdglib/graph/SequenceSubGraph.hpp"
 #include "sdglib/graph/SequenceDistanceGraph.hpp"
+#include "sdglib/views/NodeView.hpp"
 #include "sdglib/processors/KmerCompressionIndex.hpp"
 #include "sdglib/workspace/WorkSpace.hpp"
 #include "sdglib/factories/KMerFactory.hpp"
@@ -70,55 +71,64 @@
 %include "sdglib/datastores/LinkedReadsDatastore.hpp"
 %include "sdglib/readers/FileReader.hpp"
 
-   %template(vectorInt) std::vector<int>;
-   %template(vectorDouble) std::vector<double>;
-   %template(vectorFloat) std::vector<float>;
-   %template(vectorString) std::vector<std::string>;
-   %template(vectorLink) std::vector<Link>;
-   %template(vectorvectorLink) std::vector<std::vector<Link>>;
-   %template(vectorSGNode) std::vector<sgNodeID_t>;
-   %template(vectorvectorSGNode) std::vector<std::vector<sgNodeID_t>>;
-   %template(vectorNode) std::vector<Node>;
-   %template(vectorUINT16) std::vector<uint16_t >;
-   %template(vectorUINT64) std::vector<uint64_t>;
-   %template(vectorVectorUINT16) std::vector< std::vector <uint16_t > >;
-   %template(vectorVectorUINT64) std::vector< std::vector <uint64_t > >;
-   %template(vectorBool) std::vector<bool>;
-   %template(vectorMinPosIDX) std::vector<MinPosIDX>;
-   %template(vectorReadPosSize) std::vector< ReadPosSize >;
-   %template(vectorReadMapping) std::vector<ReadMapping>;
-   %template(vectorvectorReadMapping) std::vector<std::vector<ReadMapping>>;
-   %template(vectorLongReadMapping) std::vector<LongReadMapping>;
-   %template(vectorvectorLongReadMapping) std::vector<std::vector<LongReadMapping>>;
-   %template(vectorTagNeighbour) std::vector<TagNeighbour>;
-   %template(vectorvectorTagNeighbour) std::vector<std::vector<TagNeighbour>>;
-   %template(vectorHaplotypeScore) std::vector<HaplotypeScore>;
+%feature("director") DistanceGraph;
+%feature("director") SequenceDistanceGraph;
 
-   %ignore std::vector<PairedReadsDatastore>::vector(size_type);
-   %ignore std::vector<PairedReadsDatastore>::resize;
-   %template(vectorPairedReadsDatastore) std::vector<PairedReadsDatastore>;
+%template(vectorInt) std::vector<int>;
+%template(vectorDouble) std::vector<double>;
+%template(vectorFloat) std::vector<float>;
+%template(vectorString) std::vector<std::string>;
+%template(vectorLink) std::vector<Link>;
+%template(vectorvectorLink) std::vector<std::vector<Link>>;
+%template(vectorSGNode) std::vector<sgNodeID_t>;
+%template(vectorvectorSGNode) std::vector<std::vector<sgNodeID_t>>;
+%template(vectorNode) std::vector<Node>;
+%ignore std::vector<NodeView>::vector(size_type);
+%ignore std::vector<NodeView>::resize;
+%template(vectorNodeView) std::vector<NodeView>;
+%ignore std::vector<NodeDistanceView>::vector(size_type);
+%ignore std::vector<NodeDistanceView>::resize;
+%template(vectorNodeDistanceView) std::vector<NodeDistanceView>;
+%template(vectorUINT16) std::vector<uint16_t >;
+%template(vectorUINT64) std::vector<uint64_t>;
+%template(vectorVectorUINT16) std::vector< std::vector <uint16_t > >;
+%template(vectorVectorUINT64) std::vector< std::vector <uint64_t > >;
+%template(vectorBool) std::vector<bool>;
+%template(vectorMinPosIDX) std::vector<MinPosIDX>;
+%template(vectorReadPosSize) std::vector< ReadPosSize >;
+%template(vectorReadMapping) std::vector<ReadMapping>;
+%template(vectorvectorReadMapping) std::vector<std::vector<ReadMapping>>;
+%template(vectorLongReadMapping) std::vector<LongReadMapping>;
+%template(vectorvectorLongReadMapping) std::vector<std::vector<LongReadMapping>>;
+%template(vectorTagNeighbour) std::vector<TagNeighbour>;
+%template(vectorvectorTagNeighbour) std::vector<std::vector<TagNeighbour>>;
+%template(vectorHaplotypeScore) std::vector<HaplotypeScore>;
 
-   %ignore std::vector<LinkedReadsDatastore>::vector(size_type);
-   %ignore std::vector<LinkedReadsDatastore>::resize;
-   %template(vectorLinkedReadsDatastore) std::vector<LinkedReadsDatastore>;
+%ignore std::vector<PairedReadsDatastore>::vector(size_type);
+%ignore std::vector<PairedReadsDatastore>::resize;
+%template(vectorPairedReadsDatastore) std::vector<PairedReadsDatastore>;
 
-   %ignore std::vector<LongReadsDatastore>::vector(size_type);
-   %ignore std::vector<LongReadsDatastore>::resize;
-   %template(vectorLongReadsDatastore) std::vector<LongReadsDatastore>;
+%ignore std::vector<LinkedReadsDatastore>::vector(size_type);
+%ignore std::vector<LinkedReadsDatastore>::resize;
+%template(vectorLinkedReadsDatastore) std::vector<LinkedReadsDatastore>;
 
-   %template(SGNodePair) std::pair<sgNodeID_t, sgNodeID_t>;
-   %template(vectorSGNodePair) std::vector<std::pair<sgNodeID_t, sgNodeID_t>>;
+%ignore std::vector<LongReadsDatastore>::vector(size_type);
+%ignore std::vector<LongReadsDatastore>::resize;
+%template(vectorLongReadsDatastore) std::vector<LongReadsDatastore>;
 
-   %template(vectorKmerCount) std::vector<KmerCount>;
+%template(SGNodePair) std::pair<sgNodeID_t, sgNodeID_t>;
+%template(vectorSGNodePair) std::vector<std::pair<sgNodeID_t, sgNodeID_t>>;
 
-   %template(set10xTag) std::set<bsg10xTag>;
-   %template(setSGNodePair) std::set<std::pair<sgNodeID_t, sgNodeID_t>>;
-   %template(setSGNode) std::set<sgNodeID_t>;
+%template(vectorKmerCount) std::vector<KmerCount>;
 
-   %template(usetUINT64) std::unordered_set<uint64_t>;
-   %template(usetUINT128) std::unordered_set<__uint128_t, int128_hash>;
+%template(set10xTag) std::set<bsg10xTag>;
+%template(setSGNodePair) std::set<std::pair<sgNodeID_t, sgNodeID_t>>;
+%template(setSGNode) std::set<sgNodeID_t>;
 
-   %template(fastaReader) FastaReader<FastaRecord>;
+%template(usetUINT64) std::unordered_set<uint64_t>;
+%template(usetUINT128) std::unordered_set<__uint128_t, int128_hash>;
+
+%template(fastaReader) FastaReader<FastaRecord>;
 
 
 %define __STR__()
@@ -147,6 +157,16 @@ std::string __repr__() {
     __REPR__();
 }
 
+%extend NodeView{
+    __STR__();
+    __REPR__();
+};
+
+%extend NodeDistanceView{
+        __STR__();
+        __REPR__();
+};
+
 %extend LongReadMapping{
     __STR__();
     __REPR__();
@@ -173,6 +193,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %include "sdglib/graph/SequenceGraphPath.hpp"
 %include "sdglib/graph/SequenceSubGraph.hpp"
 %include "sdglib/graph/SequenceDistanceGraph.hpp"
+%include "sdglib/views/NodeView.hpp"
 %include "sdglib/indexers/UniqueKmerIndex.hpp"
 %include "sdglib/processors/KmerCompressionIndex.hpp"
 %include "sdglib/workspace/WorkSpace.hpp"
