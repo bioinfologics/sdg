@@ -7,6 +7,7 @@
 #include <cmath>
 #include <sdglib/logger/OutputLog.hpp>
 #include "SequenceDistanceGraph.hpp"
+#include <sdglib/views/NodeView.hpp>
 
 void DistanceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, Support support) {
     if (llabs(source)>=links.size()) links.resize(llabs(source)+1);
@@ -498,4 +499,8 @@ DistanceGraph &DistanceGraph::operator=(const DistanceGraph &o) {
     name = o.name;
 
     return *this;
+}
+
+NodeView DistanceGraph::get_nodeview(sgNodeID_t n) {
+    return NodeView(*this,n);
 }

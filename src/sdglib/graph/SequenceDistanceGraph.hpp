@@ -54,6 +54,8 @@ public:
     using DistanceGraph::find_self_loops;
     using DistanceGraph::write_to_gfa1;
     using DistanceGraph::write_to_gfa2;
+    using DistanceGraph::get_nodeview;
+    using DistanceGraph::name;
 
     SequenceDistanceGraph():DistanceGraph(*this) { //sdg gets initialised through LDG
         add_node(Node("",NodeStatus::Deleted)); //an empty deleted node on 0, just to skip the space

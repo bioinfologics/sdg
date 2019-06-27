@@ -21,6 +21,7 @@
 #include <sdglib/logger/OutputLog.hpp>
 
 class SequenceDistanceGraph;//fwd declaration (to break circular dependence)
+class NodeView;
 /**
  * This is a description of the graph creating new linkage, the nodes are referenced from the original graph.
  *
@@ -205,6 +206,7 @@ public:
     void write_to_gfa1(std::string filename, const std::vector<sgNodeID_t> &selected_nodes={}, const std::vector<double> &depths={});
     void write_to_gfa2(std::string filename, const std::vector<sgNodeID_t> &selected_nodes={}, const std::vector<double> &depths={});
 
+    NodeView get_nodeview(sgNodeID_t n);
     DistanceGraph& operator=(const DistanceGraph &o);
 
     void read(std::ifstream &input_file);
