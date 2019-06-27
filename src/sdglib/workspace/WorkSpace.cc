@@ -32,6 +32,28 @@ void WorkSpace::dump_to_disk(std::string filename) {
         of.write((char *) l.log_text.data(), count);
 
     }
+    count = operation_journals.size();
+    of.write((char *) &count, sizeof(count));
+    for (const auto &j:operation_journals){
+        count = j.name.size();
+        of.write((char *) &count, sizeof(count));
+        of.write((char *) j.name.data(), count);
+        count = j.detail.size();
+        of.write((char *) &count, sizeof(count));
+        of.write((char *) j.detail.data(), count);
+        count = j.tool.size();
+        of.write((char *) &count, sizeof(count));
+        of.write((char *) j.tool.data(), count);
+        of.write((char *) &j.timestamp, sizeof(j.timestamp));
+        count = j.entries.size();
+        of.write((char *) &count, sizeof(count));
+        for (const auto &e: j.entries){
+            count = e.detail.size();
+            of.write((char *) &count, sizeof(count));
+            of.write((char *) e.detail.data(), count);
+        }
+    }
+
     //dump main graph
     sdg.write(of);
     //dump KCI
@@ -122,6 +144,36 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
         wsfile.read((char *) text.data(),ssize);
         log.emplace_back(timestamp,git_version,text);
     }
+
+    wsfile.read((char *) &count, sizeof(count));
+    operation_journals.resize(count);
+    for (auto i=0; i < count; i++) {
+        auto &oj = operation_journals[i];
+        uint64_t ssize;
+
+        wsfile.read((char *) &ssize, sizeof(ssize));
+        oj.name.resize(ssize);
+        wsfile.read((char *) oj.name.data(), ssize);
+
+        wsfile.read((char *) &ssize, sizeof(ssize));
+        oj.detail.resize(ssize);
+        wsfile.read((char *) oj.detail.data(), ssize);
+
+        wsfile.read((char *) &ssize, sizeof(ssize));
+        oj.tool.resize(ssize);
+        wsfile.read((char *) oj.tool.data(), ssize);
+        wsfile.read((char *) &oj.timestamp, sizeof(oj.timestamp));
+        count = oj.entries.size();
+        wsfile.read((char *) &ssize, sizeof(ssize));
+        oj.entries.resize(ssize);
+        for (auto e = 0; e < ssize; ++e){
+            uint64_t essize;
+            wsfile.read((char *) &essize, sizeof(essize));
+            wsfile.read((char *) oj.entries[e].detail.data(), essize);
+        }
+    }
+
+
     if (log_only) return;
     //read element type, then use that element's read
     sdg.read(wsfile);
@@ -168,6 +220,10 @@ void WorkSpace::print_log() {
         char buf[50];
         std::strftime(buf,50,"%F %R",std::localtime(&l.timestamp));
         std::cout<<buf<<" ["<<l.bsg_version<<"]: "<<l.log_text<<std::endl;
+    }
+
+    for (const auto &j:operation_journals){
+        j.print_status();
     }
 }
 
@@ -307,4 +363,8 @@ DistanceGraph &WorkSpace::get_distance_graph(const std::string &name) {
         if (ds.name == name) return ds;
     }
     throw std::runtime_error("There are no DistanceGraphs named: " + name);
+}
+
+void WorkSpace::add_operation(const std::string &name, const std::string &tool, const std::string &detail) {
+    operation_journals.emplace_back(name, tool, detail);
 }
