@@ -19,13 +19,13 @@ struct WorkspaceFunctionMap : public std::map<std::string, WorkspaceFunctions>
 {
     WorkspaceFunctionMap()
     {
-        this->operator[]("make") =  MAKE;
-        this->operator[]("log") = LOG;
-        this->operator[]("dump") = DUMP;
-        this->operator[]("node-kci-profile") = NODE_KCI_DUMP;
-        this->operator[]("kci-profile") = KCI_PROFILE;
-        this->operator[]("merge") = MERGE;
-        this->operator[]("add") = ADD_DS;
+        operator[]("make") =  MAKE;
+        operator[]("log") = LOG;
+        operator[]("dump") = DUMP;
+        operator[]("node-kci-profile") = NODE_KCI_DUMP;
+        operator[]("kci-profile") = KCI_PROFILE;
+        operator[]("merge") = MERGE;
+        operator[]("add") = ADD_DS;
     };
     ~WorkspaceFunctionMap(){}
 };

@@ -362,28 +362,28 @@ PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string _filename,
 }
 
 PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, PairedReadsDatastore &o) : ws(ws), mapper(ws, *this) {
-    this->readsize = o.readsize;
-    this->filename = o.filename;
-    this->readpos_offset = o.readpos_offset;
-    this->_size = o._size;
-    this->fd = fopen(o.filename.c_str(), "r");
+    readsize = o.readsize;
+    filename = o.filename;
+    readpos_offset = o.readpos_offset;
+    _size = o._size;
+    fd = fopen(o.filename.c_str(), "r");
 
-    this->mapper.reads_in_node = o.mapper.reads_in_node;
-    this->mapper.read_to_node = o.mapper.read_to_node;
-    this->mapper.frdist = o.mapper.frdist;
-    this->mapper.rfdist = o.mapper.rfdist;
-    this->mapper.read_direction_in_node = o.mapper.read_direction_in_node;
+    mapper.reads_in_node = o.mapper.reads_in_node;
+    mapper.read_to_node = o.mapper.read_to_node;
+    mapper.frdist = o.mapper.frdist;
+    mapper.rfdist = o.mapper.rfdist;
+    mapper.read_direction_in_node = o.mapper.read_direction_in_node;
 }
 
 PairedReadsDatastore& PairedReadsDatastore::operator=(PairedReadsDatastore const &o) {
     if (&o == this) return *this;
 
-    this->mapper = o.mapper;
-    this->filename = o.filename;
-    this->_size = o._size;
-    this->readpos_offset = o.readpos_offset;
-    this->readsize = o.readsize;
-    this->ws = o.ws;
-    this->fd = fopen(filename.c_str(), "r");
+    mapper = o.mapper;
+    filename = o.filename;
+    _size = o._size;
+    readpos_offset = o.readpos_offset;
+    readsize = o.readsize;
+    ws = o.ws;
+    fd = fopen(filename.c_str(), "r");
     return *this;
 }

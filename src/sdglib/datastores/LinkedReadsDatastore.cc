@@ -569,13 +569,13 @@ LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, const LinkedReadsDatas
 LinkedReadsDatastore &LinkedReadsDatastore::operator=(LinkedReadsDatastore const &o) {
     if ( &o == this) return *this;
 
-    this->filename = o.filename;
-    this->ws = o.ws;
-    this->readsize = o.readsize;
-    this->readpos_offset = o.readpos_offset;
-    this->mapper = o.mapper;
-    this->read_tag = o.read_tag;
-    this->fd = fopen(filename.c_str(), "r");
+    filename = o.filename;
+    ws = o.ws;
+    readsize = o.readsize;
+    readpos_offset = o.readpos_offset;
+    mapper = o.mapper;
+    read_tag = o.read_tag;
+    fd = fopen(filename.c_str(), "r");
 }
 
 void BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {

@@ -135,10 +135,10 @@ public:
     PairedReadConnectivityDetail(){};
     PairedReadConnectivityDetail(const PairedReadsMapper & prm, sgNodeID_t source, sgNodeID_t dest);
     PairedReadConnectivityDetail& operator+=(const PairedReadConnectivityDetail& rhs){
-        this->orientation_paircount[0] += rhs.orientation_paircount[0];
-        this->orientation_paircount[1] += rhs.orientation_paircount[1];
-        this->orientation_paircount[2] += rhs.orientation_paircount[2];
-        this->orientation_paircount[3] += rhs.orientation_paircount[3];
+        orientation_paircount[0] += rhs.orientation_paircount[0];
+        orientation_paircount[1] += rhs.orientation_paircount[1];
+        orientation_paircount[2] += rhs.orientation_paircount[2];
+        orientation_paircount[3] += rhs.orientation_paircount[3];
         return *this;
     }
 

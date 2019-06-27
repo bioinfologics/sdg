@@ -44,7 +44,7 @@ const char* ReadSequenceBuffer::get_read_sequence(uint64_t readID) {
         read_offset_in_file=long_datastore->read_to_fileRecord[readID].offset;
         if (chunk_size < long_datastore->read_to_fileRecord[readID].record_size) {
             throw std::runtime_error(
-                    "Reading from " + this->long_datastore->filename +
+                    "Reading from " + long_datastore->filename +
                     " failed!\nThe size of the buffer chunk is smaller than read " +
                     std::to_string(readID) + " increase the chunk_size so this read fits");
         }

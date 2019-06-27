@@ -34,7 +34,7 @@ public:
 //    std::vector<seqID_t> readpaths(std::string rpds_name) const;
     sgNodeID_t node_id;
 private:
-    const DistanceGraph * dg;
+    DistanceGraph * dg;
 };
 
 class NodeDistanceView {

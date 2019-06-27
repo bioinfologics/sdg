@@ -137,16 +137,16 @@ size_t SequenceDistanceGraph::count_active_nodes() {
 }
 
 bool Link::operator==(const Link a) const {
-    if (a.source == this->source && a.dest == this->dest){
+    if (a.source == source && a.dest == dest){
         return true;
     }
     return false;
 }
 
 bool Link::operator<(const Link a) const {
-    if (a.source < this->source){
+    if (a.source < source){
         return true;
-    } if (a.source == this->source && a.dest < this->dest) {
+    } if (a.source == source && a.dest < dest) {
         return  true;
     }
     return false;
@@ -233,10 +233,10 @@ void SequenceDistanceGraph::read(std::ifstream & input_file) {
 
 void SequenceDistanceGraph::load_from_gfa(std::string filename) {
     std::string line;
-    this->filename=filename;
+    filename=filename;
     //check the filename ends in .gfa
     if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
-        this->fasta_filename=filename.substr(0,filename.size()-4)+".fasta";
+        fasta_filename=filename.substr(0,filename.size()-4)+".fasta";
     }
     else throw std::invalid_argument("Filename of the gfa input does not end in gfa, it ends in '"+filename.substr(filename.size()-4,4)+"'");
 
@@ -360,8 +360,8 @@ void SequenceDistanceGraph::load_from_gfa(std::string filename) {
 
 void SequenceDistanceGraph::load_from_fasta(std::string filename) {
     std::string line;
-    this->filename=filename;
-    this->fasta_filename=filename;
+    filename=filename;
+    fasta_filename=filename;
 
     std::ifstream fastaf(fasta_filename);
     sdglib::OutputLog(sdglib::LogLevels::INFO) << "Graph fasta filesname: " << fasta_filename << std::endl;

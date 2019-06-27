@@ -130,9 +130,9 @@ enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage
 /**
  * Long read mapping to SequenceGraph, computation and storage of the raw alignments and filtered alingments.
  *
- * this->mappings is filled via small k-mers to multi-position index and a chain search.
- * this->filtered_read_mappings is filled by calling one of the filter_mappings_* methods, which can use extra data.
- * the reads_in_node index is populated by update_indexes() from this->filtered_read_mappings data.
+ * mappings is filled via small k-mers to multi-position index and a chain search.
+ * filtered_read_mappings is filled by calling one of the filter_mappings_* methods, which can use extra data.
+ * the reads_in_node index is populated by update_indexes() from filtered_read_mappings data.
  */
 class LongReadsMapper {
     NKmerIndex assembly_kmers;
@@ -317,7 +317,7 @@ public:
     /**
      * This goes read by read, and filters the mappings by finding a set of linked nodes that maximises 1-cov of the read
      *
-     * Unfiltered mappings read from this->mappings and results stored in this->filtered_read_mappings, which is cleared.
+     * Unfiltered mappings read from mappings and results stored in filtered_read_mappings, which is cleared.
      *
      * @param lrm a LinkedReadMapper with mapped reads, over the same graph this mapper has mapped Long Reads.
      * @param min_size minimum size of the read to filter mappings.

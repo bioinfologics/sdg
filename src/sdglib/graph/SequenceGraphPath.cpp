@@ -80,7 +80,7 @@ void SequenceGraphPath::reverse(){
 bool SequenceGraphPath::is_canonical() {
     auto rp=*this;
     rp.reverse();
-    return this->get_sequence()<rp.get_sequence();
+    return get_sequence()<rp.get_sequence();
 }
 
 std::set<sgNodeID_t> SequenceGraphPath::make_set_of_nodes() const {
