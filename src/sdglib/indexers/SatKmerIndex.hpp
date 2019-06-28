@@ -53,19 +53,14 @@ public:
         return {num_kmers, num_elements};
     }
 
-    void generate_index_vec_allocs(const SequenceDistanceGraph &sg, int filter_limit = 200, bool verbose=true);
-
     /**
-     * This function is a alternative generator of the kmer index, reserving space first in the internal vectors.
+     * @brief
+     * Generate an index for the start location of each kmer and a list of {+-node,pos} that can be queried by kmer.
      * @param sg
      * @param filter_limit
      * @param verbose
      */
-    void generate_index_prealloc(const SequenceDistanceGraph &sg, uint8_t filter_limit = 200, bool verbose=true);
-
     void generate_index(const SequenceDistanceGraph &sg, uint8_t filter_limit = 200, bool verbose=true);
-
-    void generate_index_parallel(const SequenceDistanceGraph &sg, int filter_limit = 200, bool verbose=true);
 
     bool empty(uint64_t kmer) const { return assembly_kmers[kmer].empty(); }
     const_iterator begin(uint64_t kmer) const {return assembly_kmers[kmer].cbegin();}

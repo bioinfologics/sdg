@@ -204,7 +204,7 @@ TEST_CASE("Load GFA") {
 
 TEST_CASE("Load ReadPaths") {
 
-    ReadPathsDatastore ds("/Users/yanesl/rundir/a.thaliana/contigs/ecoli.D_large_K_patched.paths");
+    ReadPathsDatastore ds("../tests/datasets/test.paths");
 
     REQUIRE(ds.read_paths.size() > 0);
 }
