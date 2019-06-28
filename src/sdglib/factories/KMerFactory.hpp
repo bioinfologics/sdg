@@ -119,7 +119,7 @@ public:
         rkmer=0;
         last_unknown=0;
         uint64_t p(0);
-        mers.reserve(s.size());
+        mers.reserve(mers.size()+s.size());
         while (p < s.size()) {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)
@@ -143,7 +143,7 @@ public:
         rkmer=0;
         last_unknown=0;
         uint64_t p(0);
-        mers.reserve(s.size());
+        mers.reserve(mers.size()+s.size());
         while (p < s.size()) {
             //fkmer: grows from the right (LSB)
             //rkmer: grows from the left (MSB)

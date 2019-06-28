@@ -31,7 +31,7 @@
 #include "sdglib/mappers/LongReadsMapper.hpp"
 #include "sdglib/datastores/LongReadsDatastore.hpp"
 #include "sdglib/mappers/PairedReadsMapper.hpp"
-#include "sdglib/datastores/PairedReadsDatastore.hpp"
+#include "sdglib/datastores/KmerCountsDatastore.hpp"
 #include "sdglib/datastores/ReadSequenceBuffer.hpp"
 
 #include "sdglib/processors/Untangler.hpp"
@@ -203,6 +203,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
 
 %include "sdglib/datastores/LongReadsDatastore.hpp"
 %include "sdglib/datastores/PairedReadsDatastore.hpp"
+%include "sdglib/datastores/KmerCountsDatastore.hpp"
 %include "sdglib/mappers/LongReadsMapper.hpp"
 %include "sdglib/mappers/LinkedReadsMapper.hpp"
 %include "sdglib/mappers/PairedReadsMapper.hpp"
