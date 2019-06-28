@@ -43,8 +43,6 @@ TEST_CASE("Workspace create, read, write") {
 
     REQUIRE( out.operation_journals == in.operation_journals);
     REQUIRE( out.sdg == in.sdg);
-
-
 }
 
 TEST_CASE("Long reads datastore create, read, write") {
@@ -206,5 +204,5 @@ TEST_CASE("Load ReadPaths") {
 
     ReadPathsDatastore ds("../tests/datasets/test.paths");
 
-    REQUIRE(ds.read_paths.size() > 0);
+    REQUIRE(!ds.read_paths.empty());
 }
