@@ -124,9 +124,10 @@ BatchKmersCounter::kmerCountOMP(uint8_t K, PairedReadsDatastore const &reads, ui
         batch_status.push_back((std::atomic_uint_fast8_t *) calloc(sizeof(std::atomic_uint_fast8_t), elements));
         batch_lists.push_back(std::vector<std::shared_ptr<KmerList > >());
         batch_lists.back().resize(elements);
-        sdglib::OutputLog() << "level " << levels << " created with " << elements << " elements " << std::endl;
+//        sdglib::OutputLog() << "level " << levels << " created with " << elements << " elements " << std::endl;
         ++levels;
     }
+    sdglib::OutputLog() << "Created " << levels << " levels" << std::endl;
     std::atomic_uint_fast8_t level_count[levels]; //level->count
     for (auto &l:level_count)l = 0;
 
@@ -179,7 +180,7 @@ BatchKmersCounter::kmerCountOMP(uint8_t K, PairedReadsDatastore const &reads, ui
                 uint16_t slot = level_count[merge_level]++;
                 if (slot == batch_lists[merge_level].size() - 1) {
 #pragma omp critical
-                    sdglib::OutputLog() << "level " << merge_level << " done." << std::endl;
+                    sdglib::OutputLog() << "level " << (merge_level+1) << " done." << std::endl;
                 }
                 //   if insertion number is odd or last batch:
                 if (merge_level < levels - 1 and (slot % 2 == 1 or slot == batch_lists[merge_level].size() - 1)) {
@@ -210,15 +211,15 @@ BatchKmersCounter::kmerCountOMP(uint8_t K, PairedReadsDatastore const &reads, ui
     }
 
 
-    sdglib::OutputLog() << "Top level merge starting" << std::endl;
+//    sdglib::OutputLog() << "Top level merge starting" << std::endl;
     //inplace_count_merge(batch_lists.back()[0], batch_lists.back()[1]);
     batch_lists.back()[0]->merge(*batch_lists.back()[1]);
-    sdglib::OutputLog() << "Top level merge done" << std::endl;
+//    sdglib::OutputLog() << "Top level merge done" << std::endl;
     std::shared_ptr<KmerList> kmer_list = batch_lists.back()[0];
     batch_lists.back()[0].reset();
     batch_lists.back()[1].reset();
     for (auto &bs:batch_status) free(bs);
-    sdglib::OutputLog() << "cleanup done" << std::endl;
+//    sdglib::OutputLog() << "cleanup done" << std::endl;
     sdglib::OutputLog() << "Total kmers processed " << totalKmers << std::endl;
     return kmer_list;
 }
