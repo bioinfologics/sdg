@@ -48,7 +48,7 @@ public:
 
     ~LongReadsDatastore();
     LongReadsDatastore(WorkSpace &ws, std::ifstream &infile);
-    LongReadsDatastore(WorkSpace &ws, const std::string &filename, std::ifstream &input_file);
+    LongReadsDatastore(WorkSpace &ws, std::string default_name, const std::string &filename, std::ifstream &input_file);
     LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o);
     LongReadsDatastore(const LongReadsDatastore &o);
     /**
@@ -69,7 +69,7 @@ public:
 
     LongReadsDatastore& operator=(LongReadsDatastore const &o);
     uint32_t build_from_fastq(std::ofstream &outf, const std::string &long_read_file);
-    static void build_from_fastq(const std::string &output_file, const std::string &long_read_file);
+    static void build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file);
     void print_status() const;
     void read(std::ifstream &ifs);
     void write(std::ofstream &output_file);
@@ -80,6 +80,7 @@ public:
 
     std::string filename;
     std::string name;
+    std::string default_name;
     static const sdgVersion_t min_compat;
 
     LongReadsMapper mapper;

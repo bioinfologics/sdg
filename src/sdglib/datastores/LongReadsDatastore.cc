@@ -51,7 +51,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::ifstream &infile) : f
     read(infile);
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &filename, std::ifstream &input_file) : filename(filename), ws(ws), mapper(ws, *this) {
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string default_name, const std::string &filename, std::ifstream &input_file) : filename(filename), ws(ws), mapper(ws, *this) {
     sdgMagic_t magic;
     sdgVersion_t version;
     SDG_FILETYPE type;
@@ -74,6 +74,14 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &filenam
     // Equivalente de read_rtfr
     size_t numReads(0);
     input_file.read((char *) numReads, sizeof(numReads));
+    std::streampos fPos;
+    input_file.read((char*) &fPos, sizeof(fPos));
+    uint64_t sname=0;
+    input_file.read((char *) &sname, sizeof(sname));
+    default_name.resize(sname);
+    input_file.read((char *) default_name.data(), default_name.size());
+
+
     read_to_fileRecord.resize(numReads);
     for (auto i=0; i<numReads; i++) {
         read_to_fileRecord[i].offset=input_file.tellg();
@@ -94,7 +102,8 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &filenam
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : filename(o.filename), ws(ws), mapper(ws, *this) {
     read_to_fileRecord = o.read_to_fileRecord;
-
+    name = o.name;
+    default_name = o.default_name;
     mapper.reads_in_node = o.mapper.reads_in_node;
     mapper.filtered_read_mappings = o.mapper.filtered_read_mappings;
     mapper.first_mapping = o.mapper.first_mapping;
@@ -115,6 +124,8 @@ LongReadsDatastore &LongReadsDatastore::operator=(LongReadsDatastore const &o) {
     read_to_fileRecord = o.read_to_fileRecord;
 
     mapper = o.mapper;
+    default_name = o.default_name;
+    name = o.name;
     fd = open(filename.data(), O_RDONLY);
     if (!fd) {
         std::cerr << "Failed to open " << filename <<": " << strerror(errno);
@@ -127,6 +138,8 @@ LongReadsDatastore::LongReadsDatastore(const LongReadsDatastore &o) :
         ws(o.ws),
         mapper(*this, o.mapper),
         read_to_fileRecord(o.read_to_fileRecord),
+        name(o.name),
+        default_name(o.default_name),
         filename(o.filename)
 {
     fd = open(filename.data(), O_RDONLY);
@@ -166,6 +179,12 @@ void LongReadsDatastore::load_index(std::string &file) {
     input_file.read((char*)&nReads, sizeof(nReads));
 
     input_file.read((char*)&fPos, sizeof(fPos));
+
+    uint64_t sname(default_name.size());
+    input_file.read((char *) &sname, sizeof(sname));
+    default_name.resize(sname);
+    input_file.read((char *) default_name.data(), sname);
+
     input_file.seekg(fPos);
     read_to_fileRecord.resize(nReads);
     input_file.read((char *) read_to_fileRecord.data(), read_to_fileRecord.size()*sizeof(read_to_fileRecord[0]));
@@ -173,7 +192,7 @@ void LongReadsDatastore::load_index(std::string &file) {
     sdglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()-1<<std::endl;
 }
 
-void LongReadsDatastore::build_from_fastq(const std::string &output_file, const std::string &long_read_file) {
+void LongReadsDatastore::build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file) {
     uint64_t nReads(1);
     std::vector<ReadPosSize> read_to_file_record{ReadPosSize{0,0}};
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
@@ -189,6 +208,10 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
 
     ofs.write((char*) &nReads, sizeof(nReads));
     ofs.write((char*) &fPos, sizeof(fPos));
+    uint64_t sname=default_name.size();
+    ofs.write( (char *) &sname, sizeof(sname));
+    ofs.write( (char *) default_name.data(), sname);
+
     std::ifstream fastq_ifstream(long_read_file);
     if (!fastq_ifstream) {
         std::cerr << "Failed to open input in " << long_read_file << ": " << strerror(errno);
@@ -210,6 +233,7 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
     ofs.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
     ofs.write((char*) &nReads, sizeof(nReads));     // Dump # of reads
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
+
     ofs.flush();                                    // Make sure everything has been written
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<read_to_file_record.size()-1<<" reads"<<std::endl;
 }

@@ -12,17 +12,17 @@ TEST_CASE("Workspace create, read, write") {
     // Long reads
     std::string Lr_filepath("../tests/datasets/workspace/long_reads/long_reads.fastq");
     std::string Lrds_output_path("long_reads.loseq");
-    LongReadsDatastore::build_from_fastq(Lrds_output_path, Lr_filepath);
+    LongReadsDatastore::build_from_fastq(Lrds_output_path, Lrds_output_path, Lr_filepath);
     // Linked reads
     std::string lr1_filepath("../tests/datasets/workspace/10x/10x_R1.fastq");
     std::string lr2_filepath("../tests/datasets/workspace/10x/10x_R2.fastq");
     std::string lrds_output_path("10x.lseq");
-    LinkedReadsDatastore::build_from_fastq(lrds_output_path, lr1_filepath, lr2_filepath, LinkedReadsFormat::seq);
+    LinkedReadsDatastore::build_from_fastq(lrds_output_path, lrds_output_path, lr1_filepath, lr2_filepath, LinkedReadsFormat::seq);
     // Paired reads
     std::string r1_filepath("../tests/datasets/workspace/pe/pe_R1.fastq");
     std::string r2_filepath("../tests/datasets/workspace/pe/pe_R2.fastq");
     std::string prds_output_path("pe.prseq");
-    PairedReadsDatastore::build_from_fastq(prds_output_path, r1_filepath, r2_filepath);
+    PairedReadsDatastore::build_from_fastq(prds_output_path, r1_filepath, r2_filepath, prds_output_path);
 
     WorkSpace out, in;
     out.sdg.load_from_gfa("../tests/datasets/tgraph.gfa");
@@ -49,7 +49,7 @@ TEST_CASE("Long reads datastore create, read, write") {
     {
         std::string lr_filepath("../tests/datasets/workspace/long_reads/long_reads.fastq");
         std::string lrds_output_path("long_reads.loseq");
-        LongReadsDatastore::build_from_fastq(lrds_output_path, lr_filepath);
+        LongReadsDatastore::build_from_fastq(lrds_output_path, lrds_output_path, lr_filepath);
     }
 
     WorkSpace ws;
@@ -74,7 +74,7 @@ TEST_CASE("10x reads datastore create, read, write") {
         std::string r1_filepath("../tests/datasets/workspace/10x/10x_R1.fastq");
         std::string r2_filepath("../tests/datasets/workspace/10x/10x_R2.fastq");
         std::string lrds_output_path("10x.lseq");
-        LinkedReadsDatastore::build_from_fastq(lrds_output_path, r1_filepath, r2_filepath, LinkedReadsFormat::seq);
+        LinkedReadsDatastore::build_from_fastq(lrds_output_path, lrds_output_path, r1_filepath, r2_filepath, LinkedReadsFormat::seq);
     }
 
     WorkSpace ws;
@@ -121,8 +121,8 @@ TEST_CASE("PE reads datastore create, read, write") {
     {
         std::string r1_filepath("../tests/datasets/workspace/pe/pe_R1.fastq");
         std::string r2_filepath("../tests/datasets/workspace/pe/pe_R2.fastq");
-        std::string lrds_output_path("pe.prseq");
-        PairedReadsDatastore::build_from_fastq(lrds_output_path, r1_filepath, r2_filepath);
+        std::string prds_output_path("pe.prseq");
+        PairedReadsDatastore::build_from_fastq(prds_output_path, r1_filepath, r2_filepath, prds_output_path);
     }
 
     WorkSpace ws;

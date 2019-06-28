@@ -18,7 +18,7 @@ void PairedReadsDatastore::print_status() {
 }
 
 void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::string read1_filename,
-                                            std::string read2_filename,
+                                            std::string read2_filename, std::string default_name,
                                             uint64_t min_readsize, uint64_t max_readsize, size_t chunksize) {
 
     //std::cout<<"Memory used by every read's entry:"<< sizeof(PairedRead)<<std::endl;
@@ -53,6 +53,11 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     output.write((const char *) &SDG_VN, sizeof(SDG_VN));
     SDG_FILETYPE type(PairedDS_FT);
     output.write((char *) &type, sizeof(type));
+
+    uint64_t sname=default_name.size();
+    output.write( (char *) &sname, sizeof(sname));
+    output.write( (char *) default_name.data(), sname);
+
 
     output.write((const char *) &max_readsize,sizeof(readsize));
     auto size_pos=output.tellp();
@@ -165,6 +170,11 @@ void PairedReadsDatastore::load_index(){
     if (type != PairedDS_FT) {
         throw std::runtime_error("Incompatible file type");
     }
+
+    uint64_t sname=0;
+    fread( &sname, sizeof(sname), 1, fd);
+    default_name.resize(sname);
+    fread( (char *) default_name.data(), sizeof(char), sname, fd);
 
     fread( &readsize,sizeof(readsize),1,fd);
     fread( &_size,sizeof(_size),1,fd);
@@ -318,8 +328,9 @@ PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string _filename)
 }
 
 PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string read1_filename, std::string read2_filename,
-                                           std::string output_filename, int min_readsize, int max_readsize) : ws(ws), mapper(ws, *this) {
-    build_from_fastq(output_filename, read1_filename, read2_filename, min_readsize, max_readsize, 0);
+                                           std::string output_filename, std::string default_name, int min_readsize, int max_readsize) : ws(ws), mapper(ws, *this) {
+    default_name = default_name;
+    build_from_fastq(output_filename, read1_filename, read2_filename, default_name, min_readsize, max_readsize, 0);
 }
 
 uint64_t PairedReadsDatastore::size() const {return _size;}
