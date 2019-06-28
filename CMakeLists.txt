@@ -150,22 +150,22 @@ include_directories("deps/xxhash/")
 ## Libraries
 add_library(sdg SHARED
             src/sdglib/graph/SequenceDistanceGraph.cc
-            src/sdglib/graph/SequenceSubGraph.cpp
-            src/sdglib/graph/SequenceGraphPath.cpp
+            src/sdglib/graph/SequenceSubGraph.cc
+            src/sdglib/graph/SequenceGraphPath.cc
             src/sdglib/graph/DistanceGraph.cc
             src/sdglib/filesystem/helpers.cc
             src/sdglib/logger/OutputLog.cc
             src/sdglib/datastores/PairedReadsDatastore.cc
             src/sdglib/datastores/LinkedReadsDatastore.cc
-            src/sdglib/datastores/LongReadsDatastore.cpp
+            src/sdglib/datastores/LongReadsDatastore.cc
             src/sdglib/datastores/KmerCountsDatastore.cc
             src/sdglib/datastores/ReadPathsDatastore.cc
             src/sdglib/datastores/ReadSequenceBuffer.cc
-            src/sdglib/mappers/LongReadsMapper.cpp
+            src/sdglib/mappers/LongReadsMapper.cc
             src/sdglib/mappers/LinkedReadsMapper.cc
             src/sdglib/mappers/PairedReadsMapper.cc
             src/sdglib/processors/Untangler.cc
-            src/sdglib/processors/PathExplorer.cpp
+            src/sdglib/processors/PathExplorer.cc
             src/sdglib/processors/LinkageUntangler.cc
             src/sdglib/workspace/WorkSpace.cc
             src/sdglib/processors/KmerCompressionIndex.cc
@@ -183,22 +183,22 @@ add_library(sdg SHARED
 
 add_library(sdg_static STATIC
             src/sdglib/graph/SequenceDistanceGraph.cc
-            src/sdglib/graph/SequenceSubGraph.cpp
-            src/sdglib/graph/SequenceGraphPath.cpp
+            src/sdglib/graph/SequenceSubGraph.cc
+            src/sdglib/graph/SequenceGraphPath.cc
             src/sdglib/graph/DistanceGraph.cc
             src/sdglib/filesystem/helpers.cc
             src/sdglib/logger/OutputLog.cc
             src/sdglib/datastores/PairedReadsDatastore.cc
             src/sdglib/datastores/LinkedReadsDatastore.cc
-            src/sdglib/datastores/LongReadsDatastore.cpp
+            src/sdglib/datastores/LongReadsDatastore.cc
             src/sdglib/datastores/KmerCountsDatastore.cc
             src/sdglib/datastores/ReadPathsDatastore.cc
             src/sdglib/datastores/ReadSequenceBuffer.cc
-            src/sdglib/mappers/LongReadsMapper.cpp
+            src/sdglib/mappers/LongReadsMapper.cc
             src/sdglib/mappers/LinkedReadsMapper.cc
             src/sdglib/mappers/PairedReadsMapper.cc
             src/sdglib/processors/Untangler.cc
-            src/sdglib/processors/PathExplorer.cpp
+            src/sdglib/processors/PathExplorer.cc
             src/sdglib/processors/LinkageUntangler.cc
             src/sdglib/workspace/WorkSpace.cc
             src/sdglib/processors/KmerCompressionIndex.cc
@@ -261,12 +261,12 @@ target_link_libraries(build_all_backbones sdg_static)
 IF(BUILD_TESTING)
     enable_testing()
     include_directories("tests/include")
-    add_library( CatchMain OBJECT tests/sdglib/catch-main.cpp tests/include/catch.hpp )
+    add_library(CatchMain OBJECT tests/sdglib/catch-main.cc tests/include/catch.hpp)
     add_executable(runBasicTests
                    $<TARGET_OBJECTS:CatchMain>
-                   tests/sdglib/files_tests.cpp
-                   tests/sdglib/kmerfactory_tests.cpp
-                   tests/sdglib/index_tests.cpp
+                   tests/sdglib/files_tests.cc
+                   tests/sdglib/kmerfactory_tests.cc
+                   tests/sdglib/index_tests.cc
                    tests/sdglib/workspace_tests.cc)
     IF(BUILD_COV)
         set_target_properties(runBasicTests PROPERTIES

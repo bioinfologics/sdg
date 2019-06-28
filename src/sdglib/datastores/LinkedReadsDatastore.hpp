@@ -48,10 +48,12 @@ std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16);
  */
 class LinkedReadsDatastore {
 public:
-    LinkedReadsDatastore(WorkSpace &ws,std::string filename);
-    LinkedReadsDatastore(WorkSpace &ws,std::string filename, std::ifstream &infile);
+    LinkedReadsDatastore(WorkSpace &ws, std::string filename);
+    LinkedReadsDatastore(WorkSpace &ws, std::string filename, std::ifstream &infile);
     LinkedReadsDatastore(WorkSpace &ws, std::ifstream &infile);
-    LinkedReadsDatastore(WorkSpace &ws,std::string read1_filename,std::string read2_filename, std::string output_filename, LinkedReadsFormat format, int readsize=250);
+    LinkedReadsDatastore(WorkSpace &ws, std::string read1_filename, std::string read2_filename,
+                         std::string output_filename, LinkedReadsFormat format, std::string default_name="",
+                         int readsize = 250);
     LinkedReadsDatastore(WorkSpace &ws, const LinkedReadsDatastore &o);
 
     ~LinkedReadsDatastore(){
@@ -63,7 +65,7 @@ public:
     LinkedReadsDatastore& operator=(LinkedReadsDatastore const &o);
 
     void print_status();
-    static void build_from_fastq(std::string output_filename, std::string read1_filename, std::string read2_filename,
+    static void build_from_fastq(std::string output_filename, std::string default_name, std::string read1_filename, std::string read2_filename,
                                  LinkedReadsFormat format, uint64_t readsize = 250, size_t chunksize = 10000000);
     void write(std::ofstream & output_file);
     void write_selection(std::ofstream & output_file, const std::set<bsg10xTag> & tagSet);
@@ -86,6 +88,7 @@ public:
     uint64_t readpos_offset;
     LinkedReadsMapper mapper;
     std::string name;
+    std::string default_name;
 private:
     std::vector<uint32_t> read_tag;
     FILE * fd=NULL;

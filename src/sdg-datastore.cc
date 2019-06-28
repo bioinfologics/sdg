@@ -38,7 +38,7 @@ int main(int argc, char * argv[]) {
     }
 
     if (0==strcmp(argv[1],"make")) {
-        std::string read1, read2, long_reads, read_type, output;
+        std::string read1, read2, long_reads, read_type, output, dsname;
         uint16_t min_readsize=0,max_readsize=150;
         try {
             cxxopts::Options options("sdg-datastore make", "BSG make datastore");
@@ -51,6 +51,7 @@ int main(int argc, char * argv[]) {
                     ("t,read_type", "One of: paired,10x,long", cxxopts::value<std::string>(read_type))
                     ("l,min_read_size", "min size for each read, discards both if one is smaller (default 0)", cxxopts::value<uint16_t>(min_readsize))
                     ("s,max_read_size", "max size for short reads, truncates if longer (default 150)", cxxopts::value<uint16_t>(max_readsize))
+                    ("n,name", "How do you want to refer to this datastore?", cxxopts::value(dsname))
                     ("o,output", "output file", cxxopts::value<std::string>(output));
             auto newargc=argc-1;
             auto newargv=&argv[1];
@@ -80,26 +81,30 @@ int main(int argc, char * argv[]) {
             exit(1);
         }
 
+        if (dsname.empty()) {
+            dsname = output;
+        }
+
         //===== DATASTORE CREATION =====
         if (read_type == "10x" or read_type == "10xseq") {
             // TODO: Detect read size
             auto read_size = detect_read_size(read1);
             sdglib::OutputLog() << "Detected max read size " << read_size << std::endl;
-            LinkedReadsDatastore::build_from_fastq(output + ".lrseq", read1, read2,
+            LinkedReadsDatastore::build_from_fastq(output + ".lrseq", dsname, read1, read2,
                                                    (read_type == "10xseq" ? LinkedReadsFormat::seq
                                                                           : LinkedReadsFormat::UCDavis), read_size,
                                                    0);
-            //ds.dump_index_to_disk(output+".lrIdx");
+
         }
         else if (read_type == "paired") {
             // TODO: Detect read size
             auto read_size = detect_read_size(read1);
             sdglib::OutputLog() << "Detected max read size " << read_size << std::endl;
-            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, min_readsize, read_size, 0);
-            //ds.dump_index_to_disk(output+".lrIdx");
+            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, dsname, min_readsize, read_size, 0);
+
         }
         else if (read_type == "long") {
-            LongReadsDatastore::build_from_fastq(output+".loseq",long_reads);
+            LongReadsDatastore::build_from_fastq(output+".loseq", dsname, long_reads);
         }
         else {
             std::cout << "read_type '" << read_type << "' is not supported (yet?)" << std::endl;

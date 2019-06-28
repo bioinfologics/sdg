@@ -30,7 +30,7 @@ public:
     PairedReadsDatastore(WorkSpace &ws, std::ifstream &infile);
     PairedReadsDatastore(WorkSpace &ws, std::string filename, std::ifstream &infile);
     PairedReadsDatastore(WorkSpace &ws, std::string _filename);
-    PairedReadsDatastore(WorkSpace &ws, std::string read1_filename,std::string read2_filename, std::string output_filename, int min_readsize=0, int max_readsize=250);
+    PairedReadsDatastore(WorkSpace &ws, std::string read1_filename,std::string read2_filename, std::string output_filename, std::string default_name="", int min_readsize=0, int max_readsize=250);
     PairedReadsDatastore(WorkSpace &ws, PairedReadsDatastore &ds);
 
     ~PairedReadsDatastore(){
@@ -41,7 +41,7 @@ public:
 
     PairedReadsDatastore& operator=(PairedReadsDatastore const &o);
     void print_status();
-    static void build_from_fastq(std::string output_filename, std::string read1_filename, std::string read2_filename,
+    static void build_from_fastq(std::string output_filename, std::string read1_filename, std::string read2_filename, std::string default_name,
                                  uint64_t min_readsize = 0, uint64_t max_readsize = 250, size_t chunksize = 10000000);
     void write(std::ofstream & output_file);
     void write_selection(std::ofstream &output_file, std::vector<uint64_t> read_ids);
@@ -58,6 +58,7 @@ public:
     uint64_t readpos_offset;
     PairedReadsMapper mapper;
     std::string name;
+    std::string default_name;
 private:
     //TODO: save size
     uint64_t _size;

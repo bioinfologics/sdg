@@ -47,7 +47,7 @@ void LinkedReadsDatastore::print_status() {
     mapper.print_status();
 }
 
-void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::string read1_filename,
+void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::string default_name, std::string read1_filename,
                                             std::string read2_filename,
                                             LinkedReadsFormat format, uint64_t readsize, size_t chunksize) {
     std::vector<uint32_t> read_tag;
@@ -205,6 +205,10 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     SDG_FILETYPE type(LinkedDS_FT);
     output.write((char *) &type, sizeof(type));
 
+    uint64_t sname=default_name.size();
+    output.write( (char *) &sname, sizeof(sname));
+    output.write( (char *) default_name.data(), sname);
+
     output.write((const char *) &readsize,sizeof(readsize));
     read_tag.resize(pairs);
     sdglib::OutputLog() << "leaving space for " <<pairs<<" read_tag entries"<< std::endl;
@@ -295,6 +299,11 @@ void LinkedReadsDatastore::load_index(std::string _filename){
     if (type != LinkedDS_FT) {
         throw std::runtime_error("File type supplied: " + std::to_string(type) + " is not compatible with LinkedDS_FT");
     }
+
+    uint64_t sname=0;
+    fread( &sname, sizeof(sname), 1, fd);
+    default_name.resize(sname);
+    fread( (char *) default_name.data(), sizeof(char), sname, fd);
 
     fread( &readsize,sizeof(readsize),1,fd);
     fread(&s,sizeof(s),1,fd); read_tag.resize(s);
@@ -518,8 +527,9 @@ LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::string filename) 
 }
 
 LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::string read1_filename, std::string read2_filename,
-                                           std::string output_filename, LinkedReadsFormat format, int readsize) : ws(ws), mapper(ws, *this) {
-    build_from_fastq(output_filename, read1_filename, read2_filename, format, readsize, 0);
+                                           std::string output_filename, LinkedReadsFormat format,
+                                           std::string default_name, int readsize) : ws(ws), mapper(ws, *this) {
+    build_from_fastq(output_filename, default_name, read1_filename, read2_filename, format, readsize, 0);
 }
 
 LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper(ws, *this) {
