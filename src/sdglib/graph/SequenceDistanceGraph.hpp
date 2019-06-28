@@ -55,6 +55,7 @@ public:
     using DistanceGraph::write_to_gfa1;
     using DistanceGraph::write_to_gfa2;
     using DistanceGraph::get_nodeview;
+    using DistanceGraph::get_all_nodeviews;
     using DistanceGraph::name;
 
     SequenceDistanceGraph():DistanceGraph(*this) { //sdg gets initialised through LDG

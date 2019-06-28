@@ -207,6 +207,7 @@ public:
     void write_to_gfa2(std::string filename, const std::vector<sgNodeID_t> &selected_nodes={}, const std::vector<double> &depths={});
 
     NodeView get_nodeview(sgNodeID_t n);
+    std::vector<NodeView> get_all_nodeviews(bool include_disconnected=true);
     DistanceGraph& operator=(const DistanceGraph &o);
 
     void read(std::ifstream &input_file);

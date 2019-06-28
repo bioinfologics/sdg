@@ -504,3 +504,18 @@ DistanceGraph &DistanceGraph::operator=(const DistanceGraph &o) {
 NodeView DistanceGraph::get_nodeview(sgNodeID_t n) {
     return NodeView(this,n);
 }
+
+std::vector<NodeView> DistanceGraph::get_all_nodeviews(bool include_disconnected) {
+    uint64_t c=0;
+    for (auto nidx=0;nidx<sdg.nodes.size();++nidx) {
+        auto &n=sdg.nodes[nidx];
+        if (n.status!=NodeStatus::Deleted and (include_disconnected or !links[nidx].empty())) ++c;
+    }
+    std::vector<NodeView> nvs;
+    nvs.reserve(c);
+    for (auto nidx=0;nidx<sdg.nodes.size();++nidx) {
+        auto &n=sdg.nodes[nidx];
+        if (n.status!=NodeStatus::Deleted and (include_disconnected or !links[nidx].empty())) nvs.emplace_back(this,nidx);
+    }
+    return nvs;
+}
