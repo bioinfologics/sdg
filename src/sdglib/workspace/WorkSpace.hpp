@@ -45,10 +45,10 @@ public:
 
     void load_from_disk(std::string filename,bool log_only=false);
 
-    PairedReadsDatastore& add_paired_reads_datastore(const std::string &name, const std::string &filename);
-    LinkedReadsDatastore& add_linked_reads_datastore(const std::string &name, const std::string &filename);
-    LongReadsDatastore& add_long_reads_datastore(const std::string &name, const std::string &filename);
-    DistanceGraph& add_distance_graph(const std::string &name, const DistanceGraph &dg);
+    PairedReadsDatastore& add_paired_reads_datastore(const std::string &filename, const std::string &name="");
+    LinkedReadsDatastore& add_linked_reads_datastore(const std::string &filename, const std::string &name="");
+    LongReadsDatastore& add_long_reads_datastore(const std::string &filename, const std::string &name="");
+    DistanceGraph& add_distance_graph(const DistanceGraph &dg, const std::string &name="");
 
 
     PairedReadsDatastore& get_paired_reads_datastore(const std::string &name);

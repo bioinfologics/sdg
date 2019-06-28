@@ -312,27 +312,27 @@ void WorkSpace::remap_all63() {
     }
 }
 
-PairedReadsDatastore &WorkSpace::add_paired_reads_datastore(const std::string &name, const std::string &filename) {
+PairedReadsDatastore &WorkSpace::add_paired_reads_datastore(const std::string &filename, const std::string &name) {
     paired_read_datastores.emplace_back(*this, filename);
-    paired_read_datastores.back().name = name;
+    if (!name.empty()) paired_read_datastores.back().name = name;
     return paired_read_datastores.back();
 }
 
-LinkedReadsDatastore &WorkSpace::add_linked_reads_datastore(const std::string &name, const std::string &filename) {
+LinkedReadsDatastore &WorkSpace::add_linked_reads_datastore(const std::string &filename, const std::string &name) {
     linked_read_datastores.emplace_back(*this, filename);
-    linked_read_datastores.back().name = name;
+    if (!name.empty()) linked_read_datastores.back().name = name;
     return linked_read_datastores.back();
 }
 
-LongReadsDatastore &WorkSpace::add_long_reads_datastore(const std::string &name, const std::string &filename) {
+LongReadsDatastore &WorkSpace::add_long_reads_datastore(const std::string &filename, const std::string &name) {
     long_read_datastores.emplace_back(*this, filename);
-    long_read_datastores.back().name = name;
+    if (!name.empty()) long_read_datastores.back().name = name;
     return long_read_datastores.back();
 }
 
-DistanceGraph &WorkSpace::add_distance_graph(const std::string &name, const DistanceGraph &dg) {
+DistanceGraph &WorkSpace::add_distance_graph(const DistanceGraph &dg, const std::string &name) {
     distance_graphs.emplace_back(dg);
-    distance_graphs.back().name = name;
+    if (!name.empty()) distance_graphs.back().name = name;
     return distance_graphs.back();
 }
 
