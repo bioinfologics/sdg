@@ -48,7 +48,10 @@ const char* ReadSequenceBuffer::get_read_sequence(uint64_t readID) {
                     " failed!\nThe size of the buffer chunk is smaller than read " +
                     std::to_string(readID) + " increase the chunk_size so this read fits");
         }
-    } else return nullptr;
+    } else {
+        throw std::runtime_error(
+                "ReadSequenceBuffer can't find datastore");
+    }
     if (read_offset_in_file < buffer_offset or read_offset_in_file + chunk_size > buffer_offset + bufsize) {
         buffer_offset = read_offset_in_file;
         lseek(fd, read_offset_in_file, SEEK_SET);
