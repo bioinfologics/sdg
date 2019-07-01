@@ -65,16 +65,28 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     while (!gzeof(fd1) and !gzeof(fd2)) {
 
         if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
+        if(!readbuffer[0] == '@') {
+            throw std::runtime_error("Please check: " + read1_filename + ", it seems to be missing a header");
+        }
         if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
         currrent_read.seq1=std::string(readbuffer);
         if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
+        if(!readbuffer[0] == '+') {
+            throw std::runtime_error("Please check: " + read1_filename + ", it seems to be desynchronised a header");
+        }
         if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
         if (currrent_read.seq1.back()=='\n') currrent_read.seq1.resize(currrent_read.seq1.size()-1);
         else {std::cout<<"READ IS LONGER THAN 2998bp. ABORTING!!!! Get your act together and choose the right datastore."<<std::endl; exit(1);};
         if (NULL == gzgets(fd2, readbuffer, 2999)) continue;
+        if(!readbuffer[0] == '@') {
+            throw std::runtime_error("Please check: " + read2_filename + ", it seems to be missing a header");
+        }
         if (NULL == gzgets(fd2, readbuffer, 2999)) continue;
         currrent_read.seq2=std::string(readbuffer);
         if (NULL == gzgets(fd2, readbuffer, 2999)) continue;
+        if(!readbuffer[0] == '+') {
+            throw std::runtime_error("Please check: " + read2_filename + ", it seems to be desynchronised a header");
+        }
         if (NULL == gzgets(fd2, readbuffer, 2999)) continue;
         if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
         else {std::cout<<"READ IS LONGER THAN 2998bp. ABORTING!!!! Get your act together and choose the right datastore"<<std::endl; exit(1);};

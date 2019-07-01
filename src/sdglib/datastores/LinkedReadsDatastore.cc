@@ -82,6 +82,9 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
         if (format==LinkedReadsFormat::UCDavis) {
             //LinkedRead r1,r2;
             if (NULL == gzgets(fd1, readbuffer, 999)) continue;
+            if(!readbuffer[0] == '@') {
+                throw std::runtime_error("Please check: " + read1_filename + ", it seems to be missing a header");
+            }
             //Tag to number from r1's name
             for (auto i = 1; i < 17; ++i) {
                 newtag <<= 2;
@@ -98,13 +101,22 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
             currrent_read.seq1=std::string(readbuffer);
             if (currrent_read.seq1.back()=='\n') currrent_read.seq1.resize(currrent_read.seq1.size()-1);
             if (NULL == gzgets(fd1, readbuffer, 999)) continue;
+            if(!readbuffer[0] == '+') {
+                throw std::runtime_error("Please check: " + read1_filename + ", it seems to be desynchronised a header");
+            }
             if (NULL == gzgets(fd1, readbuffer, 999)) continue;
 
             if (NULL == gzgets(fd2, readbuffer, 999)) continue;
+            if(!readbuffer[0] == '@') {
+                throw std::runtime_error("Please check: " + read2_filename + ", it seems to be missing a header");
+            }
             if (NULL == gzgets(fd2, readbuffer, 999)) continue;
             currrent_read.seq2=std::string(readbuffer);
             if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
             if (NULL == gzgets(fd2, readbuffer, 999)) continue;
+            if(!readbuffer[0] == '+') {
+                throw std::runtime_error("Please check: " + read2_filename + ", it seems to be desynchronised a header");
+            }
             if (NULL == gzgets(fd2, readbuffer, 999)) continue;
         }
         else if (format==LinkedReadsFormat::seq){
