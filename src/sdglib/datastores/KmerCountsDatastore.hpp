@@ -4,9 +4,13 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
 
-#include <sdglib/workspace/WorkSpace.hpp>
-
+class WorkSpace;
+class PairedReadsDatastore;
+class LinkedReadsDatastore;
+class LongReadsDatastore;
 class KmerCountsDatastore {
 public:
     KmerCountsDatastore(const WorkSpace &_ws, uint8_t _k):ws(_ws),k(_k){
@@ -14,7 +18,13 @@ public:
     };
     void index_sdg();
 
+    KmerCountsDatastore& operator=(const KmerCountsDatastore &o) {
+        if ( &o == this) return *this;
 
+        counts = o.counts;
+        count_names = o.count_names;
+        index_sdg();
+    }
 
     /**
      * Accumulates the kmer count from the provided fastq file to the last available read_counts collection
@@ -33,11 +43,16 @@ public:
     std::vector<uint16_t> project_count(const std::string & count_name, const std::string &s);
     std::vector<uint16_t> project_count(const uint16_t count_idx, const std::string &s);
 
+    void write(std::ofstream & output_file);
+    void read(std::ifstream & input_file);
+
+
+    const int8_t k;
     std::vector<uint64_t> kindex;
     std::vector<std::string> count_names;
     std::vector<std::vector<uint16_t>> counts;
 
+private:
     const WorkSpace &ws;
-    const int8_t k;
 };
 

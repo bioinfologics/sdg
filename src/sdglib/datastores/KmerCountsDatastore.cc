@@ -3,6 +3,7 @@
 //
 
 #include "KmerCountsDatastore.hpp"
+#include <sdglib/workspace/WorkSpace.hpp>
 
 void KmerCountsDatastore::index_sdg() {
     //add all k-mers from SDG
@@ -209,4 +210,38 @@ std::vector<uint16_t> KmerCountsDatastore::project_count(const std::string &coun
         return project_count(cnitr-count_names.begin(),s);
     }
     return {};
+}
+
+void KmerCountsDatastore::read(std::ifstream &input_file) {
+    uint64_t s;
+    input_file.read((char *) &s, sizeof(s));
+    uint64_t counts_size(0);
+    input_file.read((char *) &counts_size, sizeof(counts_size));
+    count_names.resize(s);
+    counts.resize(s);
+
+    for (int i = 0; i < s; i++) {
+        counts[i].resize(counts_size);
+
+        uint64_t count_name_size(0);
+        input_file.read((char *) &count_name_size, sizeof(count_name_size));
+        count_names[i].resize(count_name_size);
+        input_file.read((char *) count_names[i].data(), count_names[i].size());
+        input_file.read((char *) counts[i].data(), counts[i].size());
+    }
+
+}
+
+void KmerCountsDatastore::write(std::ofstream &output_file) {
+    uint64_t s=count_names.size();
+    output_file.write((char *) &s,sizeof(s));
+    s = counts[0].size();
+    output_file.write((char *) &s,sizeof(s));
+
+    for (int i = 0; i < count_names.size(); i++) {
+        uint64_t count_name_size(count_names[i].size());
+        output_file.write((char *) &count_name_size, sizeof(count_name_size));
+        output_file.write((char *) count_names[i].data(), count_names[i].size());
+        output_file.write((char *) counts[i].data(), counts[i].size());
+    }
 }

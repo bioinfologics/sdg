@@ -17,7 +17,7 @@
 #include <sdglib/processors/KmerCompressionIndex.hpp>
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
 #include <sdglib/journal/OperationJournal.hpp>
-
+#include <sdglib/datastores/KmerCountsDatastore.hpp>
 
 class LogEntry{
 public:
@@ -30,10 +30,8 @@ public:
 class WorkSpace {
 
 public:
-    WorkSpace() : kci(sdg){}
-    explicit WorkSpace(const std::string & filename) : kci(sdg){
-        load_from_disk(filename);
-    }
+    WorkSpace();
+    explicit WorkSpace(const std::string & filename);
     WorkSpace(const WorkSpace& that) = delete; //we definitely do not want copy constructors here, thank you
     void print_log();
 
@@ -75,6 +73,8 @@ public:
     std::vector<LongReadsDatastore> long_read_datastores;
 
     std::vector<DistanceGraph> distance_graphs;
+
+    KmerCountsDatastore kmer_counts_datastore;
 
     KmerCompressionIndex kci;
 

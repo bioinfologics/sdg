@@ -88,6 +88,10 @@ void WorkSpace::dump_to_disk(std::string filename) {
         long_read_datastores[i].write(of);
         long_read_datastores[i].mapper.write(of);
     }
+
+    // Kmer counts datastore
+    kmer_counts_datastore.write(of);
+
     //dump element type then use that element's own dump to dump it to this file
 
 //    //[GONZA]
@@ -212,6 +216,10 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     for (auto i=0;i<count;++i) {
         long_read_datastores.emplace_back(*this, wsfile);
     }
+
+    // Kmer counts datastore
+    kmer_counts_datastore.read(wsfile);
+
 
 }
 
@@ -368,3 +376,9 @@ DistanceGraph &WorkSpace::get_distance_graph(const std::string &name) {
 void WorkSpace::add_operation(const std::string &name, const std::string &tool, const std::string &detail) {
     operation_journals.emplace_back(name, tool, detail);
 }
+
+WorkSpace::WorkSpace(const std::string &filename) : kci(sdg), kmer_counts_datastore(*this, 31) {
+    load_from_disk(filename);
+}
+
+WorkSpace::WorkSpace() : kci(sdg), kmer_counts_datastore(*this, 31) {}
