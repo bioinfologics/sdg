@@ -15,6 +15,7 @@ public:
     void index_sdg();
 
 
+
     /**
      * Accumulates the kmer count from the provided fastq file to the last available read_counts collection
      * @param filename Path to fastq file
@@ -25,10 +26,12 @@ public:
      * Accumulates the kmer count from the provided data-store to the last available read_counts collection
      * @param ds PairedReadsDatastore ds
      */
-
     void add_count(const std::string & count_name, const PairedReadsDatastore & datastore);
     void add_count(const std::string & count_name, const LinkedReadsDatastore & datastore);
     void add_count(const std::string & count_name, const LongReadsDatastore & datastore);
+
+    std::vector<uint16_t> project_count(const std::string & count_name, const std::string &s);
+    std::vector<uint16_t> project_count(const uint16_t count_idx, const std::string &s);
 
     std::vector<uint64_t> kindex;
     std::vector<std::string> count_names;

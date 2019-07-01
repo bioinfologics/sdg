@@ -184,3 +184,29 @@ void KmerCountsDatastore::add_count(const std::string & count_name, const Linked
 void KmerCountsDatastore::add_count(const std::string & count_name, const LongReadsDatastore & datastore){
     add_count_to_kds(*this,count_name,datastore);
 }
+
+std::vector<uint16_t> KmerCountsDatastore::project_count(const uint16_t count_idx, const std::string &s) {
+    std::vector<uint64_t> skmers;
+    StringKMerFactory skf(k);
+    skf.create_kmers(s,skmers);
+    std::vector<uint16_t> kcov;
+    for (auto &kmer: skmers){
+        auto nk = std::lower_bound(kindex.begin(), kindex.end(), kmer);
+
+        if (nk!=kindex.end() and *nk == kmer) {
+            kcov.push_back(counts[count_idx][nk-kindex.begin()]);
+
+        } else {
+            kcov.push_back(0);
+        }
+    }
+    return kcov;
+}
+
+std::vector<uint16_t> KmerCountsDatastore::project_count(const std::string &count_name, const std::string &s) {
+    auto cnitr=std::find(count_names.begin(),count_names.end(),count_name);
+    if (cnitr!=count_names.end()){
+        return project_count(cnitr-count_names.begin(),s);
+    }
+    return {};
+}
