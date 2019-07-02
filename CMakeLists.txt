@@ -178,6 +178,7 @@ add_library(sdg SHARED
             src/sdglib/indexers/NKmerIndex.cc
             src/sdglib/views/NodeView.cc
             src/sdglib/journal/OperationJournal.cc
+            src/sdglib/batch_counter/BatchKmersCounter.cc
             deps/xxhash/xxhash.c
             )
 
@@ -211,6 +212,7 @@ add_library(sdg_static STATIC
             src/sdglib/indexers/NKmerIndex.cc
             src/sdglib/views/NodeView.cc
             src/sdglib/journal/OperationJournal.cc
+            src/sdglib/batch_counter/BatchKmersCounter.cc
             deps/xxhash/xxhash.c
             )
 
