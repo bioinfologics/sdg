@@ -47,12 +47,14 @@ public:
     LinkedReadsDatastore& add_linked_reads_datastore(const std::string &filename, const std::string &name="");
     LongReadsDatastore& add_long_reads_datastore(const std::string &filename, const std::string &name="");
     DistanceGraph& add_distance_graph(const DistanceGraph &dg, const std::string &name="");
+    KmerCountsDatastore& add_counts_datastore(const std::string &name, const uint8_t k);
 
 
     PairedReadsDatastore& get_paired_reads_datastore(const std::string &name);
     LinkedReadsDatastore& get_linked_reads_datastore(const std::string &name);
     LongReadsDatastore& get_long_reads_datastore(const std::string &name);
     DistanceGraph& get_distance_graph(const std::string &name);
+    KmerCountsDatastore& get_counts_datastore(const std::string &name);
 
     //general operations
 
@@ -74,7 +76,7 @@ public:
 
     std::vector<DistanceGraph> distance_graphs;
 
-    KmerCountsDatastore kmer_counts_datastore;
+    std::vector<KmerCountsDatastore> kmer_counts_datastore;
 
     KmerCompressionIndex kci;
 

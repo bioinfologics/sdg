@@ -13,7 +13,7 @@ class LinkedReadsDatastore;
 class LongReadsDatastore;
 class KmerCountsDatastore {
 public:
-    KmerCountsDatastore(const WorkSpace &_ws, uint8_t _k):ws(_ws),k(_k){
+    KmerCountsDatastore(const WorkSpace &_ws, const std::string &_name, uint8_t _k):ws(_ws),k(_k), default_name(_name){
         index_sdg();
     };
     void index_sdg();
@@ -51,6 +51,9 @@ public:
     std::vector<uint64_t> kindex;
     std::vector<std::string> count_names;
     std::vector<std::vector<uint16_t>> counts;
+
+    std::string default_name;
+    std::string name;
 
 private:
     const WorkSpace &ws;

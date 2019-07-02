@@ -90,7 +90,11 @@ void WorkSpace::dump_to_disk(std::string filename) {
     }
 
     // Kmer counts datastore
-    kmer_counts_datastore.write(of);
+    count = kmer_counts_datastore.size();
+    of.write((char *) &count,sizeof(count));
+    for (auto i = 0; i < count; i++) {
+        kmer_counts_datastore[i].write(of);
+    }
 
     //dump element type then use that element's own dump to dump it to this file
 
@@ -218,7 +222,11 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     }
 
     // Kmer counts datastore
-    kmer_counts_datastore.read(wsfile);
+    wsfile.read((char *) &count,sizeof(count));
+    kmer_counts_datastore.reserve(count);
+    for (auto i = 0; i < count; i++) {
+        kmer_counts_datastore[i].read(wsfile);
+    }
 
 
 }
@@ -344,6 +352,10 @@ DistanceGraph &WorkSpace::add_distance_graph(const DistanceGraph &dg, const std:
     return distance_graphs.back();
 }
 
+void WorkSpace::add_operation(const std::string &name, const std::string &tool, const std::string &detail) {
+    operation_journals.emplace_back(name, tool, detail);
+}
+
 PairedReadsDatastore &WorkSpace::get_paired_reads_datastore(const std::string &name) {
     for (auto &ds : paired_read_datastores){
         if (ds.name == name) return ds;
@@ -373,12 +385,20 @@ DistanceGraph &WorkSpace::get_distance_graph(const std::string &name) {
     throw std::runtime_error("There are no DistanceGraphs named: " + name);
 }
 
-void WorkSpace::add_operation(const std::string &name, const std::string &tool, const std::string &detail) {
-    operation_journals.emplace_back(name, tool, detail);
-}
-
-WorkSpace::WorkSpace(const std::string &filename) : kci(sdg), kmer_counts_datastore(*this, 31) {
+WorkSpace::WorkSpace(const std::string &filename) : kci(sdg) {
     load_from_disk(filename);
 }
 
-WorkSpace::WorkSpace() : kci(sdg), kmer_counts_datastore(*this, 31) {}
+WorkSpace::WorkSpace() : kci(sdg) {}
+
+KmerCountsDatastore &WorkSpace::add_counts_datastore(const std::string &name, const uint8_t k) {
+    kmer_counts_datastore.emplace_back(*this, name, k);
+    return kmer_counts_datastore.back();
+}
+
+KmerCountsDatastore &WorkSpace::get_counts_datastore(const std::string &name) {
+    for (auto &ds : kmer_counts_datastore) {
+        if (ds.name == name) return ds;
+    }
+    throw std::runtime_error("Couldn't find a KmerCountsDatastore named: " + name);
+}
