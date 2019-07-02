@@ -213,7 +213,7 @@ std::vector<uint16_t> KmerCountsDatastore::project_count(const std::string &coun
 }
 
 void KmerCountsDatastore::read(std::ifstream &input_file) {
-    uint64_t s;
+    uint64_t s(0);
 
     input_file.read((char *) &s, sizeof(s));
     name.resize(s);
@@ -238,7 +238,8 @@ void KmerCountsDatastore::read(std::ifstream &input_file) {
 }
 
 void KmerCountsDatastore::write(std::ofstream &output_file) {
-    uint64_t s;
+    uint64_t s(0);
+
     s=name.size();
     output_file.write((char *) &s,sizeof(s));
     output_file.write((char *)name.data(),name.size());

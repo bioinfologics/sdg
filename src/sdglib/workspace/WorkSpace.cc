@@ -81,6 +81,13 @@ void WorkSpace::dump_to_disk(std::string filename) {
         linked_read_datastores[i].mapper.write(of);
     }
 
+    // Kmer counts datastore
+    count = kmer_counts_datastore.size();
+    of.write((char *) &count,sizeof(count));
+    for (auto i = 0; i < count; i++) {
+        kmer_counts_datastore[i].write(of);
+    }
+
     //long read datastores
     count=long_read_datastores.size();
     of.write((char *) &count,sizeof(count));
@@ -89,14 +96,6 @@ void WorkSpace::dump_to_disk(std::string filename) {
         long_read_datastores[i].mapper.write(of);
     }
 
-    // Kmer counts datastore
-    count = kmer_counts_datastore.size();
-    of.write((char *) &count,sizeof(count));
-    for (auto i = 0; i < count; i++) {
-        kmer_counts_datastore[i].write(of);
-    }
-
-    //dump element type then use that element's own dump to dump it to this file
 
 //    //[GONZA]
 //    int v = (int) read_counts_header.size();
@@ -215,12 +214,6 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
         linked_read_datastores.emplace_back(*this, wsfile);
     }
 
-    wsfile.read((char *) &count,sizeof(count));
-    long_read_datastores.reserve(count);
-    for (auto i=0;i<count;++i) {
-        long_read_datastores.emplace_back(*this, wsfile);
-    }
-
     // Kmer counts datastore
     wsfile.read((char *) &count,sizeof(count));
     kmer_counts_datastore.reserve(count);
@@ -228,6 +221,11 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
         kmer_counts_datastore[i].read(wsfile);
     }
 
+    wsfile.read((char *) &count,sizeof(count));
+    long_read_datastores.reserve(count);
+    for (auto i=0;i<count;++i) {
+        long_read_datastores.emplace_back(*this, wsfile);
+    }
 
 }
 
