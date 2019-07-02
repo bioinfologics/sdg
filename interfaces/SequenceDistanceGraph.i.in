@@ -42,6 +42,8 @@
 #include "sdglib/processors/HaplotypeConsensus.hpp"
 #include "sdglib/readers/FileReader.hpp"
 
+#include "sdglib/datastores/KmerCountsDatastore.hpp"
+
 %}
 
 #define MADE_DOCS "@DOXYGEN_FOUND@"
@@ -70,6 +72,7 @@
 %include "sdglib/types/GenericTypes.hpp"
 %include "sdglib/datastores/LinkedReadsDatastore.hpp"
 %include "sdglib/readers/FileReader.hpp"
+%include "sdglib/datastores/KmerCountsDatastore.hpp"
 
 %feature("director") DistanceGraph;
 %feature("director") SequenceDistanceGraph;
@@ -115,6 +118,10 @@
 %ignore std::vector<LongReadsDatastore>::vector(size_type);
 %ignore std::vector<LongReadsDatastore>::resize;
 %template(vectorLongReadsDatastore) std::vector<LongReadsDatastore>;
+
+%ignore std::vector<KmerCountsDatastore>::vector(size_type);
+%ignore std::vector<KmerCountsDatastore>::resize;
+%template(vectorKmerCountsDatastore) std::vector<KmerCountsDatastore>;
 
 %template(SGNodePair) std::pair<sgNodeID_t, sgNodeID_t>;
 %template(vectorSGNodePair) std::vector<std::pair<sgNodeID_t, sgNodeID_t>>;
