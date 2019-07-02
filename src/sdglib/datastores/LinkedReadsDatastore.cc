@@ -219,7 +219,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
 
     uint64_t sname=default_name.size();
     output.write( (char *) &sname, sizeof(sname));
-    output.write( (char *) default_name.data(), sname);
+    output.write( (char *) default_name.data(), sname*sizeof(char));
 
     output.write((const char *) &readsize,sizeof(readsize));
     read_tag.resize(pairs);
@@ -256,7 +256,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
         }
     }
     //go back to the beginning of the file and write the read_tag part again
-    output.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type)+sizeof(readsize));
+    output.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type)+sizeof(readsize)+sizeof(sname)+(sname*sizeof(char)));
     sdglib::OutputLog() << "writing down " <<pairs<<" read_tag entries"<< std::endl;
     rts=read_tag.size();
     output.write((const char *) &rts, sizeof(rts));
