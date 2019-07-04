@@ -2,7 +2,9 @@
 // Created by Bernardo Clavijo (EI) on 05/07/2018.
 //
 
+#include <sdglib/bloom/BloomFilter.hpp>
 #include "GraphMaker.hpp"
+#include "KmerCompressionIndex.hpp"
 
 std::string kmer_to_sequence(uint64_t kmer, uint8_t k) {
     std::string seq;
@@ -280,6 +282,22 @@ __uint128_t kmer_cannonical128(__uint128_t kmer, uint8_t k) {
     return (rkmer<kmer ? rkmer:kmer);
 }
 
+std::array<__uint128_t,4> kmer_fw_neighbours128_canonical(__uint128_t kmer, uint8_t k) {
+    std::array<__uint128_t,4> n;
+    for (__uint128_t i=0;i<4;++i){
+        n[i]=kmer_cannonical128(((kmer<<2)+i)%(((__uint128_t) 1)<<(k*2)),k);
+    }
+    return n;
+}
+
+std::array<__uint128_t,4> kmer_bw_neighbours128_canonical(__uint128_t kmer, uint8_t k) {
+    std::array<__uint128_t,4> n;
+    for (__uint128_t i=0;i<4;++i){
+        n[i]=kmer_cannonical128((kmer>>2)+(((__uint128_t) i)<<((k-1)*2)),k);
+    }
+    return n;
+}
+
 __uint128_t kmer_back_ovl128(__uint128_t kmer, uint8_t k){
     return kmer>>2;
 }
@@ -418,6 +436,139 @@ void GraphMaker::new_graph_from_kmerset_trivial128(const std::unordered_set<__ui
         }
     }
 
+}
+
+class klidxs {
+public:
+    klidxs(__uint128_t _kmer,uint64_t _idx):kmer(_kmer),idx(_idx){};
+    __uint128_t kmer;
+    uint64_t idx;
+};
+
+inline void get_fw_idxs(std::vector<klidxs> &out, const __uint128_t kmer, uint8_t k,const std::vector<__uint128_t> & kmerlist){
+    out.clear();
+    __uint128_t cnext;
+    //std::vector<__uint128_t>::const_iterator cnitr;
+    for (const __uint128_t &fnk:kmer_fw_neighbours128(kmer, k)) {
+        cnext=kmer_cannonical128(fnk,k);
+        auto cnitr=std::lower_bound(kmerlist.begin(),kmerlist.end(),cnext);
+        if (*cnitr==cnext)
+            out.emplace_back(fnk,cnitr-kmerlist.begin());
+    }
+}
+
+inline void get_bw_idxs(std::vector<klidxs> &out, const __uint128_t kmer, uint8_t k,const std::vector<__uint128_t> & kmerlist){
+    out.clear();
+    __uint128_t cnext;
+    //std::vector<__uint128_t>::const_iterator cnitr;
+    for (const __uint128_t &bnk:kmer_bw_neighbours128(kmer, k)) {
+        cnext=kmer_cannonical128(bnk,k);
+        auto cnitr=std::lower_bound(kmerlist.begin(),kmerlist.end(),cnext);
+        if (*cnitr==cnext)
+            out.emplace_back(bnk,cnitr-kmerlist.begin());
+    }
+}
+
+bool is_end_bw(const __uint128_t &kmer, uint8_t &k,const std::vector<__uint128_t> & kmerlist){
+    std::vector<klidxs> next;
+    get_bw_idxs(next,kmer,k,kmerlist);
+    if (next.size()!=1) return true;
+    auto p=next[0].kmer;
+    get_fw_idxs(next,p,k,kmerlist);
+    if (next.size()!=1) return true;
+    return false;
+}
+
+bool is_end_fw(const __uint128_t &kmer, uint8_t &k,const std::vector<__uint128_t> & kmerlist){
+    std::vector<klidxs> next;
+    get_fw_idxs(next,kmer,k,kmerlist);
+    if (next.size()!=1) return true;
+    auto p=next[0].kmer;
+    get_bw_idxs(next,p,k,kmerlist);
+    if (next.size()!=1) return true;
+    return false;
+}
+
+void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_t> & kmerlist,uint8_t k) {
+    //TODO: add a bloom filter to speed this up
+    std::cout<<"Constructing Sequence Graph from "<<kmerlist.size()<<" "<<std::to_string(k)<<"-mers"<<std::endl;
+    std::string s;
+    s.reserve(1000000); //avoid contig-sequence growth
+    std::vector<bool> used_kmers(kmerlist.size());
+    std::vector<klidxs> bw,fw;
+
+    for (uint64_t start_kmer_idx=0;start_kmer_idx<kmerlist.size();++start_kmer_idx) {
+        if (used_kmers[start_kmer_idx]) continue; //any kmer can only belong to one unitig.ww
+
+        //Check this k-mer is an end/junction
+        auto start_kmer = kmerlist[start_kmer_idx];
+        bool end_bw = is_end_bw(start_kmer, k, kmerlist);
+        auto end_fw = is_end_fw(start_kmer, k, kmerlist);
+
+        if (!end_bw and !end_fw) continue;
+
+        if (end_bw and end_fw) {
+            //kmer as unitig
+            s=kmer_to_sequence128(start_kmer, k);
+            used_kmers[start_kmer_idx] = true;
+        } else {
+            //unitig start on kmer
+            //make sure the unitig starts on FW
+
+            auto current_kmer = start_kmer;
+            used_kmers[start_kmer_idx] = true;
+
+            if (end_fw) {
+                current_kmer = kmer_reverse128(start_kmer, k);
+                end_fw = end_bw;
+            }
+            //Add kmer as unitig
+            s=kmer_to_sequence128(current_kmer, k);
+
+            std::vector<klidxs> fwn;
+            unsigned char nucleotides[4] = {'A', 'C', 'G', 'T'};
+
+
+
+            //std::cout<<"Starting sequence construction at kmer "<<kmer_to_sequence128(current_kmer,k)<<std::endl;
+            while (!end_fw) {
+                //Add end nucleotide, update current_kmer;
+                get_fw_idxs(fwn, current_kmer, k, kmerlist);
+                current_kmer = fwn[0].kmer;
+                if (used_kmers[fwn[0].idx]) break;//break circular contigs into lines.
+                used_kmers[fwn[0].idx]=true;
+                s.push_back(nucleotides[current_kmer % 4]);
+                end_fw = is_end_fw(current_kmer, k, kmerlist);
+            }
+        }
+        sg.add_node(Node(s));
+        if (!sg.nodes.back().is_canonical()) sg.nodes.back().make_rc();//inefficient, but once in a node
+    }
+    //save the (k-1)mer in (rev on first k-1 / fw on last k-1) or out ( fw on first k-1 / bw on last k-1)
+    std::vector<std::pair<__uint128_t,sgNodeID_t>> in, out;
+    in.reserve(2*sg.nodes.size());
+    out.reserve(2*sg.nodes.size());
+    CStringKMerFactory128 skf_ovl(k-1);
+    for (auto nid=1;nid<sg.nodes.size();++nid){
+        std::vector<std::pair<__uint128_t,bool>> first,last;
+        skf_ovl.create_kmers_direction(first,sg.nodes[nid].sequence.substr(0,k-1).c_str());
+        if (first[0].second) out.emplace_back(first[0].first,nid);
+        else in.emplace_back(first[0].first,nid);
+        skf_ovl.create_kmers_direction(last,sg.nodes[nid].sequence.substr(sg.nodes[nid].sequence.size()-k+1,k-1).c_str());
+        if (last[0].second) in.emplace_back(last[0].first,-nid);
+        else out.emplace_back(last[0].first,-nid);
+    }
+    std::sort(in.begin(),in.end());
+    std::sort(out.begin(),out.end());
+
+    //connect out->in for all combinations on each kmer
+    uint64_t next_out_idx=0;
+    for(auto &i:in){
+        while(out[next_out_idx].first<i.first) ++next_out_idx;
+        for (auto oidx=next_out_idx;oidx<out.size() and out[oidx].first==i.first;++oidx) {
+            sg.add_link(i.second,out[oidx].second,-k+1);//no support, although we could add the DBG operation as such
+        }
+    }
 }
 
 void GraphMaker::tip_clipping(int tip_size) {
