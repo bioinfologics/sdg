@@ -20,8 +20,8 @@ public:
     const std::vector<NodeDistanceView> next() const;
     const std::vector<NodeDistanceView> prev() const;
     const sgNodeID_t node_id() const {return sgNodeID_t(id);};
-//    std::vector<uint16_t> kmer_coverage(std::string kcovds_name,int kcovds_count_name) const;
-//    std::vector<uint16_t> kmer_coverage(int kcovds_idx,int kcovds_count_idx) const;
+    std::vector<uint16_t> kmer_coverage(std::string kcovds_name,std::string kcovds_count_name) const;
+    std::vector<uint16_t> kmer_coverage(int kcovds_idx,int kcovds_count_idx) const;
 //    std::vector<seqID_t> preads(int prds_idx=0) const;
 //    std::vector<seqID_t> preads(std::string prds_name) const;
 //    std::vector<seqID_t> lireads(int lirds_idx=0) const;
