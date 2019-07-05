@@ -32,7 +32,7 @@ TEST_CASE("Workspace create, read, write") {
 
     out.linked_read_datastores.emplace_back(out, lrds_output_path);
 
-    //out.kci.add_counts_from_datastore(out.paired_read_datastores[0]);
+    //out.kci.add_counts_from_datastore(out.paired_reads_datastores[0]);
 
     out.add_operation("test","test","test");
 

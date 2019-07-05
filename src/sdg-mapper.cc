@@ -58,11 +58,11 @@ int main(int argc, char * argv[]) {
     sdglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
     auto pri=0;
-    if (!ws.paired_read_datastores.empty() or !ws.linked_read_datastores.empty()) {
+    if (!ws.paired_reads_datastores.empty() or !ws.linked_reads_datastores.empty()) {
         if (!use63mers) ws.sdg.create_index();
         else ws.sdg.create_63mer_index();
     }
-    for (auto &ds:ws.paired_read_datastores) {
+    for (auto &ds:ws.paired_reads_datastores) {
         sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         if (!use63mers) ds.mapper.remap_all_reads();
         else ds.mapper.remap_all_reads63();
@@ -78,14 +78,14 @@ int main(int argc, char * argv[]) {
         ws.add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
     }
-    for (auto &ds:ws.linked_read_datastores) {
+    for (auto &ds:ws.linked_reads_datastores) {
         sdglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
         if (!use63mers) ds.mapper.remap_all_reads();
         else ds.mapper.remap_all_reads63();
         ws.add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }
-    for (auto &ds: ws.long_read_datastores) {
+    for (auto &ds: ws.long_reads_datastores) {
         sdglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
         ds.mapper.map_reads(max_filter);
         ws.add_log_entry("reads from "+ds.filename+" re-mapped to current graph");

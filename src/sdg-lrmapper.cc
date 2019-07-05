@@ -59,10 +59,10 @@ int main(int argc, char * argv[]) {
     ws.add_log_entry("sdg-lrmapper run started");
     sdglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
-    for (uint32_t lrds_idx=0; lrds_idx < ws.long_read_datastores.size(); lrds_idx++) {
+    for (uint32_t lrds_idx=0; lrds_idx < ws.long_reads_datastores.size(); lrds_idx++) {
         sdglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
-        ws.long_read_datastores[lrds_idx].mapper.map_reads(max_filter);
-        ws.add_log_entry("reads from "+ws.long_read_datastores[lrds_idx].filename+" re-mapped to current graph");
+        ws.long_reads_datastores[lrds_idx].mapper.map_reads(max_filter);
+        ws.add_log_entry("reads from "+ws.long_reads_datastores[lrds_idx].filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
     }
     ws.add_log_entry("sdg-lrmapper run finished");

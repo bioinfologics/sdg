@@ -58,34 +58,34 @@ void WorkSpace::dump_to_disk(std::string filename) {
     }
 
     //paired read datastores
-    count=paired_read_datastores.size();
+    count=paired_reads_datastores.size();
     of.write((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
-        paired_read_datastores[i].write(of);
-        paired_read_datastores[i].mapper.write(of);
+        paired_reads_datastores[i].write(of);
+        paired_reads_datastores[i].mapper.write(of);
     }
 
     //linker read datastores
-    count=linked_read_datastores.size();
+    count=linked_reads_datastores.size();
     of.write((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
-        linked_read_datastores[i].write(of);
-        linked_read_datastores[i].mapper.write(of);
+        linked_reads_datastores[i].write(of);
+        linked_reads_datastores[i].mapper.write(of);
     }
 
     // Kmer counts datastore
-    count = kmer_counts_datastore.size();
+    count = kmer_counts_datastores.size();
     of.write((char *) &count,sizeof(count));
     for (auto i = 0; i < count; i++) {
-        kmer_counts_datastore[i].write(of);
+        kmer_counts_datastores[i].write(of);
     }
 
     //long read datastores
-    count=long_read_datastores.size();
+    count=long_reads_datastores.size();
     of.write((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
-        long_read_datastores[i].write(of);
-        long_read_datastores[i].mapper.write(of);
+        long_reads_datastores[i].write(of);
+        long_reads_datastores[i].mapper.write(of);
     }
 }
 
@@ -161,32 +161,32 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
         distance_graphs.emplace_back(sdg, wsfile);
     }
 
-    //paired_read_datastores
+    //paired_reads_datastores
     wsfile.read((char *) &count,sizeof(count));
-    paired_read_datastores.reserve(count);
+    paired_reads_datastores.reserve(count);
     for (auto i=0;i<count;++i) {
-        paired_read_datastores.emplace_back(*this, wsfile);
+        paired_reads_datastores.emplace_back(*this, wsfile);
     }
 
-    //linked_read_datastores
+    //linked_reads_datastores
     wsfile.read((char *) &count,sizeof(count));
-    linked_read_datastores.reserve(count);
+    linked_reads_datastores.reserve(count);
     for (auto i=0;i<count;++i) {
-        linked_read_datastores.emplace_back(*this, wsfile);
+        linked_reads_datastores.emplace_back(*this, wsfile);
     }
 
     // Kmer counts datastore
     wsfile.read((char *) &count,sizeof(count));
-    kmer_counts_datastore.reserve(count);
+    kmer_counts_datastores.reserve(count);
     for (auto i = 0; i < count; i++) {
-        kmer_counts_datastore.emplace_back(*this,wsfile);
+        kmer_counts_datastores.emplace_back(*this,wsfile);
     }
 
     //Long reads datastores
     wsfile.read((char *) &count,sizeof(count));
-    long_read_datastores.reserve(count);
+    long_reads_datastores.reserve(count);
     for (auto i=0;i<count;++i) {
-        long_read_datastores.emplace_back(*this, wsfile);
+        long_reads_datastores.emplace_back(*this, wsfile);
     }
 
 }
@@ -218,8 +218,8 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
         for (auto n=1;n<sdg.nodes.size();++n) {
             if (sdg.nodes[n].sequence.size() < min_size) continue;
             if (sdg.nodes[n].sequence.size() > max_size) continue;
-            if (!linked_read_datastores.empty()) {
-                auto ntags = linked_read_datastores[0].mapper.get_node_tags(n);
+            if (!linked_reads_datastores.empty()) {
+                auto ntags = linked_reads_datastores[0].mapper.get_node_tags(n);
                 if (ntags.size() < min_tags or ntags.size() > max_tags) continue;
             }
             ++tnodes;
@@ -243,7 +243,7 @@ void WorkSpace::remap_all() {
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
     //auto pri=0;
     sdg.create_index();
-    for (auto &ds:paired_read_datastores) {
+    for (auto &ds:paired_reads_datastores) {
         sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         ds.mapper.remap_all_reads();
         ds.print_status();
@@ -258,7 +258,7 @@ void WorkSpace::remap_all() {
         add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
     }
-    for (auto &ds:linked_read_datastores) {
+    for (auto &ds:linked_reads_datastores) {
         sdglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
         ds.mapper.remap_all_reads();
         add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
@@ -269,14 +269,14 @@ void WorkSpace::remap_all() {
 void WorkSpace::remap_all63() {
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
     sdg.create_63mer_index();
-    for (auto &ds:paired_read_datastores) {
+    for (auto &ds:paired_reads_datastores) {
         sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         ds.mapper.remap_all_reads63();
         ds.print_status();
         add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
     }
-    for (auto &ds:linked_read_datastores) {
+    for (auto &ds:linked_reads_datastores) {
         sdglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
         ds.mapper.remap_all_reads63();
         add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
@@ -285,21 +285,21 @@ void WorkSpace::remap_all63() {
 }
 
 PairedReadsDatastore &WorkSpace::add_paired_reads_datastore(const std::string &filename, const std::string &name) {
-    paired_read_datastores.emplace_back(*this, filename);
-    if (!name.empty()) paired_read_datastores.back().name = name;
-    return paired_read_datastores.back();
+    paired_reads_datastores.emplace_back(*this, filename);
+    if (!name.empty()) paired_reads_datastores.back().name = name;
+    return paired_reads_datastores.back();
 }
 
 LinkedReadsDatastore &WorkSpace::add_linked_reads_datastore(const std::string &filename, const std::string &name) {
-    linked_read_datastores.emplace_back(*this, filename);
-    if (!name.empty()) linked_read_datastores.back().name = name;
-    return linked_read_datastores.back();
+    linked_reads_datastores.emplace_back(*this, filename);
+    if (!name.empty()) linked_reads_datastores.back().name = name;
+    return linked_reads_datastores.back();
 }
 
 LongReadsDatastore &WorkSpace::add_long_reads_datastore(const std::string &filename, const std::string &name) {
-    long_read_datastores.emplace_back(*this, filename);
-    if (!name.empty()) long_read_datastores.back().name = name;
-    return long_read_datastores.back();
+    long_reads_datastores.emplace_back(*this, filename);
+    if (!name.empty()) long_reads_datastores.back().name = name;
+    return long_reads_datastores.back();
 }
 
 DistanceGraph &WorkSpace::add_distance_graph(const DistanceGraph &dg, const std::string &name) {
@@ -313,21 +313,21 @@ void WorkSpace::add_operation(const std::string &name, const std::string &tool, 
 }
 
 PairedReadsDatastore &WorkSpace::get_paired_reads_datastore(const std::string &name) {
-    for (auto &ds : paired_read_datastores){
+    for (auto &ds : paired_reads_datastores){
         if (ds.name == name) return ds;
     }
     throw std::runtime_error("There are no PairedReadsDatastore named: " + name);
 }
 
 LinkedReadsDatastore &WorkSpace::get_linked_reads_datastore(const std::string &name) {
-    for (auto &ds : linked_read_datastores){
+    for (auto &ds : linked_reads_datastores){
         if (ds.name == name) return ds;
     }
     throw std::runtime_error("There are no LinkedReadsDatastore named: " + name);
 }
 
 LongReadsDatastore &WorkSpace::get_long_reads_datastore(const std::string &name) {
-    for (auto &ds : long_read_datastores){
+    for (auto &ds : long_reads_datastores){
         if (ds.name == name) return ds;
     }
     throw std::runtime_error("There are no LongReadsDatastore named: " + name);
@@ -348,12 +348,12 @@ WorkSpace::WorkSpace(const std::string &filename) : sdg(*this) {
 WorkSpace::WorkSpace() : sdg(*this) {}
 
 KmerCountsDatastore &WorkSpace::add_counts_datastore(const std::string &name, const uint8_t k) {
-    kmer_counts_datastore.emplace_back(*this, name, k);
-    return kmer_counts_datastore.back();
+    kmer_counts_datastores.emplace_back(*this, name, k);
+    return kmer_counts_datastores.back();
 }
 
 KmerCountsDatastore &WorkSpace::get_counts_datastore(const std::string &name) {
-    for (auto &ds : kmer_counts_datastore) {
+    for (auto &ds : kmer_counts_datastores) {
         if (ds.name == name) return ds;
     }
     throw std::runtime_error("Couldn't find a KmerCountsDatastore named: " + name);

@@ -325,7 +325,7 @@ DistanceGraph LinkageUntangler::make_paired_linkage(int min_reads) {
     sdglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
     //use all libraries collect votes on each link
     auto rmi=0;
-    for (auto &prds:ws.paired_read_datastores) {
+    for (auto &prds:ws.paired_reads_datastores) {
         for (auto i = 1; i < prds.mapper.read_to_node.size(); i += 2) {
             sgNodeID_t n1 = prds.mapper.read_to_node[i];
             sgNodeID_t n2 = prds.mapper.read_to_node[i + 1];
@@ -364,7 +364,7 @@ DistanceGraph LinkageUntangler::make_paired_linkage_pe(int min_reads) {
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> lv;
     sdglib::OutputLog()<<"collecting link votes across all paired libraries"<<std::endl;
     //use all libraries collect votes on each link
-    auto &prds=ws.paired_read_datastores[0];
+    auto &prds=ws.paired_reads_datastores[0];
     for (auto i = 1; i < prds.mapper.read_to_node.size(); i += 2) {
         sgNodeID_t n1 = prds.mapper.read_to_node[i];
         sgNodeID_t n2 = prds.mapper.read_to_node[i + 1];
@@ -432,9 +432,9 @@ std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> LinkageUntangler::shared_r
             std::vector<std::pair<sgNodeID_t ,sgNodeID_t >> nodeproximity_thread;
             std::vector<std::pair<uint64_t,bool>> read1kmers,read2kmers;
             std::vector<sgNodeID_t> kmernodes;
-            ReadSequenceBuffer bprsg(ws.paired_read_datastores[lib], 1000000, ws.paired_read_datastores[lib].readsize*2+2);
+            ReadSequenceBuffer bprsg(ws.paired_reads_datastores[lib], 1000000, ws.paired_reads_datastores[lib].readsize*2+2);
 #pragma omp for
-            for (auto rid = 1; rid < ws.paired_read_datastores[lib].size(); rid += 2) {
+            for (auto rid = 1; rid < ws.paired_reads_datastores[lib].size(); rid += 2) {
                 //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
 
                 read1kmers.clear();
@@ -508,7 +508,7 @@ DistanceGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_pa
     sdglib::OutputLog()<<"Getting tag neighbours"<<std::endl;
     auto selcount=std::count(selected_nodes.begin(),selected_nodes.end(),true);
     sdglib::OutputLog()<<"All possible node pairs: "<<selcount*(selcount-1)/2<<std::endl;
-    auto pass_sharing=ws.linked_read_datastores[0].mapper.get_tag_neighbour_nodes(min_reads,selected_nodes);
+    auto pass_sharing=ws.linked_reads_datastores[0].mapper.get_tag_neighbour_nodes(min_reads,selected_nodes);
 
     sdglib::OutputLog()<<"Node pairs with more than "<<min_reads<<" shared tags: "<<pass_sharing.size()<<std::endl;
 
@@ -517,7 +517,7 @@ DistanceGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_pa
     //2.a create link direction counts:
     if (use_kmer_paths){
         std::vector<size_t> libs;
-        for (auto i=0;i<ws.paired_read_datastores.size();++i)libs.push_back(i);
+        for (auto i=0;i<ws.paired_reads_datastores.size();++i)libs.push_back(i);
         lv=shared_read_paths(1,libs,true,false);
 
     }
@@ -525,7 +525,7 @@ DistanceGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_pa
         sdglib::OutputLog() << "collecting link votes across all paired libraries" << std::endl;
         //use all libraries collect votes on each link
         auto rmi = 0;
-        for (auto &prds:ws.paired_read_datastores) {
+        for (auto &prds:ws.paired_reads_datastores) {
             for (auto i = 1; i < prds.mapper.read_to_node.size(); i += 2) {
                 sgNodeID_t n1 = prds.mapper.read_to_node[i];
                 sgNodeID_t n2 = prds.mapper.read_to_node[i + 1];
@@ -645,18 +645,18 @@ DistanceGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_pa
         for (auto rm:ws.linked_read_mappers[0].reads_in_node[n1]) {
             if (rm.first_pos < n1first30point) {
                 ++n1_front_total;
-                t1ft.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
-                if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id)) > 0) {
+                t1ft.insert(ws.linked_reads_datastores[0].get_read_tag(rm.read_id));
+                if (shared_tags.count(ws.linked_reads_datastores[0].get_read_tag(rm.read_id)) > 0) {
                     ++n1_front_in;
-                    t1f.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
+                    t1f.insert(ws.linked_reads_datastores[0].get_read_tag(rm.read_id));
                 }
             }
             if (rm.last_pos > n1last30point) {
                 ++n1_back_total;
-                t1bt.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
-                if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id)) > 0) {
+                t1bt.insert(ws.linked_reads_datastores[0].get_read_tag(rm.read_id));
+                if (shared_tags.count(ws.linked_reads_datastores[0].get_read_tag(rm.read_id)) > 0) {
                     ++n1_back_in;
-                    t1b.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
+                    t1b.insert(ws.linked_reads_datastores[0].get_read_tag(rm.read_id));
                 }
             }
         }
@@ -667,18 +667,18 @@ DistanceGraph LinkageUntangler::make_tag_linkage(int min_reads, bool use_kmer_pa
         for (auto rm:ws.linked_read_mappers[0].reads_in_node[n2]) {
             if (rm.first_pos < n2first30point) {
                 ++n2_front_total;
-                t2ft.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
-                if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id)) > 0) {
+                t2ft.insert(ws.linked_reads_datastores[0].get_read_tag(rm.read_id));
+                if (shared_tags.count(ws.linked_reads_datastores[0].get_read_tag(rm.read_id)) > 0) {
                     ++n2_front_in;
-                    t2f.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
+                    t2f.insert(ws.linked_reads_datastores[0].get_read_tag(rm.read_id));
                 }
             }
             if (rm.last_pos > n2last30point) {
                 ++n2_back_total;
-                t2bt.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
-                if (shared_tags.count(ws.linked_read_datastores[0].get_read_tag(rm.read_id)) > 0) {
+                t2bt.insert(ws.linked_reads_datastores[0].get_read_tag(rm.read_id));
+                if (shared_tags.count(ws.linked_reads_datastores[0].get_read_tag(rm.read_id)) > 0) {
                     ++n2_back_in;
-                    t2b.insert(ws.linked_read_datastores[0].get_read_tag(rm.read_id));
+                    t2b.insert(ws.linked_reads_datastores[0].get_read_tag(rm.read_id));
                 }
             }
         }
@@ -782,8 +782,8 @@ DistanceGraph LinkageUntangler::make_longRead_multilinkage(const LongReadsMapper
     DistanceGraph ldg(ws.sdg);
     std::vector<Link> linkage;
     auto lormidx=0;
-    for (;lormidx<ws.long_read_datastores.size();++lormidx){
-        if (lorm.datastore.filename==ws.long_read_datastores[lormidx].filename) break;
+    for (;lormidx<ws.long_reads_datastores.size();++lormidx){
+        if (lorm.datastore.filename==ws.long_reads_datastores[lormidx].filename) break;
     }
     //for each read's filtered mappings:
     for(int64_t rid=0;rid<lorm.filtered_read_mappings.size();++rid) {
@@ -805,8 +805,8 @@ DistanceGraph LinkageUntangler::make_longRead_multilinkage(const LongReadsMapper
 DistanceGraph LinkageUntangler::make_paired10x_multilinkage(const PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore, bool fr,
                                                              uint64_t read_offset) {
     uint16_t prmidx=0;
-    for (;prmidx<ws.paired_read_datastores.size();++prmidx){
-        if (prm.datastore.filename==ws.paired_read_datastores[prmidx].filename) break;
+    for (;prmidx<ws.paired_reads_datastores.size();++prmidx){
+        if (prm.datastore.filename==ws.paired_reads_datastores[prmidx].filename) break;
     }
     DistanceGraph ldg(ws.sdg);
     uint64_t unmapped(0),same(0),non_neighbours(0),used(0);
@@ -929,7 +929,7 @@ void LinkageUntangler::expand_linear_regions(const DistanceGraph & ldg) {
     //---------------------------------Step 1: get tagsets for lines.
     std::vector<std::set<bsg10xTag>> linetagsets;
     linetagsets.reserve(lines.size());
-    BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,100000,1000);
+    BufferedTagKmerizer btk(ws.linked_reads_datastores[0],31,100000,1000);
     for (auto l:lines){
         //sdglib::OutputLog()<<"Analising line: ";
         //for (auto &ln:l) std::cout<<"seq"<<llabs(ln)<<", ";
@@ -938,8 +938,8 @@ void LinkageUntangler::expand_linear_regions(const DistanceGraph & ldg) {
         std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
         for (auto &ln:l) {
             std::map<bsg10xTag ,uint32_t> ntagcounts;
-            for (auto rm:ws.linked_read_datastores[0].mapper.reads_in_node[llabs(ln)]){
-                auto tag=ws.linked_read_datastores[0].get_read_tag(rm.read_id);
+            for (auto rm:ws.linked_reads_datastores[0].mapper.reads_in_node[llabs(ln)]){
+                auto tag=ws.linked_reads_datastores[0].get_read_tag(rm.read_id);
                 ++ntagcounts[tag];
             }
             for (auto ntc:ntagcounts) {
@@ -951,9 +951,9 @@ void LinkageUntangler::expand_linear_regions(const DistanceGraph & ldg) {
         std::set<bsg10xTag> lineTagSet;
         for (auto tc:tagcounts) {
             auto tag=tc.first;
-            auto reads=ws.linked_read_datastores[0].get_tag_reads(tc.first);
+            auto reads=ws.linked_reads_datastores[0].get_tag_reads(tc.first);
             std::set<sgNodeID_t> nodes;
-            for (auto r:reads) nodes.insert(ws.linked_read_datastores[0].mapper.read_to_node[r]);
+            for (auto r:reads) nodes.insert(ws.linked_reads_datastores[0].mapper.read_to_node[r]);
             tagtotals[tag].first=nodes.size()-nodes.count(0);
             tagtotals[tag].second=reads.size();
             if (tc.second.first>1 and reads.size()<3000) lineTagSet.insert(tc.first);
@@ -993,7 +993,7 @@ void LinkageUntangler::expand_linear_regions(const DistanceGraph & ldg) {
     {
         KmerMapCounter km_count(31);
         KmerMapCreator km_create(31);
-        ReadSequenceBuffer blrsg(ws.linked_read_datastores[0], 200000, 1000);
+        ReadSequenceBuffer blrsg(ws.linked_reads_datastores[0], 200000, 1000);
         std::unordered_map<uint64_t, uint32_t> kmercoverages;
         uint64_t done=0;
 #pragma omp for schedule(static, 100)
@@ -1015,7 +1015,7 @@ void LinkageUntangler::expand_linear_regions(const DistanceGraph & ldg) {
                 }
             }
             for (auto &t:linetagsets[i]) {
-                for (auto rid:ws.linked_read_datastores[0].get_tag_reads(t)) {
+                for (auto rid:ws.linked_reads_datastores[0].get_tag_reads(t)) {
                     km_count.count_all_kmers(blrsg.get_read_sequence(rid), kmercoverages);
                 }
             }
@@ -1107,8 +1107,8 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const DistanceGraph & l
         std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
         for (auto &ln:l) {
             std::map<bsg10xTag ,uint32_t> ntagcounts;
-            for (auto rm:ws.linked_read_datastores[0].mapper.reads_in_node[llabs(ln)]){
-                auto tag=ws.linked_read_datastores[0].get_read_tag(rm.read_id);
+            for (auto rm:ws.linked_reads_datastores[0].mapper.reads_in_node[llabs(ln)]){
+                auto tag=ws.linked_reads_datastores[0].get_read_tag(rm.read_id);
                 ++ntagcounts[tag];
             }
             for (auto ntc:ntagcounts) {
@@ -1120,9 +1120,9 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const DistanceGraph & l
         std::set<bsg10xTag> lineTagSet;
         for (auto tc:tagcounts) {
             auto tag=tc.first;
-            auto reads=ws.linked_read_datastores[0].get_tag_reads(tc.first);
+            auto reads=ws.linked_reads_datastores[0].get_tag_reads(tc.first);
             std::set<sgNodeID_t> nodes;
-            for (auto r:reads) nodes.insert(ws.linked_read_datastores[0].mapper.read_to_node[r]);
+            for (auto r:reads) nodes.insert(ws.linked_reads_datastores[0].mapper.read_to_node[r]);
             tagtotals[tag].first=nodes.size()-nodes.count(0);
             tagtotals[tag].second=reads.size();
             if (tc.second.first>1 and reads.size()<3000) lineTagSet.insert(tc.first);
@@ -1140,12 +1140,12 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const DistanceGraph & l
     local_unitigs.resize(lines.size());
 #pragma omp parallel
     {
-        ReadSequenceBuffer blrsg(ws.linked_read_datastores[0], 200000, 1000);
+        ReadSequenceBuffer blrsg(ws.linked_reads_datastores[0], 200000, 1000);
         std::vector<SequenceGraphPath> tsols;
         uint64_t donelines = 0;
 #pragma omp for schedule(dynamic, 1)
         for (auto i = 0; i < lines.size(); ++i) {
-            auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(k, min_cvg, linetagsets[i], blrsg,
+            auto ltkmers128 = ws.linked_reads_datastores[0].get_tags_kmers128(k, min_cvg, linetagsets[i], blrsg,
                                                                              count_tag_cvg);
             //std::cout << "creating DBG for line #" << i << std::endl;
             WorkSpace pws;
@@ -1271,7 +1271,7 @@ void LinkageUntangler::expand_linear_regions_skating(const DistanceGraph & ldg, 
     //---------------------------------Step 1: get tagsets for lines.
     std::vector<std::set<bsg10xTag>> linetagsets;
     linetagsets.reserve(lines.size());
-    BufferedTagKmerizer btk(ws.linked_read_datastores[0],31,100000,1000);
+    BufferedTagKmerizer btk(ws.linked_reads_datastores[0],31,100000,1000);
     for (auto l:lines){
         //sdglib::OutputLog()<<"Analising line: ";
         //for (auto &ln:l) std::cout<<"seq"<<llabs(ln)<<", ";
@@ -1280,8 +1280,8 @@ void LinkageUntangler::expand_linear_regions_skating(const DistanceGraph & ldg, 
         std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
         for (auto &ln:l) {
             std::map<bsg10xTag ,uint32_t> ntagcounts;
-            for (auto rm:ws.linked_read_datastores[0].mapper.reads_in_node[llabs(ln)]){
-                auto tag=ws.linked_read_datastores[0].get_read_tag(rm.read_id);
+            for (auto rm:ws.linked_reads_datastores[0].mapper.reads_in_node[llabs(ln)]){
+                auto tag=ws.linked_reads_datastores[0].get_read_tag(rm.read_id);
                 ++ntagcounts[tag];
             }
             for (auto ntc:ntagcounts) {
@@ -1293,9 +1293,9 @@ void LinkageUntangler::expand_linear_regions_skating(const DistanceGraph & ldg, 
         std::set<bsg10xTag> lineTagSet;
         for (auto tc:tagcounts) {
             auto tag=tc.first;
-            auto reads=ws.linked_read_datastores[0].get_tag_reads(tc.first);
+            auto reads=ws.linked_reads_datastores[0].get_tag_reads(tc.first);
             std::set<sgNodeID_t> nodes;
-            for (auto r:reads) nodes.insert(ws.linked_read_datastores[0].mapper.read_to_node[r]);
+            for (auto r:reads) nodes.insert(ws.linked_reads_datastores[0].mapper.read_to_node[r]);
             tagtotals[tag].first=nodes.size()-nodes.count(0);
             tagtotals[tag].second=reads.size();
             if (tc.second.first>1 and reads.size()<3000) lineTagSet.insert(tc.first);
@@ -1311,13 +1311,13 @@ void LinkageUntangler::expand_linear_regions_skating(const DistanceGraph & ldg, 
     std::vector<SequenceGraphPath> sols;
 #pragma omp parallel
     {
-        ReadSequenceBuffer blrsg(ws.linked_read_datastores[0], 200000, 1000);
+        ReadSequenceBuffer blrsg(ws.linked_reads_datastores[0], 200000, 1000);
         std::vector<SequenceGraphPath> tsols;
         uint64_t donelines=0;
 #pragma omp for schedule(dynamic,1)
         for (auto i=0; i<lines.size(); ++i){
             //std::cout<<"Creating kmer set for line"<<i<<" from tags"<<std::endl;
-            auto ltkmers=ws.linked_read_datastores[0].get_tags_kmers(31,3,linetagsets[i],blrsg);
+            auto ltkmers=ws.linked_reads_datastores[0].get_tags_kmers(31,3,linetagsets[i],blrsg);
             UncoveredKmerCounter ukc(31,ltkmers);
             //std::cout<<"Evaluating paths for "<<lines[i].size()-1<<" junctions"<<std::endl;
             for (auto j=0;j<lines[i].size()-1;++j){
@@ -1397,8 +1397,8 @@ void LinkageUntangler::fill_linkage_line(std::vector<sgNodeID_t> nodes) {
     std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
     for (auto &ln:nodes) {
         std::map<bsg10xTag ,uint32_t> ntagcounts;
-        for (auto rm:ws.linked_read_datastores[0].mapper.reads_in_node[llabs(ln)]){
-            auto tag=ws.linked_read_datastores[0].get_read_tag(rm.read_id);
+        for (auto rm:ws.linked_reads_datastores[0].mapper.reads_in_node[llabs(ln)]){
+            auto tag=ws.linked_reads_datastores[0].get_read_tag(rm.read_id);
             if (tag==0) continue;
             ++ntagcounts[tag];
         }
@@ -1412,18 +1412,18 @@ void LinkageUntangler::fill_linkage_line(std::vector<sgNodeID_t> nodes) {
     uint64_t total_reads=0;
     for (auto tc:tagcounts) {
         auto tag=tc.first;
-        auto reads=ws.linked_read_datastores[0].get_tag_reads(tc.first);
+        auto reads=ws.linked_reads_datastores[0].get_tag_reads(tc.first);
         total_reads+=reads.size();
         std::set<sgNodeID_t> nodes;
-        for (auto r:reads) nodes.insert(ws.linked_read_datastores[0].mapper.read_to_node[r]);
+        for (auto r:reads) nodes.insert(ws.linked_reads_datastores[0].mapper.read_to_node[r]);
         tagtotals[tag].first=nodes.size()-nodes.count(0);
         tagtotals[tag].second=reads.size();
         if (tc.second.first>1 and reads.size()<3000) lineTagSet.insert(tc.first);
     }
     std::cout<<"Local tag reads: "<<total_reads<<std::endl;
     std::cout<<"Creating an uncleaned DBG"<<std::endl;
-    ReadSequenceBuffer blrsg(ws.linked_read_datastores[0], 200000, 1000);
-    auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(63, 3, lineTagSet, blrsg, true);
+    ReadSequenceBuffer blrsg(ws.linked_reads_datastores[0], 200000, 1000);
+    auto ltkmers128 = ws.linked_reads_datastores[0].get_tags_kmers128(63, 3, lineTagSet, blrsg, true);
     //std::cout << "creating DBG for line #" << i << std::endl;
     WorkSpace pws;
     SequenceDistanceGraph dbg(pws);

@@ -36,8 +36,8 @@ void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backb
     for (auto &ln:backbone) {
         //partial counts in a single node
         std::map<bsg10xTag ,uint32_t> ntagcounts;
-        for (auto rm:ws.linked_read_datastores[0].mapper.reads_in_node[llabs(ln)]){
-            auto tag=ws.linked_read_datastores[0].get_read_tag(rm.read_id);
+        for (auto rm:ws.linked_reads_datastores[0].mapper.reads_in_node[llabs(ln)]){
+            auto tag=ws.linked_reads_datastores[0].get_read_tag(rm.read_id);
             if (tag==0) continue;
             ++ntagcounts[tag];
         }
@@ -52,7 +52,7 @@ void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backb
         auto & tag=tc.first;
         auto & tag_backbone_nodes=tc.second.first;
         auto & tag_backbone_reads=tc.second.second;
-        auto tag_total_reads=ws.linked_read_datastores[0].get_tag_reads(tc.first).size();//TODO: this can be optimised by not creating the vector
+        auto tag_total_reads=ws.linked_reads_datastores[0].get_tag_reads(tc.first).size();//TODO: this can be optimised by not creating the vector
         if (tc.second.first>1 or tag_total_reads/50<tag_backbone_reads and tag_total_reads>10) {
             tagSet.insert(tc.first);
             total_reads+=tag_total_reads;
@@ -60,19 +60,19 @@ void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backb
     }
     //std::cout<<"Local tags: "<<tagSet.size()<<" reads: "<<total_reads<<std::endl;
     //std::cout<<"Creating set of relevant paired reads..."<<std::endl;
-    for (auto prl=0;prl<ws.paired_read_datastores.size();++prl) {
+    for (auto prl=0;prl<ws.paired_reads_datastores.size();++prl) {
         paired_reads.emplace_back(std::make_pair(prl,std::vector<uint64_t>()));
         for (auto &ln:backbone) {
-            auto nreads=ws.paired_read_datastores[prl].mapper.get_node_readpairs_ids(ln);
+            auto nreads=ws.paired_reads_datastores[prl].mapper.get_node_readpairs_ids(ln);
             paired_reads.back().second.insert(paired_reads.back().second.end(),nreads.begin(),nreads.end());
         }
         if (paired_reads.back().second.empty()) paired_reads.pop_back();
-        //else std::cout<<paired_reads.back().second.size()<<" reads from "<<ws.paired_read_datastores[prl].filename<<std::endl;
+        //else std::cout<<paired_reads.back().second.size()<<" reads from "<<ws.paired_reads_datastores[prl].filename<<std::endl;
     }
-    for (auto lrl = 0; ws.long_read_datastores.size(); ++lrl) {
+    for (auto lrl = 0; ws.long_reads_datastores.size(); ++lrl) {
         long_reads.emplace_back(std::make_pair(lrl, std::vector<uint64_t>()));
         for (auto &ln:backbone) {
-            auto nreads = ws.long_read_datastores[lrl].mapper.reads_in_node[llabs(ln)];
+            auto nreads = ws.long_reads_datastores[lrl].mapper.reads_in_node[llabs(ln)];
             std::sort(nreads.begin(),nreads.end());
             long_reads.back().second.insert(long_reads.back().second.end(), nreads.begin(), nreads.end());
         }
@@ -206,8 +206,8 @@ uint64_t LocalHaplotypeAssembler::expand_canonical_repeats_direct(int max_rep_si
     std::vector<std::array<uint64_t,4>> rvotes(repeat_posibilities.size());
     //For every single read: look
     for (auto t:tagSet) {
-        for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
-            auto rseq=ws.linked_read_datastores[0].get_read_sequence(rid);
+        for (auto rid : ws.linked_reads_datastores[0].get_tag_reads(t)) {
+            auto rseq=ws.linked_reads_datastores[0].get_read_sequence(rid);
             for (auto i=0;i<repeat_posibilities.size();++i){
                 for (auto p=0;p<8;++p) {
                     if (rseq.find(repeat_posibilities[i].second[p])<rseq.size()) ++rvotes[i][p%4];
@@ -342,9 +342,9 @@ uint64_t LocalHaplotypeAssembler::unroll_short_loops() {
                 {
                     for (auto &ppp:p) std::cout << ppp << " ";
                     std::cout << std::endl;
-                    //print_seq_kmer_location(ws.linked_read_datastores[0].get_read_sequence(rid).c_str(),
+                    //print_seq_kmer_location(ws.linked_reads_datastores[0].get_read_sequence(rid).c_str(),
                     //                        assembly.kmer_to_graphposition);
-                    //print_seq_kmer_location(ws.linked_read_datastores[0].get_read_sequence(rid + 1).c_str(),
+                    //print_seq_kmer_location(ws.linked_reads_datastores[0].get_read_sequence(rid + 1).c_str(),
                     //                        assembly.kmer_to_graphposition);
 
 
@@ -356,8 +356,8 @@ uint64_t LocalHaplotypeAssembler::unroll_short_loops() {
 }
 
 void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, bool simplify, std::string output_prefix){
-    ReadSequenceBuffer blrsg(ws.linked_read_datastores[0], 200000, 1000);
-    auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(k, min_cov, tagSet, blrsg, tag_cov);
+    ReadSequenceBuffer blrsg(ws.linked_reads_datastores[0], 200000, 1000);
+    auto ltkmers128 = ws.linked_reads_datastores[0].get_tags_kmers128(k, min_cov, tagSet, blrsg, tag_cov);
     GraphMaker gm(assembly);
     gm.new_graph_from_kmerset_trivial128(ltkmers128, k);
     gm.tip_clipping(200);
@@ -429,9 +429,9 @@ void LocalHaplotypeAssembler::path_linked_reads() {
     std::vector<std::pair<uint64_t,bool>> read1kmers,read2kmers;
     std::vector<sgNodeID_t> kmernodes;
 
-    ReadSequenceBuffer blrsg(ws.linked_read_datastores[0],100000,1000);
+    ReadSequenceBuffer blrsg(ws.linked_reads_datastores[0],100000,1000);
     for (auto t:tagSet) {
-        for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
+        for (auto rid : ws.linked_reads_datastores[0].get_tag_reads(t)) {
             //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
             if (rid%2!=1) continue;
 
@@ -463,10 +463,10 @@ void LocalHaplotypeAssembler::path_linked_reads_informative_singles() {
     std::vector<std::pair<sgNodeID_t ,sgNodeID_t >> nodeproximity_thread;
     std::vector<std::pair<__uint128_t,bool>> readkmers;
     std::vector<sgNodeID_t> kmernodes;
-    ReadSequenceBuffer blrsg(ws.linked_read_datastores[0],100000,1000);
+    ReadSequenceBuffer blrsg(ws.linked_reads_datastores[0],100000,1000);
     for (auto t:tagSet) {
 //        auto chim=0;
-        for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
+        for (auto rid : ws.linked_reads_datastores[0].get_tag_reads(t)) {
             readkmers.clear();
             kmernodes.clear();
 
@@ -481,7 +481,7 @@ void LocalHaplotypeAssembler::path_linked_reads_informative_singles() {
 //                ++chim;
 //            }
         }
-        //std::cout<<t<<","<<chim<<","<<ws.linked_read_datastores[0].get_tag_reads(t).size()<<","<<100.0*chim/ws.linked_read_datastores[0].get_tag_reads(t).size()<<std::endl;
+        //std::cout<<t<<","<<chim<<","<<ws.linked_reads_datastores[0].get_tag_reads(t).size()<<","<<100.0*chim/ws.linked_reads_datastores[0].get_tag_reads(t).size()<<std::endl;
     }
     //sdglib::OutputLog()<<linkedread_paths.size()<<" informative single read paths created!"<<std::endl;
 }
@@ -497,7 +497,7 @@ void LocalHaplotypeAssembler::path_paired_reads_informative_singles() {
     std::vector<sgNodeID_t> kmernodes;
     for (auto lpr:paired_reads) {
 //        auto chim=0;
-        ReadSequenceBuffer bprsg(ws.paired_read_datastores[lpr.first],100000,ws.paired_read_datastores[lpr.first].readsize*2+2);
+        ReadSequenceBuffer bprsg(ws.paired_reads_datastores[lpr.first],100000,ws.paired_reads_datastores[lpr.first].readsize*2+2);
         for (auto rid : lpr.second) {
             readkmers.clear();
             kmernodes.clear();
@@ -531,9 +531,9 @@ void LocalHaplotypeAssembler::path_all_reads() {
     std::vector<std::pair<uint64_t,bool>> read1kmers,read2kmers;
     std::vector<sgNodeID_t> kmernodes;
 
-    ReadSequenceBuffer blrsg(ws.linked_read_datastores[0],100000,1000);
+    ReadSequenceBuffer blrsg(ws.linked_reads_datastores[0],100000,1000);
     for (auto t:tagSet) {
-        for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
+        for (auto rid : ws.linked_reads_datastores[0].get_tag_reads(t)) {
             //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
             if (rid%2!=1) continue;
 
@@ -556,7 +556,7 @@ void LocalHaplotypeAssembler::path_all_reads() {
 
     //now do the same for each paired library
     for (auto lpr:paired_reads) {
-        ReadSequenceBuffer bprsg(ws.paired_read_datastores[lpr.first],100000,ws.paired_read_datastores[lpr.first].readsize*2+2);
+        ReadSequenceBuffer bprsg(ws.paired_reads_datastores[lpr.first],100000,ws.paired_reads_datastores[lpr.first].readsize*2+2);
         for (auto rid : lpr.second) {
             //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
             if (rid%2!=1) continue;
@@ -637,19 +637,19 @@ void LocalHaplotypeAssembler::write_full(std::string prefix) {
     for (auto &t:tagSet) output_file.write((char *)&t,sizeof(t));
 
     //write the condensation of the 10x workspace
-    ws.linked_read_datastores[0].write_selection(output_file,tagSet);
+    ws.linked_reads_datastores[0].write_selection(output_file,tagSet);
     //write the condensation of the paired reads workspace.
     count=paired_reads.size();
     output_file.write((char *)&count,sizeof(count));
     for (auto &p:paired_reads){
-        ws.paired_read_datastores[p.first].write_selection(output_file,p.second);
+        ws.paired_reads_datastores[p.first].write_selection(output_file,p.second);
     }
 
     count = long_reads.size();
     output_file.write((char *)&count,sizeof(count));
     for (auto &l:long_reads){
-        ReadSequenceBuffer sequenceGetter(ws.long_read_datastores[l.first]);
-        ws.long_read_datastores[l.first].write_selection(output_file,l.second);
+        ReadSequenceBuffer sequenceGetter(ws.long_reads_datastores[l.first]);
+        ws.long_reads_datastores[l.first].write_selection(output_file,l.second);
     }
 }
 
@@ -706,25 +706,25 @@ void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
     }
 
     //write the condensation of the 10x workspace
-    ws.linked_read_datastores.emplace_back(ws, full_file, input_file);
-    //ws.linked_read_datastores[0].write_selection(output_file,tagSet);
+    ws.linked_reads_datastores.emplace_back(ws, full_file, input_file);
+    //ws.linked_reads_datastores[0].write_selection(output_file,tagSet);
     //write the condensation of the paired reads workspace.
     input_file.read((char *)&count,sizeof(count));
     for (auto n=0;n<count;++n){
-        ws.paired_read_datastores.emplace_back(ws, full_file, input_file);
+        ws.paired_reads_datastores.emplace_back(ws, full_file, input_file);
         std::vector<uint64_t> read_ids;
-        read_ids.reserve(ws.paired_read_datastores.back().size());
-        for(uint64_t i=0;i<ws.paired_read_datastores.back().size();++i) read_ids.emplace_back(i);
+        read_ids.reserve(ws.paired_reads_datastores.back().size());
+        for(uint64_t i=0;i<ws.paired_reads_datastores.back().size();++i) read_ids.emplace_back(i);
         paired_reads.emplace_back(std::make_pair(n,read_ids));
     }
 
 
     input_file.read((char *)&count,sizeof(count));
     for (auto n=0;n<count;++n){
-        ws.long_read_datastores.emplace_back(ws, full_file, full_file, input_file);
+        ws.long_reads_datastores.emplace_back(ws, full_file, full_file, input_file);
         std::vector<uint64_t> read_ids;
-        read_ids.reserve(ws.long_read_datastores.back().size());
-        for(uint64_t i=0;i<ws.long_read_datastores.back().size();++i) read_ids.emplace_back(i);
+        read_ids.reserve(ws.long_reads_datastores.back().size());
+        for(uint64_t i=0;i<ws.long_reads_datastores.back().size();++i) read_ids.emplace_back(i);
         long_reads.emplace_back(std::make_pair(n,read_ids));
     }
 }
@@ -958,10 +958,10 @@ void LocalHaplotypeAssembler::problem_analysis(std::string prefix) {
 
     for (auto t:tagSet) {
 //        auto chim=0;
-        for (auto rid : ws.linked_read_datastores[0].get_tag_reads(t)) {
+        for (auto rid : ws.linked_reads_datastores[0].get_tag_reads(t)) {
             if (rid%2==0) continue;
-            lr_r1file<<">"<<t<<"_"<<rid<<""<<std::endl<<ws.linked_read_datastores[0].get_read_sequence(rid)<<std::endl;
-            lr_r2file<<">"<<t<<"_"<<rid<<""<<std::endl<<ws.linked_read_datastores[0].get_read_sequence(rid+1)<<std::endl;
+            lr_r1file<<">"<<t<<"_"<<rid<<""<<std::endl<<ws.linked_reads_datastores[0].get_read_sequence(rid)<<std::endl;
+            lr_r2file<<">"<<t<<"_"<<rid<<""<<std::endl<<ws.linked_reads_datastores[0].get_read_sequence(rid+1)<<std::endl;
         }
     }
     auto lmplib=0;
@@ -969,7 +969,7 @@ void LocalHaplotypeAssembler::problem_analysis(std::string prefix) {
         ++lmplib;
         std::ofstream lmp_r1file(prefix+"_lmp"+std::to_string(lmplib)+"_R1.fasta");
         std::ofstream lmp_r2file(prefix+"_lmp"+std::to_string(lmplib)+"_R2.fasta");
-        ReadSequenceBuffer bprsg(ws.paired_read_datastores[lpr.first],100000,ws.paired_read_datastores[lpr.first].readsize*2+2);
+        ReadSequenceBuffer bprsg(ws.paired_reads_datastores[lpr.first],100000,ws.paired_reads_datastores[lpr.first].readsize*2+2);
         for (auto rid : lpr.second) {
             //std::cout<<"analising reads "<<rid<<" and "<<rid+1<<std::endl;
             if (rid%2!=1) continue;
@@ -979,8 +979,8 @@ void LocalHaplotypeAssembler::problem_analysis(std::string prefix) {
     }
 
     //====== 2) Trivial 31-mer graph
-    ReadSequenceBuffer blrsg(ws.linked_read_datastores[0], 200000, 1000);
-    auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers(31, 5, tagSet, blrsg);
+    ReadSequenceBuffer blrsg(ws.linked_reads_datastores[0], 200000, 1000);
+    auto ltkmers128 = ws.linked_reads_datastores[0].get_tags_kmers(31, 5, tagSet, blrsg);
     GraphMaker gm(assembly);
     gm.new_graph_from_kmerset_trivial(ltkmers128, 31);
     write_gfa(prefix+"_31-mer_DBG.gfa");

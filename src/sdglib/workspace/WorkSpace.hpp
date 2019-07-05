@@ -70,13 +70,12 @@ public:
     //All status classes are public, treat them with care anyway ;)
     SequenceDistanceGraph sdg;
 
-    std::vector<PairedReadsDatastore> paired_read_datastores;
-    std::vector<LinkedReadsDatastore> linked_read_datastores;
-    std::vector<LongReadsDatastore> long_read_datastores;
+    std::vector<PairedReadsDatastore> paired_reads_datastores;
+    std::vector<LinkedReadsDatastore> linked_reads_datastores;
+    std::vector<LongReadsDatastore> long_reads_datastores;
+    std::vector<KmerCountsDatastore> kmer_counts_datastores;
 
     std::vector<DistanceGraph> distance_graphs;
-
-    std::vector<KmerCountsDatastore> kmer_counts_datastore;
 
     static const sdgVersion_t min_compat;
     std::vector<std::string> read_counts_header;

@@ -9,7 +9,7 @@
 
 
 std::unordered_set<__uint128_t, int128_hash> countKmers(const WorkSpace &ws, int k, int min_coverage, int num_batches) {
-    auto kmer_list = BatchKmersCounter::buildKMerCount(k, ws.paired_read_datastores.back(), min_coverage, ".", ".", num_batches);
+    auto kmer_list = BatchKmersCounter::buildKMerCount(k, ws.paired_reads_datastores.back(), min_coverage, ".", ".", num_batches);
     std::unordered_set<__uint128_t, int128_hash> kmers;
     for (uint64_t i = 0; i < kmer_list->size; ++i) {
         __uint128_t kmer;
@@ -22,7 +22,7 @@ std::unordered_set<__uint128_t, int128_hash> countKmers(const WorkSpace &ws, int
 std::vector<__uint128_t> countKmersToList(const WorkSpace &ws, int k, int min_coverage, int num_batches) {
 
 
-    auto kmer_list = BatchKmersCounter::buildKMerCount(k, ws.paired_read_datastores.back(), min_coverage, ".", ".", num_batches);
+    auto kmer_list = BatchKmersCounter::buildKMerCount(k, ws.paired_reads_datastores.back(), min_coverage, ".", ".", num_batches);
     std::vector<__uint128_t> kmers;
     kmers.reserve(kmer_list->size);
     __uint128_t kmer;
@@ -87,7 +87,7 @@ int main(int argc, char * argv[]) {
     GraphMaker gm2(ws.sdg);
     ws.add_log_entry("Workspace created with sdg-dbg");
     ws.add_log_entry("Origin datastore: " + pr_file);
-    ws.paired_read_datastores.emplace_back(ws, pr_file);
+    ws.paired_reads_datastores.emplace_back(ws, pr_file);
     if (map_in_memory){
         auto kmers2 = countKmers(ws, k, min_coverage, num_batches);
         gm2.new_graph_from_kmerset_trivial128(kmers2, k);
@@ -101,7 +101,7 @@ int main(int argc, char * argv[]) {
         gm2.tip_clipping(tip_size);
         sdglib::OutputLog() << "Tip clipping DONE! " << ws.sdg.count_active_nodes() << " nodes in graph" << std::endl;
     }
-    ws.add_counts_datastore("main",31).add_count("PE",ws.paired_read_datastores[0]);
+    ws.add_counts_datastore("main",31).add_count("PE",ws.paired_reads_datastores[0]);
     ws.sdg.write_to_gfa1(output_prefix + "_DBG.gfa");
     ws.dump_to_disk(output_prefix + ".bsgws");
 }

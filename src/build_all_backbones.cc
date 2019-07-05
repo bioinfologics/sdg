@@ -46,14 +46,14 @@ int main(int argc, char **argv) {
 
     ws.load_from_disk(workspace_file);
 
-    ws.long_read_datastores[0].mapper.read_filtered_mappings(mappings_file);
-    ws.linked_read_datastores[0].mapper.read_tag_neighbours(neighbours_file);
-    ws.long_read_datastores[0].mapper.update_indexes();
+    ws.long_reads_datastores[0].mapper.read_filtered_mappings(mappings_file);
+    ws.linked_reads_datastores[0].mapper.read_tag_neighbours(neighbours_file);
+    ws.long_reads_datastores[0].mapper.update_indexes();
 
     sdglib::OutputLog() << "Selecting backbones" << std::endl;
 
     auto u=LinkageUntangler(ws);
-    auto mldg=u.make_longRead_multilinkage(ws.long_read_datastores[0].mapper);
+    auto mldg=u.make_longRead_multilinkage(ws.long_reads_datastores[0].mapper);
     u.select_multi_linkage_linear_anchors(mldg,5);
     auto ldg=u.make_nextselected_linkage(mldg);
 
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
             haplotypeConsensus.write_read_paths("oriented_read_paths_backbone_" + std::to_string(backbone) + ".orp");
 
             // Clear temp structures
-            ws.long_read_datastores[0].mapper.all_paths_between.clear();
+            ws.long_reads_datastores[0].mapper.all_paths_between.clear();
             sdglib::OutputLog() << "Done clearing structures" << std::endl;
 
         } else {
