@@ -14,43 +14,37 @@ void WorkSpace::add_log_entry(std::string text) {
 void WorkSpace::dump_to_disk(std::string filename) {
     sdglib::OutputLog()<<"Dumping workspace to "<<filename<<std::endl;
     std::ofstream of(filename);
-    //dump log
-    uint64_t count;
-    count=log.size();
+
+    //Magic number
     of.write((char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
     of.write((char *) &SDG_VN, sizeof(SDG_VN));
     SDG_FILETYPE type(WS_FT);
     of.write((char *) &type, sizeof(type));
+
+
+    //dump log
+    uint64_t count;
+    count=log.size();
     of.write((char *) &count,sizeof(count));
     for (auto &l:log){
         of.write((char *) &l.timestamp,sizeof(l.timestamp));
-        count=l.bsg_version.size();
-        of.write((char *) &count,sizeof(count));
-        of.write((char *) l.bsg_version.data(), count);
-        count=l.log_text.size();
-        of.write((char *) &count,sizeof(count));
-        of.write((char *) l.log_text.data(), count);
+        sdglib::write_string(of,l.bsg_version);
+        sdglib::write_string(of,l.log_text);
 
     }
+
+    //dump operations
     count = operation_journals.size();
     of.write((char *) &count, sizeof(count));
     for (const auto &j:operation_journals){
-        count = j.name.size();
-        of.write((char *) &count, sizeof(count));
-        of.write((char *) j.name.data(), count);
-        count = j.detail.size();
-        of.write((char *) &count, sizeof(count));
-        of.write((char *) j.detail.data(), count);
-        count = j.tool.size();
-        of.write((char *) &count, sizeof(count));
-        of.write((char *) j.tool.data(), count);
+        sdglib::write_string(of,j.name);
+        sdglib::write_string(of,j.detail);
+        sdglib::write_string(of,j.tool);
         of.write((char *) &j.timestamp, sizeof(j.timestamp));
         count = j.entries.size();
         of.write((char *) &count, sizeof(count));
-        for (const auto &e: j.entries){
-            count = e.detail.size();
-            of.write((char *) &count, sizeof(count));
-            of.write((char *) e.detail.data(), count);
+        for (const auto &e: j.entries) {
+            sdglib::write_string(of, e.detail);
         }
     }
 
@@ -93,16 +87,6 @@ void WorkSpace::dump_to_disk(std::string filename) {
         long_read_datastores[i].write(of);
         long_read_datastores[i].mapper.write(of);
     }
-
-
-//    //[GONZA]
-//    int v = (int) read_counts_header.size();
-//    of.write((const char *) &v, sizeof(v));
-//    for (int i=0; i<read_counts_header.size(); ++i){
-//        int hs = (int) read_counts_header[i].size();
-//        of.write((const char *) &hs, sizeof(hs));
-//        of.write((const char *) read_counts_header[i].data(), hs*sizeof(char));
-//    }
 }
 
 void WorkSpace::load_from_disk(std::string filename, bool log_only) {
@@ -111,12 +95,8 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
         std::cerr << filename << " opening error: " << strerror(errno) << std::endl;
         throw std::runtime_error("Error opening " + filename);
     }
-    uint64_t count;
-    //read log
-    log.clear();
-    std::string git_version,text;
-    std::time_t timestamp;
 
+    //==== Check magic number ====
     sdgMagic_t magic;
     sdgVersion_t version;
     SDG_FILETYPE type;
@@ -125,11 +105,11 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     wsfile.read((char *) &type, sizeof(type));
 
     if (magic != SDG_MAGIC) {
-        throw std::runtime_error("Magic number not present in the kci file");
+        throw std::runtime_error("Magic number not present in WorkSpace file");
     }
 
     if (version < min_compat) {
-        throw std::runtime_error("kci file version: " + std::to_string(version) + " is not compatible with " + std::to_string(min_compat));
+        throw std::runtime_error("WorkSpace file version: " + std::to_string(version) + " is not compatible with " + std::to_string(min_compat));
     }
 
     if (type != WS_FT) {
@@ -137,76 +117,60 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     }
 
 
+    uint64_t count,count2;
+    //read log
+    log.clear();
+    std::string git_version,text;
+    std::time_t timestamp;
     wsfile.read((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
-        uint64_t ssize;
         wsfile.read((char *) &timestamp,sizeof(timestamp));
-        wsfile.read((char *) &ssize,sizeof(ssize));
-        git_version.resize(ssize);
-        wsfile.read((char *) git_version.data(),ssize);
-        wsfile.read((char *) &ssize,sizeof(ssize));
-        text.resize(ssize);
-        wsfile.read((char *) text.data(),ssize);
+        sdglib::read_string(wsfile,git_version);
+        sdglib::read_string(wsfile,text);
         log.emplace_back(timestamp,git_version,text);
     }
 
+    //read operations
     wsfile.read((char *) &count, sizeof(count));
     operation_journals.resize(count);
     for (auto i=0; i < count; i++) {
-        auto &oj = operation_journals[i];
-        uint64_t ssize;
+        auto &j = operation_journals[i];
+        sdglib::read_string(wsfile,j.name);
+        sdglib::read_string(wsfile,j.detail);
+        sdglib::read_string(wsfile,j.tool);
+        wsfile.read((char *) &j.timestamp, sizeof(j.timestamp));
 
-        wsfile.read((char *) &ssize, sizeof(ssize));
-        oj.name.resize(ssize);
-        wsfile.read((char *) oj.name.data(), ssize);
-
-        wsfile.read((char *) &ssize, sizeof(ssize));
-        oj.detail.resize(ssize);
-        wsfile.read((char *) oj.detail.data(), ssize);
-
-        wsfile.read((char *) &ssize, sizeof(ssize));
-        oj.tool.resize(ssize);
-        wsfile.read((char *) oj.tool.data(), ssize);
-        wsfile.read((char *) &oj.timestamp, sizeof(oj.timestamp));
-        count = oj.entries.size();
-        wsfile.read((char *) &ssize, sizeof(ssize));
-        oj.entries.resize(ssize);
-        for (auto e = 0; e < ssize; ++e){
-            uint64_t essize;
-            wsfile.read((char *) &essize, sizeof(essize));
-            wsfile.read((char *) oj.entries[e].detail.data(), essize);
+        wsfile.read((char *) &count2, sizeof(count2));
+        j.entries.resize(count2);
+        for (auto e = 0; e < count2; ++e){
+            sdglib::read_string(wsfile,j.entries[e].detail);
         }
     }
 
 
     if (log_only) return;
-    //read element type, then use that element's read
+
+    //graph
     sdg.read(wsfile);
     sdglib::OutputLog() <<"Loaded graph with "<<sdg.nodes.size()-1<<" nodes" <<std::endl;
 
+    //distance graphs
     wsfile.read((char *) &count,sizeof(count));
     distance_graphs.reserve(count);
     for (auto i=0;i<count;++i) {
         distance_graphs.emplace_back(sdg, wsfile);
     }
-    //todo: read all datastores and mappers!!!
-//    if (format>1) {
-//        wsfile.read((char *) &count,sizeof(count));
-//        for (auto i=0;i<count;++i){
-//            paired_read_datastores.emplace_back();
-//            paired_read_datastores.back().read(wsfile);
-//            paired_read_mappers.emplace_back(sdg,linked_read_datastores.back());
-//            paired_read_mappers.back().read(wsfile);
-//        }
-//    }
+
+    //paired_read_datastores
     wsfile.read((char *) &count,sizeof(count));
     paired_read_datastores.reserve(count);
     for (auto i=0;i<count;++i) {
         paired_read_datastores.emplace_back(*this, wsfile);
     }
+
+    //linked_read_datastores
     wsfile.read((char *) &count,sizeof(count));
     linked_read_datastores.reserve(count);
-
     for (auto i=0;i<count;++i) {
         linked_read_datastores.emplace_back(*this, wsfile);
     }
@@ -215,9 +179,10 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     wsfile.read((char *) &count,sizeof(count));
     kmer_counts_datastore.reserve(count);
     for (auto i = 0; i < count; i++) {
-        kmer_counts_datastore[i].read(wsfile);
+        kmer_counts_datastore.emplace_back(*this,wsfile);
     }
 
+    //Long reads datastores
     wsfile.read((char *) &count,sizeof(count));
     long_read_datastores.reserve(count);
     for (auto i=0;i<count;++i) {

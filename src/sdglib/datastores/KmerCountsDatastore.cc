@@ -5,6 +5,10 @@
 #include "KmerCountsDatastore.hpp"
 #include <sdglib/workspace/WorkSpace.hpp>
 
+KmerCountsDatastore::KmerCountsDatastore(const WorkSpace &_ws, std::ifstream &infile): ws(_ws) {
+    read(infile);
+}
+
 void KmerCountsDatastore::index_sdg() {
     //add all k-mers from SDG
     counts.clear();
@@ -129,7 +133,7 @@ void add_count_to_kds( KmerCountsDatastore & kds, const std::string & count_name
         std::vector<uint64_t> found_kmers; // kmer index of found kmers is saved here, increments are done in the critical
         found_kmers.reserve(local_kmers_size);
         std::vector<uint64_t> readkmers;
-        CStringKMerFactory cskf(kds.k);
+        CStringKMerFactory cskf(kds.get_k());
 #pragma omp for schedule(static,10000)
         for (uint64_t rid = 1; rid <= datastore.size(); ++rid) {
             readkmers.clear();
@@ -213,46 +217,16 @@ std::vector<uint16_t> KmerCountsDatastore::project_count(const std::string &coun
 }
 
 void KmerCountsDatastore::read(std::ifstream &input_file) {
-    uint64_t s(0);
-
-    input_file.read((char *) &s, sizeof(s));
-    name.resize(s);
-    input_file.read((char *) name.data(), name.size());
-
-    input_file.read((char *) &s, sizeof(s));
-    uint64_t counts_size(0);
-    input_file.read((char *) &counts_size, sizeof(counts_size));
-    count_names.resize(s);
-    counts.resize(s);
-
-    for (int i = 0; i < s; i++) {
-        counts[i].resize(counts_size);
-
-        uint64_t count_name_size(0);
-        input_file.read((char *) &count_name_size, sizeof(count_name_size));
-        count_names[i].resize(count_name_size);
-        input_file.read((char *) count_names[i].data(), count_names[i].size());
-        input_file.read((char *) counts[i].data(), counts[i].size());
-    }
+    input_file.read((char *) &k, sizeof(k));
+    sdglib::read_string(input_file,name);
+    sdglib::read_stringvector(input_file,count_names);
+    sdglib::read_flat_vectorvector(input_file,counts);
 
 }
 
 void KmerCountsDatastore::write(std::ofstream &output_file) {
-    uint64_t s(0);
-
-    s=name.size();
-    output_file.write((char *) &s,sizeof(s));
-    output_file.write((char *)name.data(),name.size());
-
-    s=count_names.size();
-    output_file.write((char *) &s,sizeof(s));
-    s = counts[0].size();
-    output_file.write((char *) &s,sizeof(s));
-
-    for (int i = 0; i < count_names.size(); i++) {
-        uint64_t count_name_size(count_names[i].size());
-        output_file.write((char *) &count_name_size, sizeof(count_name_size));
-        output_file.write((char *) count_names[i].data(), count_names[i].size());
-        output_file.write((char *) counts[i].data(), counts[i].size());
-    }
+    output_file.write((char *) &k, sizeof(k));
+    sdglib::write_string(output_file,name);
+    sdglib::write_stringvector(output_file,count_names);
+    sdglib::write_flat_vectorvector(output_file,counts);
 }
