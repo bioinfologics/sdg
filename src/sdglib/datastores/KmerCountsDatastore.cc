@@ -220,6 +220,7 @@ void KmerCountsDatastore::read(std::ifstream &input_file) {
     input_file.read((char *) &k, sizeof(k));
     sdglib::read_string(input_file,name);
     sdglib::read_stringvector(input_file,count_names);
+    sdglib::read_flat_vector(input_file,kindex);
     sdglib::read_flat_vectorvector(input_file,counts);
 
 }
@@ -228,5 +229,6 @@ void KmerCountsDatastore::write(std::ofstream &output_file) {
     output_file.write((char *) &k, sizeof(k));
     sdglib::write_string(output_file,name);
     sdglib::write_stringvector(output_file,count_names);
+    sdglib::write_flat_vector(output_file,kindex);
     sdglib::write_flat_vectorvector(output_file,counts);
 }
