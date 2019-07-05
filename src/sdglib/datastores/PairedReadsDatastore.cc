@@ -390,7 +390,10 @@ PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, PairedReadsDatastore &
     readpos_offset = o.readpos_offset;
     _size = o._size;
     fd = fopen(o.filename.c_str(), "r");
-
+    if (!fd) {
+        std::cerr << "Failed to open " << filename <<": " << strerror(errno);
+        throw std::runtime_error("Could not open " + filename);
+    }
     mapper.reads_in_node = o.mapper.reads_in_node;
     mapper.read_to_node = o.mapper.read_to_node;
     mapper.frdist = o.mapper.frdist;
