@@ -33,6 +33,7 @@ public:
     //Node selection methods
     void clear_node_selection();
     void report_node_selection();
+    void select_nodes_by_size(uint64_t min_size,uint64_t max_size=0);
     //void select_nodes_by_size_and_ci( uint64_t min_size, float min_ci, float max_ci);
     //std::set<std::pair<sgNodeID_t, sgNodeID_t >> get_HSPNPs(uint64_t min_size, float min_ci, float max_ci);
 

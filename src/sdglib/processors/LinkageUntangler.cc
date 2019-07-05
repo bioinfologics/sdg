@@ -177,6 +177,16 @@ void LinkageUntangler::report_node_selection() {
         sdglib::OutputLog()<< "Current selection: "<<selected_count<<" / "<<total_count<<" nodes  with  "<<selected_bp<<" / "<<total_bp<<" bp"<<std::endl;
 
 }
+void LinkageUntangler::select_nodes_by_size( uint64_t min_size, uint64_t max_size) {
+    {
+        for (auto n=1;n<ws.sdg.nodes.size();++n) {
+            if (ws.sdg.nodes[n].status==NodeStatus::Deleted) continue;
+            if (ws.sdg.nodes[n].sequence.size() >= min_size and
+                (max_size==0 or ws.sdg.nodes[n].sequence.size() <= max_size))
+                selected_nodes[n]=true;
+        }
+    }
+}
 
 //void LinkageUntangler::select_nodes_by_size_and_ci( uint64_t min_size, float min_ci, float max_ci) {
 //    std::vector<sgNodeID_t> nodes;
