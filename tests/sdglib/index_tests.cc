@@ -5,6 +5,7 @@
 #include <catch.hpp>
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
 #include <sdglib/indexers/NKmerIndex.hpp>
+#include <sdglib/workspace/WorkSpace.hpp>
 
 TEST_CASE("UniqueKmerIndex create and lookup") {
     unsigned int K(15);
@@ -12,7 +13,8 @@ TEST_CASE("UniqueKmerIndex create and lookup") {
     StreamKmerIDXFactory skf(K);
     std::string seqMissing = "AAAAAAAAAAAAAAA";
     std::string seqPresent = "CTTGCGGGTTTCCAG";
-    SequenceDistanceGraph sg;
+    WorkSpace ws;
+    SequenceDistanceGraph sg(ws);
     sg.load_from_gfa("../tests/datasets/tgraph.gfa");
     UniqueKmerIndex ukm(sg, K);
     ukm.generate_index(sg, true);
@@ -32,7 +34,8 @@ TEST_CASE("UniqueKmerIndex63 create and lookup") {
     StreamKmerIDXFactory128 skf(63);
     std::string seqMissing = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
     std::string seqPresent = "CTTGCGGGTTTCCAGGAACTGGCTGTCCTCGGCGTTCAGCGCCATCGACTTCCAGTCCAGCCC";
-    SequenceDistanceGraph sg;
+    WorkSpace ws;
+    SequenceDistanceGraph sg(ws);
     sg.load_from_gfa("../tests/datasets/tgraph.gfa");
     Unique63merIndex ukm(sg);
     ukm.generate_index(sg, true);
@@ -55,7 +58,8 @@ TEST_CASE("NKmerIndex create and lookup") {
     StreamKmerFactory skf(k);
     std::string seqMissing = "AAAAAAAAAAAAAAA";
     std::string seqPresent = "CTTGCGGGTTTCCAG";
-    SequenceDistanceGraph sg;
+    WorkSpace ws;
+    SequenceDistanceGraph sg(ws);
     sg.load_from_gfa("../tests/datasets/tgraph.gfa");
     assembly_kmers.generate_index(sg);
 

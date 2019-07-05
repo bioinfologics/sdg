@@ -18,6 +18,7 @@
 
 class SequenceGraphPath;
 class SequenceSubGraph;
+class WorkSpace;
 /**
  * @brief Class representing sequence graphs
  *
@@ -58,7 +59,7 @@ public:
     using DistanceGraph::get_all_nodeviews;
     using DistanceGraph::name;
 
-    SequenceDistanceGraph():DistanceGraph(*this) { //sdg gets initialised through LDG
+    SequenceDistanceGraph(WorkSpace & _ws):DistanceGraph(*this),ws(_ws) { //sdg gets initialised through LDG
         add_node(Node("",NodeStatus::Deleted)); //an empty deleted node on 0, just to skip the space
     };
 
@@ -187,6 +188,8 @@ public:
     std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids; /// Mapping structure from input names -> IDs
     UniqueKmerIndex unique_kmer_index;
     Unique63merIndex unique_63mer_index;
+
+    WorkSpace &ws;
 
     void create_index(bool verbose = true);
 

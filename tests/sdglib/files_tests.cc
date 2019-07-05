@@ -195,7 +195,8 @@ TEST_CASE("Fasta file reader") {
 
 TEST_CASE("Load GFA") {
     sdglib::OutputLogLevel = sdglib::DEBUG;
-    SequenceDistanceGraph sg;
+    WorkSpace ws;
+    SequenceDistanceGraph sg(ws);
     sg.load_from_gfa("../tests/datasets/tgraph.gfa");
     REQUIRE(sg.nodes.size() > 1);
 }

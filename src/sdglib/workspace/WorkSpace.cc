@@ -383,11 +383,11 @@ DistanceGraph &WorkSpace::get_distance_graph(const std::string &name) {
     throw std::runtime_error("There are no DistanceGraphs named: " + name);
 }
 
-WorkSpace::WorkSpace(const std::string &filename) : kci(sdg) {
+WorkSpace::WorkSpace(const std::string &filename) : sdg(*this),kci(sdg) {
     load_from_disk(filename);
 }
 
-WorkSpace::WorkSpace() : kci(sdg) {}
+WorkSpace::WorkSpace() : sdg(*this),kci(sdg) {}
 
 KmerCountsDatastore &WorkSpace::add_counts_datastore(const std::string &name, const uint8_t k) {
     kmer_counts_datastore.emplace_back(*this, name, k);

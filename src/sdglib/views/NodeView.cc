@@ -4,6 +4,7 @@
 
 #include "NodeView.hpp"
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
+#include <sdglib/workspace/WorkSpace.hpp>
 
 DistanceGraph NodeView::graph() const {
     return *dg;
@@ -35,6 +36,14 @@ const std::vector<NodeDistanceView> NodeView::prev() const {
         r.emplace_back(dg->get_nodeview(-l.dest),l.dist,l.support);
     }
     return r;
+}
+
+std::vector<uint16_t> NodeView::kmer_coverage(std::string kcovds_name, std::string kcovds_count_name) const {
+    return dg->sdg.ws.get_counts_datastore(kcovds_name).project_count(kcovds_count_name,sequence());
+}
+
+std::vector<uint16_t> NodeView::kmer_coverage(int kcovds_idx, int kcovds_count_idx) const {
+    return dg->sdg.ws.kmer_counts_datastore[kcovds_count_idx].project_count(kcovds_count_idx,sequence());
 }
 
 std::ostream &operator<<(std::ostream &os, const NodeView &nv) {
