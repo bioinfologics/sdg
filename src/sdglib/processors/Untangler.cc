@@ -157,124 +157,124 @@ uint64_t Untangler::solve_canonical_repeats_by_tags(std::unordered_set<uint64_t>
     return paths_solved.size();
 }
 
-uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags) {
-    uint64_t aa_count=0,ab_count=0,unsolved_count=0;
+//uint64_t Untangler::expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags) {
+//    uint64_t aa_count=0,ab_count=0,unsolved_count=0;
+//
+//    std::cout << " Finding trivial repeats to analyse with tags" << std::endl;
+//    for (auto n = 1; n < ws.sdg.nodes.size(); ++n) {
+//        auto fwl = ws.sdg.get_fw_links(n);
+//        auto bwl = ws.sdg.get_bw_links(n);
+//        if (fwl.size() != 2 or bwl.size() != 2) continue;
+//        auto f0 = fwl[0].dest;
+//        auto f1 = fwl[1].dest;
+//        auto b0 = bwl[0].dest;
+//        auto b1 = bwl[1].dest;
+//        if (ws.sdg.get_bw_links(f0).size()!=1
+//            or ws.sdg.get_bw_links(f1).size()!=1
+//               or ws.sdg.get_fw_links(b0).size()!=1
+//                  or ws.sdg.get_fw_links(b1).size()!=1)
+//            continue;
+//        sgNodeID_t all[4] = {f0, f1, b0, b1};
+//        bool ok = true;
+//        for (auto x:all) if (x == n or x == -n or ws.sdg.nodes[(x > 0 ? x : -x)].sequence.size() < 199) ok = false;
+//        for (auto j = 0; j < 3; ++j)
+//            for (auto i = j + 1; i < 4; ++i)
+//                if (all[i] == all[j] or all[i] == -all[j])ok = false; //looping node
+//        if (!ok) continue;
+//
+//        auto f0t=ws.linked_read_datastores[0].mapper.get_node_tags(f0); if (f0t.size()<min_tags) continue;
+//        auto f1t=ws.linked_read_datastores[0].mapper.get_node_tags(f1); if (f1t.size()<min_tags) continue;
+//        auto b0t=ws.linked_read_datastores[0].mapper.get_node_tags(b0); if (b0t.size()<min_tags) continue;
+//        auto b1t=ws.linked_read_datastores[0].mapper.get_node_tags(b1); if (b1t.size()<min_tags) continue;
+//
+//        auto cif0=ws.kci.compute_compression_for_node(f0,1);
+//        if (cif0<min_ci or cif0>max_ci) continue;
+//        auto cif1=ws.kci.compute_compression_for_node(f1,1);
+//        if (cif1<min_ci or cif1>max_ci) continue;
+//        auto cib0=ws.kci.compute_compression_for_node(b0,1);
+//        if (cib0<min_ci or cib0>max_ci) continue;
+//        auto cib1=ws.kci.compute_compression_for_node(b1,1);
+//        if (cib1<min_ci or cib1>max_ci) continue;
+//
+//        uint64_t aa=intersection_size(b0t,f0t);
+//        uint64_t bb=intersection_size(b1t,f1t);
+//        uint64_t ab=intersection_size(b0t,f1t);
+//        uint64_t ba=intersection_size(b1t,f0t);
+//
+//        if (aa > min_tags and bb > min_tags and std::min(aa, bb) > 10 * std::max(ab, ba)) {
+//            ++aa_count;
+//            ws.sdg.expand_node(n,{{b0},{b1}},{{f0},{f1}});
+//        } else if (ba > min_tags and ab > min_tags and std::min(ba, ab) > 10 * std::max(aa, bb)) {
+//            ++ab_count;
+//            ws.sdg.expand_node(n,{{b0},{b1}},{{f1},{f0}});
+//        }
+//        else {
+//            ++unsolved_count;
+//        }
+//    }
+//    std::cout<<"Repeat expansion summary AA:"<<aa_count<<" AB:"<<ab_count <<" Unsolved:"<<unsolved_count<<std::endl;
+//    return aa_count+ab_count;
+//}
 
-    std::cout << " Finding trivial repeats to analyse with tags" << std::endl;
-    for (auto n = 1; n < ws.sdg.nodes.size(); ++n) {
-        auto fwl = ws.sdg.get_fw_links(n);
-        auto bwl = ws.sdg.get_bw_links(n);
-        if (fwl.size() != 2 or bwl.size() != 2) continue;
-        auto f0 = fwl[0].dest;
-        auto f1 = fwl[1].dest;
-        auto b0 = bwl[0].dest;
-        auto b1 = bwl[1].dest;
-        if (ws.sdg.get_bw_links(f0).size()!=1
-            or ws.sdg.get_bw_links(f1).size()!=1
-               or ws.sdg.get_fw_links(b0).size()!=1
-                  or ws.sdg.get_fw_links(b1).size()!=1)
-            continue;
-        sgNodeID_t all[4] = {f0, f1, b0, b1};
-        bool ok = true;
-        for (auto x:all) if (x == n or x == -n or ws.sdg.nodes[(x > 0 ? x : -x)].sequence.size() < 199) ok = false;
-        for (auto j = 0; j < 3; ++j)
-            for (auto i = j + 1; i < 4; ++i)
-                if (all[i] == all[j] or all[i] == -all[j])ok = false; //looping node
-        if (!ok) continue;
-
-        auto f0t=ws.linked_read_datastores[0].mapper.get_node_tags(f0); if (f0t.size()<min_tags) continue;
-        auto f1t=ws.linked_read_datastores[0].mapper.get_node_tags(f1); if (f1t.size()<min_tags) continue;
-        auto b0t=ws.linked_read_datastores[0].mapper.get_node_tags(b0); if (b0t.size()<min_tags) continue;
-        auto b1t=ws.linked_read_datastores[0].mapper.get_node_tags(b1); if (b1t.size()<min_tags) continue;
-
-        auto cif0=ws.kci.compute_compression_for_node(f0,1);
-        if (cif0<min_ci or cif0>max_ci) continue;
-        auto cif1=ws.kci.compute_compression_for_node(f1,1);
-        if (cif1<min_ci or cif1>max_ci) continue;
-        auto cib0=ws.kci.compute_compression_for_node(b0,1);
-        if (cib0<min_ci or cib0>max_ci) continue;
-        auto cib1=ws.kci.compute_compression_for_node(b1,1);
-        if (cib1<min_ci or cib1>max_ci) continue;
-
-        uint64_t aa=intersection_size(b0t,f0t);
-        uint64_t bb=intersection_size(b1t,f1t);
-        uint64_t ab=intersection_size(b0t,f1t);
-        uint64_t ba=intersection_size(b1t,f0t);
-
-        if (aa > min_tags and bb > min_tags and std::min(aa, bb) > 10 * std::max(ab, ba)) {
-            ++aa_count;
-            ws.sdg.expand_node(n,{{b0},{b1}},{{f0},{f1}});
-        } else if (ba > min_tags and ab > min_tags and std::min(ba, ab) > 10 * std::max(aa, bb)) {
-            ++ab_count;
-            ws.sdg.expand_node(n,{{b0},{b1}},{{f1},{f0}});
-        }
-        else {
-            ++unsolved_count;
-        }
-    }
-    std::cout<<"Repeat expansion summary AA:"<<aa_count<<" AB:"<<ab_count <<" Unsolved:"<<unsolved_count<<std::endl;
-    return aa_count+ab_count;
-}
-
-std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
-    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> hps;
-    std::vector<bool> used(ws.sdg.nodes.size(),false);
-    //TODO: check the coverages are actually correct?
-    const double min_c1=0.5,max_c1=1.5,min_c2=1.25,max_c2=3;
-    /*
-     * the loop always keep the first and the last elements as c=2 collapsed nodes.
-     * it starts with a c=2 node, and goes thorugh all bubbles fw, then reverts the subgraph and repeats
-     */
-
-#pragma omp parallel for schedule(static, 10)
-    for (auto n=1;n<ws.sdg.nodes.size();++n){
-        std::pair<sgNodeID_t,sgNodeID_t> hap={0,0};
-        if (ws.sdg.nodes[n].status==NodeStatus::Deleted) continue;
-        //auto frontkci=ws.kci.compute_compression_for_node(n);
-        //if (frontkci>max_c2 or frontkci<min_c2) continue;
-        auto m=n;
-        //two passes: 0->fw, 1->bw,
-        for (auto pass=0; pass<2; ++pass,m=-m) {
-
-            //check bubble going forward ------------
-            auto fw_l = ws.sdg.get_fw_links(m);
-            //fork opening
-            if (fw_l.size() != 2) continue;
-            hap.first = fw_l[0].dest;
-            hap.second = fw_l[1].dest;
-            bool used_hspnp;
-            #pragma omp critical(find_hspnp_used)
-            {
-                used_hspnp = (used[(hap.first > 0 ? hap.first : -hap.first)] or
-                              used[(hap.second > 0 ? hap.second : -hap.second)]);
-                if (!used_hspnp){
-                    used[(hap.first>0?hap.first:-hap.first)]=true;
-                    used[(hap.second>0?hap.second:-hap.second)]=true;
-                }
-            }
-            if (used_hspnp) continue;
-            if (hap.first == n or hap.first == -n or hap.second == n or hap.second == -n or hap.first == hap.second) continue;
-            //fork.closing
-            auto hap0f = ws.sdg.get_fw_links(hap.first);
-            auto hap1f = ws.sdg.get_fw_links(hap.second);
-            if (hap0f.size() != 1 or hap1f.size() != 1 or hap0f[0].dest != hap1f[0].dest) continue;
-            auto h0kc = ws.kci.compute_compression_for_node(hap.first);
-            if (h0kc > max_c1 or h0kc < min_c1) continue;
-            auto h1kc = ws.kci.compute_compression_for_node(hap.second);
-            if (h1kc > max_c1 or h1kc < min_c1) continue;
-            //auto ekc = ws.kci.compute_compression_for_node(hap0f[0].dest);
-            //if (ekc > max_c2 or ekc < min_c2) continue;
-
-#pragma omp critical(hps)
-            {
-                hps.push_back(hap);
-                if (hps.size()%1000==0) sdglib::OutputLog()<<hps.size()<<" haplotype pairs found"<<std::endl;
-            }
-        }
-    }
-    sdglib::OutputLog()<<hps.size()<<" haplotype pairs found (DONE)"<<std::endl;
-    return hps;
-}
+//std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::get_all_HSPNPs() {
+//    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> hps;
+//    std::vector<bool> used(ws.sdg.nodes.size(),false);
+//    //TODO: check the coverages are actually correct?
+//    const double min_c1=0.5,max_c1=1.5,min_c2=1.25,max_c2=3;
+//    /*
+//     * the loop always keep the first and the last elements as c=2 collapsed nodes.
+//     * it starts with a c=2 node, and goes thorugh all bubbles fw, then reverts the subgraph and repeats
+//     */
+//
+//#pragma omp parallel for schedule(static, 10)
+//    for (auto n=1;n<ws.sdg.nodes.size();++n){
+//        std::pair<sgNodeID_t,sgNodeID_t> hap={0,0};
+//        if (ws.sdg.nodes[n].status==NodeStatus::Deleted) continue;
+//        //auto frontkci=ws.kci.compute_compression_for_node(n);
+//        //if (frontkci>max_c2 or frontkci<min_c2) continue;
+//        auto m=n;
+//        //two passes: 0->fw, 1->bw,
+//        for (auto pass=0; pass<2; ++pass,m=-m) {
+//
+//            //check bubble going forward ------------
+//            auto fw_l = ws.sdg.get_fw_links(m);
+//            //fork opening
+//            if (fw_l.size() != 2) continue;
+//            hap.first = fw_l[0].dest;
+//            hap.second = fw_l[1].dest;
+//            bool used_hspnp;
+//            #pragma omp critical(find_hspnp_used)
+//            {
+//                used_hspnp = (used[(hap.first > 0 ? hap.first : -hap.first)] or
+//                              used[(hap.second > 0 ? hap.second : -hap.second)]);
+//                if (!used_hspnp){
+//                    used[(hap.first>0?hap.first:-hap.first)]=true;
+//                    used[(hap.second>0?hap.second:-hap.second)]=true;
+//                }
+//            }
+//            if (used_hspnp) continue;
+//            if (hap.first == n or hap.first == -n or hap.second == n or hap.second == -n or hap.first == hap.second) continue;
+//            //fork.closing
+//            auto hap0f = ws.sdg.get_fw_links(hap.first);
+//            auto hap1f = ws.sdg.get_fw_links(hap.second);
+//            if (hap0f.size() != 1 or hap1f.size() != 1 or hap0f[0].dest != hap1f[0].dest) continue;
+//            auto h0kc = ws.kci.compute_compression_for_node(hap.first);
+//            if (h0kc > max_c1 or h0kc < min_c1) continue;
+//            auto h1kc = ws.kci.compute_compression_for_node(hap.second);
+//            if (h1kc > max_c1 or h1kc < min_c1) continue;
+//            //auto ekc = ws.kci.compute_compression_for_node(hap0f[0].dest);
+//            //if (ekc > max_c2 or ekc < min_c2) continue;
+//
+//#pragma omp critical(hps)
+//            {
+//                hps.push_back(hap);
+//                if (hps.size()%1000==0) sdglib::OutputLog()<<hps.size()<<" haplotype pairs found"<<std::endl;
+//            }
+//        }
+//    }
+//    sdglib::OutputLog()<<hps.size()<<" haplotype pairs found (DONE)"<<std::endl;
+//    return hps;
+//}
 
 
 /**
@@ -340,62 +340,62 @@ std::vector<sgNodeID_t> Untangler::shared_nodes(std::vector<std::vector<Sequence
     return r;
 }
 
-void Untangler::analise_paths_through_nodes() {
-    std::cout<<"computing KCI for all nodes"<<std::endl;
-    ws.kci.compute_all_nodes_kci(1);
-    std::ofstream kciof("kci_dump.csv");
-    for (auto i=1;i<ws.sdg.nodes.size();++i) kciof<<"seq"<<i<<", "<<ws.kci.nodes_depth[i]<<std::endl;
-    std::cout<<"DONE!"<<std::endl;
-    //CRAP regions
-    std::vector<bool> used(ws.sdg.nodes.size(),false),aborted(ws.sdg.nodes.size(),false);
-    std::vector<SequenceSubGraph> craps;
-    for (sgNodeID_t n=1;n<ws.sdg.nodes.size();++n) {
-        if (used[n]) continue;
-        if (ws.kci.nodes_depth[n]<1.5 and ws.sdg.nodes[n].sequence.size()>500) continue;
-        SequenceSubGraph crap(ws.sdg);
-        std::vector<sgNodeID_t> to_explore={n};
-        std::cout<<"Exploring node "<<n<<std::endl;
-        while (!to_explore.empty()){
-            std::vector<sgNodeID_t> new_to_explore;
-            //std::cout<<" Exploring "<<to_explore.size()<< " neighbors"<<std::endl;
-            for (auto ne:to_explore){
-                //std::cout<<"  Exploring node #"<<ne<<std::endl;
-                for (auto neigh:ws.sdg.links[ne]){
-                    auto x=llabs(neigh.dest);
-                    //std::cout<<"  Exploring neighbour #"<<x<<std::endl;
-                    if (std::find(crap.nodes.begin(),crap.nodes.end(),x)==crap.nodes.end()) {
-                        //std::cout<<"  ADDING to crap!"<<x<<std::endl;
-                        crap.nodes.emplace_back(x);
-                        if (not (ws.kci.nodes_depth[x]<1.5 and ws.sdg.nodes[x].sequence.size()>500)) {
-                            //std::cout<<"  ADDING to explore list (size="<<ws.sdg.nodes[x].sequence.size()<<")"<<std::endl;
-                            new_to_explore.emplace_back(x);
-                        }
-                    }
-                }
-            }
-            //std::cout<<new_to_explore.size()<< " new neighbors to explore on the next round"<<std::endl;
-            to_explore=new_to_explore;
-            if (crap.nodes.size()>5000) break;
-        }
-        if (crap.nodes.size()>10) {
-            for (auto &x:crap.nodes) used[x]=true;
-            if (crap.nodes.size()<=5000) {
-                craps.emplace_back(crap);
-                std::cout << std::endl << "==== NEW CRAP ====" << std::endl;
-                for (auto x:crap.nodes) std::cout << "seq" << x << ", ";
-                std::cout << std::endl;
-            }
-            if (crap.nodes.size()>5000) {
-                for (auto x:crap.nodes) aborted[x]=true;
-            }
-        }
-    }
-    uint64_t abt=0;
-    for (auto a:aborted) if (a) ++abt;
-    std::cout<<"There were "<<abt<<" nodes in aborted crap components"<<std::endl;
-
-
-}
+//void Untangler::analise_paths_through_nodes() {
+//    std::cout<<"computing KCI for all nodes"<<std::endl;
+//    ws.kci.compute_all_nodes_kci(1);
+//    std::ofstream kciof("kci_dump.csv");
+//    for (auto i=1;i<ws.sdg.nodes.size();++i) kciof<<"seq"<<i<<", "<<ws.kci.nodes_depth[i]<<std::endl;
+//    std::cout<<"DONE!"<<std::endl;
+//    //CRAP regions
+//    std::vector<bool> used(ws.sdg.nodes.size(),false),aborted(ws.sdg.nodes.size(),false);
+//    std::vector<SequenceSubGraph> craps;
+//    for (sgNodeID_t n=1;n<ws.sdg.nodes.size();++n) {
+//        if (used[n]) continue;
+//        if (ws.kci.nodes_depth[n]<1.5 and ws.sdg.nodes[n].sequence.size()>500) continue;
+//        SequenceSubGraph crap(ws.sdg);
+//        std::vector<sgNodeID_t> to_explore={n};
+//        std::cout<<"Exploring node "<<n<<std::endl;
+//        while (!to_explore.empty()){
+//            std::vector<sgNodeID_t> new_to_explore;
+//            //std::cout<<" Exploring "<<to_explore.size()<< " neighbors"<<std::endl;
+//            for (auto ne:to_explore){
+//                //std::cout<<"  Exploring node #"<<ne<<std::endl;
+//                for (auto neigh:ws.sdg.links[ne]){
+//                    auto x=llabs(neigh.dest);
+//                    //std::cout<<"  Exploring neighbour #"<<x<<std::endl;
+//                    if (std::find(crap.nodes.begin(),crap.nodes.end(),x)==crap.nodes.end()) {
+//                        //std::cout<<"  ADDING to crap!"<<x<<std::endl;
+//                        crap.nodes.emplace_back(x);
+//                        if (not (ws.kci.nodes_depth[x]<1.5 and ws.sdg.nodes[x].sequence.size()>500)) {
+//                            //std::cout<<"  ADDING to explore list (size="<<ws.sdg.nodes[x].sequence.size()<<")"<<std::endl;
+//                            new_to_explore.emplace_back(x);
+//                        }
+//                    }
+//                }
+//            }
+//            //std::cout<<new_to_explore.size()<< " new neighbors to explore on the next round"<<std::endl;
+//            to_explore=new_to_explore;
+//            if (crap.nodes.size()>5000) break;
+//        }
+//        if (crap.nodes.size()>10) {
+//            for (auto &x:crap.nodes) used[x]=true;
+//            if (crap.nodes.size()<=5000) {
+//                craps.emplace_back(crap);
+//                std::cout << std::endl << "==== NEW CRAP ====" << std::endl;
+//                for (auto x:crap.nodes) std::cout << "seq" << x << ", ";
+//                std::cout << std::endl;
+//            }
+//            if (crap.nodes.size()>5000) {
+//                for (auto x:crap.nodes) aborted[x]=true;
+//            }
+//        }
+//    }
+//    uint64_t abt=0;
+//    for (auto a:aborted) if (a) ++abt;
+//    std::cout<<"There were "<<abt<<" nodes in aborted crap components"<<std::endl;
+//
+//
+//}
 
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::find_bubbles(uint32_t min_size,uint32_t max_size) {
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> r;
@@ -701,118 +701,118 @@ std::vector<std::pair<SequenceGraphPath,SequenceGraphPath>> Untangler::solve_bub
     return paths;
 }
 
-std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
-    //TODO: 3-part structure:
-    // 1) find, report validate kci, report
-    // 2) For each: solve
-    // 3) report
+//std::vector<std::pair<sgNodeID_t,sgNodeID_t>> Untangler::solve_bubbly_paths() {
+//    //TODO: 3-part structure:
+//    // 1) find, report validate kci, report
+//    // 2) For each: solve
+//    // 3) report
+//
+//    //find bubbly paths
+//    auto bps=ws.sdg.get_all_bubbly_subgraphs();
+//    sdglib::OutputLog()<<"--- INITIAL bubbly paths ---"<<std::endl;
+//    ws.sdg.print_bubbly_subgraph_stats(bps);
+//    //TODO: write a more sophisticated kci check
+//    std::vector<SequenceSubGraph> kobps;
+//    for (auto &bp:bps){
+//        int kci_ok=0,kci_fail=0;
+//        for (auto i=0;i<bp.nodes.size();i+=3) {
+//            auto dup_kci=ws.kci.compute_compression_for_node(bp.nodes[i],1);
+//            if (dup_kci<1.25 or dup_kci>2.5) ++kci_fail;
+//            else ++kci_ok;
+//        }
+//        if (kci_fail*3<kci_ok) {
+//            kobps.push_back(bp);
+//        }
+//    }
+//    sdglib::OutputLog()<<"--- KCI OK bubbly paths ---"<<std::endl;
+//    ws.sdg.print_bubbly_subgraph_stats(kobps);
+//
+//
+//
+//    //uint64_t solved=0, solved_nodes=0, solved_size=0, untagged=0,untagged_nodes=0, untagged_size=0 ,ambiguous=0,ambiguous_nodes=0, ambiguous_size=0;
+//    //std::vector<std::pair<std::vector<sgNodeID_t>,std::vector<sgNodeID_t>>> solved_haps;
+//    //int min_tags=20;
+//    /*{
+//        uint64_t solved = 0, unsolved = 0, untagged = 0;
+//        std::vector<SequenceSubGraph> solbubs;
+//        for (auto &bp:kobps) {
+//            bool no_tags;
+//            auto sol = solve_bubbly_path(bp, no_tags);
+//            if (no_tags) ++untagged;
+//            if (sol.first.nodes.size() == 0) ++unsolved;
+//            else {
+//                ++solved;
+//                solbubs.push_back(bp);
+//            }
+//
+//        }
+//        sdglib::OutputLog() << "OLD solver: "<< solved << " bubbly paths solved, " << unsolved << " unsolved, with " << untagged << " lacking tags" << std::endl;
+//        ws.sdg.print_bubbly_subgraph_stats(solbubs);
+//        //done!
+//    }*/
+//    {
+//        uint64_t solved = 0, unsolved = 0;
+//        std::vector<SequenceSubGraph> solbubs;
+//        std::vector<SequenceGraphPath> paths;
+//        for (auto &bp:kobps) {
+//            auto sol = solve_bubbly_path_2(bp);
+//
+//            if (sol.size() == 0) ++unsolved;
+//            else {
+//                ++solved;
+//                solbubs.push_back(bp);
+//                for (auto pp:sol) {
+//                    paths.push_back(pp.first);
+//                    paths.push_back(pp.second);
+//                }
+//
+//            }
+//
+//        }
+//        sdglib::OutputLog() << "New solver: "<< solved << " bubbly paths solved, " << unsolved << " unsolved" << std::endl;
+//        ws.sdg.print_bubbly_subgraph_stats(solbubs);
+//        std::set<sgNodeID_t> used_nodes;
+//        for (auto p:paths) {
+//            ws.sdg.join_path(p,false);
+//            for (auto n:p.nodes) used_nodes.insert(n);
+//        }
+//        for (auto n:used_nodes) ws.sdg.remove_node(n);
+//        //done!
+//    }
+//    return {};
+//}
 
-    //find bubbly paths
-    auto bps=ws.sdg.get_all_bubbly_subgraphs();
-    sdglib::OutputLog()<<"--- INITIAL bubbly paths ---"<<std::endl;
-    ws.sdg.print_bubbly_subgraph_stats(bps);
-    //TODO: write a more sophisticated kci check
-    std::vector<SequenceSubGraph> kobps;
-    for (auto &bp:bps){
-        int kci_ok=0,kci_fail=0;
-        for (auto i=0;i<bp.nodes.size();i+=3) {
-            auto dup_kci=ws.kci.compute_compression_for_node(bp.nodes[i],1);
-            if (dup_kci<1.25 or dup_kci>2.5) ++kci_fail;
-            else ++kci_ok;
-        }
-        if (kci_fail*3<kci_ok) {
-            kobps.push_back(bp);
-        }
-    }
-    sdglib::OutputLog()<<"--- KCI OK bubbly paths ---"<<std::endl;
-    ws.sdg.print_bubbly_subgraph_stats(kobps);
-
-
-
-    //uint64_t solved=0, solved_nodes=0, solved_size=0, untagged=0,untagged_nodes=0, untagged_size=0 ,ambiguous=0,ambiguous_nodes=0, ambiguous_size=0;
-    //std::vector<std::pair<std::vector<sgNodeID_t>,std::vector<sgNodeID_t>>> solved_haps;
-    //int min_tags=20;
-    /*{
-        uint64_t solved = 0, unsolved = 0, untagged = 0;
-        std::vector<SequenceSubGraph> solbubs;
-        for (auto &bp:kobps) {
-            bool no_tags;
-            auto sol = solve_bubbly_path(bp, no_tags);
-            if (no_tags) ++untagged;
-            if (sol.first.nodes.size() == 0) ++unsolved;
-            else {
-                ++solved;
-                solbubs.push_back(bp);
-            }
-
-        }
-        sdglib::OutputLog() << "OLD solver: "<< solved << " bubbly paths solved, " << unsolved << " unsolved, with " << untagged << " lacking tags" << std::endl;
-        ws.sdg.print_bubbly_subgraph_stats(solbubs);
-        //done!
-    }*/
-    {
-        uint64_t solved = 0, unsolved = 0;
-        std::vector<SequenceSubGraph> solbubs;
-        std::vector<SequenceGraphPath> paths;
-        for (auto &bp:kobps) {
-            auto sol = solve_bubbly_path_2(bp);
-
-            if (sol.size() == 0) ++unsolved;
-            else {
-                ++solved;
-                solbubs.push_back(bp);
-                for (auto pp:sol) {
-                    paths.push_back(pp.first);
-                    paths.push_back(pp.second);
-                }
-
-            }
-
-        }
-        sdglib::OutputLog() << "New solver: "<< solved << " bubbly paths solved, " << unsolved << " unsolved" << std::endl;
-        ws.sdg.print_bubbly_subgraph_stats(solbubs);
-        std::set<sgNodeID_t> used_nodes;
-        for (auto p:paths) {
-            ws.sdg.join_path(p,false);
-            for (auto n:p.nodes) used_nodes.insert(n);
-        }
-        for (auto n:used_nodes) ws.sdg.remove_node(n);
-        //done!
-    }
-    return {};
-}
-
-void Untangler::pop_errors_by_ci_and_paths(uint32_t min_size, uint32_t max_size) {
-    sdglib::OutputLog()<<"Popping errors..."<<std::endl;
-    auto bubbles=find_bubbles(min_size, max_size);
-    sdglib::OutputLog()<<"Analysing "<<bubbles.size()<<" small bubbles for coverage"<<std::endl;
-    std::vector<sgNodeID_t> to_delete;
-    //std::ofstream bubblesf("bubbles_detail.csv");
-    //bubblesf<<"prev,b1,b2,next,ci_prev,ci1,ci2,ci_next"<<std::endl;
-    for (auto bp:bubbles){
-        auto ci1=ws.kci.compute_compression_for_node(bp.first,1);
-        auto ci2=ws.kci.compute_compression_for_node(bp.second,1);
-        auto prev=ws.sdg.get_bw_links(bp.first)[0].dest;
-        auto next=ws.sdg.get_fw_links(bp.first)[0].dest;
-        auto cip=ws.kci.compute_compression_for_node(prev);
-        auto cin=ws.kci.compute_compression_for_node(next);
-        //bubblesf<<prev<<", "<<bp.first<<", "<<bp.second<<", "<<next<<", "<<cip<<", "<<ci1<<", "<<ci2<<", "<<cin<<std::endl;
-        if (cip<1.3 and cin<1.3) {
-            if (ci1 > .8 and ci2 < .3) {
-                //std::cout << "node " << bp.second << " has only " << ci2 << " coverage and " << bp.first << " has "
-                //          << ci1 << std::endl;
-                to_delete.push_back(llabs(bp.second));
-            }
-            if (ci2 > .8 and ci1 < .3) {
-                //std::cout << "node " << bp.first << " has only " << ci1 << " coverage and " << bp.second << " has "
-                //          << ci2 << std::endl;
-                to_delete.push_back(llabs(bp.first));
-            }
-        }
-    }
-    //std::cout<<"Deleting "<<to_delete.size()<<" nodes as errors"<<std::endl;
-    for (auto &pb:to_delete) ws.sdg.remove_node(pb);
-}
+//void Untangler::pop_errors_by_ci_and_paths(uint32_t min_size, uint32_t max_size) {
+//    sdglib::OutputLog()<<"Popping errors..."<<std::endl;
+//    auto bubbles=find_bubbles(min_size, max_size);
+//    sdglib::OutputLog()<<"Analysing "<<bubbles.size()<<" small bubbles for coverage"<<std::endl;
+//    std::vector<sgNodeID_t> to_delete;
+//    //std::ofstream bubblesf("bubbles_detail.csv");
+//    //bubblesf<<"prev,b1,b2,next,ci_prev,ci1,ci2,ci_next"<<std::endl;
+//    for (auto bp:bubbles){
+//        auto ci1=ws.kci.compute_compression_for_node(bp.first,1);
+//        auto ci2=ws.kci.compute_compression_for_node(bp.second,1);
+//        auto prev=ws.sdg.get_bw_links(bp.first)[0].dest;
+//        auto next=ws.sdg.get_fw_links(bp.first)[0].dest;
+//        auto cip=ws.kci.compute_compression_for_node(prev);
+//        auto cin=ws.kci.compute_compression_for_node(next);
+//        //bubblesf<<prev<<", "<<bp.first<<", "<<bp.second<<", "<<next<<", "<<cip<<", "<<ci1<<", "<<ci2<<", "<<cin<<std::endl;
+//        if (cip<1.3 and cin<1.3) {
+//            if (ci1 > .8 and ci2 < .3) {
+//                //std::cout << "node " << bp.second << " has only " << ci2 << " coverage and " << bp.first << " has "
+//                //          << ci1 << std::endl;
+//                to_delete.push_back(llabs(bp.second));
+//            }
+//            if (ci2 > .8 and ci1 < .3) {
+//                //std::cout << "node " << bp.first << " has only " << ci1 << " coverage and " << bp.second << " has "
+//                //          << ci2 << std::endl;
+//                to_delete.push_back(llabs(bp.first));
+//            }
+//        }
+//    }
+//    //std::cout<<"Deleting "<<to_delete.size()<<" nodes as errors"<<std::endl;
+//    for (auto &pb:to_delete) ws.sdg.remove_node(pb);
+//}
 
 
 
@@ -1155,47 +1155,47 @@ std::vector<Backbone> Untangler::create_backbones(uint64_t min_size, float min_c
 
 }
 
-void Untangler::unroll_simple_loops() {
-    std::vector<bool> used(ws.sdg.nodes.size(),false);
-    for (auto i=1;i<ws.sdg.nodes.size();++i){
-        if (ws.sdg.nodes[i].status==NodeStatus::Deleted) continue;
-        if (used[i]) continue;
-        auto fwl=ws.sdg.get_fw_links(i);
-        auto bwl=ws.sdg.get_bw_links(i);
-        for (auto f:fwl) {
-            for (auto b:bwl) {
-                if (f.dest == -b.dest) {
-                    used[i]=true;
-                    used[llabs(f.dest)]=true;
-                    //std::cout<< "simple loop detected between "
-                    //         <<i<< " ("<<ws.sdg.nodes[i].sequence.size()<<"bp, kci="<<ws.kci.compute_compression_for_node(i,1)<<") and "
-                    //         << f.dest <<" ("<<ws.sdg.nodes[llabs(f.dest)].sequence.size()<<"bp, kci="<<ws.kci.compute_compression_for_node(llabs(f.dest),1)<<")"<<std::endl;
-                    std::cout<<"seq"<<i<< ", "<<ws.sdg.nodes[i].sequence.size()<<", "<<ws.kci.compute_compression_for_node(i,1)<<", seq"
-                            << llabs(f.dest) <<", "<<ws.sdg.nodes[llabs(f.dest)].sequence.size()<<", "<<ws.kci.compute_compression_for_node(llabs(f.dest),1)<<std::endl;
-                }
-            }
-        }
-
-    }
-}
+//void Untangler::unroll_simple_loops() {
+//    std::vector<bool> used(ws.sdg.nodes.size(),false);
+//    for (auto i=1;i<ws.sdg.nodes.size();++i){
+//        if (ws.sdg.nodes[i].status==NodeStatus::Deleted) continue;
+//        if (used[i]) continue;
+//        auto fwl=ws.sdg.get_fw_links(i);
+//        auto bwl=ws.sdg.get_bw_links(i);
+//        for (auto f:fwl) {
+//            for (auto b:bwl) {
+//                if (f.dest == -b.dest) {
+//                    used[i]=true;
+//                    used[llabs(f.dest)]=true;
+//                    //std::cout<< "simple loop detected between "
+//                    //         <<i<< " ("<<ws.sdg.nodes[i].sequence.size()<<"bp, kci="<<ws.kci.compute_compression_for_node(i,1)<<") and "
+//                    //         << f.dest <<" ("<<ws.sdg.nodes[llabs(f.dest)].sequence.size()<<"bp, kci="<<ws.kci.compute_compression_for_node(llabs(f.dest),1)<<")"<<std::endl;
+//                    std::cout<<"seq"<<i<< ", "<<ws.sdg.nodes[i].sequence.size()<<", "<<ws.kci.compute_compression_for_node(i,1)<<", seq"
+//                            << llabs(f.dest) <<", "<<ws.sdg.nodes[llabs(f.dest)].sequence.size()<<", "<<ws.kci.compute_compression_for_node(llabs(f.dest),1)<<std::endl;
+//                }
+//            }
+//        }
+//
+//    }
+//}
 
 void PairedReadLinker::generate_links_size_ci( uint32_t min_size, float min_ci, float max_ci,int min_reads) {
     std::vector<bool> to_link(ws.sdg.nodes.size());
     for (auto &n:ws.select_from_all_nodes(min_size,1000000000,0,1000000000,min_ci,max_ci)) to_link[n]=true;
     generate_links(to_link,min_reads);
 }
-void PairedReadLinker::generate_links_hspnp(int min_reads) {
-    std::vector<bool> to_link(ws.sdg.nodes.size());
-    uint64_t count=0,bp=0;
-    for (auto &n:u.get_all_HSPNPs()) {
-        to_link[llabs(n.first)]=true;
-        to_link[llabs(n.second)]=true;
-        ++count;
-        bp+=ws.sdg.nodes[llabs(n.first)].sequence.size()+ws.sdg.nodes[llabs(n.second)].sequence.size();
-    }
-    sdglib::OutputLog()<<count<<" nodes in HSPNP selected for linkage totalling "<<bp<<std::endl;
-    generate_links(to_link,min_reads);
-}
+//void PairedReadLinker::generate_links_hspnp(int min_reads) {
+//    std::vector<bool> to_link(ws.sdg.nodes.size());
+//    uint64_t count=0,bp=0;
+//    for (auto &n:u.get_all_HSPNPs()) {
+//        to_link[llabs(n.first)]=true;
+//        to_link[llabs(n.second)]=true;
+//        ++count;
+//        bp+=ws.sdg.nodes[llabs(n.first)].sequence.size()+ws.sdg.nodes[llabs(n.second)].sequence.size();
+//    }
+//    sdglib::OutputLog()<<count<<" nodes in HSPNP selected for linkage totalling "<<bp<<std::endl;
+//    generate_links(to_link,min_reads);
+//}
 void PairedReadLinker::generate_links( const std::vector<bool> &to_link,int min_reads) {
 
     sdglib::OutputLog()<<"filling orientation indexes"<<std::endl;

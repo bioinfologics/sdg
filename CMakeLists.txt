@@ -229,13 +229,13 @@ add_executable(sdg-datastore
         src/sdg-datastore.cc
         )
 
-add_executable(sdg-kmerspectra
-               src/sdg-kmerspectra.cc
-        )
+#add_executable(sdg-kmerspectra
+#               src/sdg-kmerspectra.cc
+#        )
 
-add_executable(sdg-workspace
-        src/sdg-workspace.cc
-        )
+#add_executable(sdg-workspace
+#        src/sdg-workspace.cc
+#        )
 
 add_executable(sdg-mapper
         src/sdg-mapper.cc
@@ -251,9 +251,9 @@ add_executable(sdg-dbg
 add_executable(build_all_backbones
         src/build_all_backbones.cc)
 
-target_link_libraries(sdg-workspace sdg_static)
+#target_link_libraries(sdg-workspace sdg_static)
 target_link_libraries(sdg-datastore sdg_static)
-target_link_libraries(sdg-kmerspectra sdg_static)
+#target_link_libraries(sdg-kmerspectra sdg_static)
 target_link_libraries(sdg-mapper sdg_static ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(sdg-lrmapper sdg_static ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(sdg-dbg sdg_static)
@@ -400,9 +400,9 @@ IF(BUILD_R_INTERFACE)
 ENDIF()
 
 install(TARGETS
-        sdg-workspace
+#        sdg-workspace
         sdg-datastore
-        sdg-kmerspectra
+#        sdg-kmerspectra
         sdg-mapper
         sdg
         sdg_static

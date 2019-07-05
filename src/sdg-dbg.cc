@@ -101,9 +101,7 @@ int main(int argc, char * argv[]) {
         gm2.tip_clipping(tip_size);
         sdglib::OutputLog() << "Tip clipping DONE! " << ws.sdg.count_active_nodes() << " nodes in graph" << std::endl;
     }
-    ws.kci.index_graph();
-    ws.kci.start_new_count();
-    ws.kci.add_counts_from_datastore(ws.paired_read_datastores.back());
+    ws.add_counts_datastore("main",31).add_count("PE",ws.paired_read_datastores[0]);
     ws.sdg.write_to_gfa1(output_prefix + "_DBG.gfa");
     ws.dump_to_disk(output_prefix + ".bsgws");
 }

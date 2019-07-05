@@ -33,8 +33,8 @@ public:
     //Node selection methods
     void clear_node_selection();
     void report_node_selection();
-    void select_nodes_by_size_and_ci( uint64_t min_size, float min_ci, float max_ci);
-    std::set<std::pair<sgNodeID_t, sgNodeID_t >> get_HSPNPs(uint64_t min_size, float min_ci, float max_ci);
+    //void select_nodes_by_size_and_ci( uint64_t min_size, float min_ci, float max_ci);
+    //std::set<std::pair<sgNodeID_t, sgNodeID_t >> get_HSPNPs(uint64_t min_size, float min_ci, float max_ci);
 
     /**
     * Anchors are chosen by having all their strongly connected neighbours (i.e. those with min_links connections)
@@ -68,7 +68,7 @@ public:
     //==== DEPRECATED methods, do NOT use in new projects =====
 
 
-    void select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, float max_ci);
+    //void select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, float max_ci);
 
 
 
@@ -82,7 +82,7 @@ public:
     DistanceGraph make_and_simplify_linkage(int min_shared_tags);
 
     //Linkage improving/filtering methods
-    DistanceGraph filter_linkage_to_hspnp_duos( uint64_t min_size, float min_ci, float max_ci, const DistanceGraph & ldg);
+    //DistanceGraph filter_linkage_to_hspnp_duos( uint64_t min_size, float min_ci, float max_ci, const DistanceGraph & ldg);
 
 
     //Graph untangling/modification/local assembly methods

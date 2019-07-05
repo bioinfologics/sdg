@@ -42,7 +42,7 @@ public:
         }
     };
     void generate_links_size_ci( uint32_t min_size=1000, float min_ci=.75, float max_ci=1.25,int min_reads=5) ;
-    void generate_links_hspnp( int min_reads=5) ;
+    //void generate_links_hspnp( int min_reads=5) ;
     void generate_links( const std::vector<bool> &to_link,int min_reads=5);
     void add_link( sgNodeID_t source, sgNodeID_t dest, int32_t d);
     void remove_link(sgNodeID_t source, sgNodeID_t dest);
@@ -50,7 +50,7 @@ public:
     inline std::vector<Link> get_bw_links( sgNodeID_t n){ return get_fw_links (-n); };
     std::set<sgNodeID_t> fw_reached_nodes(sgNodeID_t n, int radius);
     void remove_transitive_links(int radius);
-    void print_perfect_chains();
+    //void print_perfect_chains();
     std::vector<std::vector<sgNodeID_t>> find_local_problems(uint64_t long_node_size);
     std::vector<std::vector<sgNodeID_t>> solve_local_problem(std::vector<sgNodeID_t> connected_nodes);
     WorkSpace &ws;
@@ -91,10 +91,10 @@ public:
     std::vector<Backbone> create_backbones(uint64_t min_size, float min_ci, float max_ci, float end_perc, int min_shared_tags);
 
     //graph simplification (direct operations, no backbones)
-    void unroll_simple_loops();
-    void pop_errors_by_ci_and_paths(uint32_t min_size, uint32_t max_size);
-    uint64_t expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags=10);
-    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> solve_bubbly_paths();
+    //void unroll_simple_loops();
+    //void pop_errors_by_ci_and_paths(uint32_t min_size, uint32_t max_size);
+    //uint64_t expand_canonical_repeats_by_tags(float min_ci, float max_ci, int min_tags=10);
+    //std::vector<std::pair<sgNodeID_t,sgNodeID_t>> solve_bubbly_paths();
     /**
      * @brief solves a single bubbly path, returns the paths for the 2 new nodes or empty paths if unsolved
      * @param bp Input bubbly path
@@ -106,10 +106,10 @@ public:
 
     uint64_t solve_canonical_repeats_by_tags(std::unordered_set<uint64_t> & reads_to_remap); //TODO: deprecate
 
-    void analise_paths_through_nodes(); //TODO: deprecate
+    //void analise_paths_through_nodes(); //TODO: deprecate
 
     //graph manipulation TODO: move to SequenceDistanceGraph
-    std::vector<std::pair<sgNodeID_t, sgNodeID_t>> get_all_HSPNPs();
+    //std::vector<std::pair<sgNodeID_t, sgNodeID_t>> get_all_HSPNPs();
     std::vector<std::pair<sgNodeID_t,sgNodeID_t>> find_bubbles(uint32_t min_size,uint32_t max_size);
     void dettach_path_as_new_node(sgNodeID_t from, sgNodeID_t to, SequenceGraphPath path);
     std::vector<SequenceGraphPath> make_parallel_paths(std::vector<SequenceGraphPath>);

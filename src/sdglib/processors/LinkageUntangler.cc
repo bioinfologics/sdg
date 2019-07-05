@@ -178,80 +178,80 @@ void LinkageUntangler::report_node_selection() {
 
 }
 
-void LinkageUntangler::select_nodes_by_size_and_ci( uint64_t min_size, float min_ci, float max_ci) {
-    std::vector<sgNodeID_t> nodes;
-    sdglib::OutputLog()<<"LU selecting nodes by size and ci: size >= " << min_size << " bp  |  " << min_ci << "<= CI <=" << max_ci <<std::endl;
-    uint64_t deleted=0,small=0,cifail=0,selected=0;
-#pragma omp parallel
-    {
-#pragma omp for schedule(static, 100) reduction(+:deleted,small,cifail,selected)
-        for (auto n=1;n<ws.sdg.nodes.size();++n) {
-            if (ws.sdg.nodes[n].status==NodeStatus::Deleted) { ++deleted; continue; }
-            if (ws.sdg.nodes[n].sequence.size() < min_size) { ++small; continue; }
-            auto ci = ws.kci.compute_compression_for_node(n, 1);
-            if (std::isnan(ci) or ci < min_ci or ci > max_ci) { ++cifail; continue;}
-            #pragma omp critical(collect_selected_nodes)
-            selected_nodes[n]=true;
-            ++selected;
-        }
-    }
-    sdglib::OutputLog()<<deleted<<" deleted, "<<small<<" small, "<<cifail<<" wrong CI and "<<selected<<" selected nodes."<<std::endl;
+//void LinkageUntangler::select_nodes_by_size_and_ci( uint64_t min_size, float min_ci, float max_ci) {
+//    std::vector<sgNodeID_t> nodes;
+//    sdglib::OutputLog()<<"LU selecting nodes by size and ci: size >= " << min_size << " bp  |  " << min_ci << "<= CI <=" << max_ci <<std::endl;
+//    uint64_t deleted=0,small=0,cifail=0,selected=0;
+//#pragma omp parallel
+//    {
+//#pragma omp for schedule(static, 100) reduction(+:deleted,small,cifail,selected)
+//        for (auto n=1;n<ws.sdg.nodes.size();++n) {
+//            if (ws.sdg.nodes[n].status==NodeStatus::Deleted) { ++deleted; continue; }
+//            if (ws.sdg.nodes[n].sequence.size() < min_size) { ++small; continue; }
+//            auto ci = ws.kci.compute_compression_for_node(n, 1);
+//            if (std::isnan(ci) or ci < min_ci or ci > max_ci) { ++cifail; continue;}
+//            #pragma omp critical(collect_selected_nodes)
+//            selected_nodes[n]=true;
+//            ++selected;
+//        }
+//    }
+//    sdglib::OutputLog()<<deleted<<" deleted, "<<small<<" small, "<<cifail<<" wrong CI and "<<selected<<" selected nodes."<<std::endl;
+//
+//}
 
-}
+//std::set<std::pair<sgNodeID_t, sgNodeID_t >> LinkageUntangler::get_HSPNPs(uint64_t min_size, float min_ci,
+//                                                                          float max_ci) {
+//    std::set<std::pair<sgNodeID_t, sgNodeID_t >> hspnps;
+//#pragma omp parallel for schedule(static, 100)
+//    for (sgNodeID_t n = 1; n < ws.sdg.nodes.size(); ++n) {
+//        if (ws.sdg.nodes[n].status == NodeStatus::Deleted) continue;
+//        if (ws.sdg.nodes[n].sequence.size() < min_size) continue;
+//        //FW check
+//        auto fwl = ws.sdg.get_fw_links(n);
+//        if (fwl.size() != 1) continue;
+//        auto post = fwl[0].dest;
+//        auto post_bwl = ws.sdg.get_bw_links(post);
+//        if (post_bwl.size() != 2) continue;
+//        if (llabs(post_bwl[0].dest)==llabs(post_bwl[1].dest))continue;
+//        //BW check
+//        auto bwl = ws.sdg.get_bw_links(n);
+//        if (bwl.size() != 1) continue;
+//        auto prev = bwl[0].dest;
+//        auto prev_fwl = ws.sdg.get_bw_links(prev);
+//        if (prev_fwl.size() != 2) continue;
+//
+//        if ((prev_fwl[0].dest == -post_bwl[0].dest and prev_fwl[1].dest == -post_bwl[1].dest)
+//            or (prev_fwl[1].dest == -post_bwl[0].dest and prev_fwl[0].dest == -post_bwl[1].dest)) {
+//            sgNodeID_t m;
+//            if (llabs(prev_fwl[0].dest) != n and llabs(prev_fwl[1].dest) != n) std::cout<<"Error! cant find N in prev!"<<std::endl;
+//            if (llabs(prev_fwl[0].dest) == n) m = llabs(prev_fwl[1].dest);
+//            else m = prev_fwl[0].dest;
+//            //Now evaluate coverage of the branches
+//            auto c1 = ws.kci.compute_compression_for_node(n, 1);
+//            if (std::isnan(c1) or c1<min_ci or c1>max_ci) continue;
+//            auto c2 = ws.kci.compute_compression_for_node(m, 1);
+//            if (std::isnan(c2) or c2<min_ci or c2>max_ci) continue;
+//#pragma omp critical(inserting_hspnps)
+//            {
+//                //hl<<(n<m ? n:m)<<" "<<(n<m ? m:n)<<std::endl;
+//                if (n < llabs(m)) hspnps.insert(std::make_pair(n, m));
+//                else hspnps.insert(std::make_pair(llabs(m), (m>0 ? n:-n)));
+//            }
+//        }
+//    }
+//    return hspnps;
+//}
 
-std::set<std::pair<sgNodeID_t, sgNodeID_t >> LinkageUntangler::get_HSPNPs(uint64_t min_size, float min_ci,
-                                                                          float max_ci) {
-    std::set<std::pair<sgNodeID_t, sgNodeID_t >> hspnps;
-#pragma omp parallel for schedule(static, 100)
-    for (sgNodeID_t n = 1; n < ws.sdg.nodes.size(); ++n) {
-        if (ws.sdg.nodes[n].status == NodeStatus::Deleted) continue;
-        if (ws.sdg.nodes[n].sequence.size() < min_size) continue;
-        //FW check
-        auto fwl = ws.sdg.get_fw_links(n);
-        if (fwl.size() != 1) continue;
-        auto post = fwl[0].dest;
-        auto post_bwl = ws.sdg.get_bw_links(post);
-        if (post_bwl.size() != 2) continue;
-        if (llabs(post_bwl[0].dest)==llabs(post_bwl[1].dest))continue;
-        //BW check
-        auto bwl = ws.sdg.get_bw_links(n);
-        if (bwl.size() != 1) continue;
-        auto prev = bwl[0].dest;
-        auto prev_fwl = ws.sdg.get_bw_links(prev);
-        if (prev_fwl.size() != 2) continue;
-
-        if ((prev_fwl[0].dest == -post_bwl[0].dest and prev_fwl[1].dest == -post_bwl[1].dest)
-            or (prev_fwl[1].dest == -post_bwl[0].dest and prev_fwl[0].dest == -post_bwl[1].dest)) {
-            sgNodeID_t m;
-            if (llabs(prev_fwl[0].dest) != n and llabs(prev_fwl[1].dest) != n) std::cout<<"Error! cant find N in prev!"<<std::endl;
-            if (llabs(prev_fwl[0].dest) == n) m = llabs(prev_fwl[1].dest);
-            else m = prev_fwl[0].dest;
-            //Now evaluate coverage of the branches
-            auto c1 = ws.kci.compute_compression_for_node(n, 1);
-            if (std::isnan(c1) or c1<min_ci or c1>max_ci) continue;
-            auto c2 = ws.kci.compute_compression_for_node(m, 1);
-            if (std::isnan(c2) or c2<min_ci or c2>max_ci) continue;
-#pragma omp critical(inserting_hspnps)
-            {
-                //hl<<(n<m ? n:m)<<" "<<(n<m ? m:n)<<std::endl;
-                if (n < llabs(m)) hspnps.insert(std::make_pair(n, m));
-                else hspnps.insert(std::make_pair(llabs(m), (m>0 ? n:-n)));
-            }
-        }
-    }
-    return hspnps;
-}
-
-void LinkageUntangler::select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, float max_ci) {
-
-    auto hspnps=get_HSPNPs(min_size,min_ci,max_ci);
-    sdglib::OutputLog() << "Selecting HSPNPs: " << hspnps.size() << " passed topology and CI" << std::endl;
-    for (auto p:hspnps) {
-        selected_nodes[llabs(p.first)] = true;
-        selected_nodes[llabs(p.second)] = true;
-    }
-
-}
+//void LinkageUntangler::select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, float max_ci) {
+//
+//    auto hspnps=get_HSPNPs(min_size,min_ci,max_ci);
+//    sdglib::OutputLog() << "Selecting HSPNPs: " << hspnps.size() << " passed topology and CI" << std::endl;
+//    for (auto p:hspnps) {
+//        selected_nodes[llabs(p.first)] = true;
+//        selected_nodes[llabs(p.second)] = true;
+//    }
+//
+//}
 
 void LinkageUntangler::select_multi_linkage_linear_anchors(const DistanceGraph &multi_ldg, int min_links, int min_transitive_links) {
     for (auto n=1;n<ws.sdg.nodes.size();++n){
@@ -842,40 +842,40 @@ DistanceGraph LinkageUntangler::make_paired10x_multilinkage(const PairedReadsMap
     return ldg;
 }
 
-DistanceGraph LinkageUntangler::filter_linkage_to_hspnp_duos(uint64_t min_size, float min_ci, float max_ci,
-                                                              const DistanceGraph &ldg_old) {
-    std::unordered_map<sgNodeID_t,sgNodeID_t> node_to_parallel;
-    //1- get all hspnps -> create a map of parallels
-    DistanceGraph ldg_new(ws.sdg);
-    auto hspnps=get_HSPNPs(min_size,min_ci,max_ci);
-    for (auto h:hspnps) {
-        node_to_parallel[h.first]=h.second;
-        node_to_parallel[-h.first]=-h.second;
-        node_to_parallel[h.second]=h.first;
-        node_to_parallel[-h.second]=-h.first;
-    }
-    //2- hspnp -> look for links in one direction from one of the nodes, and same direction for the other
-    for (auto h:hspnps){
-        auto hr=h;
-        hr.first=-hr.first;
-        hr.second=-hr.second;
-        for (auto hspnp:{h,hr}) {
-            auto n1fs = ldg_old.get_fw_links(hspnp.first);
-            auto n2fs = ldg_old.get_fw_links(hspnp.second);
-            for (auto n1f:n1fs) {
-                for (auto n2f:n2fs) {
-                    if (node_to_parallel.count(n1f.dest) and node_to_parallel[n1f.dest] == n2f.dest) {
-                        // if links are to parts of the same node -> introduce linkage on newldg.
-                        ldg_new.add_link(-hspnp.first, n1f.dest, 0);
-                        ldg_new.add_link(-hspnp.second, n2f.dest, 0);
-                    }
-                }
-            }
-        }
-    }
-    return ldg_new;
-
-}
+//DistanceGraph LinkageUntangler::filter_linkage_to_hspnp_duos(uint64_t min_size, float min_ci, float max_ci,
+//                                                              const DistanceGraph &ldg_old) {
+//    std::unordered_map<sgNodeID_t,sgNodeID_t> node_to_parallel;
+//    //1- get all hspnps -> create a map of parallels
+//    DistanceGraph ldg_new(ws.sdg);
+//    auto hspnps=get_HSPNPs(min_size,min_ci,max_ci);
+//    for (auto h:hspnps) {
+//        node_to_parallel[h.first]=h.second;
+//        node_to_parallel[-h.first]=-h.second;
+//        node_to_parallel[h.second]=h.first;
+//        node_to_parallel[-h.second]=-h.first;
+//    }
+//    //2- hspnp -> look for links in one direction from one of the nodes, and same direction for the other
+//    for (auto h:hspnps){
+//        auto hr=h;
+//        hr.first=-hr.first;
+//        hr.second=-hr.second;
+//        for (auto hspnp:{h,hr}) {
+//            auto n1fs = ldg_old.get_fw_links(hspnp.first);
+//            auto n2fs = ldg_old.get_fw_links(hspnp.second);
+//            for (auto n1f:n1fs) {
+//                for (auto n2f:n2fs) {
+//                    if (node_to_parallel.count(n1f.dest) and node_to_parallel[n1f.dest] == n2f.dest) {
+//                        // if links are to parts of the same node -> introduce linkage on newldg.
+//                        ldg_new.add_link(-hspnp.first, n1f.dest, 0);
+//                        ldg_new.add_link(-hspnp.second, n2f.dest, 0);
+//                    }
+//                }
+//            }
+//        }
+//    }
+//    return ldg_new;
+//
+//}
 
 void LinkageUntangler::expand_trivial_repeats(const DistanceGraph & ldg) {
     uint64_t aa=0,ab=0,unsolved=0;

@@ -56,8 +56,6 @@ void WorkSpace::dump_to_disk(std::string filename) {
 
     //dump main graph
     sdg.write(of);
-    //dump KCI
-    kci.write(of);
 
     count = distance_graphs.size();
     of.write((char *) &count, sizeof(count));
@@ -185,7 +183,6 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     //read element type, then use that element's read
     sdg.read(wsfile);
     sdglib::OutputLog() <<"Loaded graph with "<<sdg.nodes.size()-1<<" nodes" <<std::endl;
-    kci.read(wsfile);
 
     wsfile.read((char *) &count,sizeof(count));
     distance_graphs.reserve(count);
@@ -259,10 +256,6 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
             if (!linked_read_datastores.empty()) {
                 auto ntags = linked_read_datastores[0].mapper.get_node_tags(n);
                 if (ntags.size() < min_tags or ntags.size() > max_tags) continue;
-            }
-            if (!kci.graph_kmers.empty()) {
-                auto ci = kci.compute_compression_for_node(n, 1);
-                if (ci < min_ci or ci > max_ci) continue;
             }
             ++tnodes;
             thread_nodes.emplace_back(n);
@@ -383,11 +376,11 @@ DistanceGraph &WorkSpace::get_distance_graph(const std::string &name) {
     throw std::runtime_error("There are no DistanceGraphs named: " + name);
 }
 
-WorkSpace::WorkSpace(const std::string &filename) : sdg(*this),kci(sdg) {
+WorkSpace::WorkSpace(const std::string &filename) : sdg(*this) {
     load_from_disk(filename);
 }
 
-WorkSpace::WorkSpace() : sdg(*this),kci(sdg) {}
+WorkSpace::WorkSpace() : sdg(*this) {}
 
 KmerCountsDatastore &WorkSpace::add_counts_datastore(const std::string &name, const uint8_t k) {
     kmer_counts_datastore.emplace_back(*this, name, k);
