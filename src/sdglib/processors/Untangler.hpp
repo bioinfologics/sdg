@@ -73,17 +73,7 @@ public:
      * @return
      */
     std::pair<float,float> tag_read_percentage_at_ends(sgNodeID_t node, std::set<bsg10xTag> tags, float end_perc=.1, uint32_t end_size=0);
-    std::vector<std::vector<std::pair<sgNodeID_t,uint32_t>>> find_tag_neighbours(uint32_t min_size, float min_ci, float max_ci);
 
-    /**
-     * @brief grabs all "long" haplotype-specific nodes, uses tags to find neighbours, uses imbalance to impute direction.
-     * @param min_size Minimum node size
-     * @param min_ci Minimum compression index
-     * @param max_ci Maximum compression index
-     * @param end_perc Percentage of end covered
-     * @return
-    */
-    std::vector<Link> find_tag_neighbours_with_imbalance(uint32_t min_size, float min_ci, float max_ci, float end_perc=.1);
     std::vector<SequenceGraphPath> get_all_tag_covered_paths(sgNodeID_t from, sgNodeID_t to, std::set<bsg10xTag> &tags, BufferedTagKmerizer &btk);
 
 

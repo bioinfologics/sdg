@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sdglib/processors/KmerCompressionIndex.hpp>
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
+#include <sdglib/workspace/WorkSpace.hpp>
 #include "cxxopts.hpp"
 
 
@@ -50,7 +51,8 @@ int main(int argc, char * argv[]) {
         }
 
         //===== LOAD GRAPH =====
-        SequenceDistanceGraph sg;
+        WorkSpace ws;
+        SequenceDistanceGraph sg(ws);
         KmerCompressionIndex kci(sg);
         sg.load_from_gfa(gfa_filename);
         kci.index_graph();
@@ -90,7 +92,8 @@ int main(int argc, char * argv[]) {
                       << "Use option --help to check command line arguments." << std::endl;
             exit(1);
         }
-        SequenceDistanceGraph sg;
+        WorkSpace ws;
+        SequenceDistanceGraph sg(ws);
         KmerCompressionIndex kci(sg);
         kci.load_from_disk(filename);
         sdglib::OutputLog()<<kci.graph_kmers.size()<<" kmers in spectra loaded from disk"<<std::endl;
@@ -132,7 +135,8 @@ int main(int argc, char * argv[]) {
                       << "Use option --help to check command line arguments." << std::endl;
             exit(1);
         }
-        SequenceDistanceGraph sdg;
+        WorkSpace ws;
+        SequenceDistanceGraph sdg(ws);
         KmerCompressionIndex kci(sdg);
         sdg.load_from_gfa(gfa_filename);
         kci.load_from_disk(kci_filename);
@@ -175,7 +179,8 @@ int main(int argc, char * argv[]) {
 
 
         std::ifstream kci_file(kci_filename);
-        SequenceDistanceGraph sg;
+        WorkSpace ws;
+        SequenceDistanceGraph sg(ws);
         KmerCompressionIndex kci(sg);
         uint64_t kcount;
         kci_file.read(( char *) &kcount,sizeof(kcount));

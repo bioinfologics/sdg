@@ -1138,7 +1138,8 @@ void LinkageUntangler::linear_regions_tag_local_assembly(const DistanceGraph & l
             auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(k, min_cvg, linetagsets[i], blrsg,
                                                                              count_tag_cvg);
             //std::cout << "creating DBG for line #" << i << std::endl;
-            SequenceDistanceGraph dbg;
+            WorkSpace pws;
+            SequenceDistanceGraph dbg(pws);
             GraphMaker gm(dbg);
             gm.new_graph_from_kmerset_trivial128(ltkmers128, k);
             //dbg.write_to_gfa("local_dbg_" + std::to_string(i) + ".gfa");
@@ -1414,7 +1415,8 @@ void LinkageUntangler::fill_linkage_line(std::vector<sgNodeID_t> nodes) {
     ReadSequenceBuffer blrsg(ws.linked_read_datastores[0], 200000, 1000);
     auto ltkmers128 = ws.linked_read_datastores[0].get_tags_kmers128(63, 3, lineTagSet, blrsg, true);
     //std::cout << "creating DBG for line #" << i << std::endl;
-    SequenceDistanceGraph dbg;
+    WorkSpace pws;
+    SequenceDistanceGraph dbg(pws);
     GraphMaker gm(dbg);
     gm.new_graph_from_kmerset_trivial128(ltkmers128, 63);
     std::ofstream anchf("local_dbg_" + std::to_string(nodes[0]) + "_anchors.fasta");

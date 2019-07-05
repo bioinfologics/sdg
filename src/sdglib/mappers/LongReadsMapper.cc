@@ -902,7 +902,8 @@ std::vector<sgNodeID_t> LongReadsMapper::create_read_path(uint32_t rid, const Re
                 continue;
             } else {
                 //Create a SG with every path as a node
-                SequenceDistanceGraph psg;
+                WorkSpace pws;
+                SequenceDistanceGraph psg(pws);
                 for (const auto &p : paths) {
                     psg.add_node(Node(p.get_sequence()));
                 }

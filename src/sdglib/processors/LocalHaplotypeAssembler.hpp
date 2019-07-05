@@ -13,6 +13,7 @@ public:
     //Constructor from ws and backbone, creates lists of tags, read ids, anchor sequences and whatnot.
     LocalHaplotypeAssembler(WorkSpace & _ws) :
     ws(_ws),
+    assembly(ws),
     uniqueKmerIndex(assembly,31),
     unique63merIndex(assembly)
     {};
