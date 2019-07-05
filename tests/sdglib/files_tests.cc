@@ -26,11 +26,11 @@ TEST_CASE("Workspace create, read, write") {
 
     WorkSpace out, in;
     out.sdg.load_from_gfa("../tests/datasets/tgraph.gfa");
-    out.long_read_datastores.emplace_back(out, Lrds_output_path);
+    out.long_reads_datastores.emplace_back(out, Lrds_output_path);
 
-    out.paired_read_datastores.emplace_back(out, prds_output_path);
+    out.paired_reads_datastores.emplace_back(out, prds_output_path);
 
-    out.linked_read_datastores.emplace_back(out, lrds_output_path);
+    out.linked_reads_datastores.emplace_back(out, lrds_output_path);
 
     //out.kci.add_counts_from_datastore(out.paired_reads_datastores[0]);
 

@@ -347,12 +347,12 @@ WorkSpace::WorkSpace(const std::string &filename) : sdg(*this) {
 
 WorkSpace::WorkSpace() : sdg(*this) {}
 
-KmerCountsDatastore &WorkSpace::add_counts_datastore(const std::string &name, const uint8_t k) {
+KmerCountsDatastore &WorkSpace::add_kmer_counts_datastore(const std::string &name, const uint8_t k) {
     kmer_counts_datastores.emplace_back(*this, name, k);
     return kmer_counts_datastores.back();
 }
 
-KmerCountsDatastore &WorkSpace::get_counts_datastore(const std::string &name) {
+KmerCountsDatastore &WorkSpace::get_kmer_counts_datastore(const std::string &name) {
     for (auto &ds : kmer_counts_datastores) {
         if (ds.name == name) return ds;
     }
