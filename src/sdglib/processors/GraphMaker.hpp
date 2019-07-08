@@ -37,7 +37,7 @@ typedef union {
         unsigned int fw:4;
         unsigned int bw:4;
     };
-    unsigned int all:8=0;
+    unsigned int all = 0;
 } connectivity;
 
 class GraphMaker {

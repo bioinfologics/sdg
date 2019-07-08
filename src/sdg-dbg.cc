@@ -4,7 +4,7 @@
 #include <sdglib/processors/GraphMaker.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/batch_counter/BatchKmersCounter.hpp>
-#include <parallel/algorithm>
+#include <sdglib/utilities/omp_safe.hpp>
 #include "cxxopts.hpp"
 
 
@@ -30,7 +30,7 @@ std::vector<__uint128_t> countKmersToList(const WorkSpace &ws, int k, int min_co
         memcpy(&kmer, &kmer_list->kmers[i], 16);
         kmers.emplace_back(kmer);
     }
-    __gnu_parallel::sort(kmers.begin(),kmers.end());
+    sdglib::sort(kmers.begin(),kmers.end());
     return kmers;
 }
 
