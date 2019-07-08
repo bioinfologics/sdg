@@ -33,7 +33,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_re
     ofs.write((char*) &fPos, sizeof(fPos));
     nReads = build_from_fastq(ofs, long_read_file); // Build read_to_fileRecord
     fPos = ofs.tellp();                             // Write position after reads
-    ofs.write((char *)read_to_fileRecord.data(),read_to_fileRecord.size()*sizeof(read_to_fileRecord[0]));
+    sdglib::write_flat_vector(ofs, read_to_fileRecord);
     ofs.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
     ofs.write((char*) &nReads, sizeof(nReads));     // Dump # of reads
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
@@ -76,11 +76,8 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string default_name, 
     input_file.read((char *) numReads, sizeof(numReads));
     std::streampos fPos;
     input_file.read((char*) &fPos, sizeof(fPos));
-    uint64_t sname=0;
-    input_file.read((char *) &sname, sizeof(sname));
-    default_name.resize(sname);
-    input_file.read((char *) default_name.data(), default_name.size());
 
+    sdglib::read_string(input_file, default_name);
 
     read_to_fileRecord.resize(numReads);
     for (auto i=0; i<numReads; i++) {
@@ -180,14 +177,10 @@ void LongReadsDatastore::load_index(std::string &file) {
 
     input_file.read((char*)&fPos, sizeof(fPos));
 
-    uint64_t sname(default_name.size());
-    input_file.read((char *) &sname, sizeof(sname));
-    default_name.resize(sname);
-    input_file.read((char *) default_name.data(), sname);
+    sdglib::read_string(input_file, default_name);
 
     input_file.seekg(fPos);
-    read_to_fileRecord.resize(nReads);
-    input_file.read((char *) read_to_fileRecord.data(), read_to_fileRecord.size()*sizeof(read_to_fileRecord[0]));
+    sdglib::read_flat_vector(input_file, read_to_fileRecord);
 
     sdglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()-1<<std::endl;
 }
@@ -208,9 +201,8 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
 
     ofs.write((char*) &nReads, sizeof(nReads));
     ofs.write((char*) &fPos, sizeof(fPos));
-    uint64_t sname=default_name.size();
-    ofs.write( (char *) &sname, sizeof(sname));
-    ofs.write( (char *) default_name.data(), sname);
+
+    sdglib::write_string(ofs, default_name);
 
     std::ifstream fastq_ifstream(long_read_file);
     if (!fastq_ifstream) {
@@ -229,7 +221,7 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
         ++nReads;
     }
     fPos = ofs.tellp();                             // Write position after reads
-    ofs.write((char *)read_to_file_record.data(),read_to_file_record.size()*sizeof(read_to_fileRecord[0]));
+    sdglib::write_flat_vector(ofs, read_to_file_record);
     ofs.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
     ofs.write((char*) &nReads, sizeof(nReads));     // Dump # of reads
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
@@ -287,14 +279,8 @@ void LongReadsDatastore::print_status() const {
 }
 
 void LongReadsDatastore::read(std::ifstream &ifs) {
-    uint64_t s;
-    ifs.read((char *) &s, sizeof(s));
-    filename.resize(s);
-    ifs.read((char *) filename.data(), s*sizeof(filename[0]));
-
-    ifs.read((char *) &s, sizeof(s));
-    name.resize(s);
-    ifs.read((char *) name.data(), name.size());
+    sdglib::read_string(ifs, filename);
+    sdglib::read_string(ifs, name);
 
     load_index(filename);
     fd = open(filename.data(), O_RDONLY);
@@ -306,13 +292,8 @@ void LongReadsDatastore::read(std::ifstream &ifs) {
 
 void LongReadsDatastore::write(std::ofstream &output_file) {
     //read filename
-    uint64_t s=filename.size();
-    output_file.write((char *) &s,sizeof(s));
-    output_file.write((char *)filename.data(),s*sizeof(filename[0]));
-
-    s=name.size();
-    output_file.write((char *) &s,sizeof(s));
-    output_file.write((char *)name.data(),s*sizeof(name[0]));
+    sdglib::write_string(output_file, filename);
+    sdglib::write_string(output_file, name);
 }
 
 std::string LongReadsDatastore::get_read_sequence(size_t readID) const {

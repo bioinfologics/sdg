@@ -54,10 +54,7 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     SDG_FILETYPE type(PairedDS_FT);
     output.write((char *) &type, sizeof(type));
 
-    uint64_t sname=default_name.size();
-    output.write( (char *) &sname, sizeof(sname));
-    output.write( (char *) default_name.data(), sname);
-
+    sdglib::write_string(output, default_name);
 
     output.write((const char *) &max_readsize,sizeof(readsize));
     auto size_pos=output.tellp();
@@ -146,14 +143,8 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
 
 void PairedReadsDatastore::read(std::ifstream &input_file) {
     //read filename
-    uint64_t s;
-    input_file.read((char *) &s, sizeof(s));
-    filename.resize(s);
-    input_file.read((char *) filename.data(), filename.size());
-
-    input_file.read((char *) &s, sizeof(s));
-    name.resize(s);
-    input_file.read((char *) name.data(), name.size());
+    sdglib::read_string(input_file, filename);
+    sdglib::read_string(input_file, name);
 
     load_index();
 }
@@ -196,13 +187,8 @@ void PairedReadsDatastore::load_index(){
 
 void PairedReadsDatastore::write(std::ofstream &output_file) {
     //read filename
-    uint64_t s=filename.size();
-    output_file.write((char *) &s,sizeof(s));
-    output_file.write((char *)filename.data(),filename.size());
-
-    s=name.size();
-    output_file.write((char *) &s,sizeof(s));
-    output_file.write((char *)name.data(),name.size());
+    sdglib::write_string(output_file, filename);
+    sdglib::write_string(output_file, name);
 }
 
 void PairedReadsDatastore::write_selection(std::ofstream &output_file, std::vector<uint64_t> read_ids) {

@@ -217,16 +217,14 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     SDG_FILETYPE type(LinkedDS_FT);
     output.write((char *) &type, sizeof(type));
 
-    uint64_t sname=default_name.size();
-    output.write( (char *) &sname, sizeof(sname));
-    output.write( (char *) default_name.data(), sname*sizeof(char));
+    sdglib::write_string(output, default_name);
 
     output.write((const char *) &readsize,sizeof(readsize));
     read_tag.resize(pairs);
     sdglib::OutputLog() << "leaving space for " <<pairs<<" read_tag entries"<< std::endl;
-    uint64_t rts=read_tag.size();
-    output.write((const char *) &rts, sizeof(rts));
-    output.write((const char *) read_tag.data(),sizeof(bsg10xTag)*read_tag.size());
+
+    sdglib::write_flat_vector(output,read_tag);
+
     //multi_way merge of the chunks
     int openfiles=chunkfiles.size();
     bsg10xTag next_tags[chunkfiles.size()];
@@ -256,11 +254,9 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
         }
     }
     //go back to the beginning of the file and write the read_tag part again
-    output.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type)+sizeof(readsize)+sizeof(sname)+(sname*sizeof(char)));
+    output.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type)+sizeof(readsize)+sizeof(uint64_t)+(default_name.size()*sizeof(char)));
     sdglib::OutputLog() << "writing down " <<pairs<<" read_tag entries"<< std::endl;
-    rts=read_tag.size();
-    output.write((const char *) &rts, sizeof(rts));
-    output.write((const char *) read_tag.data(),sizeof(bsg10xTag)*read_tag.size());
+    sdglib::write_flat_vector(output, read_tag);
     output.close();
     //delete all temporary chunk files
     for (auto &c:chunkfiles) c.close();
@@ -274,13 +270,8 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
 void LinkedReadsDatastore::read(std::ifstream &input_file) {
     //read filename
     uint64_t s;
-    input_file.read((char *) &s, sizeof(s));
-    filename.resize(s);
-    input_file.read((char *) filename.data(), filename.size());
-
-    input_file.read((char *) &s, sizeof(s));
-    name.resize(s);
-    input_file.read((char *) name.data(), name.size());
+    sdglib::read_string(input_file, filename);
+    sdglib::read_string(input_file, name);
 
     load_index(filename);
 }
@@ -326,13 +317,8 @@ void LinkedReadsDatastore::load_index(std::string _filename){
 
 void LinkedReadsDatastore::write(std::ofstream &output_file) {
     //read filename
-    uint64_t s=filename.size();
-    output_file.write((char *) &s,sizeof(s));
-    output_file.write((char *)filename.data(),filename.size());
-
-    s=name.size();
-    output_file.write((char *) &s,sizeof(s));
-    output_file.write((char *)name.data(),name.size());
+    sdglib::write_string(output_file, filename);
+    sdglib::write_string(output_file, name);
 }
 
 void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std::set<bsg10xTag> &tagSet) {
