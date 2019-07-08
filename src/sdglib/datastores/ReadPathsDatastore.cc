@@ -6,7 +6,6 @@
 #include <fstream>
 #include <cstring>
 #include <sdglib/logger/OutputLog.hpp>
-#include <sdglib/utilities/io_helpers.hpp>
 
 ReadPathsDatastore::ReadPathsDatastore(const std::string &filename) {
     std::ifstream input_file(filename, std::ios::in | std::ios::binary);
@@ -25,7 +24,8 @@ ReadPathsDatastore::ReadPathsDatastore(const std::string &filename) {
         input_file.read((char *) &offset, sizeof(offset));
         read_paths[i].offset = offset;
         input_file.read((char *) &ps, sizeof(ps));
-        sdglib::read_flat_vector(input_file, read_paths[i].path);
+        read_paths[i].path.resize(ps);
+        input_file.read((char *) read_paths[i].path.data(),ps*sizeof(int));
     }
 
     sdglib::OutputLog() << "Loaded ReadPaths file with: " << read_paths.size() << " paths" << std::endl;
