@@ -133,6 +133,8 @@ BatchKmersCounter::kmerCountOMP(uint8_t K, PairedReadsDatastore const &reads, ui
 
 #pragma omp parallel shared(reads)
     {
+        ReadSequenceBuffer bprsg(reads,100000,1000);
+        std::vector<__uint128_t> read_kmers;
 #pragma omp for schedule(dynamic)
         for (auto batch = 0; batch < batches; ++batch) {
             //==== Part 1: actually counting ====
@@ -149,8 +151,6 @@ BatchKmersCounter::kmerCountOMP(uint8_t K, PairedReadsDatastore const &reads, ui
             // Replace with generating all the kmers from the reads!
             StreamKmerFactory128 skf(K);
 
-            ReadSequenceBuffer bprsg(reads,100000,1000);
-            std::vector<__uint128_t> read_kmers;
             for (auto rid=from; rid<= to; ++rid) {
                 skf.produce_all_kmers(bprsg.get_read_sequence(rid), read_kmers);
                 for (const auto &rk: read_kmers){

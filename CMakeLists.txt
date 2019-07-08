@@ -269,7 +269,7 @@ IF(BUILD_TESTING)
                    tests/sdglib/files_tests.cc
                    tests/sdglib/kmerfactory_tests.cc
                    tests/sdglib/index_tests.cc
-                   tests/sdglib/workspace_tests.cc)
+                   tests/sdglib/workspace_tests.cc tests/sdglib/batchCounter_tests.cc)
     IF(BUILD_COV)
         set_target_properties(runBasicTests PROPERTIES
                 COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"

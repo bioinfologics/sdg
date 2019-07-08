@@ -54,32 +54,7 @@ public:
 };
 
 class BatchKmersCounter {
-    class StreamKmerFactory128 : public  KMerFactory128 {
-    public:
-        explicit StreamKmerFactory128(uint8_t k) : KMerFactory128(k){}
-        inline void produce_all_kmers(const char * seq, std::vector<__uint128_t> &mers){
-            // TODO: Adjust for when K is larger than what fits in __uint128_t!
-            last_unknown=0;
-            fkmer=0;
-            rkmer=0;
-            auto s=seq;
-            while (*s!='\0' and *s!='\n') {
-                //fkmer: grows from the right (LSB)
-                //rkmer: grows from the left (MSB)
-                fillKBuf(*s, fkmer, rkmer, last_unknown);
-                if (last_unknown >= K) {
-                    if (fkmer <= rkmer) {
-                        // Is fwd
-                        mers.emplace_back(fkmer);
-                    } else {
-                        // Is bwd
-                        mers.emplace_back(rkmer);
-                    }
-                }
-                ++s;
-            }
-        }
-    };
+
     static std::shared_ptr<KmerList> kmerCountOMP( uint8_t K, PairedReadsDatastore const& reads,
                                             uint64_t gfrom, uint64_t gto, uint64_t batch_size=0);
 
