@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <tuple>
 
 class WorkSpace;
 class PairedReadsDatastore;
@@ -18,6 +19,10 @@ public:
     };
     KmerCountsDatastore (const WorkSpace &ws, std::ifstream &infile);
     void index_sdg();
+
+    bool operator==(const KmerCountsDatastore &o) const {
+        return (std::tie(k, kindex, count_names, counts) == std::tie(o.k, o.kindex, o.count_names, o.counts));
+    }
 
     KmerCountsDatastore& operator=(const KmerCountsDatastore &o) {
         if ( &o == this) return *this;

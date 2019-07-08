@@ -32,7 +32,7 @@ TEST_CASE("Workspace create, read, write") {
 
     out.linked_reads_datastores.emplace_back(out, lrds_output_path);
 
-    //out.kci.add_counts_from_datastore(out.paired_reads_datastores[0]);
+    out.add_kmer_counts_datastore("kctest", 31).add_count("prtest", out.paired_reads_datastores[0]);
 
     out.add_operation("test","test","test");
 
@@ -41,6 +41,7 @@ TEST_CASE("Workspace create, read, write") {
     in.load_from_disk("workspace.bsgws");
 
 
+    REQUIRE( out.kmer_counts_datastores == in.kmer_counts_datastores);
     REQUIRE( out.operation_journals == in.operation_journals);
     REQUIRE( out.sdg == in.sdg);
 }
