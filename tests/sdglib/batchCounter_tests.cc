@@ -44,7 +44,7 @@ TEST_CASE("Counts 60-mers correctly from PairedReadDatastore") {
     file_count.reserve(kmer_list->size);
     while(counts_file >> skmer >> count) {
         skf.produce_all_kmers(skmer.c_str(), kmers);
-        file_count.emplace_back(kmers[0], std::min(255ull,count));
+        file_count.emplace_back(kmers[0], std::min(uint64_t(255),count));
         kmers.clear();
     }
 
@@ -95,7 +95,7 @@ TEST_CASE("Counts 60-mers correctly from PairedReadDatastore, using batches") {
     file_count.reserve(kmer_list->size);
     while(counts_file >> skmer >> count) {
         skf.produce_all_kmers(skmer.c_str(), kmers);
-        file_count.emplace_back(kmers[0], std::min(255ull,count));
+        file_count.emplace_back(kmers[0], std::min(uint64_t(255),count));
         kmers.clear();
     }
 
