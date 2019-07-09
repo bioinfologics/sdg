@@ -5,7 +5,7 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include "cxxopts.hpp"
 
-const std::string program_name("sdg-kmerscounts");
+const std::string program_name("sdg-kmercounts");
 enum class KmerCountsFunctions{
     NONE, //This is needed because the default of a map is 0
     MAKE,
@@ -20,11 +20,33 @@ struct KmerCountsFunctionMap : public std::map<std::string, KmerCountsFunctions>
     };
 };
 
+void
+add_count(const std::vector<std::string> &fastq_files, int k, const std::string &ds_filename, const std::string &name,
+          WorkSpace &ws) {
+    ws.add_kmer_counts_datastore(name, k);
+    if (!fastq_files.empty()) {
+        ws.kmer_counts_datastores.back().add_count(name, fastq_files);
+    }
+    if (!ds_filename.empty()) {
+        if (ds_filename.substr(ds_filename.find(".") + 1) == "prseq") {
+            ws.kmer_counts_datastores.back().add_count(name, PairedReadsDatastore(ds_filename));
+        }
+        if (ds_filename.substr(ds_filename.find(".") + 1) == "lrseq") {
+            ws.kmer_counts_datastores.back().add_count(name, LinkedReadsDatastore(ds_filename));
+        }
+        if (ds_filename.substr(ds_filename.find(".") + 1) == "loseq") {
+            ws.kmer_counts_datastores.back().add_count(name, LongReadsDatastore(ds_filename));
+        }
+    }
+}
+
 void make_kmer_counts(int argc, char **argv) {
     std::vector<std::string> fastq_files;
+    int k(27);
     std::string output;
     std::string gfa_filename;
     std::string ws_filename;
+    std::string ds_filename;
     std::string name;
     try {
         cxxopts::Options options(program_name + " make", "SDG make KmerCounts");
@@ -35,6 +57,8 @@ void make_kmer_counts(int argc, char **argv) {
                 ("w,workspace", "input workspace", cxxopts::value<std::string>(ws_filename))
                 ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename))
                 ("f,fastq", "input reads (multi)", cxxopts::value<std::vector<std::string>>(fastq_files))
+                ("d,datastore", "input datastore", cxxopts::value<std::vector<std::string>>(ds_filename))
+                ("k", "kmer length", cxxopts::value(k)->default_value("27"))
                 ("o,output", "output file", cxxopts::value<std::string>(output));
         auto newargc=argc-1;
         auto newargv=&argv[1];
@@ -44,12 +68,16 @@ void make_kmer_counts(int argc, char **argv) {
             exit(0);
         }
 
-        if (result.count("fastq")<1 or output=="") {
-            throw cxxopts::OptionException(" please specify input files and output prefix");
+        if (output.empty() or name.empty()) {
+            throw cxxopts::OptionException(" please specify a KmerCounts name and output prefix");
+        }
+
+        if ( (result.count("fastq")<1 and ds_filename.empty()) or !(result.count("fastq")<1 and ds_filename.empty())) {
+            throw cxxopts::OptionException(" please specify an input datastore or fastq files");
         }
 
         if (gfa_filename.empty() and ws_filename.empty()) {
-            throw cxxopts::OptionException(" please specify a gfa, or workspace");
+            throw cxxopts::OptionException(" please specify a gfa or workspace");
         }
 
     } catch (const cxxopts::OptionException &e) {
@@ -62,11 +90,11 @@ void make_kmer_counts(int argc, char **argv) {
     WorkSpace ws;
     if (!ws_filename.empty()) {
         ws.load_from_disk(ws_filename);
-        ws.add_kmer_counts_datastore()
     } else if (!gfa_filename.empty()) {
-
         SequenceDistanceGraph sg(ws);
+        sg.load_from_gfa(gfa_filename);
     }
+    add_count(fastq_files, k, ds_filename, name, ws);
 }
 
 void stats_kmer_counts(int argc, char **argv) {
