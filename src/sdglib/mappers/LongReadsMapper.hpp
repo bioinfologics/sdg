@@ -274,10 +274,8 @@ public:
      *
      * @param filter_limit
      * @param readIDs
-     * @param detailed_log
      */
-    void map_reads(int filter_limit = 200, const std::unordered_set<uint32_t> &readIDs = {},
-                   std::string detailed_log = "");
+    void map_reads(int filter_limit = 200, const std::unordered_set<uint32_t> &readIDs = {});
 
     /**
      * This function maps any sequence to the graph, index needs to be already updated!

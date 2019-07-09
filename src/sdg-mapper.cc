@@ -9,6 +9,8 @@ int main(int argc, char * argv[]) {
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
     std::cout << "Git commit: " << GIT_COMMIT_HASH << std::endl<<std::endl;
     std::cout << "Executed command:"<<std::endl;
+    bool sat_kmer_index=false;
+    unsigned int long_reads_k=15;
     bool use63mers=false;
     unsigned int max_filter=200;
     for (auto i=0;i<argc;i++) std::cout<<argv[i]<<" ";
@@ -24,6 +26,8 @@ int main(int argc, char * argv[]) {
                 ("help", "Print help")
                 ("w,workspace", "input workspace", cxxopts::value<std::string>(workspace_file))
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix))
+                ("k","long read indexing/mapping kmer size", cxxopts::value(long_reads_k)->default_value("15"))
+                ("s,use_sat-index", "Use saturated small-k index", cxxopts::value(sat_kmer_index)->default_value("false")->implicit_value("true"))
                 ("m,max_kmer_repeat", "maximum number of times a kmer appears (LongReadMapper)", cxxopts::value(max_filter)->default_value("200"))
                 ("use_63-mers", "mapping based on 63-mers", cxxopts::value<bool>(use63mers));
 
@@ -87,6 +91,8 @@ int main(int argc, char * argv[]) {
     }
     for (auto &ds: ws.long_reads_datastores) {
         sdglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
+        ds.mapper.sat_kmer_index = sat_kmer_index;
+        ds.mapper.k = long_reads_k;
         ds.mapper.map_reads(max_filter);
         ws.add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;

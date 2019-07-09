@@ -338,13 +338,11 @@ std::vector<LongReadMapping> LongReadsMapper::filter_blocks(std::vector<LongRead
     return fblocks;
 }
 
-void LongReadsMapper::map_reads(int filter_limit, const std::unordered_set<uint32_t> &readIDs, std::string detailed_log) {
+void LongReadsMapper::map_reads(int filter_limit, const std::unordered_set<uint32_t> &readIDs) {
     update_graph_index(filter_limit);
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
     uint32_t num_reads_done(0);
     uint64_t no_matches(0),single_matches(0),multi_matches(0);
-    std::ofstream dl;
-    if (!detailed_log.empty()) dl.open(detailed_log);
 #pragma omp parallel
     {
         StreamKmerFactory skf(k);
