@@ -74,13 +74,13 @@ TEST_CASE("NKmerIndex create and lookup") {
 }
 
 TEST_CASE("SatKmerIndex create and lookup") {
-    const uint8_t k = 15;
+    const uint8_t k = 10;
     SatKmerIndex assembly_kmers(k);
 
     std::vector<uint64_t> readkmers;
     StreamKmerFactory skf(k);
-    std::string seqMissing = "AAAAAAAAAAAAAAA";
-    std::string seqPresent = "CTTGCGGGTTTCCAG";
+    std::string seqMissing = "AAAAAAAAAA";
+    std::string seqPresent = "CTTGCGGGTT";
     WorkSpace ws;
     SequenceDistanceGraph sg(ws);
     sg.load_from_gfa("../tests/datasets/tgraph.gfa");

@@ -16,7 +16,7 @@ BatchKmersCounter::kmerCountOMPDiskBased(uint8_t K, PairedReadsDatastore const &
     uint64_t total_kmers_in_batches=0;
     for (auto batch=0;batch < disk_batches;batch++) {
         uint64_t to = (batch+1) * reads.size()/disk_batches;
-        uint64_t from= batch * reads.size()/disk_batches;
+        uint64_t from= 1+ batch * reads.size()/disk_batches;
         auto kmer_list = kmerCountOMP(K, reads,from,to);
         std::ofstream batch_file(tmpdir+"/kmer_count_batch_"+std::to_string((int)batch),std::ios::out | std::ios::trunc | std::ios::binary);
         batch_file.write((const char *)kmer_list->kmers,sizeof(KMerNodeFreq_s)*kmer_list->size);
@@ -58,6 +58,7 @@ BatchKmersCounter::kmerCountOMPDiskBased(uint8_t K, PairedReadsDatastore const &
     while (finished_files<disk_batches) {
         //find minimum of the non-finished files
         uint min=0;
+        while (!dbf_active[min])++min;
         for (auto i=1;i<disk_batches;++i)
             if (dbf_active[i]){
                 if (next_knf_from_dbf[i]<next_knf_from_dbf[min]) min=i;
@@ -109,7 +110,7 @@ BatchKmersCounter::kmerCountOMPDiskBased(uint8_t K, PairedReadsDatastore const &
 
 std::shared_ptr<KmerList>
 BatchKmersCounter::kmerCountOMP(uint8_t K, PairedReadsDatastore const &reads, uint64_t gfrom, uint64_t gto, uint64_t batch_size) {
-    std::atomic<uint64_t> totalKmers(0);
+    uint64_t totalKmers(0);
     //Compute how many "batches" will be used. and malloc a structure for them and a bool array to mark them "ready to process".
     //optionally, there could be a total count of "ready kmers" to set a limit for memory usage, if total count is too high, slaves would wait
     if (batch_size == 0) batch_size = (gto - gfrom) / (4 * omp_get_max_threads()) + 1;
@@ -122,7 +123,7 @@ BatchKmersCounter::kmerCountOMP(uint8_t K, PairedReadsDatastore const &reads, ui
     uint16_t levels = 0;
     for (auto elements = batches; elements > 1; elements = (elements + 1) / 2) {
         batch_status.push_back((std::atomic_uint_fast8_t *) calloc(sizeof(std::atomic_uint_fast8_t), elements));
-        batch_lists.push_back(std::vector<std::shared_ptr<KmerList > >());
+        batch_lists.emplace_back();
         batch_lists.back().resize(elements);
 //        sdglib::OutputLog() << "level " << levels << " created with " << elements << " elements " << std::endl;
         ++levels;
@@ -131,7 +132,7 @@ BatchKmersCounter::kmerCountOMP(uint8_t K, PairedReadsDatastore const &reads, ui
     std::atomic_uint_fast8_t level_count[levels]; //level->count
     for (auto &l:level_count)l = 0;
 
-#pragma omp parallel shared(reads)
+#pragma omp parallel shared(reads) reduction(+:totalKmers)
     {
         ReadSequenceBuffer bprsg(reads,100000,1000);
         std::vector<__uint128_t> read_kmers;
@@ -143,15 +144,15 @@ BatchKmersCounter::kmerCountOMP(uint8_t K, PairedReadsDatastore const &reads, ui
             uint64_t to = from + read_count;
 
             std::shared_ptr<KmerList> local_kmer_list = std::make_shared<KmerList>();
-            uint64_t total_good_lenght = reads.readsize*(to-from);
-            local_kmer_list->resize(total_good_lenght);
+            uint64_t total_good_length = reads.readsize*(to-from+1);
+            local_kmer_list->resize(total_good_length);
             //Populate the kmer list
             uint64_t last_kmer=0;
 
             // Replace with generating all the kmers from the reads!
             StreamKmerFactory128 skf(K);
 
-            for (auto rid=from; rid<= to; ++rid) {
+            for (uint64_t rid=from; rid<= to; ++rid) {
                 skf.produce_all_kmers(bprsg.get_read_sequence(rid), read_kmers);
                 for (const auto &rk: read_kmers){
                     memcpy((char*) &local_kmer_list->kmers[last_kmer].kdata, (char *) &rk, 16);
@@ -296,10 +297,10 @@ void KmerList::load(std::string filename) {
 
 void KmerList::resize(size_t new_size) {
     if (size != new_size) {
-        //std::cout << " allocating space for "<< new_size <<" elements: " << sizeof(KMerNodeFreq_s) * new_size <<std::endl;
+//        std::cout << " allocating space for "<< new_size <<" elements: " << sizeof(KMerNodeFreq_s) * new_size <<std::endl;
         if (0==size) kmers = (KMerNodeFreq_s *) malloc(sizeof(KMerNodeFreq_s) * new_size);
         else kmers = (KMerNodeFreq_s *) realloc(kmers, sizeof(KMerNodeFreq_s) * new_size);
-        //if (new_size>0 and kmers == nullptr) std::cout << " realloc error!!! "<<std::endl;
+//        if (new_size>0 and kmers == nullptr) std::cout << " realloc error!!! "<<std::endl;
         size = new_size;
     }
 }

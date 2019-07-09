@@ -69,7 +69,7 @@ TEST_CASE("Counts 60-mers correctly from PairedReadDatastore, using batches") {
     WorkSpace ws;
     const PairedReadsDatastore ds(ws,"pe.prseq");
 
-    auto kmer_list = BatchKmersCounter::buildKMerCount(60, ds, 0, "./", "./", 1); // FIX: More than 1 batch fails, misses some kmers...
+    auto kmer_list = BatchKmersCounter::buildKMerCount(60, ds, 0, "./", "./", 4);
 
     __uint128_t kmer;
     batch_count.resize(kmer_list->size);
