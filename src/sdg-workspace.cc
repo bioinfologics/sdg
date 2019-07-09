@@ -8,7 +8,7 @@
 enum class WorkspaceFunctions{
     NONE, //This is needed because the default of a map is 0
     MAKE,
-    LOG,
+    STATUS,
     DUMP,
     ADD_DS
 };
@@ -17,7 +17,7 @@ struct WorkspaceFunctionMap : public std::map<std::string, WorkspaceFunctions>
     WorkspaceFunctionMap()
     {
         operator[]("make") =  WorkspaceFunctions::MAKE;
-        operator[]("log") = WorkspaceFunctions::LOG;
+        operator[]("status") = WorkspaceFunctions::STATUS;
         operator[]("dump") = WorkspaceFunctions::DUMP;
         operator[]("add") = WorkspaceFunctions::ADD_DS;
     };
@@ -111,7 +111,7 @@ void make_workspace(int argc, char** argv){
     output_ws.dump_to_disk(output + ".bsgws");
 }
 
-void log_workspace(int argc, char **argv){
+void status_workspace(int argc, char **argv){
     std::string filename;
     try {
 
@@ -146,9 +146,7 @@ void log_workspace(int argc, char **argv){
 }
 
 void dump_workspace(int argc, char **argv){
-    std::string filename,gfafilename,nodeinfofilename,seqfilename;
-    float minKCI=.5, maxKCI=1.25;
-    size_t min_size=2000,max_size=100000000;
+    std::string filename,gfafilename;
     try {
 
         cxxopts::Options options("sdg-workspace dump", "SDG workspace dump");
@@ -156,13 +154,7 @@ void dump_workspace(int argc, char **argv){
         options.add_options()
                 ("help", "Print help")
                 ("w,workspace", "workspace filename", cxxopts::value<std::string>(filename))
-                ("g,gfa", "gfa output prefix", cxxopts::value<std::string>(gfafilename))
-                ("n,node_info", "node info prefix",cxxopts::value<std::string>(nodeinfofilename))
-                ("s,node_sequences", "selected sequences prefix", cxxopts::value<std::string>(seqfilename))
-                ("min_kci", "selected sequences min KCI", cxxopts::value<float>(minKCI))
-                ("max_kci", "selected sequences max KCI", cxxopts::value<float>(maxKCI))
-                ("min_size", "selected sequences min size", cxxopts::value<size_t>(min_size))
-                ("max_size", "selected sequences max size", cxxopts::value<size_t>(max_size));
+                ("g,gfa", "gfa output prefix", cxxopts::value<std::string>(gfafilename));
 
         auto newargc=argc-1;
         auto newargv=&argv[1];
@@ -197,69 +189,6 @@ void dump_workspace(int argc, char **argv){
     std::cout << "Done... " << std::endl;
 }
 
-void add_datastores(int argc, char **argv) {
-    std::string output;
-    std::string base_filename;
-    std::vector<std::string> add_filenames;
-    try {
-        cxxopts::Options options("sdg-workspace add", "SDG workspace add, adds workspaces to a base workspace in the order they are passed in to an output workspace.");
-
-        options.add_options()
-                ("help", "Print help")
-                ("w,workspace_base", "Base workspace, the graph and KCI are taken from this workspace", cxxopts::value<std::string>(base_filename))
-                ("a,workspace_add", "Workspaces to add, can be defined multiple times (they will be added in the order specified)", cxxopts::value<std::vector<std::string>>(add_filenames))
-                ("o,output", "Output workspace", cxxopts::value<std::string>(output));
-        auto newargc=argc-1;
-        auto newargv=&argv[1];
-        auto result=options.parse(newargc,newargv);
-        if (result.count("help")) {
-            std::cout << options.help({""}) << std::endl;
-            exit(0);
-        }
-
-        if (output=="" or base_filename=="" or add_filenames.empty()) {
-            throw cxxopts::OptionException(" please specify a base workspace, a merge workspace and output prefix");
-        }
-
-    } catch (const cxxopts::OptionException &e) {
-        std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
-                  << "Use option --help to check command line arguments." << std::endl;
-        exit(1);
-    }
-
-    WorkSpace base,out;
-
-    base.load_from_disk(base_filename);
-    out.sdg = base.sdg;
-
-    /* Copy BASE datastores and mappers */
-    for (int i = 0; i < base.paired_reads_datastores.size(); ++i){
-        out.paired_reads_datastores.emplace_back(out, base.paired_reads_datastores[i]);
-    }
-    for (int i = 0; i < base.linked_reads_datastores.size(); ++i){
-        out.linked_reads_datastores.emplace_back(out, base.linked_reads_datastores[i]);
-    }
-    for (int i = 0; i < base.long_reads_datastores.size(); ++i){
-        out.long_reads_datastores.emplace_back(out, base.long_reads_datastores[i]);
-    }
-
-    /* Copy for each ADD their datastores and mappers */
-    for (const auto &fn: add_filenames) {
-        WorkSpace add;
-        add.load_from_disk(fn);
-        for (int i = 0; i < add.paired_reads_datastores.size(); ++i){
-            out.paired_reads_datastores.emplace_back(out, add.paired_reads_datastores[i]);
-        }
-        for (int i = 0; i < add.linked_reads_datastores.size(); ++i){
-            out.linked_reads_datastores.emplace_back(out, add.linked_reads_datastores[i]);
-        }
-        for (int i = 0; i < add.long_reads_datastores.size(); ++i){
-            out.long_reads_datastores.emplace_back(out, add.long_reads_datastores[i]);
-        }
-    }
-    out.dump_to_disk(output+".bsgws");
-}
-
 int main(int argc, char * argv[]) {
     std::cout << "sdg-workspace"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
@@ -283,14 +212,11 @@ int main(int argc, char * argv[]) {
         case WorkspaceFunctions::MAKE:
             make_workspace(argc,argv);
             break;
-        case WorkspaceFunctions::LOG:
-            log_workspace(argc,argv);
+        case WorkspaceFunctions::STATUS:
+            status_workspace(argc,argv);
             break;
         case WorkspaceFunctions::DUMP:
             dump_workspace(argc,argv);
-            break;
-        case WorkspaceFunctions::ADD_DS:
-            add_datastores(argc,argv);
             break;
         default:
             std::cout << "Invalid option specified." << std::endl;
