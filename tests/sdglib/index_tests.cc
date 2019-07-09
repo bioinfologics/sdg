@@ -72,3 +72,26 @@ TEST_CASE("NKmerIndex create and lookup") {
     skf.produce_all_kmers(seqPresent.data(),readkmers);
     REQUIRE(assembly_kmers.find(readkmers[0]) != assembly_kmers.end()); // FINDS PRESENT KMERS
 }
+
+TEST_CASE("SatKmerIndex create and lookup") {
+    const uint8_t k = 15;
+    SatKmerIndex assembly_kmers(k);
+
+    std::vector<uint64_t> readkmers;
+    StreamKmerFactory skf(k);
+    std::string seqMissing = "AAAAAAAAAAAAAAA";
+    std::string seqPresent = "CTTGCGGGTTTCCAG";
+    WorkSpace ws;
+    SequenceDistanceGraph sg(ws);
+    sg.load_from_gfa("../tests/datasets/tgraph.gfa");
+    assembly_kmers.generate_index(sg);
+
+    REQUIRE(!assembly_kmers.contig_offsets.empty());
+
+    skf.produce_all_kmers(seqMissing.data(),readkmers);
+    REQUIRE(assembly_kmers.beginCO(readkmers[0]) == assembly_kmers.endCO(readkmers[0])); // FAILS TO FIND NON PRESENT KMERS
+
+    readkmers.clear();
+    skf.produce_all_kmers(seqPresent.data(),readkmers);
+    REQUIRE(assembly_kmers.beginCO(readkmers[0]) < assembly_kmers.endCO(readkmers[0])); // FINDS PRESENT KMERS
+}

@@ -32,7 +32,6 @@ void SatKmerIndex::generate_index(const SequenceDistanceGraph &sg, uint8_t filte
     //---- Second Step, reserve space for each vector in structure (avoiding reallocations and such)----//
     if (verbose) sdglib::OutputLog() << "Sorting, linearising structure and saving positions" << std::endl;
     sdglib::sort(all_kmers.begin(), all_kmers.end(), kmerPos::byKmerContigOffset());
-    assembly_kmers.clear();
 
     if (verbose) sdglib::OutputLog() << "Filtering kmers appearing less than " << filter_limit << " from " << total_kmers << " initial kmers" << std::endl;
     auto witr = all_kmers.begin();
