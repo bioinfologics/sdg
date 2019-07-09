@@ -24,6 +24,9 @@ struct WorkspaceFunctionMap : public std::map<std::string, WorkspaceFunctions>
 };
 
 void make_workspace(int argc, char** argv){
+    std::string toolname("sdg-workspace make: ");
+    std::string git_version(std::string(GIT_ORIGIN_URL) + " -> " + GIT_BRANCH + " " +
+                            GIT_COMMIT_HASH);
     std::vector<std::string> lr_datastores, pr_datastores, Lr_datastores;
     std::string output;
     std::string gfa_filename;
@@ -74,14 +77,10 @@ void make_workspace(int argc, char** argv){
         output_ws.kmer_counts_datastores = w.kmer_counts_datastores;
         output_ws.sdg = w.sdg;
         output_ws.distance_graphs = w.distance_graphs;
-        op = output_ws.add_operation("Copy", std::string("sdg-workspace make ") + GIT_ORIGIN_URL + " -> " + GIT_BRANCH + " " +
-                                        GIT_COMMIT_HASH, std::string("Copied with sdg-workspace make from")+ws_filename);
+        op = output_ws.add_operation("Copy", toolname + git_version, std::string("Copied with sdg-workspace make from ")+ws_filename);
     }
     if (!gfa_filename.empty()) {
-        op = output_ws.add_operation("Creation",
-                                           std::string("sdg-workspace make ") + GIT_ORIGIN_URL + " -> " + GIT_BRANCH +
-                                           " " +
-                                           GIT_COMMIT_HASH, "Created with sdg-workspace make");
+        op = output_ws.add_operation("Create", toolname + git_version, "Created with sdg-workspace make");
         output_ws.sdg.load_from_gfa(gfa_filename);
         op.addEntry("GFA imported from " + gfa_filename + " (" + std::to_string(output_ws.sdg.nodes.size() - 1) +
                      " nodes)");
