@@ -7,10 +7,6 @@
 
 const sdgVersion_t WorkSpace::min_compat = 0x0003;
 
-void WorkSpace::add_log_entry(std::string text) {
-    log.emplace_back(std::time(0),std::string(GIT_COMMIT_HASH),text);
-}
-
 void WorkSpace::dump_to_disk(std::string filename) {
     sdglib::OutputLog()<<"Dumping workspace to "<<filename<<std::endl;
     std::ofstream of(filename);
@@ -308,8 +304,9 @@ DistanceGraph &WorkSpace::add_distance_graph(const DistanceGraph &dg, const std:
     return distance_graphs.back();
 }
 
-void WorkSpace::add_operation(const std::string &name, const std::string &tool, const std::string &detail) {
+OperationJournal &WorkSpace::add_operation(const std::string &name, const std::string &tool, const std::string &detail) {
     operation_journals.emplace_back(name, tool, detail);
+    return operation_journals.back();
 }
 
 PairedReadsDatastore &WorkSpace::get_paired_reads_datastore(const std::string &name) {

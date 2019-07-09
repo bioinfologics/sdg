@@ -25,22 +25,21 @@ struct WorkspaceFunctionMap : public std::map<std::string, WorkspaceFunctions>
 
 void make_workspace(int argc, char** argv){
     std::vector<std::string> lr_datastores, pr_datastores, Lr_datastores;
-    std::string output = "";
-    std::string gfa_filename = "", kci_filename = "";
+    std::string output;
+    std::string gfa_filename;
+    std::string kci_filename;
+    std::string ws_filename;
     try {
-        cxxopts::Options options("sdg-workspace make", "BSG make workspace");
+        cxxopts::Options options("sdg-workspace make", "SDG make workspace");
 
         options.add_options()
                 ("help", "Print help")
-                ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename))
-                ("p,paired_reads", "paired reads datastore",
-                 cxxopts::value<std::vector<std::string>>(pr_datastores))
-                ("l,linked_reads", "linked reads datastore",
-                 cxxopts::value<std::vector<std::string>>(lr_datastores))
-                ("L,long_reads", "long reads datastore",
-                 cxxopts::value<std::vector<std::string>>(Lr_datastores))
-                ("k,kmerspectra", "KCI kmer spectra", cxxopts::value<std::string>(kci_filename))
-                ("o,output", "output file", cxxopts::value<std::string>(output));
+                ("g,gfa", "input gfa file", cxxopts::value(gfa_filename))
+                ("w,workspace", "input workspace file", cxxopts::value(ws_filename))
+                ("p,paired_reads", "paired reads datastore", cxxopts::value(pr_datastores))
+                ("l,linked_reads", "linked reads datastore", cxxopts::value(lr_datastores))
+                ("L,long_reads", "long reads datastore", cxxopts::value(Lr_datastores))
+                ("o,output", "output file", cxxopts::value(output));
         auto newargc = argc - 1;
         auto newargv = &argv[1];
         auto result = options.parse(newargc, newargv);
@@ -49,10 +48,12 @@ void make_workspace(int argc, char** argv){
             exit(0);
         }
 
-        if (output == "" or gfa_filename == "") {
-            throw cxxopts::OptionException(" please specify gfa and output prefix");
+        if (!output.empty()) {
+            throw cxxopts::OptionException(" please specify an output prefix");
         }
-
+        if ( (gfa_filename.empty() and ws_filename.empty()) or (!gfa_filename.empty() and !ws_filename.empty() ) ) {
+            throw cxxopts::OptionException(" please specify either a gfa or workspace input file");
+        }
 
     } catch (const cxxopts::OptionException &e) {
         std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
@@ -61,41 +62,60 @@ void make_workspace(int argc, char** argv){
     }
 
     //===== LOAD GRAPH =====
-    WorkSpace w;
-    w.add_log_entry("Created with sdg-makeworkspace");
-    w.sdg.load_from_gfa(gfa_filename);
-    w.add_log_entry("GFA imported from " + gfa_filename + " (" + std::to_string(w.sdg.nodes.size() - 1) +
-                    " nodes)");
+    WorkSpace output_ws;
+    OperationJournal op;
+    if (!ws_filename.empty()) {
+        WorkSpace w;
+        w.load_from_disk(ws_filename);
+        output_ws.linked_reads_datastores = w.linked_reads_datastores;
+        output_ws.paired_reads_datastores = w.paired_reads_datastores;
+        output_ws.long_reads_datastores = w.long_reads_datastores;
+        output_ws.operation_journals = w.operation_journals;
+        output_ws.kmer_counts_datastores = w.kmer_counts_datastores;
+        output_ws.sdg = w.sdg;
+        output_ws.distance_graphs = w.distance_graphs;
+        op = output_ws.add_operation("Copy", std::string("sdg-workspace make ") + GIT_ORIGIN_URL + " -> " + GIT_BRANCH + " " +
+                                        GIT_COMMIT_HASH, std::string("Copied with sdg-workspace make from")+ws_filename);
+    }
+    if (!gfa_filename.empty()) {
+        op = output_ws.add_operation("Creation",
+                                           std::string("sdg-workspace make ") + GIT_ORIGIN_URL + " -> " + GIT_BRANCH +
+                                           " " +
+                                           GIT_COMMIT_HASH, "Created with sdg-workspace make");
+        output_ws.sdg.load_from_gfa(gfa_filename);
+        op.addEntry("GFA imported from " + gfa_filename + " (" + std::to_string(output_ws.sdg.nodes.size() - 1) +
+                     " nodes)");
+    }
 
     for (auto prds:pr_datastores) {
         //create and load the datastore, and the mapper!
-        w.paired_reads_datastores.emplace_back(w, prds);
-        w.add_log_entry("PairedReadDatastore imported from " + prds + " (" +
-                        std::to_string(w.paired_reads_datastores.back().size()) + " reads)");
+        output_ws.paired_reads_datastores.emplace_back(output_ws, prds);
+        op.addEntry("PairedReadDatastore imported from " + prds + " (" +
+                     std::to_string(output_ws.paired_reads_datastores.back().size()) + " reads)");
     }
 
     for (auto lrds:lr_datastores) {
         //create and load the datastore, and the mapper!
-        w.linked_reads_datastores.emplace_back(w, lrds);
-        w.add_log_entry("LinkedReadDatastore imported from " + lrds + " (" +
-                        std::to_string(w.linked_reads_datastores.back().size()) + " reads)");
+        output_ws.linked_reads_datastores.emplace_back(output_ws, lrds);
+        op.addEntry("LinkedReadDatastore imported from " + lrds + " (" +
+                     std::to_string(output_ws.linked_reads_datastores.back().size()) + " reads)");
     }
 
     for (auto Lrds:Lr_datastores) {
         //create and load the datastore, and the mapper!
-        w.long_reads_datastores.emplace_back(w, Lrds);
-        w.add_log_entry("LongReadDatastore imported from " + Lrds + " (" +
-                        std::to_string(w.long_reads_datastores.back().size()) + " reads)");
+        output_ws.long_reads_datastores.emplace_back(output_ws, Lrds);
+        op.addEntry("LongReadDatastore imported from " + Lrds + " (" +
+                     std::to_string(output_ws.long_reads_datastores.back().size()) + " reads)");
     }
 
-    w.dump_to_disk(output + ".bsgws");
+    output_ws.dump_to_disk(output + ".bsgws");
 }
 
 void log_workspace(int argc, char **argv){
     std::string filename;
     try {
 
-        cxxopts::Options options("sdg-workspace log", "BSG workspace log");
+        cxxopts::Options options("sdg-workspace log", "SDG workspace log");
 
         options.add_options()
                 ("help", "Print help")
@@ -150,7 +170,7 @@ void dump_workspace(int argc, char **argv){
     size_t min_size=2000,max_size=100000000;
     try {
 
-        cxxopts::Options options("sdg-workspace dump", "BSG workspace dump");
+        cxxopts::Options options("sdg-workspace dump", "SDG workspace dump");
 
         options.add_options()
                 ("help", "Print help")
@@ -201,7 +221,7 @@ void add_datastores(int argc, char **argv) {
     std::string base_filename;
     std::vector<std::string> add_filenames;
     try {
-        cxxopts::Options options("sdg-workspace add", "BSG workspace add, adds workspaces to a base workspace in the order they are passed in to an output workspace.");
+        cxxopts::Options options("sdg-workspace add", "SDG workspace add, adds workspaces to a base workspace in the order they are passed in to an output workspace.");
 
         options.add_options()
                 ("help", "Print help")
