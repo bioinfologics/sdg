@@ -7,6 +7,7 @@
 #include <atomic>
 #include <sstream>
 #include <sdglib/readers/FileReader.hpp>
+#include <sdglib/factories/KMerFactory.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/Version.hpp>
 #include <sdglib/datastores/PairedReadsDatastore.hpp>

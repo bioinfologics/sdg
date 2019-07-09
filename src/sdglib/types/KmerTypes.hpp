@@ -8,7 +8,6 @@
 #include <sdglib/types/GenericTypes.hpp>
 
 /**
- * An SMR compatible kmer type provides: count(field), merge(func) and max(constructor)
  * Stores: kmer, node, position and count
  */
 struct KmerIDX {
@@ -62,6 +61,7 @@ struct KmerIDX_hash {
         return k.kmer;
     }
 };
+
 /**
  * This type support k > 31
  */
@@ -132,38 +132,51 @@ struct graphStrandPos{
     }
 };
 
-/**
- * Stores a hash(kmer), signed position pair where the position encodes for fwd or rc of the kmer
- * The sign on the position translates to: as seen on the input sequence (+) and reverse complement of the input seq (-)
- */
-class MinPosIDX {
-public:
-    uint64_t hash = 0;
-    int32_t pos = 0;
+struct KmerCount {
 
-    MinPosIDX() : hash(0), pos(0) {}
+    KmerCount() : kmer(std::numeric_limits<unsigned long long int>::max()), count(0){}
+    explicit KmerCount(uint64_t kmer) : kmer(kmer), count(0) {}
 
-    MinPosIDX(uint64_t hash, int32_t pos) : hash(hash), pos(pos) {}
-    bool operator<(const MinPosIDX &o) const {
-        return hash < o.hash;
+    KmerCount(uint64_t _kmer, uint8_t _count) : kmer(_kmer), count(_count) {}
+
+    const bool operator<(const KmerCount& other) const {
+        return kmer<other.kmer;
     }
 
-    const bool operator==(const MinPosIDX &o) const {
-        return std::tie(hash,pos) == std::tie(o.hash,o.pos);
+    const bool operator>(const KmerCount &other) const {
+        return kmer>other.kmer;
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const MinPosIDX& m) {
-        os << m.hash;
+    const bool operator==(const KmerCount &other) const {
+        return kmer==other.kmer;
+    }
+
+    void merge(const KmerCount &other) {
+        uint8_t res = count + other.count;
+        res |= -(res < count);
+
+        count = res;
+    }
+
+    KmerCount max() {
+        return {};
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const KmerCount& kmer) {
+        os << kmer.kmer << "\t" << kmer.count;
         return os;
     }
 
+    uint64_t kmer;
+    uint8_t count;
+    struct KmerCount_hash {
+        size_t operator()(const KmerCount& k) const {
+            return k.kmer;
+        }
+    };
 
 };
-struct MinPosIDX_hash{
-    size_t operator()(const MinPosIDX& k) const {
-        return k.hash;
-    }
-};
+
 struct kmerPos {
     kmerPos() = default;
     kmerPos(uint64_t kmer, uint32_t contigID, int32_t offset) : kmer(kmer),

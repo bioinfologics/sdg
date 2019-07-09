@@ -14,35 +14,41 @@
 /* Includes the header in the wrapper code */
 #include <cstdint>
 #include <sstream>
+
+#include "sdglib/workspace/WorkSpace.hpp"
+
 #include "sdglib/types/KmerTypes.hpp"
 #include "sdglib/types/GenericTypes.hpp"
 #include "sdglib/types/MappingTypes.hpp"
+
 #include "sdglib/graph/SequenceGraphPath.hpp"
 #include "sdglib/graph/SequenceSubGraph.hpp"
 #include "sdglib/graph/SequenceDistanceGraph.hpp"
-#include "sdglib/views/NodeView.hpp"
-#include "sdglib/processors/KmerCompressionIndex.hpp"
-#include "sdglib/workspace/WorkSpace.hpp"
-#include "sdglib/factories/KMerFactory.hpp"
-#include "sdglib/factories/KMerCountFactory.hpp"
+#include "sdglib/graph/DistanceGraph.hpp"
 
-#include "sdglib/indexers/UniqueKmerIndex.hpp"
+#include "sdglib/views/NodeView.hpp"
+
+#include "sdglib/processors/KmerCompressionIndex.hpp"
+
+#include "sdglib/factories/KMerFactory.hpp"
+#include "sdglib/factories/KMerIDXFactory.hpp"
+
 #include "sdglib/mappers/LinkedReadsMapper.hpp"
 #include "sdglib/mappers/LongReadsMapper.hpp"
-#include "sdglib/datastores/LongReadsDatastore.hpp"
 #include "sdglib/mappers/PairedReadsMapper.hpp"
+
+#include "sdglib/datastores/LongReadsDatastore.hpp"
 #include "sdglib/datastores/KmerCountsDatastore.hpp"
 #include "sdglib/datastores/ReadSequenceBuffer.hpp"
+#include "sdglib/datastores/KmerCountsDatastore.hpp"
+
+#include "sdglib/indexers/UniqueKmerIndex.hpp"
 
 #include "sdglib/processors/Untangler.hpp"
-#include "sdglib/graph/DistanceGraph.hpp"
 #include "sdglib/processors/LinkageUntangler.hpp"
-#include "sdglib/factories/KMerCountFactory.hpp"
-
 #include "sdglib/processors/HaplotypeConsensus.hpp"
-#include "sdglib/readers/FileReader.hpp"
 
-#include "sdglib/datastores/KmerCountsDatastore.hpp"
+#include "sdglib/readers/FileReader.hpp"
 
 %}
 
@@ -68,11 +74,40 @@
     SWIG_exception(SWIG_RuntimeError, e.what());
   }
 }
+
 %include "sdglib/types/KmerTypes.hpp"
 %include "sdglib/types/GenericTypes.hpp"
-%include "sdglib/datastores/LinkedReadsDatastore.hpp"
 %include "sdglib/readers/FileReader.hpp"
+
+%include "sdglib/workspace/WorkSpace.hpp"
+
+%include "sdglib/factories/KMerFactory.hpp"
+
+%include "sdglib/types/MappingTypes.hpp"
+
+%include "sdglib/graph/SequenceGraphPath.hpp"
+%include "sdglib/graph/SequenceSubGraph.hpp"
+%include "sdglib/graph/SequenceDistanceGraph.hpp"
+%include "sdglib/graph/DistanceGraph.hpp"
+
+%include "sdglib/views/NodeView.hpp"
+
+%include "sdglib/indexers/UniqueKmerIndex.hpp"
+
+%include "sdglib/datastores/PairedReadsDatastore.hpp"
+%include "sdglib/datastores/LinkedReadsDatastore.hpp"
+%include "sdglib/datastores/LongReadsDatastore.hpp"
 %include "sdglib/datastores/KmerCountsDatastore.hpp"
+%include "sdglib/datastores/ReadSequenceBuffer.hpp"
+
+%include "sdglib/mappers/LongReadsMapper.hpp"
+%include "sdglib/mappers/LinkedReadsMapper.hpp"
+%include "sdglib/mappers/PairedReadsMapper.hpp"
+
+%include "sdglib/processors/LinkageUntangler.hpp"
+%include "sdglib/processors/KmerCompressionIndex.hpp"
+%include "sdglib/processors/HaplotypeConsensus.hpp"
+%include "sdglib/processors/Untangler.hpp"
 
 %feature("director") DistanceGraph;
 %feature("director") SequenceDistanceGraph;
@@ -97,7 +132,6 @@
 %template(vectorVectorUINT16) std::vector< std::vector <uint16_t > >;
 %template(vectorVectorUINT64) std::vector< std::vector <uint64_t > >;
 %template(vectorBool) std::vector<bool>;
-%template(vectorMinPosIDX) std::vector<MinPosIDX>;
 %template(vectorReadPosSize) std::vector< ReadPosSize >;
 %template(vectorReadMapping) std::vector<ReadMapping>;
 %template(vectorvectorReadMapping) std::vector<std::vector<ReadMapping>>;
@@ -184,38 +218,8 @@ std::string __repr__() {
     __REPR__();
 };
 
-%extend MinPosIDX{
-    __STR__();
-    __REPR__();
-};
-
 %pythoncode %{
 __version__ = "@bsg_VERSION@"
 __branch__ = "@GIT_BRANCH@"
 __commit__ = "@GIT_COMMIT_HASH@"
 %}
-
-%include "sdglib/factories/KMerFactory.hpp"
-%include "sdglib/types/MappingTypes.hpp"
-%include "sdglib/graph/SequenceGraphPath.hpp"
-%include "sdglib/graph/SequenceSubGraph.hpp"
-%include "sdglib/graph/SequenceDistanceGraph.hpp"
-%include "sdglib/views/NodeView.hpp"
-%include "sdglib/indexers/UniqueKmerIndex.hpp"
-%include "sdglib/processors/KmerCompressionIndex.hpp"
-%include "sdglib/workspace/WorkSpace.hpp"
-%include "sdglib/factories/KMerCountFactory.hpp"
-
-%include "sdglib/processors/Untangler.hpp"
-
-%include "sdglib/datastores/LongReadsDatastore.hpp"
-%include "sdglib/datastores/PairedReadsDatastore.hpp"
-%include "sdglib/datastores/KmerCountsDatastore.hpp"
-%include "sdglib/mappers/LongReadsMapper.hpp"
-%include "sdglib/mappers/LinkedReadsMapper.hpp"
-%include "sdglib/mappers/PairedReadsMapper.hpp"
-%include "sdglib/processors/LinkageUntangler.hpp"
-%include "sdglib/graph/DistanceGraph.hpp"
-%include "sdglib/datastores/ReadSequenceBuffer.hpp"
-
-%include "sdglib/processors/HaplotypeConsensus.hpp"

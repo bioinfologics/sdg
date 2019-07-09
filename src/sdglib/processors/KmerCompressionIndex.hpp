@@ -5,8 +5,57 @@
 #ifndef BSG_KMERCOMPRESSIONINDEX_HPP
 #define BSG_KMERCOMPRESSIONINDEX_HPP
 
-#include <sdglib/factories/KMerCountFactory.hpp>
 #include <sdglib/Version.hpp>
+#include <sdglib/factories/KMerFactory.hpp>
+
+struct KmerCountFactoryParams {
+    uint8_t k;
+};
+
+template<typename FileRecord>
+class KmerCountFactory : protected KMerFactory {
+public:
+    explicit KmerCountFactory(KmerCountFactoryParams params) : KMerFactory(params.k) {}
+
+    ~KmerCountFactory() {
+#pragma omp critical (KMerFactoryDestructor)
+        {
+            //std::cout << "Bases processed " << bases << "\n";
+        }
+    }
+    void setFileRecord(FileRecord &rec) {
+        currentRecord = rec;
+        fkmer=0;
+        rkmer=0;
+        last_unknown=0;
+    }
+
+    // TODO: Adjust for when K is larger than what fits in uint64_t!
+    const bool next_element(std::vector<KmerCount> &mers) {
+        uint64_t p(0);
+        while (p < currentRecord.seq.size()) {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            bases++;
+            fillKBuf(currentRecord.seq[p], fkmer, rkmer, last_unknown);
+            p++;
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(fkmer, 1);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(rkmer, 1);
+                }
+            }
+        }
+        return false;
+    }
+
+private:
+    FileRecord currentRecord;
+    uint64_t bases;
+};
 
 class SequenceDistanceGraph;
 class PairedReadsDatastore;
