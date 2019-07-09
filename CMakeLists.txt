@@ -362,9 +362,10 @@ IF(BUILD_R_INTERFACE)
 ENDIF()
 
 install(TARGETS
-#        sdg-workspace
+        sdg-dbg
+        sdg-workspace
         sdg-datastore
-#        sdg-kmerspectra
+        sdg-kmercounts
         sdg-mapper
         sdg
         sdg_static
