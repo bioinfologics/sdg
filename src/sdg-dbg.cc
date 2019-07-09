@@ -85,8 +85,10 @@ int main(int argc, char * argv[]) {
 
     WorkSpace ws;
     GraphMaker gm2(ws.sdg);
-    ws.add_log_entry("Workspace created with sdg-dbg");
-    ws.add_log_entry("Origin datastore: " + pr_file);
+    auto op = ws.add_operation("Create DBG", std::string("sdg-dbg") + GIT_ORIGIN_URL + " -> " + GIT_BRANCH +
+                                   " " +
+                                   GIT_COMMIT_HASH, "Creating the dbg");
+    op.addEntry("Origin datastore: " + pr_file);
     ws.paired_reads_datastores.emplace_back(ws, pr_file);
     if (map_in_memory){
         auto kmers2 = countKmers(ws, k, min_coverage, num_batches);

@@ -29,13 +29,13 @@ add_count(const std::vector<std::string> &fastq_files, int k, const std::string 
     }
     if (!ds_filename.empty()) {
         if (ds_filename.substr(ds_filename.find(".") + 1) == "prseq") {
-            ws.kmer_counts_datastores.back().add_count(name, PairedReadsDatastore(ds_filename));
+            ws.kmer_counts_datastores.back().add_count(name, PairedReadsDatastore(ws, ds_filename));
         }
         if (ds_filename.substr(ds_filename.find(".") + 1) == "lrseq") {
-            ws.kmer_counts_datastores.back().add_count(name, LinkedReadsDatastore(ds_filename));
+            ws.kmer_counts_datastores.back().add_count(name, LinkedReadsDatastore(ws, ds_filename));
         }
         if (ds_filename.substr(ds_filename.find(".") + 1) == "loseq") {
-            ws.kmer_counts_datastores.back().add_count(name, LongReadsDatastore(ds_filename));
+            ws.kmer_counts_datastores.back().add_count(name, LongReadsDatastore(ws, ds_filename));
         }
     }
 }
@@ -54,12 +54,12 @@ void make_kmer_counts(int argc, char **argv) {
         options.add_options()
                 ("help", "Print help")
                 ("n,name", "KmerCounts name", cxxopts::value(name))
-                ("w,workspace", "input workspace", cxxopts::value<std::string>(ws_filename))
-                ("g,gfa", "input gfa file", cxxopts::value<std::string>(gfa_filename))
-                ("f,fastq", "input reads (multi)", cxxopts::value<std::vector<std::string>>(fastq_files))
-                ("d,datastore", "input datastore", cxxopts::value<std::vector<std::string>>(ds_filename))
+                ("w,workspace", "input workspace", cxxopts::value(ws_filename))
+                ("g,gfa", "input gfa file", cxxopts::value(gfa_filename))
+                ("f,fastq", "input reads (multi)", cxxopts::value(fastq_files))
+                ("d,datastore", "input datastore", cxxopts::value(ds_filename))
                 ("k", "kmer length", cxxopts::value(k)->default_value("27"))
-                ("o,output", "output file", cxxopts::value<std::string>(output));
+                ("o,output", "output file", cxxopts::value(output));
         auto newargc=argc-1;
         auto newargv=&argv[1];
         auto result=options.parse(newargc,newargv);

@@ -18,16 +18,7 @@ void WorkSpace::dump_to_disk(std::string filename) {
     of.write((char *) &type, sizeof(type));
 
 
-    //dump log
     uint64_t count;
-    count=log.size();
-    of.write((char *) &count,sizeof(count));
-    for (auto &l:log){
-        of.write((char *) &l.timestamp,sizeof(l.timestamp));
-        sdglib::write_string(of,l.bsg_version);
-        sdglib::write_string(of,l.log_text);
-
-    }
 
     //dump operations
     count = operation_journals.size();
@@ -114,17 +105,6 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
 
 
     uint64_t count,count2;
-    //read log
-    log.clear();
-    std::string git_version,text;
-    std::time_t timestamp;
-    wsfile.read((char *) &count,sizeof(count));
-    for (auto i=0;i<count;++i){
-        wsfile.read((char *) &timestamp,sizeof(timestamp));
-        sdglib::read_string(wsfile,git_version);
-        sdglib::read_string(wsfile,text);
-        log.emplace_back(timestamp,git_version,text);
-    }
 
     //read operations
     wsfile.read((char *) &count, sizeof(count));
@@ -187,15 +167,9 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
 
 }
 
-void WorkSpace::print_log() {
-    for (auto l:log){
-        char buf[50];
-        std::strftime(buf,50,"%F %R",std::localtime(&l.timestamp));
-        std::cout<<buf<<" ["<<l.bsg_version<<"]: "<<l.log_text<<std::endl;
-    }
-
+void WorkSpace::status() {
     for (const auto &j:operation_journals){
-        j.print_status();
+        j.status();
     }
 }
 
@@ -237,6 +211,7 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
 
 void WorkSpace::remap_all() {
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
+    auto op = add_operation("Mapping", "WorkSpace::remap_all", "remapping all reads");
     //auto pri=0;
     sdg.create_index();
     for (auto &ds:paired_reads_datastores) {
@@ -251,31 +226,32 @@ void WorkSpace::remap_all() {
         //    for (auto j=i;j<i+10;++j) t+=sdist[j];
         //    if (t>0) df<<i<<", "<<t<<std::endl;
         //}
-        add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
+        op.addEntry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
     }
     for (auto &ds:linked_reads_datastores) {
         sdglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
         ds.mapper.remap_all_reads();
-        add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
+        op.addEntry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }
 }
 
 void WorkSpace::remap_all63() {
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
+    auto op = add_operation("Mapping", "WorkSpace::remap_all63", "remapping all reads");
     sdg.create_63mer_index();
     for (auto &ds:paired_reads_datastores) {
         sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         ds.mapper.remap_all_reads63();
         ds.print_status();
-        add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
+        op.addEntry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
     }
     for (auto &ds:linked_reads_datastores) {
         sdglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
         ds.mapper.remap_all_reads63();
-        add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
+        op.addEntry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }
 }

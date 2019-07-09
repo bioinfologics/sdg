@@ -11,7 +11,7 @@ void OperationJournal::addEntry(const std::string &detail) {
     entries.emplace_back(detail);
 }
 
-void OperationJournal::print_status() const {
+void OperationJournal::status() const {
     sdglib::OutputLog(false) << "Operation: " << name << " applied on " << ctime(&timestamp);
     sdglib::OutputLog(false) << "Tool: " << tool << std::endl;
     sdglib::OutputLog(false) << "Details: " << detail << std::endl << std::endl;

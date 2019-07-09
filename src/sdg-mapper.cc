@@ -58,7 +58,10 @@ int main(int argc, char * argv[]) {
     WorkSpace ws;
     sdglib::OutputLog()<<"Loading Workspace..."<<std::endl;
     ws.load_from_disk(workspace_file);
-    ws.add_log_entry("sdg-mapper run started");
+    auto op = ws.add_operation("Mapping reads", std::string("sdg-mapper") + GIT_ORIGIN_URL + " -> " + GIT_BRANCH +
+                                      " " +
+                                      GIT_COMMIT_HASH, "Mapping reads");
+    op.addEntry("sdg-mapper run started");
     sdglib::OutputLog()<<"Loading Workspace DONE"<<std::endl;
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
     auto pri=0;
@@ -79,14 +82,14 @@ int main(int argc, char * argv[]) {
             for (auto j=i;j<i+10;++j) t+=sdist[j];
             if (t>0) df<<i<<", "<<t<<std::endl;
         }
-        ws.add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
+        op.addEntry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
     }
     for (auto &ds:ws.linked_reads_datastores) {
         sdglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
         if (!use63mers) ds.mapper.remap_all_reads();
         else ds.mapper.remap_all_reads63();
-        ws.add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
+        op.addEntry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
     }
     for (auto &ds: ws.long_reads_datastores) {
@@ -94,10 +97,10 @@ int main(int argc, char * argv[]) {
         ds.mapper.sat_kmer_index = sat_kmer_index;
         ds.mapper.k = long_reads_k;
         ds.mapper.map_reads(max_filter);
-        ws.add_log_entry("reads from "+ds.filename+" re-mapped to current graph");
+        op.addEntry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
     }
-    ws.add_log_entry("sdg-mapper run finished");
+    op.addEntry("sdg-mapper run finished");
     ws.dump_to_disk(output_prefix+".bsgws");
     sdglib::OutputLog()<<"Mapping reads DONE."<<std::endl;
     return 0;

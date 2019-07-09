@@ -25,7 +25,7 @@ public:
     WorkSpace();
     explicit WorkSpace(const std::string & filename);
     WorkSpace(const WorkSpace& that) = delete; //we definitely do not want copy constructors here, thank you
-    void print_log();
+    void status();
 
 
     void dump_to_disk(std::string filename);

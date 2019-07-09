@@ -24,7 +24,7 @@ public:
 
     void addEntry(const std::string &detail);
 
-    void print_status() const;
+    void status() const;
 
     std::string name={};
     std::time_t timestamp=time(nullptr);

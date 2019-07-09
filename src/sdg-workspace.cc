@@ -141,7 +141,7 @@ void log_workspace(int argc, char **argv){
     }
     WorkSpace w;
     w.load_from_disk(filename);
-    w.print_log();
+    w.status();
     std::cout<<std::endl<<"---=== Workspace current status ===---"<<std::endl;
     //graph
     w.sdg.print_status();
