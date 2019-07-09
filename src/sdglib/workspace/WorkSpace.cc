@@ -171,6 +171,26 @@ void WorkSpace::status() {
     for (const auto &j:operation_journals){
         j.status();
     }
+    //graph
+    sdg.print_status();
+
+    //PR datastores and mappings
+    sdglib::OutputLog()<<"Workspace contains "<< paired_reads_datastores.size() << " paired reads datastores" <<std::endl;
+    for (auto di=0;di<paired_reads_datastores.size();++di){
+        paired_reads_datastores[di].print_status();
+
+    }
+    //10x datastores and mappings
+    sdglib::OutputLog()<<"Workspace contains "<< linked_reads_datastores.size() << " linked reads datastores" <<std::endl;
+    for (auto di=0;di<linked_reads_datastores.size();++di){
+        linked_reads_datastores[di].print_status();
+    }
+    //LR datastores and mappings
+    sdglib::OutputLog()<<"Workspace contains "<< long_reads_datastores.size() << " long reads datastores" <<std::endl;
+    for (auto di=0;di<long_reads_datastores.size();++di){
+        long_reads_datastores[di].print_status();
+    }
+
 }
 
 std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint32_t max_size, uint32_t min_tags, uint32_t max_tags,

@@ -115,7 +115,7 @@ void log_workspace(int argc, char **argv){
     std::string filename;
     try {
 
-        cxxopts::Options options("sdg-workspace log", "SDG workspace log");
+        cxxopts::Options options("sdg-workspace status", "SDG workspace status");
 
         options.add_options()
                 ("help", "Print help")
@@ -143,25 +143,6 @@ void log_workspace(int argc, char **argv){
     w.load_from_disk(filename);
     w.status();
     std::cout<<std::endl<<"---=== Workspace current status ===---"<<std::endl;
-    //graph
-    w.sdg.print_status();
-
-    //PR datastores and mappings
-    sdglib::OutputLog()<<"Workspace contains "<< w.paired_reads_datastores.size() << " paired reads datastores" <<std::endl;
-    for (auto di=0;di<w.paired_reads_datastores.size();++di){
-        w.paired_reads_datastores[di].print_status();
-
-    }
-    //10x datastores and mappings
-    sdglib::OutputLog()<<"Workspace contains "<< w.linked_reads_datastores.size() << " linked reads datastores" <<std::endl;
-    for (auto di=0;di<w.linked_reads_datastores.size();++di){
-        w.linked_reads_datastores[di].print_status();
-    }
-    //LR datastores and mappings
-    sdglib::OutputLog()<<"Workspace contains "<< w.long_reads_datastores.size() << " long reads datastores" <<std::endl;
-    for (auto di=0;di<w.long_reads_datastores.size();++di){
-        w.long_reads_datastores[di].print_status();
-    }
 }
 
 void dump_workspace(int argc, char **argv){
