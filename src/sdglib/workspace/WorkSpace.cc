@@ -49,7 +49,6 @@ void WorkSpace::dump_to_disk(std::string filename) {
     of.write((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
         paired_reads_datastores[i].write(of);
-        paired_reads_datastores[i].mapper.write(of);
     }
 
     //linker read datastores
@@ -57,7 +56,6 @@ void WorkSpace::dump_to_disk(std::string filename) {
     of.write((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
         linked_reads_datastores[i].write(of);
-        linked_reads_datastores[i].mapper.write(of);
     }
 
     //long read datastores
@@ -65,7 +63,6 @@ void WorkSpace::dump_to_disk(std::string filename) {
     of.write((char *) &count,sizeof(count));
     for (auto i=0;i<count;++i){
         long_reads_datastores[i].write(of);
-        long_reads_datastores[i].mapper.write(of);
     }
 
     // Kmer counts, keep these ones at the end of the workspace to make the workspaces editable by exteding the final part of the file

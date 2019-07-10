@@ -223,6 +223,13 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
     }
     fPos = ofs.tellp();                             // Write position after reads
     sdglib::write_flat_vector(ofs, read_to_file_record);
+
+    // Write empty mappings
+    uint8_t k(0);
+    ofs.write(reinterpret_cast<const char *>(&k), sizeof(k));
+    std::vector<LongReadMapping> mappings;
+    sdglib::write_flat_vector(ofs, mappings);
+
     ofs.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
     ofs.write((char*) &nReads, sizeof(nReads));     // Dump # of reads
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index

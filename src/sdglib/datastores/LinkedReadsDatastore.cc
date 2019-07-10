@@ -253,10 +253,25 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
             }
         }
     }
+
+    // Write empty mapper data
+    output.write((char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    output.write((char *) &SDG_VN, sizeof(SDG_VN));
+    type = PairedMap_FT;
+    output.write((char *) &type, sizeof(type));
+
+    std::vector<sgNodeID_t> read_to_node;
+    sdglib::write_flat_vector(output, read_to_node);
+    std::vector<std::vector<ReadMapping>> reads_in_node;
+    sdglib::write_flat_vectorvector(output, reads_in_node);
+
+    // Done
+
     //go back to the beginning of the file and write the read_tag part again
     output.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type)+sizeof(readsize)+sizeof(uint64_t)+(default_name.size()*sizeof(char)));
     sdglib::OutputLog() << "writing down " <<pairs<<" read_tag entries"<< std::endl;
     sdglib::write_flat_vector(output, read_tag);
+
     output.close();
     //delete all temporary chunk files
     for (auto &c:chunkfiles) c.close();

@@ -129,6 +129,20 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
         readdatav.clear();
     }
     _size=pairs*2;
+
+    // Write empty mapper data
+    output.write((char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
+    output.write((char *) &SDG_VN, sizeof(SDG_VN));
+    type = PairedMap_FT;
+    output.write((char *) &type, sizeof(type));
+
+    std::vector<sgNodeID_t> read_to_node;
+    sdglib::write_flat_vector(output, read_to_node);
+    std::vector<std::vector<ReadMapping>> reads_in_node;
+    sdglib::write_flat_vectorvector(output, reads_in_node);
+    // Done
+
+
     output.seekp(size_pos);
     output.write((const char *) &_size, sizeof(_size));
     output.close();
@@ -147,6 +161,7 @@ void PairedReadsDatastore::read(std::ifstream &input_file) {
     sdglib::read_string(input_file, name);
 
     load_index();
+    mapper.read(input_file);
 }
 
 void PairedReadsDatastore::load_index(){
@@ -311,7 +326,6 @@ uint64_t PairedReadsDatastore::size() const {return _size;}
 
 PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper{ws, *this} {
     read(infile);
-    mapper.read(infile);
 }
 
 PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string _filename, std::ifstream &input_file) : ws(ws), mapper(ws, *this) {
