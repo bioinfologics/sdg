@@ -219,29 +219,33 @@ std::vector<uint16_t> KmerCounts::project_count(const std::string &count_name, c
 void KmerCounts::read(std::ifstream &ws_file) {
     std::string filepath;
     sdglib::read_string(ws_file, filepath);
-    std::ifstream input_file(filepath);
-    input_file.read((char *) &k, sizeof(k));
-    sdglib::read_string(input_file,name);
-    sdglib::read_stringvector(input_file,count_names);
-    sdglib::read_flat_vector(input_file,kindex);
-    sdglib::read_flat_vectorvector(input_file,counts);
+    std::ifstream count_file(filepath);
+    read_counts(count_file);
+}
+
+void KmerCounts::read_counts(std::ifstream &count_file) {
+    count_file.read((char *) &k, sizeof(k));
+    sdglib::read_string(count_file,name);
+    sdglib::read_stringvector(count_file,count_names);
+    sdglib::read_flat_vector(count_file,kindex);
+    sdglib::read_flat_vectorvector(count_file,counts);
 
 }
 
-void KmerCounts::write(std::ofstream &output_file) {
+void KmerCounts::write(std::ofstream &output_file) const {
     sdglib::write_string(output_file, name+".count");
 
     std::ofstream count_file(name+".count");
-    count_file.write((char *) &k, sizeof(k));
-    sdglib::write_string(count_file,name);
-    sdglib::write_stringvector(count_file,count_names);
-    sdglib::write_flat_vector(count_file,kindex);
-    sdglib::write_flat_vectorvector(count_file,counts);
+    write_counts(count_file);
 }
-void KmerCounts::write(std::fstream &output_file) {
+void KmerCounts::write(std::fstream &output_file) const {
     sdglib::write_string(output_file, name+".count");
 
     std::ofstream count_file(name+".count");
+    write_counts(count_file);
+}
+
+void KmerCounts::write_counts(std::ofstream &count_file) const {
     count_file.write((char *) &k, sizeof(k));
     sdglib::write_string(count_file,name);
     sdglib::write_stringvector(count_file,count_names);

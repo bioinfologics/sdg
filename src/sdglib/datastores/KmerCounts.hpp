@@ -14,10 +14,14 @@ class LinkedReadsDatastore;
 class LongReadsDatastore;
 class KmerCounts {
 public:
-    KmerCounts(const WorkSpace &_ws, const std::string &_name, uint8_t _k):ws(_ws),k(_k), name(_name){
+    KmerCounts (const WorkSpace &_ws, const std::string &_name, uint8_t _k):ws(_ws),k(_k), name(_name){
         index_sdg();
     };
     KmerCounts (const WorkSpace &ws, std::ifstream &infile);
+    KmerCounts (const WorkSpace &_ws, const std::string &filename):ws(_ws) {
+        std::ifstream count_file(filename);
+        read_counts(count_file);
+    }
     void index_sdg();
 
     bool operator==(const KmerCounts &o) const {
@@ -49,9 +53,12 @@ public:
     std::vector<uint16_t> project_count(const std::string & count_name, const std::string &s);
     std::vector<uint16_t> project_count(const uint16_t count_idx, const std::string &s);
 
-    void write(std::ofstream & output_file);
-    void write(std::fstream & output_file);
+    void write(std::ofstream & output_file) const;
+    void write(std::fstream & output_file) const;
+    void write_counts(std::ofstream &count_file) const;
+
     void read(std::ifstream & input_file);
+    void read_counts(std::ifstream &count_file);
     int8_t get_k(){return k;};
 
     std::vector<uint64_t> kindex;

@@ -49,6 +49,7 @@ void make_kmer_counts(int argc, char **argv) {
     std::string gfa_filename;
     std::string ws_filename;
     std::string ds_filename;
+    std::string counts_filename;
     std::string name;
     try {
         cxxopts::Options options(program_name + " make", "SDG make KmerCounts");
@@ -60,6 +61,7 @@ void make_kmer_counts(int argc, char **argv) {
                 ("g,gfa", "input gfa file", cxxopts::value(gfa_filename))
                 ("f,fastq", "input reads (multi)", cxxopts::value(fastq_files))
                 ("d,datastore", "input datastore", cxxopts::value(ds_filename))
+                ("c,counts_file", "input counts filepath", cxxopts::value(counts_filename))
                 ("k", "kmer length", cxxopts::value(k)->default_value("27"))
                 ("o,output", "output file", cxxopts::value(output));
         auto newargc=argc-1;
@@ -74,14 +76,17 @@ void make_kmer_counts(int argc, char **argv) {
             throw cxxopts::OptionException(" please specify a KmerCounts name and output prefix");
         }
 
-        if ( (result.count("fastq")<1 and ds_filename.empty()) or !(result.count("fastq")<1 and ds_filename.empty())) {
+        if ( (result.count("fastq")<1 and ds_filename.empty()) or (!result.count("fastq")<1 and !ds_filename.empty())) {
             throw cxxopts::OptionException(" please specify an input datastore or fastq files");
         }
 
-        if (gfa_filename.empty() and ws_filename.empty()) {
-            throw cxxopts::OptionException(" please specify a gfa or workspace");
+        int base_count=0;
+        gfa_filename.empty() ? base_count : base_count++;
+        ws_filename.empty() ? base_count : base_count++;
+        counts_filename.empty() ? base_count : base_count++;
+        if ( base_count== 0 or base_count > 1 ) {
+            throw cxxopts::OptionException(" please specify a gfa, workspace or counts file");
         }
-
     } catch (const cxxopts::OptionException &e) {
         std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
                   << "Use option --help to check command line arguments." << std::endl;
@@ -89,16 +94,35 @@ void make_kmer_counts(int argc, char **argv) {
     }
 
     //===== LOAD GRAPH =====
-    WorkSpace ws;
-    if (!ws_filename.empty()) {
-        ws.load_from_disk(ws_filename);
-    } else if (!gfa_filename.empty()) {
-        SequenceDistanceGraph sg(ws);
-        sg.load_from_gfa(gfa_filename);
+    if (!ws_filename.empty() or !gfa_filename.empty()) {
+        WorkSpace ws;
+        if (!ws_filename.empty()) {
+            ws.load_from_disk(ws_filename);
+        } else if (!gfa_filename.empty()) {
+            SequenceDistanceGraph sg(ws);
+            sg.load_from_gfa(gfa_filename);
+        }
+        add_count(ws_filename, fastq_files, k, ds_filename, name, ws);
+    } else if (!counts_filename.empty()) {
+        WorkSpace ws;
+        KmerCounts kc(ws, counts_filename);
+        if (!fastq_files.empty()) {
+            kc.add_count(name, fastq_files);
+        }
+        if (!ds_filename.empty()) {
+            if (ds_filename.substr(ds_filename.find(".") + 1) == "prseq") {
+                kc.add_count(name, PairedReadsDatastore(ws, ds_filename));
+            }
+            if (ds_filename.substr(ds_filename.find(".") + 1) == "lrseq") {
+                kc.add_count(name, LinkedReadsDatastore(ws, ds_filename));
+            }
+            if (ds_filename.substr(ds_filename.find(".") + 1) == "loseq") {
+                kc.add_count(name, LongReadsDatastore(ws, ds_filename));
+            }
+        }
+        std::ofstream output_file(output);
+        kc.write_counts(output_file);
     }
-    add_count(ws_filename, fastq_files, k, ds_filename, name, ws);
-
-
 }
 
 void stats_kmer_counts(int argc, char **argv) {
