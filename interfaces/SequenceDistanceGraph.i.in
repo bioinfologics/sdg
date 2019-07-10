@@ -37,8 +37,9 @@
 #include "sdglib/mappers/LongReadsMapper.hpp"
 #include "sdglib/mappers/PairedReadsMapper.hpp"
 
+#include "sdglib/datastores/PairedReadsDatastore.hpp"
+#include "sdglib/datastores/LinkedReadsDatastore.hpp"
 #include "sdglib/datastores/LongReadsDatastore.hpp"
-#include "sdglib/datastores/KmerCounts.hpp"
 #include "sdglib/datastores/ReadSequenceBuffer.hpp"
 #include "sdglib/datastores/KmerCounts.hpp"
 
