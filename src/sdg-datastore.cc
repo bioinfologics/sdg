@@ -40,6 +40,7 @@ int main(int argc, char * argv[]) {
     if (0==strcmp(argv[1],"make")) {
         std::string read1, read2, long_reads, read_type, output, dsname;
         uint16_t min_readsize=0,max_readsize=150;
+        size_t chunk_size=1000000;
         try {
             cxxopts::Options options("sdg-datastore make", "BSG make datastore");
 
@@ -52,7 +53,8 @@ int main(int argc, char * argv[]) {
                     ("l,min_read_size", "min size for each read, discards both if one is smaller (default 0)", cxxopts::value<uint16_t>(min_readsize))
                     ("s,max_read_size", "max size for short reads, truncates if longer (default 150)", cxxopts::value<uint16_t>(max_readsize))
                     ("n,name", "How do you want to refer to this datastore?", cxxopts::value(dsname))
-                    ("o,output", "output file", cxxopts::value<std::string>(output));
+                    ("o,output", "output file", cxxopts::value<std::string>(output))
+                    ("c,chunk_size", "number of reads to process per chunk", cxxopts::value(dsname));
             auto newargc=argc-1;
             auto newargv=&argv[1];
             auto result=options.parse(newargc,newargv);
@@ -93,14 +95,14 @@ int main(int argc, char * argv[]) {
             LinkedReadsDatastore::build_from_fastq(output + ".lrseq", dsname, read1, read2,
                                                    (read_type == "10xseq" ? LinkedReadsFormat::seq
                                                                           : LinkedReadsFormat::UCDavis), read_size,
-                                                   0);
+                                                   chunk_size);
 
         }
         else if (read_type == "paired") {
             // TODO: Detect read size
             auto read_size = detect_read_size(read1);
             sdglib::OutputLog() << "Detected max read size " << read_size << std::endl;
-            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, dsname, min_readsize, read_size, 0);
+            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, dsname, min_readsize, read_size, chunk_size);
 
         }
         else if (read_type == "long") {
