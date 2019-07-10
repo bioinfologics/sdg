@@ -49,12 +49,7 @@ TEST_CASE("Counts 60-mers correctly from PairedReadDatastore") {
     }
 
     REQUIRE( batch_count.size() == file_count.size() );
-
-    for (uint64_t i = 0; i < batch_count.size(); i++) {
-        CAPTURE(i);
-        REQUIRE(batch_count[i].first == file_count[i].first);
-//        REQUIRE(batch_count[i].second == file_count[i].second);
-    }
+    REQUIRE(batch_count == file_count);
 }
 
 TEST_CASE("Counts 60-mers correctly from PairedReadDatastore, using batches") {
@@ -100,10 +95,5 @@ TEST_CASE("Counts 60-mers correctly from PairedReadDatastore, using batches") {
     }
 
     REQUIRE( batch_count.size() == file_count.size() );
-
-    for (uint64_t i = 0; i < batch_count.size(); i++) {
-        CAPTURE(i);
-        REQUIRE(batch_count[i].first == file_count[i].first);
-//        REQUIRE(batch_count[i].second == file_count[i].second);
-    }
+    REQUIRE(batch_count == file_count);
 }

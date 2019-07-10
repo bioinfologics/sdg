@@ -16,7 +16,7 @@ BatchKmersCounter::kmerCountOMPDiskBased(uint8_t K, PairedReadsDatastore const &
     uint64_t total_kmers_in_batches=0;
     for (auto batch=0;batch < disk_batches;batch++) {
         uint64_t to = (batch+1) * reads.size()/disk_batches;
-        uint64_t from= 1+ batch * reads.size()/disk_batches;
+        uint64_t from= batch * reads.size()/disk_batches;
         auto kmer_list = kmerCountOMP(K, reads,from,to);
         std::ofstream batch_file(tmpdir+"/kmer_count_batch_"+std::to_string((int)batch),std::ios::out | std::ios::trunc | std::ios::binary);
         batch_file.write((const char *)kmer_list->kmers,sizeof(KMerNodeFreq_s)*kmer_list->size);
@@ -152,7 +152,8 @@ BatchKmersCounter::kmerCountOMP(uint8_t K, PairedReadsDatastore const &reads, ui
             // Replace with generating all the kmers from the reads!
             StreamKmerFactory128 skf(K);
 
-            for (uint64_t rid=from; rid<= to; ++rid) {
+            std::cout << "Counting reads from " << from+1 << " to " << to << std::endl;
+            for (uint64_t rid=from+1; rid<= to; ++rid) {
                 skf.produce_all_kmers(bprsg.get_read_sequence(rid), read_kmers);
                 for (const auto &rk: read_kmers){
                     memcpy((char*) &local_kmer_list->kmers[last_kmer].kdata, (char *) &rk, 16);
