@@ -49,6 +49,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_re
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::ifstream &infile) : filename(), ws(ws), mapper(ws, *this) {
     read(infile);
+    mapper.read(infile);
 }
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string default_name, const std::string &filename, std::ifstream &input_file) : filename(filename), ws(ws), mapper(ws, *this) {
@@ -294,6 +295,8 @@ void LongReadsDatastore::write(std::ofstream &output_file) {
     //read filename
     sdglib::write_string(output_file, filename);
     sdglib::write_string(output_file, name);
+
+    mapper.write(output_file);
 }
 
 std::string LongReadsDatastore::get_read_sequence(size_t readID) const {

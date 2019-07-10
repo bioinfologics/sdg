@@ -28,7 +28,7 @@ The documentation is severily lacking right now. We're working on it. There is [
 
 ### sdg-datastore
 
-Tool to create datastores from raw reads. It also creates a special type of datastore: the KmerCountsDatastore, which computes frequency of k-mers from a read set. Since the k-mers are only counted if they appear in a WorkSpace's SequenceDistanceGraph, you will need a workspace to create a KmerCountsDatastore.
+Tool to create datastores from raw reads. It also creates a special type of datastore: the KmerCounts, which computes frequency of k-mers from a read set. Since the k-mers are only counted if they appear in a WorkSpace's SequenceDistanceGraph, you will need a workspace to create a KmerCounts.
 
 ### sdg-workspace
 

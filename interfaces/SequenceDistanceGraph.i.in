@@ -38,9 +38,9 @@
 #include "sdglib/mappers/PairedReadsMapper.hpp"
 
 #include "sdglib/datastores/LongReadsDatastore.hpp"
-#include "sdglib/datastores/KmerCountsDatastore.hpp"
+#include "sdglib/datastores/KmerCounts.hpp"
 #include "sdglib/datastores/ReadSequenceBuffer.hpp"
-#include "sdglib/datastores/KmerCountsDatastore.hpp"
+#include "sdglib/datastores/KmerCounts.hpp"
 
 #include "sdglib/indexers/UniqueKmerIndex.hpp"
 
@@ -97,7 +97,7 @@
 %include "sdglib/datastores/PairedReadsDatastore.hpp"
 %include "sdglib/datastores/LinkedReadsDatastore.hpp"
 %include "sdglib/datastores/LongReadsDatastore.hpp"
-%include "sdglib/datastores/KmerCountsDatastore.hpp"
+%include "sdglib/datastores/KmerCounts.hpp"
 %include "sdglib/datastores/ReadSequenceBuffer.hpp"
 
 %include "sdglib/mappers/LongReadsMapper.hpp"
@@ -153,9 +153,9 @@
 %ignore std::vector<LongReadsDatastore>::resize;
 %template(vectorLongReadsDatastore) std::vector<LongReadsDatastore>;
 
-%ignore std::vector<KmerCountsDatastore>::vector(size_type);
-%ignore std::vector<KmerCountsDatastore>::resize;
-%template(vectorKmerCountsDatastore) std::vector<KmerCountsDatastore>;
+%ignore std::vector<KmerCounts>::vector(size_type);
+%ignore std::vector<KmerCounts>::resize;
+%template(vectorKmerCountsDatastore) std::vector<KmerCounts>;
 
 %template(SGNodePair) std::pair<sgNodeID_t, sgNodeID_t>;
 %template(vectorSGNodePair) std::vector<std::pair<sgNodeID_t, sgNodeID_t>>;

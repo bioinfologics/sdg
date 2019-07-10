@@ -74,7 +74,7 @@ void make_workspace(int argc, char** argv){
         output_ws.paired_reads_datastores = w.paired_reads_datastores;
         output_ws.long_reads_datastores = w.long_reads_datastores;
         output_ws.operation_journals = w.operation_journals;
-        output_ws.kmer_counts_datastores = w.kmer_counts_datastores;
+        output_ws.kmer_counts = w.kmer_counts;
         output_ws.sdg = w.sdg;
         output_ws.distance_graphs = w.distance_graphs;
         op = output_ws.add_operation("Copy", toolname + git_version, std::string("Copied with sdg-workspace make from ")+ws_filename);

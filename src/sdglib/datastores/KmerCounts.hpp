@@ -12,19 +12,19 @@ class WorkSpace;
 class PairedReadsDatastore;
 class LinkedReadsDatastore;
 class LongReadsDatastore;
-class KmerCountsDatastore {
+class KmerCounts {
 public:
-    KmerCountsDatastore(const WorkSpace &_ws, const std::string &_name, uint8_t _k):ws(_ws),k(_k), name(_name){
+    KmerCounts(const WorkSpace &_ws, const std::string &_name, uint8_t _k):ws(_ws),k(_k), name(_name){
         index_sdg();
     };
-    KmerCountsDatastore (const WorkSpace &ws, std::ifstream &infile);
+    KmerCounts (const WorkSpace &ws, std::ifstream &infile);
     void index_sdg();
 
-    bool operator==(const KmerCountsDatastore &o) const {
+    bool operator==(const KmerCounts &o) const {
         return (std::tie(k, kindex, count_names, counts) == std::tie(o.k, o.kindex, o.count_names, o.counts));
     }
 
-    KmerCountsDatastore& operator=(const KmerCountsDatastore &o) {
+    KmerCounts& operator=(const KmerCounts &o) {
         if ( &o == this) return *this;
 
         counts = o.counts;
@@ -50,6 +50,7 @@ public:
     std::vector<uint16_t> project_count(const uint16_t count_idx, const std::string &s);
 
     void write(std::ofstream & output_file);
+    void write(std::fstream & output_file);
     void read(std::ifstream & input_file);
     int8_t get_k(){return k;};
 

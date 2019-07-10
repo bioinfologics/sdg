@@ -189,6 +189,8 @@ void PairedReadsDatastore::write(std::ofstream &output_file) {
     //read filename
     sdglib::write_string(output_file, filename);
     sdglib::write_string(output_file, name);
+
+    mapper.write(output_file);
 }
 
 void PairedReadsDatastore::write_selection(std::ofstream &output_file, std::vector<uint64_t> read_ids) {

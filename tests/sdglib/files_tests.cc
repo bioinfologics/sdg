@@ -41,7 +41,7 @@ TEST_CASE("Workspace create, read, write") {
     in.load_from_disk("workspace.bsgws");
 
 
-    REQUIRE( out.kmer_counts_datastores == in.kmer_counts_datastores);
+    REQUIRE( out.kmer_counts == in.kmer_counts);
     REQUIRE( out.operation_journals == in.operation_journals);
     REQUIRE( out.sdg == in.sdg);
 }

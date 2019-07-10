@@ -43,7 +43,7 @@ std::vector<uint16_t> NodeView::kmer_coverage(std::string kcovds_name, std::stri
 }
 
 std::vector<uint16_t> NodeView::kmer_coverage(int kcovds_idx, int kcovds_count_idx) const {
-    return dg->sdg.ws.kmer_counts_datastores[kcovds_count_idx].project_count(kcovds_count_idx,sequence());
+    return dg->sdg.ws.kmer_counts[kcovds_count_idx].project_count(kcovds_count_idx,sequence());
 }
 
 std::ostream &operator<<(std::ostream &os, const NodeView &nv) {

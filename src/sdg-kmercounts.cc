@@ -21,23 +21,25 @@ struct KmerCountsFunctionMap : public std::map<std::string, KmerCountsFunctions>
 };
 
 void
-add_count(const std::vector<std::string> &fastq_files, int k, const std::string &ds_filename, const std::string &name,
+add_count(const std::string ws_filename, const std::vector<std::string> &fastq_files, int k, const std::string &ds_filename, const std::string &name,
           WorkSpace &ws) {
-    ws.add_kmer_counts_datastore(name, k);
+    auto kc = ws.add_kmer_counts_datastore(name, k);
     if (!fastq_files.empty()) {
-        ws.kmer_counts_datastores.back().add_count(name, fastq_files);
+        kc.add_count(name, fastq_files);
     }
     if (!ds_filename.empty()) {
         if (ds_filename.substr(ds_filename.find(".") + 1) == "prseq") {
-            ws.kmer_counts_datastores.back().add_count(name, PairedReadsDatastore(ws, ds_filename));
+            kc.add_count(name, PairedReadsDatastore(ws, ds_filename));
         }
         if (ds_filename.substr(ds_filename.find(".") + 1) == "lrseq") {
-            ws.kmer_counts_datastores.back().add_count(name, LinkedReadsDatastore(ws, ds_filename));
+            kc.add_count(name, LinkedReadsDatastore(ws, ds_filename));
         }
         if (ds_filename.substr(ds_filename.find(".") + 1) == "loseq") {
-            ws.kmer_counts_datastores.back().add_count(name, LongReadsDatastore(ws, ds_filename));
+            kc.add_count(name, LongReadsDatastore(ws, ds_filename));
         }
     }
+
+    ws.dump_counts(ws_filename);
 }
 
 void make_kmer_counts(int argc, char **argv) {
@@ -94,7 +96,9 @@ void make_kmer_counts(int argc, char **argv) {
         SequenceDistanceGraph sg(ws);
         sg.load_from_gfa(gfa_filename);
     }
-    add_count(fastq_files, k, ds_filename, name, ws);
+    add_count(ws_filename, fastq_files, k, ds_filename, name, ws);
+
+
 }
 
 void stats_kmer_counts(int argc, char **argv) {
@@ -126,7 +130,6 @@ void stats_kmer_counts(int argc, char **argv) {
         exit(1);
     }
     WorkSpace ws;
-    SequenceDistanceGraph sg(ws);
 
 }
 

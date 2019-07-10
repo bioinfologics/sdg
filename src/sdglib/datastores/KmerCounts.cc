@@ -2,14 +2,14 @@
 // Created by Bernardo Clavijo (EI) on 2019-06-25.
 //
 
-#include "KmerCountsDatastore.hpp"
+#include "KmerCounts.hpp"
 #include <sdglib/workspace/WorkSpace.hpp>
 
-KmerCountsDatastore::KmerCountsDatastore(const WorkSpace &_ws, std::ifstream &infile): ws(_ws) {
+KmerCounts::KmerCounts(const WorkSpace &_ws, std::ifstream &infile): ws(_ws) {
     read(infile);
 }
 
-void KmerCountsDatastore::index_sdg() {
+void KmerCounts::index_sdg() {
     //add all k-mers from SDG
     counts.clear();
     count_names.clear();
@@ -38,7 +38,7 @@ void KmerCountsDatastore::index_sdg() {
     kindex.resize(c.size());
 }
 
-void KmerCountsDatastore::add_count(const std::string &count_name, const std::vector<std::string> &filenames) {
+void KmerCounts::add_count(const std::string &count_name, const std::vector<std::string> &filenames) {
     count_names.emplace_back(count_name);
     counts.emplace_back(kindex.size());
     uint64_t present(0), absent(0), rp(0);
@@ -116,7 +116,7 @@ void KmerCountsDatastore::add_count(const std::string &count_name, const std::ve
 
 /** This template is used to do the counts from the datastores, it is templatised here rather than on the header **/
 template<class T>
-void add_count_to_kds( KmerCountsDatastore & kds, const std::string & count_name, const T & datastore){
+void add_count_to_kds( KmerCounts & kds, const std::string & count_name, const T & datastore) {
     kds.count_names.emplace_back(count_name);
     kds.counts.emplace_back(kds.kindex.size());
     uint64_t present(0), absent(0), rp(0);
@@ -180,17 +180,17 @@ void add_count_to_kds( KmerCountsDatastore & kds, const std::string & count_name
                                     << " kmers found" << std::endl;
 }
 
-void KmerCountsDatastore::add_count(const std::string & count_name, const PairedReadsDatastore & datastore){
+void KmerCounts::add_count(const std::string & count_name, const PairedReadsDatastore & datastore){
     add_count_to_kds(*this,count_name,datastore);
 }
-void KmerCountsDatastore::add_count(const std::string & count_name, const LinkedReadsDatastore & datastore){
+void KmerCounts::add_count(const std::string & count_name, const LinkedReadsDatastore & datastore){
     add_count_to_kds(*this,count_name,datastore);
 }
-void KmerCountsDatastore::add_count(const std::string & count_name, const LongReadsDatastore & datastore){
+void KmerCounts::add_count(const std::string & count_name, const LongReadsDatastore & datastore){
     add_count_to_kds(*this,count_name,datastore);
 }
 
-std::vector<uint16_t> KmerCountsDatastore::project_count(const uint16_t count_idx, const std::string &s) {
+std::vector<uint16_t> KmerCounts::project_count(const uint16_t count_idx, const std::string &s) {
     std::vector<uint64_t> skmers;
     StringKMerFactory skf(k);
     skf.create_kmers(s,skmers);
@@ -208,7 +208,7 @@ std::vector<uint16_t> KmerCountsDatastore::project_count(const uint16_t count_id
     return kcov;
 }
 
-std::vector<uint16_t> KmerCountsDatastore::project_count(const std::string &count_name, const std::string &s) {
+std::vector<uint16_t> KmerCounts::project_count(const std::string &count_name, const std::string &s) {
     auto cnitr=std::find(count_names.begin(),count_names.end(),count_name);
     if (cnitr!=count_names.end()){
         return project_count(cnitr-count_names.begin(),s);
@@ -216,7 +216,7 @@ std::vector<uint16_t> KmerCountsDatastore::project_count(const std::string &coun
     return {};
 }
 
-void KmerCountsDatastore::read(std::ifstream &input_file) {
+void KmerCounts::read(std::ifstream &input_file) {
     input_file.read((char *) &k, sizeof(k));
     sdglib::read_string(input_file,name);
     sdglib::read_stringvector(input_file,count_names);
@@ -225,10 +225,23 @@ void KmerCountsDatastore::read(std::ifstream &input_file) {
 
 }
 
-void KmerCountsDatastore::write(std::ofstream &output_file) {
-    output_file.write((char *) &k, sizeof(k));
-    sdglib::write_string(output_file,name);
-    sdglib::write_stringvector(output_file,count_names);
-    sdglib::write_flat_vector(output_file,kindex);
-    sdglib::write_flat_vectorvector(output_file,counts);
+void KmerCounts::write(std::ofstream &output_file) {
+    sdglib::write_string(output_file, name+".count");
+
+    std::ofstream count_file(name+".count");
+    count_file.write((char *) &k, sizeof(k));
+    sdglib::write_string(count_file,name);
+    sdglib::write_stringvector(count_file,count_names);
+    sdglib::write_flat_vector(count_file,kindex);
+    sdglib::write_flat_vectorvector(count_file,counts);
+}
+void KmerCounts::write(std::fstream &output_file) {
+    sdglib::write_string(output_file, name+".count");
+
+    std::ofstream count_file(name+".count");
+    count_file.write((char *) &k, sizeof(k));
+    sdglib::write_string(count_file,name);
+    sdglib::write_stringvector(count_file,count_names);
+    sdglib::write_flat_vector(count_file,kindex);
+    sdglib::write_flat_vectorvector(count_file,counts);
 }

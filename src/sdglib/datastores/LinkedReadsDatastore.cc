@@ -319,6 +319,8 @@ void LinkedReadsDatastore::write(std::ofstream &output_file) {
     //read filename
     sdglib::write_string(output_file, filename);
     sdglib::write_string(output_file, name);
+
+    mapper.write(output_file);
 }
 
 void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std::set<bsg10xTag> &tagSet) {
