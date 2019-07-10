@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <tuple>
+#include <fstream>
 
 class WorkSpace;
 class PairedReadsDatastore;
