@@ -152,7 +152,6 @@ BatchKmersCounter::kmerCountOMP(uint8_t K, PairedReadsDatastore const &reads, ui
             // Replace with generating all the kmers from the reads!
             StreamKmerFactory128 skf(K);
 
-            std::cout << "Counting reads from " << from+1 << " to " << to << std::endl;
             for (uint64_t rid=from+1; rid<= to; ++rid) {
                 skf.produce_all_kmers(bprsg.get_read_sequence(rid), read_kmers);
                 for (const auto &rk: read_kmers){
