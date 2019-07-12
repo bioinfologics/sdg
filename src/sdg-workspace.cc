@@ -51,7 +51,7 @@ void make_workspace(int argc, char** argv){
             exit(0);
         }
 
-        if (!output.empty()) {
+        if (output.empty()) {
             throw cxxopts::OptionException(" please specify an output prefix");
         }
         if ( (gfa_filename.empty() and ws_filename.empty()) or (!gfa_filename.empty() and !ws_filename.empty() ) ) {
