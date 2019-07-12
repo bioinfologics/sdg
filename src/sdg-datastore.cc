@@ -40,21 +40,25 @@ int main(int argc, char * argv[]) {
     if (0==strcmp(argv[1],"make")) {
         std::string read1, read2, long_reads, read_type, output, dsname;
         uint16_t min_readsize=0,max_readsize=150;
+        int fragment_size(0);
+        int orientation(0);
         size_t chunk_size=1000000;
         try {
             cxxopts::Options options("sdg-datastore make", "BSG make datastore");
 
             options.add_options()
                     ("help", "Print help")
-                    ("1,read1", "input reads, left", cxxopts::value<std::string>(read1))
-                    ("2,read2", "input reads, right", cxxopts::value<std::string>(read2))
-                    ("L,long_reads", "input reads, long", cxxopts::value<std::string>(long_reads))
-                    ("t,read_type", "One of: paired,10x,long", cxxopts::value<std::string>(read_type))
-                    ("l,min_read_size", "min size for each read, discards both if one is smaller (default 0)", cxxopts::value<uint16_t>(min_readsize))
-                    ("s,max_read_size", "max size for short reads, truncates if longer (default 150)", cxxopts::value<uint16_t>(max_readsize))
+                    ("1,read1", "input reads, left", cxxopts::value(read1))
+                    ("2,read2", "input reads, right", cxxopts::value(read2))
+                    ("L,long_reads", "input reads, long", cxxopts::value(long_reads))
+                    ("t,read_type", "One of: paired,10x,long", cxxopts::value(read_type))
+                    ("f,fragment_size", "Expected length of the library fragments", cxxopts::value(fragment_size)->default_value("0"))
+                    ("d,read_direction", "0: Undefined(default), 1: FWD-REV, 2: REV-FWD", cxxopts::value(orientation)->default_value("0"))
+                    ("l,min_read_size", "min size for each read, discards both if one is smaller (default 0)", cxxopts::value(min_readsize)->default_value("0"))
+                    ("s,max_read_size", "max size for short reads, truncates if longer (default 150)", cxxopts::value(max_readsize)->default_value("150"))
                     ("n,name", "How do you want to refer to this datastore?", cxxopts::value(dsname))
-                    ("o,output", "output file", cxxopts::value<std::string>(output))
-                    ("c,chunk_size", "number of reads to process per chunk", cxxopts::value(dsname));
+                    ("o,output", "output file", cxxopts::value(output))
+                    ("c,chunk_size", "number of reads to process per chunk", cxxopts::value(chunk_size)->default_value("1000000"));
             auto newargc=argc-1;
             auto newargv=&argv[1];
             auto result=options.parse(newargc,newargv);
@@ -102,7 +106,7 @@ int main(int argc, char * argv[]) {
             // TODO: Detect read size
             auto read_size = detect_read_size(read1);
             sdglib::OutputLog() << "Detected max read size " << read_size << std::endl;
-            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, dsname, min_readsize, read_size, chunk_size);
+            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, dsname, min_readsize, read_size, chunk_size, fragment_size, orientation);
 
         }
         else if (read_type == "long") {

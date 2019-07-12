@@ -19,7 +19,8 @@ void PairedReadsDatastore::print_status() {
 
 void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::string read1_filename,
                                             std::string read2_filename, std::string default_name,
-                                            uint64_t min_readsize, uint64_t max_readsize, size_t chunksize) {
+                                            uint64_t min_readsize, uint64_t max_readsize, int fs, int orientation,
+                                            size_t chunksize) {
 
     //std::cout<<"Memory used by every read's entry:"<< sizeof(PairedRead)<<std::endl;
     //read each read, put it on the index and on the appropriate tag
@@ -57,6 +58,11 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     sdglib::write_string(output, default_name);
 
     output.write((const char *) &max_readsize,sizeof(readsize));
+    uint64_t outv(fs);
+    output.write((const char *) &outv,sizeof(outv));
+    outv = orientation;
+    output.write((const char *) &outv,sizeof(outv));
+
     auto size_pos=output.tellp();
     output.write((const char *) &_size, sizeof(_size));//just to save the space!
     while (!gzeof(fd1) and !gzeof(fd2)) {
@@ -195,6 +201,12 @@ void PairedReadsDatastore::load_index(){
     fread( (char *) default_name.data(), sizeof(char), sname, fd);
 
     fread( &readsize,sizeof(readsize),1,fd);
+
+    fread( &fragment_size, sizeof(fragment_size), 1, fd);
+    uint64_t ort;
+    fread( &ort, sizeof(ort), 1, fd);
+    orientation = ort;
+
     fread( &_size,sizeof(_size),1,fd);
     readpos_offset=ftell(fd);
     sdglib::OutputLog()<<"PairedReadsDatastore open: "<<filename<<"  max read length: "<<readsize<<" Total reads: " <<size()<<std::endl;
@@ -317,7 +329,8 @@ PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string _filename)
 }
 
 PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string read1_filename, std::string read2_filename,
-                                           std::string output_filename, std::string default_name, int min_readsize, int max_readsize) : ws(ws), mapper(ws, *this) {
+                                           std::string output_filename, std::string default_name, int min_readsize, int max_readsize,
+                                           int fs, int orientation) : ws(ws), mapper(ws, *this), fragment_size(fs), orientation(orientation) {
     default_name = default_name;
     build_from_fastq(output_filename, read1_filename, read2_filename, default_name, min_readsize, max_readsize, 0);
 }
