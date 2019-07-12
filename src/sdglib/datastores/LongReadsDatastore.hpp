@@ -68,7 +68,13 @@ public:
     LongReadsDatastore(WorkSpace &ws, const std::string &long_read_file, const std::string &output_file);
 
     LongReadsDatastore& operator=(LongReadsDatastore const &o);
-    uint32_t build_from_fastq(std::ofstream &outf, const std::string &long_read_file);
+    uint32_t dump_seqs_create_index(std::ofstream &outf, const std::string &long_read_file);
+    /**
+     * Create a long reads data-store from fastq files and write the lords to disk
+     * @param output_file Output filename of the datastore
+     * @param default_name internal name of the datastore
+     * @param long_read_file fastq file of long reads
+     */
     static void build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file);
     void print_status() const;
     void read(std::ifstream &ifs);
