@@ -30,6 +30,9 @@ class PairedReadsMapper {
 
 public:
     PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore &_datastore);
+
+    friend std::ostream& operator<<(std::ostream &os, const PairedReadsMapper &prm);
+
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
     /** @brief Maps each read in the data-store to the nodes using unique kmers form the graph
@@ -85,7 +88,7 @@ public:
      * Prints the count of pairs mapped where no end mapped, a single end mapped and both ends mapped and of
      * those how many mapped to a single node.
      */
-    void print_status();
+    void print_status() const ;
 
     PairedReadsMapper& operator=(const PairedReadsMapper &other);
 

@@ -35,6 +35,9 @@ class LinkedReadsMapper {
 
 public:
     LinkedReadsMapper(const WorkSpace &_ws, LinkedReadsDatastore &_datastore);
+
+    friend std::ostream& operator<<(std::ostream &os, const LinkedReadsMapper &lirm);
+
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
 
@@ -90,7 +93,7 @@ public:
      * Prints the count of pairs mapped where no end mapped, a single end mapped and both ends mapped and of
      * those how many mapped to a single node.
      */
-    void print_status();
+    void print_status() const;
 
     /** @brief Given a nodeID returns a set of all tags mapped to that node.
      * if there are no mapped tags returns an empty set

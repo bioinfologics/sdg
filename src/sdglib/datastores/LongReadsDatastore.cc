@@ -337,3 +337,9 @@ LongReadsDatastore::~LongReadsDatastore() {
     close(fd);
 }
 
+std::ostream &operator<<(std::ostream &os, const LongReadsDatastore &lords) {
+    os << "LongReadsDatastore" << std::endl;
+    os << "Name: " << ( (lords.name.empty()) ? lords.default_name : lords.name) << std::endl;
+    lords.print_status();
+}
+

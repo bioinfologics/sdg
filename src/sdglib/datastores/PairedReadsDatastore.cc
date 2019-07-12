@@ -12,7 +12,7 @@
 #include <cstring>
 
 
-void PairedReadsDatastore::print_status() {
+void PairedReadsDatastore::print_status() const {
     sdglib::OutputLog()<<"PairedRead Datastore from "<<filename<<" contains "<<size()-1<<" reads."<<std::endl;
     mapper.print_status();
 }
@@ -401,4 +401,10 @@ PairedReadsDatastore& PairedReadsDatastore::operator=(PairedReadsDatastore const
     ws = o.ws;
     fd = fopen(filename.c_str(), "r");
     return *this;
+}
+
+std::ostream &operator<<(std::ostream &os, const PairedReadsDatastore &prds) {
+    os << "PairedReadsDatastore" << std::endl;
+    os << "Name: " << ((prds.name.empty()) ? prds.default_name : prds.name) << std::endl;
+    prds.print_status();
 }

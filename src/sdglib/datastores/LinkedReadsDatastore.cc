@@ -35,15 +35,16 @@ std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k) {
     return seq;
 }
 
-void LinkedReadsDatastore::print_status() {
+void LinkedReadsDatastore::print_status() const {
     uint64_t tagcount=0;
     bsg10xTag prevtag=0;
-    for (auto &t:read_tag) if (t!=prevtag) {
-        ++tagcount;
-        t=prevtag;
+    for (auto t:read_tag) {
+        if (t != prevtag) {
+            ++tagcount;
+            t = prevtag;
+        }
     }
-    sdglib::OutputLog()<<"LinkedRead Datastore from "<<filename<<" contains "<<size()-1<<" reads in "<< tagcount <<" tags."<<std::endl;
-
+    sdglib::OutputLog()<<"LinkedRead Datastore from "<<filename<<" contains "<<size()-1<<" reads, with a maximum size of " << readsize << " in "<< tagcount <<" tags."<<std::endl;
     mapper.print_status();
 }
 
@@ -601,6 +602,12 @@ LinkedReadsDatastore &LinkedReadsDatastore::operator=(LinkedReadsDatastore const
     mapper = o.mapper;
     read_tag = o.read_tag;
     fd = fopen(filename.c_str(), "r");
+}
+
+std::ostream &operator<<(std::ostream &os, const LinkedReadsDatastore &lrds) {
+    os << "LinkedReadsDatastore" << std::endl;
+    os << "Name: " << (lrds.name.empty() ? lrds.default_name : lrds.name) << std::endl;
+    lrds.print_status();
 }
 
 void BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {

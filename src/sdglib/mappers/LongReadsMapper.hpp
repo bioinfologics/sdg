@@ -151,6 +151,8 @@ public:
     LongReadsMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k=15, bool sat_index=false);
     LongReadsMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k=15, bool sat_index=false);
 
+    friend std::ostream& operator<<(std::ostream &os, const LongReadsMapper &lorm);
+
     LongReadsMapper& operator=(const LongReadsMapper &other);
     LongReadsMapper(const LongReadsDatastore &ds, const LongReadsMapper &o);
 

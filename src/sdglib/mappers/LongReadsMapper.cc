@@ -1037,3 +1037,8 @@ first_mapping(o.first_mapping),
 k(o.k),
 filtered_read_mappings(o.filtered_read_mappings)
 {}
+
+std::ostream &operator<<(std::ostream &os, const LongReadsMapper &lorm) {
+    os << "LongReadsMapper" << std::endl;
+    lorm.print_status();
+}

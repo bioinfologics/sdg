@@ -14,13 +14,17 @@ public:
     explicit JournalEntry(const std::string &detail);
     std::string detail="";
 
-    bool operator==(const JournalEntry& o) const;
+    friend std::ostream& operator<<(std::ostream &os, const JournalEntry &je);
+
+        bool operator==(const JournalEntry& o) const;
 };
 
 class OperationJournal {
 public:
     OperationJournal() = default;
     OperationJournal(const std::string &name, const std::string &tool, const std::string &detail);
+
+    friend std::ostream& operator<<(std::ostream &os, const OperationJournal &opj);
 
     void addEntry(const std::string &detail);
 

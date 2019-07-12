@@ -39,8 +39,9 @@ public:
         }
     }
 
+    friend std::ostream& operator<<(std::ostream &os, const PairedReadsDatastore &prds);
     PairedReadsDatastore& operator=(PairedReadsDatastore const &o);
-    void print_status();
+    void print_status() const;
     static void build_from_fastq(std::string output_filename, std::string read1_filename, std::string read2_filename, std::string default_name,
                                  uint64_t min_readsize = 0, uint64_t max_readsize = 250, int fragment_size=0, int orientation=0, size_t chunksize = 10000000);
     void write(std::ofstream & output_file);

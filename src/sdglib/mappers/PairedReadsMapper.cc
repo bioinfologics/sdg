@@ -325,7 +325,7 @@ void PairedReadsMapper::remove_obsolete_mappings(){
     sdglib::OutputLog(sdglib::INFO, false) << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
 }
 
-void PairedReadsMapper::print_status(){
+void PairedReadsMapper::print_status() const {
     uint64_t none=0,single=0,both=0,same=0;
     for (uint64_t r1=1;r1<read_to_node.size();r1+=2){
         if (read_to_node[r1]==0) {
@@ -455,4 +455,9 @@ std::vector<uint64_t> PairedReadsMapper::get_node_readpairs_ids(sgNodeID_t nodeI
     }
     std::sort(rpin.begin(),rpin.end());
     return rpin;
+}
+
+std::ostream &operator<<(std::ostream &os, const PairedReadsMapper &prm) {
+    os << "PairedReadsMapper" << std::endl;
+    prm.print_status();
 }

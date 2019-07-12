@@ -327,7 +327,7 @@ void LinkedReadsMapper::remove_obsolete_mappings(){
     std::cout << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
 }
 
-void LinkedReadsMapper::print_status() {
+void LinkedReadsMapper::print_status() const {
     uint64_t none=0,single=0,both=0,same=0;
     for (uint64_t r1=1;r1<read_to_node.size();r1+=2){
         if (read_to_node[r1]==0) {
@@ -590,4 +590,9 @@ void LinkedReadsMapper::read_tag_neighbours(std::string filename) {
         tag_neighbours[i].resize(mcount);
         input_file.read(( char *) tag_neighbours[i].data(), sizeof(TagNeighbour) * mcount);
     }
+}
+
+std::ostream &operator<<(std::ostream &os, const LinkedReadsMapper &lirm) {
+    os << "LinkedReadsMapper" << std::endl;
+    lirm.print_status();
 }

@@ -62,9 +62,11 @@ public:
         }
     }
 
+    friend std::ostream& operator<<(std::ostream& os, const LinkedReadsDatastore &lrds);
+
     LinkedReadsDatastore& operator=(LinkedReadsDatastore const &o);
 
-    void print_status();
+    void print_status() const;
     static void build_from_fastq(std::string output_filename, std::string default_name, std::string read1_filename, std::string read2_filename,
                                  LinkedReadsFormat format, uint64_t readsize = 250, size_t chunksize = 10000000);
     void write(std::ofstream & output_file);

@@ -67,6 +67,8 @@ public:
      */
     LongReadsDatastore(WorkSpace &ws, const std::string &long_read_file, const std::string &output_file);
 
+    friend std::ostream& operator<<(std::ostream &os, const LongReadsDatastore &lords);
+
     LongReadsDatastore& operator=(LongReadsDatastore const &o);
     uint32_t dump_seqs_create_index(std::ofstream &outf, const std::string &long_read_file);
     /**
