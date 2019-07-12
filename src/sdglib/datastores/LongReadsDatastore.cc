@@ -31,7 +31,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_re
 
     ofs.write((char*) &nReads, sizeof(nReads));
     ofs.write((char*) &fPos, sizeof(fPos));
-    nReads = build_from_fastq(ofs, long_read_file); // Build read_to_fileRecord
+    nReads = dump_seqs_create_index(ofs, long_read_file); // Build read_to_fileRecord
     fPos = ofs.tellp();                             // Write position after reads
     sdglib::write_flat_vector(ofs, read_to_fileRecord);
     ofs.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
@@ -238,7 +238,7 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<read_to_file_record.size()-1<<" reads"<<std::endl;
 }
 
-uint32_t LongReadsDatastore::build_from_fastq(std::ofstream &outf, const std::string &long_read_file) {
+uint32_t LongReadsDatastore::dump_seqs_create_index(std::ofstream &outf, const std::string &long_read_file) {
     // open the file
     std::ifstream fastq_ifstream(long_read_file);
     if (!fastq_ifstream) {
