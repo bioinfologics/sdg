@@ -564,7 +564,7 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
     //connect out->in for all combinations on each kmer
     uint64_t next_out_idx=0;
     for(auto &i:in){
-        while(out[next_out_idx].first<i.first) ++next_out_idx;
+        while(next_out_idx<out.size() and out[next_out_idx].first<i.first) ++next_out_idx;
         for (auto oidx=next_out_idx;oidx<out.size() and out[oidx].first==i.first;++oidx) {
             sg.add_link(i.second,out[oidx].second,-k+1);//no support, although we could add the DBG operation as such
         }
