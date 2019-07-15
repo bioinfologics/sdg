@@ -33,7 +33,7 @@ class NodeView;
  */
 class DistanceGraph {
 public:
-    explicit DistanceGraph(SequenceDistanceGraph & _sdg);
+    explicit DistanceGraph(SequenceDistanceGraph & _sdg, bool resize_links=true);
     DistanceGraph(SequenceDistanceGraph& sdg, std::ifstream &input_file);
     DistanceGraph(SequenceDistanceGraph & _sdg, const std::string& name);
 

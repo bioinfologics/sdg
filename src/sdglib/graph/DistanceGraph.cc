@@ -487,8 +487,8 @@ void DistanceGraph::write(std::ofstream &output_file) {
     sdglib::write_flat_vectorvector(output_file, links);
 }
 
-DistanceGraph::DistanceGraph(SequenceDistanceGraph &_sdg): sdg(_sdg) {
-    links.resize(sdg.nodes.size());
+DistanceGraph::DistanceGraph(SequenceDistanceGraph &_sdg,bool resize_links): sdg(_sdg) {
+    if (resize_links) links.resize(sdg.nodes.size());
 }
 
 DistanceGraph::DistanceGraph(SequenceDistanceGraph &sdg, std::ifstream &input_file) : sdg(sdg) {
