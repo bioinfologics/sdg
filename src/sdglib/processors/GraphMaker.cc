@@ -543,6 +543,34 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
         sg.add_node(Node(s));
         if (!sg.nodes.back().is_canonical()) sg.nodes.back().make_rc();//inefficient, but once in a node
     }
+    //If there are any perfect circles, they won't have ends, so just pick any unused kmer and go fw
+    //(this is going to be even tricker to parallelise
+    std::cout<<"doing the circles now"<<std::endl;
+    for (uint64_t start_kmer_idx=0;start_kmer_idx<kmerlist.size();++start_kmer_idx) {
+        if (used_kmers[start_kmer_idx]) continue; //any kmer can only belong to one unitig.ww
+
+        //Check this k-mer is an end/junction
+        auto start_kmer = kmerlist[start_kmer_idx];
+        auto end_fw = is_end_fw(start_kmer, k, kmerlist);
+        std::vector<klidxs> fwn;
+        unsigned char nucleotides[4] = {'A', 'C', 'G', 'T'};
+        auto current_kmer = start_kmer;
+        used_kmers[start_kmer_idx] = true;
+        s=kmer_to_sequence128(current_kmer, k);
+
+        while (!end_fw) {
+            //Add end nucleotide, update current_kmer;
+            get_fw_idxs(fwn, current_kmer, k, kmerlist);
+            current_kmer = fwn[0].kmer;
+            if (used_kmers[fwn[0].idx]) break;//break circular contigs into lines.
+            used_kmers[fwn[0].idx] = true;
+            s.push_back(nucleotides[current_kmer % 4]);
+            end_fw = is_end_fw(current_kmer, k, kmerlist);
+        }
+        sg.add_node(Node(s));
+        if (!sg.nodes.back().is_canonical()) sg.nodes.back().make_rc();//inefficient, but once in a node
+    }
+
     //save the (k-1)mer in (rev on first k-1 / fw on last k-1) or out ( fw on first k-1 / bw on last k-1)
     std::vector<std::pair<__uint128_t,sgNodeID_t>> in, out;
     in.reserve(2*sg.nodes.size());
