@@ -27,6 +27,7 @@
 #include "sdglib/graph/DistanceGraph.hpp"
 
 #include "sdglib/views/NodeView.hpp"
+#include "sdglib/mappers/SequenceMapper.hpp"
 
 #include "sdglib/processors/KmerCompressionIndex.hpp"
 
@@ -92,6 +93,7 @@
 %include "sdglib/graph/DistanceGraph.hpp"
 
 %include "sdglib/views/NodeView.hpp"
+%include "sdglib/mappers/SequenceMapper.hpp"
 
 %include "sdglib/indexers/UniqueKmerIndex.hpp"
 
