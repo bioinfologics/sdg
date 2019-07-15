@@ -33,9 +33,9 @@ class NodeView;
  */
 class DistanceGraph {
 public:
-    explicit DistanceGraph(SequenceDistanceGraph & _sdg): sdg(_sdg){};
+    explicit DistanceGraph(SequenceDistanceGraph & _sdg);
     DistanceGraph(SequenceDistanceGraph& sdg, std::ifstream &input_file);
-    DistanceGraph(SequenceDistanceGraph & _sdg, const std::string& name) : name(name), sdg(_sdg){}
+    DistanceGraph(SequenceDistanceGraph & _sdg, const std::string& name);
 
     /** @brief Adds a link between source and destination in the links collection.
      * Each link is added from both ends in the collection (see links vector)
