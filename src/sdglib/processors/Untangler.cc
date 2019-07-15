@@ -9,7 +9,6 @@
 #include <sdglib/mappers/PairedReadsMapper.hpp>
 #include <sdglib/datastores/LongReadsDatastore.hpp>
 #include <sdglib/mappers/LongReadsMapper.hpp>
-#include "sdglib/processors/KmerCompressionIndex.hpp"
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
 
 struct Counter

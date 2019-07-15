@@ -1,7 +1,6 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <sdglib/processors/KmerCompressionIndex.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include "cxxopts.hpp"
 

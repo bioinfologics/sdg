@@ -29,7 +29,6 @@
 #include "sdglib/views/NodeView.hpp"
 #include "sdglib/mappers/SequenceMapper.hpp"
 
-#include "sdglib/processors/KmerCompressionIndex.hpp"
 
 #include "sdglib/factories/KMerFactory.hpp"
 #include "sdglib/factories/KMerIDXFactory.hpp"
@@ -108,7 +107,6 @@
 %include "sdglib/mappers/PairedReadsMapper.hpp"
 
 %include "sdglib/processors/LinkageUntangler.hpp"
-%include "sdglib/processors/KmerCompressionIndex.hpp"
 %include "sdglib/processors/HaplotypeConsensus.hpp"
 %include "sdglib/processors/Untangler.hpp"
 

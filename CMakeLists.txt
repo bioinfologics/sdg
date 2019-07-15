@@ -165,8 +165,7 @@ SET(source_files ${source_files}
     src/sdglib/processors/PathExplorer.cc
     src/sdglib/processors/LinkageUntangler.cc
     src/sdglib/workspace/WorkSpace.cc
-    src/sdglib/processors/KmerCompressionIndex.cc
-    src/sdglib/processors/GraphEditor.cc
+        src/sdglib/processors/GraphEditor.cc
     src/sdglib/processors/GraphMaker.cc
     src/sdglib/processors/LocalHaplotypeAssembler.cc
     src/sdglib/processors/HaplotypeConsensus.cc

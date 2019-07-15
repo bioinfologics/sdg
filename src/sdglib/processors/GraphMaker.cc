@@ -4,7 +4,6 @@
 
 #include <sdglib/bloom/BloomFilter.hpp>
 #include "GraphMaker.hpp"
-#include "KmerCompressionIndex.hpp"
 
 std::string kmer_to_sequence(uint64_t kmer, uint8_t k) {
     std::string seq;

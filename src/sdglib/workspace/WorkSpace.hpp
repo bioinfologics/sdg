@@ -14,7 +14,6 @@
 #include <sdglib/mappers/LinkedReadsMapper.hpp>
 #include <sdglib/mappers/LongReadsMapper.hpp>
 
-#include <sdglib/processors/KmerCompressionIndex.hpp>
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
 #include <sdglib/journal/OperationJournal.hpp>
 #include <sdglib/datastores/KmerCounts.hpp>
