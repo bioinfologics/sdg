@@ -88,7 +88,7 @@ int main(int argc, char * argv[]) {
                                    " " +
                                    GIT_COMMIT_HASH, "Creating the dbg");
     op.addEntry("Origin datastore: " + pr_file);
-    ws.paired_reads_datastores.emplace_back(ws, pr_file);
+    ws.add_paired_reads_datastore(pr_file,"dbg_reads");
 
     auto kmer_list = countKmersToList(ws, k, min_coverage, num_batches);
     gm2.new_graph_from_kmerlist_trivial128(kmer_list,k);
