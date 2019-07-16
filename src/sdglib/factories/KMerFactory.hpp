@@ -163,6 +163,55 @@ public:
     }
 };
 
+class StringKMerFactoryNC : protected KMerFactory {
+public:
+    explicit StringKMerFactoryNC(uint8_t k) : KMerFactory(k) {
+        fkmer=0;
+        rkmer=0;
+        last_unknown=0;
+    }
+
+    ~StringKMerFactoryNC() {}
+
+    // TODO: Adjust for when K is larger than what fits in uint64_t!
+    const bool create_kmers(const std::string &s, std::vector<std::pair<bool, uint64_t>> &mers) {
+        fkmer=0;
+        rkmer=0;
+        last_unknown=0;
+        uint64_t p(0);
+        mers.reserve(mers.size()+s.size());
+        while (p < s.size()) {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(s[p], fkmer, rkmer, last_unknown);
+            p++;
+            if (last_unknown >= K) {
+                mers.emplace_back(true, fkmer);
+            }
+        }
+        return false;
+    }
+
+    const bool create_kmers(const std::string &s, std::vector<uint64_t> &mers) {
+        fkmer=0;
+        rkmer=0;
+        last_unknown=0;
+        uint64_t p(0);
+        mers.reserve(mers.size()+s.size());
+        while (p < s.size()) {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(s[p], fkmer, rkmer, last_unknown);
+            p++;
+            if (last_unknown >= K) {
+                mers.emplace_back(fkmer);
+            }
+        }
+        return false;
+    }
+};
+
+
 class StreamKmerFactory : protected KMerFactory {
 public:
     explicit StreamKmerFactory(uint8_t k) : KMerFactory(k) {}
