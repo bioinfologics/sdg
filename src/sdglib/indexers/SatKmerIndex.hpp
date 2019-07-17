@@ -10,7 +10,7 @@
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/types/KmerTypes.hpp>
 #include <sdglib/factories/KMerFactory.hpp>
-#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/utilities/OutputLog.hpp>
 
 class SequenceDistanceGraph;
 struct ContigOffset {

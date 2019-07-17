@@ -10,7 +10,7 @@
 #include <iostream>
 #include <fcntl.h>
 #include <sdglib/readers/Common.hpp>
-#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/utilities/OutputLog.hpp>
 #include "kseq.hpp"
 
 struct FastxReaderParams {

@@ -3,7 +3,7 @@
 //
 
 #include "LinkedReadsDatastore.hpp"
-#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/utilities/OutputLog.hpp>
 #include <sdglib/mappers/LinkedReadsMapper.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <fstream>

@@ -5,7 +5,7 @@
 #include "PairedReadsDatastore.hpp"
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/mappers/PairedReadsMapper.hpp>
-#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/utilities/OutputLog.hpp>
 #include <sdglib/types/GenericTypes.hpp>
 #include <fstream>
 #include <strings.h>

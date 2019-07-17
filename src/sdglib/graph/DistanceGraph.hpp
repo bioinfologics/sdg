@@ -18,7 +18,7 @@
 #include <sdglib/types/GenericTypes.hpp>
 #include <sdglib/graph/SequenceSubGraph.hpp>
 #include <sdglib/graph/SequenceGraphPath.hpp>
-#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/utilities/OutputLog.hpp>
 
 class SequenceDistanceGraph;//fwd declaration (to break circular dependence)
 class NodeView;

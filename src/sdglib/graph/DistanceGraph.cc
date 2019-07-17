@@ -5,7 +5,7 @@
 #include "DistanceGraph.hpp"
 #include <fstream>
 #include <cmath>
-#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/utilities/OutputLog.hpp>
 #include "SequenceDistanceGraph.hpp"
 #include <sdglib/views/NodeView.hpp>
 

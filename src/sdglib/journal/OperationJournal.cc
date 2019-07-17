@@ -2,7 +2,7 @@
 // Created by Luis Yanes (EI) on 2019-06-26.
 //
 
-#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/utilities/OutputLog.hpp>
 #include "OperationJournal.hpp"
 
 OperationJournal::OperationJournal(const std::string &name, const std::string &tool, const std::string &detail) : name(name), timestamp(time(nullptr)), tool(tool), detail(detail) {}

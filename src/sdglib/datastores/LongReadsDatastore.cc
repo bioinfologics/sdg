@@ -5,7 +5,7 @@
 //
 
 #include "LongReadsDatastore.hpp"
-#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/utilities/OutputLog.hpp>
 #include <sdglib/mappers/LongReadsMapper.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <algorithm>
