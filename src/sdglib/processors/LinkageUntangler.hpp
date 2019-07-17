@@ -48,14 +48,6 @@ public:
 
     //Multi-Linkage creation methods: multiple evidence-supported links between any nodes
 
-    DistanceGraph make_topology_linkage(int radius);
-    DistanceGraph make_longRead_multilinkage(const LongReadsMapper &lorm,bool real_read_size=true, int32_t unmapped_end=1000);
-    DistanceGraph make_paired10x_multilinkage(const PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore=0.2, bool fr=false, uint64_t read_offset=0);
-
-
-    //supporting methods
-    std::vector<Link> mappings_to_multilinkage(const std::vector<LongReadMapping> &lorm_mappings, uint32_t read_size, int32_t unmapped_end=1000);
-
 
 
     //Linkage creation methods: aggregated links between selected nodes (anchors)
@@ -72,15 +64,6 @@ public:
     //void select_nodes_by_HSPNPs(uint64_t min_size, float min_ci, float max_ci);
 
 
-
-    //Linkage creation methods (work on selected nodes)
-    std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> shared_read_paths(int min_shared, std::vector<size_t> libraries, bool r1rev, bool r2rev);
-
-    DistanceGraph make_paired_linkage(int min_reads);
-    DistanceGraph make_paired_linkage_pe(int min_reads);
-    DistanceGraph make_tag_linkage(int min_tags, bool use_kmer_paths=false);
-
-    DistanceGraph make_and_simplify_linkage(int min_shared_tags);
 
     //Linkage improving/filtering methods
     //DistanceGraph filter_linkage_to_hspnp_duos( uint64_t min_size, float min_ci, float max_ci, const DistanceGraph & ldg);

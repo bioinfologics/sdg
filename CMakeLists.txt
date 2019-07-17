@@ -174,7 +174,7 @@ SET(source_files ${source_files}
     src/sdglib/journal/OperationJournal.cc
     src/sdglib/batch_counter/BatchKmersCounter.cc
     deps/xxhash/xxhash.c
-        src/sdglib/mappers/SequenceMapper.cc src/sdglib/mappers/SequenceMapper.hpp)
+        src/sdglib/mappers/SequenceMapper.cc src/sdglib/mappers/SequenceMapper.hpp src/sdglib/processors/LinkageMaker.cc src/sdglib/processors/LinkageMaker.hpp)
 ## Libraries
 add_library(sdg SHARED
             ${source_files}
