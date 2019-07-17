@@ -161,8 +161,7 @@ SET(source_files ${source_files}
     src/sdglib/mappers/LongReadsMapper.cc
     src/sdglib/mappers/LinkedReadsMapper.cc
     src/sdglib/mappers/PairedReadsMapper.cc
-        src/sdglib/processors/PathExplorer.cc
-    src/sdglib/processors/LinkageUntangler.cc
+        src/sdglib/processors/LinkageUntangler.cc
     src/sdglib/workspace/WorkSpace.cc
         src/sdglib/processors/GraphEditor.cc
     src/sdglib/processors/GraphMaker.cc
