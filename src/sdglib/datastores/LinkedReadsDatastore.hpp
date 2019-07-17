@@ -21,7 +21,7 @@
 #include <sdglib/mappers/LinkedReadsMapper.hpp>
 #include "ReadSequenceBuffer.hpp"
 
-enum class LinkedReadsFormat {UCDavis,raw,seq};
+enum class LinkedReadsFormat {UCDavis,raw};
 struct LinkedReadData {
     bsg10xTag tag;
     std::string seq1,seq2;

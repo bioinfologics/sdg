@@ -51,7 +51,7 @@ int main(int argc, char * argv[]) {
                     ("1,read1", "input reads, left", cxxopts::value(read1))
                     ("2,read2", "input reads, right", cxxopts::value(read2))
                     ("L,long_reads", "input reads, long", cxxopts::value(long_reads))
-                    ("t,read_type", "One of: paired,10x,long", cxxopts::value(read_type))
+                    ("t,read_type", "One of: paired,10x,10xUCD,long", cxxopts::value(read_type))
                     ("f,fragment_size", "Expected length of the library fragments", cxxopts::value(fragment_size)->default_value("0"))
                     ("d,read_direction", "0: Undefined(default), 1: FWD-REV, 2: REV-FWD", cxxopts::value(orientation)->default_value("0"))
                     ("l,min_read_size", "min size for each read, discards both if one is smaller (default 0)", cxxopts::value(min_readsize)->default_value("0"))
@@ -92,13 +92,13 @@ int main(int argc, char * argv[]) {
         }
 
         //===== DATASTORE CREATION =====
-        if (read_type == "10x" or read_type == "10xseq") {
+        if (read_type == "10x" or read_type == "10xUCD") {
             // TODO: Detect read size
             auto read_size = detect_read_size(read1);
             sdglib::OutputLog() << "Detected max read size " << read_size << std::endl;
             LinkedReadsDatastore::build_from_fastq(output + ".lrseq", dsname, read1, read2,
-                                                   (read_type == "10xseq" ? LinkedReadsFormat::seq
-                                                                          : LinkedReadsFormat::UCDavis), read_size,
+                                                   (read_type == "10xUCD" ? LinkedReadsFormat::UCDavis
+                                                                          : LinkedReadsFormat::raw), read_size,
                                                    chunk_size);
 
         }
