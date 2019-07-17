@@ -295,7 +295,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     output.close();
     //delete all temporary chunk files
     for (auto &c:chunkfiles) c.close();
-    //for (auto i=0;i<chunkfiles.size();++i) ::unlink(("sorted_chunk_"+std::to_string(i)+".data").c_str());
+    for (auto i=0;i<chunkfiles.size();++i) ::unlink(("sorted_chunk_"+std::to_string(i)+".data").c_str());
     //DONE!
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Datastore with "<<(read_tag.size())*2<<" reads, "<<tagged_reads<<" reads with tags"<<std::endl; //and "<<reads_in_tag.size()<<"tags"<<std::endl;
     gzclose(fd1);
