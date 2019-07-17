@@ -54,12 +54,12 @@ int main(int argc, char * argv[]) {
                 ("p,paired_datastore", "input paired read datastore", cxxopts::value<std::string>(pr_file))
                 ("b,disk_batches", "number of disk batches to use", cxxopts::value(num_batches))
                 //("l,linked_datastore", "input linked read datastore", cxxopts::value<std::string>(lr_filename))
-                //("map_in_memory", "use map-in-memory implementation (deprecated, for test only)", cxxopts::value(map_in_memory))
-                ("tip_size", "tip size for tip clipping (0 for no clipping)", cxxopts::value(tip_size))
+                //("map_in_memory", "use map-in-memory implementation (deprecated, for test only)", cxxopts::value(map_in_memory);
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
         options.add_options("Heuristics")
                 ("k", "k value for DBG construction (default: 63)", cxxopts::value<int>(k))
-                ("c,min_coverage", "minimum coverage for a kmer to include in DBG", cxxopts::value<int>(min_coverage));
+                ("c,min_coverage", "minimum coverage for a kmer to include in DBG", cxxopts::value<int>(min_coverage))
+                ("tip_size", "tip size for tip clipping (0 for no clipping)", cxxopts::value(tip_size));
 
 
         auto result(options.parse(argc, argv));
