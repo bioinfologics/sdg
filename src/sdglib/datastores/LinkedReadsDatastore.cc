@@ -161,7 +161,6 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
         if (0 != newtag) tagged_reads += 2;
         ++pairs;
         readdatav.push_back(currrent_read);
-        std::cout<<currrent_read.seq1<<" "<<currrent_read.seq2<<std::endl;
         if (readdatav.size()==chunksize){
             //sort
             std::sort(readdatav.begin(),readdatav.end());
