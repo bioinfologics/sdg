@@ -45,7 +45,6 @@
 
 #include "sdglib/indexers/UniqueKmerIndex.hpp"
 
-#include "sdglib/processors/Untangler.hpp"
 #include "sdglib/processors/LinkageUntangler.hpp"
 #include "sdglib/processors/HaplotypeConsensus.hpp"
 
@@ -108,7 +107,6 @@
 
 %include "sdglib/processors/LinkageUntangler.hpp"
 %include "sdglib/processors/HaplotypeConsensus.hpp"
-%include "sdglib/processors/Untangler.hpp"
 
 %feature("director") DistanceGraph;
 %feature("director") SequenceDistanceGraph;
