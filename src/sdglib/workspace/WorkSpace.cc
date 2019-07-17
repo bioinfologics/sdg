@@ -353,7 +353,16 @@ OperationJournal &WorkSpace::get_operation(const std::string &name) {
 }
 
 WorkSpace::WorkSpace(const std::string &filename) : sdg(*this) {
+    linked_reads_datastores.reserve(100);
+    paired_reads_datastores.reserve(100);
+    long_reads_datastores.reserve(100);
+    kmer_counts.reserve(100);
     load_from_disk(filename);
 }
 
-WorkSpace::WorkSpace() : sdg(*this) {}
+WorkSpace::WorkSpace() : sdg(*this) {
+    linked_reads_datastores.reserve(100);
+    paired_reads_datastores.reserve(100);
+    long_reads_datastores.reserve(100);
+    kmer_counts.reserve(100);
+}
