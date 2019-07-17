@@ -245,6 +245,7 @@ void PairedReadsDatastore::write_selection(std::ofstream &output_file, std::vect
 }
 
 std::string PairedReadsDatastore::get_read_sequence(size_t readID) {
+    if (readID==0 or readID>size()) return "";
     char buffer[readsize+1];
     size_t read_offset_in_file=readpos_offset+(readsize+1)*(readID-1);
     fseek(fd,read_offset_in_file,SEEK_SET);

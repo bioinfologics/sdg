@@ -161,6 +161,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
         if (0 != newtag) tagged_reads += 2;
         ++pairs;
         readdatav.push_back(currrent_read);
+        std::cout<<currrent_read.seq1<<" "<<currrent_read.seq2<<std::endl;
         if (readdatav.size()==chunksize){
             //sort
             std::sort(readdatav.begin(),readdatav.end());
@@ -294,7 +295,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     output.close();
     //delete all temporary chunk files
     for (auto &c:chunkfiles) c.close();
-    for (auto i=0;i<chunkfiles.size();++i) ::unlink(("sorted_chunk_"+std::to_string(i)+".data").c_str());
+    //for (auto i=0;i<chunkfiles.size();++i) ::unlink(("sorted_chunk_"+std::to_string(i)+".data").c_str());
     //DONE!
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Datastore with "<<(read_tag.size())*2<<" reads, "<<tagged_reads<<" reads with tags"<<std::endl; //and "<<reads_in_tag.size()<<"tags"<<std::endl;
     gzclose(fd1);
@@ -393,6 +394,7 @@ void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std
 }
 
 std::string LinkedReadsDatastore::get_read_sequence(size_t readID) {
+    if (readID==0 or readID>size()) return "";
     char buffer[readsize+1];
     size_t read_offset_in_file=readpos_offset+(readsize+1)*(readID-1);
     fseek(fd,read_offset_in_file,SEEK_SET);
@@ -411,6 +413,7 @@ std::vector<uint64_t> LinkedReadsDatastore::get_tag_reads(bsg10xTag tag) const {
 }
 
 bsg10xTag LinkedReadsDatastore::get_read_tag(size_t readID) {
+    if (readID==0 or readID>size()) return 0;
     return read_tag[(readID-1)/2];
 }
 
