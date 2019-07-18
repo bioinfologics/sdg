@@ -43,7 +43,7 @@ public:
      * Accumulates the kmer count from the provided fastq file to the last available read_counts collection
      * @param filename Path to fastq file
      */
-    void add_count(const std::string & count_name,const std::vector<std::string> &filenames);
+    void add_count(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
 
     /**
      * Accumulates the kmer count from the provided data-store to the last available read_counts collection

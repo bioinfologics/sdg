@@ -43,7 +43,7 @@ void KmerCounts::index_sdg() {
     kindex.resize(c.size());
 }
 
-void KmerCounts::add_count(const std::string &count_name, const std::vector<std::string> &filenames) {
+void KmerCounts::add_count(const std::string &count_name, const std::vector<std::string> &filenames, bool fastq) {
     count_names.emplace_back(count_name);
     counts.emplace_back(kindex.size());
     uint64_t present(0), absent(0), rp(0);
@@ -55,6 +55,7 @@ void KmerCounts::add_count(const std::string &count_name, const std::vector<std:
     for (auto filename:filenames) {
         sdglib::OutputLog(sdglib::INFO) << "Counting from file: " << filename << std::endl;
         FastqReader<FastqRecord> fastqReader({0}, filename);
+        FastaReader<FastaRecord> fastaReader({0}, filename);
 #pragma omp parallel shared(fastqReader)
         {
             uint64_t thread_present(0), thread_absent(0), thread_rp(0);
@@ -62,6 +63,8 @@ void KmerCounts::add_count(const std::string &count_name, const std::vector<std:
             std::vector<uint64_t> found_kmers;
             found_kmers.reserve(local_kmers_size);
             FastqRecord read;
+            FastaRecord reada;
+
             std::vector<uint64_t> readkmers;
             StringKMerFactory skf(k);
             StringKMerFactoryNC skfnc(k);
@@ -69,14 +72,15 @@ void KmerCounts::add_count(const std::string &count_name, const std::vector<std:
             bool c;
 #pragma omp critical(fastqreader)
             {
-                c = fastqReader.next_record(read);
+                if (fastq) c = fastqReader.next_record(read);
+                else c= fastaReader.next_record(reada);
             }
             while (c) {
                 readkmers.clear();
                 if (count_mode==Canonical) {
-                    skf.create_kmers(read.seq,readkmers);
+                    skf.create_kmers((fastq?read.seq:reada.seq),readkmers);
                 } else if (count_mode==NonCanonical) {
-                    skfnc.create_kmers(read.seq,readkmers);
+                    skfnc.create_kmers((fastq?read.seq:reada.seq),readkmers);
                 }
 
 
@@ -109,7 +113,10 @@ void KmerCounts::add_count(const std::string &count_name, const std::vector<std:
                 }
                 ++thread_rp;
 #pragma omp critical(fastqreader)
-                c = fastqReader.next_record(read);
+                {
+                    if (fastq) c = fastqReader.next_record(read);
+                    else c= fastaReader.next_record(reada);
+                }
             }
 #pragma omp critical(results_merge)
             {
