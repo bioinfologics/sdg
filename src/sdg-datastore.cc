@@ -58,7 +58,7 @@ int main(int argc, char * argv[]) {
                     ("s,max_read_size", "max size for short reads, truncates if longer (default 150)", cxxopts::value(max_readsize)->default_value("150"))
                     ("n,name", "How do you want to refer to this datastore?", cxxopts::value(dsname))
                     ("o,output", "output file", cxxopts::value(output))
-                    ("c,chunk_size", "number of reads to process per chunk", cxxopts::value(chunk_size)->default_value("1000000"));
+                    ("c,chunk_size", "number of reads to process per chunk", cxxopts::value(chunk_size));
             auto newargc=argc-1;
             auto newargv=&argv[1];
             auto result=options.parse(newargc,newargv);
@@ -106,7 +106,7 @@ int main(int argc, char * argv[]) {
             // TODO: Detect read size
             auto read_size = detect_read_size(read1);
             sdglib::OutputLog() << "Detected max read size " << read_size << std::endl;
-            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, dsname, min_readsize, read_size, chunk_size, fragment_size, orientation);
+            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, dsname, min_readsize, read_size, fragment_size, orientation,chunk_size);
 
         }
         else if (read_type == "long") {
