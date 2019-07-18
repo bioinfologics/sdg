@@ -8,12 +8,17 @@
 #include "LinkageUntangler.hpp"
 #include "LinkageMaker.hpp"
 
-void LinkageMaker::clear_node_selection() {
+void LinkageMaker::select_all() {
     selected_nodes.clear();
-    selected_nodes.resize(dg.sdg.nodes.size());
+    selected_nodes.resize(dg.sdg.nodes.size(),true);
 }
 
-void LinkageMaker::report_node_selection() {
+void LinkageMaker::deselect_all() {
+    selected_nodes.clear();
+    selected_nodes.resize(dg.sdg.nodes.size(),false);
+}
+
+void LinkageMaker::report_selection() {
     uint64_t total_bp=0,total_count=0,selected_bp=0,selected_count=0;
     for (auto n=1;n<dg.sdg.nodes.size();++n) {
         if (dg.sdg.nodes[n].status == NodeStatus::Deleted) continue;
@@ -27,14 +32,12 @@ void LinkageMaker::report_node_selection() {
     sdglib::OutputLog()<< "Current selection: "<<selected_count<<" / "<<total_count<<" nodes  with  "<<selected_bp<<" / "<<total_bp<<" bp"<<std::endl;
 
 }
-void LinkageMaker::select_nodes_by_size( uint64_t min_size, uint64_t max_size) {
-    {
-        for (auto n=1;n<dg.sdg.nodes.size();++n) {
-            if (dg.sdg.nodes[n].status==NodeStatus::Deleted) continue;
-            if (dg.sdg.nodes[n].sequence.size() >= min_size and
-                (max_size==0 or dg.sdg.nodes[n].sequence.size() <= max_size))
-                selected_nodes[n]=true;
-        }
+void LinkageMaker::select_by_size( uint64_t min_size, uint64_t max_size) {
+    for (auto n=1;n<dg.sdg.nodes.size();++n) {
+        if (dg.sdg.nodes[n].status==NodeStatus::Deleted) continue;
+        if (dg.sdg.nodes[n].sequence.size() >= min_size and
+            (max_size==0 or dg.sdg.nodes[n].sequence.size() <= max_size))
+            selected_nodes[n]=true;
     }
 }
 

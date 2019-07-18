@@ -45,6 +45,7 @@
 
 #include "sdglib/indexers/UniqueKmerIndex.hpp"
 
+#include "sdglib/processors/LinkageMaker.hpp"
 #include "sdglib/processors/LinkageUntangler.hpp"
 #include "sdglib/processors/HaplotypeConsensus.hpp"
 
@@ -105,6 +106,7 @@
 %include "sdglib/mappers/LinkedReadsMapper.hpp"
 %include "sdglib/mappers/PairedReadsMapper.hpp"
 
+%include "sdglib/processors/LinkageMaker.hpp"
 %include "sdglib/processors/LinkageUntangler.hpp"
 %include "sdglib/processors/HaplotypeConsensus.hpp"
 

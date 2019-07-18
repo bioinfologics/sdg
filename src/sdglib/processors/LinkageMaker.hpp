@@ -13,11 +13,13 @@
  */
 class LinkageMaker {
 public:
-    LinkageMaker(const DistanceGraph &_dg):dg(_dg){};
+    explicit LinkageMaker(const DistanceGraph &_dg):dg(_dg){deselect_all();};
+    explicit LinkageMaker(const SequenceDistanceGraph &_dg):LinkageMaker(static_cast<const DistanceGraph &>(_dg)){};
 
-    void clear_node_selection();
-    void report_node_selection();
-    void select_nodes_by_size(uint64_t min_size,uint64_t max_size=0);
+    void deselect_all();
+    void select_all();
+    void report_selection();
+    void select_by_size(uint64_t min_size,uint64_t max_size=0);
 
 
     DistanceGraph make_topology_linkage(int radius);
