@@ -457,6 +457,7 @@ std::vector<Link> LinkageMaker::mappings_to_multilinkage(const std::vector<LongR
     if (read_size==0) for (auto &m:lorm_mappings) if (m.qEnd>read_size) read_size=m.qEnd;
     for (int i=0; i<lorm_mappings.size();++i){
         auto &m=lorm_mappings[i];
+        if (not selected_nodes[llabs(m.node)]) continue;
         auto ns= dg.sdg.nodes[llabs(m.node)].sequence.size();
         if ( (i==0 and m.qStart<unmapped_end) or (i==lorm_mappings.size()-1 and m.qEnd+unmapped_end>=read_size) or total_bp[m.node]>=.7*ns) {
             //If a node has mode than one consecutive mapping, merge them.
