@@ -42,7 +42,7 @@ TEST_CASE("Workspace create, read, write") {
 
 
     REQUIRE( out.kmer_counts == in.kmer_counts);
-    REQUIRE( out.operation_journals == in.operation_journals);
+    REQUIRE( out.journal == in.journal);
     REQUIRE( out.sdg == in.sdg);
 }
 
