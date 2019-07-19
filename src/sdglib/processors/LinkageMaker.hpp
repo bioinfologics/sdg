@@ -36,7 +36,7 @@ public:
     //supporting methods
     std::vector<Link> mappings_to_multilinkage(const std::vector<LongReadMapping> &lorm_mappings, uint32_t read_size, int32_t unmapped_end=1000);
 
-    DistanceGraph make_longRead_multilinkage(const LongReadsMapper &lorm, bool real_read_size=true, int32_t unmapped_end=1000);
+    DistanceGraph make_longRead_multilinkage(const LongReadsMapper &lorm, uint64_t min_map_size=1000, float min_map_id=.1, bool real_read_size=true, int32_t unmapped_end=1000);
 
     DistanceGraph make_paired10x_multilinkage(const PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore=0.2, bool fr=false, uint64_t read_offset=0);
 

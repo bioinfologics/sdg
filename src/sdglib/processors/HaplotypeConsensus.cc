@@ -217,7 +217,7 @@ void HaplotypeConsensus::build_line_path(int min_votes, int min_path_nodes) {
     backbone_filled_path = final_line_path;
 }
 
-HaplotypeConsensus::HaplotypeConsensus(WorkSpace &_ws, const DistanceGraph &_mldg, const DistanceGraph &_ldg,
+HaplotypeConsensus::HaplotypeConsensus(WorkSpace &_ws, const std::vector<std::vector<LongReadMapping>> filtered_read_mappings, const DistanceGraph &_mldg, const DistanceGraph &_ldg,
                                        const std::vector<sgNodeID_t> _backbone, const ReadPathParams &read_path_params)
         :
         ws(_ws)
@@ -233,7 +233,7 @@ HaplotypeConsensus::HaplotypeConsensus(WorkSpace &_ws, const DistanceGraph &_mld
     }
     std::cout << std::endl;
 
-    read_cache = ws.long_reads_datastores[0].mapper.create_read_paths(backbone,read_path_params);
+    read_cache = ws.long_reads_datastores[0].mapper.create_read_paths(backbone,filtered_read_mappings,read_path_params);
     if (!is_sorted(read_cache.begin(), read_cache.end())){
         sdglib::sort(read_cache.begin(), read_cache.end());
     }

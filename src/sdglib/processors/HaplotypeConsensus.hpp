@@ -22,7 +22,7 @@
  */
 class HaplotypeConsensus {
 public:
-    HaplotypeConsensus(WorkSpace &_ws, const DistanceGraph &_mldg, const DistanceGraph &_ldg, const std::vector<sgNodeID_t> _backbone, const ReadPathParams &read_path_params);
+    HaplotypeConsensus(WorkSpace &_ws, const std::vector<std::vector<LongReadMapping>> filtered_read_mappings, const DistanceGraph &_mldg, const DistanceGraph &_ldg, const std::vector<sgNodeID_t> _backbone, const ReadPathParams &read_path_params);
 
     void orient_read_paths() {
 #pragma omp parallel for

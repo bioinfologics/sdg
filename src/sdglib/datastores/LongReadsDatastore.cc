@@ -102,8 +102,6 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : f
     read_to_fileRecord = o.read_to_fileRecord;
     name = o.name;
     default_name = o.default_name;
-    mapper.reads_in_node = o.mapper.reads_in_node;
-    mapper.filtered_read_mappings = o.mapper.filtered_read_mappings;
     mapper.first_mapping = o.mapper.first_mapping;
     mapper.read_paths = o.mapper.read_paths;
     mapper.all_paths_between = o.mapper.all_paths_between;

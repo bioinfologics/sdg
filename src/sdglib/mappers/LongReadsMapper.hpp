@@ -296,10 +296,6 @@ public:
 
     void write(std::ofstream &output_file);
 
-    void write_filtered_mappings(std::string filename);
-
-    void read_filtered_mappings(std::string filename);
-
     void write_read_paths(std::string filename);
 
     void read_read_paths(std::string filename);
@@ -325,9 +321,9 @@ public:
      * @param first_id
      * @param last_id
      */
-    void filter_mappings_with_linked_reads(const LinkedReadsMapper &lrm, uint32_t min_size=10000, float min_tnscore=0.03, uint64_t first_id=0, uint64_t last_id=0);
+    std::vector<std::vector<LongReadMapping>> filter_mappings_with_linked_reads(const LinkedReadsMapper &lrm, uint32_t min_size=10000, float min_tnscore=0.03, uint64_t first_id=0, uint64_t last_id=0) const;
 
-    void filter_mappings_by_size_and_id(int64_t size, float id);
+    std::vector<std::vector<LongReadMapping>> filter_mappings_by_size_and_id(int64_t size, float id) const;
     /**
      * This goes read by read, and transforms the filtered mappings into path-mappings, by:
      * 1) chaining coherent successive mappings
@@ -342,7 +338,7 @@ public:
     //void load_path_mappings();
 
     std::vector<LongReadMapping>
-    filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose=false);
+    filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose=false) const;
 
     /**
      * Eliminates matches that are contained within another bigger better match (more span and more score)
@@ -350,8 +346,7 @@ public:
      * @param verbose
      * @return vector of de-shadowed LongReadMappings
      */
-    std::vector<LongReadMapping>
-    remove_shadowed_matches(std::vector<LongReadMapping> &matches, bool verbose=false);
+    std::vector<LongReadMapping> remove_shadowed_matches(const std::vector<LongReadMapping> &matches) const;
 
     /**
      * Performs the de-shadowing process for each read
@@ -359,19 +354,20 @@ public:
      * @param correct_on_ws
      * @return
      */
-    std::vector<LongReadMapping> improve_read_filtered_mappings(uint32_t rid, bool correct_on_ws=false);
+    std::vector<LongReadMapping> improve_read_mappings(const std::vector<LongReadMapping> & mappings) const;
 
-    void improve_filtered_mappings() {
+    std::vector < std::vector<LongReadMapping> > improve_mappings( const std::vector < std::vector<LongReadMapping> > & filtered_read_mappings) const {
+        std::vector < std::vector<LongReadMapping> > improved_read_mappings(filtered_read_mappings.size());
 #pragma omp parallel for
         for (uint32_t rid = 0; rid < filtered_read_mappings.size(); ++rid) {
-            improve_read_filtered_mappings(rid,true);
+            improved_read_mappings[rid]=improve_read_mappings(filtered_read_mappings[rid]);
         }
-        update_indexes();
+        return improved_read_mappings;
     }
 
-    std::vector<ReadCacheItem>create_read_paths(const std::vector<sgNodeID_t> &backbone, const ReadPathParams &read_path_params);
+    std::vector<ReadCacheItem>create_read_paths(const std::vector<sgNodeID_t> &backbone, const std::vector<std::vector<LongReadMapping>> filtered_read_mappings, const ReadPathParams &read_path_params);
 
-    std::vector<sgNodeID_t> create_read_path(uint32_t rid, const ReadPathParams &read_path_params, bool verbose=false, const std::string& read_seq="");
+    std::vector<sgNodeID_t> create_read_path(const std::vector<LongReadMapping> mappings, const ReadPathParams &read_path_params, bool verbose=false, const std::string& read_seq="");
 
 //    std::vector<sgNodeID_t> create_read_path_fast(uint32_t rid, bool verbose=false, const std::string read_seq="");
     /**
@@ -395,7 +391,7 @@ public:
      */
     std::unordered_map<std::pair<sgNodeID_t,sgNodeID_t>, std::vector<SequenceGraphPath>> all_paths_between;
 
-    std::vector < std::vector<LongReadMapping> > filtered_read_mappings;
+    //std::vector < std::vector<LongReadMapping> > filtered_read_mappings;
 
     std::vector<std::vector<sgNodeID_t>> read_paths;
 
