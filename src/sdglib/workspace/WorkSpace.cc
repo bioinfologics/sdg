@@ -21,9 +21,9 @@ void WorkSpace::dump_to_disk(std::string filename) {
     uint64_t count;
 
     //dump operations
-    count = operation_journals.size();
+    count = journal.size();
     of.write((char *) &count, sizeof(count));
-    for (const auto &j:operation_journals){
+    for (const auto &j:journal){
         sdglib::write_string(of,j.name);
         sdglib::write_string(of,j.detail);
         sdglib::write_string(of,j.tool);
@@ -105,9 +105,9 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
 
     //read operations
     wsfile.read((char *) &count, sizeof(count));
-    operation_journals.resize(count);
+    journal.resize(count);
     for (auto i=0; i < count; i++) {
-        auto &j = operation_journals[i];
+        auto &j = journal[i];
         sdglib::read_string(wsfile,j.name);
         sdglib::read_string(wsfile,j.detail);
         sdglib::read_string(wsfile,j.tool);
@@ -165,7 +165,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
 }
 
 void WorkSpace::status() {
-    for (const auto &j:operation_journals){
+    for (const auto &j:journal){
         j.status();
     }
     //graph
@@ -297,9 +297,9 @@ DistanceGraph &WorkSpace::add_distance_graph(const DistanceGraph &dg, const std:
     return distance_graphs.back();
 }
 
-OperationJournal &WorkSpace::add_operation(const std::string &name, const std::string &tool, const std::string &detail) {
-    operation_journals.emplace_back(name, tool, detail);
-    return operation_journals.back();
+JournalOperation &WorkSpace::add_operation(const std::string &name, const std::string &tool, const std::string &detail) {
+    journal.emplace_back(name, tool, detail);
+    return journal.back();
 }
 
 KmerCounts &WorkSpace::add_kmer_counts_datastore(const std::string &name, const uint8_t k) {
@@ -345,11 +345,11 @@ KmerCounts &WorkSpace::get_kmer_counts_datastore(const std::string &name) {
     throw std::runtime_error("Couldn't find a KmerCounts named: " + name);
 }
 
-OperationJournal &WorkSpace::get_operation(const std::string &name) {
-    for (auto &op : operation_journals) {
+JournalOperation &WorkSpace::get_operation(const std::string &name) {
+    for (auto &op : journal) {
         if (op.name == name) return op;
     }
-    throw std::runtime_error("Couldn't find the OperationJournal named: " + name);
+    throw std::runtime_error("Couldn't find the JournalOperation named: " + name);
 }
 
 WorkSpace::WorkSpace(const std::string &filename) : sdg(*this) {

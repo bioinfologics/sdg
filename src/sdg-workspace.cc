@@ -65,14 +65,14 @@ void make_workspace(int argc, char** argv){
 
     //===== LOAD GRAPH =====
     WorkSpace output_ws;
-    OperationJournal op;
+    JournalOperation op;
     if (!ws_filename.empty()) {
         WorkSpace w;
         w.load_from_disk(ws_filename);
         output_ws.linked_reads_datastores = w.linked_reads_datastores;
         output_ws.paired_reads_datastores = w.paired_reads_datastores;
         output_ws.long_reads_datastores = w.long_reads_datastores;
-        output_ws.operation_journals = w.operation_journals;
+        output_ws.journal = w.journal;
         output_ws.kmer_counts = w.kmer_counts;
         output_ws.sdg = w.sdg;
         output_ws.distance_graphs = w.distance_graphs;

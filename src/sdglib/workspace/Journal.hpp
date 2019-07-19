@@ -19,12 +19,12 @@ public:
         bool operator==(const JournalEntry& o) const;
 };
 
-class OperationJournal {
+class JournalOperation {
 public:
-    OperationJournal() = default;
-    OperationJournal(const std::string &name, const std::string &tool, const std::string &detail);
+    JournalOperation() = default;
+    JournalOperation(const std::string &name, const std::string &tool, const std::string &detail);
 
-    friend std::ostream& operator<<(std::ostream &os, const OperationJournal &opj);
+    friend std::ostream& operator<<(std::ostream &os, const JournalOperation &opj);
 
     void addEntry(const std::string &detail);
 
@@ -36,5 +36,5 @@ public:
     std::string detail={};
     std::vector<JournalEntry> entries = {};
 
-    bool operator==(const OperationJournal& o) const;
+    bool operator==(const JournalOperation& o) const;
 };

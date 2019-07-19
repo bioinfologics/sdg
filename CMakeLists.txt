@@ -171,7 +171,7 @@ SET(source_files ${source_files}
     src/sdglib/indexers/SatKmerIndex.cc
     src/sdglib/indexers/NKmerIndex.cc
     src/sdglib/views/NodeView.cc
-    src/sdglib/journal/OperationJournal.cc
+        src/sdglib/workspace/Journal.cc
     src/sdglib/batch_counter/BatchKmersCounter.cc
     deps/xxhash/xxhash.c
         src/sdglib/mappers/SequenceMapper.cc src/sdglib/mappers/SequenceMapper.hpp src/sdglib/processors/LinkageMaker.cc src/sdglib/processors/LinkageMaker.hpp)
