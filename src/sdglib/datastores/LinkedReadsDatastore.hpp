@@ -42,7 +42,7 @@ std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k=16);
  * uint64_t readsize;
  * uint64_t read_tag.size()=pairs; (tag 0 is for pair (1,2) and 1 for (2,3), etc)
  * bsg10xTag[pairs] contents of rhe read_tag vector, a tag for each read pair.
- * read sequences: as \0 terminated characters, using 2*readsize+2 for each pair
+ * read sequences: as \\0 terminated characters, using 2*readsize+2 for each pair
  *
  *
  */

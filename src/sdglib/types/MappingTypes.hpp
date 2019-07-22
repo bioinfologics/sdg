@@ -48,7 +48,6 @@ struct ReadMapping_hash {
 };
 
 /**
- * TODO: Generate indices for LongReadMapping
  * READS FROM NODE -> IN: NODE ID OUT: READ set
  * NODES FROM READ -> IN: READ ID OUT: NODE set
  *
@@ -79,13 +78,14 @@ struct LongReadMapping {
         return os;
     }
 
-    sgNodeID_t node = 0;        /// Node ID, sign represents direction
-    uint32_t read_id = 0;       /// ID of the read from the Datastore   (this is never negative!)
-    int32_t nStart = 0;         /// Position of the starting node kmer of this mapping
-    int32_t nEnd = 0;           /// Position of the ending node kmer of this mapping
-    int32_t qStart = 0;         /// Query start position
-    int32_t qEnd = 0;           /// Query end position
-    int32_t score = 0;          /// Alignment score
+    sgNodeID_t node = 0;        ///< Node ID, sign represents direction
+    uint32_t read_id = 0;       ///< ID of the read from the Datastore (this is never negative!)
+    int32_t nStart = 0;         ///< Position of the starting node kmer of this mapping
+    int32_t nEnd = 0;           ///< Position of the ending node kmer of this mapping
+    int32_t qStart = 0;         ///< Query start position
+    int32_t qEnd = 0;           ///< Query end position
+    int32_t score = 0;          ///< Alignment score
+
 };
 
 struct LongReadMapping_hash {

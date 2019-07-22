@@ -50,10 +50,6 @@ if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
 endif(CCACHE_FOUND)
 
-if (BUILD_PYTHON_INTERFACE)
-    MESSAGE("Building docs for python interface")
-    SET(BUILD_DOC ON)
-endif ()
 # Get the remote url
 execute_process(
         COMMAND git remote get-url origin
@@ -317,7 +313,10 @@ IF(BUILD_PYTHON_INTERFACE)
 
     set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY SWIG_MODULE_NAME pysdg)
 
-    SET_SOURCE_FILES_PROPERTIES(${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTIES CPLUSPLUS ON)
+    SET_SOURCE_FILES_PROPERTIES(${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTIES
+                                                                                CPLUSPLUS ON)
+
+    SET(CMAKE_SWIG_FLAGS "-doxygen")
     if (NOT APPLE)
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
