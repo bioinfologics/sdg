@@ -147,7 +147,7 @@ SET(source_files ${source_files}
     src/sdglib/graph/SequenceSubGraph.cc
     src/sdglib/graph/SequenceGraphPath.cc
     src/sdglib/graph/DistanceGraph.cc
-        src/sdglib/utilities/OutputLog.cc
+    src/sdglib/utilities/OutputLog.cc
     src/sdglib/datastores/PairedReadsDatastore.cc
     src/sdglib/datastores/LinkedReadsDatastore.cc
     src/sdglib/datastores/LongReadsDatastore.cc
@@ -157,9 +157,9 @@ SET(source_files ${source_files}
     src/sdglib/mappers/LongReadsMapper.cc
     src/sdglib/mappers/LinkedReadsMapper.cc
     src/sdglib/mappers/PairedReadsMapper.cc
-        src/sdglib/processors/LinkageUntangler.cc
+    src/sdglib/processors/LinkageUntangler.cc
     src/sdglib/workspace/WorkSpace.cc
-        src/sdglib/processors/GraphEditor.cc
+    src/sdglib/processors/GraphEditor.cc
     src/sdglib/processors/GraphMaker.cc
     src/sdglib/processors/LocalHaplotypeAssembler.cc
     src/sdglib/processors/HaplotypeConsensus.cc
@@ -167,10 +167,12 @@ SET(source_files ${source_files}
     src/sdglib/indexers/SatKmerIndex.cc
     src/sdglib/indexers/NKmerIndex.cc
     src/sdglib/views/NodeView.cc
-        src/sdglib/workspace/Journal.cc
+    src/sdglib/workspace/Journal.cc
     src/sdglib/batch_counter/BatchKmersCounter.cc
     deps/xxhash/xxhash.c
-        src/sdglib/mappers/SequenceMapper.cc src/sdglib/mappers/SequenceMapper.hpp src/sdglib/processors/LinkageMaker.cc src/sdglib/processors/LinkageMaker.hpp)
+    src/sdglib/mappers/SequenceMapper.cc
+    src/sdglib/processors/LinkageMaker.cc)
+
 ## Libraries
 add_library(sdg SHARED
             ${source_files}

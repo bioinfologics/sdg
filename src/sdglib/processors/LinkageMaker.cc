@@ -765,7 +765,7 @@ std::vector<std::vector<LongReadMapping>> filter_mappings_with_linked_reads(cons
     return filtered_read_mappings;
 }
 
-DistanceGraph LinkageMaker::make_long10x_multilinkage(const LongReadsMapper &lorm, const LinkedReadsMapper &lrm, uint32_t min_size,  float min_tnscore, bool real_read_size=true, int32_t unmapped_end=1000) {
+DistanceGraph LinkageMaker::make_long10x_multilinkage(const LongReadsMapper &lorm, const LinkedReadsMapper &lrm, uint32_t min_size,  float min_tnscore, bool real_read_size, int32_t unmapped_end) {
     auto filtered_read_mappings=filter_mappings_with_linked_reads(lorm,lrm,min_size,min_tnscore);
     DistanceGraph ldg(dg.sdg);
     std::vector<Link> linkage;
