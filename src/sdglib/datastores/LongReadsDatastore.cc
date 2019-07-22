@@ -184,7 +184,7 @@ void LongReadsDatastore::load_index(std::string &file) {
     sdglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()-1<<std::endl;
 }
 
-void LongReadsDatastore::build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file, , size_t min_size) {
+void LongReadsDatastore::build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file, size_t min_size) {
     uint64_t nReads(1);
     std::vector<ReadPosSize> read_to_file_record{ReadPosSize{0,0}};
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
