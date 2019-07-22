@@ -14,9 +14,8 @@
 #include <sdglib/mappers/LinkedReadsMapper.hpp>
 #include <sdglib/mappers/LongReadsMapper.hpp>
 
-#include <sdglib/processors/KmerCompressionIndex.hpp>
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
-#include <sdglib/journal/OperationJournal.hpp>
+#include <sdglib/workspace/Journal.hpp>
 #include <sdglib/datastores/KmerCounts.hpp>
 
 class WorkSpace {
@@ -133,7 +132,7 @@ public:
 
     void load_from_disk(std::string filename,bool log_only=false);
 
-    OperationJournal &add_operation(const std::string &name, const std::string &tool, const std::string &detail);
+    JournalOperation &add_operation(const std::string &name, const std::string &tool, const std::string &detail);
     PairedReadsDatastore& add_paired_reads_datastore(const std::string &filename, const std::string &name="");
     LinkedReadsDatastore& add_linked_reads_datastore(const std::string &filename, const std::string &name="");
     LongReadsDatastore& add_long_reads_datastore(const std::string &filename, const std::string &name="");
@@ -146,7 +145,7 @@ public:
     LongReadsDatastore& get_long_reads_datastore(const std::string &name);
     DistanceGraph& get_distance_graph(const std::string &name);
     KmerCounts& get_kmer_counts_datastore(const std::string &name);
-    OperationJournal& get_operation(const std::string &name);
+    JournalOperation& get_operation(const std::string &name);
 
     //general operations
 
@@ -167,7 +166,7 @@ public:
 
     std::vector<DistanceGraph> distance_graphs;
 
-    std::vector<OperationJournal> operation_journals;
+    std::vector<JournalOperation> journal;
 
     static const sdgVersion_t min_compat;
 };

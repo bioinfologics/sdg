@@ -17,7 +17,7 @@ TEST_CASE("Workspace create, read, write") {
     std::string lr1_filepath("../tests/datasets/workspace/10x/10x_R1.fastq");
     std::string lr2_filepath("../tests/datasets/workspace/10x/10x_R2.fastq");
     std::string lrds_output_path("10x.lseq");
-    LinkedReadsDatastore::build_from_fastq(lrds_output_path, lrds_output_path, lr1_filepath, lr2_filepath, LinkedReadsFormat::seq);
+    LinkedReadsDatastore::build_from_fastq(lrds_output_path, lrds_output_path, lr1_filepath, lr2_filepath, LinkedReadsFormat::raw);
     // Paired reads
     std::string r1_filepath("../tests/datasets/workspace/pe/pe_R1.fastq");
     std::string r2_filepath("../tests/datasets/workspace/pe/pe_R2.fastq");
@@ -30,7 +30,7 @@ TEST_CASE("Workspace create, read, write") {
 
     out.paired_reads_datastores.emplace_back(out, prds_output_path);
 
-    out.linked_reads_datastores.emplace_back(out, lrds_output_path);
+    //out.linked_reads_datastores.emplace_back(out, lrds_output_path);
 
     out.add_kmer_counts_datastore("kctest", 31).add_count("prtest", out.paired_reads_datastores[0]);
 
@@ -42,7 +42,7 @@ TEST_CASE("Workspace create, read, write") {
 
 
     REQUIRE( out.kmer_counts == in.kmer_counts);
-    REQUIRE( out.operation_journals == in.operation_journals);
+    REQUIRE( out.journal == in.journal);
     REQUIRE( out.sdg == in.sdg);
 }
 
@@ -75,7 +75,7 @@ TEST_CASE("10x reads datastore create, read, write") {
         std::string r1_filepath("../tests/datasets/workspace/10x/10x_R1.fastq");
         std::string r2_filepath("../tests/datasets/workspace/10x/10x_R2.fastq");
         std::string lrds_output_path("10x.lseq");
-        LinkedReadsDatastore::build_from_fastq(lrds_output_path, lrds_output_path, r1_filepath, r2_filepath, LinkedReadsFormat::seq);
+        LinkedReadsDatastore::build_from_fastq(lrds_output_path, lrds_output_path, r1_filepath, r2_filepath, LinkedReadsFormat::raw);
     }
 
     WorkSpace ws;

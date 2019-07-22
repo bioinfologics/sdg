@@ -9,13 +9,15 @@
 #include <tuple>
 #include <fstream>
 
+enum KmerCountMode{Canonical,NonCanonical};
+
 class WorkSpace;
 class PairedReadsDatastore;
 class LinkedReadsDatastore;
 class LongReadsDatastore;
 class KmerCounts {
 public:
-    KmerCounts (const WorkSpace &_ws, const std::string &_name, uint8_t _k):ws(_ws),k(_k), name(_name){
+    KmerCounts (const WorkSpace &_ws, const std::string &_name, uint8_t _k, KmerCountMode _count_mode=Canonical):ws(_ws),k(_k), name(_name),count_mode(_count_mode){
         index_sdg();
     };
     KmerCounts (const WorkSpace &ws, std::ifstream &infile);
@@ -41,7 +43,7 @@ public:
      * Accumulates the kmer count from the provided fastq file to the last available read_counts collection
      * @param filename Path to fastq file
      */
-    void add_count(const std::string & count_name,const std::vector<std::string> &filenames);
+    void add_count(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
 
     /**
      * Accumulates the kmer count from the provided data-store to the last available read_counts collection
@@ -71,5 +73,6 @@ public:
 private:
     const WorkSpace &ws;
     int8_t k;
+    KmerCountMode count_mode;
 };
 

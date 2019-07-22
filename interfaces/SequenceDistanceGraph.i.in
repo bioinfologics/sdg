@@ -27,8 +27,8 @@
 #include "sdglib/graph/DistanceGraph.hpp"
 
 #include "sdglib/views/NodeView.hpp"
+#include "sdglib/mappers/SequenceMapper.hpp"
 
-#include "sdglib/processors/KmerCompressionIndex.hpp"
 
 #include "sdglib/factories/KMerFactory.hpp"
 #include "sdglib/factories/KMerIDXFactory.hpp"
@@ -45,7 +45,7 @@
 
 #include "sdglib/indexers/UniqueKmerIndex.hpp"
 
-#include "sdglib/processors/Untangler.hpp"
+#include "sdglib/processors/LinkageMaker.hpp"
 #include "sdglib/processors/LinkageUntangler.hpp"
 #include "sdglib/processors/HaplotypeConsensus.hpp"
 
@@ -92,6 +92,7 @@
 %include "sdglib/graph/DistanceGraph.hpp"
 
 %include "sdglib/views/NodeView.hpp"
+%include "sdglib/mappers/SequenceMapper.hpp"
 
 %include "sdglib/indexers/UniqueKmerIndex.hpp"
 
@@ -105,10 +106,9 @@
 %include "sdglib/mappers/LinkedReadsMapper.hpp"
 %include "sdglib/mappers/PairedReadsMapper.hpp"
 
+%include "sdglib/processors/LinkageMaker.hpp"
 %include "sdglib/processors/LinkageUntangler.hpp"
-%include "sdglib/processors/KmerCompressionIndex.hpp"
 %include "sdglib/processors/HaplotypeConsensus.hpp"
-%include "sdglib/processors/Untangler.hpp"
 
 %feature("director") DistanceGraph;
 %feature("director") SequenceDistanceGraph;

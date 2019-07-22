@@ -59,7 +59,7 @@ public:
     using DistanceGraph::get_all_nodeviews;
     using DistanceGraph::name;
 
-    SequenceDistanceGraph(WorkSpace & _ws):DistanceGraph(*this),ws(_ws) { //sdg gets initialised through LDG
+    explicit SequenceDistanceGraph(WorkSpace & _ws):DistanceGraph(*this,false),ws(_ws) { //sdg gets initialised through LDG
         add_node(Node("",NodeStatus::Deleted)); //an empty deleted node on 0, just to skip the space
     };
 

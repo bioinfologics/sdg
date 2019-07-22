@@ -46,7 +46,6 @@ int main(int argc, char * argv[]) {
     int min_coverage = 5, k = 63, num_batches(0);
     sdglib::OutputLogLevel = sdglib::LogLevels::INFO;
     int tip_size=200;
-    bool map_in_memory = false;
     try {
         cxxopts::Options options("sdg-dbg", "create a DBG graph from a short-read datastore, and populate KCI");
 
@@ -55,12 +54,12 @@ int main(int argc, char * argv[]) {
                 ("p,paired_datastore", "input paired read datastore", cxxopts::value<std::string>(pr_file))
                 ("b,disk_batches", "number of disk batches to use", cxxopts::value(num_batches))
                 //("l,linked_datastore", "input linked read datastore", cxxopts::value<std::string>(lr_filename))
-                ("map_in_memory", "use map-in-memory implementation (deprecated, for test only)", cxxopts::value(map_in_memory))
-                ("tip_size", "tip size for tip clipping (0 for no clipping)", cxxopts::value(tip_size))
+                //("map_in_memory", "use map-in-memory implementation (deprecated, for test only)", cxxopts::value(map_in_memory);
                 ("o,output", "output file prefix", cxxopts::value<std::string>(output_prefix));
         options.add_options("Heuristics")
                 ("k", "k value for DBG construction (default: 63)", cxxopts::value<int>(k))
-                ("c,min_coverage", "minimum coverage for a kmer to include in DBG", cxxopts::value<int>(min_coverage));
+                ("c,min_coverage", "minimum coverage for a kmer to include in DBG", cxxopts::value<int>(min_coverage))
+                ("tip_size", "tip size for tip clipping (0 for no clipping)", cxxopts::value(tip_size));
 
 
         auto result(options.parse(argc, argv));
@@ -89,15 +88,11 @@ int main(int argc, char * argv[]) {
                                    " " +
                                    GIT_COMMIT_HASH, "Creating the dbg");
     op.addEntry("Origin datastore: " + pr_file);
-    ws.paired_reads_datastores.emplace_back(ws, pr_file);
-    if (map_in_memory){
-        auto kmers2 = countKmers(ws, k, min_coverage, num_batches);
-        gm2.new_graph_from_kmerset_trivial128(kmers2, k);
-    }
-    else {
-        auto kmer_list = countKmersToList(ws, k, min_coverage, num_batches);
-        gm2.new_graph_from_kmerlist_trivial128(kmer_list,k);
-    }
+    ws.add_paired_reads_datastore(pr_file,"dbg_reads");
+
+    auto kmer_list = countKmersToList(ws, k, min_coverage, num_batches);
+    gm2.new_graph_from_kmerlist_trivial128(kmer_list,k);
+
     sdglib::OutputLog() << "DONE! " << ws.sdg.count_active_nodes() << " nodes in graph" << std::endl;
     if (0<tip_size) {
         gm2.tip_clipping(tip_size);

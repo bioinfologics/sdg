@@ -2,8 +2,7 @@
 // Created by Bernardo Clavijo (EI) on 28/05/2018.
 //
 
-#ifndef BSG_LINKAGEUNTANGLER_HPP
-#define BSG_LINKAGEUNTANGLER_HPP
+#pragma once
 
 
 #include <sdglib/workspace/WorkSpace.hpp>
@@ -26,43 +25,37 @@
 class LinkageUntangler {
 public:
 
-    explicit LinkageUntangler(WorkSpace & _ws): ws(_ws) { clear_node_selection();};
+    explicit LinkageUntangler(const DistanceGraph & _dg): dg(_dg) { deselect_all();};
+
+    explicit LinkageUntangler(const SequenceDistanceGraph &_dg):LinkageUntangler(static_cast<const DistanceGraph &>(_dg)){};
 
     //==== Methods currently in use =====
 
     //Node selection methods
-    void clear_node_selection();
-    void report_node_selection();
-    void select_nodes_by_size(uint64_t min_size,uint64_t max_size=0);
-    //void select_nodes_by_size_and_ci( uint64_t min_size, float min_ci, float max_ci);
+    void deselect_all();
+    void select_all();
+    void report_selection();
+    void select_by_size(uint64_t min_size,uint64_t max_size=0);
+
     //std::set<std::pair<sgNodeID_t, sgNodeID_t >> get_HSPNPs(uint64_t min_size, float min_ci, float max_ci);
 
     /**
     * Anchors are chosen by having all their strongly connected neighbours (i.e. those with min_links connections)
     * coherently connected among them in order with at least min_transitive_links.
-    * @param multi_ldg
     * @param min_links
     * @param min_transitive_links
     */
-    void select_multi_linkage_linear_anchors(const DistanceGraph & multi_ldg, int min_links=3, int min_transitive_links=2);
+    void select_linear_anchors(int min_links=3, int min_transitive_links=2);
 
     //Multi-Linkage creation methods: multiple evidence-supported links between any nodes
-
-    DistanceGraph make_topology_linkage(int radius);
-    DistanceGraph make_longRead_multilinkage(const LongReadsMapper &lorm,bool real_read_size=true, int32_t unmapped_end=1000);
-    DistanceGraph make_paired10x_multilinkage(const PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore=0.2, bool fr=false, uint64_t read_offset=0);
-
-
-    //supporting methods
-    std::vector<Link> mappings_to_multilinkage(const std::vector<LongReadMapping> &lorm_mappings, uint32_t read_size, int32_t unmapped_end=1000);
 
 
 
     //Linkage creation methods: aggregated links between selected nodes (anchors)
 
-    DistanceGraph make_nextselected_linkage(const DistanceGraph & multi_ldg, int min_links=3);
+    DistanceGraph make_nextselected_linkage(int min_links=3);
 
-    DistanceGraph make_and_simplify_anchor_linkage(const DistanceGraph &multi_ldg, int anchor_link=5, int transitive_links=3);
+    //DistanceGraph make_and_simplify_anchor_linkage(const DistanceGraph &multi_ldg, int anchor_link=5, int transitive_links=3);
 
 
 
@@ -73,27 +66,18 @@ public:
 
 
 
-    //Linkage creation methods (work on selected nodes)
-    std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> shared_read_paths(int min_shared, std::vector<size_t> libraries, bool r1rev, bool r2rev);
-
-    DistanceGraph make_paired_linkage(int min_reads);
-    DistanceGraph make_paired_linkage_pe(int min_reads);
-    DistanceGraph make_tag_linkage(int min_tags, bool use_kmer_paths=false);
-
-    DistanceGraph make_and_simplify_linkage(int min_shared_tags);
-
     //Linkage improving/filtering methods
     //DistanceGraph filter_linkage_to_hspnp_duos( uint64_t min_size, float min_ci, float max_ci, const DistanceGraph & ldg);
 
 
     //Graph untangling/modification/local assembly methods
-    void expand_trivial_repeats(const DistanceGraph &);
-    void expand_linear_regions(const DistanceGraph &);
-    void expand_linear_regions_skating(const DistanceGraph &, int max_lines=0);
-    void linear_regions_tag_local_assembly(const DistanceGraph & ldg, uint8_t k, int min_cvg, int max_lines, uint64_t min_nodes, uint64_t min_total_size, bool count_tag_cvg=false);
-
-    //Problem localisation methods
-    void fill_linkage_line(std::vector<sgNodeID_t> nodes);
+//    void expand_trivial_repeats(const DistanceGraph &);
+//    void expand_linear_regions(const DistanceGraph &);
+//    void expand_linear_regions_skating(const DistanceGraph &, int max_lines=0);
+//    void linear_regions_tag_local_assembly(const DistanceGraph & ldg, uint8_t k, int min_cvg, int max_lines, uint64_t min_nodes, uint64_t min_total_size, bool count_tag_cvg=false);
+//
+//    //Problem localisation methods
+//    void fill_linkage_line(std::vector<sgNodeID_t> nodes);
     /**
      * Adds non-anchor intermediate nodes to a line by finding the transitive path between anchors in a multi_ldg.
      * If multiple paths exist, use evidence to decide or avoid filling.
@@ -104,13 +88,8 @@ public:
      */
     //std::vector<sgNodeID_t> add_intermediate_nodes(std::vector<sgNodeID_t> line, const DistanceGraph & multi_ldg, int min_links=3);
 
-    WorkSpace &ws;
-    //std::vector<DistanceGraph> multi_linkage_graphs;
-    //std::vector<DistanceGraph> anchor_linkage_graphs;
+    const DistanceGraph & dg;
 
     std::vector<bool> selected_nodes;
-    std::vector<bool> frontier_nodes;
 };
 
-
-#endif //BSG_LINKAGEUNTANGLER_HPP

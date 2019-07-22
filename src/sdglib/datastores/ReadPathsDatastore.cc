@@ -5,7 +5,7 @@
 #include "ReadPathsDatastore.hpp"
 #include <fstream>
 #include <cstring>
-#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/utilities/OutputLog.hpp>
 
 ReadPathsDatastore::ReadPathsDatastore(const std::string &filename) {
     std::ifstream input_file(filename, std::ios::in | std::ios::binary);

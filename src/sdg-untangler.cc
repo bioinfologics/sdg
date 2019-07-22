@@ -1,11 +1,10 @@
 #include <iostream>
 #include <fstream>
 #include <sdglib/workspace/WorkSpace.hpp>
-#include <sdglib/processors/Untangler.hpp>
 #include <sdglib/processors/LinkageUntangler.hpp>
 #include <sdglib/processors/LocalHaplotypeAssembler.hpp>
 #include <sdglib/processors/GraphEditor.hpp>
-#include "sdglib/logger/OutputLog.hpp"
+#include "sdglib/utilities/OutputLog.hpp"
 #include "cxxopts.hpp"
 
 

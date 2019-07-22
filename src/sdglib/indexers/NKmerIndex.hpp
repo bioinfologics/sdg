@@ -9,7 +9,7 @@
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/types/KmerTypes.hpp>
 #include <sdglib/factories/KMerFactory.hpp>
-#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/utilities/OutputLog.hpp>
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
 #include <sdglib/bloom/BloomFilter.hpp>
 

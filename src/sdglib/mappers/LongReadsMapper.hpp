@@ -17,9 +17,9 @@
 #include <sdglib/Version.hpp>
 #include <sdglib/datastores/ReadSequenceBuffer.hpp>
 
+class LongReadsDatastore;
 
 class WorkSpace;
-class LinkedReadsMapper;
 struct ReadPathParams {
     int default_overlap_distance = 199;
     float path_distance_multiplier = 1.5;
@@ -66,64 +66,7 @@ struct match_band{
     score(sc){}
 };
 
-class HaplotypeScore {
-public:
-    float score;
-    std::vector<sgNodeID_t> haplotype_nodes;
 
-    bool operator<(const HaplotypeScore &other) const {
-        return score<other.score;
-    }
-};
-
-class LongReadsMapper;
-class LongReadsDatastore;
-
-/**
- * This class groups all methods to filter long read mappings to  haplotype solutions within a long read
- * The
- * 1) set_read -> inits the problem, gets read sequence, mappings. cleans up alignments if needed.
- * 2) generate_haplotypes_from_linked_reads -> creates the possible haplotypes, all with score 0
- * 3) score_* -> these funcions add up scores in range(0,1), modulated by their weight parameter
- * 4) sort
- * 5) filter_winner_haplotype -> populates filtered_alingments with the winning haplotype alignments
- */
-class LongReadHaplotypeMappingsFilter {
-    std::vector<uint64_t> rkmers;
-    std::vector<uint64_t> nkmers;
-    std::vector<uint8_t> coverage;
-    std::vector<std::vector<bool>> kmer_hits_by_node;
-public:
-    LongReadHaplotypeMappingsFilter (const LongReadsMapper & _lorm, const LinkedReadsMapper & _lirm);
-    ~LongReadHaplotypeMappingsFilter(){
-        delete(lrbsgp);
-    }
-    void set_read(uint64_t read_id);
-    void generate_haplotypes_from_linkedreads(float min_tn=0.05);
-    void score_coverage(float weight);
-    void score_window_winners(float weight, int k=15, int win_size=500, int win_step=250);
-
-    /**
-     * This method runs all the scoring, then puts all haplotypes that pass criteria and their scores in a sorted vector
-     *
-     * @param read_id
-     * @param coverage_weight
-     * @param winners_weight
-     * @param min_tn
-     * @return
-     */
-    void rank(uint64_t read_id, float coverage_weight, float winners_weight, float min_tn=0.05);
-
-    uint64_t read_id;
-    std::string read_seq;
-    std::vector<LongReadMapping> mappings;
-    std::vector<HaplotypeScore> haplotype_scores;
-    const LongReadsMapper & lorm;
-    const LinkedReadsMapper & lirm;
-    ReadSequenceBuffer * lrbsgp;
-    std::vector<sgNodeID_t> nodeset;
-
-};
 
 enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage};
 
@@ -296,10 +239,6 @@ public:
 
     void write(std::ofstream &output_file);
 
-    void write_filtered_mappings(std::string filename);
-
-    void read_filtered_mappings(std::string filename);
-
     void write_read_paths(std::string filename);
 
     void read_read_paths(std::string filename);
@@ -314,20 +253,7 @@ public:
      */
     void update_graph_index(int filter_limit=200, bool verbose=true);
 
-    /**
-     * This goes read by read, and filters the mappings by finding a set of linked nodes that maximises 1-cov of the read
-     *
-     * Unfiltered mappings read from mappings and results stored in filtered_read_mappings, which is cleared.
-     *
-     * @param lrm a LinkedReadMapper with mapped reads, over the same graph this mapper has mapped Long Reads.
-     * @param min_size minimum size of the read to filter mappings.
-     * @param min_tnscore minimum neighbour score on linked reads
-     * @param first_id
-     * @param last_id
-     */
-    void filter_mappings_with_linked_reads(const LinkedReadsMapper &lrm, uint32_t min_size=10000, float min_tnscore=0.03, uint64_t first_id=0, uint64_t last_id=0);
-
-    void filter_mappings_by_size_and_id(int64_t size, float id);
+    std::vector<std::vector<LongReadMapping>> filter_mappings_by_size_and_id(int64_t size, float id) const;
     /**
      * This goes read by read, and transforms the filtered mappings into path-mappings, by:
      * 1) chaining coherent successive mappings
@@ -342,7 +268,7 @@ public:
     //void load_path_mappings();
 
     std::vector<LongReadMapping>
-    filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose=false);
+    filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose=false) const;
 
     /**
      * Eliminates matches that are contained within another bigger better match (more span and more score)
@@ -350,8 +276,7 @@ public:
      * @param verbose
      * @return vector of de-shadowed LongReadMappings
      */
-    std::vector<LongReadMapping>
-    remove_shadowed_matches(std::vector<LongReadMapping> &matches, bool verbose=false);
+    std::vector<LongReadMapping> remove_shadowed_matches(const std::vector<LongReadMapping> &matches) const;
 
     /**
      * Performs the de-shadowing process for each read
@@ -359,19 +284,20 @@ public:
      * @param correct_on_ws
      * @return
      */
-    std::vector<LongReadMapping> improve_read_filtered_mappings(uint32_t rid, bool correct_on_ws=false);
+    std::vector<LongReadMapping> improve_read_mappings(const std::vector<LongReadMapping> & mappings) const;
 
-    void improve_filtered_mappings() {
+    std::vector < std::vector<LongReadMapping> > improve_mappings( const std::vector < std::vector<LongReadMapping> > & filtered_read_mappings) const {
+        std::vector < std::vector<LongReadMapping> > improved_read_mappings(filtered_read_mappings.size());
 #pragma omp parallel for
         for (uint32_t rid = 0; rid < filtered_read_mappings.size(); ++rid) {
-            improve_read_filtered_mappings(rid,true);
+            improved_read_mappings[rid]=improve_read_mappings(filtered_read_mappings[rid]);
         }
-        update_indexes();
+        return improved_read_mappings;
     }
 
-    std::vector<ReadCacheItem>create_read_paths(const std::vector<sgNodeID_t> &backbone, const ReadPathParams &read_path_params);
+    std::vector<ReadCacheItem>create_read_paths(const std::vector<sgNodeID_t> &backbone, const std::vector<std::vector<LongReadMapping>> filtered_read_mappings, const ReadPathParams &read_path_params);
 
-    std::vector<sgNodeID_t> create_read_path(uint32_t rid, const ReadPathParams &read_path_params, bool verbose=false, const std::string& read_seq="");
+    std::vector<sgNodeID_t> create_read_path(const std::vector<LongReadMapping> mappings, const ReadPathParams &read_path_params, bool verbose=false, const std::string& read_seq="");
 
 //    std::vector<sgNodeID_t> create_read_path_fast(uint32_t rid, bool verbose=false, const std::string read_seq="");
     /**
@@ -395,7 +321,7 @@ public:
      */
     std::unordered_map<std::pair<sgNodeID_t,sgNodeID_t>, std::vector<SequenceGraphPath>> all_paths_between;
 
-    std::vector < std::vector<LongReadMapping> > filtered_read_mappings;
+    //std::vector < std::vector<LongReadMapping> > filtered_read_mappings;
 
     std::vector<std::vector<sgNodeID_t>> read_paths;
 

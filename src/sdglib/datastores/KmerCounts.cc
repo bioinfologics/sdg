@@ -16,8 +16,13 @@ void KmerCounts::index_sdg() {
     uint64_t t=0;
     for(auto &n:ws.sdg.nodes) if (n.sequence.size()>=k) t+=n.sequence.size()+1-k;
     kindex.reserve(t);
-    StringKMerFactory skf(k);
-    for(auto &n:ws.sdg.nodes) if (n.sequence.size()>=k) skf.create_kmers(n.sequence,kindex);
+    if (count_mode==Canonical) {
+        StringKMerFactory skf(k);
+        for (auto &n:ws.sdg.nodes) if (n.sequence.size() >= k) skf.create_kmers(n.sequence, kindex);
+    } else if (count_mode==NonCanonical) {
+        StringKMerFactoryNC skf(k);
+        for (auto &n:ws.sdg.nodes) if (n.sequence.size() >= k) skf.create_kmers(n.sequence, kindex);
+    }
     //sort
     std::sort(kindex.begin(),kindex.end());
 
@@ -38,7 +43,7 @@ void KmerCounts::index_sdg() {
     kindex.resize(c.size());
 }
 
-void KmerCounts::add_count(const std::string &count_name, const std::vector<std::string> &filenames) {
+void KmerCounts::add_count(const std::string &count_name, const std::vector<std::string> &filenames, bool fastq) {
     count_names.emplace_back(count_name);
     counts.emplace_back(kindex.size());
     uint64_t present(0), absent(0), rp(0);
@@ -50,6 +55,7 @@ void KmerCounts::add_count(const std::string &count_name, const std::vector<std:
     for (auto filename:filenames) {
         sdglib::OutputLog(sdglib::INFO) << "Counting from file: " << filename << std::endl;
         FastqReader<FastqRecord> fastqReader({0}, filename);
+        FastaReader<FastaRecord> fastaReader({0}, filename);
 #pragma omp parallel shared(fastqReader)
         {
             uint64_t thread_present(0), thread_absent(0), thread_rp(0);
@@ -57,17 +63,26 @@ void KmerCounts::add_count(const std::string &count_name, const std::vector<std:
             std::vector<uint64_t> found_kmers;
             found_kmers.reserve(local_kmers_size);
             FastqRecord read;
+            FastaRecord reada;
+
             std::vector<uint64_t> readkmers;
             StringKMerFactory skf(k);
+            StringKMerFactoryNC skfnc(k);
 
             bool c;
 #pragma omp critical(fastqreader)
             {
-                c = fastqReader.next_record(read);
+                if (fastq) c = fastqReader.next_record(read);
+                else c= fastaReader.next_record(reada);
             }
             while (c) {
                 readkmers.clear();
-                skf.create_kmers(read.seq,readkmers);
+                if (count_mode==Canonical) {
+                    skf.create_kmers((fastq?read.seq:reada.seq),readkmers);
+                } else if (count_mode==NonCanonical) {
+                    skfnc.create_kmers((fastq?read.seq:reada.seq),readkmers);
+                }
+
 
 
                 for (auto &rk:readkmers) {
@@ -98,7 +113,10 @@ void KmerCounts::add_count(const std::string &count_name, const std::vector<std:
                 }
                 ++thread_rp;
 #pragma omp critical(fastqreader)
-                c = fastqReader.next_record(read);
+                {
+                    if (fastq) c = fastqReader.next_record(read);
+                    else c= fastaReader.next_record(reada);
+                }
             }
 #pragma omp critical(results_merge)
             {
@@ -192,8 +210,16 @@ void KmerCounts::add_count(const std::string & count_name, const LongReadsDatast
 
 std::vector<uint16_t> KmerCounts::project_count(const uint16_t count_idx, const std::string &s) {
     std::vector<uint64_t> skmers;
-    StringKMerFactory skf(k);
-    skf.create_kmers(s,skmers);
+
+    //StringKMerFactory skf(k);
+    //skf.create_kmers(s,skmers);
+    if (count_mode==Canonical) {
+        StringKMerFactory skf(k);
+        skf.create_kmers(s,skmers);
+    } else if (count_mode==NonCanonical) {
+        StringKMerFactoryNC skf(k);
+        skf.create_kmers(s,skmers);
+    }
     std::vector<uint16_t> kcov;
     for (auto &kmer: skmers){
         auto nk = std::lower_bound(kindex.begin(), kindex.end(), kmer);
@@ -225,6 +251,7 @@ void KmerCounts::read(std::ifstream &ws_file) {
 
 void KmerCounts::read_counts(std::ifstream &count_file) {
     count_file.read((char *) &k, sizeof(k));
+    count_file.read((char *) &count_mode, sizeof(count_mode));
     sdglib::read_string(count_file,name);
     sdglib::read_stringvector(count_file,count_names);
     sdglib::read_flat_vector(count_file,kindex);
@@ -234,19 +261,18 @@ void KmerCounts::read_counts(std::ifstream &count_file) {
 
 void KmerCounts::write(std::ofstream &output_file) const {
     sdglib::write_string(output_file, name+".count");
-
     std::ofstream count_file(name+".count");
     write_counts(count_file);
 }
 void KmerCounts::write(std::fstream &output_file) const {
     sdglib::write_string(output_file, name+".count");
-
     std::ofstream count_file(name+".count");
     write_counts(count_file);
 }
 
 void KmerCounts::write_counts(std::ofstream &count_file) const {
     count_file.write((char *) &k, sizeof(k));
+    count_file.write((char *) &count_mode, sizeof(count_mode));
     sdglib::write_string(count_file,name);
     sdglib::write_stringvector(count_file,count_names);
     sdglib::write_flat_vector(count_file,kindex);

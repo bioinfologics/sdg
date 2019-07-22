@@ -5,7 +5,7 @@
 //
 
 #include "LongReadsDatastore.hpp"
-#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/utilities/OutputLog.hpp>
 #include <sdglib/mappers/LongReadsMapper.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <algorithm>
@@ -102,8 +102,6 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : f
     read_to_fileRecord = o.read_to_fileRecord;
     name = o.name;
     default_name = o.default_name;
-    mapper.reads_in_node = o.mapper.reads_in_node;
-    mapper.filtered_read_mappings = o.mapper.filtered_read_mappings;
     mapper.first_mapping = o.mapper.first_mapping;
     mapper.read_paths = o.mapper.read_paths;
     mapper.all_paths_between = o.mapper.all_paths_between;
@@ -186,7 +184,7 @@ void LongReadsDatastore::load_index(std::string &file) {
     sdglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()-1<<std::endl;
 }
 
-void LongReadsDatastore::build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file) {
+void LongReadsDatastore::build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file, , size_t min_size) {
     uint64_t nReads(1);
     std::vector<ReadPosSize> read_to_file_record{ReadPosSize{0,0}};
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
@@ -213,7 +211,7 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
     FastqReader<FastqRecord> reader({}, long_read_file);
     FastqRecord rec;
     while(reader.next_record(rec)) {
-        if (!rec.seq.empty()) {
+        if (!rec.seq.empty() and (min_size==0 or rec.seq.size()>=min_size)) {
             uint32_t size = rec.seq.size();
             auto offset = ofs.tellp();
             read_to_file_record.emplace_back((off_t)offset,size);

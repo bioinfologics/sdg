@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sdglib/workspace/WorkSpace.hpp>
-#include "sdglib/logger/OutputLog.hpp"
+#include "sdglib/utilities/OutputLog.hpp"
 #include "cxxopts.hpp"
 
 int main(int argc, char * argv[]) {

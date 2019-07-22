@@ -3,7 +3,7 @@
 //
 
 #include "LinkedReadsDatastore.hpp"
-#include <sdglib/logger/OutputLog.hpp>
+#include <sdglib/utilities/OutputLog.hpp>
 #include <sdglib/mappers/LinkedReadsMapper.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <fstream>
@@ -120,9 +120,12 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
             }
             if (NULL == gzgets(fd2, readbuffer, 999)) continue;
         }
-        else if (format==LinkedReadsFormat::seq){
+        else if (format==LinkedReadsFormat::raw){
             if (NULL == gzgets(fd1, readbuffer, 999)) continue;
-            //Tag to number from r1's name
+            if(!readbuffer[0] == '@') {
+                throw std::runtime_error("Please check: " + read1_filename + ", it seems to be missing a header");
+            }
+            if (NULL == gzgets(fd1, readbuffer, 999)) continue;
             for (auto i = 0; i < 16; ++i) {
                 newtag <<= 2;
                 if (readbuffer[i] == 'C') newtag += 1;
@@ -136,9 +139,24 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
             currrent_read.tag=newtag;
             currrent_read.seq1=std::string(readbuffer + 16 + 7);
             if (currrent_read.seq1.back()=='\n') currrent_read.seq1.resize(currrent_read.seq1.size()-1);
+            if (NULL == gzgets(fd1, readbuffer, 999)) continue;
+            if(!readbuffer[0] == '+') {
+                throw std::runtime_error("Please check: " + read1_filename + ", it seems to be desynchronised a header");
+            }
+            if (NULL == gzgets(fd1, readbuffer, 999)) continue;
+
+            if (NULL == gzgets(fd2, readbuffer, 999)) continue;
+            if(!readbuffer[0] == '@') {
+                throw std::runtime_error("Please check: " + read2_filename + ", it seems to be missing a header");
+            }
             if (NULL == gzgets(fd2, readbuffer, 999)) continue;
             currrent_read.seq2=std::string(readbuffer);
             if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
+            if (NULL == gzgets(fd2, readbuffer, 999)) continue;
+            if(!readbuffer[0] == '+') {
+                throw std::runtime_error("Please check: " + read2_filename + ", it seems to be desynchronised a header");
+            }
+            if (NULL == gzgets(fd2, readbuffer, 999)) continue;
         }
         if (0 != newtag) tagged_reads += 2;
         ++pairs;
@@ -375,6 +393,7 @@ void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std
 }
 
 std::string LinkedReadsDatastore::get_read_sequence(size_t readID) {
+    if (readID==0 or readID>size()) return "";
     char buffer[readsize+1];
     size_t read_offset_in_file=readpos_offset+(readsize+1)*(readID-1);
     fseek(fd,read_offset_in_file,SEEK_SET);
@@ -393,6 +412,7 @@ std::vector<uint64_t> LinkedReadsDatastore::get_tag_reads(bsg10xTag tag) const {
 }
 
 bsg10xTag LinkedReadsDatastore::get_read_tag(size_t readID) {
+    if (readID==0 or readID>size()) return 0;
     return read_tag[(readID-1)/2];
 }
 

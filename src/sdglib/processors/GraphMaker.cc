@@ -4,7 +4,6 @@
 
 #include <sdglib/bloom/BloomFilter.hpp>
 #include "GraphMaker.hpp"
-#include "KmerCompressionIndex.hpp"
 
 std::string kmer_to_sequence(uint64_t kmer, uint8_t k) {
     std::string seq;
@@ -535,7 +534,7 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
                 //Add end nucleotide, update current_kmer;
                 get_fw_idxs(fwn, current_kmer, k, kmerlist);
                 current_kmer = fwn[0].kmer;
-                if (used_kmers[fwn[0].idx]) break;//break circular contigs into lines.
+                if (used_kmers[fwn[0].idx]) break; //this should never happen, since these have ends.
                 used_kmers[fwn[0].idx]=true;
                 s.push_back(nucleotides[current_kmer % 4]);
                 end_fw = is_end_fw(current_kmer, k, kmerlist);
@@ -544,6 +543,33 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
         sg.add_node(Node(s));
         if (!sg.nodes.back().is_canonical()) sg.nodes.back().make_rc();//inefficient, but once in a node
     }
+    //If there are any perfect circles, they won't have ends, so just pick any unused kmer and go fw till you find the same k-mer fw.
+    //(this is going to be even tricker to parallelise)
+    std::cout<<"doing the circles now"<<std::endl;
+    for (uint64_t start_kmer_idx=0;start_kmer_idx<kmerlist.size();++start_kmer_idx) {
+        if (used_kmers[start_kmer_idx]) continue; //any kmer can only belong to one unitig.ww
+
+        //Check this k-mer is an end/junction
+        auto start_kmer = kmerlist[start_kmer_idx];
+        auto end_fw = is_end_fw(start_kmer, k, kmerlist);
+        std::vector<klidxs> fwn;
+        unsigned char nucleotides[4] = {'A', 'C', 'G', 'T'};
+        auto current_kmer = start_kmer;
+        used_kmers[start_kmer_idx] = true;
+        s=kmer_to_sequence128(current_kmer, k);
+
+        while (true) {
+            //Add end nucleotide, update current_kmer;
+            get_fw_idxs(fwn, current_kmer, k, kmerlist);
+            current_kmer = fwn[0].kmer;
+            if (current_kmer==start_kmer) break;
+            used_kmers[fwn[0].idx] = true;
+            s.push_back(nucleotides[current_kmer % 4]);
+        }
+        sg.add_node(Node(s));
+        if (!sg.nodes.back().is_canonical()) sg.nodes.back().make_rc();//inefficient, but once in a node
+    }
+
     //save the (k-1)mer in (rev on first k-1 / fw on last k-1) or out ( fw on first k-1 / bw on last k-1)
     std::vector<std::pair<__uint128_t,sgNodeID_t>> in, out;
     in.reserve(2*sg.nodes.size());
@@ -560,13 +586,12 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
     }
     std::sort(in.begin(),in.end());
     std::sort(out.begin(),out.end());
-
     //connect out->in for all combinations on each kmer
     uint64_t next_out_idx=0;
     for(auto &i:in){
-        while(out[next_out_idx].first<i.first) ++next_out_idx;
+        while(next_out_idx<out.size() and out[next_out_idx].first<i.first) ++next_out_idx;
         for (auto oidx=next_out_idx;oidx<out.size() and out[oidx].first==i.first;++oidx) {
-            sg.add_link(i.second,out[oidx].second,-k+1);//no support, although we could add the DBG operation as such
+            sg.add_link(i.second,out[oidx].second,-k+1); //no support, although we could add the DBG operation as such
         }
     }
 }
@@ -597,7 +622,7 @@ void GraphMaker::tip_clipping(int tip_size) {
                     //std::cout<<" D"<<std::endl;
                 }
             }
-            if (fwl.size() == 0 and bwl.size() == 0) to_delete.insert(n);
+            if (fwl.size() == 0 and bwl.size() == 0) to_delete.insert(n); //this removes unconnected!
             //std::cout<<std::endl;
         }
         //std::cout << "Nodes to delete: " << to_delete.size() << std::endl;
