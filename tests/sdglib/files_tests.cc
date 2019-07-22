@@ -44,6 +44,12 @@ TEST_CASE("Workspace create, read, write") {
     REQUIRE( out.kmer_counts == in.kmer_counts);
     REQUIRE( out.journal == in.journal);
     REQUIRE( out.sdg == in.sdg);
+
+    ::unlink("10x.lseq");
+    ::unlink("pe.prseq");
+    ::unlink("long_reads.loseq");
+    ::unlink("workspace.bsgws");
+    ::unlink("kctest.count");
 }
 
 TEST_CASE("Long reads datastore create, read, write") {
@@ -68,6 +74,8 @@ TEST_CASE("Long reads datastore create, read, write") {
     std::string ds300(ds.get_read_sequence(300));
 
     REQUIRE(ds300 == read300);
+
+    ::unlink("long_reads.loseq");
 }
 
 TEST_CASE("10x reads datastore create, read, write") {
@@ -116,6 +124,7 @@ TEST_CASE("10x reads datastore create, read, write") {
     }
 
     REQUIRE(equal);
+    ::unlink("10x.lseq");
 }
 
 TEST_CASE("PE reads datastore create, read, write") {
@@ -164,6 +173,7 @@ TEST_CASE("PE reads datastore create, read, write") {
     }
 
     REQUIRE(equal);
+    ::unlink("pe.prseq");
 }
 
 TEST_CASE("Fastq file reader") {

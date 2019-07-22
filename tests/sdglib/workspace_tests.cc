@@ -11,5 +11,10 @@ TEST_CASE("Test log/journal"){
     ws.add_operation("Op2", "tool2", "Changed nothing again");
     ws.status();
 
-    REQUIRE(true);
+    ws.dump_to_disk("journal_test.ws");
+
+    WorkSpace ws2("journal_test.ws");
+    REQUIRE(ws2.journal == ws.journal);
+
+    ::unlink("journal_test.ws");
 }

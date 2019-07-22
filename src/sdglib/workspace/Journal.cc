@@ -18,13 +18,14 @@ void JournalOperation::status() const {
 }
 
 bool JournalOperation::operator==(const JournalOperation &o) const {
-    return std::tie(name, tool, detail, timestamp, entries) == std::tie(o.name, o.detail, o.detail, o.timestamp, o.entries);
+    return std::tie(name, tool, detail, timestamp, entries) == std::tie(o.name, o.tool, o.detail, o.timestamp, o.entries);
 }
 
 std::ostream &operator<<(std::ostream &os, const JournalOperation &opj) {
     os << "Operation: " << opj.name << " applied on " << ctime(&opj.timestamp);
     os << "Tool: " << opj.tool << std::endl;
     os << "Details: " << opj.detail << std::endl << std::endl;
+    return os;
 }
 
 JournalEntry::JournalEntry(const std::string &detail) : detail(detail) {}
@@ -33,4 +34,5 @@ bool JournalEntry::operator==(const JournalEntry &o) const { return detail == o.
 
 std::ostream &operator<<(std::ostream &os, const JournalEntry &je) {
     os << je.detail << std::endl;
+    return os;
 }

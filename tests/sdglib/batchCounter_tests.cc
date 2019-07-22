@@ -50,6 +50,10 @@ TEST_CASE("Counts 60-mers correctly from PairedReadDatastore") {
 
     REQUIRE( batch_count.size() == file_count.size() );
     REQUIRE(batch_count == file_count);
+
+    ::unlink("small_K.freqs");
+    ::unlink("pe.prseq");
+
 }
 
 TEST_CASE("Counts 60-mers correctly from PairedReadDatastore, using batches") {
@@ -96,4 +100,7 @@ TEST_CASE("Counts 60-mers correctly from PairedReadDatastore, using batches") {
 
     REQUIRE( batch_count.size() == file_count.size() );
     REQUIRE(batch_count == file_count);
+    ::unlink("small_K.freqs");
+    ::unlink("pe.prseq");
+
 }
