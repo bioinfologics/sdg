@@ -278,3 +278,18 @@ void KmerCounts::write_counts(std::ofstream &count_file) const {
     sdglib::write_flat_vector(count_file,kindex);
     sdglib::write_flat_vectorvector(count_file,counts);
 }
+
+std::vector<std::string> KmerCounts::get_count_names() {
+    return count_names;
+}
+
+const std::vector<uint16_t> &KmerCounts::get_count_by_name(const std::string &name) const {
+    for (int i = 0; i < count_names.size(); i++) {
+        if (count_names[i] == name) {
+            return counts[i];
+        }
+    }
+
+    throw std::runtime_error("Couldn't find a count named: "+name);
+
+}

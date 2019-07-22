@@ -366,3 +366,11 @@ WorkSpace::WorkSpace() : sdg(*this) {
     long_reads_datastores.reserve(100);
     kmer_counts.reserve(100);
 }
+
+std::vector<std::string> WorkSpace::get_all_kmer_count_names() {
+    std::vector<std::string> names;
+    for (const auto &kc: kmer_counts) {
+        names.emplace_back(kc.name);
+    }
+    return names;
+}

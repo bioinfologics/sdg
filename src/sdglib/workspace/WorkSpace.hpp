@@ -147,6 +147,8 @@ public:
     KmerCounts& get_kmer_counts_datastore(const std::string &name);
     JournalOperation& get_operation(const std::string &name);
 
+    std::vector<std::string> get_all_kmer_count_names();
+
     //general operations
 
     void remap_all();
