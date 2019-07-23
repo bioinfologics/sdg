@@ -25,7 +25,7 @@ TEST_CASE("Workspace create, read, write") {
     PairedReadsDatastore::build_from_fastq(prds_output_path, r1_filepath, r2_filepath, prds_output_path);
 
     WorkSpace out, in;
-    out.sdg.load_from_gfa("../tests/datasets/tgraph.gfa");
+    out.sdg.load_from_gfa("../tests/datasets/graph/tgraph.gfa");
     out.long_reads_datastores.emplace_back(out, Lrds_output_path);
 
     out.paired_reads_datastores.emplace_back(out, prds_output_path);
@@ -208,7 +208,15 @@ TEST_CASE("Load GFA") {
     sdglib::OutputLogLevel = sdglib::DEBUG;
     WorkSpace ws;
     SequenceDistanceGraph sg(ws);
-    sg.load_from_gfa("../tests/datasets/tgraph.gfa");
+    sg.load_from_gfa("../tests/datasets/graph/tgraph.gfa");
+    REQUIRE(sg.nodes.size() > 1);
+}
+
+TEST_CASE("Load GFA2") {
+    sdglib::OutputLogLevel = sdglib::DEBUG;
+    WorkSpace ws;
+    SequenceDistanceGraph sg(ws);
+    sg.load_from_gfa("../tests/datasets/graph/test_gfa2.gfa");
     REQUIRE(sg.nodes.size() > 1);
 }
 

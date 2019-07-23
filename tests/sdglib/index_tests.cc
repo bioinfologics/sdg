@@ -15,7 +15,7 @@ TEST_CASE("UniqueKmerIndex create and lookup") {
     std::string seqPresent = "CTTGCGGGTTTCCAG";
     WorkSpace ws;
     SequenceDistanceGraph sg(ws);
-    sg.load_from_gfa("../tests/datasets/tgraph.gfa");
+    sg.load_from_gfa("../tests/datasets/graph/tgraph.gfa");
     UniqueKmerIndex ukm(sg, K);
     ukm.generate_index(sg, true);
 
@@ -36,7 +36,7 @@ TEST_CASE("UniqueKmerIndex63 create and lookup") {
     std::string seqPresent = "CTTGCGGGTTTCCAGGAACTGGCTGTCCTCGGCGTTCAGCGCCATCGACTTCCAGTCCAGCCC";
     WorkSpace ws;
     SequenceDistanceGraph sg(ws);
-    sg.load_from_gfa("../tests/datasets/tgraph.gfa");
+    sg.load_from_gfa("../tests/datasets/graph/tgraph.gfa");
     Unique63merIndex ukm(sg);
     ukm.generate_index(sg, true);
 
@@ -60,7 +60,7 @@ TEST_CASE("NKmerIndex create and lookup") {
     std::string seqPresent = "CTTGCGGGTTTCCAG";
     WorkSpace ws;
     SequenceDistanceGraph sg(ws);
-    sg.load_from_gfa("../tests/datasets/tgraph.gfa");
+    sg.load_from_gfa("../tests/datasets/graph/tgraph.gfa");
     assembly_kmers.generate_index(sg);
 
     REQUIRE(!assembly_kmers.empty());
@@ -83,7 +83,7 @@ TEST_CASE("SatKmerIndex create and lookup") {
     std::string seqPresent = "CTTGCGGGTT";
     WorkSpace ws;
     SequenceDistanceGraph sg(ws);
-    sg.load_from_gfa("../tests/datasets/tgraph.gfa");
+    sg.load_from_gfa("../tests/datasets/graph/tgraph.gfa");
     assembly_kmers.generate_index(sg);
 
     REQUIRE(!assembly_kmers.contig_offsets.empty());
