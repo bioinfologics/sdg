@@ -627,7 +627,7 @@ void SequenceDistanceGraph::load_from_gfa1(std::ifstream &gfaf, std::ifstream &f
 
     //load store all connections.
 
-    std::string gfa_rtype,gfa_source,gfa_sourcedir,gfa_dest,gfa_destdir,gfa_cigar,gfa_star,gfa_length,gap_id,gap_dir;
+    std::string gfa_rtype,gfa_source,gfa_sourcedir,gfa_dest,gfa_destdir,gfa_cigar,gfa_star,gfa_length,gap_id,gap_dir,seq_location;
     sgNodeID_t src_id,dest_id;
     int32_t dist;
     uint64_t lcount=0;
@@ -640,12 +640,12 @@ void SequenceDistanceGraph::load_from_gfa1(std::ifstream &gfaf, std::ifstream &f
             iss >> gfa_source;
             iss >> gfa_star;
             iss >> gfa_length; // parse to number
-
+            if (!iss.eof()) iss >> seq_location;
             if (gfa_star != "*") {
                 throw std::logic_error("Sequences should be in a separate file.");
             }
 
-            if (gfa_source.substr(0,3) == "gap") {
+            if (gfa_star == "*" and seq_location.empty()) {
                 gap_dist[gfa_source] = std::stoi(gfa_length.substr(5));
             } else {
                 // Check equal length seq and node length reported in gfa
@@ -659,6 +659,7 @@ void SequenceDistanceGraph::load_from_gfa1(std::ifstream &gfaf, std::ifstream &f
                     }
                 }
             }
+            seq_location.clear();
         } else if (gfa_rtype == "L"){
             iss >> gfa_source;
             iss >> gfa_sourcedir;
