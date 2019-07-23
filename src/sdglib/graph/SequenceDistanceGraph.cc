@@ -241,121 +241,29 @@ void SequenceDistanceGraph::load_from_gfa(std::string filename) {
     else throw std::invalid_argument("Filename of the gfa input does not end in gfa, it ends in '"+filename.substr(filename.size()-4,4)+"'");
 
     std::ifstream gfaf(filename);
-    if (!gfaf) throw std::invalid_argument("Can't read gfa file");
+    if (!gfaf) {
+        std::cerr << "Failed to open " << filename <<": " << strerror(errno);
+        throw std::invalid_argument("Can't read gfa file");
+    }
     if (gfaf.peek() == std::ifstream::traits_type::eof()) throw std::invalid_argument("Empty gfa file");
 
-    std::getline(gfaf, line);
-    if (line!="H\tVN:Z:1.0") std::cout<<"WARNING, first line of gfa doesn't correspond to GFA1"<<std::endl;
-
     std::ifstream fastaf(fasta_filename);
-    sdglib::OutputLog(sdglib::LogLevels::INFO) << "Graph fasta filesname: " << fasta_filename << std::endl;
-    if (!fastaf) throw std::invalid_argument("Can't read graph fasta file");
+    if (!fastaf) {
+        std::cerr << "Failed to open " << fasta_filename <<": " << strerror(errno);
+        throw std::invalid_argument("Can't read graph fasta file");
+    }
     if (fastaf.peek() == std::ifstream::traits_type::eof()) throw std::invalid_argument("Empty fasta file");
 
-    //load all sequences from fasta file if they're not canonical, flip and remember they're flipped
-    sdglib::OutputLog(sdglib::LogLevels::INFO) << "Loading sequences from " << fasta_filename << std::endl;
-
-    std::string name, seq = "";
-    seq.reserve(10000000); //stupid hack but probably useful to reserve
-    oldnames_to_ids.clear();
-    oldnames.push_back("");
-    nodes.clear();
-    links.clear();
-    add_node(Node("",NodeStatus::Deleted)); //an empty deleted node on 0, just to skip the space
-    sgNodeID_t nextid=1;
-    uint64_t rcnodes=0;
-    while(!fastaf.eof()){
-        std::getline(fastaf,line);
-        if (fastaf.eof() or line[0] == '>'){
-
-            if (!name.empty()) {
-                //rough ansi C and C++ mix but it works
-                if (oldnames_to_ids.find(name) != oldnames_to_ids.end())
-                    throw std::logic_error("sequence " + name + " is already defined");
-                oldnames_to_ids[name] = add_node(Node(seq));
-                oldnames.push_back(name);
-                //reverse seq if not canonical
-                if (!nodes.back().is_canonical()) {
-                    nodes.back().make_rc();
-                    oldnames_to_ids[name] = -oldnames_to_ids[name];
-                    ++rcnodes;
-                }
-            }
-
-            // Clear the name and set name to the new name, this is a new sequence!
-            name.clear();
-            for (auto i = 1; i < line.size() and line[i] != ' '; ++i) name += line[i];
-            seq = "";
-        } else {
-            seq += line;
-
-        }
+    std::getline(gfaf, line);
+    if (line=="H\tVN:Z:1.0") {
+        load_from_gfa1(gfaf, fastaf);
+    } else if (line == "H\tVN:Z:2.0") {
+        load_from_gfa2(gfaf, fastaf);
+    } else {
+        std::cout<<"WARNING, unsuported GFA version defined on header: " << line << std::endl;
+        std::cout<<"The file will be treated as GFA1" << std::endl;
+        load_from_gfa1(gfaf, fastaf);
     }
-    sdglib::OutputLog(sdglib::LogLevels::INFO) << nodes.size()-1 << " nodes loaded (" << rcnodes << " canonised)." << std::endl;
-
-    //load store all connections.
-
-    std::string gfa_rtype,gfa_source,gfa_sourcedir,gfa_dest,gfa_destdir,gfa_cigar,gfa_star,gfa_length;
-    sgNodeID_t src_id,dest_id;
-    int32_t dist;
-    uint64_t lcount=0;
-    uint64_t dist_egt0(0);
-    while(std::getline(gfaf, line) and !gfaf.eof()) {
-        std::istringstream iss(line);
-        iss >> gfa_rtype;
-
-        if (gfa_rtype == "S"){
-            iss >> gfa_source;
-            iss >> gfa_star;
-            iss >> gfa_length; // parse to number
-
-            if (gfa_star != "*") {
-                throw std::logic_error("Sequences should be in a separate file.");
-            }
-
-            // Check equal length seq and node length reported in gfa
-            if (oldnames_to_ids.find(gfa_source) != oldnames_to_ids.end()){
-                if (std::stoi(gfa_length.substr(5)) != nodes[std::abs(oldnames_to_ids[gfa_source])].sequence.length()){
-                    throw std::logic_error("Different length in node and fasta for sequence: " + gfa_source+ " -> gfa:" + gfa_length.substr(5) + ", fasta: " + std::to_string(nodes[oldnames_to_ids[gfa_source]].sequence.length()));
-                }
-            }
-        } else if (gfa_rtype == "L"){
-            iss >> gfa_source;
-            iss >> gfa_sourcedir;
-            iss >> gfa_dest;
-            iss >> gfa_destdir;
-            iss >> gfa_cigar;
-            //std::cout<<"'"<<source<<"' '"<<gfa_sourcedir<<"' '"<<dest<<"' '"<<destdir<<"'"<<std::endl;
-            if (oldnames_to_ids.find(gfa_source) == oldnames_to_ids.end()){
-                oldnames_to_ids[gfa_source] = add_node(Node(""));
-                //std::cout<<"added source!" <<source<<std::endl;
-            }
-            if (oldnames_to_ids.find(gfa_dest) == oldnames_to_ids.end()){
-                oldnames_to_ids[gfa_dest] = add_node(Node(""));
-                //std::cout<<"added dest! "<<dest<<std::endl;
-            }
-            src_id=oldnames_to_ids[gfa_source];
-            dest_id=oldnames_to_ids[gfa_dest];
-
-            //Go from GFA's "Links as paths" to a normal "nodes have sinks (-/start/left) and sources (+/end/right)
-            if (gfa_sourcedir == "+") src_id=-src_id;
-            if (gfa_destdir == "-") dest_id=-dest_id;
-            dist=0;
-            if (gfa_cigar.size()>1 and gfa_cigar[gfa_cigar.size()-1]=='M') {
-                //TODO: better checks for M
-                dist=-atoi(gfa_cigar.c_str());
-                if (dist>=0) {
-                    dist_egt0++;
-                }
-            }
-            add_link(src_id,dest_id,dist);
-            ++lcount;
-        }
-    }
-    if (dist_egt0 > lcount*0.5f) {
-        sdglib::OutputLog(sdglib::LogLevels::WARN) << "Warning: The loaded graph contains " << dist_egt0 << " non-overlapping links out of " << lcount << std::endl;
-    }
-    sdglib::OutputLog(sdglib::LogLevels::INFO) << nodes.size() - 1 << " nodes after connecting with " << lcount << " links." << std::endl;
 }
 
 void SequenceDistanceGraph::load_from_fasta(std::string filename) {
@@ -670,4 +578,118 @@ void SequenceDistanceGraph::create_index(bool verbose) {
 
 void SequenceDistanceGraph::create_63mer_index(bool verbose) {
     unique_63mer_index.generate_index(sdg, verbose);
+}
+
+void SequenceDistanceGraph::load_from_gfa1(std::ifstream &gfaf, std::ifstream &fastaf) {
+    std::string line;
+    sdglib::OutputLog(sdglib::LogLevels::INFO) << "Graph fasta filesname: " << fasta_filename << std::endl;
+    //load all sequences from fasta file if they're not canonical, flip and remember they're flipped
+    sdglib::OutputLog(sdglib::LogLevels::INFO) << "Loading sequences from " << fasta_filename << std::endl;
+
+    std::string name, seq = "";
+    seq.reserve(10000000); //stupid hack but probably useful to reserve
+    oldnames_to_ids.clear();
+    oldnames.push_back("");
+    nodes.clear();
+    links.clear();
+    add_node(Node("",NodeStatus::Deleted)); //an empty deleted node on 0, just to skip the space
+    sgNodeID_t nextid=1;
+    uint64_t rcnodes=0;
+    while(!fastaf.eof()){
+        std::getline(fastaf,line);
+        if (fastaf.eof() or line[0] == '>'){
+
+            if (!name.empty()) {
+                //rough ansi C and C++ mix but it works
+                if (oldnames_to_ids.find(name) != oldnames_to_ids.end())
+                    throw std::logic_error("sequence " + name + " is already defined");
+                oldnames_to_ids[name] = add_node(Node(seq));
+                oldnames.push_back(name);
+                //reverse seq if not canonical
+                if (!nodes.back().is_canonical()) {
+                    nodes.back().make_rc();
+                    oldnames_to_ids[name] = -oldnames_to_ids[name];
+                    ++rcnodes;
+                }
+            }
+
+            // Clear the name and set name to the new name, this is a new sequence!
+            name.clear();
+            for (auto i = 1; i < line.size() and line[i] != ' '; ++i) name += line[i];
+            seq = "";
+        } else {
+            seq += line;
+
+        }
+    }
+    sdglib::OutputLog(sdglib::LogLevels::INFO) << nodes.size()-1 << " nodes loaded (" << rcnodes << " canonised)." << std::endl;
+
+    //load store all connections.
+
+    std::string gfa_rtype,gfa_source,gfa_sourcedir,gfa_dest,gfa_destdir,gfa_cigar,gfa_star,gfa_length;
+    sgNodeID_t src_id,dest_id;
+    int32_t dist;
+    uint64_t lcount=0;
+    uint64_t dist_egt0(0);
+    while(std::getline(gfaf, line) and !gfaf.eof()) {
+        std::istringstream iss(line);
+        iss >> gfa_rtype;
+
+        if (gfa_rtype == "S"){
+            iss >> gfa_source;
+            iss >> gfa_star;
+            iss >> gfa_length; // parse to number
+
+            if (gfa_star != "*") {
+                throw std::logic_error("Sequences should be in a separate file.");
+            }
+
+            // Check equal length seq and node length reported in gfa
+            if (oldnames_to_ids.find(gfa_source) != oldnames_to_ids.end()){
+                if (std::stoi(gfa_length.substr(5)) != nodes[std::abs(oldnames_to_ids[gfa_source])].sequence.length()){
+                    throw std::logic_error("Different length in node and fasta for sequence: " + gfa_source+ " -> gfa:" + gfa_length.substr(5) + ", fasta: " + std::to_string(nodes[oldnames_to_ids[gfa_source]].sequence.length()));
+                }
+            }
+        } else if (gfa_rtype == "L"){
+            iss >> gfa_source;
+            iss >> gfa_sourcedir;
+            iss >> gfa_dest;
+            iss >> gfa_destdir;
+            iss >> gfa_cigar;
+            //std::cout<<"'"<<source<<"' '"<<gfa_sourcedir<<"' '"<<dest<<"' '"<<destdir<<"'"<<std::endl;
+            if (oldnames_to_ids.find(gfa_source) == oldnames_to_ids.end()){
+                oldnames_to_ids[gfa_source] = add_node(Node(""));
+                //std::cout<<"added source!" <<source<<std::endl;
+            }
+            if (oldnames_to_ids.find(gfa_dest) == oldnames_to_ids.end()){
+                oldnames_to_ids[gfa_dest] = add_node(Node(""));
+                //std::cout<<"added dest! "<<dest<<std::endl;
+            }
+            src_id=oldnames_to_ids[gfa_source];
+            dest_id=oldnames_to_ids[gfa_dest];
+
+            //Go from GFA's "Links as paths" to a normal "nodes have sinks (-/start/left) and sources (+/end/right)
+            if (gfa_sourcedir == "+") src_id=-src_id;
+            if (gfa_destdir == "-") dest_id=-dest_id;
+            dist=0;
+            if (gfa_cigar.size()>1 and gfa_cigar[gfa_cigar.size()-1]=='M') {
+                //TODO: better checks for M
+                dist=-atoi(gfa_cigar.c_str());
+                if (dist>=0) {
+                    dist_egt0++;
+                }
+            }
+
+            add_link(src_id,dest_id,dist);
+            ++lcount;
+        }
+    }
+    if (dist_egt0 > lcount*0.5f) {
+        sdglib::OutputLog(sdglib::LogLevels::WARN) << "Warning: The loaded graph contains " << dist_egt0 << " non-overlapping links out of " << lcount << std::endl;
+    }
+    sdglib::OutputLog(sdglib::LogLevels::INFO) << nodes.size() - 1 << " nodes after connecting with " << lcount << " links." << std::endl;
+}
+
+void SequenceDistanceGraph::load_from_gfa2(std::ifstream &gfaf, std::ifstream &fastaf) {
+
 }

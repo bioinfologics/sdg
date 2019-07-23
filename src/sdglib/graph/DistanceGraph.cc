@@ -411,24 +411,48 @@ void DistanceGraph::write_to_gfa1(std::string filename, const std::vector<sgNode
             <<(depths.empty() or std::isnan(depths[i])?"":"\tDP:f:"+std::to_string(depths[i]))<<std::endl;
     }
 
-    for (auto &ls:links){
-        for (auto &l:ls)
-            if (l.source<=l.dest and (output_nodes.empty() or
-                                      output_nodes.count(l.source)>0 or output_nodes.count(-l.source)>0 or
-                                      output_nodes.count(l.dest)>0 or output_nodes.count(-l.dest)>0)) {
-                gfaf<<"L\t";
-                if (l.source>0) gfaf<<"seq"<<l.source<<"\t-\t";
-                else gfaf<<"seq"<<-l.source<<"\t+\t";
-                if (l.dest>0) gfaf<<"seq"<<l.dest<<"\t+\t";
-                else gfaf<<"seq"<<-l.dest<<"\t-\t";
-                gfaf<<(l.dist<0 ? -l.dist : 0)<<"M"<<std::endl;
+    // Go through all links and create a gap_sequence for every positive distance link
+    for (const auto &ls: links) {
+        for (const auto &l:ls) {
+            if (l.source <= l.dest and l.dist > 0 and (output_nodes.empty() or
+                                                       output_nodes.count(l.source) > 0 or output_nodes.count(-l.source) > 0 or
+                                                       output_nodes.count(l.dest) > 0 or output_nodes.count(-l.dest) > 0)) {
+                gfaf << "S\tgap_" << l.source << "_" << l.dest << "\t*\tLN:i:" << l.dist << std::endl;
             }
+        }
     }
 
+    for (auto &ls:links) {
+        for (auto &l:ls) {
+            if (l.source <= l.dest and (output_nodes.empty() or
+                                        output_nodes.count(l.source) > 0 or output_nodes.count(-l.source) > 0 or
+                                        output_nodes.count(l.dest) > 0 or output_nodes.count(-l.dest) > 0)) {
+                if (l.dist <= 0) {
+                    gfaf << "L\t";
+                    if (l.source > 0) gfaf << "seq" << l.source << "\t-\t";
+                    else gfaf << "seq" << -l.source << "\t+\t";
+
+                    if (l.dest > 0) gfaf << "seq" << l.dest << "\t+\t";
+                    else gfaf << "seq" << -l.dest << "\t-\t";
+
+                    gfaf << (l.dist < 0 ? -l.dist : 0) << "M" << std::endl;
+                } else {
+                    gfaf << "L\t";
+                    if (l.source > 0) gfaf << "seq" << l.source << "\t-\t" << "gap_" << std::abs(l.source) << "_" << std::abs(l.dest) << "\t+\t";
+                    else gfaf << "seq" << -l.source << "\t+\t" << "gap_" << std::abs(l.source) << "_" << std::abs(l.dest) << "\t+\t";
+                    gfaf << "0M" << std::endl;
+
+                    gfaf << "L\t";
+                    if (l.dest > 0) gfaf << "gap_" << std::abs(l.source) << "_" << std::abs(l.dest) << "\t+\t" << "seq" << l.dest << "\t+\t";
+                    else gfaf << "gap_" << std::abs(l.source) << "_" << std::abs(l.dest) << "\t+\t" << "seq" << -l.dest << "\t-\t";
+                    gfaf << "0M" << std::endl;
+                }
+            }
+        }
+    }
 }
 
 void DistanceGraph::write_to_gfa2(std::string filename, const std::vector<sgNodeID_t> &selected_nodes, const std::vector<double> &depths) {
-    //TODO: this is writing GFA1 !!!!
     std::unordered_set<sgNodeID_t > output_nodes(selected_nodes.begin(), selected_nodes.end());
     std::string fasta_filename;
     //check the filename ends in .gfa
@@ -439,7 +463,7 @@ void DistanceGraph::write_to_gfa2(std::string filename, const std::vector<sgNode
 
     std::ofstream gfaf(filename);
     if (!gfaf) throw std::invalid_argument("Can't write to gfa file");
-    gfaf<<"H\tVN:Z:1.0"<<std::endl;
+    gfaf<<"H\tVN:Z:2.0"<<std::endl;
 
     std::ofstream fastaf(fasta_filename);
     if (!fastaf) throw std::invalid_argument("Can't write to fasta file");
@@ -456,20 +480,41 @@ void DistanceGraph::write_to_gfa2(std::string filename, const std::vector<sgNode
             <<(depths.empty() or std::isnan(depths[i])?"":"\tDP:f:"+std::to_string(depths[i]))<<std::endl;
     }
 
-    for (auto &ls:links){
+    uint edge_counter(1);
+    uint gap_counter(1);
+    for (auto &ls:links) {
         for (auto &l:ls)
-            if (l.source<=l.dest and (output_nodes.empty() or
-                                      output_nodes.count(l.source)>0 or output_nodes.count(-l.source)>0 or
-                                      output_nodes.count(l.dest)>0 or output_nodes.count(-l.dest)>0)) {
-                gfaf<<"L\t";
-                if (l.source>0) gfaf<<"seq"<<l.source<<"\t-\t";
-                else gfaf<<"seq"<<-l.source<<"\t+\t";
-                if (l.dest>0) gfaf<<"seq"<<l.dest<<"\t+\t";
-                else gfaf<<"seq"<<-l.dest<<"\t-\t";
-                gfaf<<(l.dist<0 ? -l.dist : 0)<<"M"<<std::endl;
+            if (l.source <= l.dest and (output_nodes.empty() or
+                                        output_nodes.count(l.source) > 0 or output_nodes.count(-l.source) > 0 or
+                                        output_nodes.count(l.dest) > 0 or output_nodes.count(-l.dest) > 0)) {
+                if (l.dist < 0) {
+                    gfaf << "E\tedge_" << edge_counter++ << "\t";
+                    const auto source_size(sdg.nodes[std::abs(l.source)].sequence.size());
+                    const auto dest_size(sdg.nodes[std::abs(l.dest)].sequence.size());
+                    if (l.source > 0) gfaf << "seq" << l.source << "-\t";
+                    else gfaf << "seq" << -l.source << "+\t";
+
+                    if (l.dest > 0) gfaf << "seq" << l.dest << "+\t";
+                    else gfaf << "seq" << -l.dest << "-\t";
+
+                    if (l.source > 0) gfaf << source_size + l.dist << "\t" << source_size << "$\t";
+                    else gfaf << "0\t" << l.dist << "\t";
+
+                    if (l.dest > 0) gfaf << "0\t" << l.dist << "\t";
+                    else gfaf << dest_size + l.dist << "\t" << dest_size << "$\t";
+
+                    gfaf << (l.dist < 0 ? -l.dist : 0) << "M" << std::endl;
+                } else {
+                    gfaf << "G\tgap_"<< gap_counter++ <<"\t";
+                    if (l.source > 0) gfaf << "seq" << l.source << "-\t";
+                    else gfaf << "seq" << -l.source << "+\t";
+                    if (l.dest > 0) gfaf << "seq" << l.dest << "+\t";
+                    else gfaf << "seq" << -l.dest << "-\t";
+
+                    gfaf << l.dist << "\t*" << std::endl;
+                }
             }
     }
-
 }
 
 void DistanceGraph::read(std::ifstream &input_file) {

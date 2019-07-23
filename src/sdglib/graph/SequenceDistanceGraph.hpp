@@ -81,6 +81,10 @@ public:
 
     //=== I/O functions ===
     void load_from_gfa(std::string filename);
+
+    void load_from_gfa1(std::ifstream &gfaf, std::ifstream &fastaf);
+    void load_from_gfa2(std::ifstream &gfaf, std::ifstream &fastaf);
+
     void load_from_fasta(std::string filename);
     //TODO: move to DistanceGraph
 
