@@ -783,10 +783,11 @@ void SequenceDistanceGraph::load_from_gfa2(std::ifstream &gfaf, std::ifstream &f
 
         if (gfa_rtype == "S") {
             iss >> gfa_source;
+            iss >> gfa_length;
             iss >> gfa_star;
-            iss >> gfa_length; // parse to number
 
-            // Check equal length seq and node length reported in gfa
+            // The length of a sequence reported by GFA2 isn't required to match the actual length of the sequence
+            /*
             if (oldnames_to_ids.find(gfa_source) != oldnames_to_ids.end()) {
                 if (std::stoi(gfa_length.substr(5)) !=
                     nodes[std::abs(oldnames_to_ids[gfa_source])].sequence.length()) {
@@ -795,7 +796,8 @@ void SequenceDistanceGraph::load_from_gfa2(std::ifstream &gfaf, std::ifstream &f
                             gfa_length.substr(5) + ", fasta: " +
                             std::to_string(nodes[oldnames_to_ids[gfa_source]].sequence.length()));
                 }
-            }
+            }*/
+
         } else if (gfa_rtype == "E") {
             iss >> id;
             iss >> gfa_source;
