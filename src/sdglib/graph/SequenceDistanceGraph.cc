@@ -627,7 +627,7 @@ void SequenceDistanceGraph::load_from_gfa1(std::ifstream &gfaf, std::ifstream &f
 
     //load store all connections.
 
-    std::string gfa_rtype,gfa_source,gfa_sourcedir,gfa_dest,gfa_destdir,gfa_cigar,gfa_star,gfa_length;
+    std::string gfa_rtype,gfa_source,gfa_sourcedir,gfa_dest,gfa_destdir,gfa_cigar,gfa_star,gfa_length,gap_id,gap_dir;
     sgNodeID_t src_id,dest_id;
     int32_t dist;
     uint64_t lcount=0;
@@ -647,11 +647,16 @@ void SequenceDistanceGraph::load_from_gfa1(std::ifstream &gfaf, std::ifstream &f
 
             if (gfa_source.substr(0,3) == "gap") {
                 gap_dist[gfa_source] = std::stoi(gfa_length.substr(5));
-            }
-            // Check equal length seq and node length reported in gfa
-            if (oldnames_to_ids.find(gfa_source) != oldnames_to_ids.end()){
-                if (std::stoi(gfa_length.substr(5)) != nodes[std::abs(oldnames_to_ids[gfa_source])].sequence.length()){
-                    throw std::logic_error("Different length in node and fasta for sequence: " + gfa_source+ " -> gfa:" + gfa_length.substr(5) + ", fasta: " + std::to_string(nodes[oldnames_to_ids[gfa_source]].sequence.length()));
+            } else {
+                // Check equal length seq and node length reported in gfa
+                if (oldnames_to_ids.find(gfa_source) != oldnames_to_ids.end()) {
+                    if (std::stoi(gfa_length.substr(5)) !=
+                        nodes[std::abs(oldnames_to_ids[gfa_source])].sequence.length()) {
+                        throw std::logic_error(
+                                "Different length in node and fasta for sequence: " + gfa_source + " -> gfa:" +
+                                gfa_length.substr(5) + ", fasta: " +
+                                std::to_string(nodes[oldnames_to_ids[gfa_source]].sequence.length()));
+                    }
                 }
             }
         } else if (gfa_rtype == "L"){
@@ -662,20 +667,27 @@ void SequenceDistanceGraph::load_from_gfa1(std::ifstream &gfaf, std::ifstream &f
             iss >> gfa_cigar;
 
             if (gfa_dest.substr(0,3) == "gap") {
-                iss >> gfa_dest;        // Ignore gap_id x2
-                iss >> gfa_destdir;     // Ignore gap_dir x2
-                iss >> gfa_dest;        // Read dest
-                iss >> gfa_destdir;     // Read dest_dir
-                iss >> gfa_cigar;       // Ignore cigar
+                std::cout << "GAP Link" << std::endl;
+                std::getline(gfaf, line);
+                std::istringstream gap_ss(line);
+                gap_ss >> gfa_rtype;
+                gap_ss >> gap_id;        // Ignore gap_id x2
+                gap_ss >> gap_dir;     // Ignore gap_dir x2
+                gap_ss >> gfa_dest;        // Read dest
+                gap_ss >> gfa_destdir;     // Read dest_dir
+                gap_ss >> gfa_cigar;       // Ignore cigar
             }
             //std::cout<<"'"<<source<<"' '"<<gfa_sourcedir<<"' '"<<dest<<"' '"<<destdir<<"'"<<std::endl;
-            if (oldnames_to_ids.find(gfa_source) == oldnames_to_ids.end()){
-                oldnames_to_ids[gfa_source] = add_node(Node(""));
-                //std::cout<<"added source!" <<source<<std::endl;
-            }
-            if (oldnames_to_ids.find(gfa_dest) == oldnames_to_ids.end()){
-                oldnames_to_ids[gfa_dest] = add_node(Node(""));
-                //std::cout<<"added dest! "<<dest<<std::endl;
+            if (gap_dist.find(gap_id) == gap_dist.end()) {
+                std::cout << gap_id << " not found, adding a new node" << std::endl;
+                if (oldnames_to_ids.find(gfa_source) == oldnames_to_ids.end()) {
+                    oldnames_to_ids[gfa_source] = add_node(Node(""));
+                    //std::cout<<"added source!" <<source<<std::endl;
+                }
+                if (oldnames_to_ids.find(gfa_dest) == oldnames_to_ids.end()) {
+                    oldnames_to_ids[gfa_dest] = add_node(Node(""));
+                    //std::cout<<"added dest! "<<dest<<std::endl;
+                }
             }
             src_id=oldnames_to_ids[gfa_source];
             dest_id=oldnames_to_ids[gfa_dest];
@@ -692,13 +704,15 @@ void SequenceDistanceGraph::load_from_gfa1(std::ifstream &gfaf, std::ifstream &f
                 }
             }
 
-            if (gfa_dest.substr(0,3) == "gap") {
-                const auto d = gap_dist.find(gfa_dest);
+            if (gap_id.substr(0,3) == "gap") {
+                const auto d = gap_dist.find(gap_id);
                 if ( d == gap_dist.cend()) {
                     throw std::runtime_error(gfa_dest + " has not been seen in " + filename + " yet, please ensure gaps are defined before being referenced");
                 } else {
                     dist = d->second;
+                    std::cout << "Gap with dist: " << dist << std::endl;
                 }
+                gap_id.clear();
             }
             add_link(src_id,dest_id,dist);
             ++lcount;
