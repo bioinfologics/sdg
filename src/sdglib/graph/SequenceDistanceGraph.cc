@@ -667,8 +667,7 @@ void SequenceDistanceGraph::load_from_gfa1(std::ifstream &gfaf, std::ifstream &f
             iss >> gfa_destdir;
             iss >> gfa_cigar;
 
-            if (gfa_dest.substr(0,3) == "gap") {
-                std::cout << "GAP Link" << std::endl;
+            if (gap_dist.find(gfa_dest) != gap_dist.end()) {
                 std::getline(gfaf, line);
                 std::istringstream gap_ss(line);
                 gap_ss >> gfa_rtype;
@@ -680,7 +679,6 @@ void SequenceDistanceGraph::load_from_gfa1(std::ifstream &gfaf, std::ifstream &f
             }
             //std::cout<<"'"<<source<<"' '"<<gfa_sourcedir<<"' '"<<dest<<"' '"<<destdir<<"'"<<std::endl;
             if (gap_dist.find(gap_id) == gap_dist.end()) {
-                std::cout << gap_id << " not found, adding a new node" << std::endl;
                 if (oldnames_to_ids.find(gfa_source) == oldnames_to_ids.end()) {
                     oldnames_to_ids[gfa_source] = add_node(Node(""));
                     //std::cout<<"added source!" <<source<<std::endl;
@@ -705,16 +703,17 @@ void SequenceDistanceGraph::load_from_gfa1(std::ifstream &gfaf, std::ifstream &f
                 }
             }
 
-            if (gap_id.substr(0,3) == "gap") {
+            if (!gap_id.empty()) {
                 const auto d = gap_dist.find(gap_id);
-                if ( d == gap_dist.cend()) {
-                    throw std::runtime_error(gfa_dest + " has not been seen in " + filename + " yet, please ensure gaps are defined before being referenced");
-                } else {
+                if (d != gap_dist.cend()) {
                     dist = d->second;
-                    std::cout << "Gap with dist: " << dist << std::endl;
+                } else {
+                    throw std::runtime_error(gfa_dest + " has not been seen in " + filename +
+                                             " yet, please ensure gaps are defined before being referenced");
                 }
                 gap_id.clear();
             }
+
             add_link(src_id,dest_id,dist);
             ++lcount;
         }
