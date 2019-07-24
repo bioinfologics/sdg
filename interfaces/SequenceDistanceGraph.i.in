@@ -8,8 +8,6 @@
 
 #pragma SWIG nowarn=503,509,325,362,401
 
-%ignore Backbone;
-%ignore PairedReadLinker;
 %{
 /* Includes the header in the wrapper code */
 #include <cstdint>
@@ -53,62 +51,26 @@
 
 %}
 
-#define MADE_DOCS "@DOXYGEN_FOUND@"
-#ifdef SWIGPYTHON
-    #if MADE_DOCS=="YES"
-//        %include "python_docs.i"
-    #endif
-#endif
-
 %include "stl.i"
 %include "std_common.i"
 %include "std_container.i"
 %include "stdint.i"
 %include "std_set.i"
 %include "std_unordered_set.i"
+%include "std_string.i"
 %include "exception.i"
 
 %exception {
   try {
     $action
-  } catch (const std::exception& e) {
+  } catch (const std::runtime_error& e) {
     SWIG_exception(SWIG_RuntimeError, e.what());
+  } catch (const std::logic_error& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  } catch (const std::invalid_argument& e) {
+    SWIG_exception(SWIG_ValueError, e.what());
   }
 }
-
-%include "sdglib/types/KmerTypes.hpp"
-%include "sdglib/types/GenericTypes.hpp"
-%include "sdglib/readers/FileReader.hpp"
-
-%include "sdglib/workspace/WorkSpace.hpp"
-
-%include "sdglib/factories/KMerFactory.hpp"
-
-%include "sdglib/types/MappingTypes.hpp"
-
-%include "sdglib/graph/SequenceGraphPath.hpp"
-%include "sdglib/graph/SequenceSubGraph.hpp"
-%include "sdglib/graph/SequenceDistanceGraph.hpp"
-%include "sdglib/graph/DistanceGraph.hpp"
-
-%include "sdglib/views/NodeView.hpp"
-%include "sdglib/mappers/SequenceMapper.hpp"
-
-%include "sdglib/indexers/UniqueKmerIndex.hpp"
-
-%include "sdglib/datastores/PairedReadsDatastore.hpp"
-%include "sdglib/datastores/LinkedReadsDatastore.hpp"
-%include "sdglib/datastores/LongReadsDatastore.hpp"
-%include "sdglib/datastores/KmerCounts.hpp"
-%include "sdglib/datastores/ReadSequenceBuffer.hpp"
-
-%include "sdglib/mappers/LongReadsMapper.hpp"
-%include "sdglib/mappers/LinkedReadsMapper.hpp"
-%include "sdglib/mappers/PairedReadsMapper.hpp"
-
-%include "sdglib/processors/LinkageMaker.hpp"
-%include "sdglib/processors/LinkageUntangler.hpp"
-%include "sdglib/processors/HaplotypeConsensus.hpp"
 
 %feature("director") DistanceGraph;
 %feature("director") SequenceDistanceGraph;
@@ -117,60 +79,14 @@
 %template(vectorDouble) std::vector<double>;
 %template(vectorFloat) std::vector<float>;
 %template(vectorString) std::vector<std::string>;
-%template(vectorLink) std::vector<Link>;
-%template(vectorvectorLink) std::vector<std::vector<Link>>;
-%template(vectorSGNode) std::vector<sgNodeID_t>;
-%template(vectorvectorSGNode) std::vector<std::vector<sgNodeID_t>>;
-%template(vectorNode) std::vector<Node>;
-%ignore std::vector<NodeView>::vector(size_type);
-%ignore std::vector<NodeView>::resize;
-%template(vectorNodeView) std::vector<NodeView>;
-%ignore std::vector<NodeDistanceView>::vector(size_type);
-%ignore std::vector<NodeDistanceView>::resize;
-%template(vectorNodeDistanceView) std::vector<NodeDistanceView>;
+%template(ConstCharVector) std::vector<const char*>;
 %template(vectorUINT16) std::vector<uint16_t >;
 %template(vectorUINT64) std::vector<uint64_t>;
 %template(vectorVectorUINT16) std::vector< std::vector <uint16_t > >;
 %template(vectorVectorUINT64) std::vector< std::vector <uint64_t > >;
 %template(vectorBool) std::vector<bool>;
-%template(vectorReadPosSize) std::vector< ReadPosSize >;
-%template(vectorReadMapping) std::vector<ReadMapping>;
-%template(vectorvectorReadMapping) std::vector<std::vector<ReadMapping>>;
-%template(vectorLongReadMapping) std::vector<LongReadMapping>;
-%template(vectorvectorLongReadMapping) std::vector<std::vector<LongReadMapping>>;
-%template(vectorTagNeighbour) std::vector<TagNeighbour>;
-%template(vectorvectorTagNeighbour) std::vector<std::vector<TagNeighbour>>;
-%template(vectorHaplotypeScore) std::vector<HaplotypeScore>;
-
-%ignore std::vector<PairedReadsDatastore>::vector(size_type);
-%ignore std::vector<PairedReadsDatastore>::resize;
-%template(vectorPairedReadsDatastore) std::vector<PairedReadsDatastore>;
-
-%ignore std::vector<LinkedReadsDatastore>::vector(size_type);
-%ignore std::vector<LinkedReadsDatastore>::resize;
-%template(vectorLinkedReadsDatastore) std::vector<LinkedReadsDatastore>;
-
-%ignore std::vector<LongReadsDatastore>::vector(size_type);
-%ignore std::vector<LongReadsDatastore>::resize;
-%template(vectorLongReadsDatastore) std::vector<LongReadsDatastore>;
-
-%ignore std::vector<KmerCounts>::vector(size_type);
-%ignore std::vector<KmerCounts>::resize;
-%template(vectorKmerCountsDatastore) std::vector<KmerCounts>;
-
-%template(SGNodePair) std::pair<sgNodeID_t, sgNodeID_t>;
-%template(vectorSGNodePair) std::vector<std::pair<sgNodeID_t, sgNodeID_t>>;
-
-%template(vectorKmerCount) std::vector<KmerCount>;
-
-%template(set10xTag) std::set<bsg10xTag>;
-%template(setSGNodePair) std::set<std::pair<sgNodeID_t, sgNodeID_t>>;
-%template(setSGNode) std::set<sgNodeID_t>;
-
 %template(usetUINT64) std::unordered_set<uint64_t>;
 %template(usetUINT128) std::unordered_set<__uint128_t, int128_hash>;
-
-%template(fastaReader) FastaReader<FastaRecord>;
 
 
 %define __STR__()
@@ -224,3 +140,85 @@ __version__ = "@bsg_VERSION@"
 __branch__ = "@GIT_BRANCH@"
 __commit__ = "@GIT_COMMIT_HASH@"
 %}
+
+
+%include "sdglib/types/KmerTypes.hpp"
+%include "sdglib/types/GenericTypes.hpp"
+%include "sdglib/readers/FileReader.hpp"
+
+%include "sdglib/workspace/WorkSpace.hpp"
+
+%include "sdglib/factories/KMerFactory.hpp"
+
+%include "sdglib/types/MappingTypes.hpp"
+
+%include "sdglib/graph/SequenceGraphPath.hpp"
+%include "sdglib/graph/SequenceSubGraph.hpp"
+%include "sdglib/graph/SequenceDistanceGraph.hpp"
+%include "sdglib/graph/DistanceGraph.hpp"
+
+%include "sdglib/views/NodeView.hpp"
+%include "sdglib/mappers/SequenceMapper.hpp"
+
+%include "sdglib/indexers/UniqueKmerIndex.hpp"
+
+%include "sdglib/datastores/PairedReadsDatastore.hpp"
+%include "sdglib/datastores/LinkedReadsDatastore.hpp"
+%include "sdglib/datastores/LongReadsDatastore.hpp"
+%include "sdglib/datastores/KmerCounts.hpp"
+%include "sdglib/datastores/ReadSequenceBuffer.hpp"
+
+%include "sdglib/mappers/LongReadsMapper.hpp"
+%include "sdglib/mappers/LinkedReadsMapper.hpp"
+%include "sdglib/mappers/PairedReadsMapper.hpp"
+
+%include "sdglib/processors/LinkageMaker.hpp"
+%include "sdglib/processors/LinkageUntangler.hpp"
+%include "sdglib/processors/HaplotypeConsensus.hpp"
+
+%template(vectorLink) std::vector<Link>;
+%template(vectorvectorLink) std::vector<std::vector<Link>>;
+%template(vectorSGNode) std::vector<sgNodeID_t>;
+%template(vectorvectorSGNode) std::vector<std::vector<sgNodeID_t>>;
+%template(vectorNode) std::vector<Node>;
+%ignore std::vector<NodeView>::vector(size_type);
+%ignore std::vector<NodeView>::resize;
+%template(vectorNodeView) std::vector<NodeView>;
+%ignore std::vector<NodeDistanceView>::vector(size_type);
+%ignore std::vector<NodeDistanceView>::resize;
+%template(vectorNodeDistanceView) std::vector<NodeDistanceView>;
+%template(vectorReadPosSize) std::vector< ReadPosSize >;
+%template(vectorReadMapping) std::vector<ReadMapping>;
+%template(vectorvectorReadMapping) std::vector<std::vector<ReadMapping>>;
+%template(vectorLongReadMapping) std::vector<LongReadMapping>;
+%template(vectorvectorLongReadMapping) std::vector<std::vector<LongReadMapping>>;
+%template(vectorTagNeighbour) std::vector<TagNeighbour>;
+%template(vectorvectorTagNeighbour) std::vector<std::vector<TagNeighbour>>;
+%template(vectorHaplotypeScore) std::vector<HaplotypeScore>;
+
+%ignore std::vector<PairedReadsDatastore>::vector(size_type);
+%ignore std::vector<PairedReadsDatastore>::resize;
+%template(vectorPairedReadsDatastore) std::vector<PairedReadsDatastore>;
+
+%ignore std::vector<LinkedReadsDatastore>::vector(size_type);
+%ignore std::vector<LinkedReadsDatastore>::resize;
+%template(vectorLinkedReadsDatastore) std::vector<LinkedReadsDatastore>;
+
+%ignore std::vector<LongReadsDatastore>::vector(size_type);
+%ignore std::vector<LongReadsDatastore>::resize;
+%template(vectorLongReadsDatastore) std::vector<LongReadsDatastore>;
+
+%ignore std::vector<KmerCounts>::vector(size_type);
+%ignore std::vector<KmerCounts>::resize;
+%template(vectorKmerCountsDatastore) std::vector<KmerCounts>;
+
+%template(SGNodePair) std::pair<sgNodeID_t, sgNodeID_t>;
+%template(vectorSGNodePair) std::vector<std::pair<sgNodeID_t, sgNodeID_t>>;
+
+%template(vectorKmerCount) std::vector<KmerCount>;
+
+%template(set10xTag) std::set<bsg10xTag>;
+%template(setSGNodePair) std::set<std::pair<sgNodeID_t, sgNodeID_t>>;
+%template(setSGNode) std::set<sgNodeID_t>;
+
+%template(fastaReader) FastaReader<FastaRecord>;
