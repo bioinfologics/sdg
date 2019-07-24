@@ -26,7 +26,7 @@ std::string PairedReadsMapper::ls(int level,bool recursive) {
     uint64_t mapped=0,unmapped=0;
     for (auto &rtn:read_to_node) if (rtn!=0) ++mapped; else ++unmapped;
     if(unmapped>0)--unmapped;//discard read 0
-    ss << spacer << "Linked Reads Mapper: "<<mapped<<" mapped reads, "<<unmapped<<" unmapped" << std::endl;
+    ss << spacer << "Paired Reads Mapper: "<<mapped<<" mapped reads, "<<unmapped<<" unmapped" << std::endl;
     return ss.str();
 }
 
