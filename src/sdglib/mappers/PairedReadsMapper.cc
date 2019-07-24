@@ -20,6 +20,16 @@ PairedReadsMapper::PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore 
     reads_in_node.resize(ws.sdg.nodes.size());
 }
 
+std::string PairedReadsMapper::ls(int level,bool recursive) {
+    std::stringstream ss;
+    std::string spacer(2 * level, ' ');
+    uint64_t mapped=0,unmapped=0;
+    for (auto &rtn:read_to_node) if (rtn!=0) ++mapped; else ++unmapped;
+    if(unmapped>0)--unmapped;//discard read 0
+    ss << spacer << "Linked Reads Mapper: "<<mapped<<" mapped reads, "<<unmapped<<" unmapped" << std::endl;
+    return ss.str();
+}
+
 void PairedReadsMapper::write(std::ofstream &output_file) {
     //read-to-node
     output_file.write((char *) &SDG_MAGIC, sizeof(SDG_MAGIC));

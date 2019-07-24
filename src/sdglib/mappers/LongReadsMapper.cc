@@ -16,6 +16,13 @@
 
 const sdgVersion_t LongReadsMapper::min_compat = 0x0003;
 
+std::string LongReadsMapper::ls(int level,bool recursive) {
+    std::stringstream ss;
+    std::string spacer(2 * level, ' ');
+    ss << spacer << "Linked Reads Mapper: "<<mappings.size()<<" raw mappings" << std::endl;
+    return ss.str();
+}
+
 void LongReadsMapper::print_status() const {
     sdglib::OutputLog()<<"Long read mappings: "<<mappings.size()<<" mappings."<<std::endl;
 }

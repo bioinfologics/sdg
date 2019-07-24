@@ -21,6 +21,15 @@ datastore(_datastore)
 {
     reads_in_node.resize(ws.sdg.nodes.size());
 }
+std::string LinkedReadsMapper::ls(int level,bool recursive) {
+    std::stringstream ss;
+    std::string spacer(2 * level, ' ');
+    uint64_t mapped=0,unmapped=0;
+    for (auto &rtn:read_to_node) if (rtn!=0) ++mapped; else ++unmapped;
+    --unmapped;//discard read 0
+    ss << spacer << "Linked Reads Mapper: "<<mapped<<" mapped reads, "<<unmapped<<" unmapped" << std::endl;
+    return ss.str();
+}
 
 void LinkedReadsMapper::write(std::ofstream &output_file) {
     //read-to-node

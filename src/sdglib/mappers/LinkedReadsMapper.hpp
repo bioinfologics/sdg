@@ -36,6 +36,8 @@ class LinkedReadsMapper {
 public:
     LinkedReadsMapper(const WorkSpace &_ws, LinkedReadsDatastore &_datastore);
 
+    std::string ls(int level=0,bool recursive=true);
+
     friend std::ostream& operator<<(std::ostream &os, const LinkedReadsMapper &lirm);
 
     void write(std::ofstream & output_file);

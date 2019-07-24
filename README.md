@@ -62,7 +62,7 @@ Now the long reads datastore can be added, the reads mapped, the linkage created
 import pysdg as sdg
 
 # Load sdg-dbg's workspace from disk, add the pacbio datastore
-ws=sdg.WorkSpace('ecoli_assm.bsgws')
+ws=sdg.WorkSpace('ecoli_assm.sdgws')
 ws.long_read_datastores.push_back(sdg.LongReadsDatastore(ws,'ecoli_pb.loseq'))
 
 # Map long reads, filter by 10% id, pick best matches and rechain

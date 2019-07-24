@@ -8,6 +8,7 @@
 #include <sdglib/utilities/OutputLog.hpp>
 #include "SequenceDistanceGraph.hpp"
 #include <sdglib/views/NodeView.hpp>
+#include <sstream>
 
 void DistanceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, Support support) {
     if (llabs(source)>=links.size()) links.resize(llabs(source)+1);
@@ -543,6 +544,17 @@ DistanceGraph::DistanceGraph(SequenceDistanceGraph &sdg, std::ifstream &input_fi
 
 DistanceGraph::DistanceGraph(SequenceDistanceGraph &_sdg, const std::string &_name): sdg(_sdg),name(_name) {
     links.resize(sdg.nodes.size());
+}
+
+std::string DistanceGraph::ls(int level, bool recursive) {
+    std::stringstream ss;
+    std::string spacer(2*level,' ');
+    uint64_t linkcount=0;
+    for (auto lv:links)
+        for (auto l:lv)
+            if (llabs(l.source) <= llabs(l.dest)) ++linkcount;
+    ss<<spacer<<"DistanceGraph "<<name<<" ("<<sdg.name<<"): "<<linkcount<<" links"<<std::endl;
+    return ss.str();
 }
 
 DistanceGraph &DistanceGraph::operator=(const DistanceGraph &o) {

@@ -99,6 +99,8 @@ public:
     LongReadsMapper& operator=(const LongReadsMapper &other);
     LongReadsMapper(const LongReadsDatastore &ds, const LongReadsMapper &o);
 
+    std::string ls(int level=0,bool recursive=true);
+
     void print_status() const;
 
     /** @brief Getter for the defined datastore

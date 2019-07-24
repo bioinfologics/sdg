@@ -9,6 +9,7 @@
 #include <fstream>
 #include <strings.h>
 #include <cstring>
+#include <sstream>
 
 const sdgVersion_t LinkedReadsDatastore::min_compat = 0x0003;
 
@@ -610,6 +611,14 @@ LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, const LinkedReadsDatas
     mapper.read_to_node = o.mapper.read_to_node;
     mapper.reads_in_node = o.mapper.reads_in_node;
     mapper.tag_neighbours = o.mapper.tag_neighbours;
+}
+
+std::string LinkedReadsDatastore::ls(int level, bool recursive) {
+    std::stringstream ss;
+    std::string spacer(2*level,' ');
+    ss<<spacer<<"Linked Reads Datastore "<<name<<": "<<size()<<" reads"<<std::endl;
+    if (recursive) ss<<mapper.ls(level+1,true);
+    return ss.str();
 }
 
 LinkedReadsDatastore &LinkedReadsDatastore::operator=(LinkedReadsDatastore const &o) {

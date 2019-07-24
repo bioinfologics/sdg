@@ -20,6 +20,7 @@
 #include <sdglib/graph/SequenceGraphPath.hpp>
 #include <sdglib/utilities/OutputLog.hpp>
 
+
 class SequenceDistanceGraph;//fwd declaration (to break circular dependence)
 class NodeView;
 /**
@@ -36,7 +37,7 @@ public:
     explicit DistanceGraph(SequenceDistanceGraph & _sdg, bool resize_links=true);
     DistanceGraph(SequenceDistanceGraph& sdg, std::ifstream &input_file);
     DistanceGraph(SequenceDistanceGraph & _sdg, const std::string& name);
-
+    std::string ls(int level=0,bool recursive=true);
     /** @brief Adds a link between source and destination in the links collection.
      * Each link is added from both ends in the collection (see links vector)
      * The link is directed

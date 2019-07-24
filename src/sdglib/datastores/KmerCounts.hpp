@@ -25,6 +25,9 @@ public:
         std::ifstream count_file(filename);
         read_counts(count_file);
     }
+
+    std::string ls(int level=0,bool recursive=true);
+
     void index_sdg();
 
     bool operator==(const KmerCounts &o) const {

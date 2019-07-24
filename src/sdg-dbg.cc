@@ -100,6 +100,6 @@ int main(int argc, char * argv[]) {
     }
     ws.add_kmer_counts_datastore("main", 31).add_count("PE",ws.paired_reads_datastores[0]);
     ws.sdg.write_to_gfa1(output_prefix + "_DBG.gfa");
-    ws.dump_to_disk(output_prefix + ".bsgws");
+    ws.dump_to_disk(output_prefix + ".sdgws");
 }
 

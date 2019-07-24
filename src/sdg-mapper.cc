@@ -101,7 +101,7 @@ int main(int argc, char * argv[]) {
         sdglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
     }
     op.addEntry("sdg-mapper run finished");
-    ws.dump_to_disk(output_prefix+".bsgws");
+    ws.dump_to_disk(output_prefix+".sdgws");
     sdglib::OutputLog()<<"Mapping reads DONE."<<std::endl;
     return 0;
 }

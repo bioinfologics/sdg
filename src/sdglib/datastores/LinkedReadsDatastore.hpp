@@ -62,6 +62,8 @@ public:
         }
     }
 
+    std::string ls(int level=0,bool recursive=true);
+
     friend std::ostream& operator<<(std::ostream& os, const LinkedReadsDatastore &lrds);
 
     LinkedReadsDatastore& operator=(LinkedReadsDatastore const &o);

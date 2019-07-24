@@ -4,9 +4,23 @@
 
 #include "KmerCounts.hpp"
 #include <sdglib/workspace/WorkSpace.hpp>
+#include <sstream>
 
 KmerCounts::KmerCounts(const WorkSpace &_ws, std::ifstream &infile): ws(_ws) {
     read(infile);
+}
+
+std::string KmerCounts::ls(int level, bool recursive) {
+    std::stringstream ss;
+    std::string spacer(2 * level, ' ');
+    ss << spacer << "KmerCounts "<< name <<": index with "<<kindex.size()<<" "<<std::to_string(k)<<"-mers"<< std::endl;
+    ss << spacer << "  Counts: " << counts.size() << std::endl;
+    for (auto i=0;i<counts.size();++i) {
+        uint64_t total=0;
+        for (auto &c:counts[i]) total+=c;
+        ss << spacer << "    "<<count_names[i]<<": "<<total<<" total "<<std::to_string(k)<<"-mers"<< std::endl;
+    }
+    return ss.str();
 }
 
 void KmerCounts::index_sdg() {

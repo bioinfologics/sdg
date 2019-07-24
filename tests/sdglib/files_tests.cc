@@ -36,9 +36,9 @@ TEST_CASE("Workspace create, read, write") {
 
     out.add_operation("test","test","test");
 
-    out.dump_to_disk("workspace.bsgws");
+    out.dump_to_disk("workspace.sdgws");
 
-    in.load_from_disk("workspace.bsgws");
+    in.load_from_disk("workspace.sdgws");
 
 
     REQUIRE( out.kmer_counts == in.kmer_counts);
@@ -48,7 +48,7 @@ TEST_CASE("Workspace create, read, write") {
     ::unlink("10x.lseq");
     ::unlink("pe.prseq");
     ::unlink("long_reads.loseq");
-    ::unlink("workspace.bsgws");
+    ::unlink("workspace.sdgws");
     ::unlink("kctest.count");
 }
 

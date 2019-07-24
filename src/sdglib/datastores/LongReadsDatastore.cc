@@ -9,6 +9,7 @@
 #include <sdglib/mappers/LongReadsMapper.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <algorithm>
+#include <sstream>
 
 const sdgVersion_t LongReadsDatastore::min_compat = 0x0003;
 
@@ -333,6 +334,14 @@ void LongReadsDatastore::write_selection(std::ofstream &output_file, const std::
 
 LongReadsDatastore::~LongReadsDatastore() {
     close(fd);
+}
+
+std::string LongReadsDatastore::ls(int level, bool recursive) {
+    std::stringstream ss;
+    std::string spacer(2*level,' ');
+    ss<<spacer<<"Long Reads Datastore "<<name<<": "<<size()<<" reads"<<std::endl;
+    if (recursive) ss<<mapper.ls(level+1,true);
+    return ss.str();
 }
 
 std::ostream &operator<<(std::ostream &os, const LongReadsDatastore &lords) {
