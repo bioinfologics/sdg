@@ -289,8 +289,14 @@ void add_counts(int argc, char **argv) {
     }
     WorkSpace output_ws(ws_filename);
     output_ws.add_operation("ADD_COUNTS", toolname + git_version, std::string("Added KmerCounts with sdg-workspace add_counts from ")+ws_filename);
-    output_ws.kmer_counts.emplace_back(name,counts_filename);
-    output_ws.dump_to_disk(output + ".bsgws");
+    const auto& names(output_ws.get_all_kmer_count_names());
+    if (std::find(names.cbegin(), names.cend(), name) != names.cend()) {
+        output_ws.kmer_counts.emplace_back(output_ws, counts_filename);
+        output_ws.kmer_counts.back().name = name;
+        output_ws.dump_to_disk(output + ".bsgws");
+    } else {
+        throw std::runtime_error(name + " already exists in the workspace");
+    }
 
 }
 
