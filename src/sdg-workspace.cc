@@ -108,7 +108,7 @@ void make_workspace(int argc, char** argv){
                      std::to_string(output_ws.long_reads_datastores.back().size()) + " reads)");
     }
 
-    output_ws.dump_to_disk(output + ".bsgws");
+    output_ws.dump_to_disk(output + ".sdgws");
 }
 
 void status_workspace(int argc, char **argv){

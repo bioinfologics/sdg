@@ -3,6 +3,7 @@
 //
 
 #include "WorkSpace.hpp"
+#include <sstream>
 
 
 const sdgVersion_t WorkSpace::min_compat = 0x0003;
@@ -162,6 +163,34 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
         kmer_counts.emplace_back(*this,wsfile);
     }
 
+}
+
+std::string WorkSpace::ls(int level,bool recursive) {
+    std::stringstream ss;
+    std::string spacer(2*level,' ');
+    ss<<spacer<<"SDG Workspace"<<std::endl;
+    if (recursive) ss<<sdg.ls(level+1,true);
+    ss<<spacer<<"  Distance Graphs: "<<distance_graphs.size()<<std::endl;
+    if (recursive){
+        for (auto &d:distance_graphs) ss<<d.ls(level+1,true);
+    }
+    ss<<spacer<<"  Paired Read Datastores: "<<paired_reads_datastores.size()<<std::endl;
+    if (recursive){
+        for (auto &d:paired_reads_datastores) ss<<d.ls(level+2,true);
+    }
+    ss<<spacer<<"  Linked Read Datastores: "<<linked_reads_datastores.size()<<std::endl;
+    if (recursive){
+        for (auto &d:linked_reads_datastores) ss<<d.ls(level+2,true);
+    }
+    ss<<spacer<<"  Long Read Datastores: "<<long_reads_datastores.size()<<std::endl;
+    if (recursive){
+        for (auto &d:long_reads_datastores) ss<<d.ls(level+2,true);
+    }
+    ss<<spacer<<"  Kmer Count Datastores: "<<paired_reads_datastores.size()<<std::endl;
+    if (recursive){
+        for (auto &d:kmer_counts) ss<<d.ls(level+2,true);
+    }
+    return ss.str();
 }
 
 void WorkSpace::status() {

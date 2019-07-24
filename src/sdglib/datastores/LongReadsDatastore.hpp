@@ -51,6 +51,8 @@ public:
     LongReadsDatastore(WorkSpace &ws, std::string default_name, const std::string &filename, std::ifstream &input_file);
     LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o);
     LongReadsDatastore(const LongReadsDatastore &o);
+    std::string ls(int level=0,bool recursive=true);
+
     /**
      * Initialize from already created index
      * @param filename

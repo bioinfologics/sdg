@@ -78,6 +78,7 @@ public:
 
 
     SequenceDistanceGraph(const SequenceDistanceGraph &sg) = delete; // Avoid implicit generation of the copy constructor.
+    std::string ls(int level=0,bool recursive=true);
 
     //=== I/O functions ===
     void load_from_gfa(std::string filename);

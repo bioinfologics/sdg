@@ -31,6 +31,8 @@ class PairedReadsMapper {
 public:
     PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore &_datastore);
 
+    std::string ls(int level=0,bool recursive=true);
+
     friend std::ostream& operator<<(std::ostream &os, const PairedReadsMapper &prm);
 
     void write(std::ofstream & output_file);

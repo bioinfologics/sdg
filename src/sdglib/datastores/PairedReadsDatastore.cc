@@ -10,6 +10,7 @@
 #include <fstream>
 #include <strings.h>
 #include <cstring>
+#include <sstream>
 
 
 void PairedReadsDatastore::print_status() const {
@@ -389,6 +390,14 @@ PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, PairedReadsDatastore &
     mapper.frdist = o.mapper.frdist;
     mapper.rfdist = o.mapper.rfdist;
     mapper.read_direction_in_node = o.mapper.read_direction_in_node;
+}
+
+std::string PairedReadsDatastore::ls(int level, bool recursive) {
+    std::stringstream ss;
+    std::string spacer(2*level,' ');
+    ss<<spacer<<"Paired Reads Datastore "<<name<<": "<<size()<<" reads"<<std::endl;
+    if (recursive) ss<<mapper.ls(level+1,true);
+    return ss.str();
 }
 
 PairedReadsDatastore& PairedReadsDatastore::operator=(PairedReadsDatastore const &o) {

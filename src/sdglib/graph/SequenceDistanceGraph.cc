@@ -231,6 +231,17 @@ void SequenceDistanceGraph::read(std::ifstream & input_file) {
     sdglib::read_flat_vectorvector(input_file, links);
 }
 
+std::string SequenceDistanceGraph::ls(int level, bool recursive) {
+    std::stringstream ss;
+    std::string spacer(2 * level, ' ');
+    uint64_t linkcount = 0;
+    for (auto lv:links)
+        for (auto l:lv)
+            if (llabs(l.source) <= llabs(l.dest)) ++linkcount;
+    ss << spacer << "SequenceDistanceGraph " << name <<": "<< count_active_nodes() <<" nodes, " << linkcount << " links" << std::endl;
+    return ss.str();
+}
+
 void SequenceDistanceGraph::load_from_gfa(std::string filename) {
     std::string line;
     filename=filename;

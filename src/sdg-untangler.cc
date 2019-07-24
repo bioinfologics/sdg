@@ -386,7 +386,7 @@ int main(int argc, char * argv[]) {
             //remap reads (k63)
             ws.remap_all63();
             //dump workspace and graph
-            ws.dump_to_disk(output_prefix+"fulllocal_cycle_"+std::to_string(cycle)+".bsgws");
+            ws.dump_to_disk(output_prefix+"fulllocal_cycle_"+std::to_string(cycle)+".sdgws");
 
         }
     }
@@ -549,7 +549,7 @@ int main(int argc, char * argv[]) {
     ws.kci.reindex_graph();
     if (dump_gfa) ws.sg.write_to_gfa(output_prefix+".gfa");
     if (remap_reads) ws.remap_all();
-    ws.dump_to_disk(output_prefix+".bsgws");
+    ws.dump_to_disk(output_prefix+".sdgws");
     return 0;
 }
 
