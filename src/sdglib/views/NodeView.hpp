@@ -48,6 +48,10 @@ public:
     const NodeView node() const {return NodeView(node_view);};
     const int32_t distance() const {return dist; };
     const Support support() const {return Support(sup);};
+    bool operator<(const NodeDistanceView & other) const{
+        if (dist<other.dist) return true;
+        return node_view.node_id() < other.node_view.node_id();
+    }
 private:
     NodeView node_view;
     int32_t dist;
