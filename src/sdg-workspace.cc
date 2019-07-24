@@ -9,7 +9,8 @@ enum class WorkspaceFunctions{
     MAKE,
     STATUS,
     DUMP,
-    ADD_DS
+    ADD_DS,
+    ADD_COUNTS
 };
 struct WorkspaceFunctionMap : public std::map<std::string, WorkspaceFunctions>
 {
@@ -18,19 +19,21 @@ struct WorkspaceFunctionMap : public std::map<std::string, WorkspaceFunctions>
         operator[]("make") =  WorkspaceFunctions::MAKE;
         operator[]("status") = WorkspaceFunctions::STATUS;
         operator[]("dump") = WorkspaceFunctions::DUMP;
-        operator[]("add") = WorkspaceFunctions::ADD_DS;
+        operator[]("add_ds") = WorkspaceFunctions::ADD_DS;
+        operator[]("add_counts") = WorkspaceFunctions::ADD_COUNTS;
     };
 };
+
 
 void make_workspace(int argc, char** argv){
     std::string toolname("sdg-workspace make: ");
     std::string git_version(std::string(GIT_ORIGIN_URL) + " -> " + GIT_BRANCH + " " +
                             GIT_COMMIT_HASH);
     std::vector<std::string> lr_datastores, pr_datastores, Lr_datastores;
-    std::string output;
     std::string gfa_filename;
     std::string kci_filename;
     std::string ws_filename;
+    std::string output;
     try {
         cxxopts::Options options("sdg-workspace make", "SDG make workspace");
 
@@ -65,7 +68,6 @@ void make_workspace(int argc, char** argv){
 
     //===== LOAD GRAPH =====
     WorkSpace output_ws;
-    JournalOperation op;
     if (!ws_filename.empty()) {
         WorkSpace w;
         w.load_from_disk(ws_filename);
@@ -76,10 +78,10 @@ void make_workspace(int argc, char** argv){
         output_ws.kmer_counts = w.kmer_counts;
         output_ws.sdg = w.sdg;
         output_ws.distance_graphs = w.distance_graphs;
-        op = output_ws.add_operation("Copy", toolname + git_version, std::string("Copied with sdg-workspace make from ")+ws_filename);
+        auto op = output_ws.add_operation("Copy", toolname + git_version, std::string("Copied with sdg-workspace make from ")+ws_filename);
     }
     if (!gfa_filename.empty()) {
-        op = output_ws.add_operation("Create", toolname + git_version, "Created with sdg-workspace make");
+        auto op = output_ws.add_operation("Create", toolname + git_version, "Created with sdg-workspace make");
         output_ws.sdg.load_from_gfa(gfa_filename);
         op.addEntry("GFA imported from " + gfa_filename + " (" + std::to_string(output_ws.sdg.nodes.size() - 1) +
                      " nodes)");
@@ -88,21 +90,21 @@ void make_workspace(int argc, char** argv){
     for (auto prds:pr_datastores) {
         //create and load the datastore, and the mapper!
         output_ws.paired_reads_datastores.emplace_back(output_ws, prds);
-        op.addEntry("PairedReadDatastore imported from " + prds + " (" +
+        output_ws.journal.back().addEntry("PairedReadDatastore imported from " + prds + " (" +
                      std::to_string(output_ws.paired_reads_datastores.back().size()) + " reads)");
     }
 
     for (auto lrds:lr_datastores) {
         //create and load the datastore, and the mapper!
         output_ws.linked_reads_datastores.emplace_back(output_ws, lrds);
-        op.addEntry("LinkedReadDatastore imported from " + lrds + " (" +
+        output_ws.journal.back().addEntry("LinkedReadDatastore imported from " + lrds + " (" +
                      std::to_string(output_ws.linked_reads_datastores.back().size()) + " reads)");
     }
 
     for (auto Lrds:Lr_datastores) {
         //create and load the datastore, and the mapper!
         output_ws.long_reads_datastores.emplace_back(output_ws, Lrds);
-        op.addEntry("LongReadDatastore imported from " + Lrds + " (" +
+        output_ws.journal.back().addEntry("LongReadDatastore imported from " + Lrds + " (" +
                      std::to_string(output_ws.long_reads_datastores.back().size()) + " reads)");
     }
 
@@ -187,6 +189,111 @@ void dump_workspace(int argc, char **argv){
     std::cout << "Done... " << std::endl;
 }
 
+void add_datastore(int argc, char **argv) {
+    std::string toolname("sdg-workspace add_ds: ");
+    std::string git_version(std::string(GIT_ORIGIN_URL) + " -> " + GIT_BRANCH + " " +
+                            GIT_COMMIT_HASH);
+    std::vector<std::string> lr_datastores, pr_datastores, Lr_datastores;
+    std::string ws_filename;
+    std::string output;
+
+    try {
+        cxxopts::Options options("sdg-workspace add_ds", "SDG add datastore to workspace");
+
+        options.add_options()
+                ("help", "Print help")
+                ("w,workspace", "input workspace file", cxxopts::value(ws_filename))
+                ("p,paired_reads", "paired reads datastore", cxxopts::value(pr_datastores))
+                ("l,linked_reads", "linked reads datastore", cxxopts::value(lr_datastores))
+                ("L,long_reads", "long reads datastore", cxxopts::value(Lr_datastores))
+                ("o,output", "output file", cxxopts::value(output));
+        auto newargc = argc - 1;
+        auto newargv = &argv[1];
+        auto result = options.parse(newargc, newargv);
+        if (result.count("help")) {
+            std::cout << options.help({""}) << std::endl;
+            exit(0);
+        }
+
+        if (output.empty()) {
+            throw cxxopts::OptionException(" please specify an output prefix");
+        }
+        if ( ws_filename.empty() ) {
+            throw cxxopts::OptionException(" please specify a workspace input file");
+        }
+
+    } catch (const cxxopts::OptionException &e) {
+        std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
+                  << "Use option --help to check command line arguments." << std::endl;
+        exit(1);
+    }
+    WorkSpace output_ws(ws_filename);
+    output_ws.add_operation("ADD_DS", toolname + git_version, std::string("Added datastores with sdg-workspace add_ds from ")+ws_filename);
+    for (auto prds:pr_datastores) {
+        output_ws.paired_reads_datastores.emplace_back(output_ws, prds);
+        output_ws.journal.back().addEntry("PairedReadDatastore imported from " + prds + " (" +
+                    std::to_string(output_ws.paired_reads_datastores.back().size()) + " reads)");
+    }
+
+    for (auto lrds:lr_datastores) {
+        output_ws.linked_reads_datastores.emplace_back(output_ws, lrds);
+        output_ws.journal.back().addEntry("LinkedReadDatastore imported from " + lrds + " (" +
+                    std::to_string(output_ws.linked_reads_datastores.back().size()) + " reads)");
+    }
+
+    for (auto Lrds:Lr_datastores) {
+        output_ws.long_reads_datastores.emplace_back(output_ws, Lrds);
+        output_ws.journal.back().addEntry("LongReadDatastore imported from " + Lrds + " (" +
+                    std::to_string(output_ws.long_reads_datastores.back().size()) + " reads)");
+    }
+    output_ws.dump_to_disk(output + ".bsgws");
+}
+
+void add_counts(int argc, char **argv) {
+    std::string toolname("sdg-workspace add_counts: ");
+    std::string git_version(std::string(GIT_ORIGIN_URL) + " -> " + GIT_BRANCH + " " +
+                            GIT_COMMIT_HASH);
+    std::string ws_filename;
+    std::string counts_filename;
+    std::string name;
+    std::string output;
+
+    try {
+        cxxopts::Options options("sdg-workspace add_counts", "SDG add KmerCounts to workspace");
+
+        options.add_options()
+                ("help", "Print help")
+                ("w,workspace", "input workspace file", cxxopts::value(ws_filename))
+                ("n,name", "counts name", cxxopts::value(name))
+                ("c,counts_file", "input counts file", cxxopts::value(counts_filename))
+                ("o,output", "output file", cxxopts::value(output));
+        auto newargc = argc - 1;
+        auto newargv = &argv[1];
+        auto result = options.parse(newargc, newargv);
+        if (result.count("help")) {
+            std::cout << options.help({""}) << std::endl;
+            exit(0);
+        }
+
+        if (output.empty()) {
+            throw cxxopts::OptionException(" please specify an output prefix");
+        }
+        if ( ws_filename.empty() ) {
+            throw cxxopts::OptionException(" please specify a workspace input file");
+        }
+
+    } catch (const cxxopts::OptionException &e) {
+        std::cout << "Error parsing options: " << e.what() << std::endl << std::endl
+                  << "Use option --help to check command line arguments." << std::endl;
+        exit(1);
+    }
+    WorkSpace output_ws(ws_filename);
+    output_ws.add_operation("ADD_COUNTS", toolname + git_version, std::string("Added KmerCounts with sdg-workspace add_counts from ")+ws_filename);
+    output_ws.kmer_counts.emplace_back(name,counts_filename);
+    output_ws.dump_to_disk(output + ".bsgws");
+
+}
+
 int main(int argc, char * argv[]) {
     std::cout << "sdg-workspace"<<std::endl<<std::endl;
     std::cout << "Git origin: " << GIT_ORIGIN_URL << " -> "  << GIT_BRANCH << std::endl;
@@ -215,6 +322,12 @@ int main(int argc, char * argv[]) {
             break;
         case WorkspaceFunctions::DUMP:
             dump_workspace(argc,argv);
+            break;
+        case WorkspaceFunctions::ADD_DS:
+            add_datastore(argc, argv);
+            break;
+        case WorkspaceFunctions::ADD_COUNTS:
+            add_counts(argc, argv);
             break;
         default:
             std::cout << "Invalid option specified." << std::endl;
