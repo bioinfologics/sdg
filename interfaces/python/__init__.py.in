@@ -11,10 +11,12 @@ bad_entries = [entry for entry in list(pysdg.__dict__) if entry.endswith('_swigr
 for entry in bad_entries:
     del pysdg.__dict__[entry]
 
-
-from IPython.core.getipython import get_ipython
 try:
-    get_ipython().run_line_magic('reload_ext', 'wurlitzer')
+    from IPython.core.getipython import get_ipython
+    try:
+        get_ipython().run_line_magic('reload_ext', 'wurlitzer')
+    except:
+        pass
 except:
     pass
 
