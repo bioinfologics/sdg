@@ -44,6 +44,9 @@ void KmerCounts::index_sdg() {
 }
 
 void KmerCounts::add_count(const std::string &count_name, const std::vector<std::string> &filenames, bool fastq) {
+    if (std::find(count_names.cbegin(), count_names.cend(), count_name) != count_names.cend()) {
+        throw std::runtime_error(count_name + " already exists, please use a different name");
+    }
     count_names.emplace_back(count_name);
     counts.emplace_back(kindex.size());
     uint64_t present(0), absent(0), rp(0);
@@ -135,6 +138,9 @@ void KmerCounts::add_count(const std::string &count_name, const std::vector<std:
 /** This template is used to do the counts from the datastores, it is templatised here rather than on the header **/
 template<class T>
 void add_count_to_kds( KmerCounts & kds, const std::string & count_name, const T & datastore) {
+    if (std::find(kds.count_names.cbegin(), kds.count_names.cend(), count_name) != kds.count_names.cend()) {
+        throw std::runtime_error(count_name + " already exists, please use a different name");
+    }
     kds.count_names.emplace_back(count_name);
     kds.counts.emplace_back(kds.kindex.size());
     uint64_t present(0), absent(0), rp(0);

@@ -319,11 +319,11 @@ JournalOperation &WorkSpace::add_operation(const std::string &name, const std::s
     return journal.back();
 }
 
-KmerCounts &WorkSpace::add_kmer_counts_datastore(const std::string &name, const uint8_t k) {
+KmerCounts &WorkSpace::add_kmer_counts_datastore(const std::string &name, const uint8_t k, const KmerCountMode count_mode) {
     if (kmer_counts.size() > MAX_WORKSPACE_VECTOR_SIZE) {
         throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
     }
-    kmer_counts.emplace_back(*this, name, k);
+    kmer_counts.emplace_back(*this, name, k, count_mode);
     // Should edit the WS here to include the new count
 
     return kmer_counts.back();
