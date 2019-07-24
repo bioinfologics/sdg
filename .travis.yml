@@ -53,7 +53,7 @@ after_success:
   - lcov --gcov-tool=gcov-6 --remove coverage.info '*catch.hpp' --output-file coverage.info # filter out catch
   - lcov --gcov-tool=gcov-6 --list coverage.info #debug info
   # Uploading report to CodeCov
-  - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
+  - bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
 
 
 deploy:
