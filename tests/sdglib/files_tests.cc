@@ -30,7 +30,7 @@ TEST_CASE("Workspace create, read, write") {
 
     out.paired_reads_datastores.emplace_back(out, prds_output_path);
 
-    //out.linked_reads_datastores.emplace_back(out, lrds_output_path);
+    out.linked_reads_datastores.emplace_back(out, lrds_output_path);
 
     out.add_kmer_counts_datastore("kctest", 31).add_count("prtest", out.paired_reads_datastores[0]);
 

@@ -40,6 +40,7 @@ OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" OFF)
 OPTION(BUILD_R_INTERFACE "Build R interface" OFF)
 OPTION(BUILD_JULIA_INTERFACE "Build Julia interface" OFF)
 OPTION(BUILD_COV "Build coverage" OFF)
+SET(MAX_WORKSPACE_VECTOR_SIZE 100 CACHE STRING "Maximum number of items in a workspace vector")
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -102,6 +103,8 @@ if("${GIT_BRANCH}" STREQUAL "")
 else()
     add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
 endif()
+
+add_definitions("-DMAX_WORKSPACE_VECTOR_SIZE=${MAX_WORKSPACE_VECTOR_SIZE}")
 
 ## Compiler flags
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -w -Wno-deprecated -std=c++11")

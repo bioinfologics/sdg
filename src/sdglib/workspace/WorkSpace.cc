@@ -274,35 +274,55 @@ void WorkSpace::remap_all63() {
 }
 
 PairedReadsDatastore &WorkSpace::add_paired_reads_datastore(const std::string &filename, const std::string &name) {
+    if (paired_reads_datastores.size() > MAX_WORKSPACE_VECTOR_SIZE) {
+        throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
+    }
+
     paired_reads_datastores.emplace_back(*this, filename);
     if (!name.empty()) paired_reads_datastores.back().name = name;
     return paired_reads_datastores.back();
 }
 
 LinkedReadsDatastore &WorkSpace::add_linked_reads_datastore(const std::string &filename, const std::string &name) {
+    if (linked_reads_datastores.size() > MAX_WORKSPACE_VECTOR_SIZE) {
+        throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
+    }
+
     linked_reads_datastores.emplace_back(*this, filename);
     if (!name.empty()) linked_reads_datastores.back().name = name;
     return linked_reads_datastores.back();
 }
 
 LongReadsDatastore &WorkSpace::add_long_reads_datastore(const std::string &filename, const std::string &name) {
+    if (long_reads_datastores.size() > MAX_WORKSPACE_VECTOR_SIZE) {
+        throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
+    }
     long_reads_datastores.emplace_back(*this, filename);
     if (!name.empty()) long_reads_datastores.back().name = name;
     return long_reads_datastores.back();
 }
 
 DistanceGraph &WorkSpace::add_distance_graph(const DistanceGraph &dg, const std::string &name) {
+    if (distance_graphs.size() > MAX_WORKSPACE_VECTOR_SIZE) {
+        throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
+    }
     distance_graphs.emplace_back(dg);
     if (!name.empty()) distance_graphs.back().name = name;
     return distance_graphs.back();
 }
 
 JournalOperation &WorkSpace::add_operation(const std::string &name, const std::string &tool, const std::string &detail) {
+    if (journal.size() > MAX_WORKSPACE_VECTOR_SIZE) {
+        throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
+    }
     journal.emplace_back(name, tool, detail);
     return journal.back();
 }
 
 KmerCounts &WorkSpace::add_kmer_counts_datastore(const std::string &name, const uint8_t k) {
+    if (kmer_counts.size() > MAX_WORKSPACE_VECTOR_SIZE) {
+        throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
+    }
     kmer_counts.emplace_back(*this, name, k);
     // Should edit the WS here to include the new count
 
@@ -353,18 +373,18 @@ JournalOperation &WorkSpace::get_operation(const std::string &name) {
 }
 
 WorkSpace::WorkSpace(const std::string &filename) : sdg(*this) {
-    linked_reads_datastores.reserve(100);
-    paired_reads_datastores.reserve(100);
-    long_reads_datastores.reserve(100);
-    kmer_counts.reserve(100);
+    linked_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
+    paired_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
+    long_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
+    kmer_counts.reserve(MAX_WORKSPACE_VECTOR_SIZE);
     load_from_disk(filename);
 }
 
 WorkSpace::WorkSpace() : sdg(*this) {
-    linked_reads_datastores.reserve(100);
-    paired_reads_datastores.reserve(100);
-    long_reads_datastores.reserve(100);
-    kmer_counts.reserve(100);
+    linked_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
+    paired_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
+    long_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
+    kmer_counts.reserve(MAX_WORKSPACE_VECTOR_SIZE);
 }
 
 std::vector<std::string> WorkSpace::get_all_kmer_count_names() {
