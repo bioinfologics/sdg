@@ -25,6 +25,7 @@ const std::vector<NodeDistanceView> NodeView::next() const {
     for (auto &l:fwl) {
         r.emplace_back(dg->get_nodeview(l.dest),l.dist,l.support);
     }
+    std::sort(r.begin(),r.end());
     return r;
 }
 
@@ -35,6 +36,7 @@ const std::vector<NodeDistanceView> NodeView::prev() const {
     for (auto &l:bwl) {
         r.emplace_back(dg->get_nodeview(-l.dest),l.dist,l.support);
     }
+    std::sort(r.begin(),r.end());
     return r;
 }
 
