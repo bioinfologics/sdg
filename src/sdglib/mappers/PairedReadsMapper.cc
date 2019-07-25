@@ -8,6 +8,7 @@
 #include <sdglib/utilities/omp_safe.hpp>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/utilities/io_helpers.hpp>
 

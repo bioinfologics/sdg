@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <cassert>
 #include <atomic>
+#include <sstream>
 #include "sdglib/factories/KMerIDXFactory.hpp"
 #include <sdglib/datastores/LinkedReadsDatastore.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
