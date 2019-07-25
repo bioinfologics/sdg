@@ -88,6 +88,13 @@
 %template(usetUINT64) std::unordered_set<uint64_t>;
 %template(usetUINT128) std::unordered_set<__uint128_t, int128_hash>;
 
+%template(vectorSGNode) std::vector<int64_t>;
+%template(vectorvectorSGNode) std::vector<std::vector<int64_t>>;
+%template(SGNodePair) std::pair<int64_t, int64_t>;
+%template(vectorSGNodePair) std::vector<std::pair<int64_t, int64_t>>;
+%template(setSGNodePair) std::set<std::pair<int64_t, int64_t>>;
+%template(setSGNode) std::set<int64_t>;
+
 
 %define __STR__()
 std::string __str__() {
@@ -178,8 +185,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
 
 %template(vectorLink) std::vector<Link>;
 %template(vectorvectorLink) std::vector<std::vector<Link>>;
-%template(vectorSGNode) std::vector<sgNodeID_t>;
-%template(vectorvectorSGNode) std::vector<std::vector<sgNodeID_t>>;
+
 %template(vectorNode) std::vector<Node>;
 %ignore std::vector<NodeView>::vector(size_type);
 %ignore std::vector<NodeView>::resize;
@@ -212,13 +218,8 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %ignore std::vector<KmerCounts>::resize;
 %template(vectorKmerCountsDatastore) std::vector<KmerCounts>;
 
-%template(SGNodePair) std::pair<sgNodeID_t, sgNodeID_t>;
-%template(vectorSGNodePair) std::vector<std::pair<sgNodeID_t, sgNodeID_t>>;
-
 %template(vectorKmerCount) std::vector<KmerCount>;
 
 %template(set10xTag) std::set<bsg10xTag>;
-%template(setSGNodePair) std::set<std::pair<sgNodeID_t, sgNodeID_t>>;
-%template(setSGNode) std::set<sgNodeID_t>;
 
 %template(fastaReader) FastaReader<FastaRecord>;
