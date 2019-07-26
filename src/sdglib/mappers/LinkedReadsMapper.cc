@@ -75,7 +75,13 @@ void LinkedReadsMapper::read(std::ifstream &input_file) {
     sdglib::read_flat_vectorvector(input_file, reads_in_node);
 
     sdglib::read_flat_vectorvector(input_file, tag_neighbours);
+
+    populate_orientation();
+
+
 }
+
+
 
 void LinkedReadsMapper::remap_all_reads() {
     for (auto &rtn:read_to_node) rtn=0;
@@ -185,6 +191,7 @@ void LinkedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_r
     for (sgNodeID_t n=1;n<reads_in_node.size();++n){
         std::sort(reads_in_node[n].begin(),reads_in_node[n].end());
     }
+    populate_orientation();
 }
 
 void LinkedReadsMapper::remap_all_reads63() {
@@ -295,6 +302,7 @@ void LinkedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
     for (sgNodeID_t n=1;n<reads_in_node.size();++n){
         std::sort(reads_in_node[n].begin(),reads_in_node[n].end());
     }
+    populate_orientation();
 }
 
 ///**
@@ -605,4 +613,14 @@ void LinkedReadsMapper::read_tag_neighbours(std::string filename) {
 std::ostream &operator<<(std::ostream &os, const LinkedReadsMapper &lirm) {
     os << "LinkedReadsMapper" << std::endl;
     lirm.print_status();
+}
+
+void LinkedReadsMapper::populate_orientation() {
+    read_direction_in_node.clear();
+    read_direction_in_node.resize(read_to_node.size());
+    for (auto & nreads:reads_in_node){
+        for (auto &rm:nreads){
+            read_direction_in_node[rm.read_id]=rm.rev;
+        }
+    }
 }

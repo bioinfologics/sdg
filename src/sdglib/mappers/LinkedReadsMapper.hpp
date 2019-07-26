@@ -146,6 +146,11 @@ public:
     void write_tag_neighbours(std::string filename);
     void read_tag_neighbours(std::string filename);
 
+    /** @brief Populates the read_direction_in_node collection for the dataset
+    *
+    */
+    void populate_orientation();
+
     const WorkSpace &ws;
 
     LinkedReadsDatastore &datastore;
@@ -161,6 +166,11 @@ public:
      * read_to_node[readID] = nodeID where the read is mapped to
      */
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
+
+    /**
+     * read_direction_in_node[i] has the direction with wich read i was mapped in the corresponding mapping (in read_to_node[i])
+     */
+    std::vector<bool> read_direction_in_node;//0-> fw, 1->rev;
 
     /**
      *  Collection of neightbouring nodes
