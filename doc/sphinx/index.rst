@@ -5,12 +5,10 @@
 
 Welcome to SDG's documentation!
 ===============================
-
+.. include:: sdg/README.rst
 .. toctree::
-   :maxdepth: 3
    :caption: Contents:
 
-   sdg/README.md
    sdg/sdglib/README.md
    sdg/sdglib/workspace/README.md
    sdg/_sdglib_toc.rst
