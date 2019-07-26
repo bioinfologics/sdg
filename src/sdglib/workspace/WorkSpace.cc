@@ -259,7 +259,6 @@ void WorkSpace::remap_all() {
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
     auto op = add_operation("Mapping", "WorkSpace::remap_all", "remapping all reads");
     //auto pri=0;
-    sdg.create_index();
     for (auto &ds:paired_reads_datastores) {
         sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         ds.mapper.remap_all_reads();
@@ -286,7 +285,6 @@ void WorkSpace::remap_all() {
 void WorkSpace::remap_all63() {
     sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
     auto op = add_operation("Mapping", "WorkSpace::remap_all63", "remapping all reads");
-    sdg.create_63mer_index();
     for (auto &ds:paired_reads_datastores) {
         sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
         ds.mapper.remap_all_reads63();

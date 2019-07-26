@@ -38,12 +38,10 @@ std::vector<LongReadMapping> SequenceMapper::map_sequence(const char * query_seq
 void SequenceMapper::update_graph_index(int filter_limit, bool verbose) {
     if (sat_kmer_index) {
         if (verbose) std::cout<<"updating satindex with k="<<std::to_string(k)<<std::endl;
-        sat_assembly_kmers=SatKmerIndex(k);
-        sat_assembly_kmers.generate_index(sg.sdg, filter_limit, verbose);
+        sat_assembly_kmers=SatKmerIndex(sg.sdg, k, filter_limit);
     } else {
         if (verbose) std::cout<<"updating nkindex with k="<<std::to_string(k)<<std::endl;
-        assembly_kmers = NKmerIndex(k);
-        assembly_kmers.generate_index(sg.sdg, filter_limit, verbose);
+        assembly_kmers = NKmerIndex(sg.sdg, k, filter_limit);
     }
 }
 

@@ -17,7 +17,6 @@ TEST_CASE("UniqueKmerIndex create and lookup") {
     SequenceDistanceGraph sg(ws);
     sg.load_from_gfa("../tests/datasets/graph/tgraph.gfa");
     UniqueKmerIndex ukm(sg, K);
-    ukm.generate_index(sg, true);
 
     REQUIRE(ukm.getMap().size() != 0);
 
@@ -38,7 +37,6 @@ TEST_CASE("UniqueKmerIndex63 create and lookup") {
     SequenceDistanceGraph sg(ws);
     sg.load_from_gfa("../tests/datasets/graph/tgraph.gfa");
     Unique63merIndex ukm(sg);
-    ukm.generate_index(sg, true);
 
     REQUIRE(ukm.getMap().size() != 0);
 
@@ -52,7 +50,6 @@ TEST_CASE("UniqueKmerIndex63 create and lookup") {
 
 TEST_CASE("NKmerIndex create and lookup") {
     const uint8_t k = 15;
-    NKmerIndex assembly_kmers(k);
 
     std::vector<uint64_t> readkmers;
     StreamKmerFactory skf(k);
@@ -61,7 +58,7 @@ TEST_CASE("NKmerIndex create and lookup") {
     WorkSpace ws;
     SequenceDistanceGraph sg(ws);
     sg.load_from_gfa("../tests/datasets/graph/tgraph.gfa");
-    assembly_kmers.generate_index(sg);
+    NKmerIndex assembly_kmers(sg,k);
 
     REQUIRE(!assembly_kmers.empty());
 
@@ -75,7 +72,6 @@ TEST_CASE("NKmerIndex create and lookup") {
 
 TEST_CASE("SatKmerIndex create and lookup") {
     const uint8_t k = 10;
-    SatKmerIndex assembly_kmers(k);
 
     std::vector<uint64_t> readkmers;
     StreamKmerFactory skf(k);
@@ -84,7 +80,7 @@ TEST_CASE("SatKmerIndex create and lookup") {
     WorkSpace ws;
     SequenceDistanceGraph sg(ws);
     sg.load_from_gfa("../tests/datasets/graph/tgraph.gfa");
-    assembly_kmers.generate_index(sg);
+    SatKmerIndex assembly_kmers(sg,k);
 
     REQUIRE(!assembly_kmers.contig_offsets.empty());
 

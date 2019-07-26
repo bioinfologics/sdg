@@ -53,8 +53,6 @@ public:
 
     void problem_analysis(std::string prefix);
 
-    void create_index(bool verbose = true) { uniqueKmerIndex.generate_index(assembly, verbose); }
-    void create_63mer_index(bool verbose = true) { unique63merIndex.generate_index(assembly, verbose); }
 
     WorkSpace & ws;
     std::vector<sgNodeID_t > backbone;

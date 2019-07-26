@@ -78,8 +78,8 @@ enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage
  * the reads_in_node index is populated by update_indexes() from filtered_read_mappings data.
  */
 class LongReadsMapper {
-    NKmerIndex assembly_kmers;
-    SatKmerIndex sat_assembly_kmers;
+    //NKmerIndex assembly_kmers;
+    //SatKmerIndex sat_assembly_kmers;
 public:
 
     const SequenceDistanceGraph & sg;
@@ -91,7 +91,6 @@ public:
     int max_jump=500;
     int max_delta_change=60;
 
-    LongReadsMapper(const WorkSpace &_ws, const LongReadsDatastore &ds, uint8_t k=15, bool sat_index=false);
     LongReadsMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k=15, bool sat_index=false);
 
     friend std::ostream& operator<<(std::ostream &os, const LongReadsMapper &lorm);
@@ -151,10 +150,11 @@ public:
      *
      *  TODO: Change match type from in32_t to sgNodeId in this function !!!
      *
+     * @param sat_assembly_kmers kmer index
      * @param matches structure to store kmer mappings
      * @param read_kmers contains read kmers with orientations
      */
-    void get_sat_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches, std::vector<std::pair<bool, uint64_t>> &read_kmers);
+    void get_sat_kmer_matches(const SatKmerIndex & sat_assembly_kmers,std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches, std::vector<std::pair<bool, uint64_t>> &read_kmers);
     /**
      * Populates the matches container with the matches between all kmers from one read and the index of the graph.
      * The index is a filtered set of kmers from the graph constructed using update_graph_index() or similar.
@@ -166,10 +166,11 @@ public:
      *
      *  TODO: Change match type from in32_t to sgNodeId in this function !!!
      *
+     * @param sat_assembly_kmers kmer index
      * @param matches structure to store kmer mappings
      * @param read_kmers contains read kmers with orientations
      */
-    void get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers);
+    void get_all_kmer_matches(const NKmerIndex & assembly_kmers, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers);
 
     /**
      * Using the populated matches collection (see het_all_kmer_matches()) returns a collection of nodeIDs that have more than 50 matches with that particular read.
@@ -230,7 +231,7 @@ public:
      * @param query_sequence_ptr
      * @return
      */
-    std::vector<LongReadMapping> map_sequence(const char * query_sequence_ptr, sgNodeID_t seq_id=0);
+    std::vector<LongReadMapping> map_sequence(const NKmerIndex & knindex, const char * query_sequence_ptr, sgNodeID_t seq_id=0);
     //void map_reads(std::string detailed_log){map_reads({},detailed_log);};
 
     void read(std::string filename);
@@ -249,11 +250,6 @@ public:
      * Updates reads_in_nodes
      */
     void update_indexes();
-
-    /**
-     * Updates the assembly_kmers index with the kmers of the current graph with frequency less than 200
-     */
-    void update_graph_index(int filter_limit=200, bool verbose=true);
 
     std::vector<std::vector<LongReadMapping>> filter_mappings_by_size_and_id(int64_t size, float id) const;
     /**

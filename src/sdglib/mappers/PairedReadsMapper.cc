@@ -77,6 +77,7 @@ void PairedReadsMapper::remap_all_reads() {
 }
 
 void PairedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_remap) {
+    UniqueKmerIndex ukindex(ws.sdg);
     const int k = 31;
     std::atomic<int64_t> nokmers(0);
     reads_in_node.resize(ws.sdg.nodes.size());
@@ -125,8 +126,8 @@ void PairedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_r
                     ++nokmers;
                 }
                 for (auto &rk:readkmers) {
-                    auto nk = ws.sdg.unique_kmer_index.find(rk.kmer);
-                    if (ws.sdg.unique_kmer_index.end()!=nk) {
+                    auto nk = ukindex.find(rk.kmer);
+                    if (ukindex.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation
@@ -195,6 +196,7 @@ void PairedReadsMapper::remap_all_reads63() {
 
 void PairedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_remap) {
     const int k = 63;
+    Unique63merIndex ukindex(ws.sdg);
     std::atomic<int64_t> nokmers(0);
     reads_in_node.resize(ws.sdg.nodes.size());
     read_to_node.resize(datastore.size()+1);
@@ -242,8 +244,8 @@ void PairedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
                     ++nokmers;
                 }
                 for (auto &rk:readkmers) {
-                    auto nk = ws.sdg.unique_63mer_index.find(rk.kmer);
-                    if (ws.sdg.unique_63mer_index.end()!=nk) {
+                    auto nk = ukindex.find(rk.kmer);
+                    if (ukindex.end()!=nk) {
                         //get the node just as node
                         sgNodeID_t nknode = llabs(nk->second.node);
                         //TODO: sort out the sign/orientation representation

@@ -13,11 +13,11 @@
 
 const sdgVersion_t LongReadsDatastore::min_compat = 0x0003;
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string filename) : filename(filename), ws(ws), mapper(ws, *this) {
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string filename) : filename(filename), ws(ws), mapper(ws.sdg, *this) {
     load_index(filename);
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_read_file, const std::string &output_file) : filename(output_file), ws(ws), mapper(ws, *this) {
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_read_file, const std::string &output_file) : filename(output_file), ws(ws), mapper(ws.sdg, *this) {
     uint32_t nReads(1);
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
     if (!ofs) {
@@ -48,12 +48,12 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_re
 
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::ifstream &infile) : filename(), ws(ws), mapper(ws, *this) {
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::ifstream &infile) : filename(), ws(ws), mapper(ws.sdg, *this) {
     read(infile);
     mapper.read(infile);
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string default_name, const std::string &filename, std::ifstream &input_file) : filename(filename), ws(ws), mapper(ws, *this) {
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string default_name, const std::string &filename, std::ifstream &input_file) : filename(filename), ws(ws), mapper(ws.sdg, *this) {
     sdgMagic_t magic;
     sdgVersion_t version;
     SDG_FILETYPE type;
@@ -99,7 +99,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string default_name, 
 
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : filename(o.filename), ws(ws), mapper(ws, *this) {
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : filename(o.filename), ws(ws), mapper(ws.sdg, *this) {
     read_to_fileRecord = o.read_to_fileRecord;
     name = o.name;
     default_name = o.default_name;

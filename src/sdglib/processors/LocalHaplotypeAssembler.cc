@@ -364,13 +364,11 @@ void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, bool si
     if (simplify) {
         gm.remove_small_unconnected(500);
         //path_all_reads();
-        uniqueKmerIndex.generate_index(assembly,31);
         path_linked_reads();
         if (!output_prefix.empty()) assembly.write_to_gfa1(output_prefix + "pre_repex.gfa");
         while (expand_canonical_repeats() > 0) {
             assembly.join_all_unitigs();
             //path_all_reads();
-            uniqueKmerIndex.generate_index(assembly,31);
             path_linked_reads();
         }
         //unroll_short_loops();

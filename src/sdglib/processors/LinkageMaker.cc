@@ -307,7 +307,7 @@ void add_readkmer_nodes(std::vector<sgNodeID_t> & kmernodes, std::vector<std::pa
 std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> LinkageMaker::shared_read_paths(int min_shared, std::vector<size_t> libraries, bool r1rev, bool r2rev ) {
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> shared_paths;
     std::cout<<"Creating paired linkage by kmer"<<std::endl;
-    dg.sdg.create_index();
+    auto ukindex=UniqueKmerIndex(dg.sdg);
     std::cout<<"Looking up reads"<<std::endl;
     std::vector<std::pair<sgNodeID_t ,sgNodeID_t >> nodeproximity;
     //This actually works like a paired-read-to-path
@@ -330,9 +330,9 @@ std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> LinkageMaker::shared_read_
                 cskf.create_kmers_direction(read1kmers, bprsg.get_read_sequence(rid));
                 cskf.create_kmers_direction(read2kmers, bprsg.get_read_sequence(rid + 1));
                 //first put the kmers from read 1 in there;
-                add_readkmer_nodes(kmernodes, read1kmers, dg.sdg.unique_kmer_index.getMap(), r1rev);
+                add_readkmer_nodes(kmernodes, read1kmers, ukindex.getMap(), r1rev);
                 //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
-                add_readkmer_nodes(kmernodes, read2kmers, dg.sdg.unique_kmer_index.getMap(), r2rev);
+                add_readkmer_nodes(kmernodes, read2kmers, ukindex.getMap(), r2rev);
                 //for (auto kn:kmernodes) std::cout<<" "<<kn; std::cout<<std::endl;
                 //TODO: A bit of a more clever connection thingy (i.e. off to errors and back?)
                 for (auto i = 0; i < kmernodes.size(); ++i) {

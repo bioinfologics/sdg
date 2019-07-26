@@ -191,13 +191,8 @@ public:
     std::string filename,fasta_filename;    /// Name of the files containing the graph and the fasta.
     std::vector<std::string> oldnames;      /// Mapping structure IDs to input names
     std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids; /// Mapping structure from input names -> IDs
-    UniqueKmerIndex unique_kmer_index;
-    Unique63merIndex unique_63mer_index;
 
     WorkSpace &ws;
 
-    void create_index(bool verbose = true);
-
-    void create_63mer_index(bool verbose = true);
 };
 #endif //SG_SEQUENCEGRAPH_HPP

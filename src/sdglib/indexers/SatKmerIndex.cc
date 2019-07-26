@@ -5,12 +5,16 @@
 #include "SatKmerIndex.hpp"
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
 
-void SatKmerIndex::generate_index(const SequenceDistanceGraph &sg, uint8_t filter_limit, bool verbose) {
+SatKmerIndex::SatKmerIndex(const SequenceDistanceGraph &sg, uint8_t k, uint8_t filter_limit)  : k(k) {
+    if (k > 15) {
+        throw std::runtime_error(
+                "You are trying to use K>15, which is not supported by this structure. "
+                "Please consider NKmerIndex or UniqueKmerIndex as alternatives");
+    }
     // this can be parallelised by contig by aggregating different k_usage vectors on the first step, second and third steps are trickier
     // This two-pass approach could be easily adapted to a single memory block rather than vector of vectors
     uint64_t indexed_positions(0),filtered_kmers(0),total_kmers(0);
     //---- First Step, count k-mer occupancy ----//
-    if (verbose) sdglib::OutputLog() << "First pass: Generating {kmer,contig,offset} " <<std::endl;
     kmerEnd.resize(std::pow(4,k));
     std::vector<kmerPos> all_kmers;
     all_kmers.reserve(100000000);
@@ -30,10 +34,7 @@ void SatKmerIndex::generate_index(const SequenceDistanceGraph &sg, uint8_t filte
         }
     }
     //---- Second Step, reserve space for each vector in structure (avoiding reallocations and such)----//
-    if (verbose) sdglib::OutputLog() << "Sorting, linearising structure and saving positions" << std::endl;
     sdglib::sort(all_kmers.begin(), all_kmers.end(), kmerPos::byKmerContigOffset());
-
-    if (verbose) sdglib::OutputLog() << "Filtering kmers appearing less than " << filter_limit << " from " << total_kmers << " initial kmers" << std::endl;
     auto witr = all_kmers.begin();
     auto ritr = witr;
     uint64_t ckmer(0);
@@ -63,8 +64,4 @@ void SatKmerIndex::generate_index(const SequenceDistanceGraph &sg, uint8_t filte
     }
     assert(kmerEnd[std::pow(4,k)-1] == contig_offsets.size());
     std::vector<kmerPos>().swap(all_kmers);
-    if (verbose) sdglib::OutputLog() << "Kmers for mapping " << filtered_kmers << std::endl;
-    if (verbose) sdglib::OutputLog() << "Elements in structure " << contig_offsets.size() << std::endl;
-    if (verbose) sdglib::OutputLog() << "DONE" << std::endl;
-
 }
