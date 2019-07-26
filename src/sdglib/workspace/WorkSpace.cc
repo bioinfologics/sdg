@@ -304,7 +304,7 @@ PairedReadsDatastore &WorkSpace::add_paired_reads_datastore(const std::string &f
     if (paired_reads_datastores.size() > MAX_WORKSPACE_VECTOR_SIZE) {
         throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
     }
-
+    for (auto n:list_paired_reads_datastores()) if (n==name) throw std::runtime_error("Name is already in use");
     paired_reads_datastores.emplace_back(*this, filename);
     if (!name.empty()) paired_reads_datastores.back().name = name;
     return paired_reads_datastores.back();
@@ -314,7 +314,7 @@ LinkedReadsDatastore &WorkSpace::add_linked_reads_datastore(const std::string &f
     if (linked_reads_datastores.size() > MAX_WORKSPACE_VECTOR_SIZE) {
         throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
     }
-
+    for (auto n:list_linked_reads_datastores()) if (n==name) throw std::runtime_error("Name is already in use");
     linked_reads_datastores.emplace_back(*this, filename);
     if (!name.empty()) linked_reads_datastores.back().name = name;
     return linked_reads_datastores.back();
@@ -324,6 +324,7 @@ LongReadsDatastore &WorkSpace::add_long_reads_datastore(const std::string &filen
     if (long_reads_datastores.size() > MAX_WORKSPACE_VECTOR_SIZE) {
         throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
     }
+    for (auto n:list_long_reads_datastores()) if (n==name) throw std::runtime_error("Name is already in use");
     long_reads_datastores.emplace_back(*this, filename);
     if (!name.empty()) long_reads_datastores.back().name = name;
     return long_reads_datastores.back();
@@ -333,15 +334,13 @@ DistanceGraph &WorkSpace::add_distance_graph(const DistanceGraph &dg, const std:
     if (distance_graphs.size() > MAX_WORKSPACE_VECTOR_SIZE) {
         throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
     }
+    for (auto n:list_distance_graphs()) if (n==name) throw std::runtime_error("Name is already in use");
     distance_graphs.emplace_back(dg);
     if (!name.empty()) distance_graphs.back().name = name;
     return distance_graphs.back();
 }
 
 JournalOperation &WorkSpace::add_operation(const std::string &name, const std::string &tool, const std::string &detail) {
-    if (journal.size() > MAX_WORKSPACE_VECTOR_SIZE) {
-        throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
-    }
     journal.emplace_back(name, tool, detail);
     return journal.back();
 }
@@ -350,6 +349,7 @@ KmerCounter &WorkSpace::add_kmer_counter(const std::string &name, const uint8_t 
     if (kmer_counters.size() > MAX_WORKSPACE_VECTOR_SIZE) {
         throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
     }
+    for (auto n:list_kmer_counters()) if (n==name) throw std::runtime_error("Name is already in use");
     kmer_counters.emplace_back(*this, name, k, count_mode);
     // Should edit the WS here to include the new count
 
