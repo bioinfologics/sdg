@@ -24,7 +24,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_re
         std::cerr << "Failed to open " << output_file <<": " << strerror(errno);
         throw std::runtime_error("Could not open " + output_file);
     }
-    std::streampos fPos;
+    uint64_t fPos;
     ofs.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
     ofs.write((const char *) &SDG_VN, sizeof(SDG_VN));
     SDG_FILETYPE type(LongDS_FT);
@@ -76,7 +76,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string default_name, 
     // Equivalente de read_rtfr
     size_t numReads(0);
     input_file.read((char *) numReads, sizeof(numReads));
-    std::streampos fPos;
+    uint64_t fPos;
     input_file.read((char*) &fPos, sizeof(fPos));
 
     sdglib::read_string(input_file, default_name);
@@ -152,7 +152,7 @@ void LongReadsDatastore::load_index(std::string &file) {
     }
 
     uint64_t nReads(0);
-    std::streampos fPos;
+    uint64_t fPos;
 
     sdgMagic_t magic;
     sdgVersion_t version;
@@ -193,7 +193,7 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
         std::cerr << "Failed to open output in " << output_file <<": " << strerror(errno);
         throw std::runtime_error("Could not open " + output_file);
     }
-    std::streampos fPos;
+    uint64_t fPos;
     ofs.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
     ofs.write((const char *) &SDG_VN, sizeof(min_compat));
     SDG_FILETYPE type(LongDS_FT);
