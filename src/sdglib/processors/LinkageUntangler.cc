@@ -137,7 +137,7 @@ size_t intersection_size(const T1& s1, const T2& s2)
     return c.count;
 }
 
-size_t intersection_size_fast(const std::vector<bsg10xTag>& v1, const std::vector<bsg10xTag>& v2)
+size_t intersection_size_fast(const std::vector<LinkedTag>& v1, const std::vector<LinkedTag>& v2)
 {
     size_t s=0;
     auto e1=v1.data()+v1.size();
@@ -399,7 +399,7 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //    //sdglib::OutputLog()<<"USING ONLY 10 lines as a test"<<std::endl;
 //    //lines.resize(10);
 //    //---------------------------------Step 1: get tagsets for lines.
-//    std::vector<std::set<bsg10xTag>> linetagsets;
+//    std::vector<std::set<LinkedTag>> linetagsets;
 //    linetagsets.reserve(lines.size());
 //    BufferedTagKmerizer btk(ws.linked_reads_datastores[0],31,100000,1000);
 //    for (auto l:lines){
@@ -407,9 +407,9 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //        //for (auto &ln:l) std::cout<<"seq"<<llabs(ln)<<", ";
 //        //for (auto &ln:l) std::cout<<ln<<" ";
 //        //std::cout<<std::endl;
-//        std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
+//        std::map<LinkedTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
 //        for (auto &ln:l) {
-//            std::map<bsg10xTag ,uint32_t> ntagcounts;
+//            std::map<LinkedTag ,uint32_t> ntagcounts;
 //            for (auto rm:ws.linked_reads_datastores[0].mapper.reads_in_node[llabs(ln)]){
 //                auto tag=ws.linked_reads_datastores[0].get_read_tag(rm.read_id);
 //                ++ntagcounts[tag];
@@ -419,8 +419,8 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //                tagcounts[ntc.first].second+=ntc.second;
 //            }
 //        }
-//        std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagtotals;
-//        std::set<bsg10xTag> lineTagSet;
+//        std::map<LinkedTag ,std::pair<uint32_t , uint32_t >> tagtotals;
+//        std::set<LinkedTag> lineTagSet;
 //        for (auto tc:tagcounts) {
 //            auto tag=tc.first;
 //            auto reads=ws.linked_reads_datastores[0].get_tag_reads(tc.first);
@@ -573,12 +573,12 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //
 //    sdglib::OutputLog()<<"Creating tag sets for "<<lines.size()<<" linear regions"<<std::endl;
 //    //---------------------------------Step 1: get tagsets for lines.
-//    std::vector<std::set<bsg10xTag>> linetagsets;
+//    std::vector<std::set<LinkedTag>> linetagsets;
 //    linetagsets.reserve(lines.size());
 //    for (auto l:lines){
-//        std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
+//        std::map<LinkedTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
 //        for (auto &ln:l) {
-//            std::map<bsg10xTag ,uint32_t> ntagcounts;
+//            std::map<LinkedTag ,uint32_t> ntagcounts;
 //            for (auto rm:ws.linked_reads_datastores[0].mapper.reads_in_node[llabs(ln)]){
 //                auto tag=ws.linked_reads_datastores[0].get_read_tag(rm.read_id);
 //                ++ntagcounts[tag];
@@ -588,8 +588,8 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //                tagcounts[ntc.first].second+=ntc.second;
 //            }
 //        }
-//        std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagtotals;
-//        std::set<bsg10xTag> lineTagSet;
+//        std::map<LinkedTag ,std::pair<uint32_t , uint32_t >> tagtotals;
+//        std::set<LinkedTag> lineTagSet;
 //        for (auto tc:tagcounts) {
 //            auto tag=tc.first;
 //            auto reads=ws.linked_reads_datastores[0].get_tag_reads(tc.first);
@@ -741,7 +741,7 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //
 //    sdglib::OutputLog()<<"Creating tag sets for "<<lines.size()<<" linear regions"<<std::endl;
 //    //---------------------------------Step 1: get tagsets for lines.
-//    std::vector<std::set<bsg10xTag>> linetagsets;
+//    std::vector<std::set<LinkedTag>> linetagsets;
 //    linetagsets.reserve(lines.size());
 //    BufferedTagKmerizer btk(ws.linked_reads_datastores[0],31,100000,1000);
 //    for (auto l:lines){
@@ -749,9 +749,9 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //        //for (auto &ln:l) std::cout<<"seq"<<llabs(ln)<<", ";
 //        //for (auto &ln:l) std::cout<<ln<<" ";
 //        //std::cout<<std::endl;
-//        std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
+//        std::map<LinkedTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
 //        for (auto &ln:l) {
-//            std::map<bsg10xTag ,uint32_t> ntagcounts;
+//            std::map<LinkedTag ,uint32_t> ntagcounts;
 //            for (auto rm:ws.linked_reads_datastores[0].mapper.reads_in_node[llabs(ln)]){
 //                auto tag=ws.linked_reads_datastores[0].get_read_tag(rm.read_id);
 //                ++ntagcounts[tag];
@@ -761,8 +761,8 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //                tagcounts[ntc.first].second+=ntc.second;
 //            }
 //        }
-//        std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagtotals;
-//        std::set<bsg10xTag> lineTagSet;
+//        std::map<LinkedTag ,std::pair<uint32_t , uint32_t >> tagtotals;
+//        std::set<LinkedTag> lineTagSet;
 //        for (auto tc:tagcounts) {
 //            auto tag=tc.first;
 //            auto reads=ws.linked_reads_datastores[0].get_tag_reads(tc.first);
@@ -866,9 +866,9 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //    std::cout<<std::endl;
 //    std::cout<<"Creating a set with all the possibly local reads"<<std::endl;
 //    //TODO: create the set, with both 10x and LMP/PE reads
-//    std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
+//    std::map<LinkedTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
 //    for (auto &ln:nodes) {
-//        std::map<bsg10xTag ,uint32_t> ntagcounts;
+//        std::map<LinkedTag ,uint32_t> ntagcounts;
 //        for (auto rm:ws.linked_reads_datastores[0].mapper.reads_in_node[llabs(ln)]){
 //            auto tag=ws.linked_reads_datastores[0].get_read_tag(rm.read_id);
 //            if (tag==0) continue;
@@ -879,8 +879,8 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //            tagcounts[ntc.first].second+=ntc.second;
 //        }
 //    }
-//    std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagtotals;
-//    std::set<bsg10xTag> lineTagSet;
+//    std::map<LinkedTag ,std::pair<uint32_t , uint32_t >> tagtotals;
+//    std::set<LinkedTag> lineTagSet;
 //    uint64_t total_reads=0;
 //    for (auto tc:tagcounts) {
 //        auto tag=tc.first;

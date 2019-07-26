@@ -127,7 +127,7 @@ std::string __repr__() {
     __REPR__();
 };
 
-%extend NodeDistanceView{
+%extend LinkView{
         __STR__();
         __REPR__();
 };
@@ -190,9 +190,9 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %ignore std::vector<NodeView>::vector(size_type);
 %ignore std::vector<NodeView>::resize;
 %template(vectorNodeView) std::vector<NodeView>;
-%ignore std::vector<NodeDistanceView>::vector(size_type);
-%ignore std::vector<NodeDistanceView>::resize;
-%template(vectorNodeDistanceView) std::vector<NodeDistanceView>;
+%ignore std::vector<LinkView>::vector(size_type);
+%ignore std::vector<LinkView>::resize;
+%template(vectorNodeDistanceView) std::vector<LinkView>;
 %template(vectorReadPosSize) std::vector< ReadPosSize >;
 %template(vectorReadMapping) std::vector<ReadMapping>;
 %template(vectorvectorReadMapping) std::vector<std::vector<ReadMapping>>;
@@ -220,6 +220,6 @@ __commit__ = "@GIT_COMMIT_HASH@"
 
 %template(vectorKmerCount) std::vector<KmerCount>;
 
-%template(set10xTag) std::set<bsg10xTag>;
+%template(set10xTag) std::set<LinkedTag>;
 
 %template(fastaReader) FastaReader<FastaRecord>;

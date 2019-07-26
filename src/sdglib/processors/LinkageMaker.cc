@@ -521,14 +521,14 @@ DistanceGraph LinkageMaker::make_tag_linkage(int min_reads, bool use_kmer_paths)
 
         auto n1 = p.first;
         auto n2 = p.second;
-        std::set<bsg10xTag> shared_tags;
+        std::set<LinkedTag> shared_tags;
         std::set_intersection(node_tags[n1].begin(), node_tags[n1].end(), node_tags[n2].begin(), node_tags[n2].end(),
                               std::inserter(shared_tags, shared_tags.end()));
         uint64_t n1_front_in = 0, n1_front_total = 0, n1_back_in = 0, n1_back_total = 0;
         uint64_t n2_front_in = 0, n2_front_total = 0, n2_back_in = 0, n2_back_total = 0;
         uint64_t n1first30point = ws.sdg.nodes[n1].sequence.size() * end_perc;
         uint64_t n1last30point = ws.sdg.nodes[n1].sequence.size() * (1 - end_perc);
-        std::set<bsg10xTag> t1f,t1b,t2f,t2b,t1ft,t1bt,t2ft,t2bt;
+        std::set<LinkedTag> t1f,t1b,t2f,t2b,t1ft,t1bt,t2ft,t2bt;
         for (auto rm:ws.linked_read_mappers[0].reads_in_node[n1]) {
             if (rm.first_pos < n1first30point) {
                 ++n1_front_total;

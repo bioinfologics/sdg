@@ -179,7 +179,7 @@ int main(int argc, char * argv[]) {
         }
 
         WorkSpace ws;
-        std::unordered_map<bsg10xTag, std::vector<uint64_t>> tag_occupancy;
+        std::unordered_map<LinkedTag, std::vector<uint64_t>> tag_occupancy;
         std::vector<LinkedReadsDatastore> datastores;
         for (auto i=0;i<filenames.size();++i){
             datastores.emplace_back(ws, filenames[i]);

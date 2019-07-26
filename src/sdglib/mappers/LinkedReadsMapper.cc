@@ -361,20 +361,20 @@ void LinkedReadsMapper::print_status() const {
     sdglib::OutputLog()<<"Mapped pairs from "<<datastore.filename<<": None: "<<none<<"  Single: "<<single<<"  Both: "<<both<<" ("<<same<<" same)"<<std::endl;
 }
 
-std::set<bsg10xTag> LinkedReadsMapper::get_node_tags(sgNodeID_t n) {
-    std::set<bsg10xTag> tags;
+std::set<LinkedTag> LinkedReadsMapper::get_node_tags(sgNodeID_t n) {
+    std::set<LinkedTag> tags;
     for (auto &rm:reads_in_node[(n>0?n:-n)])
         tags.insert(datastore.get_read_tag(rm.read_id));
     if (tags.count(0)>0) tags.erase(0);
     return tags;
 }
 
-std::map<bsg10xTag, std::vector<sgNodeID_t>> LinkedReadsMapper::get_tag_nodes(uint32_t min_nodes,
+std::map<LinkedTag, std::vector<sgNodeID_t>> LinkedReadsMapper::get_tag_nodes(uint32_t min_nodes,
                                                                              const std::vector<bool> &selected_nodes) {
     //Approach: node->tags->nodes (checks how many different tags join this node to every other node).
 
-    std::map<bsg10xTag, std::vector<sgNodeID_t>> tag_nodes;
-    bsg10xTag curr_tag=0,new_tag=0;
+    std::map<LinkedTag, std::vector<sgNodeID_t>> tag_nodes;
+    LinkedTag curr_tag=0,new_tag=0;
     std::set<sgNodeID_t> curr_nodes;
     sgNodeID_t curr_node;
     for (size_t i=1;i<read_to_node.size();++i){
@@ -411,7 +411,7 @@ std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadsMapper::get_tag_neig
 
     auto nodes_in_tags= get_tag_nodes(2, selected_nodes);
 
-    std::unordered_map<sgNodeID_t , std::vector<bsg10xTag>> tags_in_node;
+    std::unordered_map<sgNodeID_t , std::vector<LinkedTag>> tags_in_node;
     sdglib::OutputLog()<<"There are "<<nodes_in_tags.size()<<" informative tags"<<std::endl;
     for (auto &t:nodes_in_tags){
         for (auto n:t.second) tags_in_node[n].push_back(t.first);
@@ -450,7 +450,7 @@ void LinkedReadsMapper::compute_all_tag_neighbours(int min_size, float min_score
 
     sdglib::OutputLog()<<"Counting into individual maps..."<<std::endl;
     //this loop goes through the reads, which are ordered by tag, and accumulates the nodes and their readcount for a single tag
-    bsg10xTag current_tag=0;
+    LinkedTag current_tag=0;
     for (size_t i=0;i<read_to_node.size();++i){
         if (datastore.get_read_tag(i)==0) continue;//skip tag 0
         // This is because the reads are stored sorted by  tags
@@ -504,7 +504,7 @@ void LinkedReadsMapper::compute_all_tag_neighbours2(int min_size, float min_scor
 
     //first - create start-end for tags that have > X reads
     std::vector<std::pair<uint64_t,uint64_t>> tag_start_end;
-    bsg10xTag current_tag=0;
+    LinkedTag current_tag=0;
     uint64_t mapped_reads=0, tag_firstpost=0;
     for (size_t i=1;i<read_to_node.size();++i){
         if (datastore.get_read_tag(i)!=current_tag){

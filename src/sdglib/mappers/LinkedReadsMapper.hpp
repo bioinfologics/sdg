@@ -16,7 +16,7 @@ class UniqueKmerIndex;
 class Unique63merIndex;
 class LinkedReadsDatastore;
 
-using bsg10xTag = uint32_t;
+using LinkedTag = uint32_t;
 
 class TagNeighbour {
 public:
@@ -103,7 +103,7 @@ public:
      * @param n nodeID
      * @return set of bsg10xtags
      */
-    std::set<bsg10xTag> get_node_tags(sgNodeID_t n);
+    std::set<LinkedTag> get_node_tags(sgNodeID_t n);
 
     /**
      * Returns a tags_to_nodes type map, a collection of tags with an associated vector of nodes where each tag mapped
@@ -113,7 +113,7 @@ public:
      * @param selected_nodes mask to the nodes to be considered (optional)
      * @return map of tags to nodes
      */
-    std::map<bsg10xTag, std::vector<sgNodeID_t>> get_tag_nodes(uint32_t min_nodes = 2,
+    std::map<LinkedTag, std::vector<sgNodeID_t>> get_tag_nodes(uint32_t min_nodes = 2,
                                                                const std::vector<bool> &selected_nodes = {});
 
     /** @brief Returns a collection of pairs of nodeIDs that share more than min_shared tags between them

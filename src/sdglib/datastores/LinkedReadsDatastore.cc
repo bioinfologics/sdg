@@ -13,7 +13,7 @@
 
 const sdgVersion_t LinkedReadsDatastore::min_compat = 0x0003;
 
-std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k) {
+std::string LinkedTag_to_seq(LinkedTag tag, uint8_t k) {
     std::string seq;
     seq.reserve(k);
     for (int shift = (k - 1) * 2; shift >= 0; shift -= 2) {
@@ -38,7 +38,7 @@ std::string bsg10xTag_to_seq(bsg10xTag tag, uint8_t k) {
 
 void LinkedReadsDatastore::print_status() const {
     uint64_t tagcount=0;
-    bsg10xTag prevtag=0;
+    LinkedTag prevtag=0;
     for (auto t:read_tag) {
         if (t != prevtag) {
             ++tagcount;
@@ -80,7 +80,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     //First, create the chunk files
     uint64_t pairs=0;
     while (!gzeof(fd1) and !gzeof(fd2)) {
-        bsg10xTag newtag = 0;
+        LinkedTag newtag = 0;
         if (format==LinkedReadsFormat::UCDavis) {
             //LinkedRead r1,r2;
             if (NULL == gzgets(fd1, readbuffer, 999)) continue;
@@ -247,13 +247,13 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
 
     //multi_way merge of the chunks
     int openfiles=chunkfiles.size();
-    bsg10xTag next_tags[chunkfiles.size()];
+    LinkedTag next_tags[chunkfiles.size()];
     char buffer[2 * readsize + 2];
     //read a bit from each file
-    for (auto i=0;i<chunkfiles.size();++i) chunkfiles[i].read((char *)&next_tags[i],sizeof(bsg10xTag));
+    for (auto i=0;i<chunkfiles.size();++i) chunkfiles[i].read((char *)&next_tags[i],sizeof(LinkedTag));
     read_tag.clear();
     while(openfiles){
-        bsg10xTag mintag=UINT32_MAX;
+        LinkedTag mintag=UINT32_MAX;
         //find the minimum tag
         for (auto &t:next_tags) if (t<mintag) mintag=t;
         //copy from each file till the next tag is > than minimum
@@ -264,7 +264,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
                 output.write(buffer,2*readsize+2);
                 read_tag.push_back(mintag);
                 //read next tag... eof? tag=UINT32_MAX
-                chunkfiles[i].read((char *)&next_tags[i],sizeof(bsg10xTag));
+                chunkfiles[i].read((char *)&next_tags[i],sizeof(LinkedTag));
                 if (chunkfiles[i].eof()) {
                     --openfiles;
                     next_tags[i]=UINT32_MAX;
@@ -358,7 +358,7 @@ void LinkedReadsDatastore::write(std::ofstream &output_file) {
     mapper.write(output_file);
 }
 
-void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std::set<bsg10xTag> &tagSet) {
+void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std::set<LinkedTag> &tagSet) {
     //write readsize
     output_file.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
     output_file.write((const char *) &SDG_VN, sizeof(SDG_VN));
@@ -368,7 +368,7 @@ void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std
     output_file.write((char *) &readsize, sizeof(readsize));
     //create a vector of read tags (including each tag as many times as reads it contains).
     //std::cout << "creating vector of tags" << std::endl;
-    std::vector<bsg10xTag> readtags;
+    std::vector<LinkedTag> readtags;
     //readtags.push_back(0);
     for (auto trc:get_tag_readcount()) {
         if (tagSet.count(trc.first)) readtags.resize(readtags.size() + trc.second, trc.first);
@@ -378,7 +378,7 @@ void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std
     // write tag count and tags.
     uint64_t rts = readtags.size();
     output_file.write((const char *) &rts, sizeof(rts));
-    output_file.write((const char *) readtags.data(), sizeof(bsg10xTag) * readtags.size());
+    output_file.write((const char *) readtags.data(), sizeof(LinkedTag) * readtags.size());
 
     //now for each read in each included tag, just copy the readsize+1 sequence into the file.
     uint64_t totaldata = 0;
@@ -402,7 +402,7 @@ std::string LinkedReadsDatastore::get_read_sequence(size_t readID) {
     return std::string(buffer);
 }
 
-std::vector<uint64_t> LinkedReadsDatastore::get_tag_reads(bsg10xTag tag) const {
+std::vector<uint64_t> LinkedReadsDatastore::get_tag_reads(LinkedTag tag) const {
     std::vector<uint64_t> rids;
     rids.reserve(10000);
     for (auto n=std::lower_bound(read_tag.begin(),read_tag.end(),tag)-read_tag.begin();read_tag[n]==tag;++n) {
@@ -412,13 +412,13 @@ std::vector<uint64_t> LinkedReadsDatastore::get_tag_reads(bsg10xTag tag) const {
     return rids;
 }
 
-bsg10xTag LinkedReadsDatastore::get_read_tag(size_t readID) {
+LinkedTag LinkedReadsDatastore::get_read_tag(size_t readID) {
     if (readID==0 or readID>size()) return 0;
     return read_tag[(readID-1)/2];
 }
 
-std::vector<std::pair<bsg10xTag, uint32_t>> LinkedReadsDatastore::get_tag_readcount() {
-    std::vector<std::pair<bsg10xTag, uint32_t>> readcount;
+std::vector<std::pair<LinkedTag, uint32_t>> LinkedReadsDatastore::get_tag_readcount() {
+    std::vector<std::pair<LinkedTag, uint32_t>> readcount;
     auto curr_tag=read_tag[0];
     uint32_t curr_count=0;
     for (auto &t:read_tag){
@@ -444,7 +444,7 @@ void LinkedReadsDatastore::dump_tag_occupancy_histogram(std::string filename) {
         if (oh[i]) tohf<<i<<","<<oh[i]<<std::endl;
 }
 
-std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min_tag_cov, std::set<bsg10xTag> tags, ReadSequenceBuffer & blrsg) {
+std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min_tag_cov, std::set<LinkedTag> tags, ReadSequenceBuffer & blrsg) {
     class StreamKmerFactory : public  KMerFactory {
     public:
         explicit StreamKmerFactory(uint8_t k) : KMerFactory(k){}
@@ -496,7 +496,7 @@ std::unordered_set<uint64_t> LinkedReadsDatastore::get_tags_kmers(int k, int min
     return std::move(kset);
 }
 
-std::unordered_set<__uint128_t, int128_hash> LinkedReadsDatastore::get_tags_kmers128(int k, int min_tag_cov, std::set<bsg10xTag> tags, ReadSequenceBuffer & blrsg, bool count_tag_cvg) {
+std::unordered_set<__uint128_t, int128_hash> LinkedReadsDatastore::get_tags_kmers128(int k, int min_tag_cov, std::set<LinkedTag> tags, ReadSequenceBuffer & blrsg, bool count_tag_cvg) {
     class StreamKmerFactory128 : public  KMerFactory128 {
     public:
         explicit StreamKmerFactory128(uint8_t k) : KMerFactory128(k){}
@@ -639,7 +639,7 @@ std::ostream &operator<<(std::ostream &os, const LinkedReadsDatastore &lrds) {
     lrds.print_status();
 }
 
-void BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {
+void BufferedTagKmerizer::get_tag_kmers(LinkedTag tag) {
     auto read_ids=datastore.get_tag_reads(tag);
     //counts.reserve(counts.size()+read_ids.size()*(datastore.readsize-K+1));
     for (auto rid:read_ids){
@@ -647,7 +647,7 @@ void BufferedTagKmerizer::get_tag_kmers(bsg10xTag tag) {
     }
 }
 
-std::unordered_set<uint64_t> BufferedTagKmerizer::get_tags_kmers(int min_tag_cov, std::set<bsg10xTag> tags) {
+std::unordered_set<uint64_t> BufferedTagKmerizer::get_tags_kmers(int min_tag_cov, std::set<LinkedTag> tags) {
     counts.clear();
     for (auto t:tags) get_tag_kmers(t);
     std::cout<<"Sorting "<<counts.size()<<" kmers..."<<std::endl;

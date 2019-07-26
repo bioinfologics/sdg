@@ -32,10 +32,10 @@ void LocalHaplotypeAssembler::init_from_backbone( std::vector<sgNodeID_t> _backb
 
     //std::cout<<"Filling Candidate Tag Set..."<<std::endl;
     //Get tag reads in the nodes, and how many nodes with reads counts.
-    std::map<bsg10xTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
+    std::map<LinkedTag ,std::pair<uint32_t , uint32_t >> tagcounts; //tag -> nodes, reads
     for (auto &ln:backbone) {
         //partial counts in a single node
-        std::map<bsg10xTag ,uint32_t> ntagcounts;
+        std::map<LinkedTag ,uint32_t> ntagcounts;
         for (auto rm:ws.linked_reads_datastores[0].mapper.reads_in_node[llabs(ln)]){
             auto tag=ws.linked_reads_datastores[0].get_read_tag(rm.read_id);
             if (tag==0) continue;
@@ -114,7 +114,7 @@ void LocalHaplotypeAssembler::init_from_file(std::string problem_file) {
 
     //load 10x tags;
     input_file.read((char *)&count,sizeof(count));
-    bsg10xTag t;
+    LinkedTag t;
     while (count--) {
         input_file.read((char *) &t, sizeof(t));
         tagSet.insert(t);
@@ -698,7 +698,7 @@ void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
     //write down 10x tags;
     input_file.read((char *)&count,sizeof(count));
     for (auto n=0;n<count;++n) {
-        bsg10xTag t;
+        LinkedTag t;
         input_file.read((char *) &t, sizeof(t));
         tagSet.insert(t);
     }
