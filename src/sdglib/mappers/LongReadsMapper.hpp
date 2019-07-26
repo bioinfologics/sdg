@@ -86,6 +86,7 @@ public:
 
     // TODO: Describe exactly what each of these do!!
     uint8_t k=15;
+    int max_index_freq=200;
     int min_size=1000;
     int min_chain=50;
     int max_jump=500;
@@ -123,8 +124,9 @@ public:
      * @param _max_jump
      * @param _max_delta_change
      */
-    void set_params(uint8_t _k=15, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60){
+    void set_params(uint8_t _k=15, int _max_index_freq=200, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60){
         k=_k;
+        max_index_freq=_max_index_freq;
         min_size=_min_size;
         min_chain=_min_chain;
         max_jump=_max_jump;
@@ -220,10 +222,11 @@ public:
      *
      * Results are stored in the mappings collection of this object
      *
-     * @param filter_limit
      * @param readIDs
      */
-    void map_reads(int filter_limit = 200, const std::unordered_set<uint32_t> &readIDs = {});
+
+
+    void map_reads(const std::unordered_set<uint32_t> &readIDs = {});
 
     /**
      * This function maps any sequence to the graph, index needs to be already updated!

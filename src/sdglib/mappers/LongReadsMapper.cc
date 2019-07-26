@@ -201,11 +201,11 @@ std::vector<LongReadMapping> LongReadsMapper::filter_blocks(std::vector<LongRead
     return fblocks;
 }
 
-void LongReadsMapper::map_reads(int filter_limit, const std::unordered_set<uint32_t> &readIDs) {
+void LongReadsMapper::map_reads(const std::unordered_set<uint32_t> &readIDs) {
     NKmerIndex nkindex;
     SatKmerIndex skindex;
-    if (sat_kmer_index) skindex=SatKmerIndex(sg,k,filter_limit);
-    else nkindex=NKmerIndex(sg,k,filter_limit);
+    if (sat_kmer_index) skindex=SatKmerIndex(sg,k,max_index_freq);
+    else nkindex=NKmerIndex(sg,k,max_index_freq);
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
     uint32_t num_reads_done(0);
     uint64_t no_matches(0),single_matches(0),multi_matches(0);
@@ -339,6 +339,11 @@ void LongReadsMapper::read(std::ifstream &inf) {
     sdglib::OutputLog() << "Reading long read mappings" << std::endl;
 
     inf.read(reinterpret_cast<char *>(&k), sizeof(k));
+    inf.read(reinterpret_cast<char *>(&max_index_freq), sizeof(max_index_freq));
+    inf.read(reinterpret_cast<char *>(&min_size), sizeof(min_size));
+    inf.read(reinterpret_cast<char *>(&min_chain), sizeof(min_chain));
+    inf.read(reinterpret_cast<char *>(&max_jump), sizeof(max_jump));
+    inf.read(reinterpret_cast<char *>(&max_delta_change), sizeof(max_delta_change));
 
     sdglib::read_flat_vector(inf, mappings);
 
@@ -356,6 +361,11 @@ void LongReadsMapper::write(std::ofstream &ofs) {
     sdglib::OutputLog() << "Dumping long read mappings" << std::endl;
 
     ofs.write(reinterpret_cast<const char *>(&k), sizeof(k));
+    ofs.write(reinterpret_cast<const char *>(&max_index_freq), sizeof(max_index_freq));
+    ofs.write(reinterpret_cast<const char *>(&min_size), sizeof(min_size));
+    ofs.write(reinterpret_cast<const char *>(&min_chain), sizeof(min_chain));
+    ofs.write(reinterpret_cast<const char *>(&max_jump), sizeof(max_jump));
+    ofs.write(reinterpret_cast<const char *>(&max_delta_change), sizeof(max_delta_change));
 
     sdglib::write_flat_vector(ofs, mappings);
     sdglib::OutputLog() << "Done!" << std::endl;

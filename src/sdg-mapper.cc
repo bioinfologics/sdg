@@ -92,7 +92,8 @@ int main(int argc, char * argv[]) {
         sdglib::OutputLog()<<"Mapping reads from long reads library..."<<std::endl;
         ds.mapper.sat_kmer_index = sat_kmer_index;
         ds.mapper.k = long_reads_k;
-        ds.mapper.map_reads(max_filter);
+        ds.mapper.max_index_freq=max_filter;
+        ds.mapper.map_reads();
         op.addEntry("reads from "+ds.filename+" re-mapped to current graph");
         sdglib::OutputLog()<<"Mapping reads from long reads library DONE."<<std::endl;
     }
