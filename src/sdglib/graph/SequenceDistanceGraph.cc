@@ -126,8 +126,6 @@ void SequenceDistanceGraph::remove_node(sgNodeID_t n) {
     //TODO: remove read mappings
 }
 
-
-
 size_t SequenceDistanceGraph::count_active_nodes() {
     size_t t = 0;
     for (auto &n: nodes) {
@@ -151,7 +149,6 @@ bool Link::operator<(const Link a) const {
     }
     return false;
 }
-
 
 std::vector<std::vector<sgNodeID_t>> SequenceDistanceGraph::connected_components(int max_nr_totalinks, int max_nr_dirlinks,
                                                                          int min_rsize) {
@@ -404,7 +401,6 @@ void SequenceDistanceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
         }
     }
 }
-
 
 void SequenceDistanceGraph::expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNodeID_t>> bw,
                                 std::vector<std::vector<sgNodeID_t>> fw) {

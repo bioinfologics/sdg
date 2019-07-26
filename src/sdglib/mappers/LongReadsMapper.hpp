@@ -71,9 +71,9 @@ struct match_band{
 enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage};
 
 /**
- * Long read mapping to SequenceGraph, computation and storage of the raw alignments and filtered alingments.
+ * Long read mapping to SequenceGraph, computation and storage of the raw alignments and filtered alignments.
  *
- * mappings is filled via small k-mers to multi-position index and a chain search.
+ * The mappings are filled via small k-mers to a multi-<node,position> index and a chain search.
  * filtered_read_mappings is filled by calling one of the filter_mappings_* methods, which can use extra data.
  * the reads_in_node index is populated by update_indexes() from filtered_read_mappings data.
  */
@@ -85,12 +85,14 @@ public:
     const SequenceDistanceGraph & sg;
 
     // TODO: Describe exactly what each of these do!!
-    uint8_t k=15;
-    int max_index_freq=200;
-    int min_size=1000;
-    int min_chain=50;
-    int max_jump=500;
-    int max_delta_change=60;
+    int max_index_freq=200; /// Maximum number of occurrences of kmers in index to be considered.
+    uint8_t k=15;   /// Kmer size used for mappings.
+    int min_size=1000;  /// Minimum length of chained matches to report mappings.
+    int min_chain=50;   /// Minimum number of chained matches to report mappings.
+    int max_jump=500;   /// Joins kmer hits within max_jump distance in a node.
+    int max_hits_to_candidate=4; /// Maximum number of hits to a candidate node, filters kmers with too many offsets in the node.
+    int max_delta_change=60;    /// Maximum difference between coordinates of the node against the coordinates of the reads.
+    int min_number_of_node_occurrences=50; /// Minimum number of matches of a node to consider it for mappings.
 
     LongReadsMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k=15, bool sat_index=false);
 
@@ -99,19 +101,26 @@ public:
     LongReadsMapper& operator=(const LongReadsMapper &other);
     LongReadsMapper(const LongReadsDatastore &ds, const LongReadsMapper &o);
 
+    /**
+     * @brief Provides an overview of the information in the LongReadsMapper
+     * @param level Base indentation level to use on the result
+     * @param recursive Whether it should explore or not the rest of the hierarchy
+     * @return
+     * A text summary of the information contained in a LongReadsMapper
+     */
     std::string ls(int level=0,bool recursive=true);
 
     void print_status() const;
 
     /** @brief Getter for the defined datastore
      *
-     * @return
+     * @return The LongReadsDatastore for this mapper
      */
     const LongReadsDatastore& getLongReadsDatastore() {return datastore;}
 
-    /** @brief Getter for the defined SequenceGraph
+    /** @brief Getter for the defined SequenceDistanceGraph
      *
-     * @return
+     * @return The SequenceDistanceGraph for this mapper
      */
     const SequenceDistanceGraph& getSequenceGraph() {return sg;}
 
@@ -176,7 +185,7 @@ public:
 
     /**
      * Using the populated matches collection (see het_all_kmer_matches()) returns a collection of nodeIDs that have more than 50 matches with that particular read.
-     * TODO: parameter to ckeck, the 50 in the filter, why is 50?.
+     * TODO: parameter to check, the 50 in the filter, why is 50?.
      * @param matches matches vector
      * @param read_kmers_size number of kmers in the read
      * @return set of nodeIDs of nodes with more than 50 matches to the read

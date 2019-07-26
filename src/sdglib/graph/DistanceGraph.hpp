@@ -204,10 +204,34 @@ public:
      */
     void load_from_text(std::string filename);
 
+    /**
+     * Writes the graph to a GFA v1 file, optionally a few nodes can be selected for writing.
+     * @param filename Path to the output file
+     * @param selected_nodes List of the nodes to write
+     * @param depths If nodes are selected, a depth vector can be used to specify coverage in the GFA
+     */
     void write_to_gfa1(std::string filename, const std::vector<sgNodeID_t> &selected_nodes={}, const std::vector<double> &depths={});
+
+    /**
+     * Writes the graph to a GFA v2 file, optionally a few nodes can be selected for writing.
+     * @param filename Path to the output file
+     * @param selected_nodes List of the nodes to write
+     * @param depths If nodes are selected, a depth vector can be used to specify coverage in the GFA
+     */
     void write_to_gfa2(std::string filename, const std::vector<sgNodeID_t> &selected_nodes={}, const std::vector<double> &depths={});
 
+    /**
+     * @brief Provides access to a single node NodeView graph exploration
+     * @param n ID of the SequenceDistanceGraph node
+     * @return A NodeView of the node 'n'
+     */
     NodeView get_nodeview(sgNodeID_t n);
+
+    /**
+     * @brief Provides access to the NodeView read-only graph exploration methods for all nodes
+     * @param include_disconnected If set to false and a node is disconnected, it won't be included in the result
+     * @return A NodeView list containing one per node in the graph unless include_disconnected is set to false, then only nodes with links are included
+     */
     std::vector<NodeView> get_all_nodeviews(bool include_disconnected=true);
     DistanceGraph& operator=(const DistanceGraph &o);
 

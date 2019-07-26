@@ -21,16 +21,21 @@ class PairedReadConnectivityDetail; //Forward declaration
 class WorkSpace;
 
 /**
- * @brief A mapper for linked reads from a PairedReadsDatastore.
- *
+ * A mapper for linked reads from a PairedReadsDatastore.
  * Supports partial remapping of unmapped reads or of a selection list.
  */
-
 class PairedReadsMapper {
 
 public:
     PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore &_datastore);
 
+    /**
+     * @brief Provides an overview of the information in the PairedReadsMapper
+     * @param level Base indentation level to use on the result
+     * @param recursive Whether it should explore or not the rest of the hierarchy
+     * @return
+     * A text summary of the information contained in a PairedReadsMapper
+     */
     std::string ls(int level=0,bool recursive=true);
 
     friend std::ostream& operator<<(std::ostream &os, const PairedReadsMapper &prm);
@@ -109,12 +114,12 @@ public:
     std::vector<std::vector<ReadMapping>> reads_in_node;
 
     /**
-     * read_to_node[i] containes the node where read i was mapped
+     * read_to_node[i] contains the node where read i was mapped
      */
     std::vector<sgNodeID_t> read_to_node; //id of the main node if mapped, set to 0 to remap on next process
-    //TODO: reading and writing this would simplify things??
+
     /**
-     * read_direction_in_node[i] has the direction with wich read i was mapped in the corresponding mapping (in read_to_node[i])
+     * read_direction_in_node[i] has the direction with which read i was mapped in the corresponding mapping (in read_to_node[i])
      */
     std::vector<bool> read_direction_in_node;//0-> fw, 1->rev;
 
@@ -132,9 +137,8 @@ public:
 };
 
 /**
- * @brief Analysis of all reads connecting two particular nodes.
+ * Analysis of all reads connecting two particular nodes.
  */
-
 class PairedReadConnectivityDetail {
 public:
     PairedReadConnectivityDetail(){};

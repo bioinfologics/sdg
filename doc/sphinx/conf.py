@@ -21,7 +21,7 @@ project = 'SDG'
 copyright = '2019, Bernardo J. Clavijo, Gonzalo Garcia, Luis J. Yanes, Benjamin Ward'
 author = 'Bernardo J. Clavijo, Gonzalo Garcia, Luis J. Yanes, Benjamin Ward'
 
-
+master_doc = 'index'
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be

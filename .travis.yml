@@ -55,7 +55,6 @@ before_script:
   - git lfs pull
 
 script:
-  - date > file-$TRAVIS_OS_NAME.txt
   - .travis/build.sh
 
 install:

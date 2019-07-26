@@ -18,17 +18,44 @@
 #include <sdglib/workspace/Journal.hpp>
 #include <sdglib/datastores/KmerCounter.hpp>
 
+/**
+ * The WorkSpace holds the information regarding a project in memory and can be written to a file for checkpointing purposes
+ * It contains:
+ *  - A SequenceDistanceGraph which holds all the sequences, and links between them. This is considered the base graph.
+ *  - Multiple DistanceGraphs they contain alternative links between the sequences in the SDG nodes which can come from one or more sources of information (datastores)
+ *  - Paired, Linked and Long reads datastores which contain all the sequencing information
+ *  - KmerCounters which contain the kmers used for the count in the form of an index and multiple counts for those kmers. These counts can come from one or more data sources.
+ *  - A Journal which contain details about any operation applied to the WorkSpace that transformed it in any way
+ */
 class WorkSpace {
-
 public:
     WorkSpace();
     explicit WorkSpace(const std::string & filename);
     WorkSpace(const WorkSpace& that) = delete; //we definitely do not want copy constructors here, thank you
     void status();
+
+    /**
+     * @brief
+     * Provides an overview of the information in the WorkSpace
+     * @param level Base indentation level to use on the result
+     * @param recursive Whether it should explore or not the rest of the hierarchy
+     * @return
+     * A text summary of the information contained in a WorkSpace
+     */
     std::string ls(int level=0,bool recursive=true);
 
+    /**
+     * @brief Writes a disk version of the information held by that can be used in the future, it can be used as a form of checkpoint
+     * @param filename Path to the file to write to disk
+     */
     void dump_to_disk(std::string filename);
 
+    /**
+     * @brief
+     * Load the workspace information from disk for further analysis
+     * @param filename Path to the file to load from disk
+     * @param log_only Only loads the Journal information
+     */
     void load_from_disk(std::string filename,bool log_only=false);
 
     JournalOperation &add_operation(const std::string &name, const std::string &tool, const std::string &detail);

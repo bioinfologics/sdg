@@ -36,6 +36,13 @@ class LinkedReadsMapper {
 public:
     LinkedReadsMapper(const WorkSpace &_ws, LinkedReadsDatastore &_datastore);
 
+    /**
+     * @brief Provides an overview of the information in the LinkedReadsMapper
+     * @param level Base indentation level to use on the result
+     * @param recursive Whether it should explore or not the rest of the hierarchy
+     * @return
+     * A text summary of the information contained in a LinkedReadsMapper
+     */
     std::string ls(int level=0,bool recursive=true);
 
     friend std::ostream& operator<<(std::ostream &os, const LinkedReadsMapper &lirm);
@@ -44,9 +51,8 @@ public:
     void read(std::ifstream & input_file);
 
     /** @brief Maps the provided LinkedReadsDatastore to the provided graph, saves the results to the reads_in_node and nodes_in_read collections.
-     * The mapper only considers unique perfect matches, if a single kmer from the read matches 2 different nodes the read is marked as multi-mapping and the mapping is discarded
-     * If a reads_to_remap set is passed to the function only the selected set of reads is mapped, the rest of the mappings remains as they are
-     * TODO: readIDs to alias ?
+     * The mapper only considers unique perfect matches, if a single kmer from the read matches 2 different nodes the read is marked as multi-mapping and the mapping is discarded.
+     * If a reads_to_remap set is passed to the function only the selected set of reads is mapped, the rest of the mappings remains as they are.
      *
      * To access the results see the reads_in_node and nodes_in_read collections in this class
      *
@@ -55,33 +61,29 @@ public:
     void map_reads(std::unordered_set<uint64_t> const &  reads_to_remap={});
 
     /** @brief Clears the reads_in_node and nodes_in_read collections and runs the map_reads() function with no selected set (maps all reads again)
-     *
      */
     void remap_all_reads();
 
     /**
-     * Cheks that the graph and datastore are the same and if they are assigns reads_in_node and nodes_in_read collections
+     * Checks that the graph and datastore are the same and if they are assigns reads_in_node and nodes_in_read collections
      *
-     * @param other
+     * @param other LinkedReadsMapper to compare with
      * @return
      */
     LinkedReadsMapper& operator=(const LinkedReadsMapper &other);
 
     /**
      * This is the same as map_reads() but using k63
-     * TODO: merge with map_reads()
-     * @param reads_to_remap
+     * @param reads_to_remap Optional argument of set of reads to map.
      */
     void map_reads63(std::unordered_set<uint64_t> const &  reads_to_remap={});
 
     /**
-     * Same as remap_all_reads but with k63
-     * TODO: merge with remap_all_reads()
+     * Clears the reads_in_node and nodes_in_read collections and remaps reads to regenerate them.
      */
     void remap_all_reads63();
 
-    /** @brief Clears the mappings for the nodes marked as deleted (sg.nodes[n].status==NodeStatus::Deleted) in the graph
-     *
+    /** @brief Clears the mappings for the nodes marked as deleted (sg.nodes[n].status==NodeStatus::Deleted) in the graph.
      */
     void remove_obsolete_mappings();
 
@@ -92,13 +94,12 @@ public:
 
     /** @brief Prints the count of pairs mapped.
      *
-     * Prints the count of pairs mapped where no end mapped, a single end mapped and both ends mapped and of
-     * those how many mapped to a single node.
+     * Prints the count of pairs mapped where no end mapped, a single end mapped and both ends mapped and of those how many mapped to a single node.
      */
     void print_status() const;
 
     /** @brief Given a nodeID returns a set of all tags mapped to that node.
-     * if there are no mapped tags returns an empty set
+     * If there are no mapped tags returns an empty set
      *
      * @param n nodeID
      * @return set of bsg10xtags
@@ -109,7 +110,7 @@ public:
      * Returns a tags_to_nodes type map, a collection of tags with an associated vector of nodes where each tag mapped
      * Each tag can map to more than one node ( multiple reads mapping to different nodes with the same tag ) map[tag] = [node1, node2, noden...]
      * TODO: tags should be plural
-     * @param min_nodes minimum ammount of nodes in the vector for a tag to be considered
+     * @param min_nodes minimum amount of nodes in the vector for a tag to be considered
      * @param selected_nodes mask to the nodes to be considered (optional)
      * @return map of tags to nodes
      */
@@ -173,7 +174,7 @@ public:
     std::vector<bool> read_direction_in_node;//0-> fw, 1->rev;
 
     /**
-     *  Collection of neightbouring nodes
+     *  Collection of neighbouring nodes
      *  Completed using compute_all_tag_neighbours()
      *  tag_neighbours[nodeID] = [collection of 10 determined neighbours (see TagNeighbour) ...]
      */

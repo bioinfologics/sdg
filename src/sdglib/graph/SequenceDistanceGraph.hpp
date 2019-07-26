@@ -20,13 +20,10 @@ class SequenceGraphPath;
 class SequenceSubGraph;
 class WorkSpace;
 /**
- * @brief Class representing sequence graphs
  *
- * This class represents the assembly problem as a flow formulation.
  * The most important features of this class are:
  *      - Nodes start from 1.
  *      - Nodes are signed to represent the direction in which they are being considered.
- *      - Nodes are saved in canonical form.
  */
 class SequenceDistanceGraph : public DistanceGraph {
 public:
@@ -81,6 +78,11 @@ public:
     std::string ls(int level=0,bool recursive=true);
 
     //=== I/O functions ===
+
+    /**
+     * @brief GFA loading function, it detects the format of the GFA file (1,2) and loads it appropiately
+     * @param filename Path of the gfa file to load
+     */
     void load_from_gfa(std::string filename);
 
     void load_from_gfa1(std::ifstream &gfaf, std::ifstream &fastaf);

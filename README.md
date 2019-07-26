@@ -5,27 +5,43 @@
 .. image:: https://travis-ci.org/bioinfologics/sdg.svg?branch=master
     :alt: https://travis-ci.org/bioinfologics/sdg
 
-=============
-SDG
-=============
+Sequence Distance Graph
+========================
 
-The Sequence Distance Graph (**SDG**) is a framework to work with genome graphs and sequencing data. It provides a workspace build around a Sequence Distance Graph, datastores for paired, linked and long reads, read mappers, and k-mer counters. It can be used to perform different types of sequence analyses.
+The Sequence Distance Graph (**SDG**) is a framework to work with genome graphs and sequencing data. It provides a workspace built around a Sequence Distance Graph, datastores for paired, linked and long reads, read mappers, and k-mer counters. It can be used to perform different types of sequence analyses.
 
-SDG can be used as a Python module through its SWIG API. R and Julia support are experimental and should not be used at this stage.
+SDG can be used as a Python module through its SWIG API. R and Julia support are experimental.
 
-The documentation is severily lacking right now. We're working on it. There is [SDG API documentation](https://bioinfologics.github.io/sdg/), although again it is lacking right now.
+.. warning:: SDG is undergoing major changes right now preparing for v1. Please come back in a few weeks.
 
-.. warning:: SDG is undergoing major changes right now preparing for v1. Please come back in a few weeks for serious usage.
 
-***************
 Installation
-***************
+#############
+
+The installation process requires the following dependencies:
+
+- GCC-6
+- CMake-3.14.3
+- SWIG-4.0.0 (For Python interface)
+- Python-3.7 (For Python interface)
+- Git LFS (For tests)
+
+The installation process consists of generating the configuration files using CMake and using make.
+
+.. code-block:: bash
+
+    git pull https://github.com/bioinfologics/sdg
+    cd sdg
+    mkdir build
+    cd build
+    cmake -DBUILD_PYTHON_INTERFACE=ON ../
+    make
+    make test
+    make install
 
 
-***********
 Usage
-***********
-
+#####
 
 Command line tools
 ########################
@@ -39,7 +55,7 @@ Tool to create datastores from raw reads. It also creates a special type of data
 sdg-workspace
 *************************
 
-Tool to create and modify WorSpaces. The WorkSpaces bind together a SequenceDistanceGraph, aditional DistanceGraphs defined over its nodes, read datastores (and their mappings) and k-mer count datastores. You will normally use WorkSpaces to save intermediate status of pipelines and such.
+Tool to create and modify WorSpaces. The WorkSpaces bind together a SequenceDistanceGraph, additional DistanceGraphs defined over its nodes, read datastores (and their mappings) and k-mer count datastores. You will normally use WorkSpaces to save intermediate status of pipelines and such.
 
 sdg-mapper
 *************************
@@ -59,7 +75,7 @@ Python module examples
 Example #1: short and long read hybrid assembly/scaffolding
 ****************************************************************
 
-For this example, you need to first have both the illumina and pacbio reads in datastores, and then create a starting WorkSpace with the DBG of the read sequences:
+For this example, you need to first have both the Illumina and Pacbio reads in datastores, and then create a starting WorkSpace with the DBG of the read sequences:
 
 .. code-block:: bash
 

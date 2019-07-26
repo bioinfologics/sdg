@@ -1,0 +1,5 @@
+WorkSpace
+===========
+
+.. doxygenclass:: WorkSpace
+    :members:
