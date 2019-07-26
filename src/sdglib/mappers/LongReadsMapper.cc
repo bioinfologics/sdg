@@ -7,6 +7,7 @@
 #include <cmath>
 #include <iomanip>      // std::setprecision
 #include <iterator>
+#include <sstream>
 #include <sdglib/utilities/OutputLog.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/utilities/io_helpers.hpp>
