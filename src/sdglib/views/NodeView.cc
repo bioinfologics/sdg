@@ -41,11 +41,11 @@ const std::vector<NodeDistanceView> NodeView::prev() const {
 }
 
 std::vector<uint16_t> NodeView::kmer_coverage(std::string kcovds_name, std::string kcovds_count_name) const {
-    return dg->sdg.ws.get_kmer_counts_datastore(kcovds_name).project_count(kcovds_count_name,sequence());
+    return dg->sdg.ws.get_kmer_counter(kcovds_name).project_count(kcovds_count_name,sequence());
 }
 
 std::vector<uint16_t> NodeView::kmer_coverage(int kcovds_idx, int kcovds_count_idx) const {
-    return dg->sdg.ws.kmer_counts[kcovds_count_idx].project_count(kcovds_count_idx,sequence());
+    return dg->sdg.ws.kmer_counters[kcovds_count_idx].project_count(kcovds_count_idx,sequence());
 }
 
 std::ostream &operator<<(std::ostream &os, const NodeView &nv) {

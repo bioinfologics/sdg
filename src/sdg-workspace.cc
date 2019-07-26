@@ -75,7 +75,7 @@ void make_workspace(int argc, char** argv){
         output_ws.paired_reads_datastores = w.paired_reads_datastores;
         output_ws.long_reads_datastores = w.long_reads_datastores;
         output_ws.journal = w.journal;
-        output_ws.kmer_counts = w.kmer_counts;
+        output_ws.kmer_counters = w.kmer_counters;
         output_ws.sdg = w.sdg;
         output_ws.distance_graphs = w.distance_graphs;
         auto op = output_ws.add_operation("Copy", toolname + git_version, std::string("Copied with sdg-workspace make from ")+ws_filename);
@@ -259,7 +259,7 @@ void add_counts(int argc, char **argv) {
     std::string output;
 
     try {
-        cxxopts::Options options("sdg-workspace add_counts", "SDG add KmerCounts to workspace");
+        cxxopts::Options options("sdg-workspace add_counts", "SDG add KmerCounter to workspace");
 
         options.add_options()
                 ("help", "Print help")
@@ -288,11 +288,11 @@ void add_counts(int argc, char **argv) {
         exit(1);
     }
     WorkSpace output_ws(ws_filename);
-    output_ws.add_operation("ADD_COUNTS", toolname + git_version, std::string("Added KmerCounts with sdg-workspace add_counts from ")+ws_filename);
-    const auto& names(output_ws.get_all_kmer_count_names());
+    output_ws.add_operation("ADD_COUNTS", toolname + git_version, std::string("Added KmerCounter with sdg-workspace add_counts from ")+ws_filename);
+    const auto& names(output_ws.list_kmer_counters());
     if (std::find(names.cbegin(), names.cend(), name) != names.cend()) {
-        output_ws.kmer_counts.emplace_back(output_ws, counts_filename);
-        output_ws.kmer_counts.back().name = name;
+        output_ws.kmer_counters.emplace_back(output_ws, counts_filename);
+        output_ws.kmer_counters.back().name = name;
         output_ws.dump_to_disk(output + ".bsgws");
     } else {
         throw std::runtime_error(name + " already exists in the workspace");

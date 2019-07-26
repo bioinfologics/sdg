@@ -154,7 +154,7 @@ SET(source_files ${source_files}
     src/sdglib/datastores/PairedReadsDatastore.cc
     src/sdglib/datastores/LinkedReadsDatastore.cc
     src/sdglib/datastores/LongReadsDatastore.cc
-    src/sdglib/datastores/KmerCounts.cc
+        src/sdglib/datastores/KmerCounter.cc
     src/sdglib/datastores/ReadPathsDatastore.cc
     src/sdglib/datastores/ReadSequenceBuffer.cc
     src/sdglib/mappers/LongReadsMapper.cc

@@ -67,10 +67,10 @@ void WorkSpace::dump_to_disk(std::string filename) {
     }
 
     // Kmer counts, keep these ones at the end of the workspace to make the workspaces editable by exteding the final part of the file
-    count = kmer_counts.size();
+    count = kmer_counters.size();
     of.write((char *) &count,sizeof(count));
     for (auto i = 0; i < count; i++) {
-        kmer_counts[i].write(of);
+        kmer_counters[i].write(of);
     }
 }
 
@@ -158,9 +158,9 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
 
     // Kmer counts datastore
     wsfile.read((char *) &count,sizeof(count));
-    kmer_counts.reserve(count);
+    kmer_counters.reserve(count);
     for (auto i = 0; i < count; i++) {
-        kmer_counts.emplace_back(*this,wsfile);
+        kmer_counters.emplace_back(*this,wsfile);
     }
 
 }
@@ -188,7 +188,7 @@ std::string WorkSpace::ls(int level,bool recursive) {
     }
     ss<<spacer<<"  Kmer Count Datastores: "<<paired_reads_datastores.size()<<std::endl;
     if (recursive){
-        for (auto &d:kmer_counts) ss<<d.ls(level+2,true);
+        for (auto &d:kmer_counters) ss<<d.ls(level+2,true);
     }
     return ss.str();
 }
@@ -346,14 +346,14 @@ JournalOperation &WorkSpace::add_operation(const std::string &name, const std::s
     return journal.back();
 }
 
-KmerCounts &WorkSpace::add_kmer_counts_datastore(const std::string &name, const uint8_t k, const KmerCountMode count_mode) {
-    if (kmer_counts.size() > MAX_WORKSPACE_VECTOR_SIZE) {
+KmerCounter &WorkSpace::add_kmer_counter(const std::string &name, const uint8_t k, KmerCountMode count_mode) {
+    if (kmer_counters.size() > MAX_WORKSPACE_VECTOR_SIZE) {
         throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
     }
-    kmer_counts.emplace_back(*this, name, k, count_mode);
+    kmer_counters.emplace_back(*this, name, k, count_mode);
     // Should edit the WS here to include the new count
 
-    return kmer_counts.back();
+    return kmer_counters.back();
 }
 
 PairedReadsDatastore &WorkSpace::get_paired_reads_datastore(const std::string &name) {
@@ -385,25 +385,18 @@ DistanceGraph &WorkSpace::get_distance_graph(const std::string &name) {
     throw std::runtime_error("There are no DistanceGraphs named: " + name);
 }
 
-KmerCounts &WorkSpace::get_kmer_counts_datastore(const std::string &name) {
-    for (auto &ds : kmer_counts) {
+KmerCounter &WorkSpace::get_kmer_counter(const std::string &name) {
+    for (auto &ds : kmer_counters) {
         if (ds.name == name) return ds;
     }
-    throw std::runtime_error("Couldn't find a KmerCounts named: " + name);
-}
-
-JournalOperation &WorkSpace::get_operation(const std::string &name) {
-    for (auto &op : journal) {
-        if (op.name == name) return op;
-    }
-    throw std::runtime_error("Couldn't find the JournalOperation named: " + name);
+    throw std::runtime_error("Couldn't find a KmerCounter named: " + name);
 }
 
 WorkSpace::WorkSpace(const std::string &filename) : sdg(*this) {
     linked_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
     paired_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
     long_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
-    kmer_counts.reserve(MAX_WORKSPACE_VECTOR_SIZE);
+    kmer_counters.reserve(MAX_WORKSPACE_VECTOR_SIZE);
     load_from_disk(filename);
 }
 
@@ -411,12 +404,44 @@ WorkSpace::WorkSpace() : sdg(*this) {
     linked_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
     paired_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
     long_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
-    kmer_counts.reserve(MAX_WORKSPACE_VECTOR_SIZE);
+    kmer_counters.reserve(MAX_WORKSPACE_VECTOR_SIZE);
 }
 
-std::vector<std::string> WorkSpace::get_all_kmer_count_names() {
+std::vector<std::string> WorkSpace::list_distance_graphs() {
     std::vector<std::string> names;
-    for (const auto &kc: kmer_counts) {
+    for (const auto &d: distance_graphs) {
+        names.emplace_back(d.name);
+    }
+    return names;
+}
+
+std::vector<std::string> WorkSpace::list_paired_reads_datastores() {
+    std::vector<std::string> names;
+    for (const auto &p: paired_reads_datastores) {
+        names.emplace_back(p.name);
+    }
+    return names;
+}
+
+std::vector<std::string> WorkSpace::list_long_reads_datastores() {
+    std::vector<std::string> names;
+    for (const auto &l: long_reads_datastores) {
+        names.emplace_back(l.name);
+    }
+    return names;
+}
+
+std::vector<std::string> WorkSpace::list_linked_reads_datastores() {
+    std::vector<std::string> names;
+    for (const auto &li: linked_reads_datastores) {
+        names.emplace_back(li.name);
+    }
+    return names;
+}
+
+std::vector<std::string> WorkSpace::list_kmer_counters() {
+    std::vector<std::string> names;
+    for (const auto &kc: kmer_counters) {
         names.emplace_back(kc.name);
     }
     return names;

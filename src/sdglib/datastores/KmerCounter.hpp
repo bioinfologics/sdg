@@ -15,13 +15,13 @@ class WorkSpace;
 class PairedReadsDatastore;
 class LinkedReadsDatastore;
 class LongReadsDatastore;
-class KmerCounts {
+class KmerCounter {
 public:
-    KmerCounts (const WorkSpace &_ws, const std::string &_name, uint8_t _k, KmerCountMode _count_mode=Canonical):ws(_ws),k(_k), name(_name),count_mode(_count_mode){
+    KmerCounter (const WorkSpace &_ws, const std::string &_name, uint8_t _k, KmerCountMode _count_mode=Canonical):ws(_ws),k(_k), name(_name),count_mode(_count_mode){
         index_sdg();
     };
-    KmerCounts (const WorkSpace &ws, std::ifstream &infile);
-    KmerCounts (const WorkSpace &_ws, const std::string &filename):ws(_ws) {
+    KmerCounter (const WorkSpace &ws, std::ifstream &infile);
+    KmerCounter (const WorkSpace &_ws, const std::string &filename):ws(_ws) {
         std::ifstream count_file(filename);
         read_counts(count_file);
     }
@@ -30,11 +30,11 @@ public:
 
     void index_sdg();
 
-    bool operator==(const KmerCounts &o) const {
+    bool operator==(const KmerCounter &o) const {
         return (std::tie(k, kindex, count_names, counts) == std::tie(o.k, o.kindex, o.count_names, o.counts));
     }
 
-    KmerCounts& operator=(const KmerCounts &o) {
+    KmerCounter& operator=(const KmerCounter &o) {
         if ( &o == this) return *this;
 
         counts = o.counts;

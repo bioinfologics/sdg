@@ -16,7 +16,7 @@
 
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
 #include <sdglib/workspace/Journal.hpp>
-#include <sdglib/datastores/KmerCounts.hpp>
+#include <sdglib/datastores/KmerCounter.hpp>
 
 class WorkSpace {
 
@@ -32,21 +32,26 @@ public:
     void load_from_disk(std::string filename,bool log_only=false);
 
     JournalOperation &add_operation(const std::string &name, const std::string &tool, const std::string &detail);
+
+    DistanceGraph& add_distance_graph(const DistanceGraph &dg, const std::string &name="");
     PairedReadsDatastore& add_paired_reads_datastore(const std::string &filename, const std::string &name="");
     LinkedReadsDatastore& add_linked_reads_datastore(const std::string &filename, const std::string &name="");
     LongReadsDatastore& add_long_reads_datastore(const std::string &filename, const std::string &name="");
-    DistanceGraph& add_distance_graph(const DistanceGraph &dg, const std::string &name="");
-    KmerCounts& add_kmer_counts_datastore(const std::string &name, const uint8_t k, KmerCountMode count_mode=KmerCountMode::Canonical);
+    KmerCounter& add_kmer_counter(const std::string &name, const uint8_t k,
+                                  KmerCountMode count_mode = KmerCountMode::Canonical);
 
 
     PairedReadsDatastore& get_paired_reads_datastore(const std::string &name);
     LinkedReadsDatastore& get_linked_reads_datastore(const std::string &name);
     LongReadsDatastore& get_long_reads_datastore(const std::string &name);
     DistanceGraph& get_distance_graph(const std::string &name);
-    KmerCounts& get_kmer_counts_datastore(const std::string &name);
-    JournalOperation& get_operation(const std::string &name);
+    KmerCounter& get_kmer_counter(const std::string &name);
 
-    std::vector<std::string> get_all_kmer_count_names();
+    std::vector<std::string> list_distance_graphs();
+    std::vector<std::string> list_paired_reads_datastores();
+    std::vector<std::string> list_linked_reads_datastores();
+    std::vector<std::string> list_long_reads_datastores();
+    std::vector<std::string> list_kmer_counters();
 
     //general operations
 
@@ -63,7 +68,7 @@ public:
     std::vector<PairedReadsDatastore> paired_reads_datastores;
     std::vector<LinkedReadsDatastore> linked_reads_datastores;
     std::vector<LongReadsDatastore> long_reads_datastores;
-    std::vector<KmerCounts> kmer_counts;
+    std::vector<KmerCounter> kmer_counters;
 
     std::vector<DistanceGraph> distance_graphs;
 

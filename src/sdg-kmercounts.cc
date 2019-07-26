@@ -29,10 +29,10 @@ void add_kmer_count(int argc, char **argv) {
     std::string counts_filename;
     std::string name;
     try {
-        cxxopts::Options options(program_name + " add", "SDG add a KmerCount to a KmerCounts file");
+        cxxopts::Options options(program_name + " add", "SDG add a KmerCount to a KmerCounter file");
 
         options.add_options()
-                ("n,name", "KmerCounts name", cxxopts::value(name))
+                ("n,name", "KmerCounter name", cxxopts::value(name))
                 ("c,counts_file", "input counts file (used for index)", cxxopts::value(counts_filename))
                 ("f,fastq", "input reads (multi)", cxxopts::value(fastq_files))
                 ("d,datastore", "input datastore", cxxopts::value(ds_filename))
@@ -69,7 +69,7 @@ void add_kmer_count(int argc, char **argv) {
     }
 
     WorkSpace ws;
-    KmerCounts kc(ws, counts_filename);
+    KmerCounter kc(ws, counts_filename);
     if (!fastq_files.empty()) {
         kc.add_count(name, fastq_files);
     }
@@ -99,12 +99,12 @@ void make_kmer_counts(int argc, char **argv) {
     std::string counts_filename;
     std::string name;
     try {
-        cxxopts::Options options(program_name + " make", "SDG make KmerCounts");
+        cxxopts::Options options(program_name + " make", "SDG make KmerCounter");
 
         options.add_options()
                 ("w,workspace", "input workspace (used for index)", cxxopts::value(ws_filename))
                 ("g,gfa", "input gfa file (used for index)", cxxopts::value(gfa_filename))
-                ("n,name", "KmerCounts name", cxxopts::value(name))
+                ("n,name", "KmerCounter name", cxxopts::value(name))
                 ("c,counts_file", "input counts file (used for index)", cxxopts::value(counts_filename))
                 ("f,fastq", "input reads (multi)", cxxopts::value(fastq_files))
                 ("d,datastore", "input datastore", cxxopts::value(ds_filename))
@@ -152,7 +152,7 @@ void make_kmer_counts(int argc, char **argv) {
             SequenceDistanceGraph sg(ws);
             sg.load_from_gfa(gfa_filename);
         }
-        KmerCounts kc(ws, name, k);
+        KmerCounter kc(ws, name, k);
         if (!fastq_files.empty()) {
             kc.add_count(name, fastq_files);
         }
@@ -171,7 +171,7 @@ void make_kmer_counts(int argc, char **argv) {
         kc.write_counts(output_file);
     } else if (!counts_filename.empty()) {
         WorkSpace ws;
-        KmerCounts kc(ws, counts_filename);
+        KmerCounter kc(ws, counts_filename);
         if (!fastq_files.empty()) {
             kc.add_count(name, fastq_files);
         }
@@ -195,11 +195,11 @@ void stats_kmer_counts(int argc, char **argv) {
     std::string filename;
     try {
 
-        cxxopts::Options options(program_name +" stats", "SDG KmerCounts stats");
+        cxxopts::Options options(program_name +" stats", "SDG KmerCounter stats");
 
         options.add_options()
                 ("help", "Print help")
-                ("n,name", "KmerCounts name", cxxopts::value<std::string>(filename));
+                ("n,name", "KmerCounter name", cxxopts::value<std::string>(filename));
 
         auto newargc=argc-1;
         auto newargv=&argv[1];
@@ -210,7 +210,7 @@ void stats_kmer_counts(int argc, char **argv) {
         }
 
         if (result.count("name")==0) {
-            throw cxxopts::OptionException(" please specify KmerCounts file");
+            throw cxxopts::OptionException(" please specify KmerCounter file");
         }
 
 

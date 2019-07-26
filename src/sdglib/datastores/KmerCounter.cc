@@ -2,18 +2,18 @@
 // Created by Bernardo Clavijo (EI) on 2019-06-25.
 //
 
-#include "KmerCounts.hpp"
+#include "KmerCounter.hpp"
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sstream>
 
-KmerCounts::KmerCounts(const WorkSpace &_ws, std::ifstream &infile): ws(_ws) {
+KmerCounter::KmerCounter(const WorkSpace &_ws, std::ifstream &infile): ws(_ws) {
     read(infile);
 }
 
-std::string KmerCounts::ls(int level, bool recursive) {
+std::string KmerCounter::ls(int level, bool recursive) {
     std::stringstream ss;
     std::string spacer(2 * level, ' ');
-    ss << spacer << "KmerCounts "<< name <<": index with "<<kindex.size()<<" "<<std::to_string(k)<<"-mers"<< std::endl;
+    ss << spacer << "KmerCounter "<< name <<": index with "<<kindex.size()<<" "<<std::to_string(k)<<"-mers"<< std::endl;
     ss << spacer << "  Counts: " << counts.size() << std::endl;
     for (auto i=0;i<counts.size();++i) {
         uint64_t total=0;
@@ -23,7 +23,7 @@ std::string KmerCounts::ls(int level, bool recursive) {
     return ss.str();
 }
 
-void KmerCounts::index_sdg() {
+void KmerCounter::index_sdg() {
     //add all k-mers from SDG
     counts.clear();
     count_names.clear();
@@ -57,7 +57,7 @@ void KmerCounts::index_sdg() {
     kindex.resize(c.size());
 }
 
-void KmerCounts::add_count(const std::string &count_name, const std::vector<std::string> &filenames, bool fastq) {
+void KmerCounter::add_count(const std::string &count_name, const std::vector<std::string> &filenames, bool fastq) {
     if (std::find(count_names.cbegin(), count_names.cend(), count_name) != count_names.cend()) {
         throw std::runtime_error(count_name + " already exists, please use a different name");
     }
@@ -151,7 +151,7 @@ void KmerCounts::add_count(const std::string &count_name, const std::vector<std:
 
 /** This template is used to do the counts from the datastores, it is templatised here rather than on the header **/
 template<class T>
-void add_count_to_kds( KmerCounts & kds, const std::string & count_name, const T & datastore) {
+void add_count_to_kds( KmerCounter & kds, const std::string & count_name, const T & datastore) {
     if (std::find(kds.count_names.cbegin(), kds.count_names.cend(), count_name) != kds.count_names.cend()) {
         throw std::runtime_error(count_name + " already exists, please use a different name");
     }
@@ -218,17 +218,17 @@ void add_count_to_kds( KmerCounts & kds, const std::string & count_name, const T
                                     << " kmers found" << std::endl;
 }
 
-void KmerCounts::add_count(const std::string & count_name, const PairedReadsDatastore & datastore){
+void KmerCounter::add_count(const std::string & count_name, const PairedReadsDatastore & datastore){
     add_count_to_kds(*this,count_name,datastore);
 }
-void KmerCounts::add_count(const std::string & count_name, const LinkedReadsDatastore & datastore){
+void KmerCounter::add_count(const std::string & count_name, const LinkedReadsDatastore & datastore){
     add_count_to_kds(*this,count_name,datastore);
 }
-void KmerCounts::add_count(const std::string & count_name, const LongReadsDatastore & datastore){
+void KmerCounter::add_count(const std::string & count_name, const LongReadsDatastore & datastore){
     add_count_to_kds(*this,count_name,datastore);
 }
 
-std::vector<uint16_t> KmerCounts::project_count(const uint16_t count_idx, const std::string &s) {
+std::vector<uint16_t> KmerCounter::project_count(const uint16_t count_idx, const std::string &s) {
     std::vector<uint64_t> skmers;
 
     //StringKMerFactory skf(k);
@@ -254,7 +254,7 @@ std::vector<uint16_t> KmerCounts::project_count(const uint16_t count_idx, const 
     return kcov;
 }
 
-std::vector<uint16_t> KmerCounts::project_count(const std::string &count_name, const std::string &s) {
+std::vector<uint16_t> KmerCounter::project_count(const std::string &count_name, const std::string &s) {
     auto cnitr=std::find(count_names.begin(),count_names.end(),count_name);
     if (cnitr!=count_names.end()){
         return project_count(cnitr-count_names.begin(),s);
@@ -262,14 +262,14 @@ std::vector<uint16_t> KmerCounts::project_count(const std::string &count_name, c
     return {};
 }
 
-void KmerCounts::read(std::ifstream &ws_file) {
+void KmerCounter::read(std::ifstream &ws_file) {
     std::string filepath;
     sdglib::read_string(ws_file, filepath);
     std::ifstream count_file(filepath);
     read_counts(count_file);
 }
 
-void KmerCounts::read_counts(std::ifstream &count_file) {
+void KmerCounter::read_counts(std::ifstream &count_file) {
     count_file.read((char *) &k, sizeof(k));
     count_file.read((char *) &count_mode, sizeof(count_mode));
     sdglib::read_string(count_file,name);
@@ -279,18 +279,18 @@ void KmerCounts::read_counts(std::ifstream &count_file) {
 
 }
 
-void KmerCounts::write(std::ofstream &output_file) const {
+void KmerCounter::write(std::ofstream &output_file) const {
     sdglib::write_string(output_file, name+".count");
     std::ofstream count_file(name+".count");
     write_counts(count_file);
 }
-void KmerCounts::write(std::fstream &output_file) const {
+void KmerCounter::write(std::fstream &output_file) const {
     sdglib::write_string(output_file, name+".count");
     std::ofstream count_file(name+".count");
     write_counts(count_file);
 }
 
-void KmerCounts::write_counts(std::ofstream &count_file) const {
+void KmerCounter::write_counts(std::ofstream &count_file) const {
     count_file.write((char *) &k, sizeof(k));
     count_file.write((char *) &count_mode, sizeof(count_mode));
     sdglib::write_string(count_file,name);
@@ -299,11 +299,11 @@ void KmerCounts::write_counts(std::ofstream &count_file) const {
     sdglib::write_flat_vectorvector(count_file,counts);
 }
 
-std::vector<std::string> KmerCounts::get_count_names() {
+std::vector<std::string> KmerCounter::get_count_names() {
     return count_names;
 }
 
-const std::vector<uint16_t> &KmerCounts::get_count_by_name(const std::string &name) const {
+const std::vector<uint16_t> &KmerCounter::get_count_by_name(const std::string &name) const {
     for (int i = 0; i < count_names.size(); i++) {
         if (count_names[i] == name) {
             return counts[i];

@@ -1,5 +1,5 @@
 #ifdef SWIGR
-    %module rsdg
+%module rsdg
 #endif
 
 #ifdef SWIGPYTHON
@@ -39,7 +39,7 @@
 #include "sdglib/datastores/LinkedReadsDatastore.hpp"
 #include "sdglib/datastores/LongReadsDatastore.hpp"
 #include "sdglib/datastores/ReadSequenceBuffer.hpp"
-#include "sdglib/datastores/KmerCounts.hpp"
+#include "sdglib/datastores/KmerCounter.hpp"
 
 #include "sdglib/indexers/UniqueKmerIndex.hpp"
 
@@ -172,7 +172,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %include "sdglib/datastores/PairedReadsDatastore.hpp"
 %include "sdglib/datastores/LinkedReadsDatastore.hpp"
 %include "sdglib/datastores/LongReadsDatastore.hpp"
-%include "sdglib/datastores/KmerCounts.hpp"
+%include "sdglib/datastores/KmerCounter.hpp"
 %include "sdglib/datastores/ReadSequenceBuffer.hpp"
 
 %include "sdglib/mappers/LongReadsMapper.hpp"
@@ -214,9 +214,9 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %ignore std::vector<LongReadsDatastore>::resize;
 %template(vectorLongReadsDatastore) std::vector<LongReadsDatastore>;
 
-%ignore std::vector<KmerCounts>::vector(size_type);
-%ignore std::vector<KmerCounts>::resize;
-%template(vectorKmerCountsDatastore) std::vector<KmerCounts>;
+%ignore std::vector<KmerCounter>::vector(size_type);
+%ignore std::vector<KmerCounter>::resize;
+%template(vectorKmerCountsDatastore) std::vector<KmerCounter>;
 
 %template(vectorKmerCount) std::vector<KmerCount>;
 
