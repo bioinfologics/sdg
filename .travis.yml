@@ -2,9 +2,23 @@ language: c++
 
 sudo: false
 
-matrix:
+jobs:
   include:
-    - os: linux
+    - stage: compile osx
+      os: osx
+      osx_image: xcode10.1
+      env:
+        - CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 -DBUILD_PYTHON_INTERFACE=ON"
+      deploy:
+        provider: releases
+        api_key: $GITHUB_TOKEN
+        draft: true
+        skip_cleanup: true
+        file: build/sdg-${TRAVIS_OS_NAME}.tar.gz
+        on:
+          all_branches: true
+    - stage: compile linux
+      os: linux
       addons:
         apt:
           sources:
@@ -24,16 +38,24 @@ matrix:
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && GCOV=gcov-6 && DEPLOY=true"
         - CMAKE_OPTIONS="-DDOXYGEN_EXECUTABLE=${HOME}/bin/doxygen -DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 -DBUILD_PYTHON_INTERFACE=ON -DBUILD_R_INTERFACE=OFF -DBUILD_COV=ON -DBUILD_DOC=ON"
-    - os: osx
-      osx_image: xcode10.1
+      deploy:
+        provider: releases
+        api_key: $GITHUB_TOKEN
+        draft: false
+        skip_cleanup: true
+        file: build/sdg-${TRAVIS_OS_NAME}.tar.gz
+        on:
+          tags: true
+
 before_install:
-    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sudo softwareupdate -i "Command Line Tools (macOS High Sierra version 10.13) for Xcode-9.4"; brew install git-lfs; git lfs install; fi
-    - eval "${MATRIX_EVAL}"
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install git-lfs python3 gcc@6; git lfs install; fi
+  - eval "${MATRIX_EVAL}"
 
 before_script:
   - git lfs pull
 
 script:
+  - date > file-$TRAVIS_OS_NAME.txt
   - .travis/build.sh
 
 install:
@@ -46,7 +68,7 @@ install:
   - .travis/install.sh
 
 after_success:
-    # Creating report
+  # Creating report
   - lcov --gcov-tool=gcov-6 --directory . --capture --output-file coverage.info # capture coverage info
   - lcov --gcov-tool=gcov-6 --remove coverage.info '/usr/*' --output-file coverage.info # filter out system
   - lcov --gcov-tool=gcov-6 --remove coverage.info '*deps*' --output-file coverage.info # filter out deps
