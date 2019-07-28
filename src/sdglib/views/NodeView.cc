@@ -83,7 +83,7 @@ std::vector<LongReadMapping> NodeView::get_long_mappings(std::string datastore_n
     for (auto lrid:get_long_reads(datastore_name)){
         for(auto &m:mapper.get_raw_mappings_from_read(lrid)){
             if (m.node==id) mappings.emplace_back(id,m.read_id,m.nStart,m.nEnd,m.qStart,m.qEnd,m.score);
-            if (m.node==id) mappings.emplace_back(id,m.read_id,size()-m.nStart,size()-m.nEnd,m.qStart,m.qEnd,m.score);
+            if (m.node==-id) mappings.emplace_back(id,m.read_id,size()-m.nStart,size()-m.nEnd,m.qStart,m.qEnd,m.score);
         }
     }
     std::sort(mappings.begin(),mappings.end());
