@@ -10,3 +10,5 @@ make all -j8
 echo "" > ./docs/html/.nojekyll
 echo "" > ./doc/sphinx/.nojekyll
 make test
+
+tar cz sdg-* libsdg.* pysdg/_pysdg.so pysdg/__init__.py pysdg/pysdg.py > sdg-${TRAVIS_OS_NAME}.tar.gz
