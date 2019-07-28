@@ -260,6 +260,10 @@ void SequenceDistanceGraph::load_from_gfa(std::string filename) {
 
     std::ifstream fastaf(fasta_filename);
     if (!fastaf) {
+        fasta_filename=filename.substr(0,filename.size()-4)+".fa";
+        fastaf=std::ifstream(fasta_filename);
+    }
+    if (!fastaf) {
         std::cerr << "Failed to open " << fasta_filename <<": " << strerror(errno);
         throw std::invalid_argument("Can't read graph fasta file");
     }
