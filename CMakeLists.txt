@@ -290,7 +290,7 @@ IF(BUILD_DOC)
         message("Doxygen build started")
         # note the option ALL which allows to build the docs together with the application
         add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
-                           DEPENDS ${header_files} README.md src/sdglib/README.md src/sdglib/workspace/README.md
+                           DEPENDS ${header_files} README.rst src/sdglib/README.rst src/sdglib/workspace/README.rst
                            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
                            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                            MAIN_DEPENDENCY Doxyfile
