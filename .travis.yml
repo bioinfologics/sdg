@@ -38,14 +38,22 @@ jobs:
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && GCOV=gcov-6 && DEPLOY=true"
         - CMAKE_OPTIONS="-DDOXYGEN_EXECUTABLE=${HOME}/bin/doxygen -DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 -DBUILD_PYTHON_INTERFACE=ON -DBUILD_R_INTERFACE=OFF -DBUILD_COV=ON -DBUILD_DOC=ON"
+
       deploy:
-        provider: releases
+        - provider: releases
         api_key: $GITHUB_TOKEN
         draft: false
         skip_cleanup: true
         file: build/sdg-${TRAVIS_OS_NAME}.tar.gz
         on:
           tags: true
+        - provider: pages
+        skip_cleanup: true
+        github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
+        local_dir: build/doc/sphinx
+        on:
+          branch: master
+          condition: $DEPLOY = true
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install git-lfs python3 gcc@6; git lfs install; fi
@@ -75,13 +83,3 @@ after_success:
   - lcov --gcov-tool=gcov-6 --list coverage.info #debug info
   # Uploading report to CodeCov
   - bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
-
-
-deploy:
-  provider: pages
-  skip_cleanup: true
-  github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
-  local_dir: build/doc/sphinx
-  on:
-    branch: master
-    condition: $DEPLOY = true
