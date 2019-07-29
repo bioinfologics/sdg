@@ -45,7 +45,7 @@ jobs:
         skip_cleanup: true
         file: build/sdg-${TRAVIS_OS_NAME}.tar.gz
         on:
-          all_branches: true
+          tags: true
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install git-lfs python3 gcc@6; git lfs install; fi
