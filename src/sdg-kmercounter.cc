@@ -90,7 +90,7 @@ void add_kmer_count(int argc, char **argv) {
 }
 
 void make_kmer_counts(int argc, char **argv) {
-    int k(27);
+    int k(31);
     std::vector<std::string> fastq_files;
     std::string output;
     std::string gfa_filename;
@@ -99,16 +99,18 @@ void make_kmer_counts(int argc, char **argv) {
     std::string counts_filename;
     std::string name;
     try {
-        cxxopts::Options options(program_name + " make", "SDG make KmerCounter");
+        cxxopts::Options options(program_name + " make",
+                "SDG make KmerCounter\n"
+                "A counts file requires a kmer index, this can be specified from either a workspace, a gfa or another counts file");
 
         options.add_options()
+                ("k", "kmer length", cxxopts::value(k)->default_value("31"))
                 ("w,workspace", "input workspace (used for index)", cxxopts::value(ws_filename))
                 ("g,gfa", "input gfa file (used for index)", cxxopts::value(gfa_filename))
-                ("n,name", "KmerCounter name", cxxopts::value(name))
                 ("c,counts_file", "input counts file (used for index)", cxxopts::value(counts_filename))
                 ("f,fastq", "input reads (multi)", cxxopts::value(fastq_files))
                 ("d,datastore", "input datastore", cxxopts::value(ds_filename))
-                ("k", "kmer length", cxxopts::value(k)->default_value("27"))
+                ("n,name", "KmerCounter name", cxxopts::value(name))
                 ("o,output", "output counts prefix", cxxopts::value(output))
                 ("help", "Print help");
         auto newargc=argc-1;
