@@ -407,23 +407,7 @@ install(TARGETS
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib)
-install(DIRECTORY src/sdglib
-        DESTINATION include)
-
-IF (BUILD_JULIA_INTERFACE)
-    message("Building Julia wrapper")
-    #message("Using cmake prefix path: ${JlCxx_DIR}/lib/cmake/JlCxx")
-    #message("Using jlcxx include: ${JlCxx_DIR}/include")
-    #include_directories(${JlCxx_DIR}/include)
-    find_package(JlCxx REQUIRED)
-    get_target_property(JlCxx_location JlCxx::cxxwrap_julia LOCATION)
-    get_filename_component(JlCxx_location ${JlCxx_location} DIRECTORY)
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${JlCxx_location}")
-    message(STATUS "Founc JlCxx at ${JlCxx_location}")
-        add_library(sdgjl SHARED interfaces/JuliaSDG.cpp)
-        target_link_libraries(sdgjl sdg)
-        target_link_libraries(sdgjl JlCxx::cxxwrap_julia)
-    install(TARGETS sdgjl LIBRARY DESTINATION sdgjl ARCHIVE DESTINATION sdgjl RUNTIME DESTINATION sdgjl)
-ENDIF()
+install(DIRECTORY src/sdglib DESTINATION include
+        FILES_MATCHING PATTERN "*.hpp")
 
 
