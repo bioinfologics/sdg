@@ -249,6 +249,9 @@ void SequenceDistanceGraph::load_from_gfa(std::string filename) {
     if (filename.size()>4 and filename.substr(filename.size()-4,4)==".gfa"){
         fasta_filename=filename.substr(0,filename.size()-4)+".fasta";
     }
+    else if (filename.size()>5 and filename.substr(filename.size()-5,5)==".gfa2"){
+        fasta_filename=filename.substr(0,filename.size()-5)+".fasta";
+    }
     else throw std::invalid_argument("Filename of the gfa input does not end in gfa, it ends in '"+filename.substr(filename.size()-4,4)+"'");
 
     std::ifstream gfaf(filename);
@@ -260,7 +263,7 @@ void SequenceDistanceGraph::load_from_gfa(std::string filename) {
 
     std::ifstream fastaf(fasta_filename);
     if (!fastaf) {
-        fasta_filename=filename.substr(0,filename.size()-4)+".fa";
+        fasta_filename=fasta_filename.substr(0,fasta_filename.size()-6)+".fa";
         fastaf=std::ifstream(fasta_filename);
     }
     if (!fastaf) {
