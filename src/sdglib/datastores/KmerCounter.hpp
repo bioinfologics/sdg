@@ -71,7 +71,7 @@ public:
 
 
     const std::vector<uint16_t> & get_count_by_name(const std::string &name) const;
-    std::vector<std::string> get_count_names ();
+    std::vector<std::string> list_names ();
 
     std::vector<uint64_t> kindex;
     std::vector<std::string> count_names;
