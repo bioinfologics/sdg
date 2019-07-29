@@ -43,11 +43,9 @@ public:
     void make_rc();
 
     friend std::ostream &operator<<(std::ostream &os, const Node &node) {
-        if (node.sequence.length() > 20) {
-            os << node.sequence.substr(0, 20) << " ... " << node.sequence.substr(node.sequence.length() - 20, 20);
-        } else {
-            os << node.sequence;
-        }
+        os << "Node ";
+        if (node.status == NodeStatus::Deleted) os << "(deleted) ";
+        os << node.sequence.size() <<" bp";
         return os;
     }
 

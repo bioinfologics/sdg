@@ -26,7 +26,7 @@ public:
     };
     void merge(const ReadMapping &other){};
     friend std::ostream& operator<<(std::ostream& os, const ReadMapping& rm) {
-        os << rm.node << "\t" << rm.unique_matches;
+        os << "ReadMapping " << rm.node << "\t" << rm.unique_matches;
         return os;
     }
 

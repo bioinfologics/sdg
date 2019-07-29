@@ -634,7 +634,7 @@ LinkedReadsDatastore &LinkedReadsDatastore::operator=(LinkedReadsDatastore const
 }
 
 std::ostream &operator<<(std::ostream &os, const LinkedReadsDatastore &lrds) {
-    os << lrds.ls();
+    os <<"Linked Reads Datastore "<< (lrds.name.empty() ? "unnamed":lrds.name) <<": "<<lrds.size()<<" reads";
     return os;
 }
 

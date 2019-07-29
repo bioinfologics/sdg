@@ -816,6 +816,6 @@ k(o.k)
 {}
 
 std::ostream &operator<<(std::ostream &os, const LongReadsMapper &lorm) {
-    os << lorm.ls() << std::endl;
+    os << "Long Reads Mapper: "<<lorm.mappings.size()<<" raw mappings";
     return os;
 }

@@ -196,6 +196,7 @@ void SequenceDistanceGraph::write(std::ofstream & output_file) {
     count=nodes.size();
 
     output_file.write((char *) &count,sizeof(count));
+    sdglib::write_string(output_file, name);
     for (auto &n:nodes){
         output_file.write((char *) &n.status,sizeof(n.status));
         count=n.sequence.size();
@@ -209,6 +210,7 @@ void SequenceDistanceGraph::write(std::ofstream & output_file) {
 void SequenceDistanceGraph::read(std::ifstream & input_file) {
     uint64_t count;
     input_file.read((char *) &count,sizeof(count));
+    sdglib::read_string(input_file, name);
     nodes.clear();
     nodes.reserve(count);
     uint64_t active=0;
@@ -880,6 +882,11 @@ void SequenceDistanceGraph::load_from_gfa2(std::ifstream &gfaf, std::ifstream &f
 }
 
 std::ostream &operator<<(std::ostream &os, const SequenceDistanceGraph &sdg) {
-    os << sdg.ls() << std::endl;
+    uint64_t linkcount = 0;
+    for (auto lv:sdg.links)
+        for (auto l:lv)
+            if (llabs(l.source) <= llabs(l.dest)) ++linkcount;
+
+    os <<"SequenceDistanceGraph " << sdg.name <<": "<< sdg.count_active_nodes() <<" nodes, " << linkcount << " links";
     return os;
 }

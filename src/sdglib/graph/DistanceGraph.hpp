@@ -235,10 +235,7 @@ public:
     std::vector<NodeView> get_all_nodeviews(bool include_disconnected=true);
     DistanceGraph& operator=(const DistanceGraph &o);
 
-    friend std::ostream& operator<<(std::ostream &os, const DistanceGraph &dg) {
-        os << dg.ls() << std::endl;
-        return os;
-    }
+    friend std::ostream& operator<<(std::ostream &os, const DistanceGraph &dg);
 
     void read(std::ifstream &input_file);
     void write(std::ofstream &output_file);
@@ -251,7 +248,7 @@ public:
      */
     std::vector<std::vector<Link>> links;
 
-    std::string name;
+    std::string name="SDG";
 
 };
 #endif //BSG_DISTANCEGRAPH_HPP

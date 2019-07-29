@@ -587,3 +587,13 @@ std::vector<NodeView> DistanceGraph::get_all_nodeviews(bool include_disconnected
     }
     return nvs;
 }
+
+std::ostream &operator<<(std::ostream &os, const DistanceGraph &dg) {
+    uint64_t linkcount=0;
+    for (auto lv:dg.links)
+        for (auto l:lv)
+            if (llabs(l.source) <= llabs(l.dest)) ++linkcount;
+
+    os << "DistanceGraph "<< (dg.name.empty() ? "unnamed" : dg.name )<<" ("<<dg.sdg.name<<"): "<<linkcount<<" links";
+    return os;
+}

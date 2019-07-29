@@ -451,7 +451,7 @@ std::vector<std::string> WorkSpace::list_linked_reads_datastores() {
 }
 
 std::ostream &operator<<(std::ostream &os, const WorkSpace &ws) {
-    os << ws.ls() << std::endl;
+    os << "WorkSpace @ " << &ws;
     return os;
 }
 

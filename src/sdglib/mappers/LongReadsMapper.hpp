@@ -41,7 +41,7 @@ struct ReadCacheItem {
     ReadCacheItem(uint64_t i, std::string &sequence): id(i), seq(sequence) {}
 
     friend std::ostream& operator<<(std::ostream& os, const ReadCacheItem& read) {
-        os << read.id;
+        os << "Read: " << read.id;
         return os;
     }
 

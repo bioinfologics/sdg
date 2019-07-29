@@ -345,7 +345,7 @@ std::string LongReadsDatastore::ls(int level, bool recursive) const {
 }
 
 std::ostream &operator<<(std::ostream &os, const LongReadsDatastore &lords) {
-    os << lords.ls() << std::endl;
+    os <<"Long Reads Datastore "<< (lords.name.empty() ? "unnamed" : lords.name ) <<": "<<lords.size()<<" reads";
     return os;
 }
 

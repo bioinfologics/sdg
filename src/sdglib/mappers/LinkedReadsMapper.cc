@@ -608,7 +608,10 @@ void LinkedReadsMapper::read_tag_neighbours(std::string filename) {
 }
 
 std::ostream &operator<<(std::ostream &os, const LinkedReadsMapper &lirm) {
-    os << lirm.ls() << std::endl;
+    uint64_t mapped=0,unmapped=0;
+    for (auto &rtn:lirm.read_to_node) if (rtn!=0) ++mapped; else ++unmapped;
+    --unmapped;//discard read 0
+    os << "Linked Reads Mapper: "<< mapped<<" mapped reads, "<< unmapped<<" unmapped";
     return os;
 }
 

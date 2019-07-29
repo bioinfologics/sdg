@@ -315,6 +315,6 @@ const std::vector<uint16_t> &KmerCounter::get_count_by_name(const std::string &n
 }
 
 std::ostream &operator<<(std::ostream &os, const KmerCounter &kc) {
-    os << kc.ls() << std::endl;
+    os << "KmerCounter "<< ( kc.name.empty() ? "unnamed":kc.name ) <<": index with "<<kc.kindex.size()<<" "<<std::to_string(kc.k)<<"-mers";
     return os;
 }

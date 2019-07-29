@@ -120,11 +120,11 @@ std::vector<LinkedTag> NodeView::get_linked_tags(std::string datastore_name) con
 }
 
 std::ostream &operator<<(std::ostream &os, const NodeView &nv) {
-    os << "< NodeView: "<<nv.id<<" in "<<nv.dg->name<<" >";
+    os << "NodeView: Node "<<nv.id<<" in "<<nv.dg->name;
     return os;
 }
 
 std::ostream &operator<<(std::ostream &os, const LinkView &ndv) {
-    os << "< LinkView: "<<ndv.dist<<"bp to "<<ndv.node_view.node_id()<<" >";
+    os << "LinkView: "<<ndv.dist<<"bp to Node "<<ndv.node_view.node_id();
     return os;
 }

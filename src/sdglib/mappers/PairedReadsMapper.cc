@@ -471,6 +471,10 @@ std::vector<uint64_t> PairedReadsMapper::get_node_readpairs_ids(sgNodeID_t nodeI
 }
 
 std::ostream &operator<<(std::ostream &os, const PairedReadsMapper &prm) {
-    os << prm.ls() << std::endl;
+    uint64_t mapped=0,unmapped=0;
+    for (auto &rtn:prm.read_to_node) if (rtn!=0) ++mapped; else ++unmapped;
+    if(unmapped>0)--unmapped;//discard read 0
+
+    os << "Paired Reads Mapper: "<<mapped<<" mapped reads, "<<unmapped<<" unmapped";
     return os;
 }

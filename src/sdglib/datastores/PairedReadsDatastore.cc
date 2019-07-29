@@ -414,6 +414,6 @@ PairedReadsDatastore& PairedReadsDatastore::operator=(PairedReadsDatastore const
 }
 
 std::ostream &operator<<(std::ostream &os, const PairedReadsDatastore &prds) {
-    os << prds.ls() << std::endl;
+    os << "Paired Reads Datastore "<< (prds.name.empty() ? "unnamed" : prds.name ) << ": "<< prds.size() << " reads";
     return os;
 }
