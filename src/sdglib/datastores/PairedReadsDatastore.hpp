@@ -39,7 +39,7 @@ public:
         }
     }
 
-    std::string ls(int level=0,bool recursive=true);
+    std::string ls(int level=0,bool recursive=true) const;
 
     friend std::ostream& operator<<(std::ostream &os, const PairedReadsDatastore &prds);
     PairedReadsDatastore& operator=(PairedReadsDatastore const &o);

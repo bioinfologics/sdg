@@ -43,7 +43,7 @@ public:
      * @return
      * A text summary of the information contained in a LinkedReadsMapper
      */
-    std::string ls(int level=0,bool recursive=true);
+    std::string ls(int level=0,bool recursive=true) const;
 
     friend std::ostream& operator<<(std::ostream &os, const LinkedReadsMapper &lirm);
 

@@ -91,7 +91,7 @@ public:
     int min_chain=50;   /// Minimum number of chained matches to report mappings.
     int max_jump=500;   /// Joins kmer hits within max_jump distance in a node.
     int max_hits_to_candidate=4; /// Maximum number of hits to a candidate node, filters kmers with too many offsets in the node.
-    int max_delta_change=60;    /// Maximum difference between coordinates of the node against the coordinates of the reads.
+    int max_delta_change=60;    /// Maximum delta change.
     int min_number_of_node_occurrences=50; /// Minimum number of matches of a node to consider it for mappings.
 
     LongReadsMapper(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &ds, uint8_t k=15, bool sat_index=false);
@@ -108,7 +108,7 @@ public:
      * @return
      * A text summary of the information contained in a LongReadsMapper
      */
-    std::string ls(int level=0,bool recursive=true);
+    std::string ls(int level=0,bool recursive=true) const;
 
     void print_status() const;
 
@@ -126,12 +126,11 @@ public:
 
     /**
      * Sets mapping parameters
-     * TODO: explain each parameter
      * @param _k kmer size for mapping
-     * @param _min_size
-     * @param _min_chain
-     * @param _max_jump
-     * @param _max_delta_change
+     * @param _min_size Minimum length of chained matches to report mappings.
+     * @param _min_chain Minimum number of chained matches to report mappings.
+     * @param _max_jump Joins kmer hits within max_jump distance in a node.
+     * @param _max_delta_change Maximum delta change
      */
     void set_params(uint8_t _k=15, int _max_index_freq=200, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60){
         k=_k;
@@ -144,7 +143,7 @@ public:
 
     /**
      * Copies all mappings to read from raw mappings into a vector and returns it.
-     * @param read_id
+     * @param read_id ID of the read to get the mappings for
      * @return
      */
     std::vector<LongReadMapping> get_raw_mappings_from_read(uint64_t read_id) const;
@@ -159,8 +158,6 @@ public:
      *  matches[kmer_index_in_read][kmer_match].first = node_id for a match of that kmer in the graph, sign indicates orientation
      *  matches[kmer_index_in_read][kmer_match].second = offset for a match of that kmer for corresponding node_id (.first), the offsets are always calculated from the begining of the read
      *
-     *  TODO: Change match type from in32_t to sgNodeId in this function !!!
-     *
      * @param sat_assembly_kmers kmer index
      * @param matches structure to store kmer mappings
      * @param read_kmers contains read kmers with orientations
@@ -172,10 +169,8 @@ public:
      * A match is a perfect Kmer match between the read and the graph index
      *
      * matches are stored as kmer_index_in_read->kmer_match->match_description:
-     *  matches[kmer_index_in_read][kmer_match].first = node_id for a match of that kmer in the graph, sign indicates orientation
-     *  matches[kmer_index_in_read][kmer_match].second = offset for a match of that kmer for corresponding node_id (.first), the offsets are always calculated from the begining of the read
-     *
-     *  TODO: Change match type from in32_t to sgNodeId in this function !!!
+     * - matches[kmer_index_in_read][kmer_match].first = node_id for a match of that kmer in the graph, sign indicates orientation
+     * - matches[kmer_index_in_read][kmer_match].second = offset for a match of that kmer for corresponding node_id (.first), the offsets are always calculated from the begining of the read
      *
      * @param sat_assembly_kmers kmer index
      * @param matches structure to store kmer mappings
@@ -185,7 +180,7 @@ public:
 
     /**
      * Using the populated matches collection (see het_all_kmer_matches()) returns a collection of nodeIDs that have more than 50 matches with that particular read.
-     * TODO: parameter to check, the 50 in the filter, why is 50?.
+     *
      * @param matches matches vector
      * @param read_kmers_size number of kmers in the read
      * @return set of nodeIDs of nodes with more than 50 matches to the read
@@ -240,8 +235,8 @@ public:
     /**
      * This function maps any sequence to the graph, index needs to be already updated!
      * WARNING: this is slow, not meant for high throughput
-     * @param query_sequence_ptr
-     * @return
+     * @param query_sequence_ptr Sequence to align to the index
+     * @return LongReadMappings for the sequence
      */
     std::vector<LongReadMapping> map_sequence(const NKmerIndex & knindex, const char * query_sequence_ptr, sgNodeID_t seq_id=0);
     //void map_reads(std::string detailed_log){map_reads({},detailed_log);};
@@ -290,9 +285,9 @@ public:
 
     /**
      * Performs the de-shadowing process for each read
-     * @param rid
-     * @param correct_on_ws
-     * @return
+     * @param rid ID of the read to improve
+     * @param correct_on_ws rewrite the LongReadMappings on the workspace
+     * @return A collection of the LongReadMappings
      */
     std::vector<LongReadMapping> improve_read_mappings(const std::vector<LongReadMapping> & mappings) const;
 

@@ -546,7 +546,7 @@ DistanceGraph::DistanceGraph(SequenceDistanceGraph &_sdg, const std::string &_na
     links.resize(sdg.nodes.size());
 }
 
-std::string DistanceGraph::ls(int level, bool recursive) {
+std::string DistanceGraph::ls(int level, bool recursive) const {
     std::stringstream ss;
     std::string spacer(2*level,' ');
     uint64_t linkcount=0;

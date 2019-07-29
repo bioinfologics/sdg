@@ -165,7 +165,7 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
 
 }
 
-std::string WorkSpace::ls(int level,bool recursive) {
+std::string WorkSpace::ls(int level,bool recursive) const {
     std::stringstream ss;
     std::string spacer(2*level,' ');
     ss<<spacer<<"SDG Workspace"<<std::endl;
@@ -448,6 +448,11 @@ std::vector<std::string> WorkSpace::list_linked_reads_datastores() {
         names.emplace_back(li.name);
     }
     return names;
+}
+
+std::ostream &operator<<(std::ostream &os, const WorkSpace &ws) {
+    os << ws.ls() << std::endl;
+    return os;
 }
 
 std::vector<std::string> WorkSpace::list_kmer_counters() {

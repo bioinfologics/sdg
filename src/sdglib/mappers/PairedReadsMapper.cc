@@ -21,7 +21,7 @@ PairedReadsMapper::PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore 
     reads_in_node.resize(ws.sdg.nodes.size());
 }
 
-std::string PairedReadsMapper::ls(int level,bool recursive) {
+std::string PairedReadsMapper::ls(int level,bool recursive) const {
     std::stringstream ss;
     std::string spacer(2 * level, ' ');
     uint64_t mapped=0,unmapped=0;
@@ -471,6 +471,6 @@ std::vector<uint64_t> PairedReadsMapper::get_node_readpairs_ids(sgNodeID_t nodeI
 }
 
 std::ostream &operator<<(std::ostream &os, const PairedReadsMapper &prm) {
-    os << "PairedReadsMapper" << std::endl;
-    prm.print_status();
+    os << prm.ls() << std::endl;
+    return os;
 }

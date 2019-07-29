@@ -34,6 +34,8 @@ public:
     WorkSpace(const WorkSpace& that) = delete; //we definitely do not want copy constructors here, thank you
     void status();
 
+    friend std::ostream& operator<<(std::ostream &os, const WorkSpace &ws);
+
     /**
      * @brief
      * Provides an overview of the information in the WorkSpace
@@ -42,7 +44,7 @@ public:
      * @return
      * A text summary of the information contained in a WorkSpace
      */
-    std::string ls(int level=0,bool recursive=true);
+    std::string ls(int level=0,bool recursive=true) const;
 
     /**
      * @brief Writes a disk version of the information held by that can be used in the future, it can be used as a form of checkpoint

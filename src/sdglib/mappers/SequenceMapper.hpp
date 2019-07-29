@@ -22,7 +22,7 @@ public:
     int min_chain=50;   /// Minimum number of chained matches to report mappings
     int max_jump=500;   /// Joins kmer hits within max_jump distance in a node
     int max_hits_to_candidate=4; /// Maximum number of hits to a candidate node, filters kmers with too many offsets in the node
-    int max_delta_change=60;    /// Maximum difference between coordinates of the node against the coordinates of the reads
+    int max_delta_change=60;    /// Maximum delta change
     int min_number_of_node_occurrences=50; /// Minimum number of matches of a node to consider it for mappings
     explicit SequenceMapper(const DistanceGraph &_dg,uint8_t _k=15, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60);
     explicit SequenceMapper(const SequenceDistanceGraph &_dg,uint8_t _k=15, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60):

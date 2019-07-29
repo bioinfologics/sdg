@@ -392,7 +392,7 @@ PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, PairedReadsDatastore &
     mapper.read_direction_in_node = o.mapper.read_direction_in_node;
 }
 
-std::string PairedReadsDatastore::ls(int level, bool recursive) {
+std::string PairedReadsDatastore::ls(int level, bool recursive) const {
     std::stringstream ss;
     std::string spacer(2*level,' ');
     ss<<spacer<<"Paired Reads Datastore "<<name<<": "<<size()<<" reads"<<std::endl;
@@ -414,7 +414,6 @@ PairedReadsDatastore& PairedReadsDatastore::operator=(PairedReadsDatastore const
 }
 
 std::ostream &operator<<(std::ostream &os, const PairedReadsDatastore &prds) {
-    os << "PairedReadsDatastore" << std::endl;
-    os << "Name: " << ((prds.name.empty()) ? prds.default_name : prds.name) << std::endl;
-    prds.print_status();
+    os << prds.ls() << std::endl;
+    return os;
 }

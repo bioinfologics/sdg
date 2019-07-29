@@ -613,7 +613,7 @@ LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, const LinkedReadsDatas
     mapper.tag_neighbours = o.mapper.tag_neighbours;
 }
 
-std::string LinkedReadsDatastore::ls(int level, bool recursive) {
+std::string LinkedReadsDatastore::ls(int level, bool recursive) const {
     std::stringstream ss;
     std::string spacer(2*level,' ');
     ss<<spacer<<"Linked Reads Datastore "<<name<<": "<<size()<<" reads"<<std::endl;
@@ -634,9 +634,8 @@ LinkedReadsDatastore &LinkedReadsDatastore::operator=(LinkedReadsDatastore const
 }
 
 std::ostream &operator<<(std::ostream &os, const LinkedReadsDatastore &lrds) {
-    os << "LinkedReadsDatastore" << std::endl;
-    os << "Name: " << (lrds.name.empty() ? lrds.default_name : lrds.name) << std::endl;
-    lrds.print_status();
+    os << lrds.ls();
+    return os;
 }
 
 void BufferedTagKmerizer::get_tag_kmers(LinkedTag tag) {

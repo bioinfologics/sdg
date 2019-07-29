@@ -22,7 +22,7 @@ datastore(_datastore)
 {
     reads_in_node.resize(ws.sdg.nodes.size());
 }
-std::string LinkedReadsMapper::ls(int level,bool recursive) {
+std::string LinkedReadsMapper::ls(int level,bool recursive) const {
     std::stringstream ss;
     std::string spacer(2 * level, ' ');
     uint64_t mapped=0,unmapped=0;
@@ -80,8 +80,6 @@ void LinkedReadsMapper::read(std::ifstream &input_file) {
 
 
 }
-
-
 
 void LinkedReadsMapper::remap_all_reads() {
     for (auto &rtn:read_to_node) rtn=0;
@@ -584,7 +582,6 @@ LinkedReadsMapper& LinkedReadsMapper::operator=(const LinkedReadsMapper &other) 
     return *this;
 }
 
-
 void LinkedReadsMapper::write_tag_neighbours(std::string filename) {
     std::ofstream output_file(filename.c_str());
     uint64_t count;
@@ -611,8 +608,8 @@ void LinkedReadsMapper::read_tag_neighbours(std::string filename) {
 }
 
 std::ostream &operator<<(std::ostream &os, const LinkedReadsMapper &lirm) {
-    os << "LinkedReadsMapper" << std::endl;
-    lirm.print_status();
+    os << lirm.ls() << std::endl;
+    return os;
 }
 
 void LinkedReadsMapper::populate_orientation() {

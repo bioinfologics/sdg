@@ -17,7 +17,7 @@
 
 const sdgVersion_t LongReadsMapper::min_compat = 0x0003;
 
-std::string LongReadsMapper::ls(int level,bool recursive) {
+std::string LongReadsMapper::ls(int level,bool recursive) const {
     std::stringstream ss;
     std::string spacer(2 * level, ' ');
     ss << spacer << "Long Reads Mapper: "<<mappings.size()<<" raw mappings" << std::endl;
@@ -816,6 +816,6 @@ k(o.k)
 {}
 
 std::ostream &operator<<(std::ostream &os, const LongReadsMapper &lorm) {
-    os << "LongReadsMapper" << std::endl;
-    lorm.print_status();
+    os << lorm.ls() << std::endl;
+    return os;
 }

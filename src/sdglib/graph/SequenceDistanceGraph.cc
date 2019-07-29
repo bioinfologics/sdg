@@ -126,7 +126,7 @@ void SequenceDistanceGraph::remove_node(sgNodeID_t n) {
     //TODO: remove read mappings
 }
 
-size_t SequenceDistanceGraph::count_active_nodes() {
+size_t SequenceDistanceGraph::count_active_nodes() const {
     size_t t = 0;
     for (auto &n: nodes) {
         if (n.status == NodeStatus::Active) ++t;
@@ -228,7 +228,7 @@ void SequenceDistanceGraph::read(std::ifstream & input_file) {
     sdglib::read_flat_vectorvector(input_file, links);
 }
 
-std::string SequenceDistanceGraph::ls(int level, bool recursive) {
+std::string SequenceDistanceGraph::ls(int level, bool recursive) const {
     std::stringstream ss;
     std::string spacer(2 * level, ' ');
     uint64_t linkcount = 0;
@@ -877,4 +877,9 @@ void SequenceDistanceGraph::load_from_gfa2(std::ifstream &gfaf, std::ifstream &f
     }
     sdglib::OutputLog(sdglib::LogLevels::INFO) << nodes.size() - 1 << " nodes after connecting with " << lcount << " links." << std::endl;
 
+}
+
+std::ostream &operator<<(std::ostream &os, const SequenceDistanceGraph &sdg) {
+    os << sdg.ls() << std::endl;
+    return os;
 }

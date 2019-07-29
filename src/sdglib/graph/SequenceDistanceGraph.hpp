@@ -73,9 +73,10 @@ public:
         oldnames_to_ids=other.oldnames_to_ids;
     }
 
+    friend std::ostream& operator<<(std::ostream &os, const SequenceDistanceGraph& sdg);
 
     SequenceDistanceGraph(const SequenceDistanceGraph &sg) = delete; // Avoid implicit generation of the copy constructor.
-    std::string ls(int level=0,bool recursive=true);
+    std::string ls(int level=0,bool recursive=true) const;
 
     //=== I/O functions ===
 
@@ -180,10 +181,7 @@ public:
         return oldnames[std::abs(id)];
     }
 
-    size_t count_active_nodes();
-
-
-
+    size_t count_active_nodes() const;
 
     void print_status();
 

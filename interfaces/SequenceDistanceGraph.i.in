@@ -128,8 +128,8 @@ std::string __repr__() {
 };
 
 %extend LinkView{
-        __STR__();
-        __REPR__();
+    __STR__();
+    __REPR__();
 };
 
 %extend LongReadMapping{
@@ -141,6 +141,57 @@ std::string __repr__() {
     __STR__();
     __REPR__();
 };
+
+%extend DistanceGraph{
+    __STR__();
+    __REPR__();
+};
+
+%extend SequenceDistanceGraph{
+    __STR__();
+    __REPR__();
+};
+
+%extend WorkSpace{
+    __STR__();
+    __REPR__();
+};
+
+%extend PairedReadsDatastore{
+    __STR__();
+    __REPR__();
+};
+
+%extend LinkedReadsDatastore{
+    __STR__();
+    __REPR__();
+};
+
+%extend LongReadsDatastore{
+    __STR__();
+    __REPR__();
+};
+
+%extend KmerCounter{
+    __STR__();
+    __REPR__();
+};
+
+%extend PairedReadsMapper{
+    __STR__();
+    __REPR__();
+};
+
+%extend LinkedReadsMapper{
+    __STR__();
+    __REPR__();
+};
+
+%extend LongReadsMapper{
+    __STR__();
+    __REPR__();
+};
+
 
 %pythoncode %{
 __version__ = "@bsg_VERSION@"

@@ -10,7 +10,7 @@ KmerCounter::KmerCounter(const WorkSpace &_ws, std::ifstream &infile): ws(_ws) {
     read(infile);
 }
 
-std::string KmerCounter::ls(int level, bool recursive) {
+std::string KmerCounter::ls(int level, bool recursive) const {
     std::stringstream ss;
     std::string spacer(2 * level, ' ');
     ss << spacer << "KmerCounter "<< name <<": index with "<<kindex.size()<<" "<<std::to_string(k)<<"-mers"<< std::endl;
@@ -312,4 +312,9 @@ const std::vector<uint16_t> &KmerCounter::get_count_by_name(const std::string &n
 
     throw std::runtime_error("Couldn't find a count named: "+name);
 
+}
+
+std::ostream &operator<<(std::ostream &os, const KmerCounter &kc) {
+    os << kc.ls() << std::endl;
+    return os;
 }

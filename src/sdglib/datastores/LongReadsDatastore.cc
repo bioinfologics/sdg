@@ -336,7 +336,7 @@ LongReadsDatastore::~LongReadsDatastore() {
     close(fd);
 }
 
-std::string LongReadsDatastore::ls(int level, bool recursive) {
+std::string LongReadsDatastore::ls(int level, bool recursive) const {
     std::stringstream ss;
     std::string spacer(2*level,' ');
     ss<<spacer<<"Long Reads Datastore "<<name<<": "<<size()<<" reads"<<std::endl;
@@ -345,8 +345,7 @@ std::string LongReadsDatastore::ls(int level, bool recursive) {
 }
 
 std::ostream &operator<<(std::ostream &os, const LongReadsDatastore &lords) {
-    os << "LongReadsDatastore" << std::endl;
-    os << "Name: " << ( (lords.name.empty()) ? lords.default_name : lords.name) << std::endl;
-    lords.print_status();
+    os << lords.ls() << std::endl;
+    return os;
 }
 
