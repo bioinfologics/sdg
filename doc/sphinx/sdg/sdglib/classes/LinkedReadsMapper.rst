@@ -1,0 +1,5 @@
+LinkedReadsMapper
+=======================
+
+.. doxygenclass:: LinkedReadsMapper
+   :members:

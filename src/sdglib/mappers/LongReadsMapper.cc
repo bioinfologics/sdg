@@ -111,7 +111,7 @@ std::vector<LongReadMapping> LongReadsMapper::alignment_blocks(uint32_t readID,
     for (auto p=0;p<read_kmers_size;++p){
         for (auto m:matches[p]) {
             uint32_t linear_node = (m.first>0) ? m.first : sg.nodes.size()+std::abs(m.first);
-            if (candidate_counts[linear_node] > 50) {
+            if (candidate_counts[linear_node] > min_number_of_node_occurrences) {
                 candidate_hits[m.first].emplace_back(p,m.second);
             }
         }
@@ -132,7 +132,7 @@ std::vector<LongReadMapping> LongReadsMapper::alignment_blocks(uint32_t readID,
             auto endi=starti;
             while (endi<chits.size()-1 and chits[starti].first==chits[endi+1].first) ++endi;
             bool discard=false;
-            if (endi>starti+4) discard=true; //more than 5 hits to candidate ->discard
+            if (endi>starti+max_hits_to_candidate) discard=true; //more than 5 hits to candidate ->discard
             else {
                 for (auto x=starti;x<endi;++x) {
                     if (chits[x+1].second-chits[x].second<max_jump) discard=true;

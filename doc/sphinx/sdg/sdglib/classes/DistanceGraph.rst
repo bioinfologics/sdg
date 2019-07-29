@@ -1,0 +1,5 @@
+DistanceGraph
+=============
+
+.. doxygenclass:: DistanceGraph
+   :members:

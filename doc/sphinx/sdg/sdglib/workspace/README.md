@@ -1,1 +1,0 @@
-../../../../../src/sdglib/workspace/README.md

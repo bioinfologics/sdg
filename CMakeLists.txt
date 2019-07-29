@@ -145,6 +145,38 @@ include_directories("deps/cxxopts/")
 include_directories("deps/kseqcpp/")
 include_directories("deps/xxhash/")
 ## Set sources variables
+
+SET(header_files
+    src/sdglib/graph/SequenceDistanceGraph.hpp
+    src/sdglib/graph/SequenceSubGraph.hpp
+    src/sdglib/graph/SequenceGraphPath.hpp
+    src/sdglib/graph/DistanceGraph.hpp
+    src/sdglib/utilities/OutputLog.hpp
+    src/sdglib/datastores/PairedReadsDatastore.hpp
+    src/sdglib/datastores/LinkedReadsDatastore.hpp
+    src/sdglib/datastores/LongReadsDatastore.hpp
+    src/sdglib/datastores/KmerCounter.hpp
+    src/sdglib/datastores/ReadPathsDatastore.hpp
+    src/sdglib/datastores/ReadSequenceBuffer.hpp
+    src/sdglib/mappers/LongReadsMapper.hpp
+    src/sdglib/mappers/LinkedReadsMapper.hpp
+    src/sdglib/mappers/PairedReadsMapper.hpp
+    src/sdglib/processors/LinkageUntangler.hpp
+    src/sdglib/workspace/WorkSpace.hpp
+    src/sdglib/processors/GraphEditor.hpp
+    src/sdglib/processors/GraphMaker.hpp
+    src/sdglib/processors/LocalHaplotypeAssembler.hpp
+    src/sdglib/processors/HaplotypeConsensus.hpp
+    src/sdglib/indexers/UniqueKmerIndex.hpp
+    src/sdglib/indexers/SatKmerIndex.hpp
+    src/sdglib/indexers/NKmerIndex.hpp
+    src/sdglib/views/NodeView.hpp
+    src/sdglib/workspace/Journal.hpp
+    src/sdglib/batch_counter/BatchKmersCounter.hpp
+    deps/xxhash/xxhash.c
+    src/sdglib/mappers/SequenceMapper.hpp
+    src/sdglib/processors/LinkageMaker.hpp)
+
 SET(source_files ${source_files}
     src/sdglib/graph/SequenceDistanceGraph.cc
     src/sdglib/graph/SequenceSubGraph.cc
@@ -154,7 +186,7 @@ SET(source_files ${source_files}
     src/sdglib/datastores/PairedReadsDatastore.cc
     src/sdglib/datastores/LinkedReadsDatastore.cc
     src/sdglib/datastores/LongReadsDatastore.cc
-        src/sdglib/datastores/KmerCounter.cc
+    src/sdglib/datastores/KmerCounter.cc
     src/sdglib/datastores/ReadPathsDatastore.cc
     src/sdglib/datastores/ReadSequenceBuffer.cc
     src/sdglib/mappers/LongReadsMapper.cc
@@ -244,7 +276,8 @@ IF(BUILD_DOC)
     find_package(Doxygen REQUIRED)
     if (DOXYGEN_FOUND)
         get_target_property(SDG_PUBLIC_HEADER_DIR sdg INTERFACE_INCLUDE_DIRECTORIES)
-        file(GLOB_RECURSE SDG_PUBLIC_HEADERS ${SDG_PUBLIC_HEADER_DIR}/*.h)
+        message("${SDG_PUBLIC_HEADER_DIR}")
+        file(GLOB_RECURSE SDG_PUBLIC_HEADERS ${SDG_PUBLIC_HEADER_DIR}/**/*.hpp)
         # set input and output files
         set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR})
         set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/docs)
@@ -257,7 +290,7 @@ IF(BUILD_DOC)
         message("Doxygen build started")
         # note the option ALL which allows to build the docs together with the application
         add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
-                           DEPENDS ${SDG_PUBLIC_HEADERS} README.md src/sdglib/README.md src/sdglib/workspace/README.md
+                           DEPENDS ${header_files} README.rst src/sdglib/README.rst src/sdglib/workspace/README.rst
                            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
                            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                            MAIN_DEPENDENCY Doxyfile

@@ -1,0 +1,5 @@
+LongReadsMapper
+=======================
+
+.. doxygenclass:: LongReadsMapper
+   :members:

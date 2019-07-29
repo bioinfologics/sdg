@@ -16,7 +16,7 @@ jobs:
         skip_cleanup: true
         file: build/sdg-${TRAVIS_OS_NAME}.tar.gz
         on:
-          all_branches: true
+          tags: true
     - stage: compile linux
       os: linux
       addons:
@@ -55,7 +55,6 @@ before_script:
   - git lfs pull
 
 script:
-  - date > file-$TRAVIS_OS_NAME.txt
   - .travis/build.sh
 
 install:
