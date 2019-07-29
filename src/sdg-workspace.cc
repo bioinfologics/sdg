@@ -141,8 +141,8 @@ void status_workspace(int argc, char **argv){
     }
     WorkSpace w;
     w.load_from_disk(filename);
-    w.status();
     std::cout<<std::endl<<"---=== Workspace current status ===---"<<std::endl;
+    w.ls();
 }
 
 void dump_workspace(int argc, char **argv){
