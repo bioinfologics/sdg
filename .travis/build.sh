@@ -5,10 +5,12 @@ export PATH="${HOME}"/swig/bin:"${HOME}"/bin:"${HOME}"/cmake/bin:"${PATH}":"${HO
 
 mkdir build
 cd build
-cmake .. ${CMAKE_OPTIONS}
+mkdir product
+cmake -DCMAKE_INSTALL_PREFIX=product .. ${CMAKE_OPTIONS}
 make all -j8
 echo "" > ./docs/html/.nojekyll
 echo "" > ./doc/sphinx/.nojekyll
 make test
+make install
 
-tar cz sdg-* libsdg.* pysdg/_pysdg.so pysdg/__init__.py pysdg/pysdg.py > sdg-${TRAVIS_OS_NAME}.tar.gz
+tar cz product > sdg-${TRAVIS_OS_NAME}.tar.gz
