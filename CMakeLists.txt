@@ -230,8 +230,8 @@ add_executable(sdg-datastore
         src/sdg-datastore.cc
         )
 
-add_executable(sdg-kmercounts
-               src/sdg-kmercounts.cc
+add_executable(sdg-kmercounter
+        src/sdg-kmercounter.cc
         )
 
 add_executable(sdg-workspace
@@ -247,7 +247,7 @@ add_executable(sdg-dbg
 
 target_link_libraries(sdg-workspace sdg_static)
 target_link_libraries(sdg-datastore sdg_static)
-target_link_libraries(sdg-kmercounts sdg_static)
+target_link_libraries(sdg-kmercounter sdg_static)
 target_link_libraries(sdg-mapper sdg_static)
 target_link_libraries(sdg-dbg sdg_static)
 
@@ -399,7 +399,7 @@ install(TARGETS
         sdg-dbg
         sdg-workspace
         sdg-datastore
-        sdg-kmercounts
+        sdg-kmercounter
         sdg-mapper
         sdg
         sdg_static

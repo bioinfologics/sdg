@@ -22,7 +22,7 @@ struct KmerCountsFunctionMap : public std::map<std::string, KmerCountsFunctions>
 };
 
 void add_kmer_count(int argc, char **argv) {
-    int k(27);
+    int k(31);
     std::vector<std::string> fastq_files;
     std::string output;
     std::string ds_filename;
@@ -36,7 +36,7 @@ void add_kmer_count(int argc, char **argv) {
                 ("c,counts_file", "input counts file (used for index)", cxxopts::value(counts_filename))
                 ("f,fastq", "input reads (multi)", cxxopts::value(fastq_files))
                 ("d,datastore", "input datastore", cxxopts::value(ds_filename))
-                ("k", "kmer length", cxxopts::value(k)->default_value("27"))
+                ("k", "kmer length", cxxopts::value(k)->default_value("31"))
                 ("o,output", "output counts prefix", cxxopts::value(output))
                 ("help", "Print help");
         auto newargc=argc-1;
@@ -84,7 +84,7 @@ void add_kmer_count(int argc, char **argv) {
             kc.add_count(name, LongReadsDatastore(ws, ds_filename));
         }
     }
-    std::ofstream output_file(output);
+    std::ofstream output_file(output+".sdgkc");
     kc.write_counts(output_file);
 
 }
@@ -167,7 +167,7 @@ void make_kmer_counts(int argc, char **argv) {
                 kc.add_count(name, LongReadsDatastore(ws, ds_filename));
             }
         }
-        std::ofstream output_file(output);
+        std::ofstream output_file(output+".sdgkc");
         kc.write_counts(output_file);
     } else if (!counts_filename.empty()) {
         WorkSpace ws;
@@ -186,7 +186,7 @@ void make_kmer_counts(int argc, char **argv) {
                 kc.add_count(name, LongReadsDatastore(ws, ds_filename));
             }
         }
-        std::ofstream output_file(output);
+        std::ofstream output_file(output+".sdgkc");
         kc.write_counts(output_file);
     }
 }

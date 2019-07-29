@@ -345,6 +345,17 @@ JournalOperation &WorkSpace::add_operation(const std::string &name, const std::s
     return journal.back();
 }
 
+KmerCounter &WorkSpace::add_kmer_counter(const std::string &filename, const std::string &name) {
+    if (kmer_counters.size() > MAX_WORKSPACE_VECTOR_SIZE) {
+        throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
+    }
+    for (auto n:list_kmer_counters()) if (n==name) throw std::runtime_error("Name is already in use");
+    kmer_counters.emplace_back(*this, filename);
+    kmer_counters.back().name=name;
+    // Should edit the WS here to include the new count
+    return kmer_counters.back();
+}
+
 KmerCounter &WorkSpace::add_kmer_counter(const std::string &name, const uint8_t k, KmerCountMode count_mode) {
     if (kmer_counters.size() > MAX_WORKSPACE_VECTOR_SIZE) {
         throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");

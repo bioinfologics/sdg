@@ -10,7 +10,7 @@ enum class WorkspaceFunctions{
     STATUS,
     DUMP,
     ADD_DS,
-    ADD_COUNTS
+    ADD_COUNTER
 };
 struct WorkspaceFunctionMap : public std::map<std::string, WorkspaceFunctions>
 {
@@ -20,7 +20,7 @@ struct WorkspaceFunctionMap : public std::map<std::string, WorkspaceFunctions>
         operator[]("status") = WorkspaceFunctions::STATUS;
         operator[]("dump") = WorkspaceFunctions::DUMP;
         operator[]("add_ds") = WorkspaceFunctions::ADD_DS;
-        operator[]("add_counts") = WorkspaceFunctions::ADD_COUNTS;
+        operator[]("add_counter") = WorkspaceFunctions::ADD_COUNTER;
     };
 };
 
@@ -249,8 +249,8 @@ void add_datastore(int argc, char **argv) {
     output_ws.dump_to_disk(output + ".bsgws");
 }
 
-void add_counts(int argc, char **argv) {
-    std::string toolname("sdg-workspace add_counts: ");
+void add_counter(int argc, char **argv) {
+    std::string toolname("sdg-workspace add_counter: ");
     std::string git_version(std::string(GIT_ORIGIN_URL) + " -> " + GIT_BRANCH + " " +
                             GIT_COMMIT_HASH);
     std::string ws_filename;
@@ -259,7 +259,7 @@ void add_counts(int argc, char **argv) {
     std::string output;
 
     try {
-        cxxopts::Options options("sdg-workspace add_counts", "SDG add KmerCounter to workspace");
+        cxxopts::Options options("sdg-workspace add_counter", "SDG add KmerCounter to workspace");
 
         options.add_options()
                 ("help", "Print help")
@@ -288,15 +288,9 @@ void add_counts(int argc, char **argv) {
         exit(1);
     }
     WorkSpace output_ws(ws_filename);
-    output_ws.add_operation("ADD_COUNTS", toolname + git_version, std::string("Added KmerCounter with sdg-workspace add_counts from ")+ws_filename);
-    const auto& names(output_ws.list_kmer_counters());
-    if (std::find(names.cbegin(), names.cend(), name) != names.cend()) {
-        output_ws.kmer_counters.emplace_back(output_ws, counts_filename);
-        output_ws.kmer_counters.back().name = name;
-        output_ws.dump_to_disk(output + ".bsgws");
-    } else {
-        throw std::runtime_error(name + " already exists in the workspace");
-    }
+    output_ws.add_operation("ADD_COUNTER", toolname + git_version, std::string("Added KmerCounter with sdg-workspace add_counter from ")+ws_filename);
+    output_ws.add_kmer_counter(counts_filename,name);
+    output_ws.dump_to_disk(output + ".sdgws");
 
 }
 
@@ -332,8 +326,8 @@ int main(int argc, char * argv[]) {
         case WorkspaceFunctions::ADD_DS:
             add_datastore(argc, argv);
             break;
-        case WorkspaceFunctions::ADD_COUNTS:
-            add_counts(argc, argv);
+        case WorkspaceFunctions::ADD_COUNTER:
+            add_counter(argc, argv);
             break;
         default:
             std::cout << "Invalid option specified." << std::endl;

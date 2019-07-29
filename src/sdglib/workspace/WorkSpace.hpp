@@ -64,6 +64,7 @@ public:
     PairedReadsDatastore& add_paired_reads_datastore(const std::string &filename, const std::string &name="");
     LinkedReadsDatastore& add_linked_reads_datastore(const std::string &filename, const std::string &name="");
     LongReadsDatastore& add_long_reads_datastore(const std::string &filename, const std::string &name="");
+    KmerCounter& add_kmer_counter(const std::string &filename,const std::string &name);
     KmerCounter& add_kmer_counter(const std::string &name, const uint8_t k,
                                   KmerCountMode count_mode = KmerCountMode::Canonical);
 
