@@ -20,7 +20,7 @@ public:
 class LongReadsMapper;
 
 /**
- * This class groups all methods to filter long read mappings to  haplotype solutions within a long read
+ * This class groups all methods to filter long read mappings to haplotype solutions within a long read
  * The
  * 1) set_read -> inits the problem, gets read sequence, mappings. cleans up alignments if needed.
  * 2) generate_haplotypes_from_linked_reads -> creates the possible haplotypes, all with score 0

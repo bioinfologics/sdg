@@ -15,6 +15,12 @@ class WorkSpace;
 class PairedReadsDatastore;
 class LinkedReadsDatastore;
 class LongReadsDatastore;
+
+/**
+ * KmerCounters are containers for the coverage of a set of kmers from a graph or workspace,
+ * they provide functionality to count and store an index of the kmers present and
+ * multiple instances of counts for these kmers.
+ */
 class KmerCounter {
 public:
     KmerCounter (const WorkSpace &_ws, const std::string &_name, uint8_t _k, KmerCountMode _count_mode=Canonical):ws(_ws),k(_k), name(_name),count_mode(_count_mode){
@@ -26,6 +32,14 @@ public:
         read_counts(count_file);
     }
 
+
+    /**
+     * @brief Provides an overview of the information in the KmerCounter
+     * @param level Base indentation level to use on the result
+     * @param recursive Whether it should explore or not the rest of the hierarchy
+     * @return
+     * A text summary of the information contained in a KmerCounter
+    */
     std::string ls(int level=0,bool recursive=true) const;
 
     friend std::ostream& operator<<(std::ostream &os, const KmerCounter &kc);
@@ -45,20 +59,43 @@ public:
     }
 
     /**
-     * Accumulates the kmer count from the provided fastq file to the last available read_counts collection
+     * @brief Accumulates the kmer count from the provided fastq file to the last available read_counts collection
      * @param filename Path to fastq file
      */
     void add_count(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
 
     /**
-     * Accumulates the kmer count from the provided data-store to the last available read_counts collection
+     * @brief Accumulates the kmer count from the provided data-store to the last available read_counts collection
      * @param ds PairedReadsDatastore ds
      */
     void add_count(const std::string & count_name, const PairedReadsDatastore & datastore);
+
+    /**
+     * @brief Accumulates the kmer count from the provided data-store to the last available read_counts collection
+     * @param ds LinkedReadsDatastore ds
+     */
     void add_count(const std::string & count_name, const LinkedReadsDatastore & datastore);
+
+    /**
+     * @brief Accumulates the kmer count from the provided data-store to the last available read_counts collection
+     * @param ds LongReadsDatastore ds
+     */
     void add_count(const std::string & count_name, const LongReadsDatastore & datastore);
 
+    /**
+     * @brief Retrieves the counts for each kmer in sequence s from count_name
+     * @param count_name Name of the count to query
+     * @param s Sequence to project
+     * @return Vector of kmer counts for each kmer in s
+     */
     std::vector<uint16_t> project_count(const std::string & count_name, const std::string &s);
+
+    /**
+     * @brief Retrieves the counts for each kmer in sequence s from counts[count_idx]
+     * @param count_idx Index of the count to query
+     * @param s Sequence to project
+     * @return Vector of kmer counts for each kmer in s
+     */
     std::vector<uint16_t> project_count(const uint16_t count_idx, const std::string &s);
 
     void write(std::ofstream & output_file) const;
@@ -70,14 +107,19 @@ public:
     int8_t get_k(){return k;};
 
 
+    /**
+     * @brief Retrieves a count by name
+     * @param name Name of the count
+     * @return Vector of counts for each kmer in the KmerCounter index
+     */
     const std::vector<uint16_t> & get_count_by_name(const std::string &name) const;
     std::vector<std::string> list_names ();
 
-    std::vector<uint64_t> kindex;
-    std::vector<std::string> count_names;
-    std::vector<std::vector<uint16_t>> counts;
+    std::vector<uint64_t> kindex;               /// Ordered list of kmers that contain counts
+    std::vector<std::string> count_names;       /// Names of the counts vectors
+    std::vector<std::vector<uint16_t>> counts;  /// Count vector, contains an entry per kmer in the kindex
     
-    std::string name;
+    std::string name;   /// Name of the KmerCounter
 
 private:
     const WorkSpace &ws;
