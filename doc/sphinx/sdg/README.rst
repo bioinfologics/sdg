@@ -55,7 +55,7 @@ Tool to create datastores from raw reads. It also creates a special type of data
 sdg-workspace
 *************************
 
-Tool to create and modify WorSpaces. The WorkSpaces bind together a SequenceDistanceGraph, additional DistanceGraphs defined over its nodes, read datastores (and their mappings) and k-mer count datastores. You will normally use WorkSpaces to save intermediate status of pipelines and such.
+Tool to create and modify WorkSpaces. The WorkSpaces bind together a SequenceDistanceGraph, additional DistanceGraphs defined over its nodes, read datastores (and their mappings) and k-mer count datastores. You will normally use WorkSpaces to save intermediate status of pipelines and such.
 
 sdg-mapper
 *************************
