@@ -365,11 +365,16 @@ IF(BUILD_PYTHON_INTERFACE)
     SWIG_LINK_LIBRARIES(pysdg ${PYTHON_LIBRARIES} sdg_static)
     set_target_properties(pysdg PROPERTIES
                           LIBRARY_OUTPUT_DIRECTORY pysdg)
+                          
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())" OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
+
     install(TARGETS
             pysdg
-            RUNTIME DESTINATION pysdg
-            ARCHIVE DESTINATION pysdg
-            LIBRARY DESTINATION pysdg)
+            RUNTIME DESTINATION ${PYTHON_SITE_PACKAGES}/pysdg
+            ARCHIVE DESTINATION ${PYTHON_SITE_PACKAGES}/pysdg
+            LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES}/pysdg)
+    
+    install(DIRECTORY ${CMAKE_BINARY_DIR}/pysdg DESTINATION ${PYTHON_SITE_PACKAGES})
 ENDIF()
 
 IF(BUILD_R_INTERFACE)
