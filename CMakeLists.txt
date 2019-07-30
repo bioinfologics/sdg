@@ -338,9 +338,10 @@ IF(BUILD_PYTHON_INTERFACE)
     MESSAGE("Building python interface")
     FIND_PACKAGE(SWIG REQUIRED)
     INCLUDE(${SWIG_USE_FILE})
-    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/pysdg)
-    configure_file(interfaces/python/__init__.py.in pysdg/__init__.py)
+    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/pysdg/pysdg)
+    configure_file(interfaces/python/__init__.py.in pysdg/pysdg/__init__.py)
     configure_file(interfaces/SequenceDistanceGraph.i.in SequenceDistanceGraph.i)
+    configure_file(interfaces/python/setup.py.in pysdg/setup.py)
 
     INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
 
@@ -364,17 +365,7 @@ IF(BUILD_PYTHON_INTERFACE)
                      )
     SWIG_LINK_LIBRARIES(pysdg ${PYTHON_LIBRARIES} sdg_static)
     set_target_properties(pysdg PROPERTIES
-                          LIBRARY_OUTPUT_DIRECTORY pysdg)
-                          
-    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())" OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-    install(TARGETS
-            pysdg
-            RUNTIME DESTINATION ${PYTHON_SITE_PACKAGES}/pysdg
-            ARCHIVE DESTINATION ${PYTHON_SITE_PACKAGES}/pysdg
-            LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES}/pysdg)
-    
-    install(DIRECTORY ${CMAKE_BINARY_DIR}/pysdg DESTINATION ${PYTHON_SITE_PACKAGES})
+                          LIBRARY_OUTPUT_DIRECTORY pysdg/pysdg)
 ENDIF()
 
 IF(BUILD_R_INTERFACE)
