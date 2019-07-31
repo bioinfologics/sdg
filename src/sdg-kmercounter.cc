@@ -17,7 +17,7 @@ struct KmerCountsFunctionMap : public std::map<std::string, KmerCountsFunctions>
     {
         operator[]("make") =  KmerCountsFunctions::MAKE;
         operator[]("add") =  KmerCountsFunctions::ADD;
-        operator[]("stats") = KmerCountsFunctions::STATS;
+        operator[]("status") = KmerCountsFunctions::STATS;
     };
 };
 
