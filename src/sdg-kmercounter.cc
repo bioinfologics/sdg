@@ -251,6 +251,7 @@ int main(int argc, char * argv[]) {
             break;
         case KmerCountsFunctions::ADD:
             add_kmer_count(argc, argv);
+            break;
         case KmerCountsFunctions::STATS:
             stats_kmer_counts(argc, argv);
             break;

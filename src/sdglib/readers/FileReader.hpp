@@ -34,7 +34,7 @@ public:
      * Relative or absolute path to the file that is going to be read.
      */
     explicit FastaReader(FastxReaderParams params, const std::string &filepath) : params(params), numRecords(0) {
-        sdglib::OutputLog(sdglib::LogLevels::INFO) << "Opening: " << filepath << "\n";
+        //sdglib::OutputLog(sdglib::LogLevels::INFO) << "Opening: " << filepath << "\n";
         gz_file = gzopen(filepath.c_str(), "r");
         if (gz_file == Z_NULL || gz_file == NULL) {
             sdglib::OutputLog(sdglib::LogLevels::WARN) << "Error opening FASTA " << filepath << ": " << std::strerror(errno) << std::endl;
@@ -107,7 +107,7 @@ public:
      * Relative or absolute path to the file that is going to be read.
      */
     explicit FastqReader(FastxReaderParams params, const std::string &filepath) : params(params), numRecords(0),eof_flag(false) {
-        sdglib::OutputLog() << "Opening: " << filepath << "\n";
+        //sdglib::OutputLog() << "Opening: " << filepath << "\n";
         gz_file = gzopen(filepath.c_str(), "r");
         if (gz_file == Z_NULL) {
             std::cout << "Error opening FASTQ " << filepath << ": " << std::strerror(errno) << std::endl;

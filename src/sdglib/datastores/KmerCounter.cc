@@ -280,13 +280,13 @@ void KmerCounter::read_counts(std::ifstream &count_file) {
 }
 
 void KmerCounter::write(std::ofstream &output_file) const {
-    sdglib::write_string(output_file, name+".count");
-    std::ofstream count_file(name+".count");
+    sdglib::write_string(output_file, name+".sdgkc");
+    std::ofstream count_file(name+".sdgkc");
     write_counts(count_file);
 }
 void KmerCounter::write(std::fstream &output_file) const {
-    sdglib::write_string(output_file, name+".count");
-    std::ofstream count_file(name+".count");
+    sdglib::write_string(output_file, name+".sdgkc");
+    std::ofstream count_file(name+".sdgkc");
     write_counts(count_file);
 }
 
