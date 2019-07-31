@@ -1,9 +1,9 @@
 .. image:: https://img.shields.io/badge/license-MIT-green.svg
-    :alt: https://github.com/bioinfologics/bsg/blob/master/LICENSE
+    :target: https://github.com/bioinfologics/bsg/blob/master/LICENSE
 .. image:: https://codecov.io/gh/bioinfologics/sdg/branch/master/graph/badge.svg
-    :alt: https://codecov.io/gh/bioinfologics/sdg
+    :target: https://codecov.io/gh/bioinfologics/sdg
 .. image:: https://travis-ci.org/bioinfologics/sdg.svg?branch=master
-    :alt: https://travis-ci.org/bioinfologics/sdg
+    :target: https://travis-ci.org/bioinfologics/sdg
 
 Sequence Distance Graph
 ========================
