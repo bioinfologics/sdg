@@ -246,7 +246,7 @@ void add_datastore(int argc, char **argv) {
         output_ws.journal.back().addEntry("LongReadDatastore imported from " + Lrds + " (" +
                     std::to_string(output_ws.long_reads_datastores.back().size()) + " reads)");
     }
-    output_ws.dump_to_disk(output + ".bsgws");
+    output_ws.dump_to_disk(output + ".sdgws");
 }
 
 void add_counter(int argc, char **argv) {

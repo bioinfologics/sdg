@@ -194,7 +194,7 @@ std::string __repr__() {
 
 
 %pythoncode %{
-__version__ = "@bsg_VERSION@"
+__version__ = "@sdg_VERSION@"
 __branch__ = "@GIT_BRANCH@"
 __commit__ = "@GIT_COMMIT_HASH@"
 %}

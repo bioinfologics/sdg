@@ -51,6 +51,14 @@ public:
     LongReadsDatastore(WorkSpace &ws, std::string default_name, const std::string &filename, std::ifstream &input_file);
     LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o);
     LongReadsDatastore(const LongReadsDatastore &o);
+
+    /**
+     * @brief Provides an overview of the information in the LongReadsDatastore
+     * @param level Base indentation level to use on the result
+     * @param recursive Whether it should explore or not the rest of the hierarchy
+     * @return
+     * A text summary of the information contained in a LongReadsDatastore
+    */
     std::string ls(int level=0,bool recursive=true) const;
 
     /**

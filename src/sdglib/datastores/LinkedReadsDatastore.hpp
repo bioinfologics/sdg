@@ -62,6 +62,14 @@ public:
         }
     }
 
+
+    /**
+     * @brief Provides an overview of the information in the LinkedReadsDatastore
+     * @param level Base indentation level to use on the result
+     * @param recursive Whether it should explore or not the rest of the hierarchy
+     * @return
+     * A text summary of the information contained in a LinkedReadsDatastore
+    */
     std::string ls(int level=0,bool recursive=true) const;
 
     friend std::ostream& operator<<(std::ostream& os, const LinkedReadsDatastore &lrds);

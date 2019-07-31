@@ -1,0 +1,12 @@
+from setuptools import setup
+
+setup(name='pysdg',
+      version='@sdg_VERSION@',
+      description='Sequence Distance Graph framework: graph + reads + mapping + analysis',
+      url='https://github.com/bioinfologics/sdg',
+      author='Ben J. Ward',
+      author_email='benjward@protonmail.com',
+      license='MIT',
+      packages=['pysdg'],
+      package_data={'pysdg': ['_pysdg.so']},
+      zip_safe=False)

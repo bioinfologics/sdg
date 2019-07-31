@@ -99,7 +99,7 @@ else()
     endif()
 endif()
 if("${GIT_BRANCH}" STREQUAL "")
-    add_definitions("-DGIT_COMMIT_HASH=\"not_from_git\"")
+    add_definitions("-DGIT_BRANCH=\"not_from_git\"")
 else()
     add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
 endif()
@@ -338,9 +338,10 @@ IF(BUILD_PYTHON_INTERFACE)
     MESSAGE("Building python interface")
     FIND_PACKAGE(SWIG REQUIRED)
     INCLUDE(${SWIG_USE_FILE})
-    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/pysdg)
-    configure_file(interfaces/python/__init__.py.in pysdg/__init__.py)
+    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/pysdg/pysdg)
+    configure_file(interfaces/python/__init__.py.in pysdg/pysdg/__init__.py)
     configure_file(interfaces/SequenceDistanceGraph.i.in SequenceDistanceGraph.i)
+    configure_file(interfaces/python/setup.py.in pysdg/setup.py)
 
     INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
 
@@ -364,12 +365,7 @@ IF(BUILD_PYTHON_INTERFACE)
                      )
     SWIG_LINK_LIBRARIES(pysdg ${PYTHON_LIBRARIES} sdg_static)
     set_target_properties(pysdg PROPERTIES
-                          LIBRARY_OUTPUT_DIRECTORY pysdg)
-    install(TARGETS
-            pysdg
-            RUNTIME DESTINATION pysdg
-            ARCHIVE DESTINATION pysdg
-            LIBRARY DESTINATION pysdg)
+                          LIBRARY_OUTPUT_DIRECTORY pysdg/pysdg)
 ENDIF()
 
 IF(BUILD_R_INTERFACE)
