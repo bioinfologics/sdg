@@ -211,7 +211,7 @@ void stats_kmer_counts(int argc, char **argv) {
             exit(0);
         }
 
-        if (result.count("name")==0) {
+        if (result.count("kmer_counter")==0) {
             throw cxxopts::OptionException(" please specify KmerCounter file");
         }
 
