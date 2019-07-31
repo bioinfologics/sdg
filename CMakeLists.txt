@@ -277,7 +277,7 @@ IF(BUILD_DOC)
     if (DOXYGEN_FOUND)
         get_target_property(SDG_PUBLIC_HEADER_DIR sdg INTERFACE_INCLUDE_DIRECTORIES)
         message("${SDG_PUBLIC_HEADER_DIR}")
-        file(GLOB_RECURSE SDG_PUBLIC_HEADERS ${SDG_PUBLIC_HEADER_DIR}/**/*.hpp)
+        file(GLOB_RECURSE SDG_PUBLIC_HEADERS ${header_files})
         # set input and output files
         set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR})
         set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/docs)
