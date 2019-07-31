@@ -324,7 +324,7 @@ public:
      *
      * (Maybe in canonical from->to orientation?)
      */
-    std::unordered_map<std::pair<sgNodeID_t,sgNodeID_t>, std::vector<SequenceGraphPath>> all_paths_between;
+    std::unordered_map<std::pair<sgNodeID_t,sgNodeID_t>, std::vector<SequenceDistanceGraphPath>> all_paths_between;
 
     //std::vector < std::vector<LongReadMapping> > filtered_read_mappings;
 

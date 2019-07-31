@@ -648,14 +648,14 @@ std::vector<sgNodeID_t> LongReadsMapper::create_read_path(const std::vector<Long
 //            max_path_size = 20000;
             if (verbose) std::cout << "\n\nJumping between "<<m1<<" and "<<m2<<std::endl<<"Alignment distance: " << ad << " bp, path distance " << pd << ", looking for paths of up to " << max_path_size << " bp" << std::endl;
 
-            std::unordered_map<std::pair<sgNodeID_t,sgNodeID_t>, std::vector<SequenceGraphPath>>::const_iterator place_in_map;
+            std::unordered_map<std::pair<sgNodeID_t,sgNodeID_t>, std::vector<SequenceDistanceGraphPath>>::const_iterator place_in_map;
 #pragma omp critical (paths_map)
             {
                 place_in_map = all_paths_between.find(std::make_pair(m1.node, m2.node));
             }
 
             bool found_in_map = place_in_map != all_paths_between.end();
-            const std::vector<SequenceGraphPath>& paths = ( found_in_map ?
+            const std::vector<SequenceDistanceGraphPath>& paths = ( found_in_map ?
                     place_in_map->second :
                     sg.find_all_paths_between(m1.node, m2.node, max_path_size, read_path_params.max_path_nodes, false));
 
@@ -682,7 +682,7 @@ std::vector<sgNodeID_t> LongReadsMapper::create_read_path(const std::vector<Long
                 WorkSpace pws;
                 SequenceDistanceGraph psg(pws);
                 for (const auto &p : paths) {
-                    psg.add_node(Node(p.get_sequence()));
+                    psg.add_node(Node(p.sequence()));
                 }
 
                 //Create, parametrise and index a mapper to the paths SG

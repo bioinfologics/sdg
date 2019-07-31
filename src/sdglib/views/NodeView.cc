@@ -40,6 +40,23 @@ const std::vector<LinkView> NodeView::prev() const {
     return r;
 }
 
+const std::vector<NodeView> NodeView::parallels() const {
+    auto p=prev(),n=next();
+    if (p.empty() or n.empty()) return {};
+    std::vector<NodeView> pars;
+    std::set<sgNodeID_t> pnodes,nnodes;
+    for (auto &plv:prev()) pnodes.insert(plv.node().node_id());
+    for (auto &nlv:next()) nnodes.insert(nlv.node().node_id());
+    for (auto &other:prev()[0].node().next()){
+        if (other.node()==*this) continue;
+        std::set<sgNodeID_t> opnodes,onnodes;
+        for (auto &plv:other.node().prev()) opnodes.insert(plv.node().node_id());
+        for (auto &nlv:other.node().next()) onnodes.insert(nlv.node().node_id());
+        if (pnodes==opnodes and nnodes==onnodes) pars.push_back(other.node());
+    }
+    return pars;
+}
+
 std::vector<uint16_t> NodeView::kmer_coverage(std::string kcovds_name, std::string kcovds_count_name) const {
     return dg->sdg.ws.get_kmer_counter(kcovds_name).project_count(kcovds_count_name,sequence());
 }

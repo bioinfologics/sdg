@@ -16,7 +16,7 @@
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
 #include "DistanceGraph.hpp"
 
-class SequenceGraphPath;
+class SequenceDistanceGraphPath;
 class SequenceSubGraph;
 class WorkSpace;
 /**
@@ -138,12 +138,12 @@ public:
      * @param p
      * @param consume_nodes
      */
-    void join_path(const SequenceGraphPath p, bool consume_nodes=true);
+    void join_path(const SequenceDistanceGraphPath p, bool consume_nodes=true);
     // expand_path --> creates an edge with the consensus of a path, eliminates old nodes if only in path and unused edges
 
     uint32_t join_all_unitigs();
     //TODO: deprecate and replace/merge with get_all_lines
-    std::vector<SequenceGraphPath> get_all_unitigs(uint16_t min_nodes);;
+    std::vector<SequenceDistanceGraphPath> get_all_unitigs(uint16_t min_nodes);;
 
     /**
      * Makes multiple copies of a node to expand as repeat, connects to the bw and fw as specified,

@@ -16,7 +16,7 @@ std::string HaplotypeConsensus::consensus_sequence(int disconnected_distance, in
             current_path.emplace_back(n);
         }
         if (n == 0 or ni==backbone_filled_path.size()-1) {
-            consensus+=SequenceGraphPath(ldg.sdg, current_path).get_sequence();
+            consensus+= SequenceDistanceGraphPath(ldg.sdg, current_path).sequence();
             current_path.clear();
         }
         if (n == 0 and ni < backbone_filled_path.size()-1){

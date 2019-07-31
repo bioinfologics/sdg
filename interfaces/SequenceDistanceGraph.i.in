@@ -19,7 +19,7 @@
 #include "sdglib/types/GenericTypes.hpp"
 #include "sdglib/types/MappingTypes.hpp"
 
-#include "sdglib/graph/SequenceGraphPath.hpp"
+#include "sdglib/graph/SequenceDistanceGraphPath.hpp"
 #include "sdglib/graph/SequenceSubGraph.hpp"
 #include "sdglib/graph/SequenceDistanceGraph.hpp"
 #include "sdglib/graph/DistanceGraph.hpp"
@@ -210,7 +210,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
 
 %include "sdglib/types/MappingTypes.hpp"
 
-%include "sdglib/graph/SequenceGraphPath.hpp"
+%include "sdglib/graph/SequenceDistanceGraphPath.hpp"
 %include "sdglib/graph/SequenceSubGraph.hpp"
 %include "sdglib/graph/SequenceDistanceGraph.hpp"
 %include "sdglib/graph/DistanceGraph.hpp"

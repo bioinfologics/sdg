@@ -351,14 +351,14 @@ std::vector<sgNodeID_t> SequenceDistanceGraph::oldnames_to_nodes(std::string _ol
     return nv;
 }
 
-std::vector<SequenceGraphPath> SequenceDistanceGraph::get_all_unitigs(uint16_t min_nodes) {
-    std::vector<SequenceGraphPath> unitigs;
+std::vector<SequenceDistanceGraphPath> SequenceDistanceGraph::get_all_unitigs(uint16_t min_nodes) {
+    std::vector<SequenceDistanceGraphPath> unitigs;
     std::vector<bool> used(nodes.size(),false);
 
     for (auto n=1;n<nodes.size();++n){
         if (used[n] or nodes[n].status==NodeStatus::Deleted) continue;
         used[n]=true;
-        SequenceGraphPath path(*this,{n});
+        SequenceDistanceGraphPath path(*this,{n});
 
         //two passes: 0->fw, 1->bw, path is inverted twice, so still n is +
         for (auto pass=0; pass<2; ++pass) {
@@ -385,7 +385,7 @@ uint32_t SequenceDistanceGraph::join_all_unitigs() {
     return joined;
 }
 
-void SequenceDistanceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
+void SequenceDistanceGraph::join_path(SequenceDistanceGraphPath p, bool consume_nodes) {
     std::set<sgNodeID_t> pnodes;
     for (auto n:p.nodes) {
         pnodes.insert( n );
@@ -393,7 +393,7 @@ void SequenceDistanceGraph::join_path(SequenceGraphPath p, bool consume_nodes) {
     }
 
     if (!p.is_canonical()) p.reverse();
-    sgNodeID_t new_node=add_node(Node(p.get_sequence()));
+    sgNodeID_t new_node=add_node(Node(p.sequence()));
     //TODO:check, this may have a problem with a circle
     for (auto l:get_bw_links(p.nodes.front())) add_link(new_node,l.dest,l.dist);
     for (auto l:get_fw_links(p.nodes.back())) add_link(-new_node,l.dest,l.dist);
@@ -512,7 +512,7 @@ void SequenceDistanceGraph::print_bubbly_subgraph_stats(const std::vector<Sequen
     uint64_t total_size=0,total_solved_size=0;
     for (const auto &bp:bubbly_paths){
         total_size+=bp.total_size();
-        SequenceGraphPath p1(*this),p2(*this);
+        SequenceDistanceGraphPath p1(*this),p2(*this);
         original_sizes.push_back(nodes[llabs(bp.nodes.front())].sequence.size());
         original_sizes.push_back(nodes[llabs(bp.nodes.back())].sequence.size());
         solved_sizes.push_back(nodes[llabs(bp.nodes.front())].sequence.size());
@@ -527,9 +527,9 @@ void SequenceDistanceGraph::print_bubbly_subgraph_stats(const std::vector<Sequen
             } else if (i%3==1) p1.nodes.push_back(bp.nodes[i]);
             else p2.nodes.push_back(bp.nodes[i]);
         }
-        solved_sizes.push_back(p1.get_sequence().size());
+        solved_sizes.push_back(p1.sequence().size());
         total_solved_size+=solved_sizes.back();
-        solved_sizes.push_back(p2.get_sequence().size());
+        solved_sizes.push_back(p2.sequence().size());
         total_solved_size+=solved_sizes.back();
     }
     std::sort(solved_sizes.rbegin(),solved_sizes.rend());

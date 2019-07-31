@@ -212,7 +212,7 @@ std::unordered_set<sgNodeID_t> DistanceGraph::get_connected_nodes() const {
     return std::move(r);
 }
 
-std::vector<SequenceGraphPath> DistanceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes, bool abort_on_loops) const {
+std::vector<SequenceDistanceGraphPath> DistanceGraph::find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes, bool abort_on_loops) const {
     typedef struct T {
         int64_t prev;
         sgNodeID_t node;
@@ -223,7 +223,7 @@ std::vector<SequenceGraphPath> DistanceGraph::find_all_paths_between(sgNodeID_t 
 
     std::vector<pathNodeEntry_t> node_entries;
     node_entries.reserve(100000);
-    std::vector<SequenceGraphPath> final_paths;
+    std::vector<SequenceDistanceGraphPath> final_paths;
     std::vector<sgNodeID_t> pp;
 
     for(auto &fl:get_fw_links(from)) {

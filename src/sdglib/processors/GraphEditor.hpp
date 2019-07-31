@@ -12,9 +12,9 @@ class GraphEditor {
 public:
     GraphEditor (WorkSpace &_ws):ws(_ws){};
 
-    bool detach_path (SequenceGraphPath p,bool consume_tips=false); //returns true on success
+    bool detach_path (SequenceDistanceGraphPath p,bool consume_tips=false); //returns true on success
     int patch_between (sgNodeID_t from, sgNodeID_t to, std::string);
-    SequenceGraphPath find_longest_path_from(sgNodeID_t node, std::string seq);
+    SequenceDistanceGraphPath find_longest_path_from(sgNodeID_t node, std::string seq);
     void remove_small_components(int max_nodes, int max_size, int max_total);
 
     /**
@@ -25,9 +25,9 @@ public:
      */
     void expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNodeID_t>> bw, std::vector<std::vector<sgNodeID_t>> fw);
 
-    void expand_path(const SequenceGraphPath &p);
+    void expand_path(const SequenceDistanceGraphPath &p);
 
-    void join_path(SequenceGraphPath p,bool consume_nodes=false);
+    void join_path(SequenceDistanceGraphPath p,bool consume_nodes=false);
 
     WorkSpace & ws;
     std::set<sgNodeID_t> edited_nodes;

@@ -17,7 +17,7 @@
 #include <sdglib/types/KmerTypes.hpp>
 #include <sdglib/types/GenericTypes.hpp>
 #include <sdglib/graph/SequenceSubGraph.hpp>
-#include <sdglib/graph/SequenceGraphPath.hpp>
+#include <sdglib/graph/SequenceDistanceGraphPath.hpp>
 #include <sdglib/utilities/OutputLog.hpp>
 
 
@@ -146,7 +146,7 @@ public:
      * @param abort_on_loops
      * @return
      */
-    std::vector<SequenceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes=20, bool abort_on_loops=true) const;
+    std::vector<SequenceDistanceGraphPath> find_all_paths_between(sgNodeID_t from,sgNodeID_t to, int64_t max_size, int max_nodes=20, bool abort_on_loops=true) const;
 
     /** @brief Removes transitive connections form the link collection
      *

@@ -12,26 +12,26 @@
 
 class SequenceSubGraph;
 class SequenceDistanceGraph;
-class SequenceGraphPath {
+class SequenceDistanceGraphPath {
 public:
-    explicit SequenceGraphPath(SequenceDistanceGraph & _sg, const std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
-    explicit SequenceGraphPath(const SequenceDistanceGraph &_sg, const std::vector<sgNodeID_t> _nodes={}) : sg(_sg), nodes(_nodes) {};
+    explicit SequenceDistanceGraphPath(SequenceDistanceGraph & _sg, const std::vector<sgNodeID_t> _nodes={})  : sg(_sg) ,nodes(_nodes) {};
+    explicit SequenceDistanceGraphPath(const SequenceDistanceGraph &_sg, const std::vector<sgNodeID_t> _nodes={}) : sg(_sg), nodes(_nodes) {};
 
-    SequenceGraphPath(const SequenceGraphPath& sgp) : nodes(sgp.nodes), sg(sgp.sg) {};
+    SequenceDistanceGraphPath(const SequenceDistanceGraphPath& sgp) : nodes(sgp.nodes), sg(sgp.sg) {};
 
-    SequenceGraphPath& operator=(const SequenceGraphPath &other);
+    SequenceDistanceGraphPath& operator=(const SequenceDistanceGraphPath &other);
 
     std::string get_fasta_header(bool use_oldnames = false) const;
-    std::string get_sequence() const;
+    std::string sequence() const;
     size_t get_sequence_size_fast() const;
     std::vector<Link> get_next_links();
     void reverse();
     bool is_canonical();
     std::set<sgNodeID_t> make_set_of_nodes() const;
-    bool operator==(const SequenceGraphPath& rhs) const;
-    bool operator<(const SequenceGraphPath& rhs) const;
+    bool operator==(const SequenceDistanceGraphPath& rhs) const;
+    bool operator<(const SequenceDistanceGraphPath& rhs) const;
 
-    bool extend_if_coherent(SequenceGraphPath s){};
+    bool extend_if_coherent(SequenceDistanceGraphPath s){};
     void clear() {
         nodes.clear();
     };

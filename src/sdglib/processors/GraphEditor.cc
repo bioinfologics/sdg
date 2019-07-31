@@ -5,7 +5,7 @@
 #include <functional>
 #include "GraphEditor.hpp"
 
-bool GraphEditor::detach_path(SequenceGraphPath p, bool consume_tips) {
+bool GraphEditor::detach_path(SequenceDistanceGraphPath p, bool consume_tips) {
     if (p.nodes.size()==1) return true;
     //TODO: check the path is valid?
     if (p.nodes.size()==2) {
@@ -39,7 +39,7 @@ bool GraphEditor::detach_path(SequenceGraphPath p, bool consume_tips) {
         dest=-src;
         src=nsrc;
     }
-    sgNodeID_t new_node=ws.sdg.add_node(Node(pmid.get_sequence()));
+    sgNodeID_t new_node=ws.sdg.add_node(Node(pmid.sequence()));
     //TODO: migrate connection from the src node to the first middle node into the new node
     auto old_link=ws.sdg.get_link(-p.nodes[0],p.nodes[1]);
     //ws.sdg.remove_link(-p.nodes[0],p.nodes[1]);
@@ -71,8 +71,8 @@ bool GraphEditor::detach_path(SequenceGraphPath p, bool consume_tips) {
     return true;
 }
 
-SequenceGraphPath GraphEditor::find_longest_path_from(sgNodeID_t node, std::string seq) {
-    SequenceGraphPath p(ws.sdg);
+SequenceDistanceGraphPath GraphEditor::find_longest_path_from(sgNodeID_t node, std::string seq) {
+    SequenceDistanceGraphPath p(ws.sdg);
     auto n1 = ws.sdg.nodes[llabs(node)];
     const size_t ENDS_SIZE=200;
     if (node<0) n1.make_rc();
@@ -133,14 +133,14 @@ int GraphEditor::patch_between(sgNodeID_t from, sgNodeID_t to, std::string patch
     else return 5;
 };
 
-void GraphEditor::join_path(SequenceGraphPath p, bool consume_nodes) {
+void GraphEditor::join_path(SequenceDistanceGraphPath p, bool consume_nodes) {
     std::set<sgNodeID_t> pnodes;
     for (auto n:p.nodes) {
         pnodes.insert( n );
         pnodes.insert( -n );
     }
     if (!p.is_canonical()) p.reverse();
-    sgNodeID_t new_node=ws.sdg.add_node(Node(p.get_sequence()));
+    sgNodeID_t new_node=ws.sdg.add_node(Node(p.sequence()));
     //TODO:check, this may have a problem with a circle
     for (auto l:ws.sdg.get_bw_links(p.nodes.front())) ws.sdg.add_link(new_node,l.dest,l.dist);
 

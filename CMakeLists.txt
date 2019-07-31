@@ -149,7 +149,7 @@ include_directories("deps/xxhash/")
 SET(header_files
     src/sdglib/graph/SequenceDistanceGraph.hpp
     src/sdglib/graph/SequenceSubGraph.hpp
-    src/sdglib/graph/SequenceGraphPath.hpp
+        src/sdglib/graph/SequenceDistanceGraphPath.hpp
     src/sdglib/graph/DistanceGraph.hpp
     src/sdglib/utilities/OutputLog.hpp
     src/sdglib/datastores/PairedReadsDatastore.hpp
@@ -180,7 +180,7 @@ SET(header_files
 SET(source_files ${source_files}
     src/sdglib/graph/SequenceDistanceGraph.cc
     src/sdglib/graph/SequenceSubGraph.cc
-    src/sdglib/graph/SequenceGraphPath.cc
+        src/sdglib/graph/SequenceDistanceGraphPath.cc
     src/sdglib/graph/DistanceGraph.cc
     src/sdglib/utilities/OutputLog.cc
     src/sdglib/datastores/PairedReadsDatastore.cc

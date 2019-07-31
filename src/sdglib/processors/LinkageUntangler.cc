@@ -435,7 +435,7 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //    }
 //    std::cout<<std::endl;
 //    sdglib::OutputLog()<<"Creating path collections to be evaluated for "<<lines.size()<<" linear regions"<<std::endl;
-//    std::vector<std::vector<std::vector<SequenceGraphPath>>> alternatives;
+//    std::vector<std::vector<std::vector<SequenceDistanceGraphPath>>> alternatives;
 //    uint64_t total_paths=0,found=0,evaluated=0;
 //    alternatives.reserve(lines.size());
 //    for (auto l:lines) {
@@ -504,7 +504,7 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //    KmerVectorCreator kvc(31);
 //    uint64_t solved=0,none_covered=0,too_many_covered=0,no_paths=0;
 //    GraphEditor ged(ws);
-//    std::vector<SequenceGraphPath> sols;
+//    std::vector<SequenceDistanceGraphPath> sols;
 //    for (auto i=0;i<lines.size();++i){
 //        for (auto ia=0;ia<alternatives[i].size();++ia){
 //            int best=-1;
@@ -605,7 +605,7 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //    std::cout<<std::endl;
 //
 //    //-----Step 2: local assemblies
-//    std::vector<SequenceGraphPath> sols;
+//    std::vector<SequenceDistanceGraphPath> sols;
 //    std::atomic<uint64_t> found_transitions(0),not_found_transitions(0);
 //    sdglib::OutputLog()<<"Performing local assembly for "<<lines.size()<<" linear regions"<<std::endl;
 //    std::vector<std::vector<std::string>> local_unitigs;
@@ -613,7 +613,7 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //#pragma omp parallel
 //    {
 //        ReadSequenceBuffer blrsg(ws.linked_reads_datastores[0], 200000, 1000);
-//        std::vector<SequenceGraphPath> tsols;
+//        std::vector<SequenceDistanceGraphPath> tsols;
 //        uint64_t donelines = 0;
 //#pragma omp for schedule(dynamic, 1)
 //        for (auto i = 0; i < lines.size(); ++i) {
@@ -780,11 +780,11 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //    for (auto &l:lines) jc+=l.size()-1;
 //    sdglib::OutputLog()<<"Skating across "<<jc<<" junctions in "<<lines.size()<<" linear regions"<<std::endl;
 //
-//    std::vector<SequenceGraphPath> sols;
+//    std::vector<SequenceDistanceGraphPath> sols;
 //#pragma omp parallel
 //    {
 //        ReadSequenceBuffer blrsg(ws.linked_reads_datastores[0], 200000, 1000);
-//        std::vector<SequenceGraphPath> tsols;
+//        std::vector<SequenceDistanceGraphPath> tsols;
 //        uint64_t donelines=0;
 //#pragma omp for schedule(dynamic,1)
 //        for (auto i=0; i<lines.size(); ++i){
@@ -843,7 +843,7 @@ DistanceGraph LinkageUntangler::make_nextselected_linkage(int min_links) {
 //                    if (p.back()==to) ++complete;
 //                    else ++incomplete;
 //                }
-//                if (complete==1 and incomplete==0) tsols.emplace_back(SequenceGraphPath(ws.sdg,skated_paths[0]));
+//                if (complete==1 and incomplete==0) tsols.emplace_back(SequenceDistanceGraphPath(ws.sdg,skated_paths[0]));
 //                //std::cout<<"Skating line #"<<i+1<<" junction #"<<j+1<<" produced "<<complete<<" complete paths and "<<incomplete<<" possibly incomplete paths"<<std::endl;
 //            }
 //            if (++donelines%100==0) std::cout<<"."<<std::flush;

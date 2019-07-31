@@ -20,6 +20,7 @@ public:
     NodeView(NodeView const &o):dg(o.dg), id(o.id) {};
     friend std::ostream &operator<<(std::ostream &os, const NodeView &n);
     DistanceGraph graph() const;
+    const bool operator==(const NodeView &o) const {return (id==o.id) and (dg==o.dg);};
     /**
      * @return Sequence of the underlying SequenceDistanceGraph node
      */
@@ -38,6 +39,11 @@ public:
      * @return A vector of LinkView for the previous elements defined by the DistanceGraph
      */
     const std::vector<LinkView> prev() const;
+
+    /**
+     * @return A vector of NodeView for all nodes that have the same connections fw and bw than this node
+     */
+    const std::vector<NodeView> parallels() const;
 
     /**
      * @return The id of the underlying SequenceDistanceGraph node

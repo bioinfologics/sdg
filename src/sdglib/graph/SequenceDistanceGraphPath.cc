@@ -4,7 +4,7 @@
 
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
 
-std::string SequenceGraphPath::get_fasta_header(bool use_oldnames) const {
+std::string SequenceDistanceGraphPath::get_fasta_header(bool use_oldnames) const {
     std::string h = ">sgPath_[";
     if (use_oldnames) {
         for (auto &n:nodes) {
@@ -21,8 +21,8 @@ std::string SequenceGraphPath::get_fasta_header(bool use_oldnames) const {
     return h;
 }
 
-std::string SequenceGraphPath::get_sequence() const {
-    sdglib::OutputLog(sdglib::LogLevels::DEBUG) << "get_sequence for a SequenceGraphPath with nodes = [" ;
+std::string SequenceDistanceGraphPath::sequence() const {
+    sdglib::OutputLog(sdglib::LogLevels::DEBUG) << "sequence for a SequenceDistanceGraphPath with nodes = [" ;
     if(sdglib::OutputLogLevel == sdglib::LogLevels::DEBUG) {
         for(auto &n:nodes) std::cout << " " << n;
         std::cout << " ]" << std::endl;
@@ -63,7 +63,7 @@ std::string SequenceGraphPath::get_sequence() const {
         s+=nseq;
         pnode=-n;
     }
-    sdglib::OutputLog(sdglib::LogLevels::DEBUG) << "get_sequence finished successfully for SequenceGraphPath with nodes = [" ;
+    sdglib::OutputLog(sdglib::LogLevels::DEBUG) << "sequence finished successfully for SequenceDistanceGraphPath with nodes = [" ;
     if(sdglib::OutputLogLevel == sdglib::LogLevels::DEBUG) {
         for(auto &n:nodes) std::cout<<" "<<n;
         std::cout<<" ]"<<std::endl;
@@ -71,19 +71,19 @@ std::string SequenceGraphPath::get_sequence() const {
     return s;
 }
 
-void SequenceGraphPath::reverse(){
+void SequenceDistanceGraphPath::reverse(){
     std::vector<sgNodeID_t> newn;
     for (auto n=nodes.rbegin();n<nodes.rend();++n) newn.emplace_back(-*n);
     nodes=newn;
 }
 
-bool SequenceGraphPath::is_canonical() {
+bool SequenceDistanceGraphPath::is_canonical() {
     auto rp=*this;
     rp.reverse();
-    return get_sequence()<rp.get_sequence();
+    return sequence()< rp.sequence();
 }
 
-std::set<sgNodeID_t> SequenceGraphPath::make_set_of_nodes() const {
+std::set<sgNodeID_t> SequenceDistanceGraphPath::make_set_of_nodes() const {
     std::set<sgNodeID_t> s;
     std::transform(nodes.begin(),
                    nodes.end(),
@@ -92,15 +92,15 @@ std::set<sgNodeID_t> SequenceGraphPath::make_set_of_nodes() const {
     return s;
 }
 
-bool SequenceGraphPath::operator==(const SequenceGraphPath& rhs) const {
+bool SequenceDistanceGraphPath::operator==(const SequenceDistanceGraphPath& rhs) const {
     return make_set_of_nodes() == rhs.make_set_of_nodes();
 }
 
-bool SequenceGraphPath::operator<(const SequenceGraphPath& rhs) const {
+bool SequenceDistanceGraphPath::operator<(const SequenceDistanceGraphPath& rhs) const {
     return make_set_of_nodes() < rhs.make_set_of_nodes();
 }
 
-SequenceGraphPath& SequenceGraphPath::operator=(const SequenceGraphPath &other) {
+SequenceDistanceGraphPath& SequenceDistanceGraphPath::operator=(const SequenceDistanceGraphPath &other) {
     if (&sg != &other.sg) { throw std::runtime_error("Can only copy paths from the same SequenceDistanceGraph"); }
     if (&other == this) {
         return *this;
@@ -109,11 +109,11 @@ SequenceGraphPath& SequenceGraphPath::operator=(const SequenceGraphPath &other) 
     return *this;
 }
 
-std::vector<Link> SequenceGraphPath::get_next_links() {
+std::vector<Link> SequenceDistanceGraphPath::get_next_links() {
     return sg.get_fw_links(nodes.back());
 }
 
-size_t SequenceGraphPath::get_sequence_size_fast() const{
+size_t SequenceDistanceGraphPath::get_sequence_size_fast() const{
     size_t size=0;
     //std::string s="";
     sgNodeID_t pnode=0;
@@ -138,7 +138,7 @@ size_t SequenceGraphPath::get_sequence_size_fast() const{
     return size;
 }
 
-bool SequenceGraphPath::is_unitig() {
+bool SequenceDistanceGraphPath::is_unitig() {
     for (auto i=0;i<nodes.size();++i) {
         auto fwl=sg.get_fw_links(nodes[i]);
         auto bwl=sg.get_bw_links(nodes[i]);
