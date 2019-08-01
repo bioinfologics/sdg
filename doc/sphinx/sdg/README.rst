@@ -20,11 +20,11 @@ Installation
 
 The installation process requires the following dependencies:
 
-- GCC-6
-- CMake-3.14.3
-- SWIG-4.0.0 (For Python interface)
-- Python-3.7 (For Python interface)
-- Git LFS (For tests)
+- GCC >= 6
+- CMake >= 3.14.3
+- SWIG == 4.0.0 (To compile the Python interface)
+- Python >= 3.7 (To compile the Python interface)
+- Git LFS (To obtain the test datasets)
 
 The installation process consists of generating the configuration files using CMake and using make.
 
