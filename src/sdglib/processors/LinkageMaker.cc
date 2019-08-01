@@ -635,6 +635,7 @@ std::vector<Link> LinkageMaker::mappings_to_multilinkage(const std::vector<LongR
 
 DistanceGraph LinkageMaker::make_longreads_multilinkage(const LongReadsMapper &lorm, uint64_t min_map_size,
                                                        float min_map_id, bool real_read_size, int32_t unmapped_end) {
+    check_selected_nodes();
     auto filtered_read_mappings=lorm.improve_mappings(lorm.filter_mappings_by_size_and_id(min_map_size,min_map_id));
     DistanceGraph ldg(dg.sdg);
     std::vector<Link> linkage;
@@ -662,34 +663,14 @@ DistanceGraph LinkageMaker::make_longreads_multilinkage(const LongReadsMapper &l
 DistanceGraph LinkageMaker::make_longreads_multilinkage(const std::string &longreads_datastore_name, uint64_t min_map_size,
                                                         float min_map_id, bool real_read_size, int32_t unmapped_end) {
     const auto& lorm = dg.sdg.ws.get_long_reads_datastore(longreads_datastore_name).mapper;
-    auto filtered_read_mappings=lorm.improve_mappings(lorm.filter_mappings_by_size_and_id(min_map_size,min_map_id));
-    DistanceGraph ldg(dg.sdg);
-    std::vector<Link> linkage;
-    auto lormidx=0;
-    for (; lormidx < dg.sdg.ws.long_reads_datastores.size(); ++lormidx){
-        if (lorm.datastore.filename == dg.sdg.ws.long_reads_datastores[lormidx].filename) break;
-    }
-    //for each read's filtered mappings:
-    for(int64_t rid=0;rid<filtered_read_mappings.size();++rid) {
-        if (filtered_read_mappings[rid].empty()) continue;
-        auto newlinks=mappings_to_multilinkage(filtered_read_mappings[rid],(real_read_size ? lorm.datastore.read_to_fileRecord[rid].record_size : 0), unmapped_end);
-        for (auto &l:newlinks){
-            l.support.type=SupportType::LongRead;
-            l.support.index=lormidx;
-            l.support.id=rid;
-        }
-        linkage.insert(linkage.end(),newlinks.begin(),newlinks.end());
-    }
-    for (auto l:linkage) {
-        ldg.add_link(l.source,l.dest,l.dist,l.support);
-    }
-    return ldg;
+    make_longreads_multilinkage(lorm, min_map_size, min_map_id, real_read_size, unmapped_end);
 }
 
 
 
 DistanceGraph LinkageMaker::make_paired10x_multilinkage(const PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore, bool fr,
                                                         uint64_t read_offset) {
+    check_selected_nodes();
     uint16_t prmidx=0;
     for (; prmidx < dg.sdg.ws.paired_reads_datastores.size(); ++prmidx){
         if (prm.datastore.filename == dg.sdg.ws.paired_reads_datastores[prmidx].filename) break;
@@ -793,6 +774,7 @@ std::vector<std::vector<LongReadMapping>> filter_mappings_with_linked_reads(cons
 }
 
 DistanceGraph LinkageMaker::make_long10x_multilinkage(const LongReadsMapper &lorm, const LinkedReadsMapper &lrm, uint32_t min_size,  float min_tnscore, bool real_read_size, int32_t unmapped_end) {
+    check_selected_nodes();
     auto filtered_read_mappings=filter_mappings_with_linked_reads(lorm,lrm,min_size,min_tnscore);
     DistanceGraph ldg(dg.sdg);
     std::vector<Link> linkage;
@@ -815,4 +797,17 @@ DistanceGraph LinkageMaker::make_long10x_multilinkage(const LongReadsMapper &lor
         ldg.add_link(l.source,l.dest,l.dist,l.support);
     }
     return ldg;
+}
+
+DistanceGraph LinkageMaker::make_long10x_multilinkage(const std::string &lorm_name, const std::string &lrm_name, uint32_t min_size,  float min_tnscore, bool real_read_size, int32_t unmapped_end) {
+    const auto& lorm = dg.sdg.ws.get_long_reads_datastore(lorm_name).mapper;
+    const auto& lrm = dg.sdg.ws.get_linked_reads_datastore(lrm_name).mapper;
+
+    make_long10x_multilinkage(lorm, lrm, min_size, min_tnscore, real_read_size, unmapped_end);
+}
+
+void LinkageMaker::check_selected_nodes() {
+    if (std::find(selected_nodes.begin(), selected_nodes.end(), true) == selected_nodes.cend()) {
+        throw std::runtime_error("No nodes selected for multilinkage");
+    }
 }
