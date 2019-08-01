@@ -8,7 +8,7 @@ jobs:
       os: osx
       osx_image: xcode10.1
       env:
-        - CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 -DBUILD_PYTHON_INTERFACE=ON"
+        - CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6"
       deploy:
         provider: releases
         api_key: $GITHUB_TOKEN
@@ -37,7 +37,7 @@ jobs:
             - python3-pip
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && GCOV=gcov-6 && DEPLOY=true"
-        - CMAKE_OPTIONS="-DDOXYGEN_EXECUTABLE=${HOME}/bin/doxygen -DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 -DBUILD_PYTHON_INTERFACE=ON -DBUILD_R_INTERFACE=OFF -DBUILD_COV=ON -DBUILD_DOC=ON"
+        - CMAKE_OPTIONS="-DDOXYGEN_EXECUTABLE=${HOME}/bin/doxygen -DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6 -DBUILD_COV=ON -DBUILD_DOC=ON"
       deploy:
         - provider: releases
           api_key: $GITHUB_TOKEN
