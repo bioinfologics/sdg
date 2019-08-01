@@ -659,6 +659,33 @@ DistanceGraph LinkageMaker::make_longreads_multilinkage(const LongReadsMapper &l
     return ldg;
 }
 
+DistanceGraph LinkageMaker::make_longreads_multilinkage(const std::string &longreads_datastore_name, uint64_t min_map_size,
+                                                        float min_map_id, bool real_read_size, int32_t unmapped_end) {
+    const auto& lorm = dg.sdg.ws.get_long_reads_datastore(longreads_datastore_name).mapper;
+    auto filtered_read_mappings=lorm.improve_mappings(lorm.filter_mappings_by_size_and_id(min_map_size,min_map_id));
+    DistanceGraph ldg(dg.sdg);
+    std::vector<Link> linkage;
+    auto lormidx=0;
+    for (; lormidx < dg.sdg.ws.long_reads_datastores.size(); ++lormidx){
+        if (lorm.datastore.filename == dg.sdg.ws.long_reads_datastores[lormidx].filename) break;
+    }
+    //for each read's filtered mappings:
+    for(int64_t rid=0;rid<filtered_read_mappings.size();++rid) {
+        if (filtered_read_mappings[rid].empty()) continue;
+        auto newlinks=mappings_to_multilinkage(filtered_read_mappings[rid],(real_read_size ? lorm.datastore.read_to_fileRecord[rid].record_size : 0), unmapped_end);
+        for (auto &l:newlinks){
+            l.support.type=SupportType::LongRead;
+            l.support.index=lormidx;
+            l.support.id=rid;
+        }
+        linkage.insert(linkage.end(),newlinks.begin(),newlinks.end());
+    }
+    for (auto l:linkage) {
+        ldg.add_link(l.source,l.dest,l.dist,l.support);
+    }
+    return ldg;
+}
+
 
 
 DistanceGraph LinkageMaker::make_paired10x_multilinkage(const PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore, bool fr,
