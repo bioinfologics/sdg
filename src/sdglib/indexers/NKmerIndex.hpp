@@ -22,7 +22,7 @@ public:
     using const_iterator = std::vector<kmerPos>::const_iterator;
 
     NKmerIndex(){};
-    NKmerIndex(const SequenceDistanceGraph &sg,uint8_t k=15, int filter_limit = 200);
+    explicit NKmerIndex(const SequenceDistanceGraph &sg,uint8_t k=15, int filter_limit = 200);
 
     bool empty() const { return assembly_kmers.empty(); }
     const_iterator begin() const {return assembly_kmers.cbegin();}

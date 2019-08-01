@@ -17,7 +17,7 @@ struct KmerCountsFunctionMap : public std::map<std::string, KmerCountsFunctions>
     {
         operator[]("make") =  KmerCountsFunctions::MAKE;
         operator[]("add") =  KmerCountsFunctions::ADD;
-        operator[]("stats") = KmerCountsFunctions::STATS;
+        operator[]("status") = KmerCountsFunctions::STATS;
     };
 };
 
@@ -38,7 +38,7 @@ void add_kmer_count(int argc, char **argv) {
                 ("d,datastore", "input datastore", cxxopts::value(ds_filename))
                 ("k", "kmer length", cxxopts::value(k)->default_value("31"))
                 ("o,output", "output counts prefix", cxxopts::value(output))
-                ("help", "Print help");
+                ("h,help", "Print help");
         auto newargc=argc-1;
         auto newargv=&argv[1];
         auto result=options.parse(newargc,newargv);
@@ -74,13 +74,13 @@ void add_kmer_count(int argc, char **argv) {
         kc.add_count(name, fastq_files);
     }
     if (!ds_filename.empty()) {
-        if (ds_filename.substr(ds_filename.find(".") + 1) == "prseq") {
+        if (ds_filename.substr(ds_filename.find('.') + 1) == "prseq") {
             kc.add_count(name, PairedReadsDatastore(ws, ds_filename));
         }
-        if (ds_filename.substr(ds_filename.find(".") + 1) == "lrseq") {
+        if (ds_filename.substr(ds_filename.find('.') + 1) == "lrseq") {
             kc.add_count(name, LinkedReadsDatastore(ws, ds_filename));
         }
-        if (ds_filename.substr(ds_filename.find(".") + 1) == "loseq") {
+        if (ds_filename.substr(ds_filename.find('.') + 1) == "loseq") {
             kc.add_count(name, LongReadsDatastore(ws, ds_filename));
         }
     }
@@ -112,7 +112,7 @@ void make_kmer_counts(int argc, char **argv) {
                 ("d,datastore", "input datastore", cxxopts::value(ds_filename))
                 ("n,name", "KmerCounter name", cxxopts::value(name))
                 ("o,output", "output counts prefix", cxxopts::value(output))
-                ("help", "Print help");
+                ("h,help", "Print help");
         auto newargc=argc-1;
         auto newargv=&argv[1];
         auto result=options.parse(newargc,newargv);
@@ -159,13 +159,13 @@ void make_kmer_counts(int argc, char **argv) {
             kc.add_count(name, fastq_files);
         }
         if (!ds_filename.empty()) {
-            if (ds_filename.substr(ds_filename.find(".") + 1) == "prseq") {
+            if (ds_filename.substr(ds_filename.find('.') + 1) == "prseq") {
                 kc.add_count(name, PairedReadsDatastore(ws, ds_filename));
             }
-            if (ds_filename.substr(ds_filename.find(".") + 1) == "lrseq") {
+            if (ds_filename.substr(ds_filename.find('.') + 1) == "lrseq") {
                 kc.add_count(name, LinkedReadsDatastore(ws, ds_filename));
             }
-            if (ds_filename.substr(ds_filename.find(".") + 1) == "loseq") {
+            if (ds_filename.substr(ds_filename.find('.') + 1) == "loseq") {
                 kc.add_count(name, LongReadsDatastore(ws, ds_filename));
             }
         }
@@ -178,13 +178,13 @@ void make_kmer_counts(int argc, char **argv) {
             kc.add_count(name, fastq_files);
         }
         if (!ds_filename.empty()) {
-            if (ds_filename.substr(ds_filename.find(".") + 1) == "prseq") {
+            if (ds_filename.substr(ds_filename.find('.') + 1) == "prseq") {
                 kc.add_count(name, PairedReadsDatastore(ws, ds_filename));
             }
-            if (ds_filename.substr(ds_filename.find(".") + 1) == "lrseq") {
+            if (ds_filename.substr(ds_filename.find('.') + 1) == "lrseq") {
                 kc.add_count(name, LinkedReadsDatastore(ws, ds_filename));
             }
-            if (ds_filename.substr(ds_filename.find(".") + 1) == "loseq") {
+            if (ds_filename.substr(ds_filename.find('.') + 1) == "loseq") {
                 kc.add_count(name, LongReadsDatastore(ws, ds_filename));
             }
         }
@@ -200,8 +200,8 @@ void stats_kmer_counts(int argc, char **argv) {
         cxxopts::Options options(program_name +" stats", "SDG KmerCounter stats");
 
         options.add_options()
-                ("help", "Print help")
-                ("n,name", "KmerCounter name", cxxopts::value<std::string>(filename));
+                ("h,help", "Print help")
+                ("c,kmer_counter", "KmerCounter filepath", cxxopts::value<std::string>(filename));
 
         auto newargc=argc-1;
         auto newargv=&argv[1];
@@ -211,7 +211,7 @@ void stats_kmer_counts(int argc, char **argv) {
             exit(0);
         }
 
-        if (result.count("name")==0) {
+        if (result.count("kmer_counter")==0) {
             throw cxxopts::OptionException(" please specify KmerCounter file");
         }
 
@@ -221,8 +221,11 @@ void stats_kmer_counts(int argc, char **argv) {
                   << "Use option --help to check command line arguments." << std::endl;
         exit(1);
     }
-    WorkSpace ws;
 
+    WorkSpace ws;
+    KmerCounter kc(ws, filename);
+
+    std::cout << kc.ls() << std::endl;
 }
 
 int main(int argc, char * argv[]) {

@@ -439,13 +439,13 @@ void DistanceGraph::write_to_gfa1(std::string filename, const std::vector<sgNode
                     gfaf << (l.dist < 0 ? -l.dist : 0) << "M" << std::endl;
                 } else {
                     gfaf << "L\t";
-                    if (l.source > 0) gfaf << "seq" << l.source << "\t-\t" << "gap_" << std::abs(l.source) << "_" << std::abs(l.dest) << "\t+\t";
-                    else gfaf << "seq" << -l.source << "\t+\t" << "gap_" << std::abs(l.source) << "_" << std::abs(l.dest) << "\t+\t";
+                    if (l.source > 0) gfaf << "seq" << l.source << "\t-\t" << "gap_" << l.source << "_" << l.dest << "\t+\t";
+                    else gfaf << "seq" << -l.source << "\t+\t" << "gap_" << l.source << "_" << l.dest << "\t+\t";
                     gfaf << "0M" << std::endl;
 
                     gfaf << "L\t";
-                    if (l.dest > 0) gfaf << "gap_" << std::abs(l.source) << "_" << std::abs(l.dest) << "\t+\t" << "seq" << l.dest << "\t+\t";
-                    else gfaf << "gap_" << std::abs(l.source) << "_" << std::abs(l.dest) << "\t+\t" << "seq" << -l.dest << "\t-\t";
+                    if (l.dest > 0) gfaf << "gap_" << l.source << "_" << l.dest << "\t+\t" << "seq" << l.dest << "\t+\t";
+                    else gfaf << "gap_" << l.source << "_" << l.dest << "\t+\t" << "seq" << -l.dest << "\t-\t";
                     gfaf << "0M" << std::endl;
                 }
             }

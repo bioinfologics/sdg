@@ -15,6 +15,12 @@
 #include <sdglib/utilities/io_helpers.hpp>
 
 class SequenceDistanceGraph;
+
+/**
+ * UniqueKmerIndex for kmer sizes up to 31
+ * Creates a lookup of each unique kmer in a SequenceDistanceGraph and keeps the node and position it appears in. This
+ * structure is used for the PairedReadMapper and LinkedReadMapper.
+ */
 class UniqueKmerIndex {
 public:
     using Map = std::unordered_map<uint64_t, graphStrandPos>;
@@ -74,6 +80,12 @@ private:
     std::vector<uint64_t> total_kmers_per_node;
 
 };
+
+/**
+ * UniqueKmerIndex for kmer sizes up to 63
+ * Creates a lookup of each unique kmer in a SequenceDistanceGraph and keeps the node and position it appears in. This
+ * structure is used for the PairedReadMapper and LinkedReadMapper.
+ */
 
 class Unique63merIndex {
 public:

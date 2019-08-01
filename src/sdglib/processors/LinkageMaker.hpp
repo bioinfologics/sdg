@@ -74,6 +74,7 @@ public:
     explicit LinkageMaker(const DistanceGraph &_dg):dg(_dg){deselect_all();};
     explicit LinkageMaker(const SequenceDistanceGraph &_dg):LinkageMaker(static_cast<const DistanceGraph &>(_dg)){};
 
+    void check_selected_nodes();
     void deselect_all();
     void select_all();
     void report_selection();
@@ -96,7 +97,11 @@ public:
 
     DistanceGraph make_longreads_multilinkage(const LongReadsMapper &lorm, uint64_t min_map_size=1000, float min_map_id=.1, bool real_read_size=true, int32_t unmapped_end=1000);
 
+    DistanceGraph make_longreads_multilinkage(const std::string &datastore_name, uint64_t min_map_size=1000, float min_map_id=.1, bool real_read_size=true, int32_t unmapped_end=1000);
+
     DistanceGraph make_long10x_multilinkage(const LongReadsMapper &lorm, const LinkedReadsMapper &lrm, uint32_t min_size,  float min_tnscore, bool real_read_size=true, int32_t unmapped_end=1000);
+
+    DistanceGraph make_long10x_multilinkage(const std::string &lorm_name, const std::string &lrm_name, uint32_t min_size,  float min_tnscore, bool real_read_size=true, int32_t unmapped_end=1000);
 
     DistanceGraph make_paired10x_multilinkage(const PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore=0.2, bool fr=false, uint64_t read_offset=0);
 
