@@ -247,7 +247,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
             return s;
         }
         const std::string __str__() {
-            if (self->empty) return "[]";
+            if (self->empty()) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &n:*self) oss<<"<"<<n<<">,"<<std::endl;
@@ -265,7 +265,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
             return s;
         }
         const std::string __str__() {
-            if (self->empty) return "[]";
+            if (self->empty()) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
@@ -282,7 +282,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
             return s;
         }
         const std::string __str__() {
-            if (self->empty) return "[]";
+            if (self->empty()) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
@@ -299,7 +299,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
             return s;
         }
         const std::string __str__() {
-            if (self->empty) return "[]";
+            if (self->empty()) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
@@ -323,7 +323,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
             return s;
         }
         const std::string __str__() {
-            if (self->empty) return "[]";
+            if (self->empty()) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
@@ -342,7 +342,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
             return s;
         }
         const std::string __str__() {
-            if (self->empty) return "[]";
+            if (self->empty()) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
@@ -361,7 +361,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
             return s;
         }
         const std::string __str__() {
-            if (self->empty) return "[]";
+            if (self->empty()) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
@@ -380,7 +380,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
             return s;
         }
         const std::string __str__() {
-            if (self->empty) return "[]";
+            if (self->empty()) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
@@ -397,7 +397,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
             return s;
         }
         const std::string __str__() {
-            if (self->empty) return "[]";
+            if (self->empty()) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
