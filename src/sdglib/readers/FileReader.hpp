@@ -77,11 +77,9 @@ public:
     }
 private:
     kstream<gzFile, FunctorZlib> *ks;
-    kstream<BZFILE, FunctorBZlib2> *bzKS;
     kseq seq;
     uint32_t numRecords = 0;
     gzFile gz_file;
-    BZFILE * bz_File{};
     int fq_File{};
     FunctorZlib gzr;
     FunctorRead rr;
@@ -164,7 +162,6 @@ private:
     kseq seq;
     uint64_t numRecords=0;
     gzFile gz_file;
-    BZFILE * bz_File{};
     int fq_File{};
     FunctorZlib gzr;
     FastxReaderParams params;
