@@ -247,6 +247,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
             return s;
         }
         const std::string __str__() {
+            if (self->empty) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &n:*self) oss<<"<"<<n<<">,"<<std::endl;
@@ -264,6 +265,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
             return s;
         }
         const std::string __str__() {
+            if (self->empty) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
@@ -276,10 +278,11 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %template(vectorReadMapping) std::vector<ReadMapping>;
 %extend std::vector<ReadMapping>{
         const std::string __repr__() {
-            std::string s="<Vector: "+std::to_string(self->size())+" ReadMapping>";
+            std::string s="<Vector: "+std::to_string(self->size())+" ReadMappings>";
             return s;
         }
         const std::string __str__() {
+            if (self->empty) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
@@ -292,10 +295,11 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %template(vectorLongReadMapping) std::vector<LongReadMapping>;
 %extend std::vector<LongReadMapping>{
         const std::string __repr__() {
-            std::string s="<Vector: "+std::to_string(self->size())+" LongReadMapping>";
+            std::string s="<Vector: "+std::to_string(self->size())+" LongReadMappings>";
             return s;
         }
         const std::string __str__() {
+            if (self->empty) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
@@ -315,10 +319,11 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %template(vectorPairedReadsDatastore) std::vector<PairedReadsDatastore>;
 %extend std::vector<PairedReadsDatastore>{
         const std::string __repr__() {
-            std::string s="<Vector: "+std::to_string(self->size())+" PairedReadsDatastore>";
+            std::string s="<Vector: "+std::to_string(self->size())+" PairedReadsDatastores>";
             return s;
         }
         const std::string __str__() {
+            if (self->empty) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
@@ -333,10 +338,11 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %template(vectorLinkedReadsDatastore) std::vector<LinkedReadsDatastore>;
 %extend std::vector<LinkedReadsDatastore>{
         const std::string __repr__() {
-            std::string s="<Vector: "+std::to_string(self->size())+" LinkedReadsDatastore>";
+            std::string s="<Vector: "+std::to_string(self->size())+" LinkedReadsDatastores>";
             return s;
         }
         const std::string __str__() {
+            if (self->empty) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
@@ -351,10 +357,11 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %template(vectorLongReadsDatastore) std::vector<LongReadsDatastore>;
 %extend std::vector<LongReadsDatastore>{
         const std::string __repr__() {
-            std::string s="<Vector: "+std::to_string(self->size())+" LongReadsDatastore>";
+            std::string s="<Vector: "+std::to_string(self->size())+" LongReadsDatastores>";
             return s;
         }
         const std::string __str__() {
+            if (self->empty) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
@@ -369,10 +376,11 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %template(vectorKmerCountsDatastore) std::vector<KmerCounter>;
 %extend std::vector<KmerCounter>{
         const std::string __repr__() {
-            std::string s="<Vector: "+std::to_string(self->size())+" KmerCounter>";
+            std::string s="<Vector: "+std::to_string(self->size())+" KmerCounters>";
             return s;
         }
         const std::string __str__() {
+            if (self->empty) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
@@ -385,10 +393,11 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %template(vectorKmerCount) std::vector<KmerCount>;
 %extend std::vector<KmerCount>{
         const std::string __repr__() {
-            std::string s="<Vector: "+std::to_string(self->size())+" KmerCount>";
+            std::string s="<Vector: "+std::to_string(self->size())+" KmerCounts>";
             return s;
         }
         const std::string __str__() {
+            if (self->empty) return "[]";
             std::ostringstream oss;
             oss<<"["<<std::endl;
             for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
