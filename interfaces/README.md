@@ -18,7 +18,7 @@ Another option is to append the location of the compiled `bsg` objects to the py
 
 ```python
 import sys
-sys.path.append("~/git_sources/sdg/build")
+sys.path.append("~/git_sources/sdg/build/pysdg")
 ```
 
 The library should be available and can be loaded using, this command prints the library version:
