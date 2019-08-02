@@ -241,9 +241,37 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %ignore std::vector<NodeView>::vector(size_type);
 %ignore std::vector<NodeView>::resize;
 %template(vectorNodeView) std::vector<NodeView>;
+%extend std::vector<NodeView>{
+        const char *__repr__() {
+            std::string s="<Vector: "+std::to_string(self->size())+" NodeViews>";
+            return s.c_str();
+        }
+        const char *__str__() {
+            std::ostringstream oss;
+            oss<<"["<<std::endl;
+            for (auto &n:*self) oss<<"<"<<n<<">,"<<std::endl;
+            oss.seekp(-2,oss.cur);
+            oss<<std::endl<<"]";
+            return oss.str().c_str();
+        }
+}
 %ignore std::vector<LinkView>::vector(size_type);
 %ignore std::vector<LinkView>::resize;
-%template(vectorNodeDistanceView) std::vector<LinkView>;
+%template(vectorLinkView) std::vector<LinkView>;
+%extend std::vector<LinkView>{
+        const char *__repr__() {
+            std::string s="<Vector: "+std::to_string(self->size())+" LinkViews>";
+            return s.c_str();
+        }
+        const char *__str__() {
+            std::ostringstream oss;
+            oss<<"["<<std::endl;
+            for (auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
+            oss.seekp(-2,oss.cur);
+            oss<<std::endl<<"]";
+            return oss.str().c_str();
+        }
+}
 %template(vectorReadPosSize) std::vector< ReadPosSize >;
 %template(vectorReadMapping) std::vector<ReadMapping>;
 %template(vectorvectorReadMapping) std::vector<std::vector<ReadMapping>>;
