@@ -242,40 +242,69 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %ignore std::vector<NodeView>::resize;
 %template(vectorNodeView) std::vector<NodeView>;
 %extend std::vector<NodeView>{
-        const char *__repr__() {
+        const std::string __repr__() {
             std::string s="<Vector: "+std::to_string(self->size())+" NodeViews>";
-            return s.c_str();
+            return s;
         }
-        const char *__str__() {
+        const std::string __str__() {
             std::ostringstream oss;
             oss<<"["<<std::endl;
-            for (auto &n:*self) oss<<"<"<<n<<">,"<<std::endl;
+            for (const auto &n:*self) oss<<"<"<<n<<">,"<<std::endl;
             oss.seekp(-2,oss.cur);
             oss<<std::endl<<"]";
-            return oss.str().c_str();
+            return oss.str();
         }
 }
 %ignore std::vector<LinkView>::vector(size_type);
 %ignore std::vector<LinkView>::resize;
 %template(vectorLinkView) std::vector<LinkView>;
 %extend std::vector<LinkView>{
-        const char *__repr__() {
+        const std::string __repr__() {
             std::string s="<Vector: "+std::to_string(self->size())+" LinkViews>";
-            return s.c_str();
+            return s;
         }
-        const char *__str__() {
+        const std::string __str__() {
             std::ostringstream oss;
             oss<<"["<<std::endl;
-            for (auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
+            for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
             oss.seekp(-2,oss.cur);
             oss<<std::endl<<"]";
-            return oss.str().c_str();
+            return oss.str();
         }
 }
 %template(vectorReadPosSize) std::vector< ReadPosSize >;
 %template(vectorReadMapping) std::vector<ReadMapping>;
+%extend std::vector<ReadMapping>{
+        const std::string __repr__() {
+            std::string s="<Vector: "+std::to_string(self->size())+" ReadMapping>";
+            return s;
+        }
+        const std::string __str__() {
+            std::ostringstream oss;
+            oss<<"["<<std::endl;
+            for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
+            oss.seekp(-2,oss.cur);
+            oss<<std::endl<<"]";
+            return oss.str();
+        }
+}
 %template(vectorvectorReadMapping) std::vector<std::vector<ReadMapping>>;
 %template(vectorLongReadMapping) std::vector<LongReadMapping>;
+%extend std::vector<LongReadMapping>{
+        const std::string __repr__() {
+            std::string s="<Vector: "+std::to_string(self->size())+" LongReadMapping>";
+            return s;
+        }
+        const std::string __str__() {
+            std::ostringstream oss;
+            oss<<"["<<std::endl;
+            for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
+            oss.seekp(-2,oss.cur);
+            oss<<std::endl<<"]";
+            return oss.str();
+        }
+}
+
 %template(vectorvectorLongReadMapping) std::vector<std::vector<LongReadMapping>>;
 %template(vectorTagNeighbour) std::vector<TagNeighbour>;
 %template(vectorvectorTagNeighbour) std::vector<std::vector<TagNeighbour>>;
@@ -284,20 +313,90 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %ignore std::vector<PairedReadsDatastore>::vector(size_type);
 %ignore std::vector<PairedReadsDatastore>::resize;
 %template(vectorPairedReadsDatastore) std::vector<PairedReadsDatastore>;
+%extend std::vector<PairedReadsDatastore>{
+        const std::string __repr__() {
+            std::string s="<Vector: "+std::to_string(self->size())+" PairedReadsDatastore>";
+            return s;
+        }
+        const std::string __str__() {
+            std::ostringstream oss;
+            oss<<"["<<std::endl;
+            for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
+            oss.seekp(-2,oss.cur);
+            oss<<std::endl<<"]";
+            return oss.str();
+        }
+}
 
 %ignore std::vector<LinkedReadsDatastore>::vector(size_type);
 %ignore std::vector<LinkedReadsDatastore>::resize;
 %template(vectorLinkedReadsDatastore) std::vector<LinkedReadsDatastore>;
+%extend std::vector<LinkedReadsDatastore>{
+        const std::string __repr__() {
+            std::string s="<Vector: "+std::to_string(self->size())+" LinkedReadsDatastore>";
+            return s;
+        }
+        const std::string __str__() {
+            std::ostringstream oss;
+            oss<<"["<<std::endl;
+            for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
+            oss.seekp(-2,oss.cur);
+            oss<<std::endl<<"]";
+            return oss.str();
+        }
+}
 
 %ignore std::vector<LongReadsDatastore>::vector(size_type);
 %ignore std::vector<LongReadsDatastore>::resize;
 %template(vectorLongReadsDatastore) std::vector<LongReadsDatastore>;
+%extend std::vector<LongReadsDatastore>{
+        const std::string __repr__() {
+            std::string s="<Vector: "+std::to_string(self->size())+" LongReadsDatastore>";
+            return s;
+        }
+        const std::string __str__() {
+            std::ostringstream oss;
+            oss<<"["<<std::endl;
+            for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
+            oss.seekp(-2,oss.cur);
+            oss<<std::endl<<"]";
+            return oss.str();
+        }
+}
 
 %ignore std::vector<KmerCounter>::vector(size_type);
 %ignore std::vector<KmerCounter>::resize;
 %template(vectorKmerCountsDatastore) std::vector<KmerCounter>;
+%extend std::vector<KmerCounter>{
+        const std::string __repr__() {
+            std::string s="<Vector: "+std::to_string(self->size())+" KmerCounter>";
+            return s;
+        }
+        const std::string __str__() {
+            std::ostringstream oss;
+            oss<<"["<<std::endl;
+            for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
+            oss.seekp(-2,oss.cur);
+            oss<<std::endl<<"]";
+            return oss.str();
+        }
+}
 
 %template(vectorKmerCount) std::vector<KmerCount>;
+%extend std::vector<KmerCount>{
+        const std::string __repr__() {
+            std::string s="<Vector: "+std::to_string(self->size())+" KmerCount>";
+            return s;
+        }
+        const std::string __str__() {
+            std::ostringstream oss;
+            oss<<"["<<std::endl;
+            for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
+            oss.seekp(-2,oss.cur);
+            oss<<std::endl<<"]";
+            return oss.str();
+        }
+}
 
 %template(set10xTag) std::set<LinkedTag>;
 
