@@ -18,6 +18,10 @@ const uint64_t NodeView::size() const {
     return dg->sdg.get_node_size(id);
 }
 
+NodeView NodeView::rc() const {
+    return dg->get_nodeview(-id);
+}
+
 const std::vector<LinkView> NodeView::next() const {
     auto fwl=dg->get_fw_links(id);
     std::vector<LinkView> r;

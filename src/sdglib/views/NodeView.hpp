@@ -32,6 +32,11 @@ public:
     const uint64_t size() const;
 
     /**
+     * @return The reverse complement NodeView
+     */
+    NodeView rc() const;
+
+    /**
      * @return A vector of LinkView for the next elements defined by the DistanceGraph
      */
     const std::vector<LinkView> next() const;
