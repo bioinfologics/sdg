@@ -110,6 +110,13 @@ public:
      */
     sgNodeID_t add_node(Node n);
 
+    /**
+     * Adds a new node to the graph from a string
+     * @param n Node object to add
+     * @return
+     * Returns the ID of the added node
+     */
+    sgNodeID_t add_node(std::string seq);
 
 
     /**
