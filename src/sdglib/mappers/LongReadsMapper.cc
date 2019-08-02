@@ -223,7 +223,7 @@ void LongReadsMapper::map_reads(const std::unordered_set<uint32_t> &readIDs) {
 
 #pragma omp for schedule(static,1000) reduction(+:no_matches,single_matches,multi_matches,num_reads_done)
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
-            if (++num_reads_done%1000 == 0) {
+            if (++num_reads_done%10000 == 0) {
                 sdglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" processing its read #" << num_reads_done << std::endl;
             }
 
