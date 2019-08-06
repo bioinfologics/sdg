@@ -410,3 +410,19 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %template(set10xTag) std::set<LinkedTag>;
 
 %template(fastaReader) FastaReader<FastaRecord>;
+
+%extend SequenceDistanceGraphPath{
+        const std::string __repr__() {
+            std::string s="<SequenceDistanceGraphPath: "+std::to_string(self->nodes.size())+" Nodes on "+self->sg.name+">";
+            return s;
+        }
+        const std::string __str__() {
+            if (self->nodes.empty()) return "[]";
+            std::ostringstream oss;
+            oss<<"[";
+            for (const auto &l:self->nodes) oss<<" "<<l<<",";
+            oss.seekp(-1,oss.cur);
+            oss<<" ]";
+            return oss.str();
+        }
+}

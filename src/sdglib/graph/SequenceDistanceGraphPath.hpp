@@ -42,7 +42,6 @@ public:
 
     std::vector<sgNodeID_t> nodes;
 
-private:
     const SequenceDistanceGraph& sg;
 };
 
