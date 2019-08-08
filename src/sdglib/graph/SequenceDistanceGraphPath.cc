@@ -153,3 +153,8 @@ bool SequenceDistanceGraphPath::is_unitig() {
     }
     return true;
 }
+
+std::ostream &operator<<(std::ostream &os, const SequenceDistanceGraphPath &sdgp) {
+    os << "SequenceDistanceGraphPath (" << sdgp.sg.name << "): " << sdgp.nodes.size() << " nodes";
+    return os;
+}

@@ -21,6 +21,8 @@ public:
 
     SequenceDistanceGraphPath& operator=(const SequenceDistanceGraphPath &other);
 
+    friend std::ostream& operator<<(std::ostream &os, const SequenceDistanceGraphPath &sdgp);
+
     std::string get_fasta_header(bool use_oldnames = false) const;
     std::string sequence() const;
     size_t get_sequence_size_fast() const;

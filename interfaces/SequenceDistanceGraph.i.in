@@ -239,6 +239,8 @@ __commit__ = "@GIT_COMMIT_HASH@"
 
 %template(vectorNode) std::vector<Node>;
 
+%ignore std::vector<SequenceDistanceGraphPath>::vector(size_type);
+%ignore std::vector<SequenceDistanceGraphPath>::resize;
 %template(vectorSequenceDistanceGraphPath) std::vector<SequenceDistanceGraphPath>;
 %extend std::vector<SequenceDistanceGraphPath> {
     const std::string __repr__() {
