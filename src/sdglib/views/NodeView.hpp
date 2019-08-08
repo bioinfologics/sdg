@@ -154,8 +154,7 @@ public:
      */
     const Support support() const {return Support(sup);};
     bool operator<(const LinkView & other) const{
-        if (dist<other.dist) return true;
-        return node_view.node_id() < other.node_view.node_id();
+        return std::make_tuple(dist, node_view.node_id()) < std::make_tuple(other.dist, other.node_view.node_id());
     }
 private:
     NodeView node_view;

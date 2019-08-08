@@ -30,6 +30,7 @@ const std::vector<LinkView> NodeView::next() const {
         r.emplace_back(dg->get_nodeview(l.dest),l.dist,l.support);
     }
 
+    std::sort(r.begin(), r.end());
     return r;
 }
 
@@ -41,6 +42,7 @@ const std::vector<LinkView> NodeView::prev() const {
         r.emplace_back(dg->get_nodeview(-l.dest),l.dist,l.support);
     }
 
+    std::sort(r.begin(), r.end());
     return r;
 }
 
