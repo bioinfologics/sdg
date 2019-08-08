@@ -238,6 +238,23 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %template(vectorvectorLink) std::vector<std::vector<Link>>;
 
 %template(vectorNode) std::vector<Node>;
+
+%template(vectorSequenceDistanceGraphPath) std::vector<SequenceDistanceGraphPath>;
+%extend std::vector<SequenceDistanceGraphPath> {
+    const std::string __repr__() {
+        std::string s="<Vector: " + std::to_string(self->size())+" SequenceDistanceGraphPaths>";
+        return s;
+    }
+    const std::string __str__() {
+        if (self->empty()) return "[]";
+        std::ostringstream oss;
+        oss<<"["<<std::endl;
+        for (const auto &n:*self) oss<<"<"<<n<<">,"<<std::endl;
+        oss.seekp(-2,oss.cur);
+        oss<<std::endl<<"]";
+        return oss.str();
+    }
+}
 %ignore std::vector<NodeView>::vector(size_type);
 %ignore std::vector<NodeView>::resize;
 %template(vectorNodeView) std::vector<NodeView>;
