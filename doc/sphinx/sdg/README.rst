@@ -1,5 +1,5 @@
 .. image:: https://img.shields.io/badge/license-MIT-green.svg
-    :target: https://github.com/bioinfologics/bsg/blob/master/LICENSE
+    :target: https://github.com/bioinfologics/sdg/blob/master/LICENSE
 .. image:: https://travis-ci.org/bioinfologics/sdg.svg?branch=master
     :target: https://travis-ci.org/bioinfologics/sdg
 
