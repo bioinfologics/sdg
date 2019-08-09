@@ -22,8 +22,6 @@ The Sequence Distance Graph (**SDG**) is a framework to work with genome graphs 
 
 SDG can be used as a Python module through its SWIG API. R and Julia support are experimental.
 
-Documentation for the framework can be found at https://bioinfologics.github.io/sdg
-
 Installation
 ############
 
@@ -39,7 +37,7 @@ The installation process requires the following dependencies:
 - Python 3.7+ (For Python interface)
 - Git LFS (For tests)
 
-The installation process consists of generating the configuration files using CMake and using make. By default make install will install to system wide directories, to specify a different directory use `CMAKE_INSTALL_PREFIX <https://cmake.org/cmake/help/v3.13/variable/CMAKE_INSTALL_PREFIX.html#cmake-install-prefix>`_.
+The installation process consists of generating the configuration files using CMake and using make. By default make install will install to system wide directories, to specify a different directory use `CMAKE_INSTALL_PREFIX <https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html#cmake-install-prefix>`_.
 
 .. code-block:: bash
 
@@ -56,7 +54,7 @@ The installation process consists of generating the configuration files using CM
 Usage
 #####
 
-Working with SDG typically involves two different stages: creating a *WorkSpace* with the data and mappings, and analysing this *WorkSpace*. SDG includes command line tools to create *DataStores*, *KmerCounts*, and *WorkSpaces*, and map reads within a *WorkSpace*.
+Working with SDG typically involves two different stages: creating a **WorkSpace** with the data and mappings, and analysing this **WorkSpace**. SDG includes command line tools to create **DataStores**, **KmerCounts**, and **WorkSpaces**, and map reads within a **WorkSpace**.
 
 Command line tools
 ########################
@@ -64,33 +62,33 @@ Command line tools
 sdg-datastore
 *************************
 
-Creates a *Datastore* from raw reads and can process paired, 10x or long reads. An output prefix is specified as a parameter and a <predix>.prseq, <prefix>.lrseq or <prefix>.loseq file is generated.
+Creates a **Datastore** from raw reads and can process paired, 10x or long reads. An output prefix is specified as a parameter and a <predix>.prseq, <prefix>.lrseq or <prefix>.loseq file is generated.
 
 sdg-kmercounter
 *************************
 
-Creates a *KmerCounter* indexing a graph from a *WorkSpace* or GFA, or works with an already generated one. A count can be added directly from raw reads or from a datastore. The *KmerCounter* is persisted on file with extension 'sdgkc'.
+Creates a **KmerCounter** indexing a graph from a **WorkSpace** or GFA, or works with an already generated one. A count can be added directly from raw reads or from a datastore. The **KmerCounter** is persisted on file with extension 'sdgkc'.
 
 sdg-workspace
 *************************
 
-Creates a *WorkSpace* from a base graph or works with an already generated one. *Datastores* and *KmerCounters* can be added. The *WorkSpace* is persisted on file with extension 'sdgws'.
+Creates a **WorkSpace** from a base graph or works with an already generated one. **Datastores** and **KmerCounters** can be added. The **WorkSpace** is persisted on file with extension 'sdgws'.
 
 sdg-dbg
 *************************
 
-Creates a *WorkSpace* from a *PairedReadDatastore* by building a _deBruijn graph_ and using this as the base graph. Counts for the _k-mers_ from the graph and raw reads are added too.
+Creates a **WorkSpace** from a **PairedReadDatastore** by building a *deBruijn graph* and using this as the base graph. Counts for the *k-mers* from the graph and raw reads are added too.
 
 sdg-mapper
 *************************
 
-Maps reads within a *WorkSpace*. An updated *WorkSpace* is produced and dumped to the specified prefix.
+Maps reads within a **WorkSpace**. An updated **WorkSpace** is produced and dumped to the specified prefix.
 
 
 Examples
 ########
 
-For examples on how to use SDG please visit https://github.com/bioinfologics/sdg_example
+For examples on how to use SDG please visit https://bioinfologics.github.io/sdg_examples
 
 
 .. toctree::
