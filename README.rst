@@ -71,7 +71,7 @@ Creates a *WorkSpace* from a base graph or works with an already generated one. 
 sdg-dbg
 *************************
 
-Creates a *WorkSpace* from a *PairedReadDatastore* by building a _deBruijn graph_ and using this as the base graph. Counts for the _k-mers_ from the graph and raw reads are added too.
+Creates a *WorkSpace* from a *PairedReadDatastore* by building a deBruijn graph and using this as the base graph. Counts for the k-mers from the graph and raw reads are added too.
 
 sdg-mapper
 *************************
@@ -81,4 +81,4 @@ Maps reads within a *WorkSpace*. An updated *WorkSpace* is produced and dumped t
 
 Examples
 ########
-For examples on how to use SDG please visit https://github.com/bioinfologics/sdg_examples
+For examples on how to use SDG please visit https://bioinfologics.github.io/sdg_examples/
