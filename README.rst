@@ -81,4 +81,4 @@ Maps reads within a *WorkSpace*. An updated *WorkSpace* is produced and dumped t
 
 Examples
 ########
-For examples on how to use SDG please visit https://github.com/bioinfologics/sdg_example
+For examples on how to use SDG please visit https://github.com/bioinfologics/sdg_examples
