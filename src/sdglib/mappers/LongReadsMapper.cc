@@ -14,6 +14,53 @@
 #include <sdglib/utilities/most_common_helper.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 
+struct chain{
+    sgNodeID_t node=0;
+    int32_t delta=0;
+    uint16_t score=0;
+};
+
+void window_internal_chaining (std::vector<chain> &best_chains, std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,int win_size){
+    best_chains.clear();
+    int BAND=win_size/10; //this is how much deltas can go +/- of the central delta.
+    //for every window
+    std::vector<std::pair<int32_t, int32_t>> all_win_matches;
+    for (auto wstart=0;wstart+win_size<matches.size();wstart+=win_size/2) {
+        //create a list of (dir) node / offset, sort,  then consider the best possible offset for each node. (i.e. use different bands)
+        all_win_matches.clear();
+        for (auto p=wstart; p<wstart+win_size;++p) //all_win_matches.insert(all_win_matches.end(),matches[p].begin(),matches[p].end());
+            for (auto &m:matches[p]) all_win_matches.emplace_back(m.first,m.second-p);
+        std::sort(all_win_matches.begin(),all_win_matches.end());
+        struct chain c,best_c;
+        for (auto node_match=all_win_matches.begin();node_match<all_win_matches.end();++node_match){
+            if (c.node!=node_match->first or labs(c.delta-node_match->second)>=BAND) {
+                if (c.score==best_c.score) {
+                    best_c.node=0;
+                    best_c.delta=0;
+                }
+                else if (c.score>best_c.score){
+                    best_c.node=c.node;
+                    best_c.delta=c.delta;
+                    best_c.score=c.score;
+                }
+                c.node=node_match->first;
+                c.delta=node_match->second;
+                c.score=0;
+            }
+            ++c.score;
+        }
+        if (c.score==best_c.score) {
+            best_c.node=0;
+            best_c.delta=0;
+        }
+        else if (c.score>best_c.score){
+            best_c.node=c.node;
+            best_c.delta=c.delta;
+        }
+        if (best_c.score<win_size/10) best_chains.emplace_back();
+        else best_chains.emplace_back(best_c);
+    }
+}
 
 const sdgVersion_t LongReadsMapper::min_compat = 0x0003;
 
@@ -283,6 +330,72 @@ void LongReadsMapper::map_reads(const std::unordered_set<uint32_t> &readIDs) {
     }
     sdglib::OutputLog() << "Updating mapping indexes" <<std::endl;
     update_indexes();
+}
+
+void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t> &readIDs) {
+    NKmerIndex nkindex;
+    SatKmerIndex skindex;
+    if (sat_kmer_index) skindex=SatKmerIndex(sg,k,max_index_freq);
+    else nkindex=NKmerIndex(sg,k,max_index_freq);
+    std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
+    uint32_t num_reads_done(0);
+    uint64_t no_matches(0),single_matches(0),multi_matches(0);
+#pragma omp parallel
+    {
+        StreamKmerFactory skf(k);
+        std::vector<std::pair<bool, uint64_t>> read_kmers;
+
+        auto & private_results=thread_mappings[omp_get_thread_num()];
+        ReadSequenceBuffer sequenceGetter(datastore);
+        std::vector<std::vector<std::pair<int32_t, int32_t>>> node_matches; //node, offset
+        const char * query_sequence_ptr;
+
+        std::vector<unsigned char> candidate_counts(sg.nodes.size()*2);
+
+#pragma omp for schedule(static,1000) reduction(+:no_matches,single_matches,multi_matches,num_reads_done)
+        //for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
+        for (uint32_t readID = 598822; readID < 598823; ++readID) {
+            if (++num_reads_done%10000 == 0) {
+                sdglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" processing its read #" << num_reads_done << std::endl;
+            }
+
+            if ((!readIDs.empty() and readIDs.count(readID)==0 /*Read not in selected set*/)) {
+                continue;
+            }
+            if (datastore.read_to_fileRecord[readID].record_size< 2 * min_size ) continue;
+            //========== 1. Get read sequence, kmerise, get all matches ==========
+            query_sequence_ptr = sequenceGetter.get_read_sequence(readID);
+            read_kmers.clear();
+            skf.produce_all_kmers(query_sequence_ptr, read_kmers);
+
+            if ( read_kmers.size()< 2 * min_size) {
+                continue;
+            }
+
+            if (sat_kmer_index) {
+                get_sat_kmer_matches(skindex,node_matches, read_kmers);
+            } else {
+                get_all_kmer_matches(nkindex,node_matches,read_kmers);
+            }
+
+            //========== 2. Find best chaining in fixed windows ==========
+            std::vector<chain> best_window_chain;
+            window_internal_chaining(best_window_chain,node_matches,100);
+            std::cout<<"Best window matches for read #"<<readID<<std::endl;
+            for (auto bwc:best_window_chain) {
+                std::cout<<"Node: "<<bwc.node<<" Delta: "<<bwc.delta<<" Score: "<<bwc.score<<std::endl;
+            }
+            //private_results.insert(private_results.end(),fblocks.begin(),fblocks.end());
+        }
+    }
+    //TODO: report read and win coverage by winners vs. by loosers
+//    sdglib::OutputLog()<<"Read window results:    "<<window_low_score<<" low score    "<<window_close_second<<" close second    "<<window_hit<<" hits"<<std::endl;
+//    sdglib::OutputLog()<<"Read results:    "<<no_matches<<" no match    "<<single_matches<<" single match    "<<multi_matches<<" multi matches"<<std::endl;
+//    for (auto & threadm : thread_mappings) {
+//        mappings.insert(mappings.end(),threadm.begin(),threadm.end());
+//    }
+//    sdglib::OutputLog() << "Updating mapping indexes" <<std::endl;
+//    update_indexes();
 }
 
 std::vector<LongReadMapping> LongReadsMapper::map_sequence(const NKmerIndex &nkindex, const char * query_sequence_ptr, sgNodeID_t seq_id) {

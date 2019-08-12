@@ -233,6 +233,23 @@ public:
     void map_reads(const std::unordered_set<uint32_t> &readIDs = {});
 
     /**
+     * Function to map a read to the graph in 5 steps using the methods in this class
+     *
+     * //========== 1. Get read sequence, kmerise, get all matches ==========
+     * //========== 2. Find match candidates winning in  at least a window ==========
+     * //========== 3. 1st level-chaining ==========
+     * //========== 4. Maximum lenght chaining  ==========
+     * //========== 4. Discard all matches that are not winners (can tie) on all their windows  ==========
+     *
+     * Results are stored in the mappings collection of this object
+     *
+     * @param readIDs
+     */
+
+
+    void map_reads_to_best_nodes(const std::unordered_set<uint32_t> &readIDs = {});
+
+    /**
      * This function maps any sequence to the graph, index needs to be already updated!
      * WARNING: this is slow, not meant for high throughput
      * @param query_sequence_ptr Sequence to align to the index
