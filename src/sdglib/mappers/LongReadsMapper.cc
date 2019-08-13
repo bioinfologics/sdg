@@ -93,11 +93,11 @@ void window_external_chaining ( uint32_t readID,std::vector<LongReadMapping> &re
                 for (auto &m:matches[p]) {
                     if (m.first == node and m.second-p >= min_band and m.second-p <= max_band) {
                         if (start_node_p == -1) {
-                            start_node_p = m.second + p;
+                            start_node_p = m.second;
                             start_read_p = p;
                         }
                         ++score;
-                        end_node_p = m.second + p;
+                        end_node_p = m.second;
                         end_read_p = p;
                     }
                 }
