@@ -18,9 +18,13 @@ struct chain{
     sgNodeID_t node=0;
     int32_t delta=0;
     uint16_t score=0;
+    bool operator<(const chain &other){
+        return std::tie(node,delta,score)<std::tie(other.node,other.delta,other.score);
+    }
 };
 
-void window_internal_chaining (std::vector<chain> &best_chains, std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,int win_size){
+//TODO: use read size to not generate best_chains nor analyse across all matches when matches>read_size
+void window_internal_chaining (std::vector<chain> &best_chains,const std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,int win_size){
     best_chains.clear();
     int BAND=win_size/10; //this is how much deltas can go +/- of the central delta.
     //for every window
@@ -59,6 +63,77 @@ void window_internal_chaining (std::vector<chain> &best_chains, std::vector<std:
         }
         if (best_c.score<win_size/10) best_chains.emplace_back();
         else best_chains.emplace_back(best_c);
+    }
+}
+
+//TODO: use read size to not analyse across all matches when matches>read_size
+void window_external_chaining ( uint32_t readID,std::vector<LongReadMapping> &results, const std::vector<chain> &best_chains, const std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,int win_size) {
+    if (best_chains.empty()) return;
+    std::vector<chain> sorted_chains;
+    for (auto &b:best_chains) if (b.node) sorted_chains.emplace_back(b);
+    std::sort(sorted_chains.begin(),sorted_chains.end());
+    //const int elasticity_per_kbp=200; //delta can change 20%
+    int BAND=win_size;
+    //TODO: how to deal with delta drift? also min/max delta are actually fixed as in-order
+    //check for each node band that won a window: starting and ending window of the node. give it a % of windows won.
+    auto min_delta=sorted_chains[0].delta;
+    auto max_delta=sorted_chains[0].delta;
+    auto node=sorted_chains[0].node;
+    sorted_chains.emplace_back();//just to make it process the last group of alignments.
+    for (auto wonwin=sorted_chains.begin();wonwin<sorted_chains.end();++wonwin) {
+        std::cout<<"Node: "<<wonwin->node<<" Delta: "<<wonwin->delta<<" Score: "<<wonwin->score<<std::endl;
+        if (node!=wonwin->node or min_delta-wonwin->delta>=BAND or wonwin->delta-max_delta>=BAND) {
+            //process node-band combination to find start and end of match and count hits
+            int32_t start_node_p=-1,start_read_p=-1, end_node_p=-1,end_read_p=-1;
+            uint32_t score=0;
+            auto max_band=max_delta+BAND;
+            auto min_band=min_delta-BAND;
+            std::cout<<"nodeband finished, processing node "<<node<<" with deltas "<<min_band<<" to "<<max_band<<std::endl;
+            for (auto p=0;p<matches.size();++p){
+                for (auto &m:matches[p]) {
+                    if (m.first == node and m.second-p >= min_band and m.second-p <= max_band) {
+                        if (start_node_p == -1) {
+                            start_node_p = m.second + p;
+                            start_read_p = p;
+                        }
+                        ++score;
+                        end_node_p = m.second + p;
+                        end_read_p = p;
+                    }
+                }
+            }
+            std::cout<<"Match: read("<<start_read_p<<", "<<end_read_p<<") -> node("<<start_node_p<<", "<<end_node_p<<")"<<std::endl;
+            //now go through windows fully in-match and check how many are won vs. lost
+            auto first_win=start_read_p/(win_size/2)+1;
+            auto last_win=end_read_p/(win_size/2);
+            auto won_count=0,lost_count=0;
+            for (auto w=first_win;w<=last_win;++w){
+                if (best_chains[w].node==node) ++won_count;
+                else if (0!=best_chains[w].node) ++lost_count;
+            }
+            std::cout<<"windows between "<<first_win<<" and "<<last_win<<": "<<won_count<<" won, "<<lost_count<<" lost"<<std::endl;
+            //if won>lost*4 -> add match [stupid heuristic!]
+            if (won_count>4*lost_count){
+                results.emplace_back();
+                auto &b=results.back();
+                b.read_id=readID;
+                b.qStart=start_read_p;
+                b.qEnd=end_read_p;
+                b.node=node;
+                b.nStart=start_node_p;
+                b.nEnd=end_node_p;
+                b.score=score;
+            }
+            //set node's
+            node=wonwin->node;
+            min_delta=wonwin->delta;
+            max_delta=wonwin->delta;
+        }
+        else {
+            if (min_delta>wonwin->delta) min_delta=wonwin->delta;
+            if (max_delta<wonwin->delta) max_delta=wonwin->delta;
+        }
+
     }
 }
 
@@ -351,6 +426,7 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
         const char * query_sequence_ptr;
 
         std::vector<unsigned char> candidate_counts(sg.nodes.size()*2);
+        std::vector<chain> best_window_chain;
 
 #pragma omp for schedule(static,1000) reduction(+:no_matches,single_matches,multi_matches,num_reads_done)
         //for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
@@ -379,11 +455,15 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
             }
 
             //========== 2. Find best chaining in fixed windows ==========
-            std::vector<chain> best_window_chain;
             window_internal_chaining(best_window_chain,node_matches,100);
             std::cout<<"Best window matches for read #"<<readID<<std::endl;
             for (auto bwc:best_window_chain) {
                 std::cout<<"Node: "<<bwc.node<<" Delta: "<<bwc.delta<<" Score: "<<bwc.score<<std::endl;
+            }
+            std::cout<<std::endl;
+            window_external_chaining(readID,private_results,best_window_chain,node_matches,100);
+            for (auto r:private_results){
+                std::cout<<r<<std::endl;
             }
             //private_results.insert(private_results.end(),fblocks.begin(),fblocks.end());
         }
