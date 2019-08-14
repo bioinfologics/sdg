@@ -13,6 +13,7 @@
 #include <sdglib/utilities/io_helpers.hpp>
 #include <sdglib/utilities/most_common_helper.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
+#include <chrono>
 
 struct chain{
     sgNodeID_t node=0;
@@ -24,12 +25,12 @@ struct chain{
 };
 
 //TODO: use read size to not generate best_chains nor analyse across all matches when matches>read_size
-void window_internal_chaining (std::vector<chain> &best_chains,const std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,int win_size){
+void window_internal_chaining (std::vector<chain> &best_chains,uint32_t hits_size, const std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,int win_size){
     best_chains.clear();
     int BAND=win_size/10; //this is how much deltas can go +/- of the central delta.
     //for every window
     std::vector<std::pair<int32_t, int32_t>> all_win_matches;
-    for (auto wstart=0;wstart+win_size<matches.size();wstart+=win_size/2) {
+    for (auto wstart=0;wstart+win_size<hits_size;wstart+=win_size/2) {
         //create a list of (dir) node / offset, sort,  then consider the best possible offset for each node. (i.e. use different bands)
         all_win_matches.clear();
         for (auto p=wstart; p<wstart+win_size;++p) //all_win_matches.insert(all_win_matches.end(),matches[p].begin(),matches[p].end());
@@ -67,7 +68,7 @@ void window_internal_chaining (std::vector<chain> &best_chains,const std::vector
 }
 
 //TODO: use read size to not analyse across all matches when matches>read_size
-void window_external_chaining ( uint32_t readID,std::vector<LongReadMapping> &results, const std::vector<chain> &best_chains, const std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,int win_size) {
+void window_external_chaining ( uint32_t readID,uint64_t hits_size,std::vector<LongReadMapping> &results, const std::vector<chain> &best_chains, const std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,int win_size) {
     if (best_chains.empty()) return;
     std::vector<chain> sorted_chains;
     for (auto &b:best_chains) if (b.node) sorted_chains.emplace_back(b);
@@ -90,7 +91,7 @@ void window_external_chaining ( uint32_t readID,std::vector<LongReadMapping> &re
             auto max_band=max_delta+BAND;
             auto min_band=min_delta-BAND;
             //std::cout<<"nodeband finished, processing node "<<node<<" with deltas "<<min_band<<" to "<<max_band<<std::endl;
-            for (auto p=0;p<matches.size();++p){
+            for (auto p=0;p<matches.size() and p<hits_size;++p){
                 for (auto &m:matches[p]) {
                     if (m.first == node and m.second-p >= min_band and m.second-p <= max_band) {
                         if (start_node_p == -1) {
@@ -415,6 +416,7 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
     SatKmerIndex skindex;
     if (sat_kmer_index) skindex=SatKmerIndex(sg,k,max_index_freq);
     else nkindex=NKmerIndex(sg,k,max_index_freq);
+    sdglib::OutputLog() << "Index created" << std::endl;
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
     uint32_t num_reads_done(0);
     uint64_t no_matches(0),single_matches(0),multi_matches(0);
@@ -430,11 +432,15 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
 
         std::vector<unsigned char> candidate_counts(sg.nodes.size()*2);
         std::vector<chain> best_window_chain;
+        auto t=std::chrono::high_resolution_clock::now();
+        auto tkhits=t-t,tichain=t-t,techain=t-t,ttoal=t-t;
 
-#pragma omp for schedule(static,1000) reduction(+:no_matches,single_matches,multi_matches,num_reads_done)
+#pragma omp for schedule(static,200) reduction(+:no_matches,single_matches,multi_matches,num_reads_done)
         for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
         //for (uint32_t readID = 598822; readID < 598823; ++readID) {
         //for (uint32_t readID = 3024; readID < 3024; ++readID) {
+
+            auto t0=std::chrono::high_resolution_clock::now();
             if (++num_reads_done%10000 == 0) {
                 sdglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" processing its read #" << num_reads_done << std::endl;
             }
@@ -460,19 +466,32 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
 
             //========== 2. Find best chaining in fixed windows ==========
             //std::cout<<"Internal chaining for "<<readID<<std::endl;
-            window_internal_chaining(best_window_chain,node_matches,100);
+            auto t1=std::chrono::high_resolution_clock::now();
+            window_internal_chaining(best_window_chain,read_kmers.size(),node_matches,100);
             //std::cout<<"Best window matches for read #"<<readID<<std::endl;
 //            for (auto bwc:best_window_chain) {
 //                std::cout<<"Node: "<<bwc.node<<" Delta: "<<bwc.delta<<" Score: "<<bwc.score<<std::endl;
 //            }
 //            std::cout<<std::endl;
             //std::cout<<"External chaining for "<<readID<<std::endl;
-            window_external_chaining(readID,private_results,best_window_chain,node_matches,100);
+            auto t2=std::chrono::high_resolution_clock::now();
+            window_external_chaining(readID,read_kmers.size(),private_results,best_window_chain,node_matches,100);
 //            for (auto r:private_results){
 //                std::cout<<r<<std::endl;
 //            }
+            auto t3=std::chrono::high_resolution_clock::now();
             //private_results.insert(private_results.end(),fblocks.begin(),fblocks.end());
+            tkhits+=t1-t0;
+            tichain+=t2-t1;
+            techain+=t3-t2;
+            ttoal+=t3-t0;
         }
+#pragma omp critical
+        std::cout<<"Thread #"<<omp_get_thread_num()<<" times: "
+            <<std::chrono::duration_cast<std::chrono::milliseconds>(ttoal).count()<<" total, "
+            <<std::chrono::duration_cast<std::chrono::milliseconds>(tkhits).count()<<" ("<<100*tkhits/ttoal<<"%)kmer-hit search, "
+            <<std::chrono::duration_cast<std::chrono::milliseconds>(tichain).count()<<" ("<<100*tichain/ttoal<<"%)internal chaining, "
+            <<std::chrono::duration_cast<std::chrono::milliseconds>(techain).count()<<" ("<<100*techain/ttoal<<"%)external chaining"<<std::endl;
     }
     //TODO: report read and win coverage by winners vs. by loosers
 //    sdglib::OutputLog()<<"Read window results:    "<<window_low_score<<" low score    "<<window_close_second<<" close second    "<<window_hit<<" hits"<<std::endl;
