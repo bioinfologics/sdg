@@ -72,6 +72,7 @@ void window_external_chaining ( uint32_t readID,std::vector<LongReadMapping> &re
     std::vector<chain> sorted_chains;
     for (auto &b:best_chains) if (b.node) sorted_chains.emplace_back(b);
     std::sort(sorted_chains.begin(),sorted_chains.end());
+    if (sorted_chains.empty()) return;
     //const int elasticity_per_kbp=200; //delta can change 20%
     int BAND=win_size;
     //TODO: how to deal with delta drift? also min/max delta are actually fixed as in-order
@@ -81,14 +82,14 @@ void window_external_chaining ( uint32_t readID,std::vector<LongReadMapping> &re
     auto node=sorted_chains[0].node;
     sorted_chains.emplace_back();//just to make it process the last group of alignments.
     for (auto wonwin=sorted_chains.begin();wonwin<sorted_chains.end();++wonwin) {
-        std::cout<<"Node: "<<wonwin->node<<" Delta: "<<wonwin->delta<<" Score: "<<wonwin->score<<std::endl;
+        //std::cout<<"Node: "<<wonwin->node<<" Delta: "<<wonwin->delta<<" Score: "<<wonwin->score<<std::endl;
         if (node!=wonwin->node or min_delta-wonwin->delta>=BAND or wonwin->delta-max_delta>=BAND) {
             //process node-band combination to find start and end of match and count hits
             int32_t start_node_p=-1,start_read_p=-1, end_node_p=-1,end_read_p=-1;
             uint32_t score=0;
             auto max_band=max_delta+BAND;
             auto min_band=min_delta-BAND;
-            std::cout<<"nodeband finished, processing node "<<node<<" with deltas "<<min_band<<" to "<<max_band<<std::endl;
+            //std::cout<<"nodeband finished, processing node "<<node<<" with deltas "<<min_band<<" to "<<max_band<<std::endl;
             for (auto p=0;p<matches.size();++p){
                 for (auto &m:matches[p]) {
                     if (m.first == node and m.second-p >= min_band and m.second-p <= max_band) {
@@ -102,7 +103,7 @@ void window_external_chaining ( uint32_t readID,std::vector<LongReadMapping> &re
                     }
                 }
             }
-            std::cout<<"Match: read("<<start_read_p<<", "<<end_read_p<<") -> node("<<start_node_p<<", "<<end_node_p<<")"<<std::endl;
+            //std::cout<<"Match: read("<<start_read_p<<", "<<end_read_p<<") -> node("<<start_node_p<<", "<<end_node_p<<")"<<std::endl;
             //now go through windows fully in-match and check how many are won vs. lost
             auto first_win=start_read_p/(win_size/2)+1;
             auto last_win=end_read_p/(win_size/2);
@@ -111,7 +112,7 @@ void window_external_chaining ( uint32_t readID,std::vector<LongReadMapping> &re
                 if (best_chains[w].node==node) ++won_count;
                 else if (0!=best_chains[w].node) ++lost_count;
             }
-            std::cout<<"windows between "<<first_win<<" and "<<last_win<<": "<<won_count<<" won, "<<lost_count<<" lost"<<std::endl;
+            //std::cout<<"windows between "<<first_win<<" and "<<last_win<<": "<<won_count<<" won, "<<lost_count<<" lost"<<std::endl;
             //if won>lost*4 -> add match [stupid heuristic!]
             if (won_count>4*lost_count){
                 results.emplace_back();
@@ -324,6 +325,7 @@ std::vector<LongReadMapping> LongReadsMapper::filter_blocks(std::vector<LongRead
 }
 
 void LongReadsMapper::map_reads(const std::unordered_set<uint32_t> &readIDs) {
+    mappings.clear();
     NKmerIndex nkindex;
     SatKmerIndex skindex;
     if (sat_kmer_index) skindex=SatKmerIndex(sg,k,max_index_freq);
@@ -408,6 +410,7 @@ void LongReadsMapper::map_reads(const std::unordered_set<uint32_t> &readIDs) {
 }
 
 void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t> &readIDs) {
+    mappings.clear();
     NKmerIndex nkindex;
     SatKmerIndex skindex;
     if (sat_kmer_index) skindex=SatKmerIndex(sg,k,max_index_freq);
@@ -429,8 +432,9 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
         std::vector<chain> best_window_chain;
 
 #pragma omp for schedule(static,1000) reduction(+:no_matches,single_matches,multi_matches,num_reads_done)
-        //for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
-        for (uint32_t readID = 598822; readID < 598823; ++readID) {
+        for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
+        //for (uint32_t readID = 598822; readID < 598823; ++readID) {
+        //for (uint32_t readID = 3024; readID < 3024; ++readID) {
             if (++num_reads_done%10000 == 0) {
                 sdglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" processing its read #" << num_reads_done << std::endl;
             }
@@ -455,27 +459,29 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
             }
 
             //========== 2. Find best chaining in fixed windows ==========
+            //std::cout<<"Internal chaining for "<<readID<<std::endl;
             window_internal_chaining(best_window_chain,node_matches,100);
-            std::cout<<"Best window matches for read #"<<readID<<std::endl;
-            for (auto bwc:best_window_chain) {
-                std::cout<<"Node: "<<bwc.node<<" Delta: "<<bwc.delta<<" Score: "<<bwc.score<<std::endl;
-            }
-            std::cout<<std::endl;
+            //std::cout<<"Best window matches for read #"<<readID<<std::endl;
+//            for (auto bwc:best_window_chain) {
+//                std::cout<<"Node: "<<bwc.node<<" Delta: "<<bwc.delta<<" Score: "<<bwc.score<<std::endl;
+//            }
+//            std::cout<<std::endl;
+            //std::cout<<"External chaining for "<<readID<<std::endl;
             window_external_chaining(readID,private_results,best_window_chain,node_matches,100);
-            for (auto r:private_results){
-                std::cout<<r<<std::endl;
-            }
+//            for (auto r:private_results){
+//                std::cout<<r<<std::endl;
+//            }
             //private_results.insert(private_results.end(),fblocks.begin(),fblocks.end());
         }
     }
     //TODO: report read and win coverage by winners vs. by loosers
 //    sdglib::OutputLog()<<"Read window results:    "<<window_low_score<<" low score    "<<window_close_second<<" close second    "<<window_hit<<" hits"<<std::endl;
 //    sdglib::OutputLog()<<"Read results:    "<<no_matches<<" no match    "<<single_matches<<" single match    "<<multi_matches<<" multi matches"<<std::endl;
-//    for (auto & threadm : thread_mappings) {
-//        mappings.insert(mappings.end(),threadm.begin(),threadm.end());
-//    }
-//    sdglib::OutputLog() << "Updating mapping indexes" <<std::endl;
-//    update_indexes();
+    for (auto & threadm : thread_mappings) {
+        mappings.insert(mappings.end(),threadm.begin(),threadm.end());
+    }
+    sdglib::OutputLog() << "Updating mapping indexes" <<std::endl;
+    update_indexes();
 }
 
 std::vector<LongReadMapping> LongReadsMapper::map_sequence(const NKmerIndex &nkindex, const char * query_sequence_ptr, sgNodeID_t seq_id) {
