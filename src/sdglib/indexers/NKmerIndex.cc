@@ -27,7 +27,7 @@ uint64_t filter_kmers(std::vector<kmerPos> &kmers, int max_kmer_repeat) {
     return total_kmers;
 }
 
-NKmerIndex::NKmerIndex(const SequenceDistanceGraph &sg, uint8_t k, int filter_limit) : k(k), filter(70*1024*1024){
+NKmerIndex::NKmerIndex(const SequenceDistanceGraph &sg, uint8_t k, int filter_limit) : k(k), bfilter(70*1024*1024){
     uint64_t total_length=0;
 #pragma omp parallel for reduction(+:total_length)
     for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
@@ -75,6 +75,6 @@ NKmerIndex::NKmerIndex(const SequenceDistanceGraph &sg, uint8_t k, int filter_li
     auto total_kmers(filter_kmers(assembly_kmers, filter_limit));
 #pragma omp parallel for
     for (uint64_t kidx = 0; kidx < assembly_kmers.size(); ++kidx) {
-        filter.add(assembly_kmers[kidx].kmer);
+        bfilter.add(assembly_kmers[kidx].kmer);
     }
 }
