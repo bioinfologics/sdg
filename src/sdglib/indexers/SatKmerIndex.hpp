@@ -13,10 +13,11 @@
 class SequenceDistanceGraph;
 struct ContigOffset {
     ContigOffset() = default;
-    ContigOffset(uint32_t contigID, int32_t offset) : contigID(contigID),offset(offset) {}
+    ContigOffset(uint32_t contigID, int32_t offset, int32_t rcOffset) : contigID(contigID),offset(offset),rcOffset(rcOffset) {}
 
     int32_t contigID = 0;
     int32_t offset = 0;
+    int32_t rcOffset = 0;
 
     const bool operator==(const kmerPos &a) const { return std::tie(contigID, offset) == std::tie(a.contigID, a.offset);}
 };

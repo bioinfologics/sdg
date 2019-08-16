@@ -173,7 +173,7 @@ SET(header_files
 SET(source_files ${source_files}
     src/sdglib/graph/SequenceDistanceGraph.cc
     src/sdglib/graph/SequenceSubGraph.cc
-        src/sdglib/graph/SequenceDistanceGraphPath.cc
+    src/sdglib/graph/SequenceDistanceGraphPath.cc
     src/sdglib/graph/DistanceGraph.cc
     src/sdglib/utilities/OutputLog.cc
     src/sdglib/datastores/PairedReadsDatastore.cc

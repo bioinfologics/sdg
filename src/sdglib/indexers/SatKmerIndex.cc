@@ -13,7 +13,7 @@ SatKmerIndex::SatKmerIndex(const SequenceDistanceGraph &sg, uint8_t k, uint8_t f
     }
     // this can be parallelised by contig by aggregating different k_usage vectors on the first step, second and third steps are trickier
     // This two-pass approach could be easily adapted to a single memory block rather than vector of vectors
-    uint64_t indexed_positions(0),filtered_kmers(0),total_kmers(0);
+    uint64_t filtered_kmers(0),total_kmers(0);
     //---- First Step, count k-mer occupancy ----//
     kmerEnd.resize(std::pow(4,k));
     std::vector<kmerPos> all_kmers;
@@ -52,7 +52,7 @@ SatKmerIndex::SatKmerIndex(const SequenceDistanceGraph &sg, uint8_t k, uint8_t f
             filtered_kmers+=1;
             kmerEnd[ckmer] += ritr-bitr;
             while (bitr != ritr) {
-                contig_offsets.emplace_back(bitr->contigID, bitr->offset);
+                contig_offsets.emplace_back(bitr->contigID, bitr->offset, sg.nodes[llabs(bitr->contigID)].sequence.size() - std::abs(bitr->offset));
                 ++witr;
                 ++bitr;
             }

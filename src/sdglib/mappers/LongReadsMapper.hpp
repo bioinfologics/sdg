@@ -176,7 +176,10 @@ public:
      * @param matches structure to store kmer mappings
      * @param read_kmers contains read kmers with orientations
      */
-    void get_all_kmer_matches(const NKmerIndex & assembly_kmers, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers);
+    void get_all_kmer_matches(const NKmerIndex &assembly_kmers,
+                              std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
+                              const std::vector<std::pair<bool, uint64_t>> &read_kmers,
+                              const std::vector<bool> &kmer_in_asm);
 
     /**
      * Using the populated matches collection (see het_all_kmer_matches()) returns a collection of nodeIDs that have more than 50 matches with that particular read.

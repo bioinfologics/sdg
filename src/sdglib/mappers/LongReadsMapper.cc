@@ -3,6 +3,7 @@
 //
 
 #include "LongReadsMapper.hpp"
+#include "../../../../../../../Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1/string"
 #include <atomic>
 #include <cmath>
 #include <iomanip>      // std::setprecision
@@ -172,7 +173,7 @@ void LongReadsMapper::get_sat_kmer_matches(const SatKmerIndex & sat_assembly_kme
             sgNodeID_t node= sat_assembly_kmers.contig_offsets[it].contigID; //so far, this is always positive
             if (read_kmers[i].first != (offset>0) ) {
                 node=-node;
-                offset=( (int) sg.nodes[std::llabs(sat_assembly_kmers.contig_offsets[it].contigID)].sequence.size() ) - std::abs(offset);
+                offset=sat_assembly_kmers.contig_offsets[it].rcOffset;
             }
             else offset=std::abs(offset)-1;
             matches[i].emplace_back(node, offset);
@@ -183,10 +184,17 @@ void LongReadsMapper::get_sat_kmer_matches(const SatKmerIndex & sat_assembly_kme
     }
 }
 
-void LongReadsMapper::get_all_kmer_matches(const NKmerIndex & assembly_kmers, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches, std::vector<std::pair<bool, uint64_t>> & read_kmers) {
+void LongReadsMapper::get_all_kmer_matches(const NKmerIndex &assembly_kmers,
+                                           std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
+                                           const std::vector<std::pair<bool, uint64_t>> &read_kmers,
+                                           const std::vector<bool> &kmer_in_asm) {
     if (matches.size() < read_kmers.size()) matches.resize(read_kmers.size());
     uint64_t no_match=0,single_match=0,multi_match=0; //DEBUG
     for (auto i=0;i<read_kmers.size();++i){
+        if (!kmer_in_asm[i]) {
+            ++no_match;
+            continue;
+        }
         matches[i].clear();
         auto first = assembly_kmers.find(read_kmers[i].second);
         for (auto it = first; it != assembly_kmers.end() && it->kmer == read_kmers[i].second; ++it) {
@@ -199,8 +207,7 @@ void LongReadsMapper::get_all_kmer_matches(const NKmerIndex & assembly_kmers, st
             else offset=std::abs(offset)-1;
             matches[i].emplace_back(node, offset);
         }
-        if (matches[i].empty()) ++no_match; //DEBUG
-        else if (matches[i].size()==1) ++single_match; //DEBUG
+        if (matches[i].size()==1) ++single_match; //DEBUG
         else ++multi_match; //DEBUG
     }
 //    std::cout<<"From get_all_kmer_matches with "<< read_kmers.size() <<": "<<no_match<<" ("<< (no_match*100/read_kmers.size()) << "%) no match   "
@@ -368,7 +375,7 @@ void LongReadsMapper::map_reads(const std::unordered_set<uint32_t> &readIDs) {
             if (sat_kmer_index) {
                 get_sat_kmer_matches(skindex,node_matches, read_kmers);
             } else {
-                get_all_kmer_matches(nkindex,node_matches,read_kmers);
+                get_all_kmer_matches(nkindex, node_matches, read_kmers, <#initializer#>);
             }
 
             //========== 2. Find match candidates in fixed windows ==========
@@ -458,10 +465,20 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
                 continue;
             }
 
+            // Create a vector for the lookup of read_kmers in the filter, then sort the ones that are in the filter
+            // generate_matches using a sorted version which will make the lookups faster
+
+            // sort them back in the order they came out of the reads
+
             if (sat_kmer_index) {
                 get_sat_kmer_matches(skindex,node_matches, read_kmers);
             } else {
-                get_all_kmer_matches(nkindex,node_matches,read_kmers);
+                std::vector<bool> kmer_in_assembly(read_kmers.size());
+
+                for (uint64_t i = 0; i < read_kmers.size(); ++i) {
+                    kmer_in_assembly[i] = nkindex.filter(read_kmers[i].second);
+                }
+                get_all_kmer_matches(nkindex, node_matches, read_kmers, kmer_in_assembly);
             }
 
             //========== 2. Find best chaining in fixed windows ==========
@@ -513,7 +530,7 @@ std::vector<LongReadMapping> LongReadsMapper::map_sequence(const NKmerIndex &nki
 
     std::vector<unsigned char> candidate_counts(sg.nodes.size()*2);
     skf.produce_all_kmers(query_sequence_ptr, read_kmers);
-    get_all_kmer_matches(nkindex,node_matches,read_kmers);
+    get_all_kmer_matches(nkindex, node_matches, read_kmers, <#initializer#>);
 
     //========== 2. Find match candidates in fixed windows ==========
 
