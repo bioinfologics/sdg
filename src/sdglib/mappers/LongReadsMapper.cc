@@ -19,7 +19,7 @@ struct chain{
     sgNodeID_t node=0;
     int32_t delta=0;
     uint16_t score=0;
-    bool operator<(const chain &other){
+    bool operator<(const chain &other) const{
         return std::tie(node,delta,score)<std::tie(other.node,other.delta,other.score);
     }
 };
