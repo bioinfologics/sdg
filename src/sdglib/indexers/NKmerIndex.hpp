@@ -15,21 +15,26 @@
 class SequenceDistanceGraph;
 
 class NKmerIndex {
-    BloomFilter filter;
+    BloomFilter bfilter;
     std::vector<kmerPos> assembly_kmers;
     uint8_t k=0;
 public:
     using const_iterator = std::vector<kmerPos>::const_iterator;
 
-    NKmerIndex(){};
+    NKmerIndex() = default;
+
     explicit NKmerIndex(const SequenceDistanceGraph &sg,uint8_t k=15, int filter_limit = 200);
 
     bool empty() const { return assembly_kmers.empty(); }
     const_iterator begin() const {return assembly_kmers.cbegin();}
     const_iterator end() const {return assembly_kmers.cend();}
 
+    bool filter(const uint64_t kmer) const {
+        return bfilter.contains(kmer);
+    }
+
     const_iterator find(const uint64_t kmer) const {
-        if (filter.contains(kmer)) { return std::lower_bound(assembly_kmers.cbegin(), assembly_kmers.cend(), kmer); }
+        if (bfilter.contains(kmer)) { return std::lower_bound(assembly_kmers.cbegin(), assembly_kmers.cend(), kmer); }
         return assembly_kmers.cend();
     }
 };
