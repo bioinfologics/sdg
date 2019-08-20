@@ -151,8 +151,7 @@ void make_kmer_counts(int argc, char **argv) {
         if (!ws_filename.empty()) {
             ws.load_from_disk(ws_filename);
         } else if (!gfa_filename.empty()) {
-            SequenceDistanceGraph sg(ws);
-            sg.load_from_gfa(gfa_filename);
+            ws.sdg.load_from_gfa(gfa_filename);
         }
         KmerCounter kc(ws, name, k);
         if (!fastq_files.empty()) {
