@@ -177,7 +177,7 @@ void LongReadsDatastore::load_index(std::string &file) {
 
     input_file.read((char*)&fPos, sizeof(fPos));
 
-    sdglib::read_string(input_file, default_name);
+    sdglib::read_string(input_file, name);
 
     input_file.seekg(fPos);
     sdglib::read_flat_vector(input_file, read_to_fileRecord);

@@ -340,8 +340,8 @@ void LinkedReadsDatastore::load_index(std::string _filename){
 
     uint64_t sname=0;
     fread( &sname, sizeof(sname), 1, fd);
-    default_name.resize(sname);
-    fread( (char *) default_name.data(), sizeof(char), sname, fd);
+    name.resize(sname);
+    fread( (char *) name.data(), sizeof(char), sname, fd);
 
     fread( &readsize,sizeof(readsize),1,fd);
     fread(&s,sizeof(s),1,fd); read_tag.resize(s);
