@@ -44,6 +44,9 @@ TEST_CASE("Workspace create, read, write") {
     REQUIRE( out.kmer_counters == in.kmer_counters);
     REQUIRE( out.journal == in.journal);
     REQUIRE( out.sdg == in.sdg);
+    REQUIRE( out.long_reads_datastores[0].name == Lrds_output_path);
+    REQUIRE( out.paired_reads_datastores[0].name == prds_output_path);
+    REQUIRE( out.linked_reads_datastores[0].name == lrds_output_path);
 
     ::unlink("10x.lseq");
     ::unlink("pe.prseq");

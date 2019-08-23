@@ -97,4 +97,47 @@ struct LongReadMapping_hash {
 };
 
 
+struct SequenceMatch {
+    SequenceMatch() {}
+    SequenceMatch(sgNodeID_t seq_id1,sgNodeID_t seq_id2,int32_t start1,int32_t end1,int32_t start2,int32_t end2,int32_t hits) :
+            seq_id1(seq_id1), seq_id2(seq_id2), start1(start1), end1(end1), start2(start2), end2(end2), hits(hits) {}
+
+    bool operator==(const SequenceMatch &other) const {
+        return std::tie(seq_id1,seq_id2,start1,end1,start2,end2,hits)
+               == std::tie(other.seq_id1,other.seq_id2,other.start1,other.end1,other.start2,other.end2,other.hits);
+    }
+
+    bool operator!=(const SequenceMatch &other) const {
+        return !(*this==other);
+    }
+
+    bool operator<(const SequenceMatch &other) const {
+        return std::tie(seq_id1,seq_id2,start1,end1,start2,end2,hits)
+               < std::tie(other.seq_id1,other.seq_id2,other.start1,other.end1,other.start2,other.end2,other.hits);
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const SequenceMatch& m){
+        os << "SequenceMatch " << m.seq_id1 << " (" << m.start1 << ":" << m.end1 << ") <-> "
+           << m.seq_id2 << " (" << m.start2 << ":" << m.end2 << ")  " <<m.hits<< " hits";
+        return os;
+    }
+
+    sgNodeID_t seq_id1 = 0;        ///< Node ID, sign represents direction
+    sgNodeID_t seq_id2 = 0;       ///< ID of the read from the Datastore (this is never negative!)
+    int32_t start1 = 0;         ///< Position of the starting node kmer of this mapping
+    int32_t end1 = 0;           ///< Position of the ending node kmer of this mapping
+    int32_t start2 = 0;         ///< Query start position
+    int32_t end2 = 0;           ///< Query end position
+    int32_t hits = 0;          ///< Alignment score
+
+};
+
+struct SequenceMatch_hash {
+    size_t operator()(const SequenceMatch& lr) const {
+        std::tuple<sgNodeID_t , uint64_t , int32_t > tp (lr.seq_id1,lr.seq_id2,lr.start1);
+        sdglib::hash<std::tuple<sgNodeID_t , uint64_t , int32_t>> h;
+        return h (tp);
+    }
+};
+
 #endif //BSG_MAPPINGTYPES_HPP

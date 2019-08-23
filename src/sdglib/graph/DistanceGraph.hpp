@@ -232,7 +232,7 @@ public:
      * @param include_disconnected If set to false and a node is disconnected, it won't be included in the result
      * @return A NodeView list containing one per node in the graph unless include_disconnected is set to false, then only nodes with links are included
      */
-    std::vector<NodeView> get_all_nodeviews(bool include_disconnected=true);
+    std::vector<NodeView> get_all_nodeviews(bool include_disconnected=true) const;
     DistanceGraph& operator=(const DistanceGraph &o);
 
     friend std::ostream& operator<<(std::ostream &os, const DistanceGraph &dg);

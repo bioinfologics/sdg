@@ -26,6 +26,7 @@
 
 #include "sdglib/views/NodeView.hpp"
 #include "sdglib/mappers/SequenceMapper.hpp"
+#include "sdglib/mappers/GraphSelfAligner.hpp"
 
 
 #include "sdglib/factories/KMerFactory.hpp"
@@ -75,8 +76,9 @@
 %feature("director") DistanceGraph;
 %feature("director") SequenceDistanceGraph;
 
-// Pure types
 %template(vectorInt) std::vector<int>;
+%template(vectorChar) std::vector<char>;
+%template(vectorUChar) std::vector<unsigned char>;
 %template(vectorDouble) std::vector<double>;
 %template(vectorFloat) std::vector<float>;
 %template(vectorString) std::vector<std::string>;
@@ -89,9 +91,12 @@
 %template(usetUINT64) std::unordered_set<uint64_t>;
 %template(usetUINT128) std::unordered_set<__uint128_t, int128_hash>;
 
-//SG types
 %template(vectorSGNode) std::vector<int64_t>;
 %template(vectorvectorSGNode) std::vector<std::vector<int64_t>>;
+
+%template(vectorPairIntInt) std::vector<std::pair<int32_t, int32_t>>;
+%template(vectorvectorPairIntInt) std::vector<std::vector<std::pair<int32_t, int32_t>>>;
+%template(vectorPairBoolUINT64) std::vector<std::pair<bool, uint64_t>>;
 %template(SGNodePair) std::pair<int64_t, int64_t>;
 %template(vectorSGNodePair) std::vector<std::pair<int64_t, int64_t>>;
 %template(setSGNodePair) std::set<std::pair<int64_t, int64_t>>;
@@ -137,6 +142,11 @@ std::string __repr__() {
 %extend LongReadMapping{
     __STR__();
     __REPR__();
+};
+
+%extend SequenceMatch{
+        __STR__();
+        __REPR__();
 };
 
 %extend KmerIDX{
@@ -219,6 +229,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
 
 %include "sdglib/views/NodeView.hpp"
 %include "sdglib/mappers/SequenceMapper.hpp"
+%include "sdglib/mappers/GraphSelfAligner.hpp"
 
 %include "sdglib/indexers/UniqueKmerIndex.hpp"
 
@@ -329,8 +340,24 @@ __commit__ = "@GIT_COMMIT_HASH@"
             return oss.str();
         }
 }
-
 %template(vectorvectorLongReadMapping) std::vector<std::vector<LongReadMapping>>;
+%template(vectorSequenceMatch) std::vector<SequenceMatch>;
+%extend std::vector<SequenceMatch>{
+        const std::string __repr__() {
+            std::string s="<Vector: "+std::to_string(self->size())+" SequenceMatches>";
+            return s;
+        }
+        const std::string __str__() {
+            if (self->empty()) return "[]";
+            std::ostringstream oss;
+            oss<<"["<<std::endl;
+            for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
+            oss.seekp(-2,oss.cur);
+            oss<<std::endl<<"]";
+            return oss.str();
+        }
+}
+%template(vectorvectorSequenceMatch) std::vector<std::vector<SequenceMatch>>;
 %template(vectorTagNeighbour) std::vector<TagNeighbour>;
 %template(vectorvectorTagNeighbour) std::vector<std::vector<TagNeighbour>>;
 %template(vectorHaplotypeScore) std::vector<HaplotypeScore>;
