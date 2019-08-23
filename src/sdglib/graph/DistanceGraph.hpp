@@ -225,7 +225,7 @@ public:
      * @param n ID of the SequenceDistanceGraph node
      * @return A NodeView of the node 'n'
      */
-    NodeView get_nodeview(sgNodeID_t n) const;
+    NodeView get_nodeview(sgNodeID_t n);
 
     /**
      * @brief Provides access to the NodeView read-only graph exploration methods for all nodes
