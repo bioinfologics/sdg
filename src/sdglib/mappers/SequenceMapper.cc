@@ -193,9 +193,9 @@ std::vector<LongReadMapping> SequenceMapper::alignment_blocks(uint32_t readID,
     return blocks;
 }
 
-void SequenceMapper::set_params(uint8_t _k, int _max_kfreq=200,int _min_size, int _min_chain, int _max_jump, int _max_delta_change) {
+void SequenceMapper::set_params(uint8_t _k, int _max_kfreq,int _min_size, int _min_chain, int _max_jump, int _max_delta_change) {
     k=_k;
-    max_kfreq=_max_kfreq
+    max_kfreq=_max_kfreq;
     min_size=_min_size;
     min_chain=_min_chain;
     max_jump=_max_jump;
