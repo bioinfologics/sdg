@@ -37,14 +37,7 @@ public:
      * @param _max_jump Max distance between matches to join
      * @param _max_delta_change Maximum difference between coordinates of the node against the coordinates of the reads
      */
-    void set_params(uint8_t _k=15,int _max_kfreq=200, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60){
-        k=_k;
-        min_size=_min_size;
-        min_chain=_min_chain;
-        max_jump=_max_jump;
-        max_delta_change=_max_delta_change;
-        max_kfreq=_max_kfreq;
-    }
+    void set_params(uint8_t _k=15,int _max_kfreq=200, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60);
 
     /**
      * This function maps any sequence to the graph, index needs to be already updated!
@@ -58,47 +51,6 @@ public:
      * Updates the assembly_kmers index with the kmers of the current graph with frequency less than 200
      */
     void update_graph_index(bool verbose=true);
-
-    /**
-     * This goes read by read, and filters the mappings by finding a set of linked nodes that maximises 1-cov of the read
-     *
-     * Unfiltered mappings read from mappings and results stored in filtered_read_mappings, which is cleared.
-     *
-     * @param lrm a LinkedReadMapper with mapped reads, over the same graph this mapper has mapped Long Reads.
-     * @param min_size minimum size of the read to filter mappings.
-     * @param min_tnscore minimum neighbour score on linked reads
-     * @param first_id
-     * @param last_id
-     */
-    //void filter_mappings_by_size_and_id(int64_t size, float id);
-
-    /**
-     * This goes read by read, and transforms the filtered mappings into path-mappings, by:
-     * 1) chaining coherent successive mappings
-     * 2) removing secondary mappings
-     * 3) Pathing between mappings as far as the read supports a single path
-     *
-     */
-    //std::vector<LongReadMapping>
-    //filter_and_chain_matches_by_offset_group(std::vector<LongReadMapping> &matches, bool verbose=false);
-
-    /**
-     * Eliminates matches that are contained within another bigger better match (more span and more score)
-     * @param matches set of matched to de-shadow, usually all the matches within a read
-     * @param verbose
-     * @return vector of de-shadowed LongReadMappings
-     */
-    std::vector<LongReadMapping>
-    remove_shadowed_matches(std::vector<LongReadMapping> &matches, bool verbose=false);
-
-    /**
-     * Performs the de-shadowing process for each read
-     * @param rid
-     * @param correct_on_ws
-     * @return
-     */
-    //std::vector<LongReadMapping> improve_read_filtered_mappings(uint32_t rid, bool correct_on_ws=false);
-
 
 private:
     /**
@@ -161,20 +113,8 @@ private:
                                                   std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
                                                   uint32_t read_kmers_size, const std::vector<unsigned char> &candidate_counts);
 
-    /**
-     * Given a list of blocks the filter will discard overlapping blocks keeping those with the max span and score combination
-     *
-     * @param blocks Maping blocks produced by alignment_blocks()
-     * @param matches Matches produced by get_all_kmer_matches()
-     * @param read_kmers_size Number of kmers in the read
-     * @return Filtered, non overlapping collection of mapping blocks (LongReadMapping)
-     */
-    //std::vector<LongReadMapping> filter_blocks(std::vector<LongReadMapping> & blocks, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,  uint32_t read_kmers_size);
-
-
     NKmerIndex assembly_kmers;
     SatKmerIndex sat_assembly_kmers;
 
-    std::vector<LongReadMapping> filtered_mappings;
     bool sat_kmer_index = false;
 };
