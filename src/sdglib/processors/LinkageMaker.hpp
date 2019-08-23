@@ -80,9 +80,30 @@ public:
     void report_selection();
     void select_by_size(uint64_t min_size,uint64_t max_size=0);
 
-
+    /**
+     * Creates a distance graph following the topology of the starting graph
+     *
+     * A->b->c->D->e->f->g->H
+     *
+     * Uppercase letters are selecetd nodes
+     *
+     * if called wwith radius=10 A-D y D-H are connected
+     *
+     * if called with radius=3 A is connected to D, but D is not connected to H
+     *
+     * if called with radius=2, nothing gets connected
+     *
+     *
+     * @param radius reach of the connections
+     * @return
+     */
     DistanceGraph make_topology_linkage(int radius);
 
+    /**
+     * Create a distance graph using the available paired read mappers
+     * @param min_reads minimum amount of reads to create a link
+     * @return
+     */
     DistanceGraph make_paired_linkage(int min_reads);
 
     DistanceGraph make_paired_linkage_pe(int min_reads);
