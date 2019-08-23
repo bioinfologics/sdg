@@ -118,6 +118,13 @@ public:
      */
     std::vector<LinkedTag> get_linked_tags(std::string datastore_name) const;
 
+    /**
+     * Vector of FW distances and neighbours from the nodeview, sorted in ascending distance (median if multi-link) order.
+     * @param min_links
+     * @return
+     */
+    std::vector<std::pair<int,sgNodeID_t>> fw_neighbours_by_distance( int min_links) const;
+
 private:
     sgNodeID_t id;
     DistanceGraph * dg;

@@ -151,3 +151,7 @@ std::ostream &operator<<(std::ostream &os, const LinkView &ndv) {
     os << "LinkView: "<<ndv.dist<<"bp to Node "<<ndv.node_view.node_id();
     return os;
 }
+
+std::vector<std::pair<int,sgNodeID_t>> NodeView::fw_neighbours_by_distance(int min_links) const {
+    return dg->fw_neighbours_by_distance(id, min_links);
+}
