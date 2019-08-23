@@ -77,6 +77,8 @@
 %feature("director") SequenceDistanceGraph;
 
 %template(vectorInt) std::vector<int>;
+%template(vectorChar) std::vector<char>;
+%template(vectorUChar) std::vector<unsigned char>;
 %template(vectorDouble) std::vector<double>;
 %template(vectorFloat) std::vector<float>;
 %template(vectorString) std::vector<std::string>;
@@ -91,11 +93,14 @@
 
 %template(vectorSGNode) std::vector<int64_t>;
 %template(vectorvectorSGNode) std::vector<std::vector<int64_t>>;
+
+%template(vectorPairIntInt) std::vector<std::pair<int32_t, int32_t>>;
+%template(vectorvectorPairIntInt) std::vector<std::vector<std::pair<int32_t, int32_t>>>;
+%template(vectorPairBoolUINT64) std::vector<std::pair<bool, uint64_t>>;
 %template(SGNodePair) std::pair<int64_t, int64_t>;
 %template(vectorSGNodePair) std::vector<std::pair<int64_t, int64_t>>;
 %template(setSGNodePair) std::set<std::pair<int64_t, int64_t>>;
 %template(setSGNode) std::set<int64_t>;
-
 
 %define __STR__()
 std::string __str__() {
