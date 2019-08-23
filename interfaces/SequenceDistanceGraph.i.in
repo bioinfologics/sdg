@@ -75,6 +75,7 @@
 %feature("director") DistanceGraph;
 %feature("director") SequenceDistanceGraph;
 
+// Pure types
 %template(vectorInt) std::vector<int>;
 %template(vectorDouble) std::vector<double>;
 %template(vectorFloat) std::vector<float>;
@@ -88,13 +89,14 @@
 %template(usetUINT64) std::unordered_set<uint64_t>;
 %template(usetUINT128) std::unordered_set<__uint128_t, int128_hash>;
 
+//SG types
 %template(vectorSGNode) std::vector<int64_t>;
 %template(vectorvectorSGNode) std::vector<std::vector<int64_t>>;
 %template(SGNodePair) std::pair<int64_t, int64_t>;
 %template(vectorSGNodePair) std::vector<std::pair<int64_t, int64_t>>;
 %template(setSGNodePair) std::set<std::pair<int64_t, int64_t>>;
 %template(setSGNode) std::set<int64_t>;
-
+%template(vectorIntSGNodePair) std::vector<std::pair<int,sgNodeID_t>>;
 
 %define __STR__()
 std::string __str__() {
