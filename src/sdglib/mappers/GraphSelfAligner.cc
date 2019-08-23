@@ -10,7 +10,7 @@
 void GraphSelfAligner::self_align() {
     matches.clear();
     matches.resize(dg.sdg.nodes.size());
-    SequenceMapper sm(dg,31,6);
+    SequenceMapper sm(dg,k,max_kfreq);
     auto nvs=dg.get_all_nodeviews();
 #pragma omp parallel for  schedule(static,200)
     for (auto i=0;i<nvs.size();++i){
