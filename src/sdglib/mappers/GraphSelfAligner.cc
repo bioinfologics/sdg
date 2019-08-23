@@ -10,16 +10,16 @@
 void GraphSelfAligner::self_align() {
     matches.clear();
     matches.resize(dg.sdg.nodes.size());
-    SequenceMapper sm(dg,15);
-    sm.update_graph_index(6);
-    for (auto &nv:dg.get_all_nodeviews()){
+    SequenceMapper sm(dg,31,6);
+    auto nvs=dg.get_all_nodeviews();
+#pragma omp parallel for  schedule(static,200)
+    for (auto i=0;i<nvs.size();++i){
+        auto &nv=nvs[i];
         for (auto &m:sm.map_sequence(nv.sequence().c_str(),nv.node_id())){
             if (llabs(m.node)!=nv.node_id()){
-                std::cout<<"Adding match from "<<nv<<" to matches["<<llabs(nv.node_id())<<"] :"<<m<<std::endl;
                 matches[llabs(nv.node_id())].emplace_back(nv.node_id(),m.node,m.qStart,m.qEnd,m.nStart,m.nEnd,m.score);
             }
         }
-
+        std::sort(matches[llabs(nv.node_id())].begin(),matches[llabs(nv.node_id())].end());
     }
-    std::sort(matches.begin(),matches.end());
 }

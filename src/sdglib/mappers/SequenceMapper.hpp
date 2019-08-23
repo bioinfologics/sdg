@@ -18,15 +18,16 @@ public:
     const DistanceGraph & sg;
 
     uint8_t k=15;   /// Kmer size used for mappings
+    int max_kfreq=200;  /// Maximum frequency of a kmer to be included in the index
     int min_size=1000;  /// Minimum length of chained matches to report mappings
     int min_chain=50;   /// Minimum number of chained matches to report mappings
     int max_jump=500;   /// Joins kmer hits within max_jump distance in a node
     int max_hits_to_candidate=4; /// Maximum number of hits to a candidate node, filters kmers with too many offsets in the node
     int max_delta_change=60;    /// Maximum delta change
     int min_number_of_node_occurrences=50; /// Minimum number of matches of a node to consider it for mappings
-    explicit SequenceMapper(const DistanceGraph &_dg,uint8_t _k=15, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60);
-    explicit SequenceMapper(const SequenceDistanceGraph &_dg,uint8_t _k=15, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60):
-        SequenceMapper(static_cast<const DistanceGraph &>(_dg),_k,_min_size,_min_chain,_max_jump,_max_delta_change){};//This is just for SWIG's benefit
+    explicit SequenceMapper(const DistanceGraph &_dg,uint8_t _k=15, int _max_kfreq=200, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60);
+    explicit SequenceMapper(const SequenceDistanceGraph &_dg,uint8_t _k=15, int _max_kfreq=200, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60):
+        SequenceMapper(static_cast<const DistanceGraph &>(_dg),_k,_max_kfreq,_min_size,_min_chain,_max_jump,_max_delta_change){};//This is just for SWIG's benefit
 
     /**
      * Sets mapping parameters
@@ -36,12 +37,13 @@ public:
      * @param _max_jump Max distance between matches to join
      * @param _max_delta_change Maximum difference between coordinates of the node against the coordinates of the reads
      */
-    void set_params(uint8_t _k=15, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60){
+    void set_params(uint8_t _k=15,int _max_kfreq=200, int _min_size=1000, int _min_chain=50, int _max_jump=500, int _max_delta_change = 60){
         k=_k;
         min_size=_min_size;
         min_chain=_min_chain;
         max_jump=_max_jump;
         max_delta_change=_max_delta_change;
+        max_kfreq=_max_kfreq;
     }
 
     /**
@@ -55,7 +57,7 @@ public:
     /**
      * Updates the assembly_kmers index with the kmers of the current graph with frequency less than 200
      */
-    void update_graph_index(int filter_limit=200, bool verbose=true);
+    void update_graph_index(bool verbose=true);
 
     /**
      * This goes read by read, and filters the mappings by finding a set of linked nodes that maximises 1-cov of the read

@@ -10,11 +10,14 @@
 class GraphSelfAligner {
 
 public:
-    GraphSelfAligner(const DistanceGraph &_dg):dg(_dg){};
-    explicit GraphSelfAligner(const SequenceDistanceGraph &_dg):GraphSelfAligner(static_cast<const DistanceGraph &>(_dg)){};
+    GraphSelfAligner(const DistanceGraph &_dg, int _k=31, int _max_kfreq=200):dg(_dg),k(_k),max_kfreq(_max_kfreq){};
+    explicit GraphSelfAligner(const SequenceDistanceGraph &_dg, int _k=31, int _max_kfreq=200):
+        GraphSelfAligner(static_cast<const DistanceGraph &>(_dg),_k,_max_kfreq){};
 
     void self_align();
 
     const DistanceGraph &dg;
+    int k;
+    int max_kfreq;
     std::vector<std::vector<SequenceMatch>> matches;
 };

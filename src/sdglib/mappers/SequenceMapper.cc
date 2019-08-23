@@ -4,7 +4,7 @@
 
 #include "SequenceMapper.hpp"
 
-SequenceMapper::SequenceMapper(const DistanceGraph &_dg,uint8_t _k, int _min_size, int _min_chain, int _max_jump, int _max_delta_change):sg(_dg) {
+SequenceMapper::SequenceMapper(const DistanceGraph &_dg,uint8_t _k,int _max_kfreq, int _min_size, int _min_chain, int _max_jump, int _max_delta_change):sg(_dg) {
     k=_k;
     min_size=_min_size;
     min_chain=_min_chain;
@@ -35,13 +35,13 @@ std::vector<LongReadMapping> SequenceMapper::map_sequence(const char * query_seq
 
 }
 
-void SequenceMapper::update_graph_index(int filter_limit, bool verbose) {
+void SequenceMapper::update_graph_index(bool verbose) {
     if (sat_kmer_index) {
         if (verbose) std::cout<<"updating satindex with k="<<std::to_string(k)<<std::endl;
-        sat_assembly_kmers=SatKmerIndex(sg.sdg, k, filter_limit);
+        sat_assembly_kmers=SatKmerIndex(sg.sdg, k, max_kfreq);
     } else {
         if (verbose) std::cout<<"updating nkindex with k="<<std::to_string(k)<<std::endl;
-        assembly_kmers = NKmerIndex(sg.sdg, k, filter_limit);
+        assembly_kmers = NKmerIndex(sg.sdg, k, max_kfreq);
     }
 }
 
