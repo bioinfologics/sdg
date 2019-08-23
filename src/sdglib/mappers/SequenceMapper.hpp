@@ -167,7 +167,7 @@ private:
      * @param read_kmers_size Number of kmers in the read
      * @return Filtered, non overlapping collection of mapping blocks (LongReadMapping)
      */
-    std::vector<LongReadMapping> filter_blocks(std::vector<LongReadMapping> & blocks, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,  uint32_t read_kmers_size);
+    //std::vector<LongReadMapping> filter_blocks(std::vector<LongReadMapping> & blocks, std::vector<std::vector<std::pair<int32_t, int32_t>>> & matches,  uint32_t read_kmers_size);
 
 
     NKmerIndex assembly_kmers;

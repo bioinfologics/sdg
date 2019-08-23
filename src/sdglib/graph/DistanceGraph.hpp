@@ -225,14 +225,14 @@ public:
      * @param n ID of the SequenceDistanceGraph node
      * @return A NodeView of the node 'n'
      */
-    NodeView get_nodeview(sgNodeID_t n);
+    NodeView get_nodeview(sgNodeID_t n) const;
 
     /**
      * @brief Provides access to the NodeView read-only graph exploration methods for all nodes
      * @param include_disconnected If set to false and a node is disconnected, it won't be included in the result
      * @return A NodeView list containing one per node in the graph unless include_disconnected is set to false, then only nodes with links are included
      */
-    std::vector<NodeView> get_all_nodeviews(bool include_disconnected=true);
+    std::vector<NodeView> get_all_nodeviews(bool include_disconnected=true) const;
     DistanceGraph& operator=(const DistanceGraph &o);
 
     friend std::ostream& operator<<(std::ostream &os, const DistanceGraph &dg);
