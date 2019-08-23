@@ -26,6 +26,7 @@
 
 #include "sdglib/views/NodeView.hpp"
 #include "sdglib/mappers/SequenceMapper.hpp"
+#include "sdglib/mappers/GraphSelfAligner.hpp"
 
 
 #include "sdglib/factories/KMerFactory.hpp"
@@ -137,6 +138,11 @@ std::string __repr__() {
     __REPR__();
 };
 
+%extend SequenceMatch{
+        __STR__();
+        __REPR__();
+};
+
 %extend KmerIDX{
     __STR__();
     __REPR__();
@@ -217,6 +223,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
 
 %include "sdglib/views/NodeView.hpp"
 %include "sdglib/mappers/SequenceMapper.hpp"
+%include "sdglib/mappers/GraphSelfAligner.hpp"
 
 %include "sdglib/indexers/UniqueKmerIndex.hpp"
 
@@ -327,8 +334,24 @@ __commit__ = "@GIT_COMMIT_HASH@"
             return oss.str();
         }
 }
-
 %template(vectorvectorLongReadMapping) std::vector<std::vector<LongReadMapping>>;
+%template(vectorSequenceMatch) std::vector<SequenceMatch>;
+%extend std::vector<SequenceMatch>{
+        const std::string __repr__() {
+            std::string s="<Vector: "+std::to_string(self->size())+" SequenceMatches>";
+            return s;
+        }
+        const std::string __str__() {
+            if (self->empty()) return "[]";
+            std::ostringstream oss;
+            oss<<"["<<std::endl;
+            for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
+            oss.seekp(-2,oss.cur);
+            oss<<std::endl<<"]";
+            return oss.str();
+        }
+}
+%template(vectorvectorSequenceMatch) std::vector<std::vector<SequenceMatch>>;
 %template(vectorTagNeighbour) std::vector<TagNeighbour>;
 %template(vectorvectorTagNeighbour) std::vector<std::vector<TagNeighbour>>;
 %template(vectorHaplotypeScore) std::vector<HaplotypeScore>;
