@@ -43,12 +43,15 @@
 #include "sdglib/datastores/KmerCounter.hpp"
 
 #include "sdglib/indexers/UniqueKmerIndex.hpp"
+#include "sdglib/indexers/SatKmerIndex.hpp"
 
 #include "sdglib/processors/LinkageMaker.hpp"
 #include "sdglib/processors/LinkageUntangler.hpp"
 #include "sdglib/processors/HaplotypeConsensus.hpp"
 
 #include "sdglib/readers/FileReader.hpp"
+
+
 
 %}
 
@@ -232,6 +235,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %include "sdglib/mappers/GraphSelfAligner.hpp"
 
 %include "sdglib/indexers/UniqueKmerIndex.hpp"
+%include "sdglib/indexers/SatKmerIndex.hpp"
 
 %include "sdglib/datastores/PairedReadsDatastore.hpp"
 %include "sdglib/datastores/LinkedReadsDatastore.hpp"

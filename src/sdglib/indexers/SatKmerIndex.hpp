@@ -32,6 +32,6 @@ public:
     SatKmerIndex(){};
     SatKmerIndex(const SequenceDistanceGraph &sg, uint8_t k=15, uint8_t filter_limit = 200);
 
-    auto beginCO(uint64_t kmer) const { return (0ull==kmer) ? 0ull : kmerEnd[kmer-1];}
-    auto endCO(uint64_t kmer) const { return kmerEnd[kmer]; }
+    uint64_t beginCO(uint64_t kmer) const { return (0ull==kmer) ? 0ull : kmerEnd[kmer-1];}
+    uint64_t endCO(uint64_t kmer) const { return kmerEnd[kmer]; }
 };
