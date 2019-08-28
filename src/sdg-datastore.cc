@@ -93,22 +93,22 @@ int main(int argc, char * argv[]) {
 
         //===== DATASTORE CREATION =====
         if (read_type == "10x" or read_type == "10xUCD") {
-            if (min_readsize==0) {
-                min_readsize = detect_read_size(read1);
-                sdglib::OutputLog() << "Detected max read size " << min_readsize << std::endl;
+            if (max_readsize==0) {
+                max_readsize = detect_read_size(read1);
+                sdglib::OutputLog() << "Detected max read size " << max_readsize << std::endl;
             }
             LinkedReadsDatastore::build_from_fastq(output + ".lrseq", dsname, read1, read2,
                                                    (read_type == "10xUCD" ? LinkedReadsFormat::UCDavis
-                                                                          : LinkedReadsFormat::raw), min_readsize,
+                                                                          : LinkedReadsFormat::raw), max_readsize,
                                                    chunk_size);
 
         }
         else if (read_type == "paired") {
-            if (min_readsize==0) {
-                min_readsize = detect_read_size(read1);
-                sdglib::OutputLog() << "Detected max read size " << min_readsize << std::endl;
+            if (max_readsize==0) {
+                max_readsize = detect_read_size(read1);
+                sdglib::OutputLog() << "Detected max read size " << max_readsize << std::endl;
             }
-            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, dsname, min_readsize, min_readsize, fragment_size, orientation,chunk_size);
+            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, dsname, min_readsize, max_readsize, fragment_size, orientation,chunk_size);
 
         }
         else if (read_type == "long") {
