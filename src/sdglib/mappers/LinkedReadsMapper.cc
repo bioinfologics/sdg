@@ -461,19 +461,16 @@ void LinkedReadsMapper::compute_all_tag_neighbours(int min_size, float min_score
         tag_start_end.emplace_back(tag_firstpost,read_to_node.size());
     }
 
-
     //scores[source][dest]= count of reads of source which have tags also present in dest
     std::vector<std::unordered_map<sgNodeID_t,uint32_t>> scores(ws.sdg.nodes.size());
     sdglib::OutputLog()<<"Counting into individual maps (parallel)..."<<std::endl;
-#pragma omp parallel
     {
         //local tally
         std::vector<std::unordered_map<sgNodeID_t,uint32_t>> local_scores(ws.sdg.nodes.size());
         //map with counts of how many times the tag appears on every node
         std::unordered_map<sgNodeID_t, uint32_t > node_readcount; //is it not easier to use a vector? - it is sparse
-#pragma omp for
         for(auto tidx=0;tidx<tag_start_end.size();++tidx){ //for each tag's reads
-            for(auto i=tag_start_end[tidx].first;tag_start_end[tidx].second;++i) {
+            for(auto i=tag_start_end[tidx].first;i<tag_start_end[tidx].second;++i) {
                 if (read_to_node[i] != 0) {
                     ++node_readcount[llabs(read_to_node[i])];
                 }
@@ -491,12 +488,10 @@ void LinkedReadsMapper::compute_all_tag_neighbours(int min_size, float min_score
             }
             node_readcount.clear();
         }
-#pragma omp critical(score_aggregation)
         {
             for (auto n=0;n<local_scores.size();++n)
                 for (auto ns:local_scores[n])
                     scores[n][ns.first]+=ns.second;
-
         }
     }
 
