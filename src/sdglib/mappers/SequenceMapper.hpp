@@ -52,7 +52,6 @@ public:
      */
     void update_graph_index(bool verbose=true);
 
-private:
     /**
      * Populates the matches container with the matches between all kmers from one read and the *saturated* index of the graph.
      * The index is a filtered set of kmers from the graph constructed using update_graph_index() or similar.
