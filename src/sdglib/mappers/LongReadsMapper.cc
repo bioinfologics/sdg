@@ -14,6 +14,8 @@
 #include <sdglib/utilities/most_common_helper.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <chrono>
+#include <sdglib/views/NodeView.hpp>
+#include <deps/minimap2/minimap.h>
 
 struct chain{
     sgNodeID_t node=0;
@@ -522,6 +524,85 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
     }
     sdglib::OutputLog() << "Updating mapping indexes" <<std::endl;
     update_indexes();
+}
+
+void LongReadsMapper::map_reads_with_minimap2() {
+    //first create a temporary .fa file with the node's sequences
+    std::ofstream temp_fa("minimap_temp.fa");
+    for (auto &nv:sg.get_all_nodeviews()){
+        if (nv.size()> 500)  {
+            temp_fa<<">"<<nv.node_id()<<std::endl<<nv.sequence()<<std::endl;
+        }
+    }
+    temp_fa.close();
+
+    //now run minimap2 on that sequence and add the mappings as raw mappings
+    //This code is copied from https://github.com/lh3/minimap2/master/example.c
+    mm_idxopt_t iopt;
+    mm_mapopt_t mopt;
+    int n_threads = 3;
+
+    mm_verbose = 2; // disable message output to stderr
+    mm_set_opt(0, &iopt, &mopt);
+    mopt.flag |= MM_F_CIGAR; // perform alignment
+
+    ReadSequenceBuffer sequenceGetter(datastore);
+
+    // open index reader
+    mm_idx_reader_t *r = mm_idx_reader_open("minimap_temp.fa", &iopt, 0);
+    mm_idx_t *mi;
+    while ((mi = mm_idx_reader_read(r, n_threads)) != 0) { // traverse each part of the index
+        mm_mapopt_update(&mopt, mi); // this sets the maximum minimizer occurrence; TODO: set a better default in mm_mapopt_init()!
+        mm_tbuf_t *tbuf = mm_tbuf_init(); // thread buffer; for multi-threading, allocate one tbuf for each thread
+        uint64_t num_reads_done=0;
+        for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
+            if (++num_reads_done%10000 == 0) {
+                sdglib::OutputLog() << "processing read #" << num_reads_done << std::endl;
+            }
+
+
+            //if (datastore.read_to_fileRecord[readID].record_size< 2 * min_size ) continue;
+            //========== 1. Get read sequence, kmerise, get all matches ==========
+            auto read_sequence_ptr = sequenceGetter.get_read_sequence(readID);
+            auto read_size=datastore.read_to_fileRecord[readID].record_size;
+
+            mm_reg1_t *reg;
+            int j, i, n_reg;
+            reg = mm_map(mi, read_size, read_sequence_ptr, &n_reg, tbuf, &mopt, 0); // get all hits for the query
+            for (j = 0; j < n_reg; ++j) { // traverse hits and print them out
+                mm_reg1_t *r = &reg[j];
+                assert(r->p); // with MM_F_CIGAR, this should not be NULL
+                LongReadMapping lrm;
+                lrm.qStart=r->qs;
+                lrm.qEnd=r->qe;
+                lrm.score=r->score;
+                lrm.node=std::stold(mi->seq[r->rid].name);
+                lrm.nStart=r->rs;
+                lrm.nEnd=r->re;
+                if (r->rev){
+                    lrm.nStart=sg.nodes[lrm.node].sequence.size()-lrm.nStart-1;
+                    lrm.nEnd=sg.nodes[lrm.node].sequence.size()-lrm.nEnd-1;
+                    lrm.node=-lrm.node;
+                }
+                mappings.push_back(lrm);
+
+//                printf("%s\t%d\t%d\t%d\t%c\t", ks->name.s, ks->seq.l, r->qs, r->qe, "+-"[r->rev]);
+//                printf("%s\t%d\t%d\t%d\t%d\t%d\t%d\tcg:Z:", mi->seq[r->rid].name, mi->seq[r->rid].len, r->rs, r->re, r->mlen, r->blen, r->mapq);
+//                for (i = 0; i < r->p->n_cigar; ++i) // IMPORTANT: this gives the CIGAR in the aligned regions. NO soft/hard clippings!
+//                    printf("%d%c", r->p->cigar[i]>>4, "MIDNSH"[r->p->cigar[i]&0xf]);
+//                putchar('\n');
+                free(r->p);
+            }
+            free(reg);
+        }
+        mm_tbuf_destroy(tbuf);
+        mm_idx_destroy(mi);
+    }
+    mm_idx_reader_close(r); // close the index reader
+
+    //and finally remove the temporary file
+    std::remove("minimap_temp.fa");
+
 }
 
 std::vector<LongReadMapping> LongReadsMapper::map_sequence(const NKmerIndex &nkindex, const char * query_sequence_ptr, sgNodeID_t seq_id) {
