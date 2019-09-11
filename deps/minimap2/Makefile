@@ -28,7 +28,7 @@ endif
 .c.o:
 		$(CC) -c $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $< -o $@
 
-all:$(PROG)
+all:libminimap2.a
 
 extra:all $(PROG_EXTRA)
 
