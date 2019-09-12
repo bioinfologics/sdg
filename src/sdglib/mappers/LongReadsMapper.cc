@@ -541,7 +541,7 @@ void LongReadsMapper::map_reads_with_minimap2() {
     //This code is copied from https://github.com/lh3/minimap2/master/example.c
     mm_idxopt_t iopt;
     mm_mapopt_t mopt;
-    int n_threads = 3;
+    int n_threads = omp_get_max_threads();
 
     mm_verbose = 2; // disable message output to stderr
     mm_set_opt(0, &iopt, &mopt);
@@ -584,13 +584,13 @@ void LongReadsMapper::map_reads_with_minimap2() {
                     LongReadMapping lrm;
                     lrm.read_id = readID;
                     lrm.qStart = r->qs;
-                    lrm.qEnd = r->qe;
+                    lrm.qEnd = r->qe -1;
                     lrm.score = r->score;
                     lrm.node = std::stold(mi->seq[r->rid].name);
                     lrm.nStart = r->rs;
                     lrm.nEnd = r->re;
                     if (r->rev) {
-                        lrm.nStart = sg.nodes[lrm.node].sequence.size() - r->re - 1;
+                        lrm.nStart = sg.nodes[lrm.node].sequence.size() - r->re ;
                         lrm.nEnd = sg.nodes[lrm.node].sequence.size() - r->rs - 1;
                         lrm.node = -lrm.node;
                     }
