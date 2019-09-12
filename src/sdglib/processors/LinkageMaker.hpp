@@ -39,8 +39,24 @@ public:
         delete(lrbsgp);
     }
     void set_read(uint64_t read_id);
+    /**
+     * From an initiated read instance creates all unique sets of haplotipic neighbours using the linked reads neighbour matrix
+     * The result is stores in haplotype_scores in the class
+     * @param min_tn min score for 2 nodes to be considered neighbours
+     */
     void generate_haplotypes_from_linkedreads(float min_tn=0.05);
+    /**
+     * Scores each of the haplotype scores according to how much of the read the haplotype covers, the results are added to the score attibute inside each element of haplotype_scores
+     * @param weight
+     */
     void score_coverage(float weight);
+    /**
+     *
+     * @param weight
+     * @param k
+     * @param win_size
+     * @param win_step
+     */
     void score_window_winners(float weight, int k=15, int win_size=500, int win_step=250);
 
     /**
@@ -119,7 +135,16 @@ public:
     DistanceGraph make_longreads_multilinkage(const LongReadsMapper &lorm, uint64_t min_map_size=1000, float min_map_id=.1, bool real_read_size=true, int32_t unmapped_end=1000);
 
     DistanceGraph make_longreads_multilinkage(const std::string &datastore_name, uint64_t min_map_size=1000, float min_map_id=.1, bool real_read_size=true, int32_t unmapped_end=1000);
-
+    /**
+     * Creates a multilinkage digraph using the Nano10X pipeline
+     * @param lorm long read mapper
+     * @param lrm link read mapper (needs to have the neighbours calculated, see linkedReadsMapper.compute_all_tag_neighbours)
+     * @param min_size min node size to be considered
+     * @param min_tnscore min neighbour tag score to be considered
+     * @param real_read_size
+     * @param unmapped_end
+     * @return Multi linkage DistanceGraph
+     */
     DistanceGraph make_long10x_multilinkage(const LongReadsMapper &lorm, const LinkedReadsMapper &lrm, uint32_t min_size,  float min_tnscore, bool real_read_size=true, int32_t unmapped_end=1000);
 
     DistanceGraph make_long10x_multilinkage(const std::string &lorm_name, const std::string &lrm_name, uint32_t min_size,  float min_tnscore, bool real_read_size=true, int32_t unmapped_end=1000);

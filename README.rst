@@ -56,22 +56,22 @@ Command line tools
 sdg-datastore
 *************************
 
-Creates a *Datastore* from raw reads and can process paired, 10x or long reads. An output prefix is specified as a parameter and a <predix>.prseq, <prefix>.lrseq or <prefix>.loseq file is generated.
+Creates a *Datastore* from raw reads and can process paired, 10x or long reads. An output prefix is specified as a parameter and a <prefix>.prseq, <prefix>.lrseq or <prefix>.loseq file is generated.
 
 sdg-kmercounter
 *************************
 
-Creates a *KmerCounter* indexing a graph from a *WorkSpace* or GFA, or works with an already generated one. A count can be added directly from raw reads or from a datastore. The *KmerCounter* is persisted on file with extension 'sdgkc'.
+Creates a *KmerCounter* indexing a graph from a *WorkSpace* or GFA, or works with an already generated one. A count can be added directly from raw reads or from a datastore. The *KmerCounter* is persisted on disk to a file with extension 'sdgkc'.
 
 sdg-workspace
 *************************
 
-Creates a *WorkSpace* from a base graph or works with an already generated one. *Datastores* and *KmerCounters* can be added. The *WorkSpace* is persisted on file with extension 'sdgws'.
+Creates a *WorkSpace* from a base graph or works with an already generated one. *Datastores* and *KmerCounters* can be added. The *WorkSpace* is persisted on disk to a file with extension 'sdgws'.
 
 sdg-dbg
 *************************
 
-Creates a *WorkSpace* from a *PairedReadDatastore* by building a deBruijn graph and using this as the base graph. Counts for the k-mers from the graph and raw reads are added too.
+Creates a *WorkSpace* from a *PairedReadDatastore* or FASTQ files by building a deBruijn graph and using this as the base graph. Counts for the k-mers from the graph and raw reads are added to the workspace.
 
 sdg-mapper
 *************************
