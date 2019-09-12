@@ -253,6 +253,11 @@ public:
     void map_reads_to_best_nodes(const std::unordered_set<uint32_t> &readIDs = {});
 
     /**
+     * Maps all reads to the graph using libminimap2
+     */
+    void map_reads_with_minimap2();
+
+    /**
      * This function maps any sequence to the graph, index needs to be already updated!
      * WARNING: this is slow, not meant for high throughput
      * @param query_sequence_ptr Sequence to align to the index
