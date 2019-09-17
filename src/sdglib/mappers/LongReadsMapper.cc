@@ -533,9 +533,11 @@ void LongReadsMapper::map_reads_with_minimap2(int64_t first, int64_t last, int m
     mappings.clear();
     //first create a temporary .fa file with the node's sequences
     std::ofstream temp_fa("minimap_temp.fa");
+    uint64_t total_bp=0;
     for (auto &nv:sg.get_all_nodeviews()){
         if (nv.size()>= min_size)  {
             temp_fa<<">"<<nv.node_id()<<std::endl<<nv.sequence()<<std::endl;
+            total_bp+=nv.size();
         }
     }
     temp_fa.close();
@@ -549,6 +551,7 @@ void LongReadsMapper::map_reads_with_minimap2(int64_t first, int64_t last, int m
     mm_verbose = 2; // disable message output to stderr
     mm_set_opt(0, &iopt, &mopt);
     iopt.k=k;
+    iopt.batch_size = total_bp*1.1; //set to 110% of total bp to be safe all of the genome is in a single index
     mopt.flag |= MM_F_CIGAR | MM_F_ALL_CHAINS; // perform alignment
     mopt.min_cnt = mm_min_chain;
     mopt.min_chain_score = mm_min_chain_score;
@@ -559,7 +562,7 @@ void LongReadsMapper::map_reads_with_minimap2(int64_t first, int64_t last, int m
     mm_idx_reader_t *r = mm_idx_reader_open("minimap_temp.fa", &iopt, 0);
     mm_idx_t *mi;
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
-    while ((mi = mm_idx_reader_read(r, n_threads)) != 0) { // traverse each part of the index
+    while ((mi = mm_idx_reader_read(r, n_threads)) != 0) { // traverse each part of the index TODO: there should be always only one part now
         mm_mapopt_update(&mopt, mi); // this sets the maximum minimizer occurrence; TODO: set a better default in mm_mapopt_init()!
 #pragma omp parallel
         {
