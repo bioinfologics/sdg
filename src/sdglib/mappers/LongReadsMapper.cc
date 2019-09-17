@@ -526,7 +526,9 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
     update_indexes();
 }
 
-void LongReadsMapper::map_reads_with_minimap2() {
+void LongReadsMapper::map_reads_with_minimap2(int64_t first, int64_t last) {
+    if (1>last or datastore.size()<last) last=datastore.size();
+    if (1>first) first=1;
     mappings.clear();
     //first create a temporary .fa file with the node's sequences
     std::ofstream temp_fa("minimap_temp.fa");
@@ -546,7 +548,7 @@ void LongReadsMapper::map_reads_with_minimap2() {
     mm_verbose = 2; // disable message output to stderr
     mm_set_opt(0, &iopt, &mopt);
     iopt.k=k;
-    mopt.flag |= MM_F_CIGAR; // perform alignment
+    mopt.flag |= MM_F_CIGAR | MM_F_ALL_CHAINS; // perform alignment
 
 
 
@@ -563,7 +565,7 @@ void LongReadsMapper::map_reads_with_minimap2() {
             ReadSequenceBuffer sequenceGetter(datastore);
             auto & private_results=thread_mappings[omp_get_thread_num()];
 #pragma omp for schedule(static,200)
-            for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
+            for (uint32_t readID = first; readID < last; ++readID) {
                 if (++num_reads_done % 10000 == 0) {
                     sdglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" processing its read #" << num_reads_done << std::endl;
 
