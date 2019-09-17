@@ -526,7 +526,8 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
     update_indexes();
 }
 
-void LongReadsMapper::map_reads_with_minimap2(int64_t first, int64_t last) {
+void LongReadsMapper::map_reads_with_minimap2(int64_t first, int64_t last, int mm_min_chain, int mm_min_chain_score) {
+
     if (1>last or datastore.size()<last) last=datastore.size();
     if (1>first) first=1;
     mappings.clear();
@@ -549,6 +550,8 @@ void LongReadsMapper::map_reads_with_minimap2(int64_t first, int64_t last) {
     mm_set_opt(0, &iopt, &mopt);
     iopt.k=k;
     mopt.flag |= MM_F_CIGAR | MM_F_ALL_CHAINS; // perform alignment
+    mopt.min_cnt = mm_min_chain;
+    mopt.min_chain_score = mm_min_chain_score;
 
 
 
