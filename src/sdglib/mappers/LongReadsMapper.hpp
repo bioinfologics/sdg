@@ -255,7 +255,7 @@ public:
     /**
      * Maps all reads to the graph using libminimap2
      */
-    void map_reads_with_minimap2(int64_t first=1, int64_t last=-1, int mm_min_chain=10, int mm_min_chain_score=200);
+    void map_reads_with_minimap2(int mm_min_chain=10, int mm_min_chain_score=200, int64_t first=1, int64_t last=-1);
 
     /**
      * This function maps any sequence to the graph, index needs to be already updated!

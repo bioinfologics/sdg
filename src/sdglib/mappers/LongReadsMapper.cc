@@ -526,7 +526,7 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
     update_indexes();
 }
 
-void LongReadsMapper::map_reads_with_minimap2(int64_t first, int64_t last, int mm_min_chain, int mm_min_chain_score) {
+void LongReadsMapper::map_reads_with_minimap2(int mm_min_chain, int mm_min_chain_score, int64_t first, int64_t last) {
 
     if (1>last or datastore.size()<last) last=datastore.size();
     if (1>first) first=1;
