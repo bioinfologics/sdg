@@ -462,6 +462,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
 }
 
 %template(set10xTag) std::set<LinkedTag>;
+%template(vector10xTag) std::vector<LinkedTag>;
 
 %template(fastaReader) FastaReader<FastaRecord>;
 
