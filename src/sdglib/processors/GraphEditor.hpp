@@ -49,9 +49,8 @@ public:
 
     /**
     * Marks inputs as used in the queue.
-    * @return true if operation allowed
     */
-    bool queue_mark_inputs(GraphEditorOperation);
+    void queue_mark_inputs(GraphEditorOperation);
 
     /**
      * applies the queued operations
@@ -70,9 +69,9 @@ public:
      * @param bw
      * @param fw
      */
-    void expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNodeID_t>> bw, std::vector<std::vector<sgNodeID_t>> fw);
+    //void expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNodeID_t>> bw, std::vector<std::vector<sgNodeID_t>> fw);
 
-    void expand_path(const SequenceDistanceGraphPath &p);
+    //void expand_path(const SequenceDistanceGraphPath &p);
 
     void join_path(SequenceDistanceGraphPath p,bool consume_nodes=false);
 

@@ -33,7 +33,7 @@ bool GraphEditor::queue_allows(GraphEditorOperation op) {
     return true;
 }
 
-bool GraphEditor::queue_mark_inputs(GraphEditorOperation op) {
+void GraphEditor::queue_mark_inputs(GraphEditorOperation op) {
     for (auto &n:op.input_nodes) {
         queued_nodes[n]=true;
         queued_plus_ends[n]=true;
@@ -53,6 +53,7 @@ bool GraphEditor::queue_node_expansion(sgNodeID_t node, std::vector<std::pair<sg
     //TODO: do we validate that the expansion is valid?
     queue_mark_inputs(op);
     node_expansion_queue.emplace_back(op);
+    return true;
 }
 
 void GraphEditor::apply_all() {

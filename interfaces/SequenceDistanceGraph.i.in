@@ -50,6 +50,8 @@
 #include "sdglib/processors/LinkageUntangler.hpp"
 #include "sdglib/processors/HaplotypeConsensus.hpp"
 
+#include "sdglib/processors/GraphEditor.hpp"
+
 #include "sdglib/readers/FileReader.hpp"
 
 
@@ -252,6 +254,8 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %include "sdglib/processors/LinkageMaker.hpp"
 %include "sdglib/processors/LinkageUntangler.hpp"
 %include "sdglib/processors/HaplotypeConsensus.hpp"
+
+%include "sdglib/processors/GraphEditor.hpp"
 
 %template(vectorLink) std::vector<Link>;
 %template(vectorvectorLink) std::vector<std::vector<Link>>;
