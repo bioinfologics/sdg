@@ -127,6 +127,8 @@ public:
 
     std::vector<uint64_t> get_kmers(int K);
 
+    std::unordered_set<uint64_t> get_linked_tags_kmers(std::string datastore_name, int K, int min_tag_cov);
+
 private:
     sgNodeID_t id;
     DistanceGraph * dg;
