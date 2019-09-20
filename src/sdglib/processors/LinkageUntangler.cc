@@ -3,7 +3,6 @@
 //
 
 #include "LinkageUntangler.hpp"
-#include "GraphEditor.hpp"
 #include "GraphMaker.hpp"
 #include "LinkageMaker.hpp"
 #include <atomic>

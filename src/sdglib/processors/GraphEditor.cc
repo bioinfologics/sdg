@@ -5,6 +5,72 @@
 #include <functional>
 #include "GraphEditor.hpp"
 
+GraphEditorNodeExpansion::GraphEditorNodeExpansion(sgNodeID_t node,
+                                                   std::vector<std::pair<sgNodeID_t, sgNodeID_t>> links_through) {
+
+    if (node>0) {
+        input_nodes.emplace_back(node);
+        for (auto &l:links_through)
+            input_links.emplace_back(l.first, l.second,0); //XXX these "links" are only topological
+    }
+    else {
+        input_nodes.emplace_back(-node);
+        for (auto &l:links_through)
+            input_links.emplace_back(l.second, l.first,0); //XXX these "links" are only topological
+    }
+}
+
+bool GraphEditor::queue_allows(GraphEditorOperation op) {
+    for (auto &n:op.input_nodes) {
+        if (queued_nodes[n] or queued_plus_ends[n] or queued_minus_ends[n]) return false;
+    }
+    for (auto &l:op.input_links) {
+        for (auto v:{l.source,l.dest}) {
+            if (v < 0 and queued_minus_ends[-v]) return false;
+            if (v > 0 and queued_plus_ends[v]) return false;
+        }
+    }
+    return true;
+}
+
+bool GraphEditor::queue_mark_inputs(GraphEditorOperation op) {
+    for (auto &n:op.input_nodes) {
+        queued_nodes[n]=true;
+        queued_plus_ends[n]=true;
+        queued_minus_ends[n]=true;
+    }
+    for (auto &l:op.input_links) {
+        for (auto v:{l.source,l.dest}) {
+            if (v < 0) queued_minus_ends[-v]=true;
+            if (v > 0) queued_plus_ends[v]=true;
+        }
+    }
+}
+
+bool GraphEditor::queue_node_expansion(sgNodeID_t node, std::vector<std::pair<sgNodeID_t, sgNodeID_t>> links_through) {
+    GraphEditorNodeExpansion op(node,links_through);
+    if (not queue_allows(op)) return false;
+    //TODO: do we validate that the expansion is valid?
+    queue_mark_inputs(op);
+    node_expansion_queue.emplace_back(op);
+}
+
+void GraphEditor::apply_all() {
+    for (auto &op:node_expansion_queue){
+        for (auto &lt:op.input_links) {
+            //create a copy of the node;
+            auto new_node=ws.sdg.add_node(ws.sdg.get_node_sequence(op.input_nodes[0]));
+            //connect to the sides
+            auto source_dist=ws.sdg.get_link(lt.source,op.input_nodes[0]).dist;
+            ws.sdg.add_link(lt.source,new_node,source_dist);
+            auto dest_dist=ws.sdg.get_link(-op.input_nodes[0],lt.dest).dist;
+            ws.sdg.add_link(-new_node,lt.dist,dest_dist);
+        }
+        ws.sdg.remove_node(op.input_nodes[0]);
+    }
+    node_expansion_queue.clear();
+}
+
 bool GraphEditor::detach_path(SequenceDistanceGraphPath p, bool consume_tips) {
     if (p.nodes.size()==1) return true;
     //TODO: check the path is valid?
