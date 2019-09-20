@@ -155,3 +155,10 @@ std::ostream &operator<<(std::ostream &os, const LinkView &ndv) {
 std::vector<std::pair<int,sgNodeID_t>> NodeView::fw_neighbours_by_distance(int min_links) const {
     return dg->fw_neighbours_by_distance(id, min_links);
 }
+
+std::vector<uint64_t> NodeView::get_kmers(int K){
+    std::vector<uint64_t> node_kmers;
+    auto kf = StringKMerFactory(K);
+    kf.create_kmers(sequence(), node_kmers);
+    return node_kmers;
+};
