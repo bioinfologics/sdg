@@ -65,7 +65,7 @@ void GraphEditor::apply_all() {
             auto source_dist=ws.sdg.get_link(lt.source,op.input_nodes[0]).dist;
             ws.sdg.add_link(lt.source,new_node,source_dist);
             auto dest_dist=ws.sdg.get_link(-op.input_nodes[0],lt.dest).dist;
-            ws.sdg.add_link(-new_node,lt.dist,dest_dist);
+            ws.sdg.add_link(-new_node,lt.dest,dest_dist);
         }
         ws.sdg.remove_node(op.input_nodes[0]);
     }
