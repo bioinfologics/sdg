@@ -526,13 +526,18 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
     update_indexes();
 }
 
-void LongReadsMapper::map_reads_with_minimap2() {
+void LongReadsMapper::map_reads_with_minimap2(int mm_min_chain, int mm_min_chain_score, int64_t first, int64_t last) {
+
+    if (1>last or datastore.size()<last) last=datastore.size();
+    if (1>first) first=1;
     mappings.clear();
     //first create a temporary .fa file with the node's sequences
     std::ofstream temp_fa("minimap_temp.fa");
+    uint64_t total_bp=0;
     for (auto &nv:sg.get_all_nodeviews()){
         if (nv.size()>= min_size)  {
             temp_fa<<">"<<nv.node_id()<<std::endl<<nv.sequence()<<std::endl;
+            total_bp+=nv.size();
         }
     }
     temp_fa.close();
@@ -546,7 +551,10 @@ void LongReadsMapper::map_reads_with_minimap2() {
     mm_verbose = 2; // disable message output to stderr
     mm_set_opt(0, &iopt, &mopt);
     iopt.k=k;
-    mopt.flag |= MM_F_CIGAR; // perform alignment
+    iopt.batch_size = total_bp*1.1; //set to 110% of total bp to be safe all of the genome is in a single index
+    mopt.flag |= MM_F_CIGAR | MM_F_ALL_CHAINS; // perform alignment
+    mopt.min_cnt = mm_min_chain;
+    mopt.min_chain_score = mm_min_chain_score;
 
 
 
@@ -554,7 +562,7 @@ void LongReadsMapper::map_reads_with_minimap2() {
     mm_idx_reader_t *r = mm_idx_reader_open("minimap_temp.fa", &iopt, 0);
     mm_idx_t *mi;
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
-    while ((mi = mm_idx_reader_read(r, n_threads)) != 0) { // traverse each part of the index
+    while ((mi = mm_idx_reader_read(r, n_threads)) != 0) { // traverse each part of the index TODO: there should be always only one part now
         mm_mapopt_update(&mopt, mi); // this sets the maximum minimizer occurrence; TODO: set a better default in mm_mapopt_init()!
 #pragma omp parallel
         {
@@ -563,7 +571,7 @@ void LongReadsMapper::map_reads_with_minimap2() {
             ReadSequenceBuffer sequenceGetter(datastore);
             auto & private_results=thread_mappings[omp_get_thread_num()];
 #pragma omp for schedule(static,200)
-            for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
+            for (uint32_t readID = first; readID < last; ++readID) {
                 if (++num_reads_done % 10000 == 0) {
                     sdglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" processing its read #" << num_reads_done << std::endl;
 

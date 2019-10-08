@@ -4,7 +4,6 @@
 
 #include <atomic>
 #include "GraphMaker.hpp"
-#include "GraphEditor.hpp"
 #include "LinkageUntangler.hpp"
 #include "LinkageMaker.hpp"
 #include <sdglib/mappers/LongReadsMapper.hpp>
