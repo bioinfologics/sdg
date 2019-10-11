@@ -81,7 +81,7 @@ public:
     //=== I/O functions ===
 
     /**
-     * @brief GFA loading function, it detects the format of the GFA file (1,2) and loads it appropiately
+     * @brief GFA loading function, it detects the format of the GFA file (1,2) and loads it appropriately
      * @param filename Path of the gfa file to load
      */
     void load_from_gfa(std::string filename);
