@@ -109,8 +109,7 @@
 %template(setSGNode) std::set<int64_t>;
 %template(vectorIntSGNodePair) std::vector<std::pair<int,sgNodeID_t>>;
 
-
-
+%template(tupleBoolGraphStrandPos) std::tuple<bool, graphStrandPos>;
 
 %define __STR__()
 std::string __str__() {
