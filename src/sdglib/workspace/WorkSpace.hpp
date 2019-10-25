@@ -69,7 +69,7 @@ public:
      * @param name Reference name to the DistanceGraph
      * @return Returns the DistanceGraph item added to the WorkSpace
      */
-    DistanceGraph& add_distance_graph(const DistanceGraph &dg, const std::string &name="");
+    DistanceGraph& add_distance_graph(const DistanceGraph &dg, const std::string &name);
 
     /**
      * @brief
