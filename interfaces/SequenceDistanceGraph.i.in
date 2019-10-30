@@ -94,6 +94,7 @@
 %template(vectorVectorUINT16) std::vector< std::vector <uint16_t > >;
 %template(vectorVectorUINT64) std::vector< std::vector <uint64_t > >;
 %template(vectorBool) std::vector<bool>;
+%template(usetUINT32) std::unordered_set<uint32_t>;
 %template(usetUINT64) std::unordered_set<uint64_t>;
 %template(usetUINT128) std::unordered_set<__uint128_t, int128_hash>;
 
