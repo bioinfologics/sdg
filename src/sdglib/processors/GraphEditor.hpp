@@ -8,7 +8,9 @@
 class GraphEditorOperation {
 public:
     std::vector<sgNodeID_t> input_nodes; //nodes need to be fully untouched by queue
-    std::vector<Link> input_links; //ends in links need to be fully untouched by queue
+    std::vector<sgNodeID_t> input_ends; //ends in links need to be fully untouched by queue
+    std::vector<sgNodeID_t> consumed_nodes; //nodes need to be fully untouched by queue
+    std::vector<sgNodeID_t> consumed_ends; //ends in links need to be fully untouched by queue
 //    std::vector<sgNodeID_t> consumed_nodes;
 //    std::vector<Link> consumed_links;
 //    std::vector<sgNodeID_t> generated_nodes;
@@ -24,6 +26,16 @@ public:
     GraphEditorNodeExpansion(sgNodeID_t node,std::vector<std::pair<sgNodeID_t,sgNodeID_t>> links_through);
 //    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> links_through;
 };
+
+/**
+ * An operation detaching a path by duplicating its internal nodes into a single new unitig.
+ */
+class GraphEditorPathDetachment : public GraphEditorOperation {
+public:
+    GraphEditorPathDetachment(std::vector<sgNodeID_t> nodes);
+//    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> links_through;
+};
+
 
 class GraphEditor {
 public:
@@ -41,6 +53,7 @@ public:
      */
     bool queue_node_expansion(sgNodeID_t node,std::vector<std::pair<sgNodeID_t,sgNodeID_t>> links_through);
 
+    bool queue_path_detachment (std::vector<sgNodeID_t> nodes); //returns true on success
     /**
      * Checks if an operation is allowed given the current queue.
      * @return true if operation allowed
@@ -55,7 +68,7 @@ public:
     /**
      * applies the queued operations
      */
-    void apply_all();
+    void apply_all(bool remove_small_components_total_bp=false);
 
     /******** OLD DEPRECATED FUNCTIONS *******/
     bool detach_path (SequenceDistanceGraphPath p,bool consume_tips=false); //returns true on success
@@ -86,6 +99,7 @@ public:
 
     //Queues are by operation type, order does not matter as all operations are compatible
     std::vector<GraphEditorNodeExpansion> node_expansion_queue;
+    std::vector<GraphEditorPathDetachment> path_detachment_queue;
 
 };
 

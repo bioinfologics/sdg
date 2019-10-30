@@ -138,6 +138,18 @@ size_t SequenceDistanceGraphPath::get_sequence_size_fast() const{
     return size;
 }
 
+bool SequenceDistanceGraphPath::is_valid(bool allow_ns) {
+    for (auto i=0;i<nodes.size()-1;++i) {
+        bool ok=false;
+        for (auto &l:sg.get_fw_links(nodes[i]))
+            if (l.dest==nodes[i+1] and (allow_ns or l.dist<=0)) {ok=true;break;}
+        if (ok) continue;
+        return false;
+
+    }
+    return true;
+}
+
 bool SequenceDistanceGraphPath::is_unitig() {
     for (auto i=0;i<nodes.size();++i) {
         auto fwl=sg.get_fw_links(nodes[i]);

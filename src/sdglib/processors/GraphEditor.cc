@@ -10,40 +10,48 @@ GraphEditorNodeExpansion::GraphEditorNodeExpansion(sgNodeID_t node,
 
     if (node>0) {
         input_nodes.emplace_back(node);
-        for (auto &l:links_through)
-            input_links.emplace_back(l.first, l.second,0); //XXX these "links" are only topological
     }
     else {
         input_nodes.emplace_back(-node);
-        for (auto &l:links_through)
-            input_links.emplace_back(l.second, l.first,0); //XXX these "links" are only topological
     }
+    for (auto &l:links_through) {
+        input_ends.emplace_back(l.first);
+        input_ends.emplace_back(l.second);
+    }
+    consumed_nodes=input_nodes;
+    consumed_ends=input_ends;
+}
+
+GraphEditorPathDetachment::GraphEditorPathDetachment(std::vector<sgNodeID_t> nodes) {
+    //Check first and last have their INTERNAL ends available
+    input_ends.emplace_back(-nodes.front());
+    input_ends.emplace_back(nodes.back());
+    consumed_ends=input_ends;
+    //Check every node in the path is FULLY AVAILABLE
+    for (auto i=1;i<nodes.size()-1;++i)
+        input_nodes.emplace_back(nodes[i]);
 }
 
 bool GraphEditor::queue_allows(GraphEditorOperation op) {
     for (auto &n:op.input_nodes) {
-        if (queued_nodes[n] or queued_plus_ends[n] or queued_minus_ends[n]) return false;
+        if (queued_nodes[llabs(n)] or queued_plus_ends[llabs(n)] or queued_minus_ends[llabs(n)]) return false;
     }
-    for (auto &l:op.input_links) {
-        for (auto v:{l.source,l.dest}) {
-            if (v < 0 and queued_minus_ends[-v]) return false;
-            if (v > 0 and queued_plus_ends[v]) return false;
-        }
+    for (auto &n:op.input_ends) {
+        if (n < 0 and queued_minus_ends[-n]) return false;
+        if (n > 0 and queued_plus_ends[n]) return false;
     }
     return true;
 }
 
 void GraphEditor::queue_mark_inputs(GraphEditorOperation op) {
-    for (auto &n:op.input_nodes) {
-        queued_nodes[n]=true;
-        queued_plus_ends[n]=true;
-        queued_minus_ends[n]=true;
+    for (auto &n:op.consumed_nodes) {
+        queued_nodes[llabs(n)]=true;
+        queued_plus_ends[llabs(n)]=true;
+        queued_minus_ends[llabs(n)]=true;
     }
-    for (auto &l:op.input_links) {
-        for (auto v:{l.source,l.dest}) {
-            if (v < 0) queued_minus_ends[-v]=true;
-            if (v > 0) queued_plus_ends[v]=true;
-        }
+    for (auto &e:op.consumed_ends) {
+        if (e < 0) queued_minus_ends[-e]=true;
+        if (e > 0) queued_plus_ends[e]=true;
     }
 }
 
@@ -56,20 +64,22 @@ bool GraphEditor::queue_node_expansion(sgNodeID_t node, std::vector<std::pair<sg
     return true;
 }
 
-void GraphEditor::apply_all() {
-    for (auto &op:node_expansion_queue){
-        for (auto &lt:op.input_links) {
-            //create a copy of the node;
-            auto new_node=ws.sdg.add_node(ws.sdg.get_node_sequence(op.input_nodes[0]));
-            //connect to the sides
-            auto source_dist=ws.sdg.get_link(lt.source,op.input_nodes[0]).dist;
-            ws.sdg.add_link(lt.source,new_node,source_dist);
-            auto dest_dist=ws.sdg.get_link(-op.input_nodes[0],lt.dest).dist;
-            ws.sdg.add_link(-new_node,lt.dest,dest_dist);
-        }
-        ws.sdg.remove_node(op.input_nodes[0]);
-    }
-    node_expansion_queue.clear();
+bool GraphEditor::queue_path_detachment(std::vector<sgNodeID_t> nodes) {
+    //Check path is valid
+    if (nodes.size()<2) return true;
+    SequenceDistanceGraphPath p(ws.sdg,nodes);
+    if (p.is_unitig()) return true;
+    if (!p.is_valid()) return false;
+    GraphEditorPathDetachment op(nodes);
+    if (not queue_allows(op)) return false;
+    //TODO: do we validate that the expansion is valid?
+    queue_mark_inputs(op);
+    path_detachment_queue.emplace_back(op);
+    return true;
+
+    //Mark first and last node INTERNAL ends as used
+    //for (auto )
+
 }
 
 bool GraphEditor::detach_path(SequenceDistanceGraphPath p, bool consume_tips) {
@@ -137,6 +147,98 @@ bool GraphEditor::detach_path(SequenceDistanceGraphPath p, bool consume_tips) {
     }
     return true;
 }
+void GraphEditor::apply_all(bool remove_small_components_total_bp) {
+    for (auto &op:node_expansion_queue){
+        for (auto li=0;li<op.input_ends.size()/2;++li) {
+            //create a copy of the node;
+            auto new_node=ws.sdg.add_node(ws.sdg.get_node_sequence(op.input_nodes[0]));
+            //connect to the sides
+            auto source_dist=ws.sdg.get_link(op.input_ends[2*li],op.input_nodes[0]).dist;
+            ws.sdg.add_link(op.input_ends[2*li],new_node,source_dist);
+            auto dest_dist=ws.sdg.get_link(-op.input_nodes[0],op.input_ends[2*li+1]).dist;
+            ws.sdg.add_link(-new_node,op.input_ends[2*li+1],dest_dist);
+        }
+        ws.sdg.remove_node(op.input_nodes[0]);
+    }
+    node_expansion_queue.clear();
+    for (auto &op:path_detachment_queue){
+        //Create a unitig with the internal path sequence
+        auto new_node=ws.sdg.add_node(SequenceDistanceGraphPath(ws.sdg,op.input_nodes).sequence());
+        auto first_dist=ws.sdg.get_link(op.input_ends[0],op.input_nodes.front()).dist;
+        auto last_dist=ws.sdg.get_link(op.input_ends[1],op.input_nodes.back()).dist;
+        for (auto l:ws.sdg.get_fw_links(-op.input_ends[0])) ws.sdg.remove_link(l.source,l.dest);
+        for (auto l:ws.sdg.get_bw_links(op.input_ends[1])) ws.sdg.remove_link(l.source,l.dest);
+        ws.sdg.add_link(op.input_ends[0],new_node,first_dist);
+        ws.sdg.add_link(-new_node,op.input_ends[1],last_dist);
+    }
+    node_expansion_queue.clear();
+}
+
+/*bool GraphEditor::detach_path(SequenceDistanceGraphPath p, bool consume_tips) {
+    if (p.nodes.size()==1) return true;
+    //TODO: check the path is valid?
+    if (p.nodes.size()==2) {
+        //std::cout<<"DETACHING path with only 2 nodes"<<std::endl;
+        if (p.nodes.size()==2){
+            auto fwls=ws.sdg.get_fw_links(p.nodes[0]);
+            for (auto l:fwls) if (l.dest!=p.nodes[1]) ws.sdg.remove_link(l.source,l.dest);
+            auto bwls=ws.sdg.get_bw_links(p.nodes[1]);
+            for (auto l:bwls) if (l.dest!=-p.nodes[0]) ws.sdg.remove_link(l.source,l.dest);
+        }
+        return true;
+    }
+    //check if the path is already detached.
+    if (p.is_unitig()) return true;
+    //check if the nodes in the path have already been modified
+    for (auto n:p.nodes) {
+        if (edited_nodes.count(llabs(n))>0) {
+            std::cout<<"NOT DETACHING: path has already edited-out nodes"<<std::endl;
+            return false;
+        }
+    }
+    //TODO: create a new node with the sequence of the "middle" nodes
+    auto pmid=p;
+    pmid.nodes.clear();
+    for (auto i=1;i<p.nodes.size()-1;++i) pmid.nodes.push_back(p.nodes[i]);
+    auto src=p.nodes.front();
+    auto dest=p.nodes.back();
+    if (!pmid.is_canonical()) {
+        pmid.reverse();
+        auto nsrc=-dest;
+        dest=-src;
+        src=nsrc;
+    }
+    sgNodeID_t new_node=ws.sdg.add_node(Node(pmid.sequence()));
+    //TODO: migrate connection from the src node to the first middle node into the new node
+    auto old_link=ws.sdg.get_link(-p.nodes[0],p.nodes[1]);
+    //ws.sdg.remove_link(-p.nodes[0],p.nodes[1]);
+    auto old_fw_links=ws.sdg.get_fw_links(src);
+    for (auto fwl:old_fw_links) ws.sdg.remove_link(fwl.source,fwl.dest);
+    ws.sdg.add_link(-src,new_node,old_link.dist);
+    //TODO: migrate connection from the last middle node to the dest node into the new node
+    old_link=ws.sdg.get_link(-p.nodes[p.nodes.size()-2],p.nodes[p.nodes.size()-1]);
+    //ws.sdg.remove_link(-p.nodes[p.nodes.size()-2],p.nodes[p.nodes.size()-1]);
+    auto old_bw_links=ws.sdg.get_bw_links(dest);
+    for (auto bwl:old_bw_links) ws.sdg.remove_link(bwl.source,bwl.dest);
+    ws.sdg.add_link(-new_node,dest,old_link.dist);
+    //TODO: delete nodes from the original path while there is any of them with a disconnecte end.
+    bool mod=true;
+    std::set<sgNodeID_t> mid_nodes;
+    for (auto n:pmid.nodes) mid_nodes.insert(llabs(n));
+    while (mod){
+        mod=false;
+        for (auto n:mid_nodes) {
+            if (ws.sdg.get_fw_links(n).size()==0 or ws.sdg.get_bw_links(n).size()==0) {
+                mod=true;
+                ws.sdg.remove_node(n);
+                edited_nodes.insert(llabs(n));
+                mid_nodes.erase(n);
+                break;
+            }
+        }
+    }
+    return true;
+}*/
 
 SequenceDistanceGraphPath GraphEditor::find_longest_path_from(sgNodeID_t node, std::string seq) {
     SequenceDistanceGraphPath p(ws.sdg);
