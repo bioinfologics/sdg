@@ -147,6 +147,8 @@ public:
      */
     DistanceGraph make_long10x_multilinkage(const LongReadsMapper &lorm, const LinkedReadsMapper &lrm, uint32_t min_size,  float min_tnscore, bool real_read_size=true, int32_t unmapped_end=1000);
 
+    static std::vector<std::vector<LongReadMapping>> filter_mappings_with_linked_reads(const LongReadsMapper &lorm, const LinkedReadsMapper &lrm, uint32_t min_size,  float min_tnscore);
+
     DistanceGraph make_long10x_multilinkage(const std::string &lorm_name, const std::string &lrm_name, uint32_t min_size,  float min_tnscore, bool real_read_size=true, int32_t unmapped_end=1000);
 
     DistanceGraph make_paired10x_multilinkage(const PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore=0.2, bool fr=false, uint64_t read_offset=0);

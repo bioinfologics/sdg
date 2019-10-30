@@ -727,7 +727,7 @@ DistanceGraph LinkageMaker::make_paired10x_multilinkage(const PairedReadsMapper 
  * @param min_size minimum size of the read to filter mappings.
  * @param min_tnscore minimum neighbour score on linked reads
  */
-std::vector<std::vector<LongReadMapping>> filter_mappings_with_linked_reads(const LongReadsMapper &lorm, const LinkedReadsMapper &lrm, uint32_t min_size,  float min_tnscore) {
+std::vector<std::vector<LongReadMapping>> LinkageMaker::filter_mappings_with_linked_reads(const LongReadsMapper &lorm, const LinkedReadsMapper &lrm, uint32_t min_size,  float min_tnscore) {
     if (lrm.tag_neighbours.empty()) {
         sdglib::OutputLog()<<"Can't filter mappings because there are no tag_neighbours on the LinkedReadsMapper"<<std::endl;
         return {};

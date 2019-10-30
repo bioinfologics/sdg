@@ -155,3 +155,20 @@ std::ostream &operator<<(std::ostream &os, const LinkView &ndv) {
 std::vector<std::pair<int,sgNodeID_t>> NodeView::fw_neighbours_by_distance(int min_links) const {
     return dg->fw_neighbours_by_distance(id, min_links);
 }
+
+std::vector<uint64_t> NodeView::get_kmers(int K){
+    std::vector<uint64_t> node_kmers;
+    auto kf = StringKMerFactory(K);
+    kf.create_kmers(sequence(), node_kmers);
+    return node_kmers;
+};
+
+std::unordered_set<uint64_t> NodeView::get_linked_tags_kmers(std::string datastore_name, int K, int min_tag_cov){
+    // Get tags
+//    auto tags = get_linked_reads(datastore_name);
+    std::set<LinkedTag> tags = dg->sdg.ws.get_linked_reads_datastore(datastore_name).mapper.get_node_tags(llabs(id));
+
+    // Get kmers from tags
+    ReadSequenceBuffer ds_buffer(dg->sdg.ws.get_linked_reads_datastore(datastore_name));
+    return dg->sdg.ws.get_linked_reads_datastore(datastore_name).get_tags_kmers(K, min_tag_cov, tags, ds_buffer);
+};

@@ -125,6 +125,10 @@ public:
      */
     std::vector<std::pair<int,sgNodeID_t>> fw_neighbours_by_distance( int min_links) const;
 
+    std::vector<uint64_t> get_kmers(int K);
+
+    std::unordered_set<uint64_t> get_linked_tags_kmers(std::string datastore_name, int K, int min_tag_cov);
+
 private:
     sgNodeID_t id;
     DistanceGraph * dg;
