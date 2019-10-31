@@ -7,6 +7,12 @@ jobs:
     - stage: compile osx
       os: osx
       osx_image: xcode10.1
+      before_install:
+        - brew install gcc@6
+        - brew install git-lfs
+        - git lfs install
+      before_script:
+        - git lfs pull
       env:
         - CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6"
       deploy:
@@ -19,6 +25,8 @@ jobs:
           tags: true
     - stage: compile linux
       os: linux
+      before_script:
+        - git lfs pull
       addons:
         apt:
           sources:
@@ -55,11 +63,7 @@ jobs:
             condition: $DEPLOY = true
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install git-lfs python3 gcc@6; git lfs install; fi
   - eval "${MATRIX_EVAL}"
-
-before_script:
-  - git lfs pull
 
 script:
   - .travis/build.sh

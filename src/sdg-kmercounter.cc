@@ -84,6 +84,7 @@ void add_kmer_count(int argc, char **argv) {
             kc.add_count(name, LongReadsDatastore(ws, ds_filename));
         }
     }
+    sdglib::OutputLog(sdglib::INFO) << "Writing " << output << ".sdgkc" << std::endl;
     std::ofstream output_file(output+".sdgkc");
     kc.write_counts(output_file);
 
