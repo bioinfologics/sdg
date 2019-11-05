@@ -567,7 +567,7 @@ DistanceGraph &DistanceGraph::operator=(const DistanceGraph &o) {
     return *this;
 }
 
-NodeView DistanceGraph::get_nodeview(sgNodeID_t n) {
+NodeView DistanceGraph::get_nodeview(sgNodeID_t n) const {
     if (n==0 or llabs(n)>=sdg.nodes.size()) throw std::runtime_error("Trying to get a nodeview with invalid node id");
     if (sdg.nodes[llabs(n)].status==NodeStatus::Deleted) throw std::runtime_error("Trying to get a nodeview of a deleted Node");
     return NodeView(this,n);
@@ -583,7 +583,7 @@ std::vector<NodeView> DistanceGraph::get_all_nodeviews(bool include_disconnected
     nvs.reserve(c);
     for (auto nidx=0;nidx<sdg.nodes.size();++nidx) {
         auto &n=sdg.nodes[nidx];
-        if (n.status!=NodeStatus::Deleted and (include_disconnected or !links[nidx].empty())) nvs.emplace_back(this,nidx);
+        if (n.status!=NodeStatus::Deleted and (include_disconnected or !links[nidx].empty())) nvs.push_back( NodeView(this,nidx));
     }
     return nvs;
 }

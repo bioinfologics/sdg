@@ -10,11 +10,11 @@ DistanceGraph NodeView::graph() const {
     return *dg;
 }
 
-const std::string NodeView::sequence() const {
+std::string NodeView::sequence() const {
     return dg->sdg.get_node_sequence(id);
 }
 
-const uint64_t NodeView::size() const {
+uint64_t NodeView::size() const {
     return dg->sdg.get_node_size(id);
 }
 
@@ -22,7 +22,7 @@ NodeView NodeView::rc() const {
     return dg->get_nodeview(-id);
 }
 
-const std::vector<LinkView> NodeView::next() const {
+std::vector<LinkView> NodeView::next() const {
     auto fwl=dg->get_fw_links(id);
     std::vector<LinkView> r;
     r.reserve(fwl.size());
@@ -34,7 +34,7 @@ const std::vector<LinkView> NodeView::next() const {
     return r;
 }
 
-const std::vector<LinkView> NodeView::prev() const {
+std::vector<LinkView> NodeView::prev() const {
     auto bwl=dg->get_bw_links(id);
     std::vector<LinkView> r;
     r.reserve(bwl.size());
@@ -46,7 +46,7 @@ const std::vector<LinkView> NodeView::prev() const {
     return r;
 }
 
-const std::vector<NodeView> NodeView::parallels() const {
+std::vector<NodeView> NodeView::parallels() const {
     auto p=prev(),n=next();
     if (p.empty() or n.empty()) return {};
     std::vector<NodeView> pars;

@@ -16,20 +16,20 @@ class LinkView;
  */
 class NodeView {
 public:
-    NodeView(DistanceGraph * _dg,sgNodeID_t _n):dg(_dg),id(_n){};
-    NodeView(NodeView const &o):dg(o.dg), id(o.id) {};
+    NodeView(const DistanceGraph * const _dg,sgNodeID_t _n):dg(_dg),id(_n){};
+    NodeView(NodeView const &o) = default;
     friend std::ostream &operator<<(std::ostream &os, const NodeView &n);
     DistanceGraph graph() const;
-    const bool operator==(const NodeView &o) const {return (id==o.id) and (dg==o.dg);};
+    bool operator==(const NodeView &o) const {return (id==o.id) and (dg==o.dg);}
     /**
      * @return Sequence of the underlying SequenceDistanceGraph node
      */
-    const std::string sequence() const;
+    std::string sequence() const;
 
     /**
      * @return Length of the node sequence in the graph
      */
-    const uint64_t size() const;
+    uint64_t size() const;
 
     /**
      * @return The reverse complement NodeView
@@ -39,16 +39,16 @@ public:
     /**
      * @return A vector of LinkView for the next elements defined by the DistanceGraph
      */
-    const std::vector<LinkView> next() const;
+    std::vector<LinkView> next() const;
     /**
      * @return A vector of LinkView for the previous elements defined by the DistanceGraph
      */
-    const std::vector<LinkView> prev() const;
+    std::vector<LinkView> prev() const;
 
     /**
      * @return A vector of NodeView for all nodes that have the same connections fw and bw than this node
      */
-    const std::vector<NodeView> parallels() const;
+    std::vector<NodeView> parallels() const;
 
     /**
      * @return The id of the underlying SequenceDistanceGraph node
@@ -129,7 +129,7 @@ public:
 
 private:
     sgNodeID_t id;
-    DistanceGraph * dg;
+    const DistanceGraph * dg;
 };
 
 /**
@@ -141,27 +141,27 @@ private:
 class LinkView {
 public:
     LinkView(const NodeView &nv,const int32_t &d, const Support &s):node_view(nv),dist(d),sup(s){};
-    LinkView(LinkView const &o):node_view(o.node_view),dist(o.dist),sup(o.sup) {};
+    LinkView(LinkView const &o) = default;
     friend std::ostream &operator<<(std::ostream &os, const LinkView &ndv);
     /**
      * @brief
      * NodeView of the DistanceGraph node referenced by the link
      * @return A NodeView of the traversed ID
      */
-    const NodeView node() const {return NodeView(node_view);};
+    NodeView node() const {return NodeView(node_view);}
 
     /**
      * @brief
      * Distance to the neighbour node this LinkView was generated from
      * @return A negative value represents an overlap, a positive value represents a gap.
      */
-    const int32_t distance() const {return dist; };
+    int32_t distance() const {return dist; }
 
     /**
      * @brief Provides information about the origin of the Link
      * @return A summary of the information about the origin of the Link
      */
-    const Support support() const {return Support(sup);};
+    Support support() const {return sup;}
     bool operator<(const LinkView & other) const{
         return std::make_tuple(dist, node_view.node_id()) < std::make_tuple(other.dist, other.node_view.node_id());
     }

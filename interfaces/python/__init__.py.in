@@ -21,4 +21,4 @@ except:
     pass
 
 print("version", pysdg.__version__)
-print(pysdg.__branch__, pysdg.__commit__)
+print( ("Git origin: %s -> %s\nGit commit: %s") % (pysdg.__origin__, pysdg.__branch__, pysdg.__commit__))
