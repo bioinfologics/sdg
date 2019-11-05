@@ -92,8 +92,10 @@
 %template(ConstCharVector) std::vector<const char*>;
 %template(vectorUINT16) std::vector<uint16_t >;
 %template(vectorUINT64) std::vector<uint64_t>;
+%template(vectorUINT128) std::vector<__uint128_t>;
 %template(vectorVectorUINT16) std::vector< std::vector <uint16_t > >;
 %template(vectorVectorUINT64) std::vector< std::vector <uint64_t > >;
+%template(vectorVectorUINT128) std::vector< std::vector <__uint128_t > >;
 %template(vectorBool) std::vector<bool>;
 %template(usetUINT32) std::unordered_set<uint32_t>;
 %template(usetUINT64) std::unordered_set<uint64_t>;
@@ -106,6 +108,7 @@
 %template(vectorPairIntInt) std::vector<std::pair<int32_t, int32_t>>;
 %template(vectorvectorPairIntInt) std::vector<std::vector<std::pair<int32_t, int32_t>>>;
 %template(vectorPairBoolUINT64) std::vector<std::pair<bool, uint64_t>>;
+%template(vectorPairBoolUINT128) std::vector<std::pair<bool, __uint128_t>>;
 %template(SGNodePair) std::pair<int64_t, int64_t>;
 %template(vectorSGNodePair) std::vector<std::pair<int64_t, int64_t>>;
 %template(setSGNodePair) std::set<std::pair<int64_t, int64_t>>;
