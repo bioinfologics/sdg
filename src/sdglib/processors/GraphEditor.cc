@@ -8,12 +8,7 @@
 GraphEditorNodeExpansion::GraphEditorNodeExpansion(sgNodeID_t node,
                                                    std::vector<std::pair<sgNodeID_t, sgNodeID_t>> links_through) {
 
-    if (node>0) {
-        input_nodes.emplace_back(node);
-    }
-    else {
-        input_nodes.emplace_back(-node);
-    }
+    input_nodes.emplace_back(node);
     for (auto &l:links_through) {
         input_ends.emplace_back(l.first);
         input_ends.emplace_back(l.second);
