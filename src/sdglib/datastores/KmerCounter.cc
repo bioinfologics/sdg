@@ -147,6 +147,7 @@ void KmerCounter::add_count(const std::string &count_name, const std::vector<std
         sdglib::OutputLog(sdglib::INFO) << rp << " reads processed " << present << " / " << present + absent
                                         << " kmers found" << std::endl;
     }
+    sdglib::OutputLog(sdglib::INFO) << "Done" << std::endl;
 }
 
 /** This template is used to do the counts from the datastores, it is templatised here rather than on the header **/
@@ -216,6 +217,7 @@ void add_count_to_kds( KmerCounter & kds, const std::string & count_name, const 
     }
     sdglib::OutputLog(sdglib::INFO) << rp << " reads processed " << present << " / " << present + absent
                                     << " kmers found" << std::endl;
+    sdglib::OutputLog(sdglib::INFO) << "Done" << std::endl;
 }
 
 void KmerCounter::add_count(const std::string & count_name, const PairedReadsDatastore & datastore){

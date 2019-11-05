@@ -115,9 +115,6 @@
 %template(setSGNode) std::set<int64_t>;
 %template(vectorIntSGNodePair) std::vector<std::pair<int,sgNodeID_t>>;
 
-
-
-
 %define __STR__()
 std::string __str__() {
   std::ostringstream out;
@@ -270,6 +267,10 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %template(vectorvectorLink) std::vector<std::vector<Link>>;
 
 %template(vectorNode) std::vector<Node>;
+
+%ignore std::vector<DistanceGraph>::vector(size_type);
+%ignore std::vector<DistanceGraph>::resize;
+%template(vectorDistanceGraph) std::vector<DistanceGraph>;
 
 %ignore std::vector<SequenceDistanceGraphPath>::vector(size_type);
 %ignore std::vector<SequenceDistanceGraphPath>::resize;

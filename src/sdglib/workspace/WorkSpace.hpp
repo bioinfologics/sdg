@@ -62,19 +62,102 @@ public:
 
     JournalOperation &add_operation(const std::string &name, const std::string &tool, const std::string &detail);
 
-    DistanceGraph& add_distance_graph(const DistanceGraph &dg, const std::string &name="");
+
+    /**
+     * @brief
+     * Add a new DistanceGraph and assign it a name
+     * @param name Reference name to the DistanceGraph
+     * @return Returns the DistanceGraph item added to the WorkSpace
+     */
+    DistanceGraph& add_distance_graph(const DistanceGraph &dg, const std::string &name);
+
+    /**
+     * @brief
+     * Add a PairedReadsDatastore from an existing file and assign it a name
+     * @param filename Path to the PairedReadsDatastore
+     * @param name Reference name to the PairedReadsDatastore
+     * @return Returns the PairedReadsDatastore item added to the WorkSpace
+     */
     PairedReadsDatastore& add_paired_reads_datastore(const std::string &filename, const std::string &name="");
+
+    /**
+     * @brief
+     * Add a LinkedReadsDatastore from an existing file and assign it a name
+     * @param filename Path to the LinkedReadsDatastore
+     * @param name Reference name to the LinkedReadsDatastore
+     * @return Returns the LinkedReadsDatastore item added to the WorkSpace
+     */
     LinkedReadsDatastore& add_linked_reads_datastore(const std::string &filename, const std::string &name="");
+
+    /**
+     * @brief
+     * Add a LongReadsDatastore from an existing file and assign it a name
+     * @param filename Path to the LongReadsDatastore
+     * @param name Reference name to the LongReadsDatastore
+     * @return Returns the LongReadsDatastore item added to the WorkSpace
+     */
     LongReadsDatastore& add_long_reads_datastore(const std::string &filename, const std::string &name="");
+
+
+    /**
+     * @brief
+     * Add a KmerCounter from an existing file and assign it a name
+     * @param filename Path to the KmerCounter
+     * @param name Reference name to the KmerCounter
+     * @return Returns the KmerCounter item added to the WorkSpace
+     */
     KmerCounter& add_kmer_counter(const std::string &filename,const std::string &name);
+
+    /**
+     * @brief
+     * Add a new KmerCounter and assign it a name
+     * @param name Reference name to the KmerCounter
+     * @param k Size of the kmer used for the counts
+     * @param count_mode Counts canonical or non-canonical kmers
+     * @return Returns the KmerCounter item added to the WorkSpace
+     */
     KmerCounter& add_kmer_counter(const std::string &name, const uint8_t k,
                                   KmerCountMode count_mode = KmerCountMode::Canonical);
 
 
+    /**
+     * @brief
+     * Get a reference to a PairedReadsDatastore corresponding to the name
+     * @param name Name of the PairedReadsDatastore
+     * @return Returns the PairedReadsDatastore associated to the name
+     */
     PairedReadsDatastore& get_paired_reads_datastore(const std::string &name);
+
+    /**
+     * @brief
+     * Get a reference to a LinkedReadsDatastore corresponding to the name
+     * @param name Name of the LinkedReadsDatastore
+     * @return Returns the LinkedReadsDatastore associated to the name
+     */
     LinkedReadsDatastore& get_linked_reads_datastore(const std::string &name);
+
+    /**
+     * @brief
+     * Get a reference to a LongReadsDatastore corresponding to the name
+     * @param name Name of the LongReadsDatastore
+     * @return Returns the LongReadsDatastore associated to the name
+     */
     LongReadsDatastore& get_long_reads_datastore(const std::string &name);
+
+    /**
+     * @brief
+     * Get a reference to a DistanceGraph corresponding to the name
+     * @param name Name of the DistanceGraph
+     * @return Returns the DistanceGraph associated to the name
+     */
     DistanceGraph& get_distance_graph(const std::string &name);
+
+    /**
+     * @brief
+     * Get a reference to a KmerCounter corresponding to the name
+     * @param name Name of the KmerCounter
+     * @return Returns the KmerCounter associated to the name
+     */
     KmerCounter& get_kmer_counter(const std::string &name);
 
     std::vector<std::string> list_distance_graphs();
