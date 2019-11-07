@@ -117,6 +117,15 @@ public:
         return std::make_tuple(exists, p);
     }
 
+    graphStrandPos kmer_to_pos(const __uint128_t kmer) const {
+        const auto nk = find(kmer);
+        if (nk!=end()) {
+            if (nk->first == kmer )return nk->second;
+            else return {-nk->second.node,nk->second.pos};
+        }
+        return {0,0};
+    }
+
     bool is_unmappable(sgNodeID_t id) const {
         return 0 == unique_kmers_per_node[std::abs(id)];
     }
