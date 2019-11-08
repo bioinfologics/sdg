@@ -53,6 +53,7 @@
 
 #include "sdglib/processors/GraphMaker.hpp"
 #include "sdglib/processors/GraphEditor.hpp"
+#include "sdglib/processors/GraphContigger.hpp"
 
 #include "sdglib/readers/FileReader.hpp"
 
@@ -499,6 +500,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
 
 %include "sdglib/processors/GraphMaker.hpp"
 %include "sdglib/processors/GraphEditor.hpp"
+%include "sdglib/processors/GraphContigger.hpp"
 
 %template(fastaReader) FastaReader<FastaRecord>;
 

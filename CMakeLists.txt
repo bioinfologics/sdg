@@ -199,7 +199,7 @@ SET(source_files ${source_files}
     src/sdglib/batch_counter/BatchKmersCounter.cc
     deps/xxhash/xxhash.c
     src/sdglib/mappers/SequenceMapper.cc
-    src/sdglib/processors/LinkageMaker.cc src/sdglib/mappers/GraphSelfAligner.cc src/sdglib/mappers/GraphSelfAligner.hpp)
+    src/sdglib/processors/LinkageMaker.cc src/sdglib/mappers/GraphSelfAligner.cc src/sdglib/mappers/GraphSelfAligner.hpp src/sdglib/processors/GraphContigger.cc src/sdglib/processors/GraphContigger.hpp)
 
 ## Libraries
 add_library(sdg SHARED
