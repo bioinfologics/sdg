@@ -3,6 +3,7 @@
 //
 
 #include <sdglib/bloom/BloomFilter.hpp>
+#include <sdglib/batch_counter/BatchKmersCounter.hpp>
 #include "GraphMaker.hpp"
 
 std::string kmer_to_sequence(uint64_t kmer, uint8_t k) {
@@ -594,6 +595,10 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
             sg.add_link(i.second,out[oidx].second,-k+1); //no support, although we could add the DBG operation as such
         }
     }
+}
+
+void GraphMaker::new_graph_from_paired_datastore(const PairedReadsDatastore& ds,  int k, int min_coverage, int num_batches) {
+    new_graph_from_kmerlist_trivial128(BatchKmersCounter::countKmersToList(ds, k, min_coverage, num_batches),k);
 }
 
 void GraphMaker::tip_clipping(int tip_size) {

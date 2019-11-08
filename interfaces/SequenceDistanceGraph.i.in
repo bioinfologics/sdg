@@ -39,6 +39,7 @@
 #include "sdglib/datastores/PairedReadsDatastore.hpp"
 #include "sdglib/datastores/LinkedReadsDatastore.hpp"
 #include "sdglib/datastores/LongReadsDatastore.hpp"
+#include "sdglib/datastores/ReadPathsDatastore.hpp"
 #include "sdglib/datastores/ReadSequenceBuffer.hpp"
 #include "sdglib/datastores/KmerCounter.hpp"
 
@@ -50,6 +51,7 @@
 #include "sdglib/processors/LinkageUntangler.hpp"
 #include "sdglib/processors/HaplotypeConsensus.hpp"
 
+#include "sdglib/processors/GraphMaker.hpp"
 #include "sdglib/processors/GraphEditor.hpp"
 
 #include "sdglib/readers/FileReader.hpp"
@@ -114,6 +116,7 @@
 %template(setSGNodePair) std::set<std::pair<int64_t, int64_t>>;
 %template(setSGNode) std::set<int64_t>;
 %template(vectorIntSGNodePair) std::vector<std::pair<int,sgNodeID_t>>;
+%template(vectorReadPath) std::vector<ReadPath>;
 
 %define __STR__()
 std::string __str__() {
@@ -250,6 +253,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %include "sdglib/datastores/PairedReadsDatastore.hpp"
 %include "sdglib/datastores/LinkedReadsDatastore.hpp"
 %include "sdglib/datastores/LongReadsDatastore.hpp"
+%include "sdglib/datastores/ReadPathsDatastore.hpp"
 %include "sdglib/datastores/KmerCounter.hpp"
 %include "sdglib/datastores/ReadSequenceBuffer.hpp"
 
@@ -261,7 +265,9 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %include "sdglib/processors/LinkageUntangler.hpp"
 %include "sdglib/processors/HaplotypeConsensus.hpp"
 
+%include "sdglib/processors/GraphMaker.hpp"
 %include "sdglib/processors/GraphEditor.hpp"
+
 
 %template(vectorLink) std::vector<Link>;
 %template(vectorvectorLink) std::vector<std::vector<Link>>;

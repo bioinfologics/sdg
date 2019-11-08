@@ -4,6 +4,7 @@
 
 #include <atomic>
 #include "BatchKmersCounter.hpp"
+#include <sdglib/workspace/WorkSpace.hpp>
 
 std::shared_ptr<KmerList>
 BatchKmersCounter::kmerCountOMPDiskBased(uint8_t K, PairedReadsDatastore const &reads,
@@ -364,4 +365,20 @@ void KmerList::merge(KmerList &other) {
     }
     other.clear();
     //std::cout<<"merge done, new size "<<size<<std::endl;
+}
+
+
+std::vector<__uint128_t> BatchKmersCounter::countKmersToList(const PairedReadsDatastore &ds, int k, int min_coverage, int num_batches) {
+
+
+    auto kmer_list = BatchKmersCounter::buildKMerCount(k, ds, min_coverage, ".", ".", num_batches);
+    std::vector<__uint128_t> kmers;
+    kmers.reserve(kmer_list->size);
+    __uint128_t kmer;
+    for (uint64_t i = 0; i < kmer_list->size; ++i) {
+        memcpy(&kmer, &kmer_list->kmers[i], 16);
+        kmers.emplace_back(kmer);
+    }
+    sdglib::sort(kmers.begin(),kmers.end());
+    return kmers;
 }

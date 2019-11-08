@@ -67,6 +67,8 @@ public:
                                               std::string workdir, std::string tmpdir,
                                               unsigned char disk_batches );
 
+    static std::vector<__uint128_t> countKmersToList(const PairedReadsDatastore &ds, int k, int min_coverage, int num_batches);
+
 };
 
 
