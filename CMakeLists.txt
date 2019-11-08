@@ -356,18 +356,20 @@ IF(BUILD_PYTHON_INTERFACE)
     SET_SOURCE_FILES_PROPERTIES(${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTIES
                                                                                 CPLUSPLUS ON)
 
-    SET(CMAKE_SWIG_FLAGS "-doxygen")
+    SET(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-py3")
+    SET(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-builtin")
+    SET(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-O")
+    SET(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-doxygen")
     if (NOT APPLE)
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
         set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
     endif()
 
-    SET_PROPERTY(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY CMAKE_SWIG_FLAGS "-doxygen")
     SWIG_ADD_LIBRARY(pysdg
                      LANGUAGE python
                      SOURCES ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i
                      )
-    SWIG_LINK_LIBRARIES(pysdg ${PYTHON_LIBRARIES} sdg_static)
+    SWIG_LINK_LIBRARIES(pysdg ${PYTHON_LIBRARIES} sdg)
     set_target_properties(pysdg PROPERTIES
                           LIBRARY_OUTPUT_DIRECTORY pysdg/pysdg)
 ENDIF()
