@@ -61,12 +61,11 @@
 %}
 
 %include "stl.i"
-%include "std_common.i"
 %include "std_container.i"
-%include "stdint.i"
-%include "std_set.i"
+%include "std_vector.i"
 %include "std_unordered_set.i"
-%include "std_string.i"
+%include "std_set.i"
+%include "stdint.i"
 %include "exception.i"
 
 %exception {
@@ -117,6 +116,7 @@
 %template(setSGNode) std::set<int64_t>;
 %template(vectorIntSGNodePair) std::vector<std::pair<int,sgNodeID_t>>;
 %template(vectorReadPath) std::vector<ReadPath>;
+%template(vectorVectorReadPath) std::vector<std::vector<ReadPath>>;
 
 %define __STR__()
 std::string __str__() {
@@ -226,47 +226,6 @@ __branch__ = "@GIT_BRANCH@"
 __commit__ = "@GIT_COMMIT_HASH@"
 %}
 
-
-%include "sdglib/types/KmerTypes.hpp"
-%include "sdglib/types/GenericTypes.hpp"
-%include "sdglib/readers/FileReader.hpp"
-
-%include "sdglib/workspace/WorkSpace.hpp"
-
-%include "sdglib/factories/KMerFactory.hpp"
-
-%include "sdglib/types/MappingTypes.hpp"
-
-%include "sdglib/graph/SequenceDistanceGraphPath.hpp"
-%include "sdglib/graph/SequenceSubGraph.hpp"
-%include "sdglib/graph/SequenceDistanceGraph.hpp"
-%include "sdglib/graph/DistanceGraph.hpp"
-
-%include "sdglib/views/NodeView.hpp"
-%include "sdglib/mappers/SequenceMapper.hpp"
-%include "sdglib/mappers/GraphSelfAligner.hpp"
-
-%include "sdglib/indexers/UniqueKmerIndex.hpp"
-%include "sdglib/indexers/SatKmerIndex.hpp"
-%include "sdglib/indexers/NKmerIndex.hpp"
-
-%include "sdglib/datastores/PairedReadsDatastore.hpp"
-%include "sdglib/datastores/LinkedReadsDatastore.hpp"
-%include "sdglib/datastores/LongReadsDatastore.hpp"
-%include "sdglib/datastores/ReadPathsDatastore.hpp"
-%include "sdglib/datastores/KmerCounter.hpp"
-%include "sdglib/datastores/ReadSequenceBuffer.hpp"
-
-%include "sdglib/mappers/LongReadsMapper.hpp"
-%include "sdglib/mappers/LinkedReadsMapper.hpp"
-%include "sdglib/mappers/PairedReadsMapper.hpp"
-
-%include "sdglib/processors/LinkageMaker.hpp"
-%include "sdglib/processors/LinkageUntangler.hpp"
-%include "sdglib/processors/HaplotypeConsensus.hpp"
-
-%include "sdglib/processors/GraphMaker.hpp"
-%include "sdglib/processors/GraphEditor.hpp"
 
 
 %template(vectorLink) std::vector<Link>;
@@ -481,10 +440,6 @@ __commit__ = "@GIT_COMMIT_HASH@"
         }
 }
 
-
-
-%template(fastaReader) FastaReader<FastaRecord>;
-
 %extend SequenceDistanceGraphPath{
         const std::string __repr__() {
             std::string s="<SequenceDistanceGraphPath: "+std::to_string(self->nodes.size())+" Nodes on "+self->sg.name+">";
@@ -500,3 +455,49 @@ __commit__ = "@GIT_COMMIT_HASH@"
             return oss.str();
         }
 }
+
+
+
+%include "sdglib/types/KmerTypes.hpp"
+%include "sdglib/types/GenericTypes.hpp"
+%include "sdglib/readers/FileReader.hpp"
+
+%include "sdglib/workspace/WorkSpace.hpp"
+
+%include "sdglib/factories/KMerFactory.hpp"
+
+%include "sdglib/types/MappingTypes.hpp"
+
+%include "sdglib/graph/SequenceDistanceGraphPath.hpp"
+%include "sdglib/graph/SequenceSubGraph.hpp"
+%include "sdglib/graph/SequenceDistanceGraph.hpp"
+%include "sdglib/graph/DistanceGraph.hpp"
+
+%include "sdglib/views/NodeView.hpp"
+%include "sdglib/mappers/SequenceMapper.hpp"
+%include "sdglib/mappers/GraphSelfAligner.hpp"
+
+%include "sdglib/indexers/UniqueKmerIndex.hpp"
+%include "sdglib/indexers/SatKmerIndex.hpp"
+%include "sdglib/indexers/NKmerIndex.hpp"
+
+%include "sdglib/datastores/PairedReadsDatastore.hpp"
+%include "sdglib/datastores/LinkedReadsDatastore.hpp"
+%include "sdglib/datastores/LongReadsDatastore.hpp"
+%include "sdglib/datastores/ReadPathsDatastore.hpp"
+%include "sdglib/datastores/KmerCounter.hpp"
+%include "sdglib/datastores/ReadSequenceBuffer.hpp"
+
+%include "sdglib/mappers/LongReadsMapper.hpp"
+%include "sdglib/mappers/LinkedReadsMapper.hpp"
+%include "sdglib/mappers/PairedReadsMapper.hpp"
+
+%include "sdglib/processors/LinkageMaker.hpp"
+%include "sdglib/processors/LinkageUntangler.hpp"
+%include "sdglib/processors/HaplotypeConsensus.hpp"
+
+%include "sdglib/processors/GraphMaker.hpp"
+%include "sdglib/processors/GraphEditor.hpp"
+
+%template(fastaReader) FastaReader<FastaRecord>;
+
