@@ -305,6 +305,95 @@ void PairedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
     populate_orientation();
 }
 
+void PairedReadsMapper::path_reads63() {
+    const int k = 63;
+    Unique63merIndex ukindex(ws.sdg);
+    std::atomic<int64_t> nokmers(0);
+    read_paths.clear();
+    read_paths.resize(datastore.size()+1);
+
+    /*
+     * Read mapping in parallel,
+     */
+    uint64_t thread_mapped_count[omp_get_max_threads()],thread_total_count[omp_get_max_threads()],thread_multimap_count[omp_get_max_threads()];
+    std::vector<ReadMapping> thread_mapping_results[omp_get_max_threads()];
+    sdglib::OutputLog(sdglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
+#pragma omp parallel
+    {
+        const int min_matches=1;
+        std::vector<KmerIDX128> readkmers;
+        StreamKmerIDXFactory128 skf(63);
+        auto blrs=ReadSequenceBuffer(datastore,128*1024,datastore.readsize*2+2);
+        auto & private_results=thread_mapping_results[omp_get_thread_num()];
+        auto & mapped_count=thread_mapped_count[omp_get_thread_num()];
+        auto & total_count=thread_total_count[omp_get_thread_num()];
+        auto & multimap_count=thread_multimap_count[omp_get_thread_num()];
+        mapped_count=0;
+        total_count=0;
+        multimap_count=0;
+        bool c ;
+        //std::cout<<omp_get_thread_num()<<std::endl;
+#pragma omp for
+        for (uint64_t readID=1;readID<read_paths.size();++readID) {
+            auto &path=read_paths[readID].path;
+            path.clear();
+            //get all kmers from read
+            auto seq=blrs.get_read_sequence(readID);
+            readkmers.clear();
+            skf.produce_all_kmers(seq,readkmers);
+            if (readkmers.size()==0) {
+                ++nokmers;
+            }
+            for (auto &rk:readkmers) {
+                auto nk = ukindex.find(rk.kmer);
+                if (ukindex.end()!=nk) {
+                    //get the node just as node
+                    sgNodeID_t nknode = nk->second.node;
+                    if (rk.contigID<0) nknode=-nknode;
+                    if (path.empty() or path.back()!=nknode) path.emplace_back(nknode);
+                }
+            }
+            if (not path.empty()) {
+                ++mapped_count;
+                if (path.size()>1) ++multimap_count;
+            }
+            auto tc = ++total_count;
+            if (tc % 10000000 == 0) sdglib::OutputLog()<< mapped_count << " / " << tc <<" ("<<++multimap_count<<" multi-node paths)"<< std::endl;
+        }
+    }
+    uint64_t mapped_count=0,total_count=0,multimap_count=0;
+    for (auto i=0;i<omp_get_max_threads();++i){
+        mapped_count+=thread_mapped_count[i];
+        total_count+=thread_total_count[i];
+        multimap_count+=thread_multimap_count[i];
+    }
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Reads without k-mers: "<<nokmers<<std::endl;
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Reads mapped: "<<mapped_count<<" / "<<total_count<<" ("<<multimap_count<<" multi-node paths)"<<std::endl;
+
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Reserving paths_in_node"<<std::endl;
+    //first pass, size computing for vector allocation;
+    std::vector<uint64_t> path_counts(ws.sdg.nodes.size());
+    for (auto i=0;i<read_paths.size();++i){
+        const auto &p=read_paths[i];
+        for (const auto &n:p.path){
+            ++path_counts[llabs(n)];
+        }
+    }
+
+    paths_in_node.clear();
+    paths_in_node.resize(path_counts.size());
+    for (auto i=0;i<path_counts.size();++i) paths_in_node[i].reserve(path_counts[i]);
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Filling paths_in_node"<<std::endl;
+    for (auto i=0;i<read_paths.size();++i){
+        const auto &p=read_paths[i];
+        for (const auto &n:p.path){
+            auto pid=(n<0 ? -i : i);
+            if (paths_in_node[llabs(n)].empty() or paths_in_node[llabs(n)].back()!=pid) paths_in_node[llabs(n)].emplace_back(pid);
+        }
+    }
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"paths_in_node filled"<<std::endl;
+}
+
 ///**
 // * @brief Mapping of paired end read files.
 // *
