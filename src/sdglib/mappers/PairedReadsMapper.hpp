@@ -43,6 +43,9 @@ public:
 
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
+    void dump_readpaths(std::string filename);
+    void load_readpaths(std::string filename);
+
     /** @brief Maps each read in the data-store to the nodes using unique kmers form the graph
      *
      * Maps each read in the data-store to the nodes using unique kmers form the graph.
