@@ -5,6 +5,7 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/batch_counter/BatchKmersCounter.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
+#include <sdglib/processors/GraphContigger.hpp>
 #include "cxxopts.hpp"
 
 
@@ -82,7 +83,8 @@ int main(int argc, char * argv[]) {
 
     sdglib::OutputLog() << "DONE! " << ws.sdg.count_active_nodes() << " nodes in graph" << std::endl;
     if (0<tip_size) {
-        gm2.tip_clipping(tip_size);
+        GraphContigger gc(ws);
+        gc.tip_clipping(tip_size);
         sdglib::OutputLog() << "Tip clipping DONE! " << ws.sdg.count_active_nodes() << " nodes in graph" << std::endl;
     }
     ws.add_kmer_counter("main", 31).add_count("PE",ws.paired_reads_datastores[0]);

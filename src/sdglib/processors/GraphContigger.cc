@@ -6,7 +6,7 @@
 #include "GraphEditor.hpp"
 #include <sdglib/views/NodeView.hpp>
 
-void GraphContigger::solve_canonical_repeats_with_single_paths(int min_support, int max_noise, float snr) {
+void GraphContigger::solve_canonical_repeats_with_single_paths(const PairedReadsDatastore & prds,int min_support, int max_noise, float snr) {
     GraphEditor ge(ws);
     uint64_t repeats=0;
     uint64_t solved_repeats=0;
@@ -17,9 +17,9 @@ void GraphContigger::solve_canonical_repeats_with_single_paths(int min_support, 
         //sdglib::OutputLog()<<"repeat on node "<<nv<<std::endl;
         ++repeats;
         std::unordered_map<std::pair<sgNodeID_t,sgNodeID_t>,uint64_t> through;
-        for (auto &pid:ws.paired_reads_datastores[0].mapper.paths_in_node[nv.node_id()]){
+        for (auto &pid:prds.mapper.paths_in_node[nv.node_id()]){
             //sdglib::OutputLog()<<"checking path "<<pid<<std::endl;
-            auto p=ws.paired_reads_datastores[0].mapper.read_paths[llabs(pid)].path;
+            auto p=prds.mapper.read_paths[llabs(pid)].path;
             if (pid<0) {
                 auto old_p=p;
                 p.clear();
@@ -61,4 +61,48 @@ void GraphContigger::solve_canonical_repeats_with_single_paths(int min_support, 
     }
     sdglib::OutputLog()<<"Contigger repeat_expansion: "<<solved_repeats<<" / "<<repeats<<std::endl;
     ge.apply_all();
+}
+
+void GraphContigger::tip_clipping(int tip_size) {
+    while (true) {
+        std::set<sgNodeID_t> to_delete;
+        for (sgNodeID_t n = 1; n < ws.sdg.nodes.size(); ++n) {
+            if (ws.sdg.nodes[n].status == NodeStatus::Deleted) continue;
+            if (ws.sdg.nodes[n].sequence.size() > tip_size) continue;
+            //std::cout<<"Evaluating seq"<<n<<": ";
+            auto fwl = ws.sdg.get_fw_links(n);
+            auto bwl = ws.sdg.get_bw_links(n);
+            //std::cout<<" fwl: "<<fwl.size()<<"  bwl: "<<bwl.size();
+            if (fwl.size() == 1 and bwl.size() == 0) {
+                //std::cout<<"  bwl for "<<fwl[0].dest<<": "<<dbg.get_bw_links(fwl[0].dest).size();
+                if (ws.sdg.get_bw_links(fwl[0].dest).size() >1 ) {
+                    //TODO: this shoudl actually check that at least one connection is to a larger node.
+                    to_delete.insert(n);
+                    //std::cout<<" D"<<std::endl;
+                }
+            }
+            if (fwl.size() == 0 and bwl.size() == 1) {
+                //std::cout<<"  fwl for "<<-bwl[0].dest<<": "<<dbg.get_fw_links(-bwl[0].dest).size();
+                if (ws.sdg.get_fw_links(-bwl[0].dest).size() >1 ) {
+                    //TODO: this shoudl actually check that at least one connection is to a larger node.
+                    to_delete.insert(n);
+                    //std::cout<<" D"<<std::endl;
+                }
+            }
+            if (fwl.size() == 0 and bwl.size() == 0) to_delete.insert(n); //this removes unconnected!
+            //std::cout<<std::endl;
+        }
+        //std::cout << "Nodes to delete: " << to_delete.size() << std::endl;
+        for (auto n:to_delete) ws.sdg.remove_node(n);
+        auto utc = ws.sdg.join_all_unitigs();
+        if (to_delete.size()==0 and utc==0) break;
+    }
+}
+
+void GraphContigger::remove_small_unconnected(int min_size) {
+    for (sgNodeID_t n = 1; n < ws.sdg.nodes.size(); ++n) {
+        if (ws.sdg.nodes[n].status == NodeStatus::Deleted) continue;
+        if (ws.sdg.nodes[n].sequence.size() >= min_size) continue;
+        if (ws.sdg.get_fw_links(n).size()==0 and ws.sdg.get_bw_links(n).size()==0) ws.sdg.remove_node(n);
+    }
 }

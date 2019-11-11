@@ -49,8 +49,7 @@ public:
     void new_graph_from_kmerlist_trivial128(const std::vector<__uint128_t> & kmerset,uint8_t k);
     void new_graph_from_paired_datastore(const  PairedReadsDatastore & ds, int k, int min_coverage, int num_batches);
 //    //Minimum cleanup options
-    void tip_clipping(int tip_size);
-    void remove_small_unconnected(int min_size);
+
 private:
     SequenceDistanceGraph & sg;
 };

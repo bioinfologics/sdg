@@ -9,7 +9,9 @@
 class GraphContigger {
 public:
     GraphContigger (WorkSpace &_ws):ws(_ws){};
-    void solve_canonical_repeats_with_single_paths(int min_support=6, int max_noise=5, float snr=10);
+    void tip_clipping(int tip_size);
+    void remove_small_unconnected(int min_size);
+    void solve_canonical_repeats_with_single_paths(const PairedReadsDatastore & prds,int min_support=6, int max_noise=5, float snr=10);
 private:
     WorkSpace &ws;
 };

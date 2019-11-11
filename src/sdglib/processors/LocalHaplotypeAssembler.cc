@@ -6,6 +6,7 @@
 #include <string>
 #include "LocalHaplotypeAssembler.hpp"
 #include "GraphMaker.hpp"
+#include "GraphContigger.hpp"
 
 void print_seq_kmer_location(const char * seq, std::unordered_map<uint64_t, graphStrandPos> & index){
     std::cout<<"Kmer to node analysis for "<<seq<<std::endl;
@@ -360,9 +361,10 @@ void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, bool si
     auto ltkmers128 = ws.linked_reads_datastores[0].get_tags_kmers128(k, min_cov, tagSet, blrsg, tag_cov);
     GraphMaker gm(assembly);
     gm.new_graph_from_kmerset_trivial128(ltkmers128, k);
-    gm.tip_clipping(200);
+    GraphContigger gc(ws);
+    gc.tip_clipping(200);
     if (simplify) {
-        gm.remove_small_unconnected(500);
+        gc.remove_small_unconnected(500);
         //path_all_reads();
         path_linked_reads();
         if (!output_prefix.empty()) assembly.write_to_gfa1(output_prefix + "pre_repex.gfa");
