@@ -150,12 +150,6 @@ std::vector<LinkedTag> NodeView::get_linked_tags(std::string datastore_name, int
             tags.push_back(t.first);
         }
     }
-
-//    std::set<LinkedTag> tags;
-//    for (auto &rm:reads_in_node[(n>0?n:-n)])
-//        tags.insert(datastore.get_read_tag(rm.read_id));
-//    if (tags.count(0)>0) tags.erase(0);
-
     return tags;
 }
 
