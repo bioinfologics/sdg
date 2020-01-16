@@ -54,8 +54,11 @@ std::string SequenceDistanceGraphPath::sequence() const {
                 else {
                     auto ovl =- l->dist;
                     for (auto s1 = s.c_str() + s.size() - ovl, s2 = nseq.c_str(); *s1 != NULL; ++s1, ++s2)
-                        if (*s1 != *s2)
-                            throw std::runtime_error("path overlap is invalid!");
+                        if (*s1 != *s2) {
+                            char buffer[250];
+                            sprintf(buffer,"path overlap is invalid! (%d,%d,%d)",l->source,l->dest,l->dist);
+                            throw std::runtime_error(buffer);
+                        }
                     nseq.erase(0, ovl);
                 }
             }
