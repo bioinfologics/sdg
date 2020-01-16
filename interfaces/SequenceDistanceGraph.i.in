@@ -35,6 +35,7 @@
 #include "sdglib/mappers/LinkedReadsMapper.hpp"
 #include "sdglib/mappers/LongReadsMapper.hpp"
 #include "sdglib/mappers/PairedReadsMapper.hpp"
+#include "sdglib/mappers/LongReadsRecruiter.hpp"
 
 #include "sdglib/datastores/PairedReadsDatastore.hpp"
 #include "sdglib/datastores/LinkedReadsDatastore.hpp"
@@ -119,6 +120,8 @@
 %template(vectorIntSGNodePair) std::vector<std::pair<int,sgNodeID_t>>;
 %template(vectorReadPath) std::vector<ReadPath>;
 %template(vectorVectorReadPath) std::vector<std::vector<ReadPath>>;
+%template(vectorPerfectMatch) std::vector<PerfectMatch>;
+%template(vectorVectorPerfectMatch) std::vector<std::vector<PerfectMatch>>;
 
 %define __STR__()
 std::string __str__() {
@@ -493,6 +496,7 @@ __commit__ = "@GIT_COMMIT_HASH@"
 %include "sdglib/mappers/LongReadsMapper.hpp"
 %include "sdglib/mappers/LinkedReadsMapper.hpp"
 %include "sdglib/mappers/PairedReadsMapper.hpp"
+%include "sdglib/mappers/LongReadsRecruiter.hpp"
 
 %include "sdglib/processors/LinkageMaker.hpp"
 %include "sdglib/processors/LinkageUntangler.hpp"
