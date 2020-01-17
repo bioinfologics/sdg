@@ -10,7 +10,6 @@
 #include <sdglib/datastores/LongReadsDatastore.hpp>
 
 //TODO: OMP
-//TODO: dump/load
 //TODO: translate kmer positions on negative node to equivalent bp positions?
 //TODO: eliminate the need to use the SequenceMatch class
 //    instead use an index returning the matches.
@@ -32,10 +31,11 @@ public:
 class LongReadsRecruiter {
 public:
     LongReadsRecruiter(const SequenceDistanceGraph &sdg, const LongReadsDatastore &datastore,uint8_t k=25, uint16_t f=50);
+    void dump(std::string filename);
+    void load(std::string filename);
     void recruit_reads(uint16_t seed_size,uint16_t seed_count,uint64_t first_read=1,uint64_t last_read=0);
     void reset_recruitment();
-    //TODO: dump, load
-    NKmerIndex nkindex;
+
     const SequenceDistanceGraph & sdg;
     const LongReadsDatastore &datastore;
     uint8_t k;

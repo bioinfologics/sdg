@@ -10,6 +10,19 @@ LongReadsRecruiter::LongReadsRecruiter(const SequenceDistanceGraph &sdg, const L
     reset_recruitment();
 };
 
+
+void LongReadsRecruiter::dump(std::string filename) {
+    std::ofstream ofs(filename);
+    sdglib::write_flat_vectorvector(ofs,node_reads);
+    sdglib::write_flat_vectorvector(ofs,read_perfect_matches);
+}
+
+void LongReadsRecruiter::load(std::string filename) {
+    std::ifstream ifs(filename);
+    sdglib::read_flat_vectorvector(ifs,node_reads);
+    sdglib::read_flat_vectorvector(ifs,read_perfect_matches);
+}
+
 void LongReadsRecruiter::reset_recruitment() {
     node_reads.clear();
     node_reads.resize(sdg.nodes.size());
@@ -68,33 +81,5 @@ void LongReadsRecruiter::recruit_reads(uint16_t seed_size, uint16_t seed_count, 
                 if (node_match_count[pmatch.node]==seed_count) node_reads[llabs(pmatch.node)].emplace_back(rid);
             }
         }
-
-//                longest_seed=chain
-//                nps=()
-//                #if i+chain<lm and mml[i+chain]==0: skip_to=i+chain
-//                #if skip_to and i<skip_to: continue
-//                for j in matches[i]:
-//                    if i+chain>=lm or (j[0],j[1]+chain) not in matches[i+longest_seed]: continue
-//                    last_node=j[0]
-//                    last_pos=j[1]
-//                    last_i=i
-//                    while last_i+2<lm and (last_node,last_pos+last_i-i+1) in matches[last_i+1]:
-//                        last_i+=1
-//                    if last_i-1==longest_seed:
-//                        nps=()
-//                    if last_i-i>longest_seed:
-//                        longest_seed=last_i-i
-//                        nps=(last_node,last_i,j[1])
-//                if nps == (): continue
-//                if best_seeds==[]:
-//                    #best_seeds.append([i,nps[0],nps[1]-i,nps[2]])
-//                    best_seeds=[[i,nps[0],nps[1]-i,nps[2]]]
-//                    c.update([nps[0]])
-//                elif nps[1]>best_seeds[-1][0]+best_seeds[-1][2]:
-//                    best_seeds[0]=[i,nps[0],nps[1]-i,nps[2]]
-//                    c.update([nps[0]])
-
-
     }
-
 }
