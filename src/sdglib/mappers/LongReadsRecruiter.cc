@@ -35,50 +35,59 @@ inline bool in_vector(std::vector<T> V,T VAL) { return std::find(V.begin(),V.end
 //TODO: add read position and node position to match
 void LongReadsRecruiter::recruit_reads(uint16_t seed_size, uint16_t seed_count, uint64_t first_read,
                                        uint64_t last_read) {
-    StreamKmerFactory skf(k);
     SequenceMapper sm(sdg,k,f); //TODO: this is only using get all k-mer matches, should be promoted to a smaller class
-    std::vector<std::pair<bool,uint64_t >> read_kmers; //TODO: type should be defined in the kmerisers
-    std::vector<std::vector<std::pair<int32_t,int32_t >>> kmer_matches; //TODO: type should be defined in the index class
-    PerfectMatch pmatch(0,0,0);
-
     if (last_read==0) last_read=datastore.size()-1;
-    for (auto rid=first_read;rid<=last_read;++rid){
-        auto seq=datastore.get_read_sequence(rid);
-        read_kmers.clear();
-        skf.produce_all_kmers(seq.c_str(),read_kmers);
-        sm.get_all_kmer_matches(kmer_matches,read_kmers);
-        std::map<sgNodeID_t,uint32_t > node_match_count;
-        auto rksize=read_kmers.size();
-        auto longest_seed = seed_size - k;
-        for (auto i=0;i<rksize;++i) {
+#pragma omp parallel
+    {
+        StreamKmerFactory skf(k);
+        std::vector<std::pair<bool,uint64_t >> read_kmers; //TODO: type should be defined in the kmerisers
+        std::vector<std::vector<std::pair<int32_t,int32_t >>> kmer_matches; //TODO: type should be defined in the index class
+        PerfectMatch pmatch(0,0,0);
+        ReadSequenceBuffer sequence_reader(datastore);
+#pragma omp for
+        for (auto rid=first_read;rid<=last_read;++rid){
+            std::vector<PerfectMatch> private_read_perfect_matches;
+            auto seq=sequence_reader.get_read_sequence(rid);
+            read_kmers.clear();
+            skf.produce_all_kmers(seq,read_kmers);
+            sm.get_all_kmer_matches(kmer_matches,read_kmers);
+            std::map<sgNodeID_t,uint32_t > node_match_count;
+            auto rksize=read_kmers.size();
+            auto longest_seed = seed_size - k;
+            for (auto i=0;i<rksize;++i) {
 
-            longest_seed = (longest_seed>seed_size - k ? longest_seed-1: longest_seed);
-            pmatch.node = 0;
-            for (auto const &m:kmer_matches[i]) {
-                auto last_node = m.first;
-                auto last_pos = m.second;
-                if (i + longest_seed >= rksize or not in_vector(kmer_matches[i + longest_seed], {last_node, last_pos + longest_seed}))
-                    continue;
-                auto last_i = i;
-                while (last_i + 1 < rksize and
-                       in_vector(kmer_matches[last_i + 1], {last_node, last_pos + last_i - i + 1}))
-                    ++last_i;
-                if (last_i - i == longest_seed and i==pmatch.read_position) {
-                    pmatch.node = 0;
+                longest_seed = (longest_seed>seed_size - k ? longest_seed-1: longest_seed);
+                pmatch.node = 0;
+                for (auto const &m:kmer_matches[i]) {
+                    auto last_node = m.first;
+                    auto last_pos = m.second;
+                    if (i + longest_seed >= rksize or not in_vector(kmer_matches[i + longest_seed], {last_node, last_pos + longest_seed}))
+                        continue;
+                    auto last_i = i;
+                    while (last_i + 1 < rksize and
+                           in_vector(kmer_matches[last_i + 1], {last_node, last_pos + last_i - i + 1}))
+                        ++last_i;
+                    if (last_i - i == longest_seed and i==pmatch.read_position) {
+                        pmatch.node = 0;
+                    }
+                    if (last_i - i > longest_seed) {
+                        longest_seed = last_i - i;
+                        pmatch.node = last_node;
+                        pmatch.node_position = last_pos;
+                        pmatch.read_position = i;
+                        pmatch.size = k + last_i - i;
+
+                    }
                 }
-                if (last_i - i > longest_seed) {
-                    longest_seed = last_i - i;
-                    pmatch.node = last_node;
-                    pmatch.node_position = last_pos;
-                    pmatch.read_position = i;
-                    pmatch.size = k + last_i - i;
-
+                if (pmatch.node != 0) {
+                    private_read_perfect_matches.emplace_back(pmatch);
+                    node_match_count[pmatch.node] = node_match_count[pmatch.node] + 1;
+                    if (node_match_count[pmatch.node]==seed_count) node_reads[llabs(pmatch.node)].emplace_back(rid);
                 }
             }
-            if (pmatch.node != 0) {
-                read_perfect_matches[rid].emplace_back(pmatch);
-                node_match_count[pmatch.node] = node_match_count[pmatch.node] + 1;
-                if (node_match_count[pmatch.node]==seed_count) node_reads[llabs(pmatch.node)].emplace_back(rid);
+#pragma omp critical
+            {
+                read_perfect_matches[rid] = private_read_perfect_matches;
             }
         }
     }
