@@ -58,8 +58,14 @@ class BatchKmersCounter {
     static std::shared_ptr<KmerList> kmerCountOMP( uint8_t K, PairedReadsDatastore const& reads,
                                             uint64_t gfrom, uint64_t gto, uint64_t batch_size=0);
 
+    static std::shared_ptr<KmerList> kmerCountOMP( uint8_t K, LongReadsDatastore const& reads,
+                                            uint64_t gfrom, uint64_t gto, uint64_t batch_size=0);
+
 
     static std::shared_ptr<KmerList> kmerCountOMPDiskBased( uint8_t K, PairedReadsDatastore const& reads, unsigned minCount,
+                                                     std::string tmpdir, std::string workdir, unsigned char disk_batches=8);
+
+    static std::shared_ptr<KmerList> kmerCountOMPDiskBased( uint8_t K, LongReadsDatastore const& reads, unsigned minCount,
                                                      std::string tmpdir, std::string workdir, unsigned char disk_batches=8);
 
 public:
@@ -67,7 +73,13 @@ public:
                                               std::string workdir, std::string tmpdir,
                                               unsigned char disk_batches );
 
+    static std::shared_ptr<KmerList> buildKMerCount( uint8_t K, LongReadsDatastore const& reads, unsigned minCount,
+                                                     std::string workdir, std::string tmpdir,
+                                                     unsigned char disk_batches );
+
     static std::vector<__uint128_t> countKmersToList(const PairedReadsDatastore &ds, int k, int min_coverage, int num_batches);
+
+    static std::vector<__uint128_t> countKmersToList(const LongReadsDatastore &ds, int k, int min_coverage, int num_batches);
 
 };
 

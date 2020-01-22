@@ -601,3 +601,6 @@ void GraphMaker::new_graph_from_paired_datastore(const PairedReadsDatastore& ds,
     new_graph_from_kmerlist_trivial128(BatchKmersCounter::countKmersToList(ds, k, min_coverage, num_batches),k);
 }
 
+void GraphMaker::new_graph_from_long_datastore(const LongReadsDatastore& ds,  int k, int min_coverage, int num_batches) {
+    new_graph_from_kmerlist_trivial128(BatchKmersCounter::countKmersToList(ds, k, min_coverage, num_batches),k);
+}

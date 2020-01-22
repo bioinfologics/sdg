@@ -11,6 +11,8 @@
 
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
 #include <sdglib/datastores/PairedReadsDatastore.hpp>
+#include <sdglib/datastores/LongReadsDatastore.hpp>
+
 /**
  * This kmer class can give possible neighbours FW and BW to help build a graph more easily.
  *
@@ -47,7 +49,8 @@ public:
     void new_graph_from_kmerset_trivial(const std::unordered_set<uint64_t> & kmerset,uint8_t k);
     void new_graph_from_kmerset_trivial128(const std::unordered_set<__uint128_t, int128_hash> & kmerset,uint8_t k);
     void new_graph_from_kmerlist_trivial128(const std::vector<__uint128_t> & kmerset,uint8_t k);
-    void new_graph_from_paired_datastore(const  PairedReadsDatastore & ds, int k, int min_coverage, int num_batches);
+    void new_graph_from_paired_datastore(const PairedReadsDatastore & ds, int k, int min_coverage, int num_batches);
+    void new_graph_from_long_datastore(const LongReadsDatastore & ds, int k, int min_coverage, int num_batches);
 //    //Minimum cleanup options
 
 private:
