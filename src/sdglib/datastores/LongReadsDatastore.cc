@@ -182,7 +182,7 @@ void LongReadsDatastore::load_index(std::string &file) {
     input_file.seekg(fPos);
     sdglib::read_flat_vector(input_file, read_to_fileRecord);
 
-    sdglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()-1<<std::endl;
+    sdglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()<<std::endl;
 }
 
 void LongReadsDatastore::build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file, size_t min_size) {
@@ -261,7 +261,7 @@ void LongReadsDatastore::print_status() const {
     auto &log_no_date=sdglib::OutputLog(sdglib::LogLevels::INFO,false);
     std::vector<uint64_t> read_sizes;
     uint64_t total_size=0;
-    for (auto ri=1;ri<size();++ri) {
+    for (auto ri=1;ri<=size();++ri) {
         auto s=read_to_fileRecord[ri].record_size;
             total_size += s;
             read_sizes.push_back(s);

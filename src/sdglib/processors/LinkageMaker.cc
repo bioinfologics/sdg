@@ -734,7 +734,7 @@ std::vector<std::vector<LongReadMapping>> LinkageMaker::filter_mappings_with_lin
     }
     sdglib::OutputLog()<<"Filtering mappings"<<std::endl;
     std::vector<std::vector<LongReadMapping>> filtered_read_mappings;
-    filtered_read_mappings.resize(lorm.datastore.size());
+    filtered_read_mappings.resize(lorm.datastore.size()+1);
     std::atomic<uint64_t> rshort(0), runmapped(0), rnoresult(0), rfiltered(0);
 #pragma omp parallel
     {
@@ -742,7 +742,7 @@ std::vector<std::vector<LongReadMapping>> LinkageMaker::filter_mappings_with_lin
         //run hap_filter on every read
 
 #pragma omp for schedule(static, 10)
-        for (uint64_t rid = 0; rid <= lorm.datastore.size()-1; ++rid) {
+        for (uint64_t rid = 0; rid <= lorm.datastore.size(); ++rid) {
             hap_filter.set_read(rid);
             if (hap_filter.read_seq.size()<min_size){
                 ++rshort;

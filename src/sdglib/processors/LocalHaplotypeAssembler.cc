@@ -723,8 +723,8 @@ void LocalHaplotypeAssembler::init_from_full_file(std::string full_file) {
     for (auto n=0;n<count;++n){
         ws.long_reads_datastores.emplace_back(ws, full_file, full_file, input_file);
         std::vector<uint64_t> read_ids;
-        read_ids.reserve(ws.long_reads_datastores.back().size());
-        for(uint64_t i=0;i<ws.long_reads_datastores.back().size();++i) read_ids.emplace_back(i);
+        read_ids.reserve(ws.long_reads_datastores.back().size()+1);
+        for(uint64_t i=1;i<=ws.long_reads_datastores.back().size();++i) read_ids.emplace_back(i);
         long_reads.emplace_back(std::make_pair(n,read_ids));
     }
 }

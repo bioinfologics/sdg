@@ -489,9 +489,35 @@ bool is_end_fw(const __uint128_t &kmer, uint8_t &k,const std::vector<__uint128_t
     return false;
 }
 
+inline bool is_end_fw_fast(const __uint128_t &kmer, uint8_t &k,const std::vector<__uint128_t> & kmerlist){
+    uint8_t c=0;
+    __uint128_t next;
+    //for each possible kmer fw (in next):
+    for (auto &fnk:kmer_fw_neighbours128(kmer,k)) {
+        auto cnext=kmer_cannonical128(fnk,k);
+        auto cnitr=std::lower_bound(kmerlist.begin(),kmerlist.end(),cnext);
+        if (*cnitr==cnext){
+            ++c;
+            if (c>1) return true;
+            next=fnk;
+        }
+    }
+    if (c==0) return true;
+    c=0;
+    for (auto &bnk:kmer_bw_neighbours128(next,k)) {
+        auto cnext=kmer_cannonical128(bnk,k);
+        auto cnitr=std::lower_bound(kmerlist.begin(),kmerlist.end(),cnext);
+        if (*cnitr==cnext){
+            ++c;
+            if (c>1) return true;
+        }
+    }
+    return false;
+}
+
 void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_t> & kmerlist,uint8_t k) {
     //TODO: add a bloom filter to speed this up
-    std::cout<<"Constructing Sequence Graph from "<<kmerlist.size()<<" "<<std::to_string(k)<<"-mers"<<std::endl;
+    sdglib::OutputLog()<<"Constructing Graph from "<<kmerlist.size()<<" "<<std::to_string(k)<<"-mers"<<std::endl;
     std::string s;
     s.reserve(1000000); //avoid contig-sequence growth
     std::vector<bool> used_kmers(kmerlist.size());
@@ -503,7 +529,7 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
         //Check this k-mer is an end/junction
         auto start_kmer = kmerlist[start_kmer_idx];
         bool end_bw = is_end_bw(start_kmer, k, kmerlist);
-        auto end_fw = is_end_fw(start_kmer, k, kmerlist);
+        auto end_fw = is_end_fw_fast(start_kmer, k, kmerlist);
 
         if (!end_bw and !end_fw) continue;
 
@@ -538,7 +564,7 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
                 if (used_kmers[fwn[0].idx]) break; //this should never happen, since these have ends.
                 used_kmers[fwn[0].idx]=true;
                 s.push_back(nucleotides[current_kmer % 4]);
-                end_fw = is_end_fw(current_kmer, k, kmerlist);
+                end_fw = is_end_fw_fast(current_kmer, k, kmerlist);
             }
         }
         sg.add_node(Node(s));
@@ -546,13 +572,13 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
     }
     //If there are any perfect circles, they won't have ends, so just pick any unused kmer and go fw till you find the same k-mer fw.
     //(this is going to be even tricker to parallelise)
-    std::cout<<"doing the circles now"<<std::endl;
+    sdglib::OutputLog()<<"doing the circles now"<<std::endl;
     for (uint64_t start_kmer_idx=0;start_kmer_idx<kmerlist.size();++start_kmer_idx) {
         if (used_kmers[start_kmer_idx]) continue; //any kmer can only belong to one unitig.ww
 
         //Check this k-mer is an end/junction
         auto start_kmer = kmerlist[start_kmer_idx];
-        auto end_fw = is_end_fw(start_kmer, k, kmerlist);
+        auto end_fw = is_end_fw_fast(start_kmer, k, kmerlist);
         std::vector<klidxs> fwn;
         unsigned char nucleotides[4] = {'A', 'C', 'G', 'T'};
         auto current_kmer = start_kmer;
@@ -595,6 +621,7 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
             sg.add_link(i.second,out[oidx].second,-k+1); //no support, although we could add the DBG operation as such
         }
     }
+    sdglib::OutputLog()<<"Graph construction finished"<<std::endl;
 }
 
 void GraphMaker::new_graph_from_paired_datastore(const PairedReadsDatastore& ds,  int k, int min_coverage, int num_batches) {

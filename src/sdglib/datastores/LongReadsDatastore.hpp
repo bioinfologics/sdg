@@ -92,7 +92,7 @@ public:
     void read(std::ifstream &ifs);
     void write(std::ofstream &output_file);
     void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids);
-    size_t size() const { return read_to_fileRecord.size(); }
+    size_t size() const { return read_to_fileRecord.size()-1; }
 
     std::string get_read_sequence(size_t readID) const;
 

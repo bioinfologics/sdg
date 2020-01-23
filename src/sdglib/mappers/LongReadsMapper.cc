@@ -355,7 +355,7 @@ void LongReadsMapper::map_reads(const std::unordered_set<uint32_t> &readIDs) {
         std::vector<unsigned char> candidate_counts(sg.nodes.size()*2);
 
 #pragma omp for schedule(static,1000) reduction(+:no_matches,single_matches,multi_matches,num_reads_done)
-        for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
+        for (uint32_t readID = 1; readID <= datastore.size(); ++readID) {
             if (++num_reads_done%10000 == 0) {
                 sdglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" processing its read #" << num_reads_done << std::endl;
             }
@@ -449,7 +449,7 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
         auto tkhits=t-t,tichain=t-t,techain=t-t,ttoal=t-t;
 
 #pragma omp for schedule(static,200) reduction(+:no_matches,single_matches,multi_matches,num_reads_done)
-        for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
+        for (uint32_t readID = 1; readID <= datastore.size(); ++readID) {
         //for (uint32_t readID = 598822; readID < 598823; ++readID) {
         //for (uint32_t readID = 3024; readID < 3024; ++readID) {
 
@@ -570,7 +570,7 @@ void LongReadsMapper::map_reads_with_minimap2(int mm_min_chain, int mm_min_chain
             ReadSequenceBuffer sequenceGetter(datastore);
             auto & private_results=thread_mappings[omp_get_thread_num()];
 #pragma omp for schedule(static,200)
-            for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
+            for (uint32_t readID = 1; readID <= datastore.size(); ++readID) {
                 if (++num_reads_done % 10000 == 0) {
                     sdglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" processing its read #" << num_reads_done << std::endl;
                 }
@@ -659,7 +659,7 @@ void LongReadsMapper::update_indexes() {
     reads_in_node.clear();
     reads_in_node.resize(sg.nodes.size());
     first_mapping.clear();
-    first_mapping.resize(datastore.size(),-1);
+    first_mapping.resize(datastore.size()+1,-1);
     for (int64_t i=0;i<mappings.size();++i){
         auto &m=mappings[i];
         if (first_mapping.size()<=m.read_id) first_mapping.resize(m.read_id+1,-1);
@@ -739,7 +739,7 @@ LongReadsMapper& LongReadsMapper::operator=(const LongReadsMapper &other) {
 
 std::vector<std::vector<LongReadMapping>> LongReadsMapper::filter_mappings_by_size_and_id(int64_t size, float id) const {
     std::vector<std::vector<LongReadMapping>> filtered_read_mappings;
-    filtered_read_mappings.resize(datastore.size());
+    filtered_read_mappings.resize(datastore.size()+1);
     for (auto &m:mappings){
         if (m.nEnd-m.nStart>=size and 100.0*m.score/(m.nEnd-m.nStart)>=id){
             filtered_read_mappings[m.read_id].emplace_back(m);
