@@ -390,7 +390,7 @@ BatchKmersCounter::kmerCountOMP(uint8_t K, LongReadsDatastore const &reads, uint
 
 #pragma omp parallel shared(reads) reduction(+:totalKmers)
     {
-        ReadSequenceBuffer bprsg(reads,100000,1000);
+        ReadSequenceBuffer bprsg(reads,100000000,10000000);
         std::vector<__uint128_t> read_kmers;
 #pragma omp for schedule(dynamic)
         for (auto batch = 0; batch < batches; ++batch) {
