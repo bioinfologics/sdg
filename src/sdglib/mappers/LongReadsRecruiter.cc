@@ -82,7 +82,10 @@ void LongReadsRecruiter::recruit_reads(uint16_t seed_size, uint16_t seed_count, 
                 if (pmatch.node != 0) {
                     private_read_perfect_matches.emplace_back(pmatch);
                     node_match_count[pmatch.node] = node_match_count[pmatch.node] + 1;
-                    if (node_match_count[pmatch.node]==seed_count) node_reads[llabs(pmatch.node)].emplace_back(rid);
+                    if (node_match_count[pmatch.node]==seed_count) {
+#pragma omp critical
+                        node_reads[llabs(pmatch.node)].emplace_back(rid);
+                    }
                 }
             }
 #pragma omp critical
