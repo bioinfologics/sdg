@@ -27,16 +27,15 @@ void LongReadsRecruiter::reset_recruitment() {
     node_reads.clear();
     node_reads.resize(sdg.nodes.size());
     read_perfect_matches.clear();
-    read_perfect_matches.resize(datastore.size());
+    read_perfect_matches.resize(datastore.size()+1);
 }
 //TODO: optimise the in-vector class to do a binary search?
 template<class T>
 inline bool in_vector(std::vector<T> V,T VAL) { return std::find(V.begin(),V.end(),VAL)!=V.end();}
-//TODO: add read position and node position to match
-void LongReadsRecruiter::recruit_reads(uint16_t seed_size, uint16_t seed_count, uint64_t first_read,
-                                       uint64_t last_read) {
+
+void LongReadsRecruiter::perfect_mappings(uint16_t seed_size, uint64_t first_read, uint64_t last_read) {
     SequenceMapper sm(sdg,k,f); //TODO: this is only using get all k-mer matches, should be promoted to a smaller class
-    if (last_read==0) last_read=datastore.size()-1;
+    if (last_read==0) last_read=datastore.size();
 #pragma omp parallel
     {
         StreamKmerFactory skf(k);
@@ -81,16 +80,27 @@ void LongReadsRecruiter::recruit_reads(uint16_t seed_size, uint16_t seed_count, 
                 }
                 if (pmatch.node != 0) {
                     private_read_perfect_matches.emplace_back(pmatch);
-                    node_match_count[pmatch.node] = node_match_count[pmatch.node] + 1;
-                    if (node_match_count[pmatch.node]==seed_count) {
-#pragma omp critical
-                        node_reads[llabs(pmatch.node)].emplace_back(rid);
-                    }
                 }
             }
-#pragma omp critical
-            {
-                read_perfect_matches[rid] = private_read_perfect_matches;
+            read_perfect_matches[rid] = private_read_perfect_matches;
+        }
+    }
+}
+
+//TODO: add read position and node position to match
+void LongReadsRecruiter::recruit_reads(uint16_t seed_size, uint16_t seed_count, uint64_t first_read,
+                                       uint64_t last_read) {
+    node_reads.clear();
+    node_reads.resize(sdg.nodes.size());
+    if (last_read==0) last_read=datastore.size();
+    for (auto rid=first_read;rid<=last_read;++rid) {
+        std::map<sgNodeID_t, uint32_t> node_match_count;
+        for (const auto &pmatch:read_perfect_matches[rid]) {
+            if (pmatch.size>=seed_size) {
+                node_match_count[pmatch.node] = node_match_count[pmatch.node] + 1;
+                if (node_match_count[pmatch.node] == seed_count) {
+                    node_reads[llabs(pmatch.node)].emplace_back(rid);
+                }
             }
         }
     }
