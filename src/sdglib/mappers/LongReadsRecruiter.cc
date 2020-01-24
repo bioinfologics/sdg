@@ -31,7 +31,7 @@ void LongReadsRecruiter::reset_recruitment() {
 }
 //TODO: optimise the in-vector class to do a binary search?
 template<class T>
-inline bool in_vector(std::vector<T> V,T VAL) { return std::find(V.begin(),V.end(),VAL)!=V.end();}
+inline bool in_vector(const std::vector<T> &V,T VAL) { return std::find(V.begin(),V.end(),VAL)!=V.end();}
 
 void LongReadsRecruiter::perfect_mappings(uint16_t seed_size, uint64_t first_read, uint64_t last_read) {
     SequenceMapper sm(sdg,k,f); //TODO: this is only using get all k-mer matches, should be promoted to a smaller class
