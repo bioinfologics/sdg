@@ -11,22 +11,18 @@
 #include <sdglib/datastores/ReadSequenceBuffer.hpp>
 
 typedef struct __attribute__((__packed__)) KMerNodeFreq_s {
-    uint64_t kdata[2];
+    __uint128_t kdata;
     uint8_t count;
     inline const bool operator==(KMerNodeFreq_s const & other) const {
         //return 0==memcmp(&kdata,&other.kdata,2*sizeof(uint64_t));
-        return (kdata[0]==other.kdata[0] and kdata[1]==other.kdata[1]);
+        return kdata==other.kdata;
     }
     inline const bool operator<(KMerNodeFreq_s const & other) const{
         //return -1==memcmp(&kdata,&other.kdata,2*sizeof(uint64_t));
-        if (kdata[0]<other.kdata[0]) return true;
-        if (kdata[0]>other.kdata[0]) return false;
-        return kdata[1]<other.kdata[1];
+        return kdata<other.kdata;
     }
     inline const bool operator>(KMerNodeFreq_s const & other) const{
-        if (kdata[0]>other.kdata[0]) return true;
-        if (kdata[0]<other.kdata[0]) return false;
-        return kdata[1]>other.kdata[1];
+        return kdata>other.kdata;
     }
     inline void combine(KMerNodeFreq_s const & other){
         uint16_t newcount=count+other.count;

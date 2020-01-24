@@ -156,7 +156,7 @@ BatchKmersCounter::kmerCountOMP(uint8_t K, PairedReadsDatastore const &reads, ui
             for (uint64_t rid=from+1; rid<= to; ++rid) {
                 skf.produce_all_kmers(bprsg.get_read_sequence(rid), read_kmers);
                 for (const auto &rk: read_kmers){
-                    memcpy((char*) &local_kmer_list->kmers[last_kmer].kdata, (char *) &rk, 16);
+                    local_kmer_list->kmers[last_kmer].kdata=rk;
                     local_kmer_list->kmers[last_kmer].count=1;
                     ++last_kmer;
                 }
@@ -412,7 +412,7 @@ BatchKmersCounter::kmerCountOMP(uint8_t K, LongReadsDatastore const &reads, uint
             for (uint64_t rid=from+1; rid<= to; ++rid) {
                 skf.produce_all_kmers(bprsg.get_read_sequence(rid), read_kmers);
                 for (const auto &rk: read_kmers){
-                    memcpy((char*) &local_kmer_list->kmers[last_kmer].kdata, (char *) &rk, 16);
+                    local_kmer_list->kmers[last_kmer].kdata=rk;
                     local_kmer_list->kmers[last_kmer].count=1;
                     ++last_kmer;
                 }
