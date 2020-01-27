@@ -631,3 +631,11 @@ void GraphMaker::new_graph_from_paired_datastore(const PairedReadsDatastore& ds,
 void GraphMaker::new_graph_from_long_datastore(const LongReadsDatastore& ds,  int k, int min_coverage, int num_batches) {
     new_graph_from_kmerlist_trivial128(BatchKmersCounter::countKmersToList(ds, k, min_coverage, num_batches),k);
 }
+
+void GraphMaker::new_knodes_graph_from_long_datastore(const LongReadsDatastore& ds,  int k, int min_coverage, int max_coverage, int num_batches) {
+    //new_graph_from_kmerlist_trivial128(BatchKmersCounter::countKmersToList(ds, k, min_coverage, num_batches),k);
+    auto kmer_list = BatchKmersCounter::buildKMerCount(k, ds, min_coverage, ".", ".", num_batches);
+    for (auto kp=kmer_list->kmers;kp<kmer_list->kmers+kmer_list->size;++kp){
+        if (kp->count>=min_coverage and kp->count<=max_coverage) sg.add_node(kmer_to_sequence128(kp->kdata,k));
+    }
+}
