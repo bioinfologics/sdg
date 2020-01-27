@@ -52,30 +52,27 @@ void LongReadsRecruiter::perfect_mappings(uint16_t seed_size, uint64_t first_rea
             sm.get_all_kmer_matches(kmer_matches,read_kmers);
             std::map<sgNodeID_t,uint32_t > node_match_count;
             auto rksize=read_kmers.size();
-            auto longest_seed = seed_size - k;
+            auto longest_seed = seed_size;
             for (auto i=0;i<rksize;++i) {
-
-                longest_seed = (longest_seed>seed_size - k ? longest_seed-1: longest_seed);
+                longest_seed=(longest_seed>seed_size ? longest_seed-1:longest_seed); //decreases the length of the skipped matches in each cycle
                 pmatch.node = 0;
                 for (auto const &m:kmer_matches[i]) {
                     auto last_node = m.first;
                     auto last_pos = m.second;
-                    if (i + longest_seed >= rksize or not in_vector(kmer_matches[i + longest_seed], {last_node, last_pos + longest_seed}))
+                    auto needed_hit=i+longest_seed-k;
+                    if (needed_hit>i and (needed_hit >= rksize or not in_vector(kmer_matches[needed_hit], {last_node, last_pos + needed_hit -i})))
                         continue;
                     auto last_i = i;
                     while (last_i + 1 < rksize and
                            in_vector(kmer_matches[last_i + 1], {last_node, last_pos + last_i - i + 1}))
                         ++last_i;
-                    if (last_i - i == longest_seed and i==pmatch.read_position) {
+                    if (last_i == needed_hit and i==pmatch.read_position) {
                         pmatch.node = 0;
-                    }
-                    if (last_i - i > longest_seed) {
-                        longest_seed = last_i - i;
+                    } else if (last_i >= needed_hit) {
                         pmatch.node = last_node;
-                        pmatch.node_position = last_pos;
+                        pmatch.node_position = (last_node>0 ? last_pos:last_pos+1-k);
                         pmatch.read_position = i;
-                        pmatch.size = k + last_i - i;
-
+                        longest_seed = pmatch.size = k + last_i - i;
                     }
                 }
                 if (pmatch.node != 0) {

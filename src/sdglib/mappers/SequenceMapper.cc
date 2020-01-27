@@ -42,6 +42,7 @@ void SequenceMapper::update_graph_index(bool verbose) {
     } else {
         if (verbose) std::cout<<"updating nkindex with k="<<std::to_string(k)<<std::endl;
         assembly_kmers = NKmerIndex(sg.sdg, k, max_kfreq);
+        if (verbose) std::cout<<"nkindex has "<<assembly_kmers.end()-assembly_kmers.begin()<<" k-mers"<<std::endl;
     }
 }
 
