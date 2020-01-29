@@ -22,9 +22,10 @@ enum class SupportType:uint8_t {Undefined,Operation,SequenceDistanceGraph,Distan
 
 class Support{
 public:
-    SupportType type=SupportType::Undefined;
-    uint16_t index=0;
-    uint64_t id=0;
+    Support(SupportType _type=SupportType::Undefined,uint16_t _index=0,uint64_t _id=0):type(_type),index(_index),id(_id){};
+    SupportType type;
+    uint16_t index;
+    uint64_t id;
 };
 
 /**
