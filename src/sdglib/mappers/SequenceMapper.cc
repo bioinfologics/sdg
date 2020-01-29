@@ -38,11 +38,11 @@ std::vector<LongReadMapping> SequenceMapper::map_sequence(const char * query_seq
 void SequenceMapper::update_graph_index(bool verbose) {
     if (sat_kmer_index) {
         if (verbose) std::cout<<"updating satindex with k="<<std::to_string(k)<<std::endl;
-        sat_assembly_kmers=SatKmerIndex(sg.sdg, k, max_kfreq);
+        sat_assembly_kmers.reset(new SatKmerIndex(sg.sdg, k, max_kfreq));
     } else {
         if (verbose) std::cout<<"updating nkindex with k="<<std::to_string(k)<<std::endl;
-        assembly_kmers = NKmerIndex(sg.sdg, k, max_kfreq);
-        if (verbose) std::cout<<"nkindex has "<<assembly_kmers.end()-assembly_kmers.begin()<<" k-mers"<<std::endl;
+        assembly_kmers.reset(new NKmerIndex(sg.sdg, k, max_kfreq));
+        if (verbose) std::cout<<"nkindex has "<<assembly_kmers->end()-assembly_kmers->begin()<<" k-mers"<<std::endl;
     }
 }
 
@@ -51,14 +51,14 @@ void SequenceMapper::get_sat_kmer_matches(std::vector<std::vector<std::pair<int3
     uint64_t no_match=0,single_match=0,multi_match=0; //DEBUG
     for (auto i=0;i<read_kmers.size();++i){
         matches[i].clear();
-        auto start(sat_assembly_kmers.beginCO(read_kmers[i].second));
-        auto end(sat_assembly_kmers.endCO(read_kmers[i].second));
+        auto start(sat_assembly_kmers->beginCO(read_kmers[i].second));
+        auto end(sat_assembly_kmers->endCO(read_kmers[i].second));
         for (auto it = start; it < end; ++it) {
-            int32_t offset=sat_assembly_kmers.contig_offsets[it].offset; //so far, this is +1 and the sign indicate direction of kmer in contig
-            sgNodeID_t node= sat_assembly_kmers.contig_offsets[it].contigID; //so far, this is always positive
+            int32_t offset=sat_assembly_kmers->contig_offsets[it].offset; //so far, this is +1 and the sign indicate direction of kmer in contig
+            sgNodeID_t node= sat_assembly_kmers->contig_offsets[it].contigID; //so far, this is always positive
             if (read_kmers[i].first != (offset>0) ) {
                 node=-node;
-                offset=( (int) sg.sdg.nodes[std::llabs(sat_assembly_kmers.contig_offsets[it].contigID)].sequence.size() ) - std::abs(offset);
+                offset=( (int) sg.sdg.nodes[std::llabs(sat_assembly_kmers->contig_offsets[it].contigID)].sequence.size() ) - std::abs(offset);
             }
             else offset=std::abs(offset)-1;
             matches[i].emplace_back(node, offset);
@@ -74,8 +74,8 @@ void SequenceMapper::get_all_kmer_matches(std::vector<std::vector<std::pair<int3
     uint64_t no_match=0,single_match=0,multi_match=0; //DEBUG
     for (auto i=0;i<read_kmers.size();++i){
         matches[i].clear();
-        auto first = assembly_kmers.find(read_kmers[i].second);
-        for (auto it = first; it != assembly_kmers.end() && it->kmer == read_kmers[i].second; ++it) {
+        auto first = assembly_kmers->find(read_kmers[i].second);
+        for (auto it = first; it != assembly_kmers->end() && it->kmer == read_kmers[i].second; ++it) {
             int32_t offset=it->offset; //so far, this is +1 and the sign indicate direction of kmer in contig
             sgNodeID_t node=it->contigID; //so far, this is always positive
             if (read_kmers[i].first != (offset>0) ) {

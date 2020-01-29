@@ -3,7 +3,7 @@
 //
 
 #include "LongReadsRecruiter.hpp"
-#include "SequenceMapper.hpp"
+#include <sdglib/indexers/NKmerIndex.hpp>
 
 LongReadsRecruiter::LongReadsRecruiter(const SequenceDistanceGraph &sdg, const LongReadsDatastore &datastore,uint8_t k=25, uint16_t f=50):
     sdg(sdg),datastore(datastore),k(k) {
@@ -34,7 +34,7 @@ template<class T>
 inline bool in_vector(const std::vector<T> &V,T VAL) { return std::find(V.begin(),V.end(),VAL)!=V.end();}
 
 void LongReadsRecruiter::perfect_mappings(uint16_t seed_size, uint64_t first_read, uint64_t last_read) {
-    SequenceMapper sm(sdg,k,f); //TODO: this is only using get all k-mer matches, should be promoted to a smaller class
+    NKmerIndex nki(sdg,k,f);
     if (last_read==0) last_read=datastore.size();
 #pragma omp parallel
     {
@@ -49,12 +49,12 @@ void LongReadsRecruiter::perfect_mappings(uint16_t seed_size, uint64_t first_rea
             auto seq=sequence_reader.get_read_sequence(rid);
             read_kmers.clear();
             skf.produce_all_kmers(seq,read_kmers);
-            sm.get_all_kmer_matches(kmer_matches,read_kmers);
+            nki.get_all_kmer_matches(kmer_matches,read_kmers);
             std::map<sgNodeID_t,uint32_t > node_match_count;
             auto rksize=read_kmers.size();
             auto longest_seed = seed_size;
             for (auto i=0;i<rksize;++i) {
-                longest_seed=(longest_seed>seed_size ? longest_seed-1:longest_seed); //decreases the length of the skipped matches in each cycle
+                longest_seed=(longest_seed>=seed_size ? longest_seed-1:longest_seed); //decreases the length of the skipped matches in each cycle
                 pmatch.node = 0;
                 for (auto const &m:kmer_matches[i]) {
                     auto last_node = m.first;
@@ -68,7 +68,7 @@ void LongReadsRecruiter::perfect_mappings(uint16_t seed_size, uint64_t first_rea
                         ++last_i;
                     if (last_i == needed_hit and i==pmatch.read_position) {
                         pmatch.node = 0;
-                    } else if (last_i >= needed_hit) {
+                    } else if (last_i > needed_hit) {
                         pmatch.node = last_node;
                         pmatch.node_position = (last_node>0 ? last_pos:last_pos+1-k);
                         pmatch.read_position = i;

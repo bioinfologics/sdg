@@ -27,7 +27,7 @@ uint64_t filter_kmers(std::vector<kmerPos> &kmers, int max_kmer_repeat) {
     return total_kmers;
 }
 
-NKmerIndex::NKmerIndex(const SequenceDistanceGraph &sg, uint8_t k, int filter_limit) : k(k), bfilter(70*1024*1024){
+NKmerIndex::NKmerIndex(const SequenceDistanceGraph &_sg, uint8_t k, int filter_limit) : k(k), bfilter(70*1024*1024), sg(_sg){
     uint64_t total_length=0;
 #pragma omp parallel for reduction(+:total_length)
     for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {
@@ -76,5 +76,23 @@ NKmerIndex::NKmerIndex(const SequenceDistanceGraph &sg, uint8_t k, int filter_li
 #pragma omp parallel for
     for (uint64_t kidx = 0; kidx < assembly_kmers.size(); ++kidx) {
         bfilter.add(assembly_kmers[kidx].kmer);
+    }
+}
+
+void NKmerIndex::get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
+                                      std::vector<std::pair<bool, uint64_t>> &seq_kmers) {
+    if (matches.size() < seq_kmers.size()) matches.resize(seq_kmers.size());
+    for (auto i = 0; i < seq_kmers.size(); ++i) {
+        matches[i].clear();
+        auto first = find(seq_kmers[i].second);
+        for (auto it = first; it != assembly_kmers.end() && it->kmer == seq_kmers[i].second; ++it) {
+            int32_t offset = it->offset; //so far, this is +1 and the sign indicates direction of kmer in contig
+            sgNodeID_t node = it->contigID; //so far, this is always positive
+            if (seq_kmers[i].first != (offset > 0)) { //match is on reverse
+                node = -node;
+                offset = ((int) sg.nodes[std::llabs(it->contigID)].sequence.size()) - std::abs(offset);
+            } else offset = std::abs(offset) - 1;
+            matches[i].emplace_back(node, offset);
+        }
     }
 }

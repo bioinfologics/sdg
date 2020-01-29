@@ -335,10 +335,10 @@ std::vector<LongReadMapping> LongReadsMapper::filter_blocks(std::vector<LongRead
 
 void LongReadsMapper::map_reads(const std::unordered_set<uint32_t> &readIDs) {
     mappings.clear();
-    NKmerIndex nkindex;
-    SatKmerIndex skindex;
-    if (sat_kmer_index) skindex=SatKmerIndex(sg,k,max_index_freq);
-    else nkindex=NKmerIndex(sg,k,max_index_freq);
+    std::shared_ptr<NKmerIndex> nkindex;
+    std::shared_ptr<SatKmerIndex> skindex;
+    if (sat_kmer_index) skindex.reset(new SatKmerIndex(sg,k,max_index_freq));
+    else nkindex.reset(new NKmerIndex(sg,k,max_index_freq));
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
     uint32_t num_reads_done(0);
     uint64_t no_matches(0),single_matches(0),multi_matches(0);
@@ -374,14 +374,14 @@ void LongReadsMapper::map_reads(const std::unordered_set<uint32_t> &readIDs) {
             }
 
             if (sat_kmer_index) {
-                get_sat_kmer_matches(skindex,node_matches, read_kmers);
+                get_sat_kmer_matches(*skindex,node_matches, read_kmers);
             } else {
                 std::vector<bool> kmer_in_assembly(read_kmers.size());
 
                 for (uint64_t i = 0; i < read_kmers.size(); ++i) {
-                    kmer_in_assembly[i] = nkindex.filter(read_kmers[i].second);
+                    kmer_in_assembly[i] = nkindex->filter(read_kmers[i].second);
                 }
-                get_all_kmer_matches(nkindex, node_matches, read_kmers, kmer_in_assembly);
+                get_all_kmer_matches(*nkindex, node_matches, read_kmers, kmer_in_assembly);
             }
 
             //========== 2. Find match candidates in fixed windows ==========
@@ -425,10 +425,10 @@ void LongReadsMapper::map_reads(const std::unordered_set<uint32_t> &readIDs) {
 
 void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t> &readIDs) {
     mappings.clear();
-    NKmerIndex nkindex;
-    SatKmerIndex skindex;
-    if (sat_kmer_index) skindex=SatKmerIndex(sg,k,max_index_freq);
-    else nkindex=NKmerIndex(sg,k,max_index_freq);
+    std::shared_ptr<NKmerIndex> nkindex;
+    std::shared_ptr<SatKmerIndex> skindex;
+    if (sat_kmer_index) skindex.reset(new SatKmerIndex(sg,k,max_index_freq));
+    else nkindex.reset(new NKmerIndex(sg,k,max_index_freq));
     sdglib::OutputLog() << "Index created" << std::endl;
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
     uint32_t num_reads_done(0);
@@ -477,14 +477,14 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
             // sort them back in the order they came out of the reads
 
             if (sat_kmer_index) {
-                get_sat_kmer_matches(skindex,node_matches, read_kmers);
+                get_sat_kmer_matches(*skindex,node_matches, read_kmers);
             } else {
                 std::vector<bool> kmer_in_assembly(read_kmers.size());
 
                 for (uint64_t i = 0; i < read_kmers.size(); ++i) {
-                    kmer_in_assembly[i] = nkindex.filter(read_kmers[i].second);
+                    kmer_in_assembly[i] = nkindex->filter(read_kmers[i].second);
                 }
-                get_all_kmer_matches(nkindex, node_matches, read_kmers, kmer_in_assembly);
+                get_all_kmer_matches(*nkindex, node_matches, read_kmers, kmer_in_assembly);
             }
 
             //========== 2. Find best chaining in fixed windows ==========

@@ -7,6 +7,7 @@
 #include <sdglib/indexers/NKmerIndex.hpp>
 #include <sdglib/indexers/SatKmerIndex.hpp>
 #include <sdglib/types/MappingTypes.hpp>
+#include <memory>
 
 /**
  * This class implements a simple sequence mapper to query a DG with single sequences.
@@ -112,8 +113,8 @@ public:
                                                   std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,
                                                   uint32_t read_kmers_size, const std::vector<unsigned char> &candidate_counts);
 
-    NKmerIndex assembly_kmers;
-    SatKmerIndex sat_assembly_kmers;
+    std::shared_ptr<NKmerIndex> assembly_kmers;
+    std::shared_ptr<SatKmerIndex> sat_assembly_kmers;
 
     bool sat_kmer_index = false;
 };
