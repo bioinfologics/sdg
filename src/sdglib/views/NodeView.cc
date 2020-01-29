@@ -6,7 +6,7 @@
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 
-DistanceGraph NodeView::graph() const {
+DistanceGraph & NodeView::graph() const {
     return *dg;
 }
 

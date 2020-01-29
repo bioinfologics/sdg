@@ -19,7 +19,7 @@ public:
     NodeView(DistanceGraph * _dg,sgNodeID_t _n):dg(_dg),id(_n){};
     NodeView(NodeView const &o):dg(o.dg), id(o.id) {};
     friend std::ostream &operator<<(std::ostream &os, const NodeView &n);
-    DistanceGraph graph() const;
+    DistanceGraph & graph() const;
     const bool operator==(const NodeView &o) const {return (id==o.id) and (dg==o.dg);};
     /**
      * @return Sequence of the underlying SequenceDistanceGraph node
