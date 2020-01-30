@@ -49,7 +49,6 @@ void LongReadsRecruiter::perfect_mappings(uint16_t seed_size, uint64_t first_rea
             auto seq=sequence_reader.get_read_sequence(rid);
             read_kmers.clear();
             skf.produce_all_kmers(seq,read_kmers);
-            std::cout<<"K-mer index has "<<nki.end()-nki.begin()<<" kmers"<<std::endl;
             nki.get_all_kmer_matches(kmer_matches,read_kmers);
             std::map<sgNodeID_t,uint32_t > node_match_count;
             auto rksize=read_kmers.size();
@@ -57,9 +56,7 @@ void LongReadsRecruiter::perfect_mappings(uint16_t seed_size, uint64_t first_rea
             for (auto i=0;i<rksize;++i) {
                 longest_seed=(longest_seed>=seed_size ? longest_seed-1:longest_seed); //decreases the length of the skipped matches in each cycle
                 pmatch.node = 0;
-                if (i==0) std::cout<<kmer_matches[i].size()<<" matches on position "<<i<<std::endl;
                 for (auto const &m:kmer_matches[i]) {
-                    if (i==0) std::cout<<rid<<":"<<i<<" -> "<<m.first<<":"<<m.second<<std::endl;
                     auto last_node = m.first;
                     auto last_pos = m.second;
                     auto needed_hit=i+longest_seed-k;
@@ -69,7 +66,6 @@ void LongReadsRecruiter::perfect_mappings(uint16_t seed_size, uint64_t first_rea
                     while (last_i + 1 < rksize and
                            in_vector(kmer_matches[last_i + 1], {last_node, last_pos + last_i - i + 1}))
                         ++last_i;
-                    if (i==0) std::cout<<rid<<":"<<i<<" -> "<<m.first<<":"<<m.second<<"-"<<last_i<<std::endl;
                     if (last_i == needed_hit and i==pmatch.read_position) {
                         pmatch.node = 0;
                     } else if (last_i > needed_hit) {
