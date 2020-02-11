@@ -19,6 +19,12 @@ public:
     NodeView(DistanceGraph * _dg,sgNodeID_t _n):dg(_dg),id(_n){};
     NodeView(NodeView const &o):dg(o.dg), id(o.id) {};
     friend std::ostream &operator<<(std::ostream &os, const NodeView &n);
+    const std::string str() const{
+        return "NodeView: Node "+std::to_string(id)+" in "+dg->name;
+    }
+    const std::string repr() const{
+        return "<NodeView: Node "+std::to_string(id)+" in "+dg->name+">";
+    }
     DistanceGraph & graph() const;
     const bool operator==(const NodeView &o) const {return (id==o.id) and (dg==o.dg);};
     /**
@@ -129,6 +135,8 @@ public:
     std::vector<uint64_t> get_kmers(int K);
 
     std::unordered_set<uint64_t> get_linked_tags_kmers(std::string datastore_name, int K, int min_tag_cov);
+
+
 
 private:
     sgNodeID_t id;
