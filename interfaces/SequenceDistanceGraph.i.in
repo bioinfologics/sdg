@@ -71,22 +71,6 @@ SWIG_exception(SWIG_ValueError, e.what());
 %feature("python:slot", "tp_repr", functype="reprfunc") NodeView::repr;
 %feature("python:slot", "tp_str", functype="reprfunc") NodeView::str;
 
-%feature("python:tp_repr", functype="reprfunc") LinkView repr_vectorLinkViews;
-
-const std::string repr_vectorLinkViews() {
-    std::string s="<Vector: "+std::to_string(self->size())+" LinkViews>";
-    return s;
-}
-const std::string __str__() {
-    if (self->empty()) return "[]";
-    std::ostringstream oss;
-    oss<<"["<<std::endl;
-    for (const auto &l:*self) oss<<"<"<<l<<">,"<<std::endl;
-    oss.seekp(-2,oss.cur);
-    oss<<std::endl<<"]";
-    return oss.str();
-}
-
 %template(vectorInt) std::vector<int>;
 %template(vectorUInt) std::vector<unsigned int>;
 %template(vectorChar) std::vector<char>;

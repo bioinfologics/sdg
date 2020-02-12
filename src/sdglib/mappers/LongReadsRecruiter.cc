@@ -29,7 +29,7 @@ void LongReadsRecruiter::reset_recruitment() {
     read_perfect_matches.clear();
     read_perfect_matches.resize(datastore.size()+1);
 }
-//TODO: optimise the in-vector class to do a binary search?
+//TODO: optimise the in-vector class to do a binary search (right now the kmatches are not well-ordered because of RCs)
 template<class T>
 inline bool in_vector(const std::vector<T> &V,T VAL) { return std::find(V.begin(),V.end(),VAL)!=V.end();}
 
