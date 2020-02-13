@@ -374,6 +374,42 @@ IF(BUILD_PYTHON_INTERFACE)
                           LIBRARY_OUTPUT_DIRECTORY pysdg/pysdg)
 ENDIF()
 
+IF(BUILD_SIMPLE_PYTHON_INTERFACE)
+    FIND_PACKAGE(PythonInterp 3 REQUIRED)
+    FIND_PACKAGE(PythonLibs 3 REQUIRED)
+
+        MESSAGE("Building simple python interface")
+        INCLUDE_DIRECTORIES(
+                ${PYTHON_INCLUDE_DIRS}
+                "deps/pybind11"
+                "interfaces/simple_python"
+        )
+
+        ADD_LIBRARY( SDGpython SHARED interfaces/simple_python/SDGpython.cc )
+        TARGET_LINK_LIBRARIES( SDGpython sdg )
+        # The library must not have any prefix and should be located in
+        # a subfolder that includes the package name. The setup will be
+        # more complicated otherwise.
+        SET_TARGET_PROPERTIES( SDGpython
+                PROPERTIES
+                PREFIX ""
+                LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/SDGpython"
+                )
+
+        # This is required for linking the library under Mac OS X. Moreover,
+        # the suffix ensures that the module can be found by the interpreter
+        # later on.
+        IF( APPLE )
+            SET_TARGET_PROPERTIES( SDGpython
+                    PROPERTIES
+                    LINK_FLAGS "-undefined dynamic_lookup"
+                    SUFFIX     ".so"
+                    )
+        ENDIF()
+ENDIF()
+
+
+
 IF(BUILD_R_INTERFACE)
     MESSAGE("Building R interface")
     FIND_PACKAGE(SWIG REQUIRED)
@@ -409,6 +445,7 @@ install(TARGETS
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib)
+
 install(DIRECTORY src/sdglib DESTINATION include
         FILES_MATCHING PATTERN "*.hpp")
 
