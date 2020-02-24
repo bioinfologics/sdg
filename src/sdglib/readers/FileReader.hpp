@@ -11,7 +11,7 @@
 #include <fcntl.h>
 #include <sdglib/readers/Common.hpp>
 #include <sdglib/utilities/OutputLog.hpp>
-#include "kseq.hpp"
+#include "kseqcpp/kseq.hpp"
 
 struct FastxReaderParams {
     uint32_t min_length=0;

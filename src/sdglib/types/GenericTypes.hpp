@@ -10,7 +10,7 @@
 #include <tuple>
 #include <limits>
 #include <cstdint>
-#include <xxhash.h>
+#include <xxhash/xxhash.h>
 #include "hashing_helper.hpp"
 
 using sgNodeID_t = int64_t; //first node is 1; negatives are RC
