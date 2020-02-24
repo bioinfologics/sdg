@@ -28,6 +28,18 @@ public:
 
 };
 
+class NodePosition{
+public:
+    NodePosition(sgNodeID_t _node,int32_t _start,int32_t _end): node(_node),start(_start),end(_end){};
+    //uint64_t read_id; //Not needed because we're using a vector per read.
+    bool operator<(const struct NodePosition &other) const{
+        return std::tie(start,end,node)<std::tie(other.start,other.end,other.node);
+    }
+    sgNodeID_t node;
+    int32_t start; //we need both start and end due to read indels
+    int32_t end; //we need both start and end due to read indels
+};
+
 class LongReadsRecruiter {
 public:
     LongReadsRecruiter(const SequenceDistanceGraph &sdg, const LongReadsDatastore &datastore,uint8_t k=25, uint16_t f=50);
@@ -36,6 +48,9 @@ public:
     void perfect_mappings(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
     void recruit_reads(uint16_t seed_size,uint16_t seed_count,uint64_t first_read=1,uint64_t last_read=0);
     void reset_recruitment();
+
+    std::vector<NodePosition> endmatches_to_positions(uint64_t rid,int32_t end_size, uint16_t matches);
+    void thread_reads(DistanceGraph &dg,uint32_t end_size, uint16_t matches); //uses endmatches_to_positions
 
     const SequenceDistanceGraph & sdg;
     const LongReadsDatastore &datastore;

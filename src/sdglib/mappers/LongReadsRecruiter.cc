@@ -34,6 +34,7 @@ template<class T>
 inline bool in_vector(const std::vector<T> &V,T VAL) { return std::find(V.begin(),V.end(),VAL)!=V.end();}
 
 void LongReadsRecruiter::perfect_mappings(uint16_t seed_size, uint64_t first_read, uint64_t last_read) {
+    if (seed_size<k) seed_size=k;
     NKmerIndex nki(sdg,k,f);
     if (last_read==0) last_read=datastore.size();
 #pragma omp parallel shared(nki)
@@ -99,6 +100,84 @@ void LongReadsRecruiter::recruit_reads(uint16_t seed_size, uint16_t seed_count, 
                     node_reads[llabs(pmatch.node)].emplace_back(rid);
                 }
             }
+        }
+    }
+}
+
+std::vector<NodePosition> LongReadsRecruiter::endmatches_to_positions(uint64_t rid, int32_t end_size, uint16_t matches) {
+    std::vector<NodePosition> positions;
+    float MAX_DIFF=.1;
+    std::map<sgNodeID_t, int> node_count;
+    for (auto &pm : read_perfect_matches[rid]) node_count[pm.node]+=1;
+    PerfectMatch start_first,start_second,end_first,end_second;
+    for (auto &n:node_count) {
+        if (n.second>=matches) {
+            int16_t nsize=sdg.get_node_size(n.first);
+            //std::cout<<std::endl<<"Matches vs. node "<<n.first<< " ( "<<nsize<<"bp )"<<std::endl;
+            auto mi=read_perfect_matches[rid].begin();
+            for (auto i=0;i<n.second;++i){//iterate thorugh the node's matches
+                while (mi->node!=n.first) ++mi; // get to the i-th match to this node
+                //std::cout<<mi->read_position<<" -> "<<mi->node_position;
+                if (i==0) {
+                    start_first=*mi;
+                    //std::cout<<" SF ";
+                }
+                if (i==matches-1) {
+                    start_second=*mi;
+                    //std::cout<<" SS ";
+                }
+                if (i==n.second-matches) {
+                    end_first=*mi;
+                    //std::cout<<" EF ";
+                }
+                if (i==n.second-1) {
+                    end_second=*mi;
+                    //std::cout<<" ES ";
+                }
+                //std::cout<<std::endl;
+                ++mi;
+            }
+
+            //std::cout<<start_first.node_position<<" "<<start_second.node_position<<" : "<<end_first.node_position<<" "<<end_second.node_position<<"  ( node: "<<nsize<<"  last_match:"<<read_perfect_matches[rid].back().read_position<<" )"<<std::endl;
+            int32_t nstart=INT32_MIN,nend=INT32_MIN;
+            //std::cout<<start_second.node_position<<"<="<<end_size<<"?"<<std::endl;
+            if (start_second.node_position<=end_size) nstart=start_first.read_position-start_first.node_position;
+            //std::cout<<end_first.node_position<<">="<<nsize-end_size<<"?"<<std::endl;
+            if (end_first.node_position>=nsize-end_size) nend=end_second.read_position+nsize-end_second.node_position;
+            //std::cout<<"from matches --> "<<nstart<<" - "<<nend<<std::endl;
+            //skip if no end detected
+            if (nstart==INT32_MIN and nend==INT32_MIN) continue;
+
+            //skip if only start and end should be there
+            if (nend==INT32_MIN){
+                if (nstart+nsize<=read_perfect_matches[rid].back().read_position) continue;
+                nend=nstart+nsize;
+            }
+            //skip if only end and start should be there
+            else if (nstart==INT32_MIN){
+                if (nend-nsize>0) continue;
+                nstart=nend-nsize;
+            }
+            //skip if node size is wrong
+            else if (llabs(nend-nstart-nsize)/nsize>MAX_DIFF) continue;
+            //std::cout<<"adjusted to --> "<<nstart<<" - "<<nend<<std::endl;
+            positions.emplace_back(n.first,nstart,nend);
+
+        }
+    }
+    return positions;
+}
+
+void LongReadsRecruiter::thread_reads(DistanceGraph &dg, uint32_t end_size, uint16_t matches) {
+    for (auto rid=1;rid<read_perfect_matches.size();++rid){
+        if (read_perfect_matches[rid].empty()) continue;
+        //std::cout<<std::endl<<"analysing read "<<rid<<" ( matches from "<<read_perfect_matches[rid].front().read_position<<" to "<<read_perfect_matches[rid].back().read_position<<" )"<<std::endl;
+        auto pos=endmatches_to_positions(rid,end_size,matches);
+        if (pos.empty()) continue;
+        std::sort(pos.begin(),pos.end());
+        for (auto i=0;i<pos.size()-1;++i){
+            //std::cout<<"dg.add_link("<<-pos[i].node<<","<<pos[i+1].node<<","<<pos[i+1].start-pos[i].end<<",{SupportType::LongRead,0,"<<static_cast<uint64_t>(rid)<<"})"<<std::endl;
+            dg.add_link(-pos[i].node,pos[i+1].node,pos[i+1].start-pos[i].end,{SupportType::LongRead,0,static_cast<uint64_t>(rid)});
         }
     }
 }

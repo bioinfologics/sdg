@@ -15,7 +15,7 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <chrono>
 #include <sdglib/views/NodeView.hpp>
-#include <deps/minimap2/minimap.h>
+#include <minimap2/minimap.h>
 
 struct chain{
     sgNodeID_t node=0;

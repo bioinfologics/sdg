@@ -34,9 +34,10 @@ SET(CMAKE_RULE_MESSAGES OFF)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 INCLUDE(FindPythonModule)
 ENABLE_TESTING()
-OPTION(BUILD_TESTING "Build tests." ON)
+OPTION(BUILD_TESTING "Build tests." OFF)
 OPTION(BUILD_DOC "Build documentation" OFF)
-OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" ON)
+OPTION(BUILD_PYTHON_INTERFACE "Build SWIG Python interface" OFF)
+OPTION(BUILD_SIMPLE_PYTHON_INTERFACE "Build pybind11 simple Python  interface" OFF)
 OPTION(BUILD_R_INTERFACE "Build R interface" OFF)
 OPTION(BUILD_JULIA_INTERFACE "Build Julia interface" OFF)
 OPTION(BUILD_COV "Build coverage" OFF)
@@ -105,6 +106,8 @@ else()
 endif()
 
 add_definitions("-DMAX_WORKSPACE_VECTOR_SIZE=${MAX_WORKSPACE_VECTOR_SIZE}")
+
+
 
 ## Compiler flags
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -w -Wno-deprecated -std=c++11")
@@ -373,37 +376,34 @@ IF(BUILD_PYTHON_INTERFACE)
 ENDIF()
 
 IF(BUILD_SIMPLE_PYTHON_INTERFACE)
+    MESSAGE("Building simple python interface")
     FIND_PACKAGE(PythonInterp 3 REQUIRED)
     FIND_PACKAGE(PythonLibs 3 REQUIRED)
+    ADD_LIBRARY( SDGpython SHARED interfaces/simple_python/SDGpython.cc )
+    TARGET_INCLUDE_DIRECTORIES( SDGpython PUBLIC
+            ${PYTHON_INCLUDE_DIRS}
+            "interfaces/simple_python"
+    )
+    TARGET_LINK_LIBRARIES( SDGpython sdg )
+    # The library must not have any prefix and should be located in
+    # a subfolder that includes the package name. The setup will be
+    # more complicated otherwise.
+    SET_TARGET_PROPERTIES( SDGpython
+            PROPERTIES
+            PREFIX ""
+            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/SDGpython"
+            )
 
-        MESSAGE("Building simple python interface")
-        INCLUDE_DIRECTORIES(
-                ${PYTHON_INCLUDE_DIRS}
-                "deps/pybind11"
-                "interfaces/simple_python"
-        )
-
-        ADD_LIBRARY( SDGpython SHARED interfaces/simple_python/SDGpython.cc )
-        TARGET_LINK_LIBRARIES( SDGpython sdg )
-        # The library must not have any prefix and should be located in
-        # a subfolder that includes the package name. The setup will be
-        # more complicated otherwise.
+    # This is required for linking the library under Mac OS X. Moreover,
+    # the suffix ensures that the module can be found by the interpreter
+    # later on.
+    IF( APPLE )
         SET_TARGET_PROPERTIES( SDGpython
                 PROPERTIES
-                PREFIX ""
-                LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/SDGpython"
+                LINK_FLAGS "-undefined dynamic_lookup"
+                SUFFIX     ".so"
                 )
-
-        # This is required for linking the library under Mac OS X. Moreover,
-        # the suffix ensures that the module can be found by the interpreter
-        # later on.
-        IF( APPLE )
-            SET_TARGET_PROPERTIES( SDGpython
-                    PROPERTIES
-                    LINK_FLAGS "-undefined dynamic_lookup"
-                    SUFFIX     ".so"
-                    )
-        ENDIF()
+    ENDIF()
 ENDIF()
 
 
