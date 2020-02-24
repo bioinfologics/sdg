@@ -6,7 +6,7 @@
 #include <sdglib/batch_counter/BatchKmersCounter.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/processors/GraphContigger.hpp>
-#include "cxxopts.hpp"
+#include "cxxopts/cxxopts.hpp"
 
 
 std::unordered_set<__uint128_t, int128_hash> countKmers(const WorkSpace &ws, int k, int min_coverage, int num_batches) {

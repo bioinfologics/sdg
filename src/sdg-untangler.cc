@@ -5,7 +5,7 @@
 #include <sdglib/processors/LocalHaplotypeAssembler.hpp>
 #include <sdglib/processors/GraphEditor.hpp>
 #include "sdglib/utilities/OutputLog.hpp"
-#include "cxxopts.hpp"
+#include "cxxopts/cxxopts.hpp"
 
 
 int main(int argc, char * argv[]) {

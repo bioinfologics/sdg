@@ -43,8 +43,8 @@
 
 #include "attr.h"
 #include "options.h"
-#include "deps/pybind11/detail/class.h"
-#include "deps/pybind11/detail/init.h"
+#include "pybind11/detail/class.h"
+#include "pybind11/detail/init.h"
 
 #if defined(__GNUG__) && !defined(__clang__)
 #  include <cxxabi.h>

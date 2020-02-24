@@ -134,9 +134,7 @@ endif()
 
 ## Include directories
 include_directories("src/")
-include_directories("deps/cxxopts/")
-include_directories("deps/kseqcpp/")
-include_directories("deps/xxhash/")
+include_directories("deps/")
 ## Set sources variables
 
 SET(header_files

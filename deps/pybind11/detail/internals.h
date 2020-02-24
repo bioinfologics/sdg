@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "deps/pybind11/pytypes.h"
+#include "pybind11/pytypes.h"
 
 NAMESPACE_BEGIN(PYBIND11_NAMESPACE)
 NAMESPACE_BEGIN(detail)

@@ -2,7 +2,7 @@
 #include <fstream>
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
-#include "cxxopts.hpp"
+#include "cxxopts/cxxopts.hpp"
 
 const std::string program_name("sdg-kmercounts");
 enum class KmerCountsFunctions{

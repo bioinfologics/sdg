@@ -2,7 +2,7 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/processors/LinkageUntangler.hpp>
 #include <sdglib/processors/HaplotypeConsensus.hpp>
-#include "cxxopts.hpp"
+#include "cxxopts/cxxopts.hpp"
 
 
 int main(int argc, char **argv) {

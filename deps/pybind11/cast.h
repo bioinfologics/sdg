@@ -11,9 +11,9 @@
 #pragma once
 
 #include "pytypes.h"
-#include "deps/pybind11/detail/typeid.h"
-#include "deps/pybind11/detail/descr.h"
-#include "deps/pybind11/detail/internals.h"
+#include "pybind11/detail/typeid.h"
+#include "pybind11/detail/descr.h"
+#include "pybind11/detail/internals.h"
 #include <array>
 #include <limits>
 #include <tuple>

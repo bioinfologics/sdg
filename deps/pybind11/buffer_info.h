@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "deps/pybind11/detail/common.h"
+#include "pybind11/detail/common.h"
 
 NAMESPACE_BEGIN(PYBIND11_NAMESPACE)
 

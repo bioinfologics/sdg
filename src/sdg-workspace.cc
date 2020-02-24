@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <sdglib/workspace/WorkSpace.hpp>
-#include "cxxopts.hpp"
+#include "cxxopts/cxxopts.hpp"
 
 enum class WorkspaceFunctions{
     NONE, //This is needed because the default of a map is 0
