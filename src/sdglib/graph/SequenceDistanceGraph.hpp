@@ -97,8 +97,8 @@ public:
 
     //=== read operations ===
 
-    std::string get_node_sequence(sgNodeID_t n);
-    uint64_t get_node_size(sgNodeID_t n);
+    std::string get_node_sequence (sgNodeID_t n) const;
+    uint64_t get_node_size (sgNodeID_t n) const;
 
 
     //=== graph operations ===

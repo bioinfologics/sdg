@@ -66,7 +66,7 @@ void Node::make_rc() {
     std::swap(sequence,rseq);
 };
 
-std::string SequenceDistanceGraph::get_node_sequence(sgNodeID_t n){
+std::string SequenceDistanceGraph::get_node_sequence(sgNodeID_t n) const {
     if (n>0) return nodes[n].sequence;
     n=-n;
     std::string rseq;
@@ -90,7 +90,7 @@ std::string SequenceDistanceGraph::get_node_sequence(sgNodeID_t n){
     return rseq;
 }
 
-uint64_t SequenceDistanceGraph::get_node_size(sgNodeID_t n) {
+uint64_t SequenceDistanceGraph::get_node_size (sgNodeID_t n) const {
     return nodes[llabs(n)].sequence.size();
 }
 
