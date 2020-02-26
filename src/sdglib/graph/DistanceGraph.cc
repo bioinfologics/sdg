@@ -34,6 +34,21 @@ bool DistanceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
     return false;
 }
 
+bool DistanceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, Support s) {
+    auto & slinks = links[(source > 0 ? source : -source)];
+    auto slinksLen = slinks.size();
+    slinks.erase(std::remove_if(slinks.begin(), slinks.end(), [source,dest,d,s](const Link &l) {
+        return std::tie(source,dest,d,s)==std::tie(l.source,l.dest,l.dist,l.support);
+    }), slinks.end());
+    auto & dlinks = links[(dest > 0 ? dest : -dest)];
+    auto dlinksLen = dlinks.size();
+    dlinks.erase(std::remove_if(dlinks.begin(), dlinks.end(), [source,dest,d,s](const Link &l) {
+        return std::tie(source,dest,d,s)==std::tie(l.dest,l.source,l.dist,l.support);
+    }), dlinks.end());
+    if (slinks.size() != slinksLen or dlinks.size() != dlinksLen) return true;
+    return false;
+}
+
 void DistanceGraph::disconnect_node(sgNodeID_t node) {
     for (auto fwl:get_fw_links(node)) remove_link(fwl.source,fwl.dest);
     for (auto bwl:get_bw_links(node)) remove_link(bwl.source,bwl.dest);

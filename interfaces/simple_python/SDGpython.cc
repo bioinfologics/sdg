@@ -63,6 +63,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<LinkView>(m,"LinkView","A view for a Link in a Distance Graph")
         .def("node",&LinkView::node)
         .def("distance",&LinkView::distance)
+        .def("support",&LinkView::support)
         .def("__repr__",
              [](const LinkView &lv) {
                  return "<LinkView to " + std::to_string(lv.node().node_id()) + " at " + std::to_string(lv.distance()) + " bp>";
@@ -88,6 +89,10 @@ PYBIND11_MODULE(SDGpython, m) {
         .def_property_readonly("sdg", [] (const DistanceGraph &dg) {return &dg.sdg;},py::return_value_policy::reference)
         .def(py::init<const SequenceDistanceGraph &>(),"","sdg"_a)
         .def("add_link",&DistanceGraph::add_link,"source"_a,"dest"_a,"distance"_a,"support"_a=Support() )
+        .def("disconnect_node",&DistanceGraph::disconnect_node)
+        .def("remove_link",py::overload_cast<sgNodeID_t , sgNodeID_t >(&DistanceGraph::remove_link))
+        .def("remove_link",py::overload_cast<sgNodeID_t , sgNodeID_t, int32_t, Support >(&DistanceGraph::remove_link))
+        .def("fw_neighbours_by_distance",&DistanceGraph::fw_neighbours_by_distance,"node_id"_a,"min_links"_a=3)
         .def("get_nodeview",&DistanceGraph::get_nodeview)
         .def("get_all_nodeviews",&DistanceGraph::get_all_nodeviews,"include_disconnected"_a=true,"Returns a vector with NodeViews for all active nodes",py::return_value_policy::move)
         .def_readwrite("name",&DistanceGraph::name)
@@ -97,6 +102,7 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<SequenceDistanceGraph,DistanceGraph>(m, "SequenceDistanceGraph", "A Sequence Distance Graph")
         .def("get_node_size",&SequenceDistanceGraph::get_node_size)
+        .def("add_node",py::overload_cast<std::string>(&SequenceDistanceGraph::add_node))
         .def("join_all_unitigs",&SequenceDistanceGraph::join_all_unitigs)
         .def("load_from_gfa",&SequenceDistanceGraph::load_from_gfa)
         .def("load_from_fasta",&SequenceDistanceGraph::load_from_fasta)
@@ -150,6 +156,17 @@ PYBIND11_MODULE(SDGpython, m) {
         .def("map",&LongReadsRecruiter::perfect_mappings,"hit_size"_a=21,"first_read"_a=1,"last_read"_a=0)
         .def("recruit",&LongReadsRecruiter::recruit_reads,"hit_size"_a=21,"hit_count"_a=1,"first_read"_a=1,"last_read"_a=0)
         .def("thread_reads",&LongReadsRecruiter::thread_reads,"dg"_a,"end_size"_a,"end_matches"_a)
+        .def("endmatches_to_positions",&LongReadsRecruiter::endmatches_to_positions)
+        ;
+
+    py::class_<NodePosition>(m,"NodePosition", "A node position in a LRR")
+        .def_readwrite("node",&NodePosition::node)
+        .def_readwrite("start",&NodePosition::start)
+        .def_readwrite("end",&NodePosition::end)
+        .def("__repr__", [](const NodePosition &np) {
+                     return "<NodePosition: node " + std::to_string(np.node) + " @ "+std::to_string(np.start)+":"+std::to_string(np.end)+">";
+                 })
+            ;
         ;
 
     py::class_<GraphEditor>(m,"GraphEditor", "A graph editor with operation queue")

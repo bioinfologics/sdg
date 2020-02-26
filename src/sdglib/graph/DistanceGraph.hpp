@@ -63,6 +63,8 @@ public:
      */
     bool remove_link(sgNodeID_t source, sgNodeID_t dest);
 
+    bool remove_link(sgNodeID_t source, sgNodeID_t dest,int32_t d, Support s);
+
     /** @brief Removes all the links in the collection from and to a given nodeID
      * TODO: check this one
      * @param node
