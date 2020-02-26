@@ -112,7 +112,7 @@ std::vector<NodePosition> LongReadsRecruiter::endmatches_to_positions(uint64_t r
     PerfectMatch start_first,start_second,end_first,end_second;
     for (auto &n:node_count) {
         if (n.second>=matches) {
-            int16_t nsize=sdg.get_node_size(n.first);
+            int64_t nsize=sdg.get_node_size(n.first);
             //std::cout<<std::endl<<"Matches vs. node "<<n.first<< " ( "<<nsize<<"bp )"<<std::endl;
             auto mi=read_perfect_matches[rid].begin();
             for (auto i=0;i<n.second;++i){//iterate thorugh the node's matches
@@ -143,7 +143,7 @@ std::vector<NodePosition> LongReadsRecruiter::endmatches_to_positions(uint64_t r
             //std::cout<<start_second.node_position<<"<="<<end_size<<"?"<<std::endl;
             if (start_second.node_position<=end_size) nstart=start_first.read_position-start_first.node_position;
             //std::cout<<end_first.node_position<<">="<<nsize-end_size<<"?"<<std::endl;
-            if (end_first.node_position>=nsize-end_size) nend=end_second.read_position+nsize-end_second.node_position;
+            if (end_first.node_position>=nsize-end_size) nend=end_second.read_position-end_second.node_position+nsize;
             //std::cout<<"from matches --> "<<nstart<<" - "<<nend<<std::endl;
             //skip if no end detected
             if (nstart==INT32_MIN and nend==INT32_MIN) continue;
