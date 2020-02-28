@@ -151,11 +151,12 @@ PYBIND11_MODULE(SDGpython, m) {
         .def(py::init<const SequenceDistanceGraph &, const LongReadsDatastore &,uint8_t, uint16_t>(),"sdg"_a,"datastore"_a,"k"_a=25,"f"_a=50)
         .def_readwrite("read_perfect_matches",&LongReadsRecruiter::read_perfect_matches)
         .def_readwrite("node_reads",&LongReadsRecruiter::node_reads)
+        .def_readwrite("read_threads",&LongReadsRecruiter::read_threads)
         .def("dump",&LongReadsRecruiter::dump,"filename"_a)
         .def("load",&LongReadsRecruiter::load,"filename"_a)
         .def("map",&LongReadsRecruiter::perfect_mappings,"hit_size"_a=21,"first_read"_a=1,"last_read"_a=0)
         .def("recruit",&LongReadsRecruiter::recruit_reads,"hit_size"_a=21,"hit_count"_a=1,"first_read"_a=1,"last_read"_a=0)
-        .def("thread_reads",&LongReadsRecruiter::thread_reads,"dg"_a,"end_size"_a,"end_matches"_a)
+        .def("thread_reads",&LongReadsRecruiter::thread_reads,"dg"_a,"end_size"_a,"end_matches"_a,"fill_read_threads"_a)
         .def("endmatches_to_positions",&LongReadsRecruiter::endmatches_to_positions)
         ;
 

@@ -165,16 +165,21 @@ std::vector<NodePosition> LongReadsRecruiter::endmatches_to_positions(uint64_t r
 
         }
     }
+    std::sort(positions.begin(),positions.end());
     return positions;
 }
 
-void LongReadsRecruiter::thread_reads(DistanceGraph &dg, uint32_t end_size, uint16_t matches) {
+void LongReadsRecruiter::thread_reads(DistanceGraph &dg, uint32_t end_size, uint16_t matches, bool fill_read_threads) {
+    if (fill_read_threads) {
+        read_threads.clear();
+        read_threads.resize(read_perfect_matches.size());
+    }
     for (auto rid=1;rid<read_perfect_matches.size();++rid){
         if (read_perfect_matches[rid].empty()) continue;
         //std::cout<<std::endl<<"analysing read "<<rid<<" ( matches from "<<read_perfect_matches[rid].front().read_position<<" to "<<read_perfect_matches[rid].back().read_position<<" )"<<std::endl;
         auto pos=endmatches_to_positions(rid,end_size,matches);
+        if (fill_read_threads) read_threads[rid]=pos;
         if (pos.empty()) continue;
-        std::sort(pos.begin(),pos.end());
         for (auto i=0;i<pos.size()-1;++i){
             //std::cout<<"dg.add_link("<<-pos[i].node<<","<<pos[i+1].node<<","<<pos[i+1].start-pos[i].end<<",{SupportType::LongRead,0,"<<static_cast<uint64_t>(rid)<<"})"<<std::endl;
             dg.add_link(-pos[i].node,pos[i+1].node,pos[i+1].start-pos[i].end,{SupportType::LongRead,0,static_cast<uint64_t>(rid)});
