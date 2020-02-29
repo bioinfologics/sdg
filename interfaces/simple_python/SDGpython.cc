@@ -19,6 +19,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<PerfectMatch>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<PerfectMatch>>);
 PYBIND11_MAKE_OPAQUE(std::vector<uint64_t>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<uint64_t>>);
+PYBIND11_MAKE_OPAQUE(std::vector<std::vector<NodePosition>>);
 
 PYBIND11_MODULE(SDGpython, m) {
 
@@ -168,7 +169,7 @@ PYBIND11_MODULE(SDGpython, m) {
                      return "<NodePosition: node " + std::to_string(np.node) + " @ "+std::to_string(np.start)+":"+std::to_string(np.end)+">";
                  })
             ;
-        ;
+    py::bind_vector<std::vector<std::vector<NodePosition>>>(m, "VectorVectorNodePosition");
 
     py::class_<GraphEditor>(m,"GraphEditor", "A graph editor with operation queue")
         .def(py::init<WorkSpace &>())
