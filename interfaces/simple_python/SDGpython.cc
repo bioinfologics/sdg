@@ -15,9 +15,8 @@
 namespace py = pybind11;
 using namespace py::literals;
 
-PYBIND11_MAKE_OPAQUE(std::vector<PerfectMatch>);
+
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<PerfectMatch>>);
-PYBIND11_MAKE_OPAQUE(std::vector<uint64_t>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<uint64_t>>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<NodePosition>>);
 
