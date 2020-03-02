@@ -289,6 +289,21 @@ float KmerCounter::kci(sgNodeID_t node) {
     }
 }
 
+std::vector<uint64_t> KmerCounter::count_spectra(std::string name, uint16_t maxf, bool unique_in_graph) {
+    std::vector<uint64_t> s(maxf+1);
+    auto &cv=get_count_by_name(name);
+    if (unique_in_graph){
+        for (auto i=0;i<counts[0].size();++i){
+            if (counts[0][i]==1)
+                ++s[(cv[i]>maxf ? maxf : cv[i])];
+        }
+
+    } else {
+        for (auto &c:cv) ++s[(c>maxf ? maxf : c)];
+    }
+    return s;
+}
+
 std::vector<uint16_t> KmerCounter::project_count(const std::string &count_name, const std::string &s) {
     auto cnitr=std::find(count_names.begin(),count_names.end(),count_name);
     if (cnitr!=count_names.end()){

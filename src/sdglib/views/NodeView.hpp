@@ -77,6 +77,7 @@ public:
      */
     std::vector<uint16_t> kmer_coverage(int kcovds_idx,int kcovds_count_idx) const;
 
+    float kci();
     /**
      * @brief Collect all paired reads from a PairedReadsDatastore referred to by name
      * @param datastore_name Name of the datastore to collect the reads from

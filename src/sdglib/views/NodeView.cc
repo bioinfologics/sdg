@@ -71,6 +71,11 @@ std::vector<uint16_t> NodeView::kmer_coverage(int kcovds_idx, int kcovds_count_i
     return dg->sdg.ws.kmer_counters[kcovds_count_idx].project_count(kcovds_count_idx,sequence());
 }
 
+float NodeView::kci() {
+    if (dg->sdg.ws.kmer_counters.empty() or dg->sdg.ws.kmer_counters[0].counts.size()<2) return -1;
+    return dg->sdg.ws.kmer_counters[0].kci(llabs(id));
+}
+
 std::vector<seqID_t> NodeView::get_paired_reads(std::string datastore_name) const {
     std::vector<seqID_t> reads;
     for(auto rm:dg->sdg.ws.get_paired_reads_datastore(datastore_name).mapper.reads_in_node[llabs(id)]) reads.push_back(rm.read_id);
