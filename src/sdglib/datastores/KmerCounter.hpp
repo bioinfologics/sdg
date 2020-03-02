@@ -8,6 +8,7 @@
 #include <vector>
 #include <tuple>
 #include <fstream>
+#include <unordered_map>
 
 enum KmerCountMode{Canonical,NonCanonical};
 
@@ -98,6 +99,16 @@ public:
      */
     std::vector<uint16_t> project_count(const uint16_t count_idx, const std::string &s);
 
+    void set_kci_peak(float f){
+        if (f!=kci_peak_f){
+            kci_peak_f=f;
+            kci_cache.clear();
+        }
+
+    }
+
+    float kci(int64_t node);
+
     void write(std::ofstream & output_file) const;
     void write(std::fstream & output_file) const;
     void write_counts(std::ofstream &count_file) const;
@@ -125,5 +136,7 @@ private:
     const WorkSpace &ws;
     int8_t k;
     KmerCountMode count_mode;
+    float kci_peak_f=-1;
+    std::unordered_map<int64_t, float> kci_cache;
 };
 

@@ -42,6 +42,11 @@ PYBIND11_MODULE(SDGpython, m) {
             .value("stKmerCoverage",SupportType::KmerCoverage)
             .export_values();
 
+    py::enum_<KmerCountMode>(m,"KmerCountMode")
+            .value("Canonical",KmerCountMode::Canonical)
+            .value("NonCanonical",KmerCountMode::NonCanonical)
+            .export_values();
+
     py::class_<Support>(m,"Support","Support for an operation or piece of data")
             .def(py::init<SupportType,uint16_t,uint64_t>(),"","support"_a=SupportType::Undefined,"index"_a=0,"id"_a=0)
             .def_readonly("type",&Support::type)
@@ -128,6 +133,12 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<KmerCounter>(m, "KmerCounters", "A kmer counter container")
             .def("list_names",&KmerCounter::list_names)
             .def("project_count",py::overload_cast<const std::string &, const std::string & >(&KmerCounter::project_count))
+            .def("set_kci_peak",&KmerCounter::set_kci_peak)
+            .def("kci",&KmerCounter::kci,"node"_a)
+            .def("add_count",py::overload_cast<const std::string &, const std::vector<std::string> &,bool>(&KmerCounter::add_count),"name"_a,"input_files"_a,"fastq"_a=true)
+            .def("add_count",py::overload_cast<const std::string &, const PairedReadsDatastore &>(&KmerCounter::add_count),"name"_a,"datastore"_a)
+            .def("add_count",py::overload_cast<const std::string &, const LinkedReadsDatastore &>(&KmerCounter::add_count),"name"_a,"datastore"_a)
+            .def("add_count",py::overload_cast<const std::string &, const LongReadsDatastore &>(&KmerCounter::add_count),"name"_a,"datastore"_a)
             ;
 
     py::class_<WorkSpace>(m, "WorkSpace", "A full SDG WorkSpace")
@@ -137,10 +148,11 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("add_long_reads_datastore",&WorkSpace::add_long_reads_datastore,"datastore"_a,"name"_a="",py::return_value_policy::reference)
             .def("add_paired_reads_datastore",&WorkSpace::add_paired_reads_datastore,"datastore"_a,"name"_a="",py::return_value_policy::reference)
             .def("add_linked_reads_datastore",&WorkSpace::add_linked_reads_datastore,"datastore"_a,"name"_a="",py::return_value_policy::reference)
+            .def("add_kmer_counter",py::overload_cast<const std::string &, uint8_t , KmerCountMode >(&WorkSpace::add_kmer_counter),"name"_a,"k"_a=31,"count_mode"_a=KmerCountMode::Canonical)
             .def("get_long_reads_datastore",&WorkSpace::get_long_reads_datastore,"name"_a,py::return_value_policy::reference)
             .def("get_paired_reads_datastore",&WorkSpace::get_paired_reads_datastore,"name"_a,py::return_value_policy::reference)
             .def("get_linked_reads_datastore",&WorkSpace::get_linked_reads_datastore,"name"_a,py::return_value_policy::reference)
-            .def("get_get_kmer_counter",&WorkSpace::get_kmer_counter,"name"_a,py::return_value_policy::reference)
+            .def("get_kmer_counter",&WorkSpace::get_kmer_counter,"name"_a,py::return_value_policy::reference)
             .def("list_long_reads_datastores",&WorkSpace::list_long_reads_datastores)
             .def("list_linked_reads_datastores",&WorkSpace::list_linked_reads_datastores)
             .def("list_paired_reads_datastores",&WorkSpace::list_paired_reads_datastores)

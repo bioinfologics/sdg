@@ -256,6 +256,39 @@ std::vector<uint16_t> KmerCounter::project_count(const uint16_t count_idx, const
     return kcov;
 }
 
+float KmerCounter::kci(sgNodeID_t node) {
+    try {
+        return kci_cache.at(llabs(node));
+    }
+    catch(const std::out_of_range& oor) {
+        std::vector<uint64_t> skmers;
+        auto &s=ws.sdg.nodes[llabs(node)].sequence;
+        //StringKMerFactory skf(k);
+        //skf.create_kmers(s,skmers);
+        if (count_mode==Canonical) {
+            StringKMerFactory skf(k);
+            skf.create_kmers(s,skmers);
+        } else if (count_mode==NonCanonical) {
+            StringKMerFactoryNC skf(k);
+            skf.create_kmers(s,skmers);
+        }
+        uint64_t totalf=0,count=0;
+        for (auto &kmer: skmers){
+            auto nk = std::lower_bound(kindex.begin(), kindex.end(), kmer);
+
+            if (nk!=kindex.end() and *nk == kmer and counts[0][nk-kindex.begin()]==1) {
+                totalf+=counts[1][nk-kindex.begin()];
+                count+=1;
+            }
+        }
+#pragma omp critical
+        {
+            kci_cache[llabs(node)] = (count>0 ? totalf / (count * kci_peak_f) : -1);
+        }
+        return (count>0 ? totalf / (count * kci_peak_f) : -1);
+    }
+}
+
 std::vector<uint16_t> KmerCounter::project_count(const std::string &count_name, const std::string &s) {
     auto cnitr=std::find(count_names.begin(),count_names.end(),count_name);
     if (cnitr!=count_names.end()){
