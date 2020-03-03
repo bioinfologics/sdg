@@ -273,19 +273,22 @@ float KmerCounter::kci(sgNodeID_t node) {
             skf.create_kmers(s,skmers);
         }
         uint64_t totalf=0,count=0;
+        std::vector<uint64_t> freqs;
+        freqs.reserve(skmers.size());
         for (auto &kmer: skmers){
             auto nk = std::lower_bound(kindex.begin(), kindex.end(), kmer);
 
             if (nk!=kindex.end() and *nk == kmer and counts[0][nk-kindex.begin()]==1) {
-                totalf+=counts[1][nk-kindex.begin()];
-                count+=1;
+                freqs.emplace_back(counts[1][nk-kindex.begin()]);
             }
         }
+        std::sort(freqs.begin(),freqs.end());
+        float nkci=(freqs.size()>10 ? freqs[freqs.size()/2]:-1)/ kci_peak_f;
 #pragma omp critical
         {
-            kci_cache[llabs(node)] = (count>0 ? totalf / (count * kci_peak_f) : -1);
+            kci_cache[llabs(node)] = nkci;
         }
-        return (count>0 ? totalf / (count * kci_peak_f) : -1);
+        return nkci;
     }
 }
 
