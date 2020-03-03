@@ -110,6 +110,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<SequenceDistanceGraph,DistanceGraph>(m, "SequenceDistanceGraph", "A Sequence Distance Graph")
             .def("get_node_size",&SequenceDistanceGraph::get_node_size)
             .def("add_node",py::overload_cast<std::string>(&SequenceDistanceGraph::add_node))
+            .def("remove_node",&SequenceDistanceGraph::remove_node)
             .def("join_all_unitigs",&SequenceDistanceGraph::join_all_unitigs)
             .def("load_from_gfa",&SequenceDistanceGraph::load_from_gfa)
             .def("load_from_fasta",&SequenceDistanceGraph::load_from_fasta)
@@ -141,6 +142,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("add_count",py::overload_cast<const std::string &, const LinkedReadsDatastore &>(&KmerCounter::add_count),"name"_a,"datastore"_a)
             .def("add_count",py::overload_cast<const std::string &, const LongReadsDatastore &>(&KmerCounter::add_count),"name"_a,"datastore"_a)
             .def("count_spectra",&KmerCounter::count_spectra,"name"_a,"max_freq"_a=1000,"unique_in_graph"_a=true)
+            .def("update_graph_counts",&KmerCounter::update_graph_counts)
             ;
 
     py::class_<WorkSpace>(m, "WorkSpace", "A full SDG WorkSpace")

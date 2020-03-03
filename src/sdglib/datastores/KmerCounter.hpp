@@ -47,6 +47,8 @@ public:
 
     void index_sdg();
 
+    void update_graph_counts();
+
     bool operator==(const KmerCounter &o) const {
         return (std::tie(k, kindex, count_names, counts) == std::tie(o.k, o.kindex, o.count_names, o.counts));
     }
@@ -82,6 +84,12 @@ public:
      * @param ds LongReadsDatastore ds
      */
     void add_count(const std::string & count_name, const LongReadsDatastore & datastore);
+
+    /**TODO
+     * @brief Accumulates the kmer count from the DG's nodes, allowing to filter by size and connection status
+     * @param ds LongReadsDatastore ds
+     */
+    //void add_count(const std::string & count_name, const DistanceGraph & dg, uint32_t min_size=0, bool only_connected=true);
 
     /**
      * @brief Retrieves the counts for each kmer in sequence s from count_name

@@ -57,6 +57,44 @@ void KmerCounter::index_sdg() {
     kindex.resize(c.size());
 }
 
+void KmerCounter::update_graph_counts() {
+    for (auto &c:counts[0])c=0;
+
+    std::vector<uint64_t> nkmers;
+    uint64_t not_found=0;
+
+    if (count_mode==Canonical) {
+        StringKMerFactory skf(k);
+        for (auto &n:ws.sdg.nodes) {
+            nkmers.clear();
+            if (n.sequence.size() >= k) {
+                skf.create_kmers(n.sequence, nkmers);
+                for (auto &kmer:nkmers) {
+                    auto kidx=std::lower_bound(kindex.begin(), kindex.end(), kmer);
+                    if (kidx==kindex.end() or *kidx!=kmer) ++not_found;
+                    else ++counts[0][kidx-kindex.begin()];
+                }
+            }
+        }
+    } else if (count_mode==NonCanonical) {
+        StringKMerFactoryNC skf(k);
+        for (auto &n:ws.sdg.nodes) {
+            nkmers.clear();
+            if (n.sequence.size() >= k) {
+                skf.create_kmers(n.sequence, nkmers);
+                for (auto &kmer:nkmers) {
+                    auto kidx=std::lower_bound(kindex.begin(), kindex.end(), kmer);
+                    if (kidx==kindex.end() or *kidx!=kmer) ++not_found;
+                    else ++counts[0][kidx-kindex.begin()];
+                }
+            }
+        }
+    }
+    if (not_found) sdglib::OutputLog()<<"WARNING: "<<not_found<<" kmers not in index when updating graph counts"<<std::endl;
+    //clear kci cache, as it will be invalid since we don't know if the same k-mers are unique in the graph!
+    kci_cache.clear();
+}
+
 void KmerCounter::add_count(const std::string &count_name, const std::vector<std::string> &filenames, bool fastq) {
     if (std::find(count_names.cbegin(), count_names.cend(), count_name) != count_names.cend()) {
         throw std::runtime_error(count_name + " already exists, please use a different name");
