@@ -185,7 +185,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("map",&LongReadsRecruiter::perfect_mappings,"hit_size"_a=21,"first_read"_a=1,"last_read"_a=0)
             .def("recruit",&LongReadsRecruiter::recruit_reads,"hit_size"_a=21,"hit_count"_a=1,"first_read"_a=1,"last_read"_a=0)
             .def("thread_reads",&LongReadsRecruiter::thread_reads,"end_size"_a=500,"end_matches"_a=2)
-            .def("dg_from_threads",&LongReadsRecruiter::dg_from_threads)
+            .def("dg_from_threads",&LongReadsRecruiter::dg_from_threads,"multi_link"_a=false)
             .def("endmatches_to_positions",&LongReadsRecruiter::endmatches_to_positions)
             ;
 

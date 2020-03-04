@@ -179,15 +179,24 @@ void LongReadsRecruiter::thread_reads(uint32_t end_size, uint16_t matches) {
     }
 }
 
-DistanceGraph LongReadsRecruiter::dg_from_threads() {
+DistanceGraph LongReadsRecruiter::dg_from_threads(bool multi_link) {
     DistanceGraph dg(sdg);
     for (auto rid=1;rid<read_threads.size();++rid) {
         auto &pos=read_threads[rid];
         if (pos.empty()) continue;
-        for (auto i = 0; i < pos.size() - 1; ++i) {
-            //std::cout<<"dg.add_link("<<-pos[i].node<<","<<pos[i+1].node<<","<<pos[i+1].start-pos[i].end<<",{SupportType::LongRead,0,"<<static_cast<uint64_t>(rid)<<"})"<<std::endl;
-            dg.add_link(-pos[i].node, pos[i + 1].node, pos[i + 1].start - pos[i].end,
-                        {SupportType::LongRead, 0, static_cast<uint64_t>(rid)});
+        if (multi_link) {
+            for (auto i = 0; i < pos.size() - 1; ++i) {
+                for (auto j = i + 1; j < pos.size(); ++j) {
+                    //std::cout<<"dg.add_link("<<-pos[i].node<<","<<pos[i+1].node<<","<<pos[i+1].start-pos[i].end<<",{SupportType::LongRead,0,"<<static_cast<uint64_t>(rid)<<"})"<<std::endl;
+                    dg.add_link(-pos[i].node, pos[j].node, pos[j].start - pos[i].end, {SupportType::LongRead, 0, static_cast<uint64_t>(rid)});
+                }
+            }
+        }
+        else {
+            for (auto i = 0; i < pos.size() - 1; ++i) {
+                //std::cout<<"dg.add_link("<<-pos[i].node<<","<<pos[i+1].node<<","<<pos[i+1].start-pos[i].end<<",{SupportType::LongRead,0,"<<static_cast<uint64_t>(rid)<<"})"<<std::endl;
+                dg.add_link(-pos[i].node, pos[i + 1].node, pos[i + 1].start - pos[i].end, {SupportType::LongRead, 0, static_cast<uint64_t>(rid)});
+            }
         }
     }
 }
