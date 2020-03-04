@@ -115,7 +115,7 @@ std::vector<NodePosition> LongReadsRecruiter::endmatches_to_positions(uint64_t r
             int64_t nsize=sdg.get_node_size(n.first);
             //std::cout<<std::endl<<"Matches vs. node "<<n.first<< " ( "<<nsize<<"bp )"<<std::endl;
             auto mi=read_perfect_matches[rid].begin();
-            for (auto i=0;i<n.second;++i){//iterate thorugh the node's matches
+            for (auto i=0;i<n.second;++i){//iterate thorugh the node's matches TODO: only iterate through matches in ends? a spurious middle match can be a disaster
                 while (mi->node!=n.first) ++mi; // get to the i-th match to this node
                 //std::cout<<mi->read_position<<" -> "<<mi->node_position;
                 if (i==0) {
@@ -169,20 +169,25 @@ std::vector<NodePosition> LongReadsRecruiter::endmatches_to_positions(uint64_t r
     return positions;
 }
 
-void LongReadsRecruiter::thread_reads(DistanceGraph &dg, uint32_t end_size, uint16_t matches, bool fill_read_threads) {
-    if (fill_read_threads) {
-        read_threads.clear();
-        read_threads.resize(read_perfect_matches.size());
-    }
+void LongReadsRecruiter::thread_reads(uint32_t end_size, uint16_t matches) {
+    read_threads.clear();
+    read_threads.resize(read_perfect_matches.size());
     for (auto rid=1;rid<read_perfect_matches.size();++rid){
         if (read_perfect_matches[rid].empty()) continue;
         //std::cout<<std::endl<<"analysing read "<<rid<<" ( matches from "<<read_perfect_matches[rid].front().read_position<<" to "<<read_perfect_matches[rid].back().read_position<<" )"<<std::endl;
-        auto pos=endmatches_to_positions(rid,end_size,matches);
-        if (fill_read_threads) read_threads[rid]=pos;
+        read_threads[rid]=endmatches_to_positions(rid,end_size,matches);
+    }
+}
+
+DistanceGraph LongReadsRecruiter::dg_from_threads() {
+    DistanceGraph dg(sdg);
+    for (auto rid=1;rid<read_threads.size();++rid) {
+        auto &pos=read_threads[rid];
         if (pos.empty()) continue;
-        for (auto i=0;i<pos.size()-1;++i){
+        for (auto i = 0; i < pos.size() - 1; ++i) {
             //std::cout<<"dg.add_link("<<-pos[i].node<<","<<pos[i+1].node<<","<<pos[i+1].start-pos[i].end<<",{SupportType::LongRead,0,"<<static_cast<uint64_t>(rid)<<"})"<<std::endl;
-            dg.add_link(-pos[i].node,pos[i+1].node,pos[i+1].start-pos[i].end,{SupportType::LongRead,0,static_cast<uint64_t>(rid)});
+            dg.add_link(-pos[i].node, pos[i + 1].node, pos[i + 1].start - pos[i].end,
+                        {SupportType::LongRead, 0, static_cast<uint64_t>(rid)});
         }
     }
 }

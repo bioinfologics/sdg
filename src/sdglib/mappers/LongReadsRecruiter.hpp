@@ -50,7 +50,8 @@ public:
     void reset_recruitment();
 
     std::vector<NodePosition> endmatches_to_positions(uint64_t rid,int32_t end_size, uint16_t matches);
-    void thread_reads(DistanceGraph &dg,uint32_t end_size, uint16_t matches, bool fill_read_nodes=true); //uses endmatches_to_positions
+    void thread_reads(uint32_t end_size, uint16_t matches); //uses endmatches_to_positions
+    DistanceGraph dg_from_threads();
 
     const SequenceDistanceGraph & sdg;
     const LongReadsDatastore &datastore;
