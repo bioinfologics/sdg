@@ -211,6 +211,9 @@ add_library(sdg_static STATIC
             ${source_files}
             )
 
+target_link_libraries(sdg ${DEPENDENCY_LIBS})
+target_link_libraries(sdg_static ${DEPENDENCY_LIBS})
+
 if (BUILD_COV)
     set_target_properties(sdg PROPERTIES
             COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
