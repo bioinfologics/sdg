@@ -211,22 +211,6 @@ add_library(sdg_static STATIC
             ${source_files}
             )
 
-add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/deps/minimap2/libminimap2.a
-        COMMAND make
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/deps/minimap2/
-        )
-
-add_custom_target(
-        libminimap2
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/deps/minimap2/libminimap2.a
-)
-
-add_dependencies(sdg libminimap2)
-add_dependencies(sdg_static libminimap2)
-
-target_link_libraries(sdg ${DEPENDENCY_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/deps/minimap2/libminimap2.a)
-target_link_libraries(sdg_static ${DEPENDENCY_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/deps/minimap2/libminimap2.a)
-
 if (BUILD_COV)
     set_target_properties(sdg PROPERTIES
             COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
