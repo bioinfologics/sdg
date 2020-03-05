@@ -51,7 +51,7 @@ public:
 
     std::vector<NodePosition> endmatches_to_positions(uint64_t rid,int32_t end_size, uint16_t matches);
     void thread_reads(uint32_t end_size, uint16_t matches); //uses endmatches_to_positions
-    DistanceGraph dg_from_threads(bool multi_link);
+    DistanceGraph dg_from_threads(bool multi_link=false);
 
     const SequenceDistanceGraph & sdg;
     const LongReadsDatastore &datastore;
