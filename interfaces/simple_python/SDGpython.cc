@@ -190,6 +190,7 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<NodePosition>(m,"NodePosition", "A node position in a LRR")
+            .def(py::init<sgNodeID_t ,int32_t ,int32_t >(),"node"_a,"start"_a,"end"_a)
             .def_readwrite("node",&NodePosition::node)
             .def_readwrite("start",&NodePosition::start)
             .def_readwrite("end",&NodePosition::end)
