@@ -11,6 +11,7 @@
 #include <sdglib/mappers/LongReadsRecruiter.hpp>
 #include <sdglib/processors/GraphEditor.hpp>
 #include <sdglib/processors/LinkageUntangler.hpp>
+#include <sdglib/processors/GraphContigger.hpp>
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -119,6 +120,11 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<PairedReadsDatastore>(m, "PairedReadsDatastore", "A Paired Reads Datastore")
             .def("size",&PairedReadsDatastore::size)
             .def("get_read_sequence",&PairedReadsDatastore::get_read_sequence)
+            .def_readwrite("mapper",&PairedReadsDatastore::mapper)
+            ;
+
+    py::class_<PairedReadsMapper>(m, "PairedReadsMapper", "A Paired Reads Mapper")
+            .def("path_reads63",&PairedReadsMapper::path_reads63)
             ;
     py::class_<LinkedReadsDatastore>(m, "LinkedReadsDatastore", "A Linked Reads Datastore")
             .def("size",&LinkedReadsDatastore::size)
@@ -213,5 +219,11 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readonly("selected_nodes",&LinkageUntangler::selected_nodes)
             .def("select_linear_anchors",&LinkageUntangler::select_linear_anchors,"min_links"_a=3,"min_transitive_links"_a=2)
             .def("make_nextselected_linkage",&LinkageUntangler::make_nextselected_linkage,"min_links"_a=3)
+            ;
+
+    py::class_<GraphContigger>(m,"GraphContigger","Paired end contigger")
+            .def(py::init<WorkSpace &>())
+            .def("solve_canonical_repeats_with_single_paths",&GraphContigger::solve_canonical_repeats_with_single_paths,"datastore"_a,"min_support"_a,"max_noise"_a,"snr"_a=10)
+            .def("solve_canonical_repeats_with_paired_paths",&GraphContigger::solve_canonical_repeats_with_paired_paths,"datastore"_a,"min_support"_a,"max_noise"_a,"snr"_a=10)
             ;
 }
