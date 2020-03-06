@@ -321,7 +321,7 @@ float KmerCounter::kci(sgNodeID_t node) {
             }
         }
         std::sort(freqs.begin(),freqs.end());
-        float nkci=(freqs.size()>10 ? freqs[freqs.size()/2]:-1)/ kci_peak_f;
+        float nkci=(freqs.size()>10 ? freqs[freqs.size()/2]/ kci_peak_f:-1);
 #pragma omp critical
         {
             kci_cache[llabs(node)] = nkci;
