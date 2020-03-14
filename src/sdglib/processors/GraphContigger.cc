@@ -7,6 +7,22 @@
 #include <sdglib/views/NodeView.hpp>
 
 
+void GraphContigger::pop_bubbles(const PairedReadsDatastore &prds, int bubble_size, int min_support, int max_noise,
+                                    float snr) {
+    std::set<sgNodeID_t> to_delete;
+    for (auto &nv:ws.sdg.get_all_nodeviews()) {
+        if (nv.size() > bubble_size) continue;
+        auto p = nv.parallels();
+        if (p.size() != 1) continue;
+        auto noise = prds.mapper.paths_in_node[nv.node_id()].size();
+        if (noise > max_noise) continue;
+        auto support = prds.mapper.paths_in_node[llabs(p[0].node_id())].size();
+        if (support < min_support or (noise > 0 and (float) support / noise < snr)) continue;
+        to_delete.insert(nv.node_id());
+    }
+    for (auto n:to_delete) ws.sdg.remove_node(n);
+    ws.sdg.join_all_unitigs();
+}
 
 void GraphContigger::solve_canonical_repeats_with_single_paths(const PairedReadsDatastore & prds,int min_support, int max_noise, float snr) {
     GraphEditor ge(ws);
@@ -80,7 +96,10 @@ void GraphContigger::solve_canonical_repeats_with_paired_paths(const PairedReads
         std::vector<std::pair<sgNodeID_t, sgNodeID_t >> through;
         bool non_canonical = false;
         if (nvp.size()>1 and nvp.size() == nvn.size()) {
-
+            bool stop=false;
+            for (auto &l:nvp) if (l.node().next().size()>1) stop=true;
+            for (auto &l:nvn) if (l.node().prev().size()>1) stop=true;
+            if (stop) continue;
             std::unordered_map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> through_counts;
             for (auto &p:nvp) {
                 auto pn = p.node().node_id();
@@ -151,7 +170,7 @@ void GraphContigger::solve_canonical_repeats_with_paired_paths(const PairedReads
 }
 
 
-void GraphContigger::tip_clipping(int tip_size, int rounds) {
+void GraphContigger::clip_tips(int tip_size, int rounds) {
     for (auto r=0;r<rounds;++r) {
         std::set<sgNodeID_t> to_delete;
         for (auto &nv:ws.sdg.get_all_nodeviews()){

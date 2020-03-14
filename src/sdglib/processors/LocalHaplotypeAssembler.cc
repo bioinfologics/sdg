@@ -362,7 +362,7 @@ void LocalHaplotypeAssembler::assemble(int k, int min_cov, bool tag_cov, bool si
     GraphMaker gm(assembly);
     gm.new_graph_from_kmerset_trivial128(ltkmers128, k);
     GraphContigger gc(ws);
-    gc.tip_clipping(200);
+    gc.clip_tips(200);
     if (simplify) {
         gc.remove_small_unconnected(500);
         //path_all_reads();
