@@ -15,7 +15,12 @@ void GraphContigger::solve_canonical_repeats_with_single_paths(const PairedReads
     for (auto & nv :ws.sdg.get_all_nodeviews()){
         auto nvp=nv.prev();
         auto nvn=nv.next();
-        if (nvp.size()!=2 or nvn.size()!=2) continue;
+        if (nvp.size()!=2 or nvn.size()!=2) continue;//XXX: it should check the nodes in and out have only one connection to this node too!!!!
+        if (nvp[0].node().next().size()!=1
+            or nvp[1].node().next().size()!=1
+            or nvn[0].node().prev().size()!=1
+            or nvn[1].node().prev().size()!=1)
+            continue;
         //sdglib::OutputLog()<<"repeat on node "<<nv<<std::endl;
         ++repeats;
         std::unordered_map<std::pair<sgNodeID_t,sgNodeID_t>,uint64_t> through;
