@@ -146,39 +146,17 @@ void GraphContigger::solve_canonical_repeats_with_paired_paths(const PairedReads
 }
 
 
-void GraphContigger::tip_clipping(int tip_size) {
-    while (true) {
+void GraphContigger::tip_clipping(int tip_size, int rounds) {
+    for (auto r=0;r<rounds;++r) {
         std::set<sgNodeID_t> to_delete;
-        for (sgNodeID_t n = 1; n < ws.sdg.nodes.size(); ++n) {
-            if (ws.sdg.nodes[n].status == NodeStatus::Deleted) continue;
-            if (ws.sdg.nodes[n].sequence.size() > tip_size) continue;
-            //std::cout<<"Evaluating seq"<<n<<": ";
-            auto fwl = ws.sdg.get_fw_links(n);
-            auto bwl = ws.sdg.get_bw_links(n);
-            //std::cout<<" fwl: "<<fwl.size()<<"  bwl: "<<bwl.size();
-            if (fwl.size() == 1 and bwl.size() == 0) {
-                //std::cout<<"  bwl for "<<fwl[0].dest<<": "<<dbg.get_bw_links(fwl[0].dest).size();
-                if (ws.sdg.get_bw_links(fwl[0].dest).size() >1 ) {
-                    //TODO: this shoudl actually check that at least one connection is to a larger node.
-                    to_delete.insert(n);
-                    //std::cout<<" D"<<std::endl;
-                }
-            }
-            if (fwl.size() == 0 and bwl.size() == 1) {
-                //std::cout<<"  fwl for "<<-bwl[0].dest<<": "<<dbg.get_fw_links(-bwl[0].dest).size();
-                if (ws.sdg.get_fw_links(-bwl[0].dest).size() >1 ) {
-                    //TODO: this shoudl actually check that at least one connection is to a larger node.
-                    to_delete.insert(n);
-                    //std::cout<<" D"<<std::endl;
-                }
-            }
-            if (fwl.size() == 0 and bwl.size() == 0) to_delete.insert(n); //this removes unconnected!
-            //std::cout<<std::endl;
+        for (auto &nv:ws.sdg.get_all_nodeviews()){
+            if (nv.size()<=tip_size and (nv.prev().size()==0 or nv.next().size()==0))
+                to_delete.insert(nv.node_id());
         }
         //std::cout << "Nodes to delete: " << to_delete.size() << std::endl;
         for (auto n:to_delete) ws.sdg.remove_node(n);
         auto utc = ws.sdg.join_all_unitigs();
-        if (to_delete.size()==0 and utc==0) break;
+        if (to_delete.empty() and utc==0) break;
     }
 }
 
