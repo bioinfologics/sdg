@@ -6,6 +6,26 @@
 #include <sdglib/batch_counter/BatchKmersCounter.hpp>
 #include "GraphMaker.hpp"
 
+struct sbcont {
+    unsigned int fA:1;
+    unsigned int fC:1;
+    unsigned int fG:1;
+    unsigned int fT:1;
+    unsigned int bA:1;
+    unsigned int bC:1;
+    unsigned int bG:1;
+    unsigned int bT:1;
+};
+
+struct fb {
+    unsigned int fw:4;
+    unsigned int bw:4;
+};
+union kcontext {
+    struct fb fb;
+    struct sbcont sbcont;
+};
+
 std::string kmer_to_sequence(uint64_t kmer, uint8_t k) {
     std::string seq;
     seq.reserve(k);
@@ -469,7 +489,13 @@ inline void get_bw_idxs(std::vector<klidxs> &out, const __uint128_t kmer, uint8_
     }
 }
 
-bool is_end_bw(const __uint128_t &kmer, uint8_t &k,const std::vector<__uint128_t> & kmerlist){
+template<class T>
+inline bool in_sorted_vector(const std::vector<T> &V,T VAL) {
+    auto itr=lower_bound(V.begin(),V.end(),VAL);
+    return itr!=V.end() and *itr==VAL;
+}
+
+bool is_end_bw_f(const __uint128_t &kmer, uint8_t &k,const std::vector<__uint128_t> & kmerlist){
     std::vector<klidxs> next;
     get_bw_idxs(next,kmer,k,kmerlist);
     if (next.size()!=1) return true;
@@ -479,7 +505,7 @@ bool is_end_bw(const __uint128_t &kmer, uint8_t &k,const std::vector<__uint128_t
     return false;
 }
 
-bool is_end_fw(const __uint128_t &kmer, uint8_t &k,const std::vector<__uint128_t> & kmerlist){
+bool is_end_fw_f(const __uint128_t &kmer, uint8_t &k,const std::vector<__uint128_t> & kmerlist){
     std::vector<klidxs> next;
     get_fw_idxs(next,kmer,k,kmerlist);
     if (next.size()!=1) return true;
@@ -521,15 +547,72 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
     std::string s;
     s.reserve(1000000); //avoid contig-sequence growth
     std::vector<bool> used_kmers(kmerlist.size());
-    std::vector<klidxs> bw,fw;
+    std::vector<kcontext> kcontextlist(kmerlist.size());
+    std::vector<bool> is_end_fw(kmerlist.size());
+    std::vector<bool> is_end_bw(kmerlist.size());
+    sdglib::OutputLog()<<"Finding neighbours"<<std::endl;
+#pragma omp parallel for
+    for (auto i=0;i<kmerlist.size();++i){
+        auto fns=kmer_fw_neighbours128(kmerlist[i], k);
+        auto &c=kcontextlist[i];
+        c.fb.fw=0;
+        c.fb.bw=0;
+        if (in_sorted_vector(kmerlist,kmer_cannonical128(fns[0],k))) c.sbcont.fA=1;
+        if (in_sorted_vector(kmerlist,kmer_cannonical128(fns[1],k))) c.sbcont.fC=1;
+        if (in_sorted_vector(kmerlist,kmer_cannonical128(fns[2],k))) c.sbcont.fG=1;
+        if (in_sorted_vector(kmerlist,kmer_cannonical128(fns[3],k))) c.sbcont.fT=1;
+        auto bns=kmer_bw_neighbours128(kmerlist[i], k);
+        if (in_sorted_vector(kmerlist,kmer_cannonical128(bns[0],k))) c.sbcont.bA=1;
+        if (in_sorted_vector(kmerlist,kmer_cannonical128(bns[1],k))) c.sbcont.bC=1;
+        if (in_sorted_vector(kmerlist,kmer_cannonical128(bns[2],k))) c.sbcont.bG=1;
+        if (in_sorted_vector(kmerlist,kmer_cannonical128(bns[3],k))) c.sbcont.bT=1;
+    }
+    sdglib::OutputLog()<<"Marking ends"<<std::endl;
+#pragma omp parallel for
+    for (auto i=0;i<kmerlist.size();++i) {
+        auto &c=kcontextlist[i];
+        if (c.fb.bw!=1 and c.fb.bw!=2 and c.fb.bw!=4 and c.fb.bw!=8 ) {
+            is_end_bw[i]=true;
+        } else {
+            int nn;
+            if (c.sbcont.bA) nn=0;
+            else if (c.sbcont.bC) nn=1;
+            else if (c.sbcont.bG) nn=2;
+            else if (c.sbcont.bT) nn=3;
+            auto next=kmer_bw_neighbours128(kmerlist[i],k)[nn];
+            auto cnext=kmer_cannonical128(next,k);
+            auto ni=std::lower_bound(kmerlist.begin(),kmerlist.end(),cnext)-kmerlist.begin();
+            auto &nc=kcontextlist[ni];
+            if (next==cnext and nc.fb.fw!=1 and nc.fb.fw!=2 and nc.fb.fw!=4 and nc.fb.fw!=8) is_end_bw[i]=true;
+            if (next!=cnext and nc.fb.bw!=1 and nc.fb.bw!=2 and nc.fb.bw!=4 and nc.fb.bw!=8) is_end_bw[i]=true;
+        }
+        if (c.fb.fw!=1 and c.fb.fw!=2 and c.fb.fw!=4 and c.fb.fw!=8 ) {
+            is_end_fw[i]=true;
+        } else {
+            int nn;
+            if (c.sbcont.fA) nn=0;
+            else if (c.sbcont.fC) nn=1;
+            else if (c.sbcont.fG) nn=2;
+            else if (c.sbcont.fT) nn=3;
+            auto next=kmer_fw_neighbours128(kmerlist[i],k)[nn];
+            auto cnext=kmer_cannonical128(next,k);
+            auto ni=std::lower_bound(kmerlist.begin(),kmerlist.end(),cnext)-kmerlist.begin();
+            auto &nc=kcontextlist[ni];
+            if (next==cnext and nc.fb.bw!=1 and nc.fb.bw!=2 and nc.fb.bw!=4 and nc.fb.bw!=8) is_end_fw[i]=true;
+            if (next!=cnext and nc.fb.fw!=1 and nc.fb.fw!=2 and nc.fb.fw!=4 and nc.fb.fw!=8) is_end_fw[i]=true;
+        }
+    }
+    sdglib::OutputLog()<<"Creating unitigs"<<std::endl;
 
     for (uint64_t start_kmer_idx=0;start_kmer_idx<kmerlist.size();++start_kmer_idx) {
         if (used_kmers[start_kmer_idx]) continue; //any kmer can only belong to one unitig.ww
 
         //Check this k-mer is an end/junction
         auto start_kmer = kmerlist[start_kmer_idx];
-        bool end_bw = is_end_bw(start_kmer, k, kmerlist);
-        auto end_fw = is_end_fw_fast(start_kmer, k, kmerlist);
+
+
+        auto end_bw=is_end_bw[start_kmer_idx];
+        auto end_fw=is_end_fw[start_kmer_idx];
 
         if (!end_bw and !end_fw) continue;
 
@@ -542,16 +625,17 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
             //make sure the unitig starts on FW
 
             auto current_kmer = start_kmer;
+            auto current_idx = start_kmer_idx;
             used_kmers[start_kmer_idx] = true;
 
             if (end_fw) {
                 current_kmer = kmer_reverse128(start_kmer, k);
-                end_fw = end_bw;
+                std::swap(end_fw,end_bw);
             }
+
             //Add kmer as unitig
             s=kmer_to_sequence128(current_kmer, k);
 
-            std::vector<klidxs> fwn;
             unsigned char nucleotides[4] = {'A', 'C', 'G', 'T'};
 
 
@@ -559,17 +643,35 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
             //std::cout<<"Starting sequence construction at kmer "<<kmer_to_sequence128(current_kmer,k)<<std::endl;
             while (!end_fw) {
                 //Add end nucleotide, update current_kmer;
-                get_fw_idxs(fwn, current_kmer, k, kmerlist);
-                current_kmer = fwn[0].kmer;
-                if (used_kmers[fwn[0].idx]) break; //this should never happen, since these have ends.
-                used_kmers[fwn[0].idx]=true;
+                //get_fw_idxs(fwn, current_kmer, k, kmerlist);
+                auto c=kcontextlist[current_idx];
+                int nn;
+                if (kmer_cannonical128(current_kmer,k)==current_kmer) {
+                    if (c.sbcont.fA) nn = 0;
+                    else if (c.sbcont.fC) nn = 1;
+                    else if (c.sbcont.fG) nn = 2;
+                    else if (c.sbcont.fT) nn = 3;
+                }
+                else{
+                    if (c.sbcont.bA) nn = 3;
+                    else if (c.sbcont.bC) nn = 2;
+                    else if (c.sbcont.bG) nn = 1;
+                    else if (c.sbcont.bT) nn = 0;
+                }
+                current_kmer=kmer_fw_neighbours128(current_kmer,k)[nn];
+                auto ccurr=kmer_cannonical128(current_kmer,k);
+                current_idx=std::lower_bound(kmerlist.begin(),kmerlist.end(),ccurr)-kmerlist.begin();
+                if (used_kmers[current_idx]) break; //this should never happen, since these have ends.
+                used_kmers[current_idx]=true;
                 s.push_back(nucleotides[current_kmer % 4]);
-                end_fw = is_end_fw_fast(current_kmer, k, kmerlist);
+                if (ccurr==current_kmer) end_fw = is_end_fw[current_idx];
+                else end_fw = is_end_bw[current_idx];
             }
         }
         sg.add_node(Node(s));
         if (!sg.nodes.back().is_canonical()) sg.nodes.back().make_rc();//inefficient, but once in a node
     }
+    sdglib::OutputLog()<<sg.nodes.size()<<" unitigs"<<std::endl;
     //If there are any perfect circles, they won't have ends, so just pick any unused kmer and go fw till you find the same k-mer fw.
     //(this is going to be even tricker to parallelise)
     sdglib::OutputLog()<<"doing the circles now"<<std::endl;
@@ -578,7 +680,6 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
 
         //Check this k-mer is an end/junction
         auto start_kmer = kmerlist[start_kmer_idx];
-        auto end_fw = is_end_fw_fast(start_kmer, k, kmerlist);
         std::vector<klidxs> fwn;
         unsigned char nucleotides[4] = {'A', 'C', 'G', 'T'};
         auto current_kmer = start_kmer;
@@ -596,6 +697,7 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
         sg.add_node(Node(s));
         if (!sg.nodes.back().is_canonical()) sg.nodes.back().make_rc();//inefficient, but once in a node
     }
+    sdglib::OutputLog()<<sg.nodes.size()<<" unitigs"<<std::endl;
 
     //save the (k-1)mer in (rev on first k-1 / fw on last k-1) or out ( fw on first k-1 / bw on last k-1)
     std::vector<std::pair<__uint128_t,sgNodeID_t>> in, out;
