@@ -356,6 +356,10 @@ void PairedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
     populate_orientation();
 }
 
+bool inline are_complement(const char &A,const char &B){
+    return (A=='A' and B=='T') or (A=='C' and B=='G') or (A=='G' and B=='C') or (A=='T' and B=='A');
+}
+
 void PairedReadsMapper::path_reads63() {
     const int k = 63;
     Unique63merIndex ukindex(ws.sdg);
@@ -368,10 +372,9 @@ void PairedReadsMapper::path_reads63() {
      */
     uint64_t thread_mapped_count[omp_get_max_threads()],thread_total_count[omp_get_max_threads()],thread_multimap_count[omp_get_max_threads()];
     std::vector<ReadMapping> thread_mapping_results[omp_get_max_threads()];
-    sdglib::OutputLog(sdglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
+    sdglib::OutputLog()<<"Mapping with "<<omp_get_max_threads()<<" threads"<<std::endl;
 #pragma omp parallel
     {
-        const int min_matches=1;
         std::vector<KmerIDX128> readkmers;
         StreamKmerIDXFactory128 skf(63);
         auto blrs=ReadSequenceBuffer(datastore,128*1024,datastore.readsize*2+2);
@@ -382,8 +385,6 @@ void PairedReadsMapper::path_reads63() {
         mapped_count=0;
         total_count=0;
         multimap_count=0;
-        bool c ;
-        //std::cout<<omp_get_thread_num()<<std::endl;
 #pragma omp for
         for (uint64_t readID=1;readID<read_paths.size();++readID) {
             auto &path=read_paths[readID].path;
@@ -395,12 +396,30 @@ void PairedReadsMapper::path_reads63() {
             if (readkmers.size()==0) {
                 ++nokmers;
             }
-            for (auto &rk:readkmers) {
+            //lookup for kmer, but extend on current sequence until missmatch or end
+            for (auto rki=0;rki<readkmers.size();++rki) {
+                auto &rk=readkmers[rki];
                 auto nk = ukindex.find(rk.kmer);
                 if (ukindex.end()!=nk) {
                     //get the node just as node
                     sgNodeID_t nknode = nk->second.node;
                     if (rk.contigID<0) nknode=-nknode;
+                    if ( nknode>0 ) {
+                        auto cpos = nk->second.pos + k;
+                        while (rki < readkmers.size()
+                               and cpos < ws.sdg.nodes[nknode].sequence.size()
+                               and ws.sdg.nodes[nknode].sequence[cpos] == seq[rki + k]) {
+                            ++cpos, ++rki;
+                        }
+                    }
+                    else {
+                        int32_t cpos = nk->second.pos-1;
+                        while (rki < readkmers.size()
+                               and cpos >= 0
+                               and are_complement(ws.sdg.nodes[-nknode].sequence[cpos],seq[rki + k])) {
+                            --cpos, ++rki;
+                        }
+                    }
                     if (path.empty() or path.back()!=nknode) path.emplace_back(nknode);
                 }
             }
