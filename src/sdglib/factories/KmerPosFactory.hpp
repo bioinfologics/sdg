@@ -35,12 +35,12 @@ public:
                 if (fkmer <= rkmer) {
                     // Is fwd
                     pos.node=currentRecord.id;
-                    pos.pos=p;
+                    pos.pos=p-K;
                     mers.emplace_back(fkmer, pos);
                 } else {
                     // Is bwd
                     pos.node=-currentRecord.id;
-                    pos.pos=p;
+                    pos.pos=p-K;
                     mers.emplace_back(rkmer, pos);
                 }
             }
@@ -80,12 +80,12 @@ public:
                 if (fkmer <= rkmer) {
                     // Is fwd
                     pos.node=currentRecord.id;
-                    pos.pos=p;
+                    pos.pos=p-K;
                     mers.emplace_back(fkmer, pos);
                 } else {
                     // Is bwd
                     pos.node=-currentRecord.id;
-                    pos.pos=p;
+                    pos.pos=p-K;
                     mers.emplace_back(rkmer, pos);
                 }
             }
