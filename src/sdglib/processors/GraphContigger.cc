@@ -84,6 +84,7 @@ void GraphContigger::solve_canonical_repeats_with_single_paths(const PairedReads
     }
     sdglib::OutputLog()<<"Contigger repeat_expansion: "<<solved_repeats<<" / "<<repeats<<std::endl;
     ge.apply_all();
+    ws.sdg.join_all_unitigs();
 }
 
 void GraphContigger::solve_canonical_repeats_with_paired_paths(const PairedReadsDatastore & prds,int min_support, int max_noise, float snr) {
@@ -167,6 +168,7 @@ void GraphContigger::solve_canonical_repeats_with_paired_paths(const PairedReads
         }
     }
     ge.apply_all();
+    ws.sdg.join_all_unitigs();
 }
 
 
