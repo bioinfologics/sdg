@@ -440,7 +440,7 @@ void PairedReadsMapper::path_reads63() {
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Reads without k-mers: "<<nokmers<<std::endl;
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Reads mapped: "<<mapped_count<<" / "<<total_count<<" ("<<multimap_count<<" multi-node paths)"<<std::endl;
 
-    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Reserving paths_in_node"<<std::endl;
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Creating paths_in_node"<<std::endl;
     //first pass, size computing for vector allocation;
     std::vector<uint64_t> path_counts(ws.sdg.nodes.size());
     for (auto i=0;i<read_paths.size();++i){
@@ -453,7 +453,6 @@ void PairedReadsMapper::path_reads63() {
     paths_in_node.clear();
     paths_in_node.resize(path_counts.size());
     for (auto i=0;i<path_counts.size();++i) paths_in_node[i].reserve(path_counts[i]);
-    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Filling paths_in_node"<<std::endl;
     for (auto i=0;i<read_paths.size();++i){
         const auto &p=read_paths[i];
         for (const auto &n:p.path){
@@ -461,7 +460,7 @@ void PairedReadsMapper::path_reads63() {
             if (paths_in_node[llabs(n)].empty() or paths_in_node[llabs(n)].back()!=pid) paths_in_node[llabs(n)].emplace_back(pid);
         }
     }
-    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"paths_in_node filled"<<std::endl;
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"pathing finished"<<std::endl;
 }
 
 ///**
