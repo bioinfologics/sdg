@@ -20,12 +20,16 @@ using namespace py::literals;
 
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<PerfectMatch>>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<uint64_t>>);
+PYBIND11_MAKE_OPAQUE(std::vector<std::vector<int64_t>>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<NodePosition>>);
+PYBIND11_MAKE_OPAQUE(std::vector<ReadPath>);
 
 PYBIND11_MODULE(SDGpython, m) {
 
     py::bind_vector<std::vector<uint64_t>>(m, "VectorU64");
     py::bind_vector<std::vector<std::vector<uint64_t>>>(m, "VectorVectorU64");
+    py::bind_vector<std::vector<int64_t>>(m, "Vector64");
+    py::bind_vector<std::vector<std::vector<int64_t>>>(m, "VectorVector64");
     py::enum_<NodeStatus>(m,"NodeStatus")
             .value("Active",NodeStatus::Active)
             .value("Deleted",NodeStatus::Deleted)
@@ -124,8 +128,16 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("mapper",&PairedReadsDatastore::mapper)
             ;
 
+    py::class_<ReadPath>(m, "ReadPath", "A Paired Reads ReadPath")
+            .def_readonly("offset",&ReadPath::offset)
+            .def_readonly("path",&ReadPath::path)
+            ;
+    py::bind_vector<std::vector<ReadPath>>(m, "VectorReadPath");
+
     py::class_<PairedReadsMapper>(m, "PairedReadsMapper", "A Paired Reads Mapper")
             .def("path_reads63",&PairedReadsMapper::path_reads63)
+            .def_readonly("paths_in_node",&PairedReadsMapper::paths_in_node)
+            .def_readonly("read_paths",&PairedReadsMapper::read_paths)
             ;
     py::class_<LinkedReadsDatastore>(m, "LinkedReadsDatastore", "A Linked Reads Datastore")
             .def("size",&LinkedReadsDatastore::size)
