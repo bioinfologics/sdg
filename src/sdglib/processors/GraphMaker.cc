@@ -552,7 +552,7 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
     std::vector<bool> is_end_bw(kmerlist.size());
     sdglib::OutputLog()<<"Finding neighbours"<<std::endl;
 #pragma omp parallel for
-    for (auto i=0;i<kmerlist.size();++i){
+    for (uint64_t i=0;i<kmerlist.size();++i){
         auto fns=kmer_fw_neighbours128(kmerlist[i], k);
         auto &c=kcontextlist[i];
         c.fb.fw=0;
@@ -569,7 +569,7 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
     }
     sdglib::OutputLog()<<"Marking ends"<<std::endl;
 #pragma omp parallel for
-    for (auto i=0;i<kmerlist.size();++i) {
+    for (uint64_t i=0;i<kmerlist.size();++i) {
         auto &c=kcontextlist[i];
         if (c.fb.bw!=1 and c.fb.bw!=2 and c.fb.bw!=4 and c.fb.bw!=8 ) {
             is_end_bw[i]=true;
@@ -704,7 +704,7 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
     in.reserve(2*sg.nodes.size());
     out.reserve(2*sg.nodes.size());
     CStringKMerFactory128 skf_ovl(k-1);
-    for (auto nid=1;nid<sg.nodes.size();++nid){
+    for (uint64_t nid=1;nid<sg.nodes.size();++nid){
         std::vector<std::pair<__uint128_t,bool>> first,last;
         skf_ovl.create_kmers_direction(first,sg.nodes[nid].sequence.substr(0,k-1).c_str());
         if (first[0].second) out.emplace_back(first[0].first,nid);
