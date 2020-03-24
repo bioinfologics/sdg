@@ -330,7 +330,7 @@ float KmerCounter::kci(sgNodeID_t node) {
     }
 }
 
-std::vector<uint64_t> KmerCounter::count_spectra(std::string name, uint16_t maxf, bool unique_in_graph) {
+std::vector<uint64_t> KmerCounter::count_spectra(std::string name, uint16_t maxf, bool unique_in_graph, bool present_in_graph) {
     std::vector<uint64_t> s(maxf+1);
     auto &cv=get_count_by_name(name);
     if (unique_in_graph){
@@ -340,7 +340,10 @@ std::vector<uint64_t> KmerCounter::count_spectra(std::string name, uint16_t maxf
         }
 
     } else {
-        for (auto &c:cv) ++s[(c>maxf ? maxf : c)];
+        for (auto i=0;i<counts[0].size();++i){
+            if ((not present_in_graph) or counts[0][i]>0)
+                ++s[(cv[i]>maxf ? maxf : cv[i])];
+        }
     }
     return s;
 }

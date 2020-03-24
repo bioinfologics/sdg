@@ -117,7 +117,7 @@ public:
 
     float kci(int64_t node);
 
-    std::vector<uint64_t> count_spectra(std::string name, uint16_t maxf=1000, bool unique_in_graph=false);
+    std::vector<uint64_t> count_spectra(std::string name, uint16_t maxf=1000, bool unique_in_graph=false, bool present_in_graph=true);
 
     void write(std::ofstream & output_file) const;
     void write(std::fstream & output_file) const;
