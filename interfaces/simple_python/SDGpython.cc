@@ -138,6 +138,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("path_reads63",&PairedReadsMapper::path_reads63)
             .def_readonly("paths_in_node",&PairedReadsMapper::paths_in_node)
             .def_readonly("read_paths",&PairedReadsMapper::read_paths)
+            .def("dump_readpaths",&PairedReadsMapper::dump_readpaths)
+            .def("load_readpaths",&PairedReadsMapper::load_readpaths)
             ;
     py::class_<LinkedReadsDatastore>(m, "LinkedReadsDatastore", "A Linked Reads Datastore")
             .def("size",&LinkedReadsDatastore::size)
