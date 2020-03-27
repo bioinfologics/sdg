@@ -111,6 +111,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("name",&DistanceGraph::name)
             .def("write_to_gfa1",&DistanceGraph::write_to_gfa1,"filename"_a,"selected_nodes"_a=std::vector<sgNodeID_t>(),"depths"_a=std::vector<sgNodeID_t>())
             .def("write_to_gfa2",&DistanceGraph::write_to_gfa2)
+            .def("are_connected",&DistanceGraph::are_connected,"node1"_a, "node2"_a)
+            .def("find_all_paths_between",&DistanceGraph::find_all_paths_between,"from"_a,"to"_a,"max_size"_a,"max_nodes"_a,"abort_on_loops"_a)
             ;
 
     py::class_<SequenceDistanceGraph,DistanceGraph>(m, "SequenceDistanceGraph", "A Sequence Distance Graph")
@@ -120,6 +122,11 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("join_all_unitigs",&SequenceDistanceGraph::join_all_unitigs)
             .def("load_from_gfa",&SequenceDistanceGraph::load_from_gfa)
             .def("load_from_fasta",&SequenceDistanceGraph::load_from_fasta)
+            ;
+
+    py::class_<SequenceDistanceGraphPath>(m, "SequenceDistanceGraphPath", "SequenceDistanceGraphPath")
+            .def("sequence", &SequenceDistanceGraphPath::sequence)
+            .def("getNodes", py::overload_cast<>(&SequenceDistanceGraphPath::getNodes, py::const_))
             ;
 
     py::class_<PairedReadsDatastore>(m, "PairedReadsDatastore", "A Paired Reads Datastore")
