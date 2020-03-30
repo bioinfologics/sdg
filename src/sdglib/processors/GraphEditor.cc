@@ -110,7 +110,7 @@ void GraphEditor::apply_all(bool remove_small_components_total_bp) {
             ws.sdg.add_link(-new_node, op.input_ends[1], last_dist);
         }
     }
-    node_expansion_queue.clear();
+    path_detachment_queue.clear();
 }
 
 
