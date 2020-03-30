@@ -93,6 +93,9 @@ void GraphEditor::apply_all(bool remove_small_components_total_bp) {
     }
     node_expansion_queue.clear();
     for (auto &op:path_detachment_queue){
+        std::cout<<"applying "<<-op.input_ends[0]<<" -> (";
+        for (auto &n:op.input_nodes) std::cout<<" "<<n;
+        std::cout<<" ) -> "<<op.input_ends[1]<<std::endl;
         //special case: path with just ends
         if (op.input_nodes.empty()){
             for (auto l:ws.sdg.get_fw_links(-op.input_ends[0])){
@@ -103,10 +106,13 @@ void GraphEditor::apply_all(bool remove_small_components_total_bp) {
         else {
             //Create a unitig with the internal path sequence
             auto new_node = ws.sdg.add_node(SequenceDistanceGraphPath(ws.sdg, op.input_nodes).sequence());
+            std::cout<<" new node="<<new_node<<std::endl;
             auto first_dist = ws.sdg.get_link(op.input_ends[0], op.input_nodes.front()).dist;
             auto last_dist = ws.sdg.get_link(-op.input_nodes.back(), op.input_ends[1]).dist;
-            for (auto l:ws.sdg.get_fw_links(-op.input_ends[0])) ws.sdg.remove_link(l.source, l.dest);
-            for (auto l:ws.sdg.get_bw_links(op.input_ends[1])) ws.sdg.remove_link(l.source, l.dest);
+            //for (auto l:ws.sdg.get_fw_links(-op.input_ends[0])) ws.sdg.remove_link(l.source, l.dest);
+            ws.sdg.remove_link(op.input_ends[0],op.input_nodes.front());
+            //for (auto l:ws.sdg.get_bw_links(op.input_ends[1])) ws.sdg.remove_link(l.source, l.dest);
+            ws.sdg.remove_link(-op.input_nodes.back(),op.input_ends[1]);
             ws.sdg.add_link(op.input_ends[0], new_node, first_dist);
             ws.sdg.add_link(-new_node, op.input_ends[1], last_dist);
         }
