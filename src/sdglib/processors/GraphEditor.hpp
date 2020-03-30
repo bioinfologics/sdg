@@ -11,10 +11,6 @@ public:
     std::vector<sgNodeID_t> input_ends; //ends in links need to be fully untouched by queue
     std::vector<sgNodeID_t> consumed_nodes; //nodes need to be fully untouched by queue
     std::vector<sgNodeID_t> consumed_ends; //ends in links need to be fully untouched by queue
-//    std::vector<sgNodeID_t> consumed_nodes;
-//    std::vector<Link> consumed_links;
-//    std::vector<sgNodeID_t> generated_nodes;
-//    std::vector<Link> generated_links;
 };
 
 /**
@@ -71,9 +67,6 @@ public:
     void apply_all(bool remove_small_components_total_bp=false);
 
     /******** OLD DEPRECATED FUNCTIONS *******/
-    bool detach_path (SequenceDistanceGraphPath p,bool consume_tips=false); //returns true on success
-    int patch_between (sgNodeID_t from, sgNodeID_t to, std::string);
-    SequenceDistanceGraphPath find_longest_path_from(sgNodeID_t node, std::string seq);
     void remove_small_components(int max_nodes, int max_size, int max_total);
 
     /**
@@ -82,15 +75,9 @@ public:
      * @param bw
      * @param fw
      */
-    //void expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNodeID_t>> bw, std::vector<std::vector<sgNodeID_t>> fw);
 
-    //void expand_path(const SequenceDistanceGraphPath &p);
-
-    void join_path(SequenceDistanceGraphPath p,bool consume_nodes=false);
 
     WorkSpace & ws;
-    std::set<sgNodeID_t> edited_nodes;
-    std::set<sgNodeID_t> new_nodes;
 
     //Node and node end status are saved as bool vectors for fast lookup
     std::vector<bool> queued_nodes;

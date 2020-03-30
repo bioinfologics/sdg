@@ -125,6 +125,7 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<SequenceDistanceGraphPath>(m, "SequenceDistanceGraphPath", "SequenceDistanceGraphPath")
+            .def(py::init<const SequenceDistanceGraph &,const std::vector<sgNodeID_t> >(),"","sdg"_a,"nodes"_a)
             .def("sequence", &SequenceDistanceGraphPath::sequence)
             .def("getNodes", py::overload_cast<>(&SequenceDistanceGraphPath::getNodes, py::const_))
             ;
@@ -247,6 +248,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<GraphMaker>(m,"GraphMaker","DBG construccion")
             .def(py::init<SequenceDistanceGraph &>())
             .def("new_graph_from_paired_datastore",&GraphMaker::new_graph_from_paired_datastore)
+            .def("new_graph_from_long_datastore",&GraphMaker::new_graph_from_long_datastore)
             ;
 
     py::class_<GraphContigger>(m,"GraphContigger","Paired end contigger")
