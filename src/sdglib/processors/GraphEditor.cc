@@ -32,6 +32,7 @@ bool GraphEditor::queue_allows(GraphEditorOperation op) {
         if (queued_nodes[llabs(n)] or queued_plus_ends[llabs(n)] or queued_minus_ends[llabs(n)]) return false;
     }
     for (auto &n:op.input_ends) {
+        if (queued_nodes[llabs(n)]) return false;
         if (n < 0 and queued_minus_ends[-n]) return false;
         if (n > 0 and queued_plus_ends[n]) return false;
     }
