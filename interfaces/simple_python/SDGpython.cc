@@ -231,6 +231,8 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<GraphEditor>(m,"GraphEditor", "A graph editor with operation queue")
             .def(py::init<WorkSpace &>())
+            .def("queue_node_deletion",&GraphEditor::queue_node_deletion)
+            .def("queue_link_deletion",&GraphEditor::queue_link_deletion)
             .def("queue_node_expansion",&GraphEditor::queue_node_expansion)
             .def("queue_path_detachment",&GraphEditor::queue_path_detachment)
             .def("apply_all",&GraphEditor::apply_all)

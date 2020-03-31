@@ -14,6 +14,16 @@ public:
     std::vector<sgNodeID_t> consumed_ends; //ends in links need to be fully untouched by queue
 };
 
+class GraphEditorLinkDeletion : public GraphEditorOperation {
+public:
+    GraphEditorLinkDeletion(sgNodeID_t src,sgNodeID_t dest);
+};
+
+class GraphEditorNodeDeletion : public GraphEditorOperation {
+public:
+    GraphEditorNodeDeletion(sgNodeID_t node,const std::vector<sgNodeID_t> &connected_ends);
+};
+
 /**
  * An operation expanding a node into as many copies as links-through.
  * For every linkf_through=(s,d) a copy nc is create and links (s,nc) and (-nc,d) are created.
@@ -21,7 +31,6 @@ public:
 class GraphEditorNodeExpansion : public GraphEditorOperation {
 public:
     GraphEditorNodeExpansion(sgNodeID_t node,std::vector<std::pair<sgNodeID_t,sgNodeID_t>> links_through);
-//    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> links_through;
 };
 
 /**
@@ -30,7 +39,6 @@ public:
 class GraphEditorPathDetachment : public GraphEditorOperation {
 public:
     GraphEditorPathDetachment(std::vector<sgNodeID_t> nodes);
-//    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> links_through;
 };
 
 
@@ -42,6 +50,9 @@ public:
         queued_minus_ends.resize(ws.sdg.nodes.size());
     };
 
+    bool queue_link_deletion(sgNodeID_t src, sgNodeID_t dest);
+
+    bool queue_node_deletion(sgNodeID_t node);
     /**
      * Puts a node expansion in the queue.
      * @param node
@@ -86,6 +97,8 @@ public:
     std::vector<bool> queued_minus_ends;
 
     //Queues are by operation type, order does not matter as all operations are compatible
+    std::vector<GraphEditorNodeDeletion> node_deletion_queue;
+    std::vector<GraphEditorLinkDeletion> link_deletion_queue;
     std::vector<GraphEditorNodeExpansion> node_expansion_queue;
     std::vector<GraphEditorPathDetachment> path_detachment_queue;
     uint64_t next_op=0;

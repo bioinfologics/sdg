@@ -5,6 +5,18 @@
 #include <functional>
 #include "GraphEditor.hpp"
 
+GraphEditorNodeDeletion::GraphEditorNodeDeletion(sgNodeID_t node, const std::vector<sgNodeID_t> &connected_ends){
+    input_nodes.emplace_back(node);
+    consumed_nodes=input_nodes;
+    consumed_ends=connected_ends;
+}
+
+GraphEditorLinkDeletion::GraphEditorLinkDeletion(sgNodeID_t src, sgNodeID_t dest) {
+    input_ends.emplace_back(src);
+    input_ends.emplace_back(dest);
+    consumed_ends=input_ends;
+}
+
 GraphEditorNodeExpansion::GraphEditorNodeExpansion(sgNodeID_t node,
                                                    std::vector<std::pair<sgNodeID_t, sgNodeID_t>> links_through) {
 
@@ -51,6 +63,28 @@ void GraphEditor::queue_mark_inputs(GraphEditorOperation op) {
     }
 }
 
+bool GraphEditor::queue_node_deletion(sgNodeID_t node) {
+    std::vector<sgNodeID_t> connected_ends(ws.sdg.links[llabs(node)].size());
+    for (auto l:ws.sdg.links[llabs(node)]) connected_ends.emplace_back(l.dest);
+    GraphEditorNodeDeletion op(node,connected_ends);
+    if (not queue_allows(op)) return false;
+    //TODO: do we validate that the expansion is valid?
+    queue_mark_inputs(op);
+    op.index=next_op++;
+    node_deletion_queue.emplace_back(op);
+    return true;
+}
+
+bool GraphEditor::queue_link_deletion(sgNodeID_t src, sgNodeID_t dest) {
+    GraphEditorLinkDeletion op(src,dest);
+    if (not queue_allows(op)) return false;
+    //TODO: do we validate that the expansion is valid?
+    queue_mark_inputs(op);
+    op.index=next_op++;
+    link_deletion_queue.emplace_back(op);
+    return true;
+}
+
 bool GraphEditor::queue_node_expansion(sgNodeID_t node, std::vector<std::pair<sgNodeID_t, sgNodeID_t>> links_through) {
     GraphEditorNodeExpansion op(node,links_through);
     if (not queue_allows(op)) return false;
@@ -81,9 +115,21 @@ bool GraphEditor::queue_path_detachment(std::vector<sgNodeID_t> nodes) {
 }
 
 void GraphEditor::apply_all() {
+    auto next_node_deletion=node_deletion_queue.begin();
+    auto next_link_deletion=link_deletion_queue.begin();
     auto next_expansion=node_expansion_queue.begin();
     auto next_detachment=path_detachment_queue.begin();
     for (uint64_t i=i;i<next_op;++i) {
+        if (next_node_deletion!=node_deletion_queue.end() and next_node_deletion->index==i) {
+            auto &op=*next_node_deletion;
+            ws.sdg.remove_node(llabs(op.input_nodes[0]));
+            ++next_node_deletion;
+        }
+        if (next_link_deletion!=link_deletion_queue.end() and next_link_deletion->index==i) {
+            auto &op=*next_link_deletion;
+            ws.sdg.remove_link(op.input_ends[0],op.input_ends[1]);
+            ++next_link_deletion;
+        }
         if (next_expansion!=node_expansion_queue.end() and next_expansion->index==i) {
             auto &op=*next_expansion;
             for (auto li = 0; li < op.input_ends.size() / 2; ++li) {
