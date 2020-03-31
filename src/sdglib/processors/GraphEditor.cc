@@ -56,6 +56,7 @@ bool GraphEditor::queue_node_expansion(sgNodeID_t node, std::vector<std::pair<sg
     if (not queue_allows(op)) return false;
     //TODO: do we validate that the expansion is valid?
     queue_mark_inputs(op);
+    op.index=next_op++;
     node_expansion_queue.emplace_back(op);
     return true;
 }
@@ -70,6 +71,7 @@ bool GraphEditor::queue_path_detachment(std::vector<sgNodeID_t> nodes) {
     if (not queue_allows(op)) return false;
     //TODO: do we validate that the expansion is valid?
     queue_mark_inputs(op);
+    op.index=next_op++;
     path_detachment_queue.emplace_back(op);
     return true;
 
@@ -78,45 +80,50 @@ bool GraphEditor::queue_path_detachment(std::vector<sgNodeID_t> nodes) {
 
 }
 
-void GraphEditor::apply_all(bool remove_small_components_total_bp) {
-    for (auto &op:node_expansion_queue){
-        for (auto li=0;li<op.input_ends.size()/2;++li) {
-            //create a copy of the node;
-            auto new_node=ws.sdg.add_node(ws.sdg.get_node_sequence(op.input_nodes[0]));
-            //connect to the sides
-            auto source_dist=ws.sdg.get_link(op.input_ends[2*li],op.input_nodes[0]).dist;
-            ws.sdg.add_link(op.input_ends[2*li],new_node,source_dist);
-            auto dest_dist=ws.sdg.get_link(-op.input_nodes[0],op.input_ends[2*li+1]).dist;
-            ws.sdg.add_link(-new_node,op.input_ends[2*li+1],dest_dist);
+void GraphEditor::apply_all() {
+    auto next_expansion=node_expansion_queue.begin();
+    auto next_detachment=path_detachment_queue.begin();
+    for (uint64_t i=i;i<next_op;++i) {
+        if (next_expansion!=node_expansion_queue.end() and next_expansion->index==i) {
+            auto &op=*next_expansion;
+            for (auto li = 0; li < op.input_ends.size() / 2; ++li) {
+                //create a copy of the node;
+                auto new_node = ws.sdg.add_node(ws.sdg.get_node_sequence(op.input_nodes[0]));
+                //connect to the sides
+                auto source_dist = ws.sdg.get_link(op.input_ends[2 * li], op.input_nodes[0]).dist;
+                ws.sdg.add_link(op.input_ends[2 * li], new_node, source_dist);
+                auto dest_dist = ws.sdg.get_link(-op.input_nodes[0], op.input_ends[2 * li + 1]).dist;
+                ws.sdg.add_link(-new_node, op.input_ends[2 * li + 1], dest_dist);
+            }
+            ws.sdg.remove_node(op.input_nodes[0]);
+            ++next_expansion;
         }
-        ws.sdg.remove_node(op.input_nodes[0]);
+        if (next_detachment!=path_detachment_queue.end() and next_detachment->index==i) {
+            auto &op=*next_detachment;
+            for (auto &n:op.input_nodes) std::cout << " " << n;
+            //special case: path with just ends
+            if (op.input_nodes.empty()) {
+                for (auto l:ws.sdg.get_fw_links(-op.input_ends[0])) {
+                    if (l.dest != op.input_ends[1])
+                        ws.sdg.remove_link(l.source, l.dest);
+                }
+            } else {
+                //Create a unitig with the internal path sequence
+                auto new_node = ws.sdg.add_node(SequenceDistanceGraphPath(ws.sdg, op.input_nodes).sequence());
+                auto first_dist = ws.sdg.get_link(op.input_ends[0], op.input_nodes.front()).dist;
+                auto last_dist = ws.sdg.get_link(-op.input_nodes.back(), op.input_ends[1]).dist;
+                //for (auto l:ws.sdg.get_fw_links(-op.input_ends[0])) ws.sdg.remove_link(l.source, l.dest);
+                ws.sdg.remove_link(op.input_ends[0], op.input_nodes.front());
+                //for (auto l:ws.sdg.get_bw_links(op.input_ends[1])) ws.sdg.remove_link(l.source, l.dest);
+                ws.sdg.remove_link(-op.input_nodes.back(), op.input_ends[1]);
+                ws.sdg.add_link(op.input_ends[0], new_node, first_dist);
+                ws.sdg.add_link(-new_node, op.input_ends[1], last_dist);
+            }
+            ++next_detachment;
+        }
+
     }
     node_expansion_queue.clear();
-    for (auto &op:path_detachment_queue){
-        std::cout<<"applying "<<-op.input_ends[0]<<" -> (";
-        for (auto &n:op.input_nodes) std::cout<<" "<<n;
-        std::cout<<" ) -> "<<op.input_ends[1]<<std::endl;
-        //special case: path with just ends
-        if (op.input_nodes.empty()){
-            for (auto l:ws.sdg.get_fw_links(-op.input_ends[0])){
-                if (l.dest!=op.input_ends[1])
-                    ws.sdg.remove_link(l.source,l.dest);
-            }
-        }
-        else {
-            //Create a unitig with the internal path sequence
-            auto new_node = ws.sdg.add_node(SequenceDistanceGraphPath(ws.sdg, op.input_nodes).sequence());
-            std::cout<<" new node="<<new_node<<std::endl;
-            auto first_dist = ws.sdg.get_link(op.input_ends[0], op.input_nodes.front()).dist;
-            auto last_dist = ws.sdg.get_link(-op.input_nodes.back(), op.input_ends[1]).dist;
-            //for (auto l:ws.sdg.get_fw_links(-op.input_ends[0])) ws.sdg.remove_link(l.source, l.dest);
-            ws.sdg.remove_link(op.input_ends[0],op.input_nodes.front());
-            //for (auto l:ws.sdg.get_bw_links(op.input_ends[1])) ws.sdg.remove_link(l.source, l.dest);
-            ws.sdg.remove_link(-op.input_nodes.back(),op.input_ends[1]);
-            ws.sdg.add_link(op.input_ends[0], new_node, first_dist);
-            ws.sdg.add_link(-new_node, op.input_ends[1], last_dist);
-        }
-    }
     path_detachment_queue.clear();
 }
 

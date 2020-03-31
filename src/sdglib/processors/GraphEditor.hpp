@@ -7,6 +7,7 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 class GraphEditorOperation {
 public:
+    uint64_t index;
     std::vector<sgNodeID_t> input_nodes; //nodes need to be fully untouched by queue
     std::vector<sgNodeID_t> input_ends; //ends in links need to be fully untouched by queue
     std::vector<sgNodeID_t> consumed_nodes; //nodes need to be fully untouched by queue
@@ -64,7 +65,7 @@ public:
     /**
      * applies the queued operations
      */
-    void apply_all(bool remove_small_components_total_bp=false);
+    void apply_all();
 
     /******** OLD DEPRECATED FUNCTIONS *******/
     void remove_small_components(int max_nodes, int max_size, int max_total);
@@ -87,6 +88,7 @@ public:
     //Queues are by operation type, order does not matter as all operations are compatible
     std::vector<GraphEditorNodeExpansion> node_expansion_queue;
     std::vector<GraphEditorPathDetachment> path_detachment_queue;
+    uint64_t next_op=0;
 
 };
 
