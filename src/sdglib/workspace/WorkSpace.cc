@@ -132,7 +132,8 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
     wsfile.read((char *) &count,sizeof(count));
     distance_graphs.reserve(count);
     for (auto i=0;i<count;++i) {
-        distance_graphs.emplace_back(sdg, wsfile);
+        distance_graphs.emplace_back(sdg);
+        distance_graphs.back().read(wsfile);
     }
 
     //paired_reads_datastores

@@ -42,7 +42,7 @@ public:
 
 class LongReadsRecruiter {
 public:
-    LongReadsRecruiter(const SequenceDistanceGraph &sdg, const LongReadsDatastore &datastore,uint8_t k=25, uint16_t f=50);
+    LongReadsRecruiter(SequenceDistanceGraph &sdg, const LongReadsDatastore &datastore,uint8_t k=25, uint16_t f=50);
     void dump(std::string filename);
     void load(std::string filename);
     void perfect_mappings(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
@@ -53,7 +53,7 @@ public:
     void thread_reads(uint32_t end_size, uint16_t matches); //uses endmatches_to_positions
     DistanceGraph dg_from_threads(bool multi_link=false);
 
-    const SequenceDistanceGraph & sdg;
+    SequenceDistanceGraph & sdg;
     const LongReadsDatastore &datastore;
     uint8_t k;
     uint16_t f;

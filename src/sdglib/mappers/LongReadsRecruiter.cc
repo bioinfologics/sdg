@@ -5,7 +5,7 @@
 #include "LongReadsRecruiter.hpp"
 #include <sdglib/indexers/NKmerIndex.hpp>
 
-LongReadsRecruiter::LongReadsRecruiter(const SequenceDistanceGraph &_sdg, const LongReadsDatastore &datastore,uint8_t _k=25, uint16_t _f=50):
+LongReadsRecruiter::LongReadsRecruiter(SequenceDistanceGraph &_sdg, const LongReadsDatastore &datastore,uint8_t _k=25, uint16_t _f=50):
     sdg(_sdg),datastore(datastore),k(_k),f(_f) {
     reset_recruitment();
 };
@@ -180,7 +180,7 @@ void LongReadsRecruiter::thread_reads(uint32_t end_size, uint16_t matches) {
 }
 
 DistanceGraph LongReadsRecruiter::dg_from_threads(bool multi_link) {
-    DistanceGraph dg(sdg);
+    DistanceGraph dg(sdg,"LRRthreads");
     for (auto rid=1;rid<read_threads.size();++rid) {
         auto &pos=read_threads[rid];
         if (pos.empty()) continue;

@@ -27,38 +27,11 @@ class WorkSpace;
  */
 class SequenceDistanceGraph : public DistanceGraph {
 public:
-    //SWIG's version of "supporting inheritance" :'(
-    using DistanceGraph::links;
-    using DistanceGraph::add_link;
-    using DistanceGraph::copy_links;
-    using DistanceGraph::remove_link;
-    using DistanceGraph::disconnect_node;
-    using DistanceGraph::get_fw_links;
-    using DistanceGraph::get_bw_links;
-    using DistanceGraph::get_link;
-    using DistanceGraph::get_next_nodes;
-    using DistanceGraph::get_prev_nodes;
-    using DistanceGraph::fw_reached_nodes;
-    using DistanceGraph::fw_neighbours_by_distance;
-    using DistanceGraph::get_connected_nodes;
-    using DistanceGraph::find_all_paths_between;
-    using DistanceGraph::remove_transitive_links;
-    using DistanceGraph::report_connectivity;
-    using DistanceGraph::are_connected;
-    using DistanceGraph::link_count;
-    using DistanceGraph::get_all_lines;
-    using DistanceGraph::find_bubbles;
-    using DistanceGraph::find_tips;
-    using DistanceGraph::find_self_loops;
-    using DistanceGraph::write_to_gfa1;
-    using DistanceGraph::write_to_gfa2;
-    using DistanceGraph::get_nodeview;
-    using DistanceGraph::get_all_nodeviews;
-    using DistanceGraph::name;
 
-    explicit SequenceDistanceGraph(WorkSpace & _ws):DistanceGraph(*this,false),ws(_ws) { //sdg gets initialised through LDG
+    explicit SequenceDistanceGraph(WorkSpace & _ws):DistanceGraph(*this),ws(_ws) { //sdg gets initialised through LDG
         add_node(Node("",NodeStatus::Deleted)); //an empty deleted node on 0, just to skip the space
     };
+    SequenceDistanceGraph(const SequenceDistanceGraph &sg) = delete; // Avoid implicit generation of the copy constructor.
 
     bool operator==(const SequenceDistanceGraph &o) const {
         return (nodes == o.nodes and links==o.links);
@@ -75,7 +48,7 @@ public:
 
     friend std::ostream& operator<<(std::ostream &os, const SequenceDistanceGraph& sdg);
 
-    SequenceDistanceGraph(const SequenceDistanceGraph &sg) = delete; // Avoid implicit generation of the copy constructor.
+
     std::string ls(int level=0,bool recursive=true) const;
 
     //=== I/O functions ===
@@ -194,7 +167,7 @@ public:
 
     //=== internal variables ===
 
-    std::vector<Node> nodes;    /// Contains the actual nodes from the graph, nodes are generally accesed using its IDs on to this structure.
+    std::vector<Node> nodes={};    /// Contains the actual nodes from the graph, nodes are generally accesed using its IDs on to this structure.
     std::string filename,fasta_filename;    /// Name of the files containing the graph and the fasta.
     std::vector<std::string> oldnames;      /// Mapping structure IDs to input names
     std::unordered_map<std::string,sgNodeID_t> oldnames_to_ids; /// Mapping structure from input names -> IDs

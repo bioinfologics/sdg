@@ -100,7 +100,7 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<DistanceGraph>(m, "DistanceGraph", "A Distance Graph")
             .def_property_readonly("sdg", [] (const DistanceGraph &dg) {return &dg.sdg;},py::return_value_policy::reference)
-            .def(py::init<const SequenceDistanceGraph &>(),"","sdg"_a)
+            .def(py::init<SequenceDistanceGraph &, const std::string &>(),"","sdg"_a,"name"_a="unnamed")
             .def("add_link",&DistanceGraph::add_link,"source"_a,"dest"_a,"distance"_a,"support"_a=Support() )
             .def("disconnect_node",&DistanceGraph::disconnect_node)
             .def("remove_link",py::overload_cast<sgNodeID_t , sgNodeID_t >(&DistanceGraph::remove_link))
@@ -175,8 +175,8 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<WorkSpace>(m, "WorkSpace", "A full SDG WorkSpace")
-            .def(py::init<>(),"")
-            .def(py::init<const std::string &>(),"Load from disk","filename"_a)
+            .def(py::init<>(),"",py::return_value_policy::take_ownership)
+            .def(py::init<const std::string &>(),"Load from disk","filename"_a,py::return_value_policy::take_ownership)
             .def_readonly("sdg",&WorkSpace::sdg)
             .def("add_long_reads_datastore",&WorkSpace::add_long_reads_datastore,"datastore"_a,"name"_a="",py::return_value_policy::reference)
             .def("add_paired_reads_datastore",&WorkSpace::add_paired_reads_datastore,"datastore"_a,"name"_a="",py::return_value_policy::reference)
@@ -205,7 +205,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::bind_vector<std::vector<std::vector<PerfectMatch>>>(m, "VectorVectorPerfectMatch");
 
     py::class_<LongReadsRecruiter>(m, "LongReadsRecruiter", "A full SDG WorkSpace")
-            .def(py::init<const SequenceDistanceGraph &, const LongReadsDatastore &,uint8_t, uint16_t>(),"sdg"_a,"datastore"_a,"k"_a=25,"f"_a=50)
+            .def(py::init<SequenceDistanceGraph &, const LongReadsDatastore &,uint8_t, uint16_t>(),"sdg"_a,"datastore"_a,"k"_a=25,"f"_a=50)
             .def_readwrite("read_perfect_matches",&LongReadsRecruiter::read_perfect_matches)
             .def_readwrite("node_reads",&LongReadsRecruiter::node_reads)
             .def_readwrite("read_threads",&LongReadsRecruiter::read_threads)

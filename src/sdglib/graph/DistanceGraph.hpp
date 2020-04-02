@@ -34,9 +34,8 @@ class NodeView;
  */
 class DistanceGraph {
 public:
-    explicit DistanceGraph(SequenceDistanceGraph & _sdg, bool resize_links=true);
-    DistanceGraph(SequenceDistanceGraph& sdg, std::ifstream &input_file);
-    DistanceGraph(SequenceDistanceGraph & _sdg, const std::string& name);
+    //explicit DistanceGraph(SequenceDistanceGraph& sdg, std::ifstream &input_file);
+    explicit DistanceGraph(SequenceDistanceGraph & _sdg, const std::string& name="unnamed");
     std::string ls(int level=0,bool recursive=true) const;
     /** @brief Adds a link between source and destination in the links collection.
      * Each link is added from both ends in the collection (see links vector)
@@ -248,7 +247,7 @@ public:
      * Collection of links for each node of the graph
      * links[node] = [link, link....]
      */
-    std::vector<std::vector<Link>> links;
+    std::vector<std::vector<Link>> links={};
 
     std::string name="SDG";
 
