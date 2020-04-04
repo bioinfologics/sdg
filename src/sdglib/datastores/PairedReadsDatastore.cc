@@ -339,8 +339,7 @@ PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string read1_file
 
 uint64_t PairedReadsDatastore::size() const {return _size;}
 
-PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper{ws, *this} {
-    read(infile);
+PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws) : ws(ws), mapper(ws, *this) {
 }
 
 PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string _filename, std::ifstream &input_file) : ws(ws), mapper(ws, *this) {
@@ -375,42 +374,12 @@ PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string _filename,
 
 }
 
-PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, PairedReadsDatastore &o) : ws(ws), mapper(ws, *this) {
-    readsize = o.readsize;
-    filename = o.filename;
-    readpos_offset = o.readpos_offset;
-    _size = o._size;
-    fd = fopen(o.filename.c_str(), "r");
-    if (!fd) {
-        std::cerr << "Failed to open " << filename <<": " << strerror(errno);
-        throw std::runtime_error("Could not open " + filename);
-    }
-    mapper.reads_in_node = o.mapper.reads_in_node;
-    mapper.read_to_node = o.mapper.read_to_node;
-    mapper.frdist = o.mapper.frdist;
-    mapper.rfdist = o.mapper.rfdist;
-    mapper.read_direction_in_node = o.mapper.read_direction_in_node;
-}
-
 std::string PairedReadsDatastore::ls(int level, bool recursive) const {
     std::stringstream ss;
     std::string spacer(2*level,' ');
     ss<<spacer<<"Paired Reads Datastore "<<name<<": "<<size()<<" reads"<<std::endl;
     if (recursive) ss<<mapper.ls(level+1,true);
     return ss.str();
-}
-
-PairedReadsDatastore& PairedReadsDatastore::operator=(PairedReadsDatastore const &o) {
-    if (&o == this) return *this;
-
-    mapper = o.mapper;
-    filename = o.filename;
-    _size = o._size;
-    readpos_offset = o.readpos_offset;
-    readsize = o.readsize;
-    ws = o.ws;
-    fd = fopen(filename.c_str(), "r");
-    return *this;
 }
 
 std::ostream &operator<<(std::ostream &os, const PairedReadsDatastore &prds) {

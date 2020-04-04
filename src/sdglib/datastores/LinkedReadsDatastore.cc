@@ -304,11 +304,11 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
 
 void LinkedReadsDatastore::read(std::ifstream &input_file) {
     //read filename
-    uint64_t s;
     sdglib::read_string(input_file, filename);
     sdglib::read_string(input_file, name);
 
     load_index(filename);
+    mapper.read(input_file);
 }
 
 void LinkedReadsDatastore::load_index(std::string _filename){
@@ -569,9 +569,7 @@ LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::string read1_file
     build_from_fastq(output_filename, default_name, read1_filename, read2_filename, format, readsize, 0);
 }
 
-LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper(ws, *this) {
-    read(infile);
-    mapper.read(infile);
+LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws) : ws(ws), mapper(ws, *this) {
 }
 
 LinkedReadsDatastore::LinkedReadsDatastore(WorkSpace &ws, std::string filename, std::ifstream &infile) : ws(ws), mapper(ws, *this) {
@@ -619,18 +617,6 @@ std::string LinkedReadsDatastore::ls(int level, bool recursive) const {
     ss<<spacer<<"Linked Reads Datastore "<<name<<": "<<size()<<" reads"<<std::endl;
     if (recursive) ss<<mapper.ls(level+1,true);
     return ss.str();
-}
-
-LinkedReadsDatastore &LinkedReadsDatastore::operator=(LinkedReadsDatastore const &o) {
-    if ( &o == this) return *this;
-
-    filename = o.filename;
-    ws = o.ws;
-    readsize = o.readsize;
-    readpos_offset = o.readpos_offset;
-    mapper = o.mapper;
-    read_tag = o.read_tag;
-    fd = fopen(filename.c_str(), "r");
 }
 
 std::ostream &operator<<(std::ostream &os, const LinkedReadsDatastore &lrds) {

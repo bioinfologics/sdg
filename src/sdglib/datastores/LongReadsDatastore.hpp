@@ -42,15 +42,17 @@ class LongReadsDatastore {
     void load_index(std::string &file);
 
     WorkSpace &ws;
-    int fd;
+    FILE * fd=NULL;
 public:
     std::vector< ReadPosSize > read_to_fileRecord{ReadPosSize(0,0)};
 
-    ~LongReadsDatastore();
-    LongReadsDatastore(WorkSpace &ws, std::ifstream &infile);
+    ~LongReadsDatastore(){
+        if (fd) {
+            fclose(fd);
+        }
+    }
+    explicit LongReadsDatastore(WorkSpace &ws);
     LongReadsDatastore(WorkSpace &ws, std::string default_name, const std::string &filename, std::ifstream &input_file);
-    LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o);
-    LongReadsDatastore(const LongReadsDatastore &o);
 
     /**
      * @brief Provides an overview of the information in the LongReadsDatastore
@@ -79,7 +81,6 @@ public:
 
     friend std::ostream& operator<<(std::ostream &os, const LongReadsDatastore &lords);
 
-    LongReadsDatastore& operator=(LongReadsDatastore const &o);
     uint32_t dump_seqs_create_index(std::ofstream &outf, const std::string &long_read_file);
     /**
      * Create a long reads data-store from fastq files and write the lords to disk

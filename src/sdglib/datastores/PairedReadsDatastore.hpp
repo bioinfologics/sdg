@@ -27,11 +27,10 @@ struct PairedReadData {
 
 class PairedReadsDatastore {
 public:
-    PairedReadsDatastore(WorkSpace &ws, std::ifstream &infile);
+    PairedReadsDatastore(WorkSpace &ws);
     PairedReadsDatastore(WorkSpace &ws, std::string filename, std::ifstream &infile);
     PairedReadsDatastore(WorkSpace &ws, std::string _filename);
     PairedReadsDatastore(WorkSpace &ws, std::string read1_filename,std::string read2_filename, std::string output_filename, std::string default_name="", int min_readsize=0, int max_readsize=250, int fs=0, int orientation=0);
-    PairedReadsDatastore(WorkSpace &ws, PairedReadsDatastore &ds);
 
     ~PairedReadsDatastore(){
         if (fd) {
@@ -49,7 +48,6 @@ public:
     std::string ls(int level=0,bool recursive=true) const;
 
     friend std::ostream& operator<<(std::ostream &os, const PairedReadsDatastore &prds);
-    PairedReadsDatastore& operator=(PairedReadsDatastore const &o);
     void print_status() const;
     static void build_from_fastq(std::string output_filename, std::string read1_filename, std::string read2_filename, std::string default_name,
                                  uint64_t min_readsize = 0, uint64_t max_readsize = 250, int fragment_size=0, int orientation=0, size_t chunksize = 10000000);

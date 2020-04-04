@@ -48,9 +48,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_re
 
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::ifstream &infile) : filename(), ws(ws), mapper(ws.sdg, *this) {
-    read(infile);
-    mapper.read(infile);
+LongReadsDatastore::LongReadsDatastore(WorkSpace &ws) : filename(), ws(ws), mapper(ws.sdg, *this) {
 }
 
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string default_name, const std::string &filename, std::ifstream &input_file) : filename(filename), ws(ws), mapper(ws.sdg, *this) {
@@ -97,49 +95,6 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string default_name, 
         throw std::runtime_error("Could not open " + filename);
     }
 
-}
-
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, LongReadsDatastore &o) : filename(o.filename), ws(ws), mapper(ws.sdg, *this) {
-    read_to_fileRecord = o.read_to_fileRecord;
-    name = o.name;
-    default_name = o.default_name;
-    mapper.first_mapping = o.mapper.first_mapping;
-    mapper.read_paths = o.mapper.read_paths;
-    mapper.all_paths_between = o.mapper.all_paths_between;
-    fd = open(filename.data(), O_RDONLY);
-    if (!fd) {
-        std::cerr << "Failed to open " << filename << ": " << strerror(errno);
-        throw std::runtime_error("Could not open " + filename);
-    }
-}
-
-LongReadsDatastore &LongReadsDatastore::operator=(LongReadsDatastore const &o) {
-    if (&o == this) return *this;
-
-    filename = o.filename;
-    ws = o.ws;
-    read_to_fileRecord = o.read_to_fileRecord;
-
-    mapper = o.mapper;
-    default_name = o.default_name;
-    name = o.name;
-    fd = open(filename.data(), O_RDONLY);
-    if (!fd) {
-        std::cerr << "Failed to open " << filename <<": " << strerror(errno);
-        throw std::runtime_error("Could not open " + filename + " when using the operator= of LongReadsDatastore");
-    }
-    return *this;
-}
-
-LongReadsDatastore::LongReadsDatastore(const LongReadsDatastore &o) :
-        ws(o.ws),
-        mapper(*this, o.mapper),
-        read_to_fileRecord(o.read_to_fileRecord),
-        name(o.name),
-        default_name(o.default_name),
-        filename(o.filename)
-{
-    fd = open(filename.data(), O_RDONLY);
 }
 
 void LongReadsDatastore::load_index(std::string &file) {
@@ -295,6 +250,7 @@ void LongReadsDatastore::read(std::ifstream &ifs) {
         std::cerr << "Failed to open " << filename << ": " << strerror(errno);
         throw std::runtime_error("Could not open " + filename);
     }
+    mapper.read(ifs);
 }
 
 void LongReadsDatastore::write(std::ofstream &output_file) {
@@ -330,10 +286,6 @@ void LongReadsDatastore::write_selection(std::ofstream &output_file, const std::
         output_file.write((char *) &size,sizeof(size)); // Read length
         output_file.write(seq.data(),seq.size());       // Read sequence
     }
-}
-
-LongReadsDatastore::~LongReadsDatastore() {
-    close(fd);
 }
 
 std::string LongReadsDatastore::ls(int level, bool recursive) const {

@@ -30,6 +30,11 @@ PYBIND11_MODULE(SDGpython, m) {
     py::bind_vector<std::vector<std::vector<uint64_t>>>(m, "VectorVectorU64");
     py::bind_vector<std::vector<int64_t>>(m, "Vector64");
     py::bind_vector<std::vector<std::vector<int64_t>>>(m, "VectorVector64");
+    py::bind_vector<std::vector<ReadPath>>(m, "VectorReadPath");
+    py::bind_vector<std::vector<PerfectMatch>>(m, "VectorPerfectMatch");
+    py::bind_vector<std::vector<std::vector<PerfectMatch>>>(m, "VectorVectorPerfectMatch");
+    py::bind_vector<std::vector<std::vector<NodePosition>>>(m, "VectorVectorNodePosition");
+
     py::enum_<NodeStatus>(m,"NodeStatus")
             .value("Active",NodeStatus::Active)
             .value("Deleted",NodeStatus::Deleted)
@@ -140,7 +145,6 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readonly("offset",&ReadPath::offset)
             .def_readonly("path",&ReadPath::path)
             ;
-    py::bind_vector<std::vector<ReadPath>>(m, "VectorReadPath");
 
     py::class_<PairedReadsMapper>(m, "PairedReadsMapper", "A Paired Reads Mapper")
             .def("path_reads63",&PairedReadsMapper::path_reads63)
@@ -175,8 +179,7 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<WorkSpace>(m, "WorkSpace", "A full SDG WorkSpace")
-            .def(py::init<>(),"",py::return_value_policy::take_ownership)
-            .def(py::init<const std::string &>(),"Load from disk","filename"_a,py::return_value_policy::take_ownership)
+            .def(py::init<const std::string &>(),"filename"_a="",py::return_value_policy::take_ownership)
             .def_readonly("sdg",&WorkSpace::sdg)
             .def("add_long_reads_datastore",&WorkSpace::add_long_reads_datastore,"datastore"_a,"name"_a="",py::return_value_policy::reference)
             .def("add_paired_reads_datastore",&WorkSpace::add_paired_reads_datastore,"datastore"_a,"name"_a="",py::return_value_policy::reference)
@@ -201,8 +204,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readonly("read_position",&PerfectMatch::read_position)
             .def_readonly("size",&PerfectMatch::size)
             ;
-    py::bind_vector<std::vector<PerfectMatch>>(m, "VectorPerfectMatch");
-    py::bind_vector<std::vector<std::vector<PerfectMatch>>>(m, "VectorVectorPerfectMatch");
+
 
     py::class_<LongReadsRecruiter>(m, "LongReadsRecruiter", "A full SDG WorkSpace")
             .def(py::init<SequenceDistanceGraph &, const LongReadsDatastore &,uint8_t, uint16_t>(),"sdg"_a,"datastore"_a,"k"_a=25,"f"_a=50)
@@ -227,7 +229,7 @@ PYBIND11_MODULE(SDGpython, m) {
                 return "<NodePosition: node " + std::to_string(np.node) + " @ "+std::to_string(np.start)+":"+std::to_string(np.end)+">";
             })
             ;
-    py::bind_vector<std::vector<std::vector<NodePosition>>>(m, "VectorVectorNodePosition");
+
 
     py::class_<GraphEditor>(m,"GraphEditor", "A graph editor with operation queue")
             .def(py::init<WorkSpace &>())

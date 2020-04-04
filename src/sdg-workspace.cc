@@ -40,7 +40,7 @@ void make_workspace(int argc, char** argv){
         options.add_options()
                 ("help", "Print help")
                 ("g,gfa", "input gfa file", cxxopts::value(gfa_filename))
-                ("w,workspace", "input workspace file", cxxopts::value(ws_filename))
+                ("w,workspace", "(DEPRECATED)", cxxopts::value(ws_filename))
                 ("p,paired_reads", "paired reads datastore", cxxopts::value(pr_datastores))
                 ("l,linked_reads", "linked reads datastore", cxxopts::value(lr_datastores))
                 ("L,long_reads", "long reads datastore", cxxopts::value(Lr_datastores))
@@ -69,16 +69,19 @@ void make_workspace(int argc, char** argv){
     //===== LOAD GRAPH =====
     WorkSpace output_ws;
     if (!ws_filename.empty()) {
-        WorkSpace w;
-        w.load_from_disk(ws_filename);
-        output_ws.linked_reads_datastores = w.linked_reads_datastores;
-        output_ws.paired_reads_datastores = w.paired_reads_datastores;
-        output_ws.long_reads_datastores = w.long_reads_datastores;
-        output_ws.journal = w.journal;
-        output_ws.kmer_counters = w.kmer_counters;
-        output_ws.sdg = w.sdg;
-        output_ws.distance_graphs = w.distance_graphs;
-        auto op = output_ws.add_operation("Copy", toolname + git_version, std::string("Copied with sdg-workspace make from ")+ws_filename);
+        std::cout << "Error parsing options: merging workspaces is deprecated!" << std::endl
+                  << "Use option --help to check command line arguments." << std::endl;
+        exit(1);
+//        WorkSpace w;
+//        w.load_from_disk(ws_filename);
+//        output_ws.linked_reads_datastores = w.linked_reads_datastores;
+//        output_ws.paired_reads_datastores = w.paired_reads_datastores;
+//        output_ws.long_reads_datastores = w.long_reads_datastores;
+//        output_ws.journal = w.journal;
+//        output_ws.kmer_counters = w.kmer_counters;
+//        output_ws.sdg = w.sdg;
+//        output_ws.distance_graphs = w.distance_graphs;
+//        auto op = output_ws.add_operation("Copy", toolname + git_version, std::string("Copied with sdg-workspace make from ")+ws_filename);
     }
     if (!gfa_filename.empty()) {
         auto op = output_ws.add_operation("Create", toolname + git_version, "Created with sdg-workspace make");

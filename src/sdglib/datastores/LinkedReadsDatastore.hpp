@@ -50,7 +50,7 @@ class LinkedReadsDatastore {
 public:
     LinkedReadsDatastore(WorkSpace &ws, std::string filename);
     LinkedReadsDatastore(WorkSpace &ws, std::string filename, std::ifstream &infile);
-    LinkedReadsDatastore(WorkSpace &ws, std::ifstream &infile);
+    LinkedReadsDatastore(WorkSpace &ws);
     LinkedReadsDatastore(WorkSpace &ws, std::string read1_filename, std::string read2_filename,
                          std::string output_filename, LinkedReadsFormat format, std::string default_name="",
                          int readsize = 250);
@@ -73,8 +73,6 @@ public:
     std::string ls(int level=0,bool recursive=true) const;
 
     friend std::ostream& operator<<(std::ostream& os, const LinkedReadsDatastore &lrds);
-
-    LinkedReadsDatastore& operator=(LinkedReadsDatastore const &o);
 
     void print_status() const;
     static void build_from_fastq(std::string output_filename, std::string default_name, std::string read1_filename, std::string read2_filename,
