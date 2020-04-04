@@ -555,7 +555,7 @@ void DistanceGraph::write(std::ofstream &output_file) {
 }*/
 
 DistanceGraph::DistanceGraph(SequenceDistanceGraph &_sdg, const std::string &_name): sdg(_sdg),name(_name) {
-    links.resize(sdg.nodes.size());
+    if (name!="SDG") links.resize(sdg.nodes.size()); //This is a hack to allow paths in a straight-constructed DG.
 }
 
 std::string DistanceGraph::ls(int level, bool recursive) const {
@@ -567,16 +567,6 @@ std::string DistanceGraph::ls(int level, bool recursive) const {
             if (llabs(l.source) <= llabs(l.dest)) ++linkcount;
     ss<<spacer<<"DistanceGraph "<<name<<" ("<<sdg.name<<"): "<<linkcount<<" links"<<std::endl;
     return ss.str();
-}
-
-DistanceGraph &DistanceGraph::operator=(const DistanceGraph &o) {
-    if (this == &o) return *this;
-
-    sdg = o.sdg;
-    links = o.links;
-    name = o.name;
-
-    return *this;
 }
 
 NodeView DistanceGraph::get_nodeview(sgNodeID_t n) {

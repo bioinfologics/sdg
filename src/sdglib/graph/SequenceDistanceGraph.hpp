@@ -28,22 +28,13 @@ class WorkSpace;
 class SequenceDistanceGraph : public DistanceGraph {
 public:
 
-    explicit SequenceDistanceGraph(WorkSpace & _ws):DistanceGraph(*this),ws(_ws) { //sdg gets initialised through LDG
+    explicit SequenceDistanceGraph(WorkSpace & _ws):nodes(0),DistanceGraph(*this,"SDG"),ws(_ws) { //sdg gets initialised through LDG
         add_node(Node("",NodeStatus::Deleted)); //an empty deleted node on 0, just to skip the space
     };
     SequenceDistanceGraph(const SequenceDistanceGraph &sg) = delete; // Avoid implicit generation of the copy constructor.
 
     bool operator==(const SequenceDistanceGraph &o) const {
         return (nodes == o.nodes and links==o.links);
-    }
-
-    SequenceDistanceGraph& operator=(const SequenceDistanceGraph& other){
-        nodes=other.nodes;
-        links=other.links;
-        filename=other.filename;
-        fasta_filename=other.fasta_filename;
-        oldnames=other.oldnames;
-        oldnames_to_ids=other.oldnames_to_ids;
     }
 
     friend std::ostream& operator<<(std::ostream &os, const SequenceDistanceGraph& sdg);
