@@ -242,7 +242,10 @@ std::vector<SequenceDistanceGraphPath> DistanceGraph::find_all_paths_between(sgN
     std::vector<sgNodeID_t> pp;
 
     for(auto &fl:get_fw_links(from)) {
-        if (sdg.nodes[llabs(fl.dest)].sequence.size()<=max_size) {
+        if (fl.dest==to and final_paths.empty()) {
+            final_paths.emplace_back(sdg,pp);
+        }
+        else if (sdg.nodes[llabs(fl.dest)].sequence.size()<=max_size) {
             node_entries.emplace_back(-1, fl.dest, 1, sdg.nodes[llabs(fl.dest)].sequence.size());
         }
     }
