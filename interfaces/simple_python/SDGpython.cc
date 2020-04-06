@@ -132,7 +132,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<SequenceDistanceGraphPath>(m, "SequenceDistanceGraphPath", "SequenceDistanceGraphPath")
             .def(py::init<const SequenceDistanceGraph &,const std::vector<sgNodeID_t> >(),"","sdg"_a,"nodes"_a)
             .def("sequence", &SequenceDistanceGraphPath::sequence)
-            .def("getNodes", py::overload_cast<>(&SequenceDistanceGraphPath::getNodes, py::const_))
+            .def_readwrite("nodes", &SequenceDistanceGraphPath::nodes)
             ;
 
     py::class_<PairedReadsDatastore>(m, "PairedReadsDatastore", "A Paired Reads Datastore")
