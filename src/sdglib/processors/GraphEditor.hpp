@@ -38,7 +38,8 @@ public:
  */
 class GraphEditorPathDetachment : public GraphEditorOperation {
 public:
-    GraphEditorPathDetachment(std::vector<sgNodeID_t> nodes);
+    GraphEditorPathDetachment(std::vector<sgNodeID_t> nodes, bool full=false);
+    bool full_detach;
 };
 
 
@@ -61,7 +62,7 @@ public:
      */
     bool queue_node_expansion(sgNodeID_t node,std::vector<std::pair<sgNodeID_t,sgNodeID_t>> links_through);
 
-    bool queue_path_detachment (std::vector<sgNodeID_t> nodes); //returns true on success
+    bool queue_path_detachment (std::vector<sgNodeID_t> nodes, bool full=false); //returns true on success
     /**
      * Checks if an operation is allowed given the current queue.
      * @return true if operation allowed

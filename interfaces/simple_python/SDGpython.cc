@@ -13,6 +13,7 @@
 #include <sdglib/processors/LinkageUntangler.hpp>
 #include <sdglib/processors/GraphContigger.hpp>
 #include <sdglib/processors/GraphMaker.hpp>
+#include <sdglib/processors/PathFinder.hpp>
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -261,5 +262,10 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("pop_bubbles",&GraphContigger::pop_bubbles,"datastore"_a,"bubble_size"_a=200,"min_support"_a=4,"max_noise"_a=3,"snr"_a=10)
             .def("solve_canonical_repeats_with_single_paths",&GraphContigger::solve_canonical_repeats_with_single_paths,"datastore"_a,"min_support"_a,"max_noise"_a,"snr"_a=10)
             .def("solve_canonical_repeats_with_paired_paths",&GraphContigger::solve_canonical_repeats_with_paired_paths,"datastore"_a,"min_support"_a,"max_noise"_a,"snr"_a=10)
+            ;
+
+    py::class_<PathFinder>(m,"PathFinder","PathFinder")
+            .def(py::init<WorkSpace &,sgNodeID_t, sgNodeID_t, std::vector<SequenceDistanceGraphPath>, uint8_t>(),"ws"_a,"n1"_a,"n2"_a,"paths"_a,"k"_a)
+            .def("seq_to_pathpos",&PathFinder::seq_to_pathpos,"path_id"_a,"seq"_a)
             ;
 }
