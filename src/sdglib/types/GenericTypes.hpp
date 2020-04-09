@@ -100,4 +100,26 @@ struct int128_hash {
     }
 };
 
+inline std::string strRC(const std::string & sequence){
+    std::string rseq;
+    rseq.resize(sequence.size());
+    for (size_t i=0,j=sequence.size()-1;i<sequence.size();++i,--j){
+        switch(sequence[j]){
+            case 'A':
+                rseq[i]='T';
+                break;
+            case 'C':
+                rseq[i]='G';
+                break;
+            case 'G':
+                rseq[i]='C';
+                break;
+            case 'T':
+                rseq[i]='A';
+                break;
+        }
+    }
+    return rseq;
+}
+
 #endif //BSG_GENERICTYPES_HPP
