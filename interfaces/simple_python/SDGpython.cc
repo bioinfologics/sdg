@@ -269,5 +269,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("index_paths",&PathFinder::index_paths,"paths"_a)
             .def("seq_to_pathpos",&PathFinder::seq_to_pathpos,"path_id"_a,"seq"_a)
             .def("load_lrseqs",&PathFinder::load_lrseqs,"dg"_a,"lrr"_a,"ovl_extension"_a=300)
+            .def("lrseqs_as_fasta",&PathFinder::lrseqs_as_fasta)
+            .def("index_seqs",&PathFinder::index_seqs)
             ;
 }

@@ -19,7 +19,7 @@ public:
     std::string seq;
     PFSEType evtype;
     uint8_t dsidx;
-    uint8_t rid;
+    uint64_t rid;
 };
 
 class PathFinder {
@@ -31,7 +31,7 @@ public:
 
     //TODO: recive a MLDG and a LRR and chop/rc reads to extract sequence between n1 and n2
     void load_lrseqs(DistanceGraph &dg, const LongReadsRecruiter & lrr, int ovl_extension=300);
-
+    std::string lrseqs_as_fasta();
     //Strategy #1: index the paths, then score each read against the paths to get the winner.
     void index_paths(std::vector<SequenceDistanceGraphPath> _paths);
     std::vector<std::vector<uint64_t>> seq_to_pathpos(uint16_t path_id, std::string seq);

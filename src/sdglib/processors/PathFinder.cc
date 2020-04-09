@@ -39,23 +39,47 @@ std::vector<std::vector<uint64_t> > PathFinder::seq_to_pathpos(uint16_t path_id,
 
 void PathFinder::load_lrseqs(DistanceGraph &dg, const LongReadsRecruiter & lrr, int ovl_extension) {
     //get all reads joining the nodes in the dg (allows for more than 1 pass)
-    for (auto &l:dg.get_nodeview(n1).next()){
-        if (l.node().node_id()!=n2) continue;
-        auto rid=l.support().id;
-        int64_t fstart=-1;
-        int64_t rstart=-1;
+    for (auto &l:dg.get_nodeview(n1).next()) {
+        if (l.node().node_id() != n2) continue;
+        auto rid = l.support().id;
+        int64_t fstart = -1;
+        int64_t rstart = -1;
         for (auto &tn:lrr.read_threads[rid]) {
-            if (tn.node==n1) fstart=std::max(tn.end-ovl_extension,0);
-            if (tn.node==-n2) rstart=std::max(tn.end-ovl_extension,0);
-            if (tn.node==n2 and fstart!=-1) {
-                PFSequenceEvidence(lrr.datastore.get_read_sequence(rid).substr(fstart,tn.start+300-fstart),PFSEType::PFLongRead,0,rid);
-                fstart=-1;
+            if (tn.node == n1) fstart = std::max(tn.end - ovl_extension, 0);
+            if (tn.node == -n2) rstart = std::max(tn.end - ovl_extension, 0);
+            if (tn.node == n2 and fstart != -1 and fstart < tn.start) {
+                seqs.emplace_back(lrr.datastore.get_read_sequence(rid).substr(fstart, tn.start + 300 - fstart),
+                                  PFSEType::PFLongRead, 0, rid);
+                fstart = -1;
             }
-            if (tn.node==-n1 and rstart!=-1) {
-                PFSequenceEvidence(strRC(lrr.datastore.get_read_sequence(rid).substr(rstart,tn.start+300-rstart)),PFSEType::PFLongRead,0,rid);
-                fstart=-1;
+            if (tn.node == -n1 and rstart != -1 and fstart < tn.start) {
+                seqs.emplace_back(strRC(lrr.datastore.get_read_sequence(rid).substr(rstart, tn.start + 300 - rstart)),
+                                  PFSEType::PFLongRead, 0, rid);
+                rstart = -1;
             }
         }
     }
-    //get all mappings from lrr, chop the reads between the
+}
+
+std::string PathFinder::lrseqs_as_fasta() {
+    std::string r;
+    for (auto &lrs:seqs) {
+        r+=">rid"+std::to_string(lrs.rid)+"\n"+lrs.seq+"\n";
+    }
+    return r;
+}
+
+void PathFinder::index_seqs() {
+    StringKMerFactoryNC skf(k);
+    kmerpos.clear();
+    for (auto i=0;i<seqs.size();++i){
+        std::vector<uint64_t > sk;
+        auto &lrs=seqs[i];
+        skf.create_kmers(lrs.seq,sk);
+        for (auto si=0;si<sk.size();++si) {
+            auto &kmer=sk[si];
+            if (kmerpos.count(kmer)==0) kmerpos[kmer]={};
+            kmerpos[kmer].emplace_back(i,si);
+        }
+    }
 }
