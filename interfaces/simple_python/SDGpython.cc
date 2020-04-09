@@ -265,7 +265,9 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<PathFinder>(m,"PathFinder","PathFinder")
-            .def(py::init<WorkSpace &,sgNodeID_t, sgNodeID_t, std::vector<SequenceDistanceGraphPath>, uint8_t>(),"ws"_a,"n1"_a,"n2"_a,"paths"_a,"k"_a)
+            .def(py::init<WorkSpace &,sgNodeID_t, sgNodeID_t, uint8_t>(),"ws"_a,"n1"_a,"n2"_a,"k"_a)
+            .def("index_paths",&PathFinder::index_paths,"paths"_a)
             .def("seq_to_pathpos",&PathFinder::seq_to_pathpos,"path_id"_a,"seq"_a)
+            .def("load_lrseqs",&PathFinder::load_lrseqs,"dg"_a,"lrr"_a,"ovl_extension"_a=300)
             ;
 }

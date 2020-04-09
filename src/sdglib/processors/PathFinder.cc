@@ -3,9 +3,12 @@
 //
 
 #include "PathFinder.hpp"
+#include <sdglib/views/NodeView.hpp>
 
-void PathFinder::index_paths() {
+void PathFinder::index_paths(std::vector<SequenceDistanceGraphPath> _paths) {
+    paths=_paths;
     StringKMerFactoryNC skf(k);
+    kmerpos.clear();
     for (auto i=0;i<paths.size();++i){
         std::vector<uint64_t > pk;
         auto &p=paths[i];
@@ -32,4 +35,27 @@ std::vector<std::vector<uint64_t> > PathFinder::seq_to_pathpos(uint16_t path_id,
         }
     }
     return r;
+}
+
+void PathFinder::load_lrseqs(DistanceGraph &dg, const LongReadsRecruiter & lrr, int ovl_extension) {
+    //get all reads joining the nodes in the dg (allows for more than 1 pass)
+    for (auto &l:dg.get_nodeview(n1).next()){
+        if (l.node().node_id()!=n2) continue;
+        auto rid=l.support().id;
+        int64_t fstart=-1;
+        int64_t rstart=-1;
+        for (auto &tn:lrr.read_threads[rid]) {
+            if (tn.node==n1) fstart=std::max(tn.end-ovl_extension,0);
+            if (tn.node==-n2) rstart=std::max(tn.end-ovl_extension,0);
+            if (tn.node==n2 and fstart!=-1) {
+                PFSequenceEvidence(lrr.datastore.get_read_sequence(rid).substr(fstart,tn.start+300-fstart),PFSEType::PFLongRead,0,rid);
+                fstart=-1;
+            }
+            if (tn.node==-n1 and rstart!=-1) {
+                PFSequenceEvidence(strRC(lrr.datastore.get_read_sequence(rid).substr(rstart,tn.start+300-rstart)),PFSEType::PFLongRead,0,rid);
+                fstart=-1;
+            }
+        }
+    }
+    //get all mappings from lrr, chop the reads between the
 }
