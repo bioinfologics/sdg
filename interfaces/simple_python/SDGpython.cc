@@ -272,4 +272,12 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("lrseqs_as_fasta",&PathFinder::lrseqs_as_fasta)
             .def("index_seqs",&PathFinder::index_seqs)
             ;
+
+    py::class_<PFScoredPath>(m,"PFScoredPath","PFScoredPath")
+            .def(py::init<PathFinder &, sgNodeID_t ,sgNodeID_t>(),"pf"_a,"from"_a,"to"_a)
+            .def("find_hits",&PFScoredPath::find_hits)
+            .def_readonly("read_hitpos",&PFScoredPath::read_hitpos,py::return_value_policy::reference)
+            .def_readwrite("path",&PFScoredPath::path,py::return_value_policy::reference)
+            .def("score",&PFScoredPath::score)
+            ;
 }

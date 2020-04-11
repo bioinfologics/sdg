@@ -22,6 +22,26 @@ public:
     uint64_t rid;
 };
 
+class PathFinder;
+
+/*
+ * This class holds a path and its score across all reads. Can be used to compare 2 paths to an equivalent length.
+ * The PF, uses this scores to advance through the best current path(s) until a singe winner is found.
+ * This could easily be transformed into a tree form, where each path only scores its last node and refers back to the previous path in the tree
+ */
+class PFScoredPath{
+
+public:
+    PFScoredPath(const PathFinder & _pf, sgNodeID_t _from,sgNodeID_t _to);
+    //this goes back to the last hit on each read and starts advancing in bps adding the new hits from new nodes.
+    std::pair<uint64_t,uint64_t > score(uint64_t size=0);
+    void find_hits();
+    sgNodeID_t from,to;
+    SequenceDistanceGraphPath path;
+    const PathFinder &pf;
+    std::vector<std::vector<int64_t>> read_hitpos;
+};
+
 class PathFinder {
 public:
     PathFinder(WorkSpace &_ws, sgNodeID_t _n1, sgNodeID_t _n2, uint8_t _k):
@@ -42,7 +62,7 @@ public:
     SequenceDistanceGraphPath find_path_with_lrseqs();
 
     //TODO: Strategy #3: local TAP
-    std::unordered_map<uint64_t,std::vector<std::pair<uint16_t ,uint64_t >>> kmerpos; //kmer -> [(path_id, pos)]
+    std::unordered_map<uint64_t,std::vector<std::pair<uint16_t ,int64_t >>> kmerpos; //kmer -> [(path_id, pos)]
     WorkSpace & ws;
     sgNodeID_t n1,n2;
     std::vector<SequenceDistanceGraphPath> paths;

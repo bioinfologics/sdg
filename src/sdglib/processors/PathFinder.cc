@@ -5,6 +5,48 @@
 #include "PathFinder.hpp"
 #include <sdglib/views/NodeView.hpp>
 
+PFScoredPath::PFScoredPath(const PathFinder &_pf, sgNodeID_t _from, sgNodeID_t _to):pf(_pf),path(_pf.ws.sdg),from(_from),to(_to){
+
+}
+
+
+void PFScoredPath::find_hits() {
+    //clear old hits
+    read_hitpos.clear();
+    read_hitpos.resize(pf.seqs.size());
+    auto seq=path.sequence();
+    //std::cout<<"path seq: "<<seq<<std::endl;
+    if (seq.empty() or pf.seqs.empty()) return;
+    std::vector<int64_t> last_hit(read_hitpos.size(),-1);
+    StringKMerFactoryNC skf(pf.k);
+    std::vector<uint64_t > pk;
+    skf.create_kmers(seq,pk);
+    //std::cout<<"path kmers: "<<pk.size()<<std::endl;
+    //std::cout<<"scored kmers in PF: "<<pf.kmerpos.size()<<std::endl;
+    for (auto &hp:read_hitpos) hp.resize(pk.size(),-1);
+    for (uint64_t ki=0;ki<pk.size();++ki){
+        if(pf.kmerpos.count(pk[ki])==0) continue;
+        for (const auto & kpos:pf.kmerpos.at(pk[ki])) {
+            //std::cout<<" "<<kpos.first<<" "<<kpos.second<<" (last was "<<last_hit[kpos.first]<<" : "<<(kpos.second>last_hit[kpos.first])<<", current position points to "<<read_hitpos[kpos.first][ki]<<" : "<<(read_hitpos[kpos.first][ki]==-1)<<")"<<std::endl;
+            if (read_hitpos[kpos.first][ki]==-1 and kpos.second>last_hit[kpos.first]){
+                last_hit[kpos.first]=kpos.second;
+                read_hitpos[kpos.first][ki]=kpos.second;
+            }
+        }
+    }
+}
+
+std::pair<uint64_t, uint64_t> PFScoredPath::score(uint64_t size) {
+    std::pair<uint64_t, uint64_t> sc;
+    for (auto &hp:read_hitpos){
+        for (uint64_t p=0;p<hp.size() and p < size;++p){
+            if (hp[p]==-1) ++sc.second;
+            else ++sc.first;
+        }
+    }
+    return sc;
+}
+
 void PathFinder::index_paths(std::vector<SequenceDistanceGraphPath> _paths) {
     paths=_paths;
     StringKMerFactoryNC skf(k);
