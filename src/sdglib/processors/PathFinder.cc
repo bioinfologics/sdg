@@ -107,7 +107,7 @@ void PathFinder::load_lrseqs(DistanceGraph &dg, const LongReadsRecruiter & lrr, 
                                   PFSEType::PFLongRead, 0, rid);
                 fstart = -1;
             }
-            if (tn.node == -n1 and rstart != -1 and fstart < tn.start) {
+            if (tn.node == -n1 and rstart != -1 and rstart < tn.start) {
                 seqs.emplace_back(strRC(lrr.datastore.get_read_sequence(rid).substr(rstart, tn.start + 300 - rstart)),
                                   PFSEType::PFLongRead, 0, rid);
                 rstart = -1;
