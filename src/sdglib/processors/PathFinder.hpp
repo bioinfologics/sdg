@@ -67,6 +67,7 @@ public:
     sgNodeID_t n1,n2;
     std::vector<SequenceDistanceGraphPath> paths;
     uint8_t k;
+    int ovl;
     std::vector<PFSequenceEvidence> seqs;
 };
 
