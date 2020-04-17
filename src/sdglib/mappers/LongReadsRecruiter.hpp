@@ -47,6 +47,7 @@ public:
     void load(std::string filename);
     void perfect_mappings(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
     void recruit_reads(uint16_t seed_size,uint16_t seed_count,uint64_t first_read=1,uint64_t last_read=0);
+    void recruit_threads();
     void reset_recruitment();
 
     std::vector<NodePosition> endmatches_to_positions(uint64_t rid,int32_t end_size, uint16_t matches);
@@ -60,6 +61,7 @@ public:
     std::vector<std::vector<PerfectMatch>> read_perfect_matches;
     std::vector<std::vector<NodePosition>> read_threads;
     std::vector<std::vector<uint64_t>> node_reads;
+    std::vector<std::vector<uint64_t>> node_threads;
 };
 
 

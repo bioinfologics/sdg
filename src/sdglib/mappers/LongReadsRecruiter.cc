@@ -103,6 +103,13 @@ void LongReadsRecruiter::recruit_reads(uint16_t seed_size, uint16_t seed_count, 
         }
     }
 }
+void LongReadsRecruiter::recruit_threads() {
+    node_threads.clear();
+    node_threads.resize(sdg.nodes.size());
+    for (auto rid=1;rid<=read_threads.size();++rid)
+        for (const auto &match:read_threads[rid])
+                    node_threads[llabs(match.node)].emplace_back(rid);
+}
 
 std::vector<NodePosition> LongReadsRecruiter::endmatches_to_positions(uint64_t rid, int32_t end_size, uint16_t matches) {
     std::vector<NodePosition> positions;
