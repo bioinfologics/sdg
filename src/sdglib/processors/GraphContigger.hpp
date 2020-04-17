@@ -10,6 +10,7 @@
 class GraphContigger {
 public:
     GraphContigger (WorkSpace &_ws):ws(_ws){};
+    void reconnect_tips(const PairedReadsDatastore & prds, int min_support=6);
     void clip_tips(int tip_size, int rounds=10);
     void pop_bubbles(const PairedReadsDatastore & prds, int bubble_size, int min_support=6, int max_noise=5, float snr=10);
     void remove_small_unconnected(int min_size);
