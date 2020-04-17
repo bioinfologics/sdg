@@ -4,6 +4,7 @@
 
 #pragma once
 #include <sdglib/workspace/WorkSpace.hpp>
+#include <sdglib/mappers/LongReadsRecruiter.hpp>
 
 
 class GraphContigger {
@@ -14,6 +15,7 @@ public:
     void remove_small_unconnected(int min_size);
     void solve_canonical_repeats_with_single_paths(const PairedReadsDatastore & prds,int min_support=6, int max_noise=5, float snr=10);
     void solve_canonical_repeats_with_paired_paths(const PairedReadsDatastore & prds,int min_support=6, int max_noise=5, float snr=10);
+    void solve_canonical_repeats_with_long_reads(const LongReadsRecruiter & lrr, float max_side_kci=1.5, int min_support=6, int max_noise=5, float snr=10);
     void extend_to_repeats(int max_size=300);
 
 private:

@@ -171,6 +171,145 @@ void GraphContigger::solve_canonical_repeats_with_paired_paths(const PairedReads
     ws.sdg.join_all_unitigs();
 }
 
+void GraphContigger::solve_canonical_repeats_with_long_reads(const LongReadsRecruiter &lrr, float max_side_kci, int min_support, int max_noise, float snr) {
+    GraphEditor ge(ws);
+    uint64_t repeats=0;
+    uint64_t solved_repeats=0;
+    for (auto & nv :ws.sdg.get_all_nodeviews()){
+        auto nvp=nv.prev();
+        auto nvn=nv.next();
+        if (nvp.size()!=2 or nvn.size()!=2) continue;//XXX: it should check the nodes in and out have only one connection to this node too!!!!
+        if (nvp[0].node().next().size()!=1
+            or nvp[1].node().next().size()!=1
+            or nvn[0].node().prev().size()!=1
+            or nvn[1].node().prev().size()!=1)
+            continue;
+        //sdglib::OutputLog()<<"repeat on node "<<nv<<std::endl;
+
+        sgNodeID_t r=nv.node_id(),pA=nvp[0].node().node_id(), pB=nvp[1].node().node_id(), nA=nvn[0].node().node_id(), nB=nvn[1].node().node_id();
+        auto pAkci=ws.sdg.get_nodeview(pA).kci();
+        if (pAkci==-1 or pAkci>max_side_kci) continue;
+        auto pBkci=ws.sdg.get_nodeview(pB).kci();
+        if (pBkci==-1 or pBkci>max_side_kci) continue;
+        auto nAkci=ws.sdg.get_nodeview(nA).kci();
+        if (nAkci==-1 or nAkci>max_side_kci) continue;
+        auto nBkci=ws.sdg.get_nodeview(nB).kci();
+        if (nBkci==-1 or nBkci>max_side_kci) continue;
+        //sdglib::OutputLog()<<"repeat on node "<<nv<<" passed kci conditions, voting"<<std::endl;
+        ++repeats;
+        //Count threads doing pA->nA, pA->nB and nA->other (TODO: make the conditions more strict!)
+        uint64_t vAA=0,vAB=0,vAo=0;
+        //sdglib::OutputLog()<<"voting from pA="<<pA<<std::endl;
+        if (r==115695) std::cout<<"r="<<r<<" pA="<<pA<<" pB="<<pB<<" nA="<<nA<<" nB="<<nB<<std::endl;
+        for (auto tid:lrr.node_threads[llabs(pA)]){
+            auto &t=lrr.read_threads[tid];
+            if (r==115695) {
+                std::cout<<"thread["<<tid<<"] : ";
+                for (auto &tm:t) std::cout<<" "<<tm.node;
+                std::cout<<std::endl;
+            }
+            for (auto i=0;i<t.size();++i){
+                if (t[i].node==pA and i<t.size()-1){
+                    //std::cout<<"found "<<pA<<std::endl;
+                    if (t[i+1].node==nA or (i<t.size()-2 and t[i+1].node==r and t[i+2].node==nA)) ++vAA;
+                    else if (t[i+1].node==nB or (i<t.size()-2 and t[i+1].node==r and t[i+2].node==nB)) ++vAB;
+                    else ++vAo;
+                    break;
+                }
+                if (t[i].node==-pA and i>0){
+                    //std::cout<<"found "<<-pA<<std::endl;
+                    if (t[i-1].node==-nA or (i>1 and t[i-1].node==-r and t[i-2].node==-nA)) ++vAA;
+                    else if (t[i-1].node==-nB or (i>1 and t[i-1].node==-r and t[i-2].node==-nB)) ++vAB;
+                    else ++vAo;
+                    break;
+                }
+            }
+            if (r==115695) std::cout<<"vAA="<<vAA<<" vAB="<<vAB<<" vAo="<<vAo<<std::endl;
+        }
+        //Count threads doing B->A, B->B and B->other
+        uint64_t vBA=0,vBB=0,vBo=0;
+        //sdglib::OutputLog()<<"voting from pB="<<pB<<std::endl;
+        for (auto tid:lrr.node_threads[llabs(pB)]){
+            auto &t=lrr.read_threads[tid];
+            if (r==115695) {
+                std::cout<<"thread["<<tid<<"] : ";
+                for (auto &tm:t) std::cout<<" "<<tm.node;
+                std::cout<<std::endl;
+            }
+            for (auto i=0;i<t.size();++i){
+                if (t[i].node==pB and i<t.size()-1){
+                    //std::cout<<"found "<<pB<<std::endl;
+                    if (t[i+1].node==nA or (i<t.size()-2 and t[i+1].node==r and t[i+2].node==nA)) ++vBA;
+                    else if (t[i+1].node==nB or (i<t.size()-2 and t[i+1].node==r and t[i+2].node==nB)) ++vBB;
+                    //else ++vBo;
+                    break;
+                }
+                if (t[i].node==-pB and i>0){
+                    //std::cout<<"found "<<-pB<<std::endl;
+                    if (t[i-1].node==-nA or (i>1 and t[i-1].node==-r and t[i-2].node==-nA)) ++vBA;
+                    else if (t[i-1].node==-nB or (i>1 and t[i-1].node==-r and t[i-2].node==-nB)) ++vBB;
+                    //else ++vBo;
+                    break;
+                }
+            }
+            if (r==115695) std::cout<<"vBA="<<vBA<<" vBB="<<vBB<<" vBo="<<vBo<<std::endl;
+        }
+        //sdglib::OutputLog()<<"repeat on node "<<nv<<" voted, evaluating: vAA="<<vAA<<" vAB="<<vAB<<" vAo="<<vAo<<" vBA="<<vBA<<" vBB="<<vBB<<" vBo="<<vBo<<std::endl;
+        if (vAA>min_support and vBB>min_support and vAA/snr>=vAB+vAo and vBB/snr>=vBA+vBo) {
+            ge.queue_node_expansion(r, {{-pA,nA},{-pB,nB}});
+            ++solved_repeats;
+        }
+        if (vAB>min_support and vBA>min_support and vAB/snr>=vAA+vAo and vBA/snr>=vBB+vBo) {
+            ge.queue_node_expansion(r, {{-pA,nB},{-pB,nA}});
+            ++solved_repeats;
+        }
+    }
+    sdglib::OutputLog()<<"Contigger LRR repeat_expansion: "<<solved_repeats<<" / "<<repeats<<std::endl;
+    ge.apply_all();
+    ws.sdg.join_all_unitigs();
+}
+
+void GraphContigger::reconnect_tips(const PairedReadsDatastore & prds, int min_support) {
+    //first mark all nodes that are tips
+    std::vector<bool> tip_fw(ws.sdg.nodes.size());
+    std::vector<bool> tip_bw(ws.sdg.nodes.size());
+
+    for (auto &nv:ws.sdg.get_all_nodeviews()){
+        if (nv.next().empty()) tip_fw[nv.node_id()]=true;
+        if (nv.prev().empty()) tip_bw[nv.node_id()]=true;
+    }
+
+    std::unordered_map<std::pair<sgNodeID_t,sgNodeID_t>,uint64_t> pathcount;
+    sgNodeID_t t1=0,t2=0;
+    bool failed=false;
+    for (auto i1=1;i1<prds.mapper.read_paths.size();i1+=2){
+        failed=false;
+        t1=0;
+        t2=0;
+        for (auto pit=prds.mapper.read_paths[i1].path.cbegin();pit<prds.mapper.read_paths[i1].path.cend();++pit) {
+            if ( (*pit>0 and tip_fw[*pit]) or (*pit<0 and tip_fw[-*pit]) ) {
+                if (t1==0 or t1==*pit) t1=*pit;
+                else failed=true;
+            }
+            if ( (*pit>0 and tip_bw[*pit]) or (*pit<0 and tip_bw[-*pit]) ) {
+                if (t1!=0 and (t2==0 or t2==*pit)) t2=*pit;
+                else failed=true;
+            }
+        }
+        for (auto pit=prds.mapper.read_paths[i1].path.crbegin();pit<prds.mapper.read_paths[i1].path.crend();++pit) {
+            sgNodeID_t n=-*pit;
+            if ( (n>0 and tip_fw[n]) or (n<0 and tip_fw[-n]) ) {
+                if (t1==0 or t1==n) t1=n;
+                else failed=true;
+            }
+            if ( (n>0 and tip_bw[n]) or (n<0 and tip_bw[-n]) ) {
+                if (t1!=0 and (t2==0 or t2==n)) t2=n;
+                else failed=true;
+            }
+        }
+        if ( t1!=0 and t2!=0 and not failed ) ++pathcount[{t1,t2}];
+    }
+}
 
 void GraphContigger::clip_tips(int tip_size, int rounds) {
     for (auto r=0;r<rounds;++r) {
