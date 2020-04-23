@@ -80,11 +80,12 @@ public:
      */
     void path_reads63();
 
-    /** @brief Discards mappings of nodes marked as deleted.
+    /** @brief returns a list of possible nodes fw, node needs to appear with same sign in read's path, negative read id means reversed path
      *
-     * Discards mappings of nodes marked as deleted by changing to 0 the mappings in read_to_node[read_id] and clearing the reads_in_node[deletedNode] vector
+     * @param read_id
+     * @param node
      */
-    void remove_obsolete_mappings();
+    std::vector<sgNodeID_t> path_fw(int64_t read_id,sgNodeID_t node, bool use_pair=true);
 
     /** @brief Estimates the fragment size distribution for the mapped data-store using the mapped pairs.
      *

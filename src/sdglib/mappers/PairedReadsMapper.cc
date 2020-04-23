@@ -463,37 +463,35 @@ void PairedReadsMapper::path_reads63() {
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"pathing finished"<<std::endl;
 }
 
-///**
-// * @brief Mapping of paired end read files.
-// *
-// * Reads are mapped through a unique k-mer index in process_reads_from_file.
-// * R1 and R2 are processed independently. R1 gets odds ids, R2 gets the next even id, so [1,2] and [3,4] are pairs.
-// *
-// * @todo fix and test 10x tags processing
-// * @todo enable some basic 10x tag statistics
-// * @todo add support for LMP reads (i.e FR reads)
-// * @todo add distribution computing on the fly
-// * @todo support other kind of indexes and variable k-mer size
-// */
+std::vector<sgNodeID_t> PairedReadsMapper::path_fw(int64_t read_id, sgNodeID_t node, bool use_pair) {
+    std::vector<sgNodeID_t> path_fw;
 
-void PairedReadsMapper::remove_obsolete_mappings(){
-    uint64_t nodes=0,reads=0;
-    std::set<sgNodeID_t> updated_nodes;
-    for (auto n=1;n<ws.sdg.nodes.size();++n) {
-        if (ws.sdg.nodes[n].status==NodeStatus::Deleted) {
-            updated_nodes.insert(n);
-            updated_nodes.insert(-n);
-            reads_in_node[n > 0 ? n : -n].clear();
-            ++nodes;
+    if (read_id>0) {
+        auto it=read_paths[read_id].path.cbegin();
+        while (it!=read_paths[read_id].path.cend() and *it!=node) ++it;
+        if (it==read_paths[read_id].path.cend()) return {};
+        else ++it;
+        while (it!=read_paths[read_id].path.cend()) path_fw.emplace_back(*it++);
+        if (use_pair) {
+            path_fw.emplace_back(0);
+            auto read2_id = (read_id % 2 ? read_id + 1 : read_id - 1);
+            auto itr = read_paths[read2_id].path.crbegin();
+            for (; itr != read_paths[read2_id].path.crend() and *itr != -node; ++itr);
+            if (itr == read_paths[read2_id].path.crend()) itr = read_paths[read2_id].path.crbegin();
+            else ++itr;
+            while (itr != read_paths[read2_id].path.crend()) path_fw.emplace_back(-*itr++);
         }
     }
-    for (auto &read_node:read_to_node) {
-        if (updated_nodes.count(read_node) !=0 ) {
-            read_node=0;
-            ++reads;
-        }
+    else {
+        auto itr=read_paths[-read_id].path.crbegin();
+        while (itr!=read_paths[-read_id].path.crend() and *itr!=-node) ++itr;
+        if (itr==read_paths[-read_id].path.crend()) return {};
+        else ++itr;
+        while (itr!=read_paths[-read_id].path.crend()) path_fw.emplace_back(-*itr++);
+        //pair is not FW, so it is not used!
     }
-    sdglib::OutputLog(sdglib::INFO, false) << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
+    if (not path_fw.empty() and path_fw.back()==0) path_fw.resize(path_fw.size()-1);
+    return path_fw;
 }
 
 void PairedReadsMapper::print_status() const {
