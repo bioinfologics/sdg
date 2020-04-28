@@ -28,7 +28,7 @@ class WorkSpace;
 class PairedReadsMapper {
 
 public:
-    PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore &_datastore);
+    PairedReadsMapper(WorkSpace &_ws, PairedReadsDatastore &_datastore);
 
     /**
      * @brief Provides an overview of the information in the PairedReadsMapper
@@ -78,6 +78,12 @@ public:
      *
      * @return
      */
+    void path_reads();
+
+    /** @brief creates a read path for each read through mapping
+     *
+     * @return
+     */
     void path_reads63();
 
     /** @brief returns a list of possible nodes fw, node needs to appear with same sign in read's path, negative read id means reversed path
@@ -117,7 +123,7 @@ public:
      */
     std::vector<uint64_t> get_node_readpairs_ids(sgNodeID_t nodeID);
 
-    const WorkSpace &ws;
+    WorkSpace &ws;
     const PairedReadsDatastore & datastore;
     /**
      * reads_in_node[i] contains all the read ids from the data-store mapped to node i
