@@ -373,8 +373,8 @@ public:
             completed_node = (node_position==nodeseq.size()-1);
             completed_read = (read_position==readseq.size()-1);
         }
-        else{
-            while(read_position<readseq.size()-1 and node_position>0 and are_complement(nodeseq[node_position+1],readseq[read_position+1])){
+        else {
+            while(read_position<readseq.size()-1 and node_position>0 and are_complement(nodeseq[node_position-1],readseq[read_position+1])){
                 --node_position;
                 ++read_position;
             }
@@ -387,7 +387,7 @@ public:
     sgNodeID_t node;
 
     uint64_t offset;//will only be set if first part
-    uint64_t previous_part;//will only be set if not first part
+    int64_t previous_part;//will only be set if not first part
     uint64_t read_position;//position of the last matched base in read
     uint64_t node_position;//postiion of the last matched base in node (canonical orientation)
 
@@ -403,12 +403,14 @@ public:
     void reset(std::string _readseq){
         matchparts.clear();
         readseq=_readseq;
+        last_readpos=0;
     }
 
     void add_starting_match(sgNodeID_t node_id, uint64_t read_offset, uint64_t node_offset, uint8_t _k){ //add a new start
         k=_k;
         matchparts.emplace_back();
         auto &mp=matchparts.back();
+        mp.previous_part=-1;
         mp.node=node_id;
         mp.extended=false;
         mp.read_position=read_offset+k-1;
@@ -425,53 +427,82 @@ public:
 
     void extend_fw(){
         //TODO: this could be extended backwards in the original hit to add diferentiation on overlap-transitioned hits after an error.
+        std::cout<<"extend_fw called with "<<matchparts.size()<<" starting matchparts"<<std::endl;
         for(uint64_t next=0;next<matchparts.size();++next){
             //extend, if end of node add all nexts as unextended parts.
+            std::cout<<"extending matchpart "<<next<<" to node "<<matchparts[next].node<<" with current readpos="<<matchparts[next].read_position<<" and nodepos="<<matchparts[next].node_position<<std::endl;
             matchparts[next].extend(readseq,dg.sdg.nodes[llabs(matchparts[next].node)].sequence);
+            std::cout<<" -> readpos="<<matchparts[next].read_position<<(matchparts[next].completed_read ? " (completed)":"")<<", nodepos="<<matchparts[next].node_position<<(matchparts[next].completed_node ? " (completed)":"")<<std::endl;
             if (matchparts[next].completed_node and not matchparts[next].completed_read){
                 for (auto l: dg.get_nodeview(matchparts[next].node).next()){
-                    if (l.distance()>-k) continue;
+                    if (l.distance()>-k+1) continue;
+                    std::cout<<"extending to next node "<<l.node().node_id()<<std::endl;
                     matchparts.emplace_back();//add next node part, pointing to this one as previous.
                     auto &mp=matchparts.back();
                     mp.node=l.node().node_id();
                     mp.read_position=matchparts[next].read_position+1;
                     if (mp.node>0) {
-                        mp.node_position=-l.distance()-1;
+                        mp.node_position=-l.distance();
                     }
                     else {
-                        mp.node_position=dg.sdg.get_node_size(mp.node)+l.distance();
+                        mp.node_position=dg.sdg.get_node_size(mp.node)+l.distance()-1;
                     }
                     mp.extended=false;
+                    mp.previous_part=next;
                 }
             }
         }
     }
     std::vector<sgNodeID_t> best_path(){ //set extension_size when returning a path that was extended.
+        std::vector<sgNodeID_t> bp;
         //find the matches that goes farthest in the read?
         //more than one? -> unspecific section, return nothing. //TODO: keep them in case many of them define a longest path still?
+        uint64_t best_length=0;
+        int64_t next_index=0;
+        for (auto i=0;i<matchparts.size();++i){
+            auto &mp=matchparts[i];
+            if (mp.read_position==best_length) next_index=-1;
+            else if (mp.read_position>best_length) {
+                best_length=mp.read_position;
+                next_index=i;
+            }
+        }
+        last_nodepos=matchparts[next_index].node_position;
+
+        while (next_index!=-1) {
+            bp.emplace_back(matchparts[next_index].node);
+            next_index=matchparts[next_index].previous_part;
+        }
+        std::reverse(bp.begin(),bp.end());
+        if (!bp.empty()) last_readpos=best_length;
+        else last_nodepos=0;
+        return bp;
     }
 
     DistanceGraph & dg;
     uint8_t k;
     std::vector<PerfectMatchPart> matchparts;
-    uint64_t extension_size;
+    uint64_t last_readpos;
+    uint64_t last_nodepos;
     std::string readseq;
 
 };
 
 void PairedReadsMapper::path_reads() {
-    //TODO: consider optimisation: create all nodes' RC (or write the contions appropriately)
+    //TODO: compute overlap regions for nodes to not start a match into an overlap nor accept a match fully on an overlap.
     //read pather
     // - Starts from a (multi)63-mer match -> add all starts to PME
     // - extends and check if there's a best path.
     // - uses the index to check if there is further hits, starting from the kmer that includes 1bp beyond the extended match. (cycle)
-
+    sgNodeID_t match_node;
+    int64_t match_offset;
     read_paths.clear();
     read_paths.resize(datastore.size());
-    uint8_t k=63;
+    uint8_t k=31;
     NKmerIndex nki(ws.sdg,k,50);//TODO: hardcoded parameters!!
+    std::cout<<"Index created!"<<std::endl;
     //if (last_read==0) last_read=datastore.size();
-#pragma omp parallel shared(nki)
+//#pragma omp parallel shared(nki)
     {
         StreamKmerFactory skf(k);
         std::vector<std::pair<bool,uint64_t >> read_kmers; //TODO: type should be defined in the kmerisers
@@ -479,8 +510,10 @@ void PairedReadsMapper::path_reads() {
         std::vector<sgNodeID_t> rp;
         PerfectMatchExtender pme(ws.sdg);
         ReadSequenceBuffer sequence_reader(datastore);
-#pragma omp for
-        for (auto rid=1;rid<=datastore.size();++rid){
+//#pragma omp for
+        //for (auto rid=1;rid<=datastore.size();++rid){
+        for (auto rid=2;rid<=2;++rid){
+            std::cout<<std::endl<<"Processing read "<<rid<<std::endl;
             auto seq=sequence_reader.get_read_sequence(rid);
             read_kmers.clear();
             skf.produce_all_kmers(seq,read_kmers);
@@ -489,57 +522,39 @@ void PairedReadsMapper::path_reads() {
                 auto kmatch=nki.find(read_kmers[rki].second);
                 if (kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second){
                     pme.reset(seq);
+                    //std::cout<<std::endl<<"PME reset done"<<std::endl;
+                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
                     for (;kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second;++kmatch) {
-                        if (read_kmers[rki].first) pme.add_starting_match(kmatch->contigID, rki, kmatch->offset, k);
-                        else pme.add_starting_match(-kmatch->contigID, rki, kmatch->offset, k);
+                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
+                        auto contig=kmatch->contigID;
+                        int64_t pos=kmatch->offset-1;
+                        if (pos<0) {
+                            contig=-contig;
+                            pos=-pos-2;
+                        }
+                        if (!read_kmers[rki].first) contig=-contig;
+                        //std::cout<<"pos = "<<ws.sdg.get_node_size(contig)<<" / "<<pos<<std::endl;
+                        //avoid starting a node in overlap zone, TODO:hardcoded for overlaps of 63!!!
+                        if ( (contig>0 and ws.sdg.get_node_size(contig)-pos<63) or (contig<0 and pos<63-k) )
+                            pme.add_starting_match(contig, rki, pos, k);
+
                     }
                     pme.extend_fw();
-                    for (auto nid:pme.best_path())
-                        if (rp.empty() or nid!=rp.back()) rp.emplace_back(nid);
-                    rki+=pme.extension_size; //this avoids doing extra index looks for kmers that are already used-up.
+                    auto pmebp=pme.best_path();
+
+                    if (pmebp.size()>1 or (pmebp.size()==1 and ( (kmatch->offset>0 and pme.last_nodepos>63) or (kmatch->offset<0 and  ws.sdg.get_node_size(kmatch->contigID)-pme.last_nodepos>63)))) {
+                        for (auto &nid:pmebp)
+                            if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
+                    }
+                    if (!pmebp.empty()) rki=pme.last_readpos+1-k; //this avoids doing extra index looks for kmers that are already used-up.
                     //TODO: matches shold be extended left to avoid unneeded indeterminaiton when an error occurrs in an overlap region and the new hit matches a further part of the genome.
+                    std::cout<<"rki after match extension: "<<rki<<" / "<<read_kmers.size()<<std::endl;
                 }
+
             }
             read_paths[rid].path=rp;
             //TODO: keep the offset of the first match!
         }
-//        for (auto rid=first_read;rid<=last_read;++rid){
-//            std::vector<PerfectMatch> private_read_perfect_matches;
-//            auto seq=sequence_reader.get_read_sequence(rid);
-//            read_kmers.clear();
-//            skf.produce_all_kmers(seq,read_kmers);
-//            nki.get_all_kmer_matches(kmer_matches,read_kmers);
-//            std::map<sgNodeID_t,uint32_t > node_match_count;
-//            auto rksize=read_kmers.size();
-//            auto longest_seed = seed_size;
-//            for (auto i=0;i<rksize;++i) {
-//                longest_seed=(longest_seed>=seed_size ? longest_seed-1:longest_seed); //decreases the length of the skipped matches in each cycle
-//                pmatch.node = 0;
-//                for (auto const &m:kmer_matches[i]) {
-//                    auto last_node = m.first;
-//                    auto last_pos = m.second;
-//                    auto needed_hit=i+longest_seed-k;
-//                    if (needed_hit>i and (needed_hit >= rksize or not in_vector(kmer_matches[needed_hit], {last_node, last_pos + needed_hit -i})))
-//                        continue;
-//                    auto last_i = i;
-//                    while (last_i + 1 < rksize and
-//                           in_vector(kmer_matches[last_i + 1], {last_node, last_pos + last_i - i + 1}))
-//                        ++last_i;
-//                    if (last_i == needed_hit and i==pmatch.read_position) {
-//                        pmatch.node = 0;
-//                    } else if (last_i > needed_hit) {
-//                        pmatch.node = last_node;
-//                        pmatch.node_position = (last_node>0 ? last_pos:last_pos+1-k);
-//                        pmatch.read_position = i;
-//                        longest_seed = pmatch.size = k + last_i - i;
-//                    }
-//                }
-//                if (pmatch.node != 0) {
-//                    private_read_perfect_matches.emplace_back(pmatch);
-//                }
-//            }
-//            read_perfect_matches[rid] = private_read_perfect_matches;
-//        }
     }
 
 };
