@@ -365,6 +365,7 @@ class PerfectMatchPart{
 public:
     void extend(const std::string & readseq,const std::string & nodeseq) {//this jsut grows until it can't and sets the flags.
         //while(i<size(read) and j<size(node) and read[i]==node[j]) ++i (consider RC, maybe just write the conditions appropriately?)
+        auto srp=read_position;
         if (node>0){
             while(read_position<readseq.size()-1 and node_position<nodeseq.size()-1 and nodeseq[node_position+1]==readseq[read_position+1]){
                 ++node_position;
@@ -382,6 +383,7 @@ public:
             completed_read = (read_position==readseq.size()-1);
         }
         extended=true;
+        if (read_position==srp and previous_part!=-1) invalid=true;
     }
 
     sgNodeID_t node;
@@ -394,11 +396,12 @@ public:
     bool completed_node=false;
     bool completed_read=false;
     bool extended=false;
+    bool invalid=false;
 };
 
 class PerfectMatchExtender{
 public:
-    PerfectMatchExtender(DistanceGraph & _dg):dg(_dg){};
+    PerfectMatchExtender(DistanceGraph & _dg, uint8_t _k):dg(_dg),k(_k){};
 
     void reset(std::string _readseq){
         matchparts.clear();
@@ -406,8 +409,7 @@ public:
         last_readpos=0;
     }
 
-    void add_starting_match(sgNodeID_t node_id, uint64_t read_offset, uint64_t node_offset, uint8_t _k){ //add a new start
-        k=_k;
+    void add_starting_match(sgNodeID_t node_id, uint64_t read_offset, uint64_t node_offset){ //add a new start
         matchparts.emplace_back();
         auto &mp=matchparts.back();
         mp.previous_part=-1;
@@ -427,25 +429,38 @@ public:
 
     void extend_fw(){
         //TODO: this could be extended backwards in the original hit to add diferentiation on overlap-transitioned hits after an error.
-        std::cout<<"extend_fw called with "<<matchparts.size()<<" starting matchparts"<<std::endl;
+//        std::cout<<"extend_fw called with "<<matchparts.size()<<" starting matchparts"<<std::endl;
+        //First, check if any matchparts overlap with each other and start the hit in the OVL, if they do, invalidate the incoming
+        for(uint64_t from=0;from<matchparts.size();++from){
+            for(uint64_t to=0;to<matchparts.size();++to){
+                if (from==to) continue;
+                auto d=dg.min_distance(matchparts[from].node,matchparts[to].node);
+                if (d<=-k){
+                    if (matchparts[from].node<0 and matchparts[from].node_position+k<=-d) matchparts[from].invalid=true;
+                    if (matchparts[from].node>0 and dg.sdg.get_node_size(matchparts[from].node)-matchparts[from].node_position<=-d) matchparts[from].invalid=true;
+                }
+            }
+        }
+
         for(uint64_t next=0;next<matchparts.size();++next){
             //extend, if end of node add all nexts as unextended parts.
-            std::cout<<"extending matchpart "<<next<<" to node "<<matchparts[next].node<<" with current readpos="<<matchparts[next].read_position<<" and nodepos="<<matchparts[next].node_position<<std::endl;
+            if (matchparts[next].invalid) continue;
+//            std::cout<<"extending matchpart "<<next<<" to node "<<matchparts[next].node<<" with current readpos="<<matchparts[next].read_position<<" and nodepos="<<matchparts[next].node_position<<std::endl;
             matchparts[next].extend(readseq,dg.sdg.nodes[llabs(matchparts[next].node)].sequence);
-            std::cout<<" -> readpos="<<matchparts[next].read_position<<(matchparts[next].completed_read ? " (completed)":"")<<", nodepos="<<matchparts[next].node_position<<(matchparts[next].completed_node ? " (completed)":"")<<std::endl;
+//            std::cout<<" -> readpos="<<matchparts[next].read_position<<(matchparts[next].completed_read ? " (completed)":"")<<", nodepos="<<matchparts[next].node_position<<(matchparts[next].completed_node ? " (completed)":"")<<std::endl;
             if (matchparts[next].completed_node and not matchparts[next].completed_read){
                 for (auto l: dg.get_nodeview(matchparts[next].node).next()){
                     if (l.distance()>-k+1) continue;
-                    std::cout<<"extending to next node "<<l.node().node_id()<<std::endl;
+//                    std::cout<<"extending to next node "<<l.node().node_id()<<std::endl;
                     matchparts.emplace_back();//add next node part, pointing to this one as previous.
                     auto &mp=matchparts.back();
                     mp.node=l.node().node_id();
-                    mp.read_position=matchparts[next].read_position+1;
+                    mp.read_position=matchparts[next].read_position;
                     if (mp.node>0) {
-                        mp.node_position=-l.distance();
+                        mp.node_position=-l.distance()-1;
                     }
                     else {
-                        mp.node_position=dg.sdg.get_node_size(mp.node)+l.distance()-1;
+                        mp.node_position=dg.sdg.get_node_size(mp.node)+l.distance();
                     }
                     mp.extended=false;
                     mp.previous_part=next;
@@ -455,19 +470,37 @@ public:
     }
     std::vector<sgNodeID_t> best_path(){ //set extension_size when returning a path that was extended.
         std::vector<sgNodeID_t> bp;
-        //find the matches that goes farthest in the read?
-        //more than one? -> unspecific section, return nothing. //TODO: keep them in case many of them define a longest path still?
+        //find if there is a single part that goes further in the read than all the others.
         uint64_t best_length=0;
         int64_t next_index=0;
         for (auto i=0;i<matchparts.size();++i){
             auto &mp=matchparts[i];
+            if (mp.invalid) continue;
             if (mp.read_position==best_length) next_index=-1;
             else if (mp.read_position>best_length) {
                 best_length=mp.read_position;
                 next_index=i;
             }
         }
+        if (next_index==-1){//there was a tie, try to go back to a match that was shared among all paths
+            //go through all match-parts, count how many were tied and walk back from those voting.
+            //at each stage the first one that has votes from all previous winners is considered the consensus hit so far.
+            std::vector<int> votes(matchparts.size());
+            int winners_seen=0;
+            for (auto i=0;i<matchparts.size();++i) {
+                auto &mp = matchparts[i];
+                if (mp.invalid or mp.read_position!=best_length) continue;
+                ++winners_seen;
+                next_index=-1;
+                for (auto j=i;j!=-1;j=matchparts[j].previous_part){
+                    ++votes[j];
+                    if (votes[j]==winners_seen) next_index=j;
+                }
+            }
+//            if (next_index!=-1) std::cout<<"backtracked to a common part as winner, at index"<<next_index<<std::endl;
+        }
         last_nodepos=matchparts[next_index].node_position;
+
 
         while (next_index!=-1) {
             bp.emplace_back(matchparts[next_index].node);
@@ -476,6 +509,11 @@ public:
         std::reverse(bp.begin(),bp.end());
         if (!bp.empty()) last_readpos=best_length;
         else last_nodepos=0;
+//        if (!bp.empty()){
+//            std::cout<<"Winner path found: ";
+//            for (auto &n:bp) std::cout<<" "<<n;
+//            std::cout<<" last_readpos="<<last_readpos<<std::endl;
+//        }
         return bp;
     }
 
@@ -489,7 +527,7 @@ public:
 };
 
 void PairedReadsMapper::path_reads() {
-    //TODO: compute overlap regions for nodes to not start a match into an overlap nor accept a match fully on an overlap.
+    //TODO: when a path jumps nodes implied by overlaps included nodes, add them
     //read pather
     // - Starts from a (multi)63-mer match -> add all starts to PME
     // - extends and check if there's a best path.
@@ -497,23 +535,23 @@ void PairedReadsMapper::path_reads() {
     sgNodeID_t match_node;
     int64_t match_offset;
     read_paths.clear();
-    read_paths.resize(datastore.size());
+    read_paths.resize(datastore.size()+1);
     uint8_t k=31;
     NKmerIndex nki(ws.sdg,k,50);//TODO: hardcoded parameters!!
-    std::cout<<"Index created!"<<std::endl;
+    //sdt::cout<<"Index created!"<<std::endl;
     //if (last_read==0) last_read=datastore.size();
-//#pragma omp parallel shared(nki)
+#pragma omp parallel shared(nki)
     {
         StreamKmerFactory skf(k);
         std::vector<std::pair<bool,uint64_t >> read_kmers; //TODO: type should be defined in the kmerisers
         std::vector<std::vector<std::pair<int32_t,int32_t >>> kmer_matches; //TODO: type should be defined in the index class
         std::vector<sgNodeID_t> rp;
-        PerfectMatchExtender pme(ws.sdg);
+        PerfectMatchExtender pme(ws.sdg,k);
         ReadSequenceBuffer sequence_reader(datastore);
-//#pragma omp for
-        //for (auto rid=1;rid<=datastore.size();++rid){
-        for (auto rid=2;rid<=2;++rid){
-            std::cout<<std::endl<<"Processing read "<<rid<<std::endl;
+#pragma omp for
+        for (auto rid=1;rid<=datastore.size();++rid){
+//        for (auto rid=937;rid<=937;++rid){
+            //sdt::cout<<std::endl<<"Processing read "<<rid<<std::endl;
             auto seq=sequence_reader.get_read_sequence(rid);
             read_kmers.clear();
             skf.produce_all_kmers(seq,read_kmers);
@@ -522,10 +560,10 @@ void PairedReadsMapper::path_reads() {
                 auto kmatch=nki.find(read_kmers[rki].second);
                 if (kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second){
                     pme.reset(seq);
-                    //std::cout<<std::endl<<"PME reset done"<<std::endl;
-                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
+//                    std::cout<<std::endl<<"PME reset done"<<std::endl;
+//                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
                     for (;kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second;++kmatch) {
-                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
+//                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
                         auto contig=kmatch->contigID;
                         int64_t pos=kmatch->offset-1;
                         if (pos<0) {
@@ -533,22 +571,15 @@ void PairedReadsMapper::path_reads() {
                             pos=-pos-2;
                         }
                         if (!read_kmers[rki].first) contig=-contig;
-                        //std::cout<<"pos = "<<ws.sdg.get_node_size(contig)<<" / "<<pos<<std::endl;
-                        //avoid starting a node in overlap zone, TODO:hardcoded for overlaps of 63!!!
-                        if ( (contig>0 and ws.sdg.get_node_size(contig)-pos<63) or (contig<0 and pos<63-k) )
-                            pme.add_starting_match(contig, rki, pos, k);
-
+                        pme.add_starting_match(contig, rki, pos);
                     }
                     pme.extend_fw();
                     auto pmebp=pme.best_path();
-
-                    if (pmebp.size()>1 or (pmebp.size()==1 and ( (kmatch->offset>0 and pme.last_nodepos>63) or (kmatch->offset<0 and  ws.sdg.get_node_size(kmatch->contigID)-pme.last_nodepos>63)))) {
-                        for (auto &nid:pmebp)
-                            if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
-                    }
+                    for (auto &nid:pmebp)
+                        if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
                     if (!pmebp.empty()) rki=pme.last_readpos+1-k; //this avoids doing extra index looks for kmers that are already used-up.
-                    //TODO: matches shold be extended left to avoid unneeded indeterminaiton when an error occurrs in an overlap region and the new hit matches a further part of the genome.
-                    std::cout<<"rki after match extension: "<<rki<<" / "<<read_kmers.size()<<std::endl;
+//                    //TODO: matches shold be extended left to avoid unneeded indeterminaiton when an error occurrs in an overlap region and the new hit matches a further part of the genome.
+//                    std::cout<<"rki after match extension: "<<rki<<" / "<<read_kmers.size()<<std::endl;
                 }
 
             }
@@ -556,6 +587,27 @@ void PairedReadsMapper::path_reads() {
             //TODO: keep the offset of the first match!
         }
     }
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Creating paths_in_node"<<std::endl;
+    //first pass, size computing for vector allocation;
+    std::vector<uint64_t> path_counts(ws.sdg.nodes.size());
+    for (auto i=0;i<read_paths.size();++i){
+        const auto &p=read_paths[i];
+        for (const auto &n:p.path){
+            ++path_counts[llabs(n)];
+        }
+    }
+
+    paths_in_node.clear();
+    paths_in_node.resize(path_counts.size());
+    for (auto i=0;i<path_counts.size();++i) paths_in_node[i].reserve(path_counts[i]);
+    for (auto i=0;i<read_paths.size();++i){
+        const auto &p=read_paths[i];
+        for (const auto &n:p.path){
+            auto pid=(n<0 ? -i : i);
+            if (paths_in_node[llabs(n)].empty() or paths_in_node[llabs(n)].back()!=pid) paths_in_node[llabs(n)].emplace_back(pid);
+        }
+    }
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"pathing finished"<<std::endl;
 
 };
 
