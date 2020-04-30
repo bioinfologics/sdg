@@ -263,7 +263,7 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<GraphContigger>(m,"GraphContigger","Paired end contigger")
             .def(py::init<WorkSpace &>())
-            .def("reconnect_tips",&GraphContigger::clip_tips,"size"_a,"rounds"_a=10)
+            .def("reconnect_tips",&GraphContigger::reconnect_tips,"datastore"_a,"min_links"_a=3)
             .def("clip_tips",&GraphContigger::clip_tips,"size"_a,"rounds"_a=10)
             .def("pop_bubbles",&GraphContigger::pop_bubbles,"datastore"_a,"bubble_size"_a=200,"min_support"_a=4,"max_noise"_a=3,"snr"_a=10)
             .def("solve_canonical_repeats_with_single_paths",&GraphContigger::solve_canonical_repeats_with_single_paths,"datastore"_a,"min_support"_a,"max_noise"_a,"snr"_a=10)
