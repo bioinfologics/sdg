@@ -41,7 +41,7 @@ void GraphContigger::solve_canonical_repeats_with_single_paths(const PairedReads
         ++repeats;
         std::unordered_map<std::pair<sgNodeID_t,sgNodeID_t>,uint64_t> through;
         for (auto &pid:prds.mapper.paths_in_node[nv.node_id()]){
-            //sdglib::OutputLog()<<"checking path "<<pid<<std::endl;
+            //detail_log<<"checking path "<<pid<<std::endl;
             auto p=prds.mapper.read_paths[llabs(pid)].path;
             if (pid<0) {
                 auto old_p=p;
@@ -296,7 +296,7 @@ void GraphContigger::reconnect_tips(const PairedReadsDatastore & prds, int min_s
                 else failed=true;
             }
         }
-        for (auto pit=prds.mapper.read_paths[i1].path.crbegin();pit<prds.mapper.read_paths[i1].path.crend();++pit) {
+        for (auto pit=prds.mapper.read_paths[i1+1].path.crbegin();pit<prds.mapper.read_paths[i1+1].path.crend();++pit) {
             sgNodeID_t n=-*pit;
             if ( (n>0 and tip_fw[n]) or (n<0 and tip_fw[-n]) ) {
                 if (t1==0 or t1==n) t1=n;
@@ -307,8 +307,15 @@ void GraphContigger::reconnect_tips(const PairedReadsDatastore & prds, int min_s
                 else failed=true;
             }
         }
-        if ( t1!=0 and t2!=0 and not failed ) ++pathcount[{t1,t2}];
+        if ( t1!=0 and t2!=0 and not failed ) ++pathcount[{std::min(t1,t2),std::max(t1,t2)}];
     }
+    uint64_t r=0;
+    std::ofstream tcdf("tip_conn_detail.txt");
+    for (auto &pc:pathcount){
+        if (pc.second>=min_support) r++;
+        tcdf<<pc.first.first<<" "<<pc.first.second<<" "<<pc.second<<std::endl;
+    }
+    std::cout<<"tip reconnection: "<<r<<" tip pairs connected by at least "<<min_support<<" links"<<std::endl;
 }
 
 void GraphContigger::clip_tips(int tip_size, int rounds) {
