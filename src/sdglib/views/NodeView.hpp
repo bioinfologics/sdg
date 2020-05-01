@@ -16,8 +16,8 @@ class LinkView;
  */
 class NodeView {
 public:
-    NodeView(DistanceGraph * _dg,sgNodeID_t _n):dg(_dg),id(_n){};
-    NodeView(NodeView const &o):dg(o.dg), id(o.id) {};
+    NodeView(const DistanceGraph * const _dg,sgNodeID_t _n):dg(_dg),id(_n){};
+    NodeView(NodeView const &o) = default;
     friend std::ostream &operator<<(std::ostream &os, const NodeView &n);
     const std::string str() const{
         return "NodeView: Node "+std::to_string(id)+" in "+dg->name;
@@ -141,7 +141,7 @@ public:
 
 private:
     sgNodeID_t id;
-    DistanceGraph * dg;
+    const DistanceGraph * dg;
 };
 
 /**
@@ -153,7 +153,7 @@ private:
 class LinkView {
 public:
     LinkView(const NodeView &nv,const int32_t &d, const Support &s):node_view(nv),dist(d),sup(s){};
-    LinkView(LinkView const &o):node_view(o.node_view),dist(o.dist),sup(o.sup) {};
+    LinkView(LinkView const &o) = default;
     friend std::ostream &operator<<(std::ostream &os, const LinkView &ndv);
     /**
      * @brief

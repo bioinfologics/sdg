@@ -395,8 +395,6 @@ bool DistanceGraph::are_connected(sgNodeID_t n1, sgNodeID_t n2) const {
     return false;
 }
 
-
-
 uint32_t DistanceGraph::link_count(sgNodeID_t n1, sgNodeID_t n2) const {
     uint32_t c=0;
     for (auto &l:links[llabs(n1)]) if (l.source==n1 and l.dest==n2) ++c;
@@ -560,12 +558,6 @@ void DistanceGraph::write(std::ofstream &output_file) {
     sdglib::write_flat_vectorvector(output_file, links);
 }
 
-
-/*DistanceGraph::DistanceGraph(SequenceDistanceGraph &sdg, std::ifstream &input_file) : sdg(sdg) {
-    read(input_file);
-    links.resize(sdg.nodes.size());
-}*/
-
 DistanceGraph::DistanceGraph(SequenceDistanceGraph &_sdg, const std::string &_name): sdg(_sdg),name(_name) {
     if (name!="SDG") links.resize(sdg.nodes.size()); //This is a hack to allow paths in a straight-constructed DG.
 }
@@ -581,7 +573,7 @@ std::string DistanceGraph::ls(int level, bool recursive) const {
     return ss.str();
 }
 
-NodeView DistanceGraph::get_nodeview(sgNodeID_t n) {
+NodeView DistanceGraph::get_nodeview(sgNodeID_t n) const {
     if (n==0 or llabs(n)>=sdg.nodes.size()) throw std::runtime_error("Trying to get a nodeview with invalid node id");
     if (sdg.nodes[llabs(n)].status==NodeStatus::Deleted) throw std::runtime_error("Trying to get a nodeview of a deleted Node");
     return NodeView(this,n);

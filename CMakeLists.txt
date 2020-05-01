@@ -30,6 +30,10 @@ endif (APPLE)
 
 PROJECT (sdg VERSION 0.1)
 
+if (CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 6.0)
+    message(FATAL_ERROR "Unsupported compiler version, please use GCC version 6 or newer")
+endif()
+
 SET(CMAKE_RULE_MESSAGES OFF)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 INCLUDE(FindPythonModule)
@@ -52,55 +56,76 @@ if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
 endif(CCACHE_FOUND)
 
-# Get the remote url
-execute_process(
-        COMMAND git remote get-url origin
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_ORIGIN_URL
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-# Get the current working branch
-execute_process(
-        COMMAND git rev-parse --abbrev-ref HEAD
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_BRANCH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-# Get the latest abbreviated commit hash of the working branch
-execute_process(
-        COMMAND git log -1 --format=%h
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_COMMIT_HASH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-# Check if the git directory is clean
-execute_process(
-        COMMAND git status -s
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_STATUS
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
 # Fill the version variables in case the compilation isn't done from a git repo
 if("${GIT_ORIGIN_URL}" STREQUAL "")
-    add_definitions("-DGIT_ORIGIN_URL=\"not set\"")
+    # Get the remote url
+    execute_process(
+            COMMAND git remote get-url origin
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE GIT_ORIGIN_URL
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if("${GIT_ORIGIN_URL}" STREQUAL "")
+        add_definitions("-DGIT_ORIGIN_URL=\"not set\"")
+    else()
+        add_definitions("-DGIT_ORIGIN_URL=\"${GIT_ORIGIN_URL}\"")
+    endif()
 else()
     add_definitions("-DGIT_ORIGIN_URL=\"${GIT_ORIGIN_URL}\"")
 endif()
+
 if("${GIT_COMMIT_HASH}" STREQUAL "")
-    add_definitions("-DGIT_COMMIT_HASH=\"experimental\"")
-else()
-    if("${GIT_STATUS}" STREQUAL "")
-        add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+    # Get the latest abbreviated commit hash of the working branch
+    execute_process(
+            COMMAND git log -1 --format=%h
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE GIT_COMMIT_HASH
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    if("${GIT_COMMIT_HASH}" STREQUAL "")
+        add_definitions("-DGIT_COMMIT_HASH=\"experimental\"")
     else()
-        add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH} (dirty)\"")
+        execute_process(
+                COMMAND git log -1 --format=%h
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                OUTPUT_VARIABLE GIT_COMMIT_HASH
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if("${GIT_STATUS}" STREQUAL "")
+            # Check if the git directory is clean
+            execute_process(
+                    COMMAND git status -s
+                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                    OUTPUT_VARIABLE GIT_STATUS
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+
+            if("${GIT_STATUS}" STREQUAL "")
+                add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+            else()
+                add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH} (dirty)\"")
+            endif()
+        endif()
     endif()
+    MESSAGE("STATUS - ${GIT_COMMIT_HASH}")
 endif()
+
+
 if("${GIT_BRANCH}" STREQUAL "")
-    add_definitions("-DGIT_BRANCH=\"not_from_git\"")
+    # Get the current working branch
+    execute_process(
+            COMMAND git rev-parse --abbrev-ref HEAD
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE GIT_BRANCH
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    if("${GIT_BRANCH}" STREQUAL "")
+        add_definitions("-DGIT_BRANCH=\"not_from_git\"")
+    else()
+        add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
+    endif()
 else()
     add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
 endif()
