@@ -147,12 +147,14 @@ void GraphEditor::apply_all() {
         }
         if (next_detachment!=path_detachment_queue.end() and next_detachment->index==i) {
             auto &op=*next_detachment;
-            for (auto &n:op.input_nodes) std::cout << " " << n;
             //special case: path with just ends
             if (op.input_nodes.empty()) {
-                for (auto l:ws.sdg.get_fw_links(-op.input_ends[0])) {
-                    if (l.dest != op.input_ends[1])
-                        ws.sdg.remove_link(l.source, l.dest);
+                if ( op.full_detach ) {
+                    for (auto l:ws.sdg.get_fw_links(-op.input_ends[0]))
+                        if (l.dest != op.input_ends[1]) ws.sdg.remove_link(l.source, l.dest);
+                    for (auto l:ws.sdg.get_bw_links(op.input_ends[1]))
+                        if (l.dest != op.input_ends[0]) ws.sdg.remove_link(l.source, l.dest);
+
                 }
             } else {
                 //Create a unitig with the internal path sequence
