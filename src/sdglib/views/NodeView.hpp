@@ -19,23 +19,23 @@ public:
     NodeView(const DistanceGraph * const _dg,sgNodeID_t _n):dg(_dg),id(_n){};
     NodeView(NodeView const &o) = default;
     friend std::ostream &operator<<(std::ostream &os, const NodeView &n);
-    const std::string str() const{
+    std::string str() const{
         return "NodeView: Node "+std::to_string(id)+" in "+dg->name;
     }
-    const std::string repr() const{
+    std::string repr() const{
         return "<NodeView: Node "+std::to_string(id)+" in "+dg->name+">";
     }
-    DistanceGraph & graph() const;
-    const bool operator==(const NodeView &o) const {return (id==o.id) and (dg==o.dg);};
+    const DistanceGraph & graph() const;
+    bool operator==(const NodeView &o) const {return (id==o.id) and (dg==o.dg);};
     /**
      * @return Sequence of the underlying SequenceDistanceGraph node
      */
-    const std::string sequence() const;
+    std::string sequence() const;
 
     /**
      * @return Length of the node sequence in the graph
      */
-    const uint64_t size() const;
+    uint64_t size() const;
 
     /**
      * @return The reverse complement NodeView
@@ -45,21 +45,21 @@ public:
     /**
      * @return A vector of LinkView for the next elements defined by the DistanceGraph
      */
-    const std::vector<LinkView> next() const;
+    std::vector<LinkView> next() const;
     /**
      * @return A vector of LinkView for the previous elements defined by the DistanceGraph
      */
-    const std::vector<LinkView> prev() const;
+    std::vector<LinkView> prev() const;
 
     /**
      * @return A vector of NodeView for all nodes that have the same connections fw and bw than this node
      */
-    const std::vector<NodeView> parallels() const;
+    std::vector<NodeView> parallels() const;
 
     /**
      * @return The id of the underlying SequenceDistanceGraph node
      */
-    const sgNodeID_t node_id() const {return sgNodeID_t(id);};
+    sgNodeID_t node_id() const {return sgNodeID_t(id);};
 
     /**
      * @brief Coverage of each kmer in the node
