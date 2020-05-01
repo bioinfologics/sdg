@@ -13,7 +13,6 @@
 #include "sdglib/factories/KMerIDXFactory.hpp"
 #include <sdglib/indexers/UniqueKmerIndex.hpp>
 #include <sdglib/Version.hpp>
-#include <sdglib/datastores/ReadPathsDatastore.hpp>
 
 class PairedReadsDatastore;
 class UniqueKmerIndex;

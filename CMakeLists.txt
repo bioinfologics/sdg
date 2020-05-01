@@ -175,8 +175,7 @@ SET(header_files
     src/sdglib/datastores/LinkedReadsDatastore.hpp
     src/sdglib/datastores/LongReadsDatastore.hpp
     src/sdglib/datastores/KmerCounter.hpp
-    src/sdglib/datastores/ReadPathsDatastore.hpp
-    src/sdglib/datastores/ReadSequenceBuffer.hpp
+        src/sdglib/datastores/ReadSequenceBuffer.hpp
     src/sdglib/mappers/LongReadsMapper.hpp
     src/sdglib/mappers/LinkedReadsMapper.hpp
     src/sdglib/mappers/PairedReadsMapper.hpp
@@ -206,8 +205,7 @@ SET(source_files ${source_files}
     src/sdglib/datastores/LinkedReadsDatastore.cc
     src/sdglib/datastores/LongReadsDatastore.cc
     src/sdglib/datastores/KmerCounter.cc
-    src/sdglib/datastores/ReadPathsDatastore.cc
-    src/sdglib/datastores/ReadSequenceBuffer.cc
+        src/sdglib/datastores/ReadSequenceBuffer.cc
     src/sdglib/mappers/LongReadsMapper.cc
     src/sdglib/mappers/LinkedReadsMapper.cc
     src/sdglib/mappers/PairedReadsMapper.cc
@@ -348,45 +346,6 @@ IF(BUILD_DOC)
     endif (DOXYGEN_FOUND)
 ENDIF()
 
-IF(BUILD_PYTHON_INTERFACE)
-    FIND_PACKAGE(PythonInterp 3 REQUIRED)
-    FIND_PACKAGE(PythonLibs 3 REQUIRED)
-
-    MESSAGE("Building python interface")
-    FIND_PACKAGE(SWIG REQUIRED)
-    INCLUDE(${SWIG_USE_FILE})
-    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/pysdg/pysdg)
-    configure_file(interfaces/python/__init__.py.in pysdg/pysdg/__init__.py)
-    configure_file(interfaces/SequenceDistanceGraph.i.in SequenceDistanceGraph.i)
-    configure_file(interfaces/python/setup.py.in pysdg/setup.py)
-
-    INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
-
-    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-
-    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY SWIG_MODULE_NAME pysdg)
-
-    SET_SOURCE_FILES_PROPERTIES(${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTIES
-                                                                                CPLUSPLUS ON)
-
-    SET(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-py3")
-    SET(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-builtin")
-    SET(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-O")
-    SET(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-doxygen")
-    if (NOT APPLE)
-        set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
-        set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
-    endif()
-
-    SWIG_ADD_LIBRARY(pysdg
-                     LANGUAGE python
-                     SOURCES ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i
-                     )
-    SWIG_LINK_LIBRARIES(pysdg ${PYTHON_LIBRARIES} sdg)
-    set_target_properties(pysdg PROPERTIES
-                          LIBRARY_OUTPUT_DIRECTORY pysdg/pysdg)
-ENDIF()
-
 IF(BUILD_SIMPLE_PYTHON_INTERFACE)
     MESSAGE("Building simple python interface")
     FIND_PACKAGE(PythonInterp 3 REQUIRED)
@@ -416,31 +375,6 @@ IF(BUILD_SIMPLE_PYTHON_INTERFACE)
                 SUFFIX     ".so"
                 )
     ENDIF()
-ENDIF()
-
-
-
-IF(BUILD_R_INTERFACE)
-    MESSAGE("Building R interface")
-    FIND_PACKAGE(SWIG REQUIRED)
-    SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
-    FIND_PACKAGE(R REQUIRED)
-    INCLUDE_DIRECTORIES(${R_INCLUDE_DIR})
-    INCLUDE(${SWIG_USE_FILE})
-    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/rsdg)
-    configure_file(interfaces/SequenceDistanceGraph.i.in SequenceDistanceGraph.i)
-
-    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-    SET_SOURCE_FILES_PROPERTIES(${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTIES CPLUSPLUS ON)
-    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY SWIG_MODULE_NAME rsdg)
-    SWIG_ADD_LIBRARY(rsdg LANGUAGE r SOURCES ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i)
-    SWIG_LINK_LIBRARIES(rsdg ${R_LIBRARIES} sdg_static)
-
-    install(TARGETS
-            rsdg
-            RUNTIME DESTINATION rsdg
-            ARCHIVE DESTINATION rsdg
-            LIBRARY DESTINATION rsdg)
 ENDIF()
 
 install(TARGETS

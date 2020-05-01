@@ -2,8 +2,7 @@
 // Created by Luis Yanes (EI) on 22/03/2018.
 //
 
-#ifndef BSG_GENERICTYPES_HPP
-#define BSG_GENERICTYPES_HPP
+#pragma once
 
 #include <iostream>
 #include <string>
@@ -121,5 +120,3 @@ inline std::string strRC(const std::string & sequence){
     }
     return rseq;
 }
-
-#endif //BSG_GENERICTYPES_HPP

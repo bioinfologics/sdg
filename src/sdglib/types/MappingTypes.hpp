@@ -2,8 +2,7 @@
 // Created by Luis Yanes (EI) on 23/03/2018.
 //
 
-#ifndef BSG_MAPPINGTYPES_HPP
-#define BSG_MAPPINGTYPES_HPP
+#pragma once
 
 #include <cstdint>
 #include <strings.h>
@@ -11,6 +10,7 @@
 #include <tuple>
 #include "GenericTypes.hpp"
 #include "hashing_helper.hpp"
+#include <vector>
 
 class ReadMapping {
 public:
@@ -140,4 +140,7 @@ struct SequenceMatch_hash {
     }
 };
 
-#endif //BSG_MAPPINGTYPES_HPP
+struct ReadPath{
+    uint32_t offset;
+    std::vector<sgNodeID_t> path;
+};

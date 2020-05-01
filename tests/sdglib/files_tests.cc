@@ -6,7 +6,6 @@
 #include <sdglib/readers/FileReader.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <random>
-#include <sdglib/datastores/ReadPathsDatastore.hpp>
 
 TEST_CASE("Workspace create, read, write") {
     // Long reads
