@@ -190,7 +190,7 @@ void GraphEditor::remove_small_components(int max_nodes, int max_size, int max_t
             if (ws.sdg.nodes[llabs(n)].sequence.size()>max_size) total+=max_total;
             total+=ws.sdg.nodes[llabs(n)].sequence.size();
         }
-        if (total>max_size) continue;
+        if (total>max_total) continue;
         else to_remove.insert(to_remove.end(),c.begin(),c.end());
     }
     uint64_t tbp=0;
