@@ -4,6 +4,8 @@
 
 #pragma once
 #include <sdglib/graph/DistanceGraph.hpp>
+#include <sdglib/indexers/NKmerIndex.hpp>
+#include <memory>
 
 class PerfectMatchPart{
 public:
@@ -30,24 +32,36 @@ public:
     void reset(std::string _readseq);
     void add_starting_match(sgNodeID_t node_id, uint64_t read_offset, uint64_t node_offset);
     void extend_fw();
-    std::vector<sgNodeID_t> best_path(); //Todo: return pointer to the last part?
+    void set_best_path(); //Todo: return pointer to the last part?
 
 
 
     DistanceGraph & dg;
     uint8_t k;
     std::vector<PerfectMatchPart> matchparts;
+    std::vector<sgNodeID_t> best_path;
     uint64_t last_readpos;
     uint64_t last_nodepos;
     std::string readseq;
 
 };
 
-class PerfectMatcher {
+/*class PerfectMatcher {
+public:
     //Create with a graph and parameters for the index.
+    PerfectMatcher(DistanceGraph &_dg,std::shared_ptr<NKmerIndex> _nki):dg(_dg),nki(_nki){};
+
+    //Create with a graph and a pointer to the index.
+    PerfectMatcher(DistanceGraph &_dg,uint8_t _k, uint16_t _max_freq):dg(_dg),nki(std::make_shared<NKmerIndex>(dg.sdg,_k,_max_freq)){};
 
     //set a sequence to map
+    void set_sequence();
 
     //get_next_match returns a PerfectMatchPath object that points to the pme and enables to get the match parts
+    PerfectMatchPart & get_next_part();
 
-};
+    void reset_part_getter()
+
+    std::shared_ptr<NKmerIndex> nki;
+    DistanceGraph & dg;
+};*/

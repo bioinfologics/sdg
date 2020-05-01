@@ -34,6 +34,7 @@ void PerfectMatchPart::extend(const std::string & readseq,const std::string & no
 
 void PerfectMatchExtender::reset(std::string _readseq){
     matchparts.clear();
+    best_path.clear();
     readseq=_readseq;
     last_readpos=0;
 }
@@ -78,7 +79,7 @@ void PerfectMatchExtender::extend_fw(){
         matchparts[next].extend(readseq,dg.sdg.nodes[llabs(matchparts[next].node)].sequence);
 //            std::cout<<" -> readpos="<<matchparts[next].read_position<<(matchparts[next].completed_read ? " (completed)":"")<<", nodepos="<<matchparts[next].node_position<<(matchparts[next].completed_node ? " (completed)":"")<<std::endl;
         if (matchparts[next].completed_node and not matchparts[next].completed_read){
-            for (auto l: dg.get_nodeview(matchparts[next].node).next()){
+            for (const auto & l: dg.get_nodeview(matchparts[next].node).next()){
                 if (l.distance()>-k+1) continue;
 //                    std::cout<<"extending to next node "<<l.node().node_id()<<std::endl;
                 matchparts.emplace_back();//add next node part, pointing to this one as previous.
@@ -97,8 +98,7 @@ void PerfectMatchExtender::extend_fw(){
         }
     }
 }
-std::vector<sgNodeID_t> PerfectMatchExtender::best_path(){ //set extension_size when returning a path that was extended.
-    std::vector<sgNodeID_t> bp;
+void PerfectMatchExtender::set_best_path(){ //set extension_size when returning a path that was extended.
     //find if there is a single part that goes further in the read than all the others.
     uint64_t best_length=0;
     int64_t next_index=0;
@@ -132,16 +132,10 @@ std::vector<sgNodeID_t> PerfectMatchExtender::best_path(){ //set extension_size 
 
 
     while (next_index!=-1) {
-        bp.emplace_back(matchparts[next_index].node);
+        best_path.emplace_back(matchparts[next_index].node);
         next_index=matchparts[next_index].previous_part;
     }
-    std::reverse(bp.begin(),bp.end());
-    if (!bp.empty()) last_readpos=best_length;
+    std::reverse(best_path.begin(),best_path.end());
+    if (!best_path.empty()) last_readpos=best_length;
     else last_nodepos=0;
-//        if (!bp.empty()){
-//            std::cout<<"Winner path found: ";
-//            for (auto &n:bp) std::cout<<" "<<n;
-//            std::cout<<" last_readpos="<<last_readpos<<std::endl;
-//        }
-    return bp;
 }

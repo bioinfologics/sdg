@@ -408,9 +408,10 @@ void PairedReadsMapper::path_reads() {
                         pme.add_starting_match(contig, rki, pos);
                     }
                     pme.extend_fw();
-                    auto pmebp=pme.best_path();
+                    pme.set_best_path();
+                    const auto & pmebp=pme.best_path;
                     if (pme.last_readpos==datastore.readsize-1 or pme.last_readpos-rki>=63) {//TODO: hardcoded 63bp hit or end
-                        for (auto &nid:pmebp)
+                        for (const auto &nid:pmebp)
                             if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
                         if (!pmebp.empty())
                             rki = pme.last_readpos + 1 - k; //avoid extra index lookups for kmers already used once
