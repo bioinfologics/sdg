@@ -330,6 +330,14 @@ float KmerCounter::kci(sgNodeID_t node) {
     }
 }
 
+void KmerCounter::compute_all_kcis() {
+#pragma omp parallel for
+    for (sgNodeID_t n=1;n<ws.sdg.nodes.size();++n){
+        if (ws.sdg.nodes[n].status==NodeStatus::Active) kci(n);
+    }
+
+}
+
 std::vector<uint64_t> KmerCounter::count_spectra(std::string name, uint16_t maxf, bool unique_in_graph, bool present_in_graph) {
     std::vector<uint64_t> s(maxf+1);
     auto &cv=get_count_by_name(name);
