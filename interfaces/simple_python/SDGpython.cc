@@ -288,4 +288,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("path",&PFScoredPath::path,py::return_value_policy::reference)
             .def("score",&PFScoredPath::score)
             ;
+
+    m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
+    m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
 }

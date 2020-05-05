@@ -428,4 +428,13 @@ public:
     }
 };
 
+namespace sdglib {
+    static std::vector<std::pair<bool, uint64_t>> str_to_kmers(std::string s, uint8_t k) {
+        std::vector<std::pair<bool, uint64_t>> r;
+        StreamKmerFactory skf(k);
+        skf.produce_all_kmers(s.c_str(), r);
+        return r;
+    }
+}
+
 #endif //SEQ_SORTER_KMERFACTORY_H
