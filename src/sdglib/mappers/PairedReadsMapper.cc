@@ -556,34 +556,49 @@ void PairedReadsMapper::path_reads63() {
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"pathing finished"<<std::endl;
 }
 
-std::vector<sgNodeID_t> PairedReadsMapper::path_fw(int64_t read_id, sgNodeID_t node, bool use_pair) {
-    std::vector<sgNodeID_t> path_fw;
+std::vector<sgNodeID_t> PairedReadsMapper::path_fw(seqID_t read_id, sgNodeID_t node, bool use_pair, bool collapse_pair) {
+    auto pread_id=datastore.get_read_pair(read_id);
 
-    if (read_id>0) {
-        auto it=read_paths[read_id].path.cbegin();
-        while (it!=read_paths[read_id].path.cend() and *it!=node) ++it;
-        if (it==read_paths[read_id].path.cend()) return {};
-        else ++it;
-        while (it!=read_paths[read_id].path.cend()) path_fw.emplace_back(*it++);
-        if (use_pair) {
-            path_fw.emplace_back(0);
-            auto read2_id = (read_id % 2 ? read_id + 1 : read_id - 1);
-            auto itr = read_paths[read2_id].path.crbegin();
-            for (; itr != read_paths[read2_id].path.crend() and *itr != -node; ++itr);
-            if (itr == read_paths[read2_id].path.crend()) itr = read_paths[read2_id].path.crbegin();
-            else ++itr;
-            while (itr != read_paths[read2_id].path.crend()) path_fw.emplace_back(-*itr++);
-        }
+    //check for obvious no-path conditions:
+    if (read_paths[llabs(read_id)].path.empty()) return {};
+    if (read_paths[llabs(read_id)].path.size()==1) {
+        if (not use_pair) return {};
+        if (read_paths[llabs(pread_id)].path.empty()) return {};
+        if (read_paths[llabs(pread_id)].path.size()==1 and read_paths[llabs(pread_id)].path[0]==-node) return {};
+    }
+
+    //get read paths in the right orientation - leaves r2p empty if not using pairs
+    std::vector<sgNodeID_t> r1p,r2p;
+    if (read_id > 0) {
+        r1p=read_paths[read_id].path;
+        if (use_pair) sdglib::reverse_path(r2p,read_paths[-datastore.get_read_pair(read_id)].path);
     }
     else {
-        auto itr=read_paths[-read_id].path.crbegin();
-        while (itr!=read_paths[-read_id].path.crend() and *itr!=-node) ++itr;
-        if (itr==read_paths[-read_id].path.crend()) return {};
-        else ++itr;
-        while (itr!=read_paths[-read_id].path.crend()) path_fw.emplace_back(-*itr++);
-        //pair is not FW, so it is not used!
+        sdglib::reverse_path(r1p,read_paths[-read_id].path); //no read pair, as the pair comes "BEFORE"
     }
-    if (not path_fw.empty() and path_fw.back()==0) path_fw.resize(path_fw.size()-1);
+
+    //if collapsing pairs, find max overlap between end of r1p and begining of r2p
+    int ovl=0;
+    if (collapse_pair){
+        for (ovl=std::min(r1p.size(),r2p.size());ovl>0;--ovl){
+            auto p1it=r1p.cend()-ovl, p2it=r2p.cbegin();
+            while(p1it<r1p.cend() and *p1it==*p2it) ++p1it,++p2it;
+            if (p1it==r1p.cend()) break;
+        }
+    }
+
+    //discards up to node in r1p
+    auto r1it=r1p.cbegin();
+    while (r1it<r1p.cend() and *r1it!=node) ++r1it;
+    if (r1it==r1p.cend()) return {};
+    std::vector<sgNodeID_t> path_fw;
+    path_fw.insert(path_fw.end(),++r1it,r1p.cend());
+
+    //adds {0} and r2p if there's anything there
+    if (ovl<r2p.size()){
+        path_fw.emplace_back(0);
+        path_fw.insert(path_fw.end(),r2p.cbegin()+ovl,r2p.cend());
+    }
     return path_fw;
 }
 
@@ -665,45 +680,6 @@ PairedReadsMapper& PairedReadsMapper::operator=(const PairedReadsMapper &other) 
     reads_in_node = other.reads_in_node;
     read_to_node = other.read_to_node;
     return *this;
-}
-
-PairedReadConnectivityDetail::PairedReadConnectivityDetail(const PairedReadsMapper &prm, sgNodeID_t source,
-                                                           sgNodeID_t dest) {
-    /*std::set<uint64_t> connecting_reads_s;
-    std::set<uint64_t> connecting_reads_d;
-    for (auto rm:prm.reads_in_node[llabs(source)]){
-        auto rs=rm.read_id;
-        auto rd=rs;
-        if (rs%2==1) rd=rs+1;
-        else rd=rs-1;
-        connecting_reads_s.insert(rs);
-        connecting_reads_d.insert(rd);
-    }*/
-    sgNodeID_t us=llabs(source);
-    sgNodeID_t  ud=llabs(dest);
-    for (auto rm:prm.reads_in_node[us]){
-        uint64_t r1,r2;
-        if (rm.read_id%2==1){
-            r1=rm.read_id;
-            r2=r1+1;
-        }
-        else{
-            r1=rm.read_id-1;
-            r2=r1+1;
-        }
-        if (prm.read_to_node[r1]==us){
-            if (prm.read_to_node[r2]==ud){
-                ++orientation_paircount[(prm.read_direction_in_node[r1]? 0:1)+(prm.read_direction_in_node[r2]? 0:2)];
-            }
-        }
-        else if (prm.read_to_node[r1]==ud) {
-            if (prm.read_to_node[r2]==us) {
-                ++orientation_paircount[(prm.read_direction_in_node[r2] ? 0 : 1)+(prm.read_direction_in_node[r1] ? 0 : 2)];
-            }
-
-        }
-    }
-
 }
 
 std::vector<uint64_t> PairedReadsMapper::get_node_readpairs_ids(sgNodeID_t nodeID) {

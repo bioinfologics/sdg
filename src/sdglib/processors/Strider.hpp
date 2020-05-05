@@ -10,7 +10,10 @@ class Strider {
 public:
 
     Strider(WorkSpace & _ws):ws(_ws){};
+    //walk out from a node
     SequenceDistanceGraphPath walk_out(sgNodeID_t n);
+
+    SequenceDistanceGraphPath walk_out_in_order(sgNodeID_t n);
     WorkSpace & ws;
 };
 

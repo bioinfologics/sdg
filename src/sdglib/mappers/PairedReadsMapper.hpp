@@ -2,8 +2,7 @@
 // Created by Bernardo Clavijo (EI) on 12/05/2018.
 //
 
-#ifndef BSG_PAIREDREADSMAPPER_HPP
-#define BSG_PAIREDREADSMAPPER_HPP
+#pragma once
 
 #include <map>
 #include <unordered_set>
@@ -89,8 +88,10 @@ public:
      *
      * @param read_id
      * @param node
+     * @param use_pair
+     * @param collapse_pair
      */
-    std::vector<sgNodeID_t> path_fw(int64_t read_id,sgNodeID_t node, bool use_pair=true);
+    std::vector<sgNodeID_t> path_fw(seqID_t read_id,sgNodeID_t node, bool use_pair=true, bool collapse_pair=true);
 
     /** @brief Estimates the fragment size distribution for the mapped data-store using the mapped pairs.
      *
@@ -155,22 +156,3 @@ public:
 
 };
 
-/**
- * Analysis of all reads connecting two particular nodes.
- */
-class PairedReadConnectivityDetail {
-public:
-    PairedReadConnectivityDetail(){};
-    PairedReadConnectivityDetail(const PairedReadsMapper & prm, sgNodeID_t source, sgNodeID_t dest);
-    PairedReadConnectivityDetail& operator+=(const PairedReadConnectivityDetail& rhs){
-        orientation_paircount[0] += rhs.orientation_paircount[0];
-        orientation_paircount[1] += rhs.orientation_paircount[1];
-        orientation_paircount[2] += rhs.orientation_paircount[2];
-        orientation_paircount[3] += rhs.orientation_paircount[3];
-        return *this;
-    }
-
-    uint64_t orientation_paircount[4]={0,0,0,0};
-};
-
-#endif //BSG_PAIREDREADSMAPPER_HPP

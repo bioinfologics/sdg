@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <tuple>
+#include <vector>
 #include <limits>
 #include <cstdint>
 #include <xxhash/xxhash.h>
@@ -120,5 +121,19 @@ namespace sdglib {
             }
         }
         return rseq;
+    }
+
+    inline void reverse_path(std::vector<sgNodeID_t> &out,const std::vector<sgNodeID_t> &in){
+        out.clear();
+        out.reserve(in.size());
+        for (auto it=in.crbegin();it<in.crend();++it) {
+            out.emplace_back(-*it);
+        }
+    }
+
+    inline std::vector<sgNodeID_t> reverse_path(const std::vector<sgNodeID_t> &in){
+        std::vector<sgNodeID_t> out;
+        sdglib::reverse_path(out,in);
+        return out;
     }
 }
