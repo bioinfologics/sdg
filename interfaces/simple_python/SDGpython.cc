@@ -139,7 +139,8 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<PairedReadsDatastore>(m, "PairedReadsDatastore", "A Paired Reads Datastore")
             .def("size",&PairedReadsDatastore::size)
-            .def("get_read_sequence",&PairedReadsDatastore::get_read_sequence)
+            .def("get_read_sequence",&PairedReadsDatastore::get_read_sequence,"read_id"_a)
+            .def("get_read_pair",&PairedReadsDatastore::get_read_pair,"read_id"_a)
             .def_readwrite("mapper",&PairedReadsDatastore::mapper)
             ;
 

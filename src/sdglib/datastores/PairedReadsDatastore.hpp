@@ -56,8 +56,8 @@ public:
     void read(std::ifstream & input_file);
     void load_index();
     uint64_t size()const;
-    std::string get_read_sequence(size_t readID);
-    size_t get_read_pair(size_t readID) {return (readID%2==1) ? readID+1: readID-1;};
+    std::string get_read_sequence(seqID_t readID);
+    seqID_t get_read_pair(seqID_t readID);
     std::unordered_set<__uint128_t, int128_hash> get_all_kmers128(int k, int min_tag_cov);
     std::unordered_set<__uint128_t, int128_hash> get_reads_kmers128(int k, int min_tag_cov, std::vector<uint64_t> reads);
 
