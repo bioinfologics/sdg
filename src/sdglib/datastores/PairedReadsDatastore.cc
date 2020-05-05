@@ -255,7 +255,7 @@ std::string PairedReadsDatastore::get_read_sequence(seqID_t readID) {
     return std::string(buffer);
 }
 
-seqID_t PairedReadsDatastore::get_read_pair(seqID_t readID) {
+seqID_t PairedReadsDatastore::get_read_pair(seqID_t readID) const {
     if (readID>0) {
         if (readID % 2) return -readID - 1;
         return -readID+1;

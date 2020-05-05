@@ -57,7 +57,7 @@ public:
     void load_index();
     uint64_t size()const;
     std::string get_read_sequence(seqID_t readID);
-    seqID_t get_read_pair(seqID_t readID);
+    seqID_t get_read_pair(seqID_t readID) const;
     std::unordered_set<__uint128_t, int128_hash> get_all_kmers128(int k, int min_tag_cov);
     std::unordered_set<__uint128_t, int128_hash> get_reads_kmers128(int k, int min_tag_cov, std::vector<uint64_t> reads);
 
