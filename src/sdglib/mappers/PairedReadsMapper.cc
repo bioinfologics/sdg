@@ -602,6 +602,20 @@ std::vector<sgNodeID_t> PairedReadsMapper::path_fw(seqID_t read_id, sgNodeID_t n
     return path_fw;
 }
 
+std::vector<std::vector<sgNodeID_t> > PairedReadsMapper::all_paths_fw(sgNodeID_t node, bool use_pair, bool collapse_pair) {
+    std::vector<std::vector<sgNodeID_t> > r;
+    std::unordered_set<seqID_t> rids;
+    for (auto rid:paths_in_node[llabs(node)] ){
+        if (node<0) rid=-rid;
+        if (rid<0 or rids.count(datastore.get_read_pair(rid))==0) {
+            rids.insert(rid);
+            r.emplace_back(path_fw(rid,node,use_pair,collapse_pair));
+            if (r.back().empty()) r.pop_back();
+        }
+    }
+    return r;
+}
+
 void PairedReadsMapper::print_status() const {
     uint64_t none=0,single=0,both=0,same=0;
     for (uint64_t r1=1;r1<read_to_node.size();r1+=2){

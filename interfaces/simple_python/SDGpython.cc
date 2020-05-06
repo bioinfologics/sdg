@@ -14,6 +14,7 @@
 #include <sdglib/processors/GraphContigger.hpp>
 #include <sdglib/processors/GraphMaker.hpp>
 #include <sdglib/processors/PathFinder.hpp>
+#include <sdglib/processors/Strider.hpp>
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -155,6 +156,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readonly("paths_in_node",&PairedReadsMapper::paths_in_node)
             .def_readonly("read_paths",&PairedReadsMapper::read_paths)
             .def("path_fw",&PairedReadsMapper::path_fw,"read_id"_a,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true)
+            .def("all_paths_fw",&PairedReadsMapper::all_paths_fw,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true)
             .def("dump_readpaths",&PairedReadsMapper::dump_readpaths)
             .def("load_readpaths",&PairedReadsMapper::load_readpaths)
             ;

@@ -93,6 +93,8 @@ public:
      */
     std::vector<sgNodeID_t> path_fw(seqID_t read_id,sgNodeID_t node, bool use_pair=true, bool collapse_pair=true);
 
+    std::vector<std::vector<sgNodeID_t>> all_paths_fw(sgNodeID_t node, bool use_pair=true, bool collapse_pair=true);
+
     /** @brief Estimates the fragment size distribution for the mapped data-store using the mapped pairs.
      *
      * Estimates the fragment size distribution for the mapped data-store using the mapped pairs.
