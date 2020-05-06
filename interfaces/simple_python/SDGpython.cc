@@ -292,6 +292,10 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("score",&PFScoredPath::score)
             ;
 
+    py::class_<Strider>(m,"Strider","Strider")
+            .def(py::init<WorkSpace &>(),"ws"_a)
+            .def("walk_out",&Strider::walk_out,"node"_a);
+
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
 }
