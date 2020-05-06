@@ -294,7 +294,8 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<Strider>(m,"Strider","Strider")
             .def(py::init<WorkSpace &>(),"ws"_a)
-            .def("walk_out",&Strider::walk_out,"node"_a);
+            .def("walk_out",&Strider::walk_out,"node"_a)
+            .def("walk_out_in_order",&Strider::walk_out_in_order,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true);
 
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);

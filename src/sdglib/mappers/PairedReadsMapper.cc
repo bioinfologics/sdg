@@ -564,7 +564,7 @@ std::vector<sgNodeID_t> PairedReadsMapper::path_fw(seqID_t read_id, sgNodeID_t n
     if (read_paths[llabs(read_id)].path.size()==1) {
         if (not use_pair) return {};
         if (read_paths[llabs(pread_id)].path.empty()) return {};
-        if (read_paths[llabs(pread_id)].path.size()==1 and read_paths[llabs(pread_id)].path[0]==-node) return {};
+        if (read_paths[llabs(pread_id)].path.size()==1 and read_paths[llabs(pread_id)].path[0]==(pread_id>0 ? -node:node) ) return {};
     }
 
     //get read paths in the right orientation - leaves r2p empty if not using pairs

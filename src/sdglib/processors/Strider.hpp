@@ -13,7 +13,7 @@ public:
     //walk out from a node
     SequenceDistanceGraphPath walk_out(sgNodeID_t n);
 
-    SequenceDistanceGraphPath walk_out_in_order(sgNodeID_t n);
+    SequenceDistanceGraphPath walk_out_in_order(sgNodeID_t n, bool use_pair=true, bool collapse_pair=true);
     WorkSpace & ws;
 };
 
