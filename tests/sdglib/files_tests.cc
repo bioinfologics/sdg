@@ -221,10 +221,3 @@ TEST_CASE("Load GFA2") {
     sg.load_from_gfa("../tests/datasets/graph/test_gfa2.gfa");
     REQUIRE(sg.nodes.size() > 1);
 }
-
-TEST_CASE("Load ReadPaths") {
-
-    ReadPathsDatastore ds("../tests/datasets/test.paths");
-
-    REQUIRE(!ds.read_paths.empty());
-}
