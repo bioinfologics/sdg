@@ -46,6 +46,7 @@ void PerfectMatchExtender::add_starting_match(sgNodeID_t node_id, uint64_t read_
     mp.node=node_id;
     mp.extended=false;
     mp.read_position=read_offset+k-1;
+    mp.offset=read_offset;
     mp.extended=mp.completed_read=(mp.read_position==readseq.size()-1);
     if (node_id>0) {
         mp.node_position=node_offset+k-1;
@@ -129,6 +130,7 @@ void PerfectMatchExtender::set_best_path(){ //set extension_size when returning 
 //            if (next_index!=-1) std::cout<<"backtracked to a common part as winner, at index"<<next_index<<std::endl;
     }
     last_nodepos=matchparts[next_index].node_position;
+    winning_last_part=next_index;
 
 
     while (next_index!=-1) {
@@ -138,4 +140,21 @@ void PerfectMatchExtender::set_best_path(){ //set extension_size when returning 
     std::reverse(best_path.begin(),best_path.end());
     if (!best_path.empty()) last_readpos=best_length;
     else last_nodepos=0;
+}
+
+void PerfectMatchExtender::make_path_as_perfect_matches() {
+    best_path_matches.clear();
+    //PerfectMatch pm(node,node_position,read_position,size)
+    auto next_index=winning_last_part;
+    while (next_index!=-1) {
+        //best_path.emplace_back(matchparts[next_index].node);
+        const auto & mp=matchparts[next_index];
+        auto rpstart=(mp.previous_part == -1 ? mp.offset: matchparts[mp.previous_part].read_position+1);
+        //TODO: not sure if the node coordinates will adjust to expectation like this
+        auto msize=mp.read_position-rpstart+1;
+        auto npstart=(mp.node>0 ? mp.node_position+1-msize : dg.sdg.get_node_size(mp.node)-mp.node_position-msize);
+        best_path_matches.emplace_back(mp.node,npstart,rpstart,msize);
+        next_index=matchparts[next_index].previous_part;
+    }
+    std::reverse(best_path_matches.begin(),best_path_matches.end());
 }

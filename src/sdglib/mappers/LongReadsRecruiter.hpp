@@ -46,6 +46,7 @@ public:
     void dump(std::string filename);
     void load(std::string filename);
     void perfect_mappings(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
+    void map(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
     void recruit_reads(uint16_t seed_size,uint16_t seed_count,uint64_t first_read=1,uint64_t last_read=0);
     void recruit_threads();
     void reset_recruitment();

@@ -6,6 +6,7 @@
 #include <sdglib/graph/DistanceGraph.hpp>
 #include <sdglib/indexers/NKmerIndex.hpp>
 #include <memory>
+#include "LongReadsRecruiter.hpp"
 
 class PerfectMatchPart{
 public:
@@ -33,16 +34,18 @@ public:
     void add_starting_match(sgNodeID_t node_id, uint64_t read_offset, uint64_t node_offset);
     void extend_fw();
     void set_best_path(); //Todo: return pointer to the last part?
-
+    void make_path_as_perfect_matches();
 
 
     DistanceGraph & dg;
     uint8_t k;
     std::vector<PerfectMatchPart> matchparts;
+    std::vector<PerfectMatch> best_path_matches;
     std::vector<sgNodeID_t> best_path;
     uint64_t last_readpos;
     uint64_t last_nodepos;
     std::string readseq;
+    int16_t winning_last_part=-1;
 
 };
 

@@ -3,6 +3,7 @@
 //
 
 #include "LongReadsRecruiter.hpp"
+#include "PerfectMatcher.hpp"
 #include <sdglib/indexers/NKmerIndex.hpp>
 
 LongReadsRecruiter::LongReadsRecruiter(SequenceDistanceGraph &_sdg, const LongReadsDatastore &datastore,uint8_t _k=25, uint16_t _f=50):
@@ -79,6 +80,64 @@ void LongReadsRecruiter::perfect_mappings(uint16_t seed_size, uint64_t first_rea
                 if (pmatch.node != 0) {
                     private_read_perfect_matches.emplace_back(pmatch);
                 }
+            }
+            read_perfect_matches[rid] = private_read_perfect_matches;
+        }
+    }
+}
+
+void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t last_read) {
+    if (seed_size<k) seed_size=k;
+    NKmerIndex nki(sdg,k,f);
+    if (last_read==0) last_read=datastore.size();
+#pragma omp parallel shared(nki)
+    {
+        StreamKmerFactory skf(k);
+        std::vector<std::pair<bool,uint64_t >> read_kmers; //TODO: type should be defined in the kmerisers
+        std::vector<std::vector<std::pair<int32_t,int32_t >>> kmer_matches; //TODO: type should be defined in the index class
+        PerfectMatch pmatch(0,0,0);
+        PerfectMatchExtender pme(sdg,k);
+        ReadSequenceBuffer sequence_reader(datastore);
+#pragma omp for
+        for (auto rid=first_read;rid<=last_read;++rid){
+            std::vector<PerfectMatch> private_read_perfect_matches;
+            auto seq=sequence_reader.get_read_sequence(rid);
+            read_kmers.clear();
+            skf.produce_all_kmers(seq,read_kmers);
+            for (auto rki=0;rki<read_kmers.size();++rki){
+                auto kmatch=nki.find(read_kmers[rki].second);
+                if (kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second){
+                    pme.reset(seq);
+//                    std::cout<<std::endl<<"PME reset done"<<std::endl;
+//                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
+                    for (;kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second;++kmatch) {
+//                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
+                        auto contig=kmatch->contigID;
+                        int64_t pos=kmatch->offset-1;
+                        if (pos<0) {
+                            contig=-contig;
+                            pos=-pos-2;
+                        }
+                        if (!read_kmers[rki].first) contig=-contig;
+                        pme.add_starting_match(contig, rki, pos);
+                    }
+                    pme.extend_fw();
+                    pme.set_best_path();
+                    const auto & pmebp=pme.best_path;
+                    if (pme.last_readpos-rki>=seed_size) {
+                        //TODO:create perfectMathces with positions and all
+                        //for (const auto &nid:pmebp)
+                        //    if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
+                        if (!pmebp.empty()) {
+                            rki = pme.last_readpos + 1 - k; //avoid extra index lookups for kmers already used once
+                            pme.make_path_as_perfect_matches();
+                            private_read_perfect_matches.insert(private_read_perfect_matches.end(),pme.best_path_matches.begin(),pme.best_path_matches.end());
+                        }
+                    }
+//                    //TODO: matches shold be extended left to avoid unneeded indeterminaiton when an error occurrs in an overlap region and the new hit matches a further part of the genome.
+//                    std::cout<<"rki after match extension: "<<rki<<" / "<<read_kmers.size()<<std::endl;
+                }
+
             }
             read_perfect_matches[rid] = private_read_perfect_matches;
         }

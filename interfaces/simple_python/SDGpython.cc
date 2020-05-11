@@ -211,6 +211,11 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readonly("node_position",&PerfectMatch::node_position)
             .def_readonly("read_position",&PerfectMatch::read_position)
             .def_readonly("size",&PerfectMatch::size)
+            .def("__repr__", [](const PerfectMatch &pm) {
+                return "<PerfectMatch: " + std::to_string(pm.read_position) + ":" +
+                    std::to_string(pm.read_position+pm.size-1) + " -> " + std::to_string(pm.node) + " @ " +
+                    std::to_string(pm.node_position) +":"+ std::to_string(pm.node_position+pm.size-1)+">";
+            })
             ;
 
 
@@ -222,7 +227,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("node_threads",&LongReadsRecruiter::node_threads)
             .def("dump",&LongReadsRecruiter::dump,"filename"_a)
             .def("load",&LongReadsRecruiter::load,"filename"_a)
-            .def("map",&LongReadsRecruiter::perfect_mappings,"hit_size"_a=21,"first_read"_a=1,"last_read"_a=0)
+            .def("map_old",&LongReadsRecruiter::perfect_mappings,"hit_size"_a=21,"first_read"_a=1,"last_read"_a=0)
+            .def("map",&LongReadsRecruiter::map,"hit_size"_a=21,"first_read"_a=1,"last_read"_a=0)
             .def("recruit",&LongReadsRecruiter::recruit_reads,"hit_size"_a=21,"hit_count"_a=1,"first_read"_a=1,"last_read"_a=0)
             .def("recruit_threads",&LongReadsRecruiter::recruit_threads)
             .def("thread_reads",&LongReadsRecruiter::thread_reads,"end_size"_a=500,"end_matches"_a=2)
