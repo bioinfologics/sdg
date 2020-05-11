@@ -183,8 +183,7 @@ SET(header_files
     src/sdglib/workspace/WorkSpace.hpp
     src/sdglib/processors/GraphEditor.hpp
     src/sdglib/processors/GraphMaker.hpp
-        src/sdglib/processors/HaplotypeConsensus.hpp
-    src/sdglib/indexers/UniqueKmerIndex.hpp
+        src/sdglib/indexers/UniqueKmerIndex.hpp
     src/sdglib/indexers/SatKmerIndex.hpp
     src/sdglib/indexers/NKmerIndex.hpp
     src/sdglib/views/NodeView.hpp
@@ -212,8 +211,7 @@ SET(source_files ${source_files}
     src/sdglib/workspace/WorkSpace.cc
     src/sdglib/processors/GraphEditor.cc
     src/sdglib/processors/GraphMaker.cc
-        src/sdglib/processors/HaplotypeConsensus.cc
-    src/sdglib/indexers/UniqueKmerIndex.cc
+        src/sdglib/indexers/UniqueKmerIndex.cc
     src/sdglib/indexers/SatKmerIndex.cc
     src/sdglib/indexers/NKmerIndex.cc
     src/sdglib/views/NodeView.cc
