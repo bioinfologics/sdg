@@ -32,11 +32,15 @@ void PerfectMatchPart::extend(const std::string & readseq,const std::string & no
     if (read_position==srp and previous_part!=-1) invalid=true;
 }
 
-void PerfectMatchExtender::reset(std::string _readseq){
+void PerfectMatchExtender::reset(){
     matchparts.clear();
     best_path.clear();
-    readseq=_readseq;
     last_readpos=0;
+}
+
+void PerfectMatchExtender::set_read(const std::string &_readseq){
+    readseq=_readseq;
+    reset();
 }
 
 void PerfectMatchExtender::add_starting_match(sgNodeID_t node_id, uint64_t read_offset, uint64_t node_offset){ //add a new start
@@ -62,6 +66,7 @@ void PerfectMatchExtender::extend_fw(){
     //TODO: this could be extended backwards in the original hit to add diferentiation on overlap-transitioned hits after an error.
 //        std::cout<<"extend_fw called with "<<matchparts.size()<<" starting matchparts"<<std::endl;
     //First, check if any matchparts overlap with each other and start the hit in the OVL, if they do, invalidate the incoming
+
     for(uint64_t from=0;from<matchparts.size();++from){
         for(uint64_t to=0;to<matchparts.size();++to){
             if (from==to) continue;
@@ -115,7 +120,8 @@ void PerfectMatchExtender::set_best_path(){ //set extension_size when returning 
     if (next_index==-1){//there was a tie, try to go back to a match that was shared among all paths
         //go through all match-parts, count how many were tied and walk back from those voting.
         //at each stage the first one that has votes from all previous winners is considered the consensus hit so far.
-        std::vector<int> votes(matchparts.size());
+        votes.clear();
+        votes.resize(matchparts.size());
         int winners_seen=0;
         for (auto i=0;i<matchparts.size();++i) {
             auto &mp = matchparts[i];

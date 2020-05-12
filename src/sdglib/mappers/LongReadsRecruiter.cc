@@ -5,6 +5,7 @@
 #include "LongReadsRecruiter.hpp"
 #include "PerfectMatcher.hpp"
 #include <sdglib/indexers/NKmerIndex.hpp>
+#include <atomic>
 
 LongReadsRecruiter::LongReadsRecruiter(SequenceDistanceGraph &_sdg, const LongReadsDatastore &datastore,uint8_t _k=25, uint16_t _f=50):
     sdg(_sdg),datastore(datastore),k(_k),f(_f) {
@@ -95,19 +96,20 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
         StreamKmerFactory skf(k);
         std::vector<std::pair<bool,uint64_t >> read_kmers; //TODO: type should be defined in the kmerisers
         std::vector<std::vector<std::pair<int32_t,int32_t >>> kmer_matches; //TODO: type should be defined in the index class
-        PerfectMatch pmatch(0,0,0);
         PerfectMatchExtender pme(sdg,k);
         ReadSequenceBuffer sequence_reader(datastore);
+        uint64_t private_mapped_reads=0;
 #pragma omp for
         for (auto rid=first_read;rid<=last_read;++rid){
             std::vector<PerfectMatch> private_read_perfect_matches;
-            auto seq=sequence_reader.get_read_sequence(rid);
+            const auto seq=std::string(sequence_reader.get_read_sequence(rid));
             read_kmers.clear();
-            skf.produce_all_kmers(seq,read_kmers);
+            skf.produce_all_kmers(seq.c_str(),read_kmers);
+            pme.set_read(seq);
             for (auto rki=0;rki<read_kmers.size();++rki){
                 auto kmatch=nki.find(read_kmers[rki].second);
                 if (kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second){
-                    pme.reset(seq);
+                    pme.reset();
 //                    std::cout<<std::endl<<"PME reset done"<<std::endl;
 //                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
                     for (;kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second;++kmatch) {
@@ -140,6 +142,9 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
 
             }
             read_perfect_matches[rid] = private_read_perfect_matches;
+            if (++private_mapped_reads%5000==0) {
+                sdglib::OutputLog()<<private_mapped_reads<<" reads mapped on thread "<<omp_get_thread_num()<<std::endl;
+            }
         }
     }
 }

@@ -30,7 +30,8 @@ class PerfectMatchExtender{
 public:
     PerfectMatchExtender(DistanceGraph & _dg, uint8_t _k):dg(_dg),k(_k){};
 
-    void reset(std::string _readseq);
+    void set_read(const std::string & _readseq);
+    void reset();
     void add_starting_match(sgNodeID_t node_id, uint64_t read_offset, uint64_t node_offset);
     void extend_fw();
     void set_best_path(); //Todo: return pointer to the last part?
@@ -46,6 +47,7 @@ public:
     uint64_t last_nodepos;
     std::string readseq;
     int16_t winning_last_part=-1;
+    std::vector<int> votes;//optimisation, since best_path takes ages
 
 };
 
