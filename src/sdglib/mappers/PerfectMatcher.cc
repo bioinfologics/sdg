@@ -129,7 +129,7 @@ void PerfectMatchExtender::set_best_path(){ //set extension_size when returning 
         }
 //            if (next_index!=-1) std::cout<<"backtracked to a common part as winner, at index"<<next_index<<std::endl;
     }
-    last_nodepos=matchparts[next_index].node_position;
+    else last_nodepos=matchparts[next_index].node_position;
     winning_last_part=next_index;
 
 
