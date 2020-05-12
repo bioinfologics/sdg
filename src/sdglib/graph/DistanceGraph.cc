@@ -401,11 +401,23 @@ uint32_t DistanceGraph::link_count(sgNodeID_t n1, sgNodeID_t n2) const {
     return c;
 }
 
-int32_t DistanceGraph::min_distance(sgNodeID_t n1, sgNodeID_t n2) const {
-    if (llabs(n1)>=links.size()) return INT32_MAX;
-    int32_t d=INT32_MAX;
-    for (const auto &l:links[llabs(n1)]) if (l.source==-n1 and l.dest==n2 and l.dist<d) d=l.dist ;
-    return d;
+int32_t DistanceGraph::min_distance(const sgNodeID_t & n1, const sgNodeID_t & n2) const {
+    if (n1>0) {
+        if (n1 >= links.size()) return INT32_MAX;
+        int32_t d = INT32_MAX;
+        for (const Link * l=links[n1].data();l<links[n1].data()+links[n1].size();++l)
+            if (l->dest == n2 and l->source == -n1 and l->dist < d)
+                d = l->dist;
+        return d;
+    }
+    else {
+        if (-n1 >= links.size()) return INT32_MAX;
+        int32_t d = INT32_MAX;
+        for (const Link * l=links[-n1].data();l<links[-n1].data()+links[-n1].size();++l)
+            if (l->dest == n2 and l->source == -n1 and l->dist < d)
+                d = l->dist;
+        return d;
+    }
 }
 
 void DistanceGraph::write_to_gfa1(std::string filename, const std::vector<sgNodeID_t> &selected_nodes, const std::vector<double> &depths) {

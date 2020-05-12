@@ -171,7 +171,7 @@ public:
      */
     bool are_connected(sgNodeID_t n1, sgNodeID_t n2) const;
     uint32_t link_count(sgNodeID_t n1, sgNodeID_t n2) const;
-    int32_t min_distance(sgNodeID_t n1, sgNodeID_t n2) const;
+    int32_t min_distance(const sgNodeID_t & n1, const sgNodeID_t & n2) const;
 
     /**
      * Get all unitigs from the graph, returns a vector of paths where all nodes are connected 1-1
