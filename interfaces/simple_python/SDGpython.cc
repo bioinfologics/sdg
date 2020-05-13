@@ -225,6 +225,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("node_reads",&LongReadsRecruiter::node_reads)
             .def_readwrite("read_threads",&LongReadsRecruiter::read_threads)
             .def_readwrite("node_threads",&LongReadsRecruiter::node_threads)
+            .def_readwrite("read_paths",&LongReadsRecruiter::read_paths)
+            .def_readwrite("node_paths",&LongReadsRecruiter::node_paths)
             .def("dump",&LongReadsRecruiter::dump,"filename"_a)
             .def("load",&LongReadsRecruiter::load,"filename"_a)
             .def("map_old",&LongReadsRecruiter::perfect_mappings,"hit_size"_a=21,"first_read"_a=1,"last_read"_a=0)
@@ -234,6 +236,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("thread_reads",&LongReadsRecruiter::thread_reads,"end_size"_a=500,"end_matches"_a=2)
             .def("dg_from_threads",&LongReadsRecruiter::dg_from_threads,"multi_link"_a=false)
             .def("endmatches_to_positions",&LongReadsRecruiter::endmatches_to_positions)
+            .def("thread_and_pop",&LongReadsRecruiter::thread_and_pop)
             ;
 
     py::class_<NodePosition>(m,"NodePosition", "A node position in a LRR")

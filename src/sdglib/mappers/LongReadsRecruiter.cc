@@ -127,9 +127,6 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
                     pme.set_best_path();
                     const auto & pmebp=pme.best_path;
                     if (pme.last_readpos-rki>=seed_size) {
-                        //TODO:create perfectMathces with positions and all
-                        //for (const auto &nid:pmebp)
-                        //    if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
                         if (!pmebp.empty()) {
                             rki = pme.last_readpos + 1 - k; //avoid extra index lookups for kmers already used once
                             pme.make_path_as_perfect_matches();
@@ -269,4 +266,111 @@ DistanceGraph LongReadsRecruiter::dg_from_threads(bool multi_link) {
         }
     }
     return dg;
+}
+
+
+
+//*********************** WELL INTENTIONED WARNING ****************************
+// Thread And Pop is a nugget of what it could potentially become.
+// It is unreliable and buggy, and so will be for a while.It works where it has
+// been tested, and I am working on making it better. For now, it still is my
+// pet project.
+//
+// bj
+//*****************************************************************************
+
+class AggregatedHits{
+public:
+    AggregatedHits(const std::vector<PerfectMatch> &_read_pms,uint start):read_pms(_read_pms){
+        start_idx=start;
+        for(end_idx=start;end_idx+1<read_pms.size();++end_idx) {
+            auto & l = read_pms[end_idx];
+            auto & n = read_pms[end_idx+1];
+            if (n.node != l.node or n.read_position < l.read_position or l.node_position < l.node_position) break;
+        }
+    }
+
+    uint hit_count() const { return end_idx-start_idx+1;}
+
+    sgNodeID_t node() const { return read_pms[start_idx].node;}
+
+    int32_t rstart() const {return read_pms[start_idx].read_position;}
+
+    int32_t rend() const {return read_pms[end_idx].read_position+read_pms[end_idx].size;}
+
+    int32_t nstart() const {return read_pms[start_idx].node_position;}
+
+    int32_t nend() const {return read_pms[end_idx].node_position+read_pms[end_idx].size;}
+
+    bool can_join(const AggregatedHits &other) const {
+        if (node() == other.node()) {
+            if (rend() < other.rstart() and nend() < other.nend()) return true;
+            if (other.rend() < rstart() and other.nend() < nend()) return true;
+        }
+        return false;
+    }
+
+    uint start_idx;
+    uint end_idx;
+    const std::vector<PerfectMatch> &read_pms;
+};
+
+std::vector<AggregatedHits> aggregate_hits(const std::vector<PerfectMatch>&prm) {
+    std::vector<AggregatedHits> ahs;
+    for(auto next_hit=0;next_hit<prm.size();){
+        ahs.emplace_back(AggregatedHits(prm,next_hit));
+        next_hit=ahs.back().end_idx+1;
+    }
+    return ahs;
+}
+
+//def rudimentary_tap(rid):
+//    #transform consecutive runs of ascending hits to the same node into single long-runs
+//    prm=[x for x in lrr.read_perfect_matches[rid]]
+//    ahs=aggregate_hits(prm)
+//
+//    #identify runs of just one hit, evaluate if they represent a transition or a switch
+//    switches=[]
+//    if ahs[0].size()==1: switches.append(0)
+//    if ahs[-1].size()==1: switches.append(len(prm)-1)
+//    for i in range(1,len(ahs)-1):
+//        if ahs[i].size()==1 and ahs[i-1].can_join(ahs[i+1]):
+//            #print(ahs[i]," identified as a 1-hit switch")
+//            for x in range(ahs[i].start_index,ahs[i].end_index+1): switches.append(x)
+//    prm=[prm[x] for x in range(len(prm)) if x not in switches]
+//    ahs=aggregate_hits(prm)
+//    return ahs
+
+std::vector<sgNodeID_t> rudimentary_tap(const std::vector<PerfectMatch>&prm){
+    std::vector<PerfectMatch> filtered_prm;
+    auto ahs=aggregate_hits(prm);
+
+    for (auto i=0;i<ahs.size();++i){
+        if (i==0 or i==ahs.size()-1){
+            if (ahs[i].hit_count()==1) continue; //Discards starting and ending single-hits, may be valid but not trustworthy
+        }
+        else {
+            if (ahs[i].hit_count()==1 and ahs[i-1].can_join(ahs[i+1])) continue; //Discards 1-hit switches
+        }
+        for (auto mi=ahs[i].start_idx;mi<=ahs[i].end_idx;++mi) filtered_prm.emplace_back(prm[mi]);
+    }
+    std::vector<sgNodeID_t> p;
+    for (auto &ah: aggregate_hits(filtered_prm)) p.emplace_back(ah.node());
+    return p;
+}
+
+void LongReadsRecruiter::thread_and_pop() {
+    read_paths.clear();
+    read_paths.resize(read_perfect_matches.size());
+    node_paths.clear();
+    node_paths.resize(sdg.nodes.size());
+    std::vector<uint32_t> pcount(sdg.nodes.size());
+    for (auto rid=1;rid<read_perfect_matches.size();++rid) {
+        read_paths[rid]=rudimentary_tap(read_perfect_matches[rid]);
+        for (auto const & n:read_paths[rid]) ++pcount[abs(n)];
+    }
+    for(auto i=1;i<pcount.size();++i) node_paths[i].reserve(pcount[i]);
+    for (auto rid=1;rid<read_perfect_matches.size();++rid){
+        for (auto const & n:read_paths[rid]) node_paths[abs(n)].emplace_back( n>0 ? rid : -rid);
+    }
 }

@@ -50,6 +50,7 @@ public:
     void recruit_reads(uint16_t seed_size,uint16_t seed_count,uint64_t first_read=1,uint64_t last_read=0);
     void recruit_threads();
     void reset_recruitment();
+    void thread_and_pop();
 
     std::vector<NodePosition> endmatches_to_positions(uint64_t rid,int32_t end_size, uint16_t matches);
     void thread_reads(uint32_t end_size, uint16_t matches); //uses endmatches_to_positions
@@ -63,6 +64,8 @@ public:
     std::vector<std::vector<NodePosition>> read_threads;
     std::vector<std::vector<uint64_t>> node_reads;
     std::vector<std::vector<uint64_t>> node_threads;
+    std::vector<std::vector<uint32_t>> node_paths;
+    std::vector<std::vector<sgNodeID_t>> read_paths;
 };
 
 
