@@ -4,6 +4,12 @@
 
 #include <sdglib/views/NodeView.hpp>
 #include "Strider.hpp"
+
+Strider::Strider(WorkSpace & _ws, std::vector<std::string> paired_reads, std::vector<std::string> long_reads):ws(_ws){
+    for (auto &peds: paired_reads) paired_datastores.emplace_back(&ws.get_paired_reads_datastore(peds));
+    for (auto &lords: long_reads) long_datastores.emplace_back(&ws.get_long_reads_datastore(lords));
+};
+
 inline uint32_t get_votes(std::unordered_map<sgNodeID_t,uint32_t> votes, sgNodeID_t node){
     auto it=votes.find(node);
     if (it==votes.end()) return 0;
@@ -39,13 +45,13 @@ SequenceDistanceGraphPath Strider::walk_out(sgNodeID_t n) {
     return p;
 }
 
-SequenceDistanceGraphPath Strider::walk_out_in_order(sgNodeID_t n,bool use_pair, bool collapse_pair) {
+SequenceDistanceGraphPath Strider::walk_out_in_order(sgNodeID_t n,bool use_pair, bool collapse_pair, bool verbose) {
     auto read_paths=ws.paired_reads_datastores[0].mapper.all_paths_fw(n);
+    //TODO: improve paths -> add missing small connecting nodes.
     std::vector<int> next_node(read_paths.size());
     std::vector<bool> past_jump(read_paths.size());
 
     SequenceDistanceGraphPath p(ws.sdg);
-
 
     p.nodes.emplace_back(n);
     while (true){
@@ -76,10 +82,21 @@ SequenceDistanceGraphPath Strider::walk_out_in_order(sgNodeID_t n,bool use_pair,
                 winner_votes=v;
             }
         }
-        if (winner==0 or total_votes<2 or winner_votes<total_votes*.75) break;
+        if (winner==0 or total_votes<2 or winner_votes<total_votes*.75) {
+            if (verbose) {
+                std::cout << "  can't find winner, options are:";
+                for (const auto & l: nv.next()) std::cout<<" "<<l;
+                std::cout<<std::endl;
+                std::cout << "  but votes are:";
+                for (const auto & v: votes) std::cout<<"    "<<v.first<<": "<<v.second<<std::endl;
+            }
+            break;
+        }
         p.nodes.emplace_back(winner);
         for (auto i=0;i<read_paths.size();++i) {
-            if (read_paths[i][next_node[i]]==winner) ++next_node[i];
+            if (next_node[i]!=-1 and read_paths[i][next_node[i]]==winner) {
+                if (++next_node[i]==read_paths[i].size()) next_node[i]=-1;
+            }
         }
     }
     return p;
