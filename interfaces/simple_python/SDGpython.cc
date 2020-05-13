@@ -237,6 +237,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("dg_from_threads",&LongReadsRecruiter::dg_from_threads,"multi_link"_a=false)
             .def("endmatches_to_positions",&LongReadsRecruiter::endmatches_to_positions)
             .def("thread_and_pop",&LongReadsRecruiter::thread_and_pop)
+            .def("path_fw",&LongReadsRecruiter::path_fw,"read_id"_a,"node"_a)
+            .def("all_paths_fw",&LongReadsRecruiter::all_paths_fw,"node"_a)
             ;
 
     py::class_<NodePosition>(m,"NodePosition", "A node position in a LRR")

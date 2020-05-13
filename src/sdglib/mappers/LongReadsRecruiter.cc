@@ -324,6 +324,40 @@ std::vector<AggregatedHits> aggregate_hits(const std::vector<PerfectMatch>&prm) 
     return ahs;
 }
 
+std::vector<sgNodeID_t> LongReadsRecruiter::path_fw(seqID_t read_id, sgNodeID_t node) {
+    //check for obvious no-path conditions:
+    if (read_paths[llabs(read_id)].size()<2) return {};
+    //get read paths in the right orientation - leaves r2p empty if not using pairs
+    std::vector<sgNodeID_t> r1p;
+    if (read_id > 0) {
+        r1p=read_paths[read_id];
+    }
+    else {
+        sdglib::reverse_path(r1p,read_paths[-read_id]); //no read pair, as the pair comes "BEFORE"
+    }
+
+    //discards up to node in r1p
+    auto r1it=r1p.cbegin();
+    while (r1it<r1p.cend() and *r1it!=node) ++r1it;
+    if (r1it==r1p.cend()) return {};
+    std::vector<sgNodeID_t> path_fw;
+    path_fw.insert(path_fw.end(),++r1it,r1p.cend());
+
+    return path_fw;
+}
+
+std::vector<std::vector<sgNodeID_t> > LongReadsRecruiter::all_paths_fw(sgNodeID_t node) {
+    std::vector<std::vector<sgNodeID_t> > r;
+    std::unordered_set<seqID_t> rids;
+    for (auto rid:node_paths[llabs(node)] ){
+        if (node<0) rid=-rid;
+        r.emplace_back(path_fw(rid,node));
+        if (r.back().empty()) r.pop_back();
+
+    }
+    return r;
+}
+
 //def rudimentary_tap(rid):
 //    #transform consecutive runs of ascending hits to the same node into single long-runs
 //    prm=[x for x in lrr.read_perfect_matches[rid]]
