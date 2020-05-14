@@ -324,7 +324,7 @@ std::vector<AggregatedHits> aggregate_hits(const std::vector<PerfectMatch>&prm) 
     return ahs;
 }
 
-std::vector<sgNodeID_t> LongReadsRecruiter::path_fw(seqID_t read_id, sgNodeID_t node) {
+std::vector<sgNodeID_t> LongReadsRecruiter::path_fw(seqID_t read_id, sgNodeID_t node) const {
     //check for obvious no-path conditions:
     if (read_paths[llabs(read_id)].size()<2) return {};
     //get read paths in the right orientation - leaves r2p empty if not using pairs
@@ -346,7 +346,7 @@ std::vector<sgNodeID_t> LongReadsRecruiter::path_fw(seqID_t read_id, sgNodeID_t 
     return path_fw;
 }
 
-std::vector<std::vector<sgNodeID_t> > LongReadsRecruiter::all_paths_fw(sgNodeID_t node) {
+std::vector<std::vector<sgNodeID_t> > LongReadsRecruiter::all_paths_fw(sgNodeID_t node) const {
     std::vector<std::vector<sgNodeID_t> > r;
     std::unordered_set<seqID_t> rids;
     for (auto rid:node_paths[llabs(node)] ){

@@ -5,10 +5,14 @@
 #include <sdglib/views/NodeView.hpp>
 #include "Strider.hpp"
 
-Strider::Strider(WorkSpace & _ws, std::vector<std::string> paired_reads, std::vector<std::string> long_reads):ws(_ws){
-    for (auto &peds: paired_reads) paired_datastores.emplace_back(&ws.get_paired_reads_datastore(peds));
-    for (auto &lords: long_reads) long_datastores.emplace_back(&ws.get_long_reads_datastore(lords));
+static const std::string Strider::logo="                    80CLfft11G\n                   01;;1111tf8\n                   0;:1CCCCCC0\n                    L:tCCCCCCC8\n                     CifCCCCCC8\n                      8GCCCCC0\n                   8888GLffLG8        088\n                80GGCCCL11111fG8     0LL0\n               0CCCCCCCL11111tLG  80GCG0\n                8GCCC00f111111tLC0GCCG8\n                 8GCC8G1111111tLCCCG8\n                  0CCf1111111CGCG8\n                   0Cf1iii11L\n                   G1CLt:,:;L0\n                   C:;i;,,,,,:iL8\n                   t,,,,,,,,,,ifC0\n      00          0:,,,,,i;:ifCCCC0\n    8L11L0888     G:,,,,i88G8 8CCCG\n  0t1tfCCCCCGGGGGGLf1;:C     8CCCC8\n 0i1C08 800GCCCCCCCCCG0      8CCCC0\n LG        88000GG08         0CCC0\n                              CCC8\n                              GCC8\n                             8fffL08\n                             0t1t1ttfC\n                              8800G08\n";
+
+Strider::Strider(WorkSpace & _ws):ws(_ws){
 };
+
+void Strider::print_logo() {
+    std::cout<<
+}
 
 inline uint32_t get_votes(std::unordered_map<sgNodeID_t,uint32_t> votes, sgNodeID_t node){
     auto it=votes.find(node);
@@ -46,7 +50,15 @@ SequenceDistanceGraphPath Strider::walk_out(sgNodeID_t n) {
 }
 
 SequenceDistanceGraphPath Strider::walk_out_in_order(sgNodeID_t n,bool use_pair, bool collapse_pair, bool verbose) {
-    auto read_paths=ws.paired_reads_datastores[0].mapper.all_paths_fw(n);
+    std::vector<std::vector<sgNodeID_t>> read_paths;
+    for (auto prds:paired_datastores) {
+        auto new_read_paths = prds->mapper.all_paths_fw(n, use_pair, collapse_pair);
+        read_paths.insert(read_paths.end(),new_read_paths.begin(),new_read_paths.end());
+    }
+    for (auto lrr:long_recruiters) {
+        auto new_read_paths = lrr->all_paths_fw(n);
+        read_paths.insert(read_paths.end(),new_read_paths.begin(),new_read_paths.end());
+    }
     //TODO: improve paths -> add missing small connecting nodes.
     std::vector<int> next_node(read_paths.size());
     std::vector<bool> past_jump(read_paths.size());

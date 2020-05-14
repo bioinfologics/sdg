@@ -557,7 +557,7 @@ void PairedReadsMapper::path_reads63() {
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"pathing finished"<<std::endl;
 }
 
-std::vector<sgNodeID_t> PairedReadsMapper::path_fw(seqID_t read_id, sgNodeID_t node, bool use_pair, bool collapse_pair) {
+std::vector<sgNodeID_t> PairedReadsMapper::path_fw(seqID_t read_id, sgNodeID_t node, bool use_pair, bool collapse_pair) const{
     auto pread_id=datastore.get_read_pair(read_id);
 
     //check for obvious no-path conditions:
@@ -603,7 +603,7 @@ std::vector<sgNodeID_t> PairedReadsMapper::path_fw(seqID_t read_id, sgNodeID_t n
     return path_fw;
 }
 
-std::vector<std::vector<sgNodeID_t> > PairedReadsMapper::all_paths_fw(sgNodeID_t node, bool use_pair, bool collapse_pair) {
+std::vector<std::vector<sgNodeID_t> > PairedReadsMapper::all_paths_fw(sgNodeID_t node, bool use_pair, bool collapse_pair) const {
     std::vector<std::vector<sgNodeID_t> > r;
     std::unordered_set<seqID_t> rids;
     for (auto rid:paths_in_node[llabs(node)] ){

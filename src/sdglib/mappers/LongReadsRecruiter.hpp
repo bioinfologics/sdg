@@ -51,8 +51,8 @@ public:
     void recruit_threads();
     void reset_recruitment();
     void thread_and_pop();
-    std::vector<sgNodeID_t> path_fw(seqID_t read_id, sgNodeID_t node);
-    std::vector<std::vector<sgNodeID_t> > all_paths_fw(sgNodeID_t node);
+    std::vector<sgNodeID_t> path_fw(seqID_t read_id, sgNodeID_t node) const;
+    std::vector<std::vector<sgNodeID_t> > all_paths_fw(sgNodeID_t node) const;
 
     std::vector<NodePosition> endmatches_to_positions(uint64_t rid,int32_t end_size, uint16_t matches);
     void thread_reads(uint32_t end_size, uint16_t matches); //uses endmatches_to_positions

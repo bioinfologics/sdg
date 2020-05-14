@@ -304,7 +304,10 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<Strider>(m,"Strider","Strider")
-            .def(py::init<WorkSpace &,std::vector<std::string>,std::vector<std::string>>(),"ws"_a,"paired_reads"_a=std::vector<std::string>(),"long_reads"_a=std::vector<std::string>())
+            .def(py::init<WorkSpace &>(),"ws"_a)
+            .def_readonly("logo",&Strider::logo)
+            .def("add_datastore",py::overload_cast<const PairedReadsDatastore &>(&Strider::add_datastore))
+            .def("add_datastore",py::overload_cast<const LongReadsRecruiter &>(&Strider::add_datastore))
             .def("walk_out",&Strider::walk_out,"node"_a,py::return_value_policy::take_ownership)
             .def("walk_out_in_order",&Strider::walk_out_in_order,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true,"verbose"_a=false,py::return_value_policy::take_ownership);
 
