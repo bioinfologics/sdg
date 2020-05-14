@@ -10,9 +10,6 @@ static const std::string Strider::logo="                    80CLfft11G\n        
 Strider::Strider(WorkSpace & _ws):ws(_ws){
 };
 
-void Strider::print_logo() {
-    std::cout<<
-}
 
 inline uint32_t get_votes(std::unordered_map<sgNodeID_t,uint32_t> votes, sgNodeID_t node){
     auto it=votes.find(node);

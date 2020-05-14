@@ -11,7 +11,6 @@ class Strider {
 public:
 
     Strider(WorkSpace & _ws);
-    void print_logo();
     void add_datastore(const PairedReadsDatastore & datastore) {paired_datastores.emplace_back(&datastore);}
     void add_datastore(const LongReadsRecruiter & datastore) {long_recruiters.emplace_back(&datastore);}
     //walk out from a node
