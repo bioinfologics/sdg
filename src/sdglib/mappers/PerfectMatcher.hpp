@@ -46,7 +46,7 @@ public:
     uint64_t last_readpos;
     uint64_t last_nodepos;
     std::string readseq;
-    int16_t winning_last_part=-1;
+    int64_t winning_last_part=-1;
     std::vector<int> votes;//optimisation, since best_path takes ages
 
 };
