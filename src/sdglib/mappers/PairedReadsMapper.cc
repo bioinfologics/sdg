@@ -604,6 +604,7 @@ std::vector<sgNodeID_t> PairedReadsMapper::path_fw(seqID_t read_id, sgNodeID_t n
 }
 
 std::vector<std::vector<sgNodeID_t> > PairedReadsMapper::all_paths_fw(sgNodeID_t node, bool use_pair, bool collapse_pair) const {
+    if (llabs(node)>paths_in_node.size()) return {};
     std::vector<std::vector<sgNodeID_t> > r;
     std::unordered_set<seqID_t> rids;
     for (auto rid:paths_in_node[llabs(node)] ){

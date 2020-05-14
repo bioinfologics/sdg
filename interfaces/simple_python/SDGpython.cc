@@ -305,11 +305,15 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<Strider>(m,"Strider","Strider")
             .def(py::init<WorkSpace &>(),"ws"_a)
-            .def_readonly("logo",&Strider::logo)
+            .def_readonly_static("logo",&Strider::logo)
+            .def_readonly("routes_fw",&Strider::routes_fw)
+            .def_readonly("routes_bw",&Strider::routes_bw)
+            .def_readonly("is_anchor",&Strider::is_anchor)
+            .def("stride_from_anchors",&Strider::stride_from_anchors,"min_size"_a=1,"min_kci"_a=.5,"max_kci"_a=1.5)
             .def("add_datastore",py::overload_cast<const PairedReadsDatastore &>(&Strider::add_datastore))
             .def("add_datastore",py::overload_cast<const LongReadsRecruiter &>(&Strider::add_datastore))
-            .def("walk_out",&Strider::walk_out,"node"_a,py::return_value_policy::take_ownership)
-            .def("walk_out_in_order",&Strider::walk_out_in_order,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true,"verbose"_a=false,py::return_value_policy::take_ownership);
+            .def("stride_out",&Strider::stride_out,"node"_a,py::return_value_policy::take_ownership)
+            .def("stride_out_in_order",&Strider::stride_out_in_order,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true,"verbose"_a=false,py::return_value_policy::take_ownership);
 
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
