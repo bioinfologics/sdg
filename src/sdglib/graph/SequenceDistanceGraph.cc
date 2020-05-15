@@ -290,6 +290,60 @@ void SequenceDistanceGraph::load_from_gfa(std::string filename) {
         load_from_gfa1(gfaf, fastaf);
     }
 }
+void SequenceDistanceGraph::load_from_bcalm(std::string filename,uint16_t k) {
+    if (k%2==0) throw std::invalid_argument("Can't read bcalm files with even K values, use odd values please");
+    std::string header,sequence;
+    filename=filename;
+    std::ifstream bcalmf(filename);
+    if (!bcalmf) {
+        std::cerr << "Failed to open " << filename <<": " << strerror(errno);
+        throw std::invalid_argument("Can't read bcalm file");
+    }
+    if (bcalmf.peek() == std::ifstream::traits_type::eof()) throw std::invalid_argument("Empty bcalm file");
+    //sdglib::OutputLog()<<"Loading graph from bcalm, loading sequences..."<<std::endl;
+    nodes.clear();
+    links.clear();
+    add_node(Node("",NodeStatus::Deleted)); //an empty deleted node on 0, just to skip the space
+
+    //First pass, insert the sequences
+    std::vector<sgNodeID_t> node_ids;
+    while (not bcalmf.eof()) {
+        std::getline(bcalmf, header);
+        std::getline(bcalmf, sequence);
+        if (header=="" or sequence=="") continue;
+        uint64_t bcalm_unitig_number=0;
+        for(auto c=header.begin()+1;*c!=' ';++c) bcalm_unitig_number=bcalm_unitig_number*10+*c-'0';
+        if (node_ids.size()<bcalm_unitig_number+1) node_ids.resize(bcalm_unitig_number+1);
+        node_ids[bcalm_unitig_number]=add_node(sequence);
+    }
+    //second pass, add the links
+
+    bcalmf.clear();
+    bcalmf.seekg(0, bcalmf.beg);
+    while (not bcalmf.eof()) {
+        std::getline(bcalmf, header);
+        std::getline(bcalmf, sequence);
+        if (header=="" or sequence=="") continue;
+        uint64_t bcalm_unitig_number = 0;
+        for(auto c=header.begin()+1;*c!=' ';++c) bcalm_unitig_number=bcalm_unitig_number*10+*c-'0';
+
+        for (auto c = header.begin() + 1; c!=header.end(); ++c) {
+            if (*c=='L' and *++c==':') {
+                uint64_t bcalm_destunitig_number = 0;
+                sgNodeID_t src=0,dest=0;
+                ++c;
+                if (*c=='+') src=-node_ids[bcalm_unitig_number];
+                else if (*c=='-') src=node_ids[bcalm_unitig_number];
+                ++c;++c;
+                for(;*c!=':';++c) bcalm_destunitig_number=bcalm_destunitig_number*10+*c-'0';
+                ++c;
+                if (*c=='-') dest=-node_ids[bcalm_destunitig_number];
+                else if (*c=='+') dest=node_ids[bcalm_destunitig_number];
+                if (llabs(src)<=llabs(dest)) add_link(src,dest,-k+1);
+            }
+        }
+    }
+}
 
 void SequenceDistanceGraph::load_from_fasta(std::string filename) {
     std::string line;

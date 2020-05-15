@@ -129,6 +129,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("remove_node",&SequenceDistanceGraph::remove_node)
             .def("join_all_unitigs",&SequenceDistanceGraph::join_all_unitigs)
             .def("load_from_gfa",&SequenceDistanceGraph::load_from_gfa)
+            .def("load_from_bcalm",&SequenceDistanceGraph::load_from_bcalm,"filename"_a,"k"_a)
             .def("load_from_fasta",&SequenceDistanceGraph::load_from_fasta)
             ;
 

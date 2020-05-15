@@ -49,6 +49,7 @@ public:
      * @param filename Path of the gfa file to load
      */
     void load_from_gfa(std::string filename);
+    void load_from_bcalm(std::string filename,uint16_t k);
 
     void load_from_gfa1(std::ifstream &gfaf, std::ifstream &fastaf);
     void load_from_gfa2(std::ifstream &gfaf, std::ifstream &fastaf);
