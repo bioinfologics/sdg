@@ -339,7 +339,8 @@ void SequenceDistanceGraph::load_from_bcalm(std::string filename,uint16_t k) {
                 ++c;
                 if (*c=='-') dest=-node_ids[bcalm_destunitig_number];
                 else if (*c=='+') dest=node_ids[bcalm_destunitig_number];
-                if (llabs(src)<=llabs(dest)) add_link(src,dest,-k+1);
+                if (llabs(src)<llabs(dest)) add_link(src,dest,-k+1);
+                else if (llabs(src)==llabs(dest)) if (not are_connected(src,dest)) add_link(src,dest,-k+1);
             }
         }
     }
