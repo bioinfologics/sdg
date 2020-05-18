@@ -22,6 +22,8 @@ public:
 
     void stride_from_anchors(uint32_t min_size=1,float min_kci=0.5, float max_kci=1.5);
 
+    void route_vs_readpaths_stats();
+
 
     WorkSpace & ws;
     std::vector<const PairedReadsDatastore *> paired_datastores;

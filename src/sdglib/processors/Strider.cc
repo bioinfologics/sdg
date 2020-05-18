@@ -136,3 +136,67 @@ void Strider::stride_from_anchors(uint32_t min_size, float min_kci, float max_kc
     }
     sdglib::OutputLog()<<"Strider found "<<found_fw<<" forward and "<<found_bw<<" backward routes from "<< anchors << " anchors"<<std::endl;
 }
+
+void Strider::route_vs_readpaths_stats() {
+    uint64_t p_finished80=0;
+    uint64_t end_in_tip=0;
+    uint64_t reaching_anchor=0;
+    uint64_t not_reaching_paths_anchors=0;
+    uint64_t anchor_routes=0;
+    for (auto fnid=1;fnid<is_anchor.size();++fnid){
+        if (not is_anchor[fnid]) continue;
+        anchor_routes+=2;
+        for (auto nid:{fnid,-fnid}) {
+            uint64_t p_finished=0,p_anchor=0;
+            std::vector<std::vector<sgNodeID_t>> read_paths;
+            //get_readpaths
+            for (auto prds:paired_datastores) {
+                auto new_read_paths = prds->mapper.all_paths_fw(nid);
+                read_paths.insert(read_paths.end(), new_read_paths.begin(), new_read_paths.end());
+            }
+            for (auto lrr:long_recruiters) {
+                auto new_read_paths = lrr->all_paths_fw(nid);
+                read_paths.insert(read_paths.end(), new_read_paths.begin(), new_read_paths.end());
+            }
+            std::vector<sgNodeID_t> route;
+            if (nid==fnid) route=routes_fw[fnid];
+            else route=routes_bw[fnid];
+
+            //Percentaje of paths with their last node in the route (proxy for "finished reads")
+            std::unordered_set<sgNodeID_t> nodes_in_route(route.begin(),route.end());
+            for (auto &p:read_paths) if (nodes_in_route.count(p.back())) ++p_finished;
+            if (p_finished>=read_paths.size()*.8) ++p_finished80;
+
+            //Percentaje of routes finishing in a tip
+            if (ws.sdg.get_nodeview(route.back()).next().size()==0) ++end_in_tip;
+
+            //Percentaje of routes reaching an anchor - reaching an anchor if there's an anchor on 80+% of their paths
+            bool anchor_reached=false;
+            for (auto &n:route) if (is_anchor[llabs(n)]) {
+                if (n==nid) continue;
+                ++reaching_anchor;
+                anchor_reached=true;
+                break;
+            }
+            if (not anchor_reached) {
+                uint64_t anchor_not_in_route = 0;
+                for (auto &p:read_paths) {
+                    for (auto &n:p) {
+                        if (n==nid) continue;
+                        if (is_anchor[llabs(n)]) {
+                            if (not nodes_in_route.count(n)) ++anchor_not_in_route;
+                            break;
+                        }
+                    }
+
+                }
+                if (anchor_not_in_route >= read_paths.size() * .5) ++not_reaching_paths_anchors;
+            }
+        }
+    }
+
+    std::cout<<p_finished80<<" / "<<anchor_routes<<" routes from anchors have 80+% of their read paths's last nodes"<<std::endl;
+    std::cout<<end_in_tip<<" routes end in tips"<<std::endl;
+    std::cout<<reaching_anchor<<" routes reach other anchors"<<std::endl;
+    std::cout<<not_reaching_paths_anchors<<" routes do not reach anchors, but 50+% of their paths do"<<std::endl;
+}
