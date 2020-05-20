@@ -13,6 +13,7 @@
 #include <sdglib/processors/LinkageUntangler.hpp>
 #include <sdglib/processors/GraphContigger.hpp>
 #include <sdglib/processors/GraphMaker.hpp>
+#include <sdglib/processors/GraphPatcher.hpp>
 #include <sdglib/processors/PathFinder.hpp>
 #include <sdglib/processors/Strider.hpp>
 
@@ -307,6 +308,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<Strider>(m,"Strider","Strider")
             .def(py::init<WorkSpace &>(),"ws"_a)
             .def_readonly_static("logo",&Strider::logo)
+            .def_readwrite("experimental_striding",&Strider::experimental_striding)
             .def_readonly("routes_fw",&Strider::routes_fw)
             .def_readonly("routes_bw",&Strider::routes_bw)
             .def_readonly("is_anchor",&Strider::is_anchor)
@@ -317,6 +319,10 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("stride_out",&Strider::stride_out,"node"_a,py::return_value_policy::take_ownership)
             .def("stride_out_in_order",&Strider::stride_out_in_order,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true,"verbose"_a=false,py::return_value_policy::take_ownership);
 
+    py::class_<GraphPatcher>(m,"GraphPatcher","GraphPatcher")
+            .def(py::init<WorkSpace &>(),"ws"_a)
+            .def("find_tips_to_reconnect",&GraphPatcher::find_tips_to_reconnect)
+            .def_readonly("reconnection_groups",&GraphPatcher::reconnection_groups);
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
 }

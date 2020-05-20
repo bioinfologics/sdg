@@ -99,7 +99,19 @@ SequenceDistanceGraphPath Strider::stride_out_in_order(sgNodeID_t n,bool use_pai
                 std::cout << "  but votes are:";
                 for (const auto & v: votes) std::cout<<"    "<<v.first<<": "<<v.second<<std::endl;
             }
-            break;
+            if (!experimental_striding) break;
+            //allow to skip a single node (i.e. add votes to the next node to this node's votes too:
+            for (const auto & l: nv.next()){
+                auto v=get_votes(votes,l.node().node_id());
+                for (auto nl: l.node().next()) v+=get_votes(votes,nl.node().node_id());
+                total_votes+=v;
+                if (v==winner_votes) winner=0;
+                if (v>winner_votes) {
+                    winner=l.node().node_id();
+                    winner_votes=v;
+                }
+            }
+            if (winner==0 or total_votes<2 or winner_votes<total_votes*.75) break;
         }
         p.nodes.emplace_back(winner);
         for (auto i=0;i<read_paths.size();++i) {
