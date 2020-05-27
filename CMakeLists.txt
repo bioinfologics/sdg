@@ -176,6 +176,7 @@ SET(header_files
     src/sdglib/datastores/LongReadsDatastore.hpp
     src/sdglib/datastores/KmerCounter.hpp
         src/sdglib/datastores/ReadSequenceBuffer.hpp
+        src/sdglib/factories/KmerIterator.h
     src/sdglib/mappers/LongReadsMapper.hpp
     src/sdglib/mappers/LinkedReadsMapper.hpp
     src/sdglib/mappers/PairedReadsMapper.hpp
