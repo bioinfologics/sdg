@@ -236,7 +236,11 @@ public:
      */
     std::vector<NodeView> get_all_nodeviews(bool include_disconnected=true) const;
 
+    /**
+     * @brief Prints the graph stats by kci according to the first kci collection in the ws
+     */
     void stats_by_kci();
+
     std::vector<uint64_t> nstats(std::vector<uint64_t> sizes, std::vector<int> stops={25,50,75});
 
     friend std::ostream& operator<<(std::ostream &os, const DistanceGraph &dg);
