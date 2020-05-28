@@ -119,6 +119,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("name",&DistanceGraph::name)
             .def("write_to_gfa1",&DistanceGraph::write_to_gfa1,"filename"_a,"selected_nodes"_a=std::vector<sgNodeID_t>(),"depths"_a=std::vector<sgNodeID_t>())
             .def("write_to_gfa2",&DistanceGraph::write_to_gfa2)
+            .def("stats_by_kci",&DistanceGraph::stats_by_kci)
             .def("are_connected",&DistanceGraph::are_connected,"node1"_a, "node2"_a)
             .def("find_all_paths_between",&DistanceGraph::find_all_paths_between,"from"_a,"to"_a,"max_size"_a,"max_nodes"_a,"abort_on_loops"_a)
             ;

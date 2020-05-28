@@ -236,6 +236,9 @@ public:
      */
     std::vector<NodeView> get_all_nodeviews(bool include_disconnected=true) const;
 
+    void stats_by_kci();
+    std::vector<uint64_t> nstats(std::vector<uint64_t> sizes, std::vector<int> stops={25,50,75});
+
     friend std::ostream& operator<<(std::ostream &os, const DistanceGraph &dg);
 
     void read(std::ifstream &input_file);

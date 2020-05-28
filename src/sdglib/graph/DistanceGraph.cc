@@ -615,3 +615,110 @@ std::ostream &operator<<(std::ostream &os, const DistanceGraph &dg) {
     os << "DistanceGraph "<< (dg.name.empty() ? "unnamed" : dg.name )<<" ("<<dg.sdg.name<<"): "<<linkcount<<" links";
     return os;
 }
+
+std::vector<uint64_t> DistanceGraph::nstats(std::vector<uint64_t> sizes, std::vector<int> stops){
+    uint64_t t=0;
+    for (auto& s: sizes){
+        t+=s;
+    }
+    stops.push_back(1000);
+
+    uint64_t p=0;
+    uint64_t next_stop=0;
+    std::vector<uint64_t> nxx;
+    // reverse sort sizes
+    std::sort(sizes.begin(), sizes.end(), std::greater<>());
+    for (auto& x: sizes){
+        p+=x;
+        while(p>=t*stops[next_stop]/100){
+            nxx.push_back(x);
+            next_stop+=1;
+        }
+    }
+    return nxx;
+}
+
+void DistanceGraph::stats_by_kci() {
+
+//    // Check the kci peak value is not -1
+//    if (sdg.ws.kmer_counters[0].kci_peak < 0){
+//        std::cout << "KCI peak not set!" << std::endl;
+//        return;
+//    }
+
+    std::vector<uint64_t> nokci_sizes;
+    std::vector<uint64_t> kci0_sizes;
+    std::vector<uint64_t> kci1_sizes;
+    std::vector<uint64_t> kci2_sizes;
+    std::vector<uint64_t> kci3_sizes;
+    std::vector<uint64_t> kci4_sizes;
+
+    uint64_t nokci_tips=0;
+    uint64_t kci0_tips=0;
+    uint64_t kci1_tips=0;
+    uint64_t kci2_tips=0;
+    uint64_t kci3_tips=0;
+    uint64_t kci4_tips=0;
+
+    std::vector<uint64_t> binned_bps(61, 0);
+    std::vector<uint64_t> binned_counts(61, 0);
+
+    for (const NodeView& nv: get_all_nodeviews()){
+        float kci = nv.kci();
+
+        if (kci == -1){
+            nokci_sizes.push_back(nv.size());
+            if (nv.next().empty() or nv.prev().empty()) nokci_tips++;
+        } else if (kci<.5){
+            kci0_sizes.push_back(nv.size());
+            if (nv.next().empty() or nv.prev().empty()) kci0_tips++;
+        } else if (kci<=1.5){
+            kci1_sizes.push_back(nv.size());
+            if (nv.next().empty() or nv.prev().empty()) kci1_tips++;
+        } else if (kci<=2.5){
+            kci2_sizes.push_back(nv.size());
+            if (nv.next().empty() or nv.prev().empty()) kci2_tips++;
+        } else if (kci<=3.5){
+            kci3_sizes.push_back(nv.size());
+            if (nv.next().empty() or nv.prev().empty()) kci3_tips++;
+        } else {
+            kci4_sizes.push_back(nv.size());
+            if (nv.next().empty() or nv.prev().empty()) kci4_tips++;
+        }
+
+        if (kci != -1) binned_bps[std::min((int)(kci*10),60)]+=nv.size();
+        if (kci != -1) binned_counts[std::min((int)(kci*10),60)]++;
+
+    }
+    std::vector<uint64_t> all_sizes;
+    all_sizes.insert( all_sizes.end(), nokci_sizes.begin(), nokci_sizes.end() );
+    all_sizes.insert( all_sizes.end(), kci0_sizes.begin(), kci0_sizes.end() );
+    all_sizes.insert( all_sizes.end(), kci1_sizes.begin(), kci1_sizes.end() );
+    all_sizes.insert( all_sizes.end(), kci2_sizes.begin(), kci2_sizes.end() );
+    all_sizes.insert( all_sizes.end(), kci3_sizes.begin(), kci3_sizes.end() );
+    all_sizes.insert( all_sizes.end(), kci4_sizes.begin(), kci4_sizes.end() );
+
+    uint64_t all_tips = nokci_tips+kci0_tips+kci1_tips+kci2_tips+kci3_tips+kci4_tips;
+
+    auto nstats_nokci = nstats(nokci_sizes);
+    auto nstats_0 = nstats(kci0_sizes);
+    auto nstats_1 = nstats(kci1_sizes);
+    auto nstats_2 = nstats(kci2_sizes);
+    auto nstats_3 = nstats(kci3_sizes);
+    auto nstats_4 = nstats(kci4_sizes);
+    auto all_stats = nstats(all_sizes);
+
+    std::printf(" ---------------------------------------------------------------------------------\n");
+    std::printf("|  KCI  |   Total bp   |  Nodes  |  Tips   |     N25    |     N50    |     N75    |\n");
+    std::printf("|-------+--------------+---------+---------+------------+------------+------------|\n");
+    std::printf("| None  | %12d | %7d | %7d | %10d | %10d | %10d |\n", std::accumulate(nokci_sizes.begin(), nokci_sizes.end(), 0), nokci_sizes.size(), nokci_tips, nstats_nokci[0], nstats_nokci[1], nstats_nokci[2]);
+    std::printf("| < 0.5 | %12d | %7d | %7d | %10d | %10d | %10d |\n", std::accumulate(kci0_sizes.begin(), kci0_sizes.end(), 0), kci0_sizes.size(), kci0_tips, nstats_0[0], nstats_0[1], nstats_0[2]);
+    std::printf("| ~ 1   | %12d | %7d | %7d | %10d | %10d | %10d |\n", std::accumulate(kci1_sizes.begin(), kci1_sizes.end(), 0), kci1_sizes.size(), kci1_tips,  nstats_1[0], nstats_1[1], nstats_1[2]);
+    std::printf("| ~ 2   | %12d | %7d | %7d | %10d | %10d | %10d |\n", std::accumulate(kci2_sizes.begin(), kci2_sizes.end(), 0), kci2_sizes.size(), kci2_tips,  nstats_2[0], nstats_2[1], nstats_2[2]);
+    std::printf("| ~ 3   | %12d | %7d | %7d | %10d | %10d | %10d |\n", std::accumulate(kci3_sizes.begin(), kci3_sizes.end(), 0), kci3_sizes.size(), kci3_tips,  nstats_3[0], nstats_3[1], nstats_3[2]);
+    std::printf("| > 3.5 | %12d | %7d | %7d | %10d | %10d | %10d |\n", std::accumulate(kci4_sizes.begin(), kci4_sizes.end(), 0), kci4_sizes.size(), kci4_tips,  nstats_4[0], nstats_4[1], nstats_4[2]);
+    std::printf("|-------+--------------+---------+---------+------------+------------+------------|\n");
+    std::printf("| All   | %12d | %7d | %7d | %10d | %10d | %10d |\n", std::accumulate(all_sizes.begin(), all_sizes.end(), 0), all_sizes.size(), all_tips, all_stats[0], all_stats[1], all_stats[2]);
+    std::printf(" ---------------------------------------------------------------------------------\n");
+    return;
+}
