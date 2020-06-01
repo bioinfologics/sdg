@@ -68,8 +68,9 @@ public:
             fwmer = 0;
             rvmer = 0;
             mask = (value_type(1) << (2 * parent.K)) - 1;
+            incorporate_char(position);
         }
-
+        bool has_reached_end() { return *position == '\0'; }
         reference operator*() const {
             // I want to specialize this on template parameter F but am unsure on how to do it properly.
             return std::min(fwmer & mask, rvmer & mask);
@@ -78,37 +79,28 @@ public:
             // I want to specialize this on template parameter F but am unsure on how to do it properly.
             return std::min(fwmer & mask, rvmer & mask);
         }
+
         // Advance the iterator to the next valid kmer in the sequence, or to the end of the string
         // (\0), whichever comes first.
         iterator& operator++() {
-            // Here I disallow the pointer to be advanced past the end of the string (while loop condition).
-            // I don't know if such safety is C++ style or not, or if given iterators relationship to
-            // pointers, the C++ philosophy is to wash their hands and say "you're on your own".
-            while(*position != '\0') {
-                // Then add the base pointed to by nextbase to rvmer and fwmer.
-                // Then increment nextbase
-                //std::cout << "Current pos: " << position << std::endl;
-                //std::cout << "Current char: " << *position << std::endl;
-                const char nucleotide = *position;
-                // Get bits for the nucleotide.
-                // The array should be a static and constant array.
-                value_type fbits = parent.translation_table[nucleotide];
-                value_type rbits = ~fbits & (value_type) 3;
-                last_unknown = fbits == 4 ? 0 : last_unknown + 1;
-                //std::cout << "last unknown: " << last_unknown << std::endl;
-                fwmer = (fwmer << 2 | fbits);
-                rvmer = (rvmer >> 2) | (rbits << ((parent.K - 1) * 2));
-                ++position;
-                if(last_unknown >= parent.K) break;
-            }
+            scan_right();
             return *this;
-        }
-        bool reached_end() const {
-            return *position == '\0';
         }
         bool operator<(Kmers::iterator other) {
             // true if both iterators refer to same sequence, and this iterator is at a lower position.
             return parent.sequence == other.parent.sequence && position < other.position;
+        }
+        bool operator<=(Kmers::iterator other) {
+            // true if both iterators refer to same sequence, and this iterator is at a lower position.
+            return parent.sequence == other.parent.sequence && position <= other.position;
+        }
+        bool operator!=(Kmers::iterator other) {
+            // true if both iterators refer to the same sequence, and this iterator is not at the same positon.
+            return parent.sequence == other.parent.sequence && position != other.position;
+        }
+        bool operator==(Kmers::iterator other) {
+            // true if both iterators refer to the same sequence, and this iterator is not at the same positon.
+            return parent.sequence == other.parent.sequence && position == other.position;
         }
     private:
         const Kmers& parent;
@@ -117,16 +109,36 @@ public:
         value_type rvmer;
         value_type mask;
         size_t last_unknown;
+
+        void scan_right() {
+            while(*position != '\0') {
+                ++position;
+                const char nucleotide = *position;
+                // Get bits for the nucleotide.
+                // The array should be a static and constant array.
+                incorporate_char(nucleotide);
+                if(last_unknown >= parent.K) break;
+            }
+        }
+
+        void incorporate_char(const char c) {
+            value_type fbits = parent.translation_table[c];
+            value_type rbits = ~fbits & (value_type) 3;
+            last_unknown = fbits == 4 ? 0 : last_unknown + 1;
+            fwmer = (fwmer << 2 | fbits);
+            rvmer = (rvmer >> 2) | (rbits << ((parent.K - 1) * 2));
+        }
     };
     // An iterator at the first valid Kmer in the sequence.
     iterator begin() {
         iterator it(*this);
-        return ++it;
+        ++it;
+        return it;
     }
     // An iterator past all valid Kmers in the sequence (has hit \0 in input string).
     iterator end() {
         iterator it = begin();
-        while(!it.reached_end()) ++it;
+        while(!it.has_reached_end()) ++it;
         return it;
     }
 private:

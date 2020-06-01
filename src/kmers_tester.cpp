@@ -27,9 +27,20 @@ int main() {
 
     std::cout << "Done" << std::endl;
 
-    std::cout << "Testing a for loop" << std::endl;
+    std::cout << "Testing a for loop" << std::endl << std::endl;
     int i {0};
-    for(auto it = mykmers.begin(); !it.reached_end(); ++it) {
+    for(auto it = mykmers.begin(); it != mykmers.end(); it++) {
         std::cout << ++i << ' ' << std::bitset<64>(*it) << std::endl;
     }
+
+    std::cout << std::endl << ".end() scans to find the last iterator position" << std::endl;
+    std::cout << "you can also use a condition instead: !it.has_reached_end()" << std::endl << std::endl;
+
+    i = 0;
+    for(auto it = mykmers.begin(); !it.has_reached_end(); it++) {
+        std::cout << ++i << ' ' << std::bitset<64>(*it) << std::endl;
+    }
+    
+    std::cout << std::bitset<64>(*it) << std::endl;
+    std::cout << std::bitset<64>(*lastit) << std::endl;
 }
