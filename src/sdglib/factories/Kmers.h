@@ -2,10 +2,14 @@
 // Created by Ben J. Ward (EI) on 27/05/2020.
 //
 
-#ifndef SDG_KMERITERATOR_H
-#define SDG_KMERITERATOR_H
+#ifndef SDG_KMERS_H
+#define SDG_KMERS_H
 
 #pragma once
+
+#include <array>
+#include <limits>
+#include <assert.h>
 
 // QUESTION: Should SDG get it's own sequence classes that aren't just strings?
 // Check BioSequences.jl for example of what I can do.
@@ -76,63 +80,69 @@ constexpr std::array<U, 256> make_nuc2bin_tbl(){
 
 // A type representing a "lazy" - if you want to call it that, container of all the k-mers in a sequence.
 // Has an input iterator in its scope for iterating from the first k-mer in a sequence to the last.
-template<int K> // I'm not sure if K should be a type parameter - it is for my Kmer types in BioJulia.
-// It means some stuff and constants get worked out at compile time e.g. see value_type below,
-// and it stops people mixing kmers of different K and shit like that.
-// Not sure if as valid for C++ as C++ is not JIT and much less interactive.
-class Kmers {
+template <typename U> class Kmers {
     // C++11 (explicit aliases for input iterator).
     using iterator_category = std::input_iterator_tag;
-    using value_type = typename std::conditional<(K > 32), uint64_t, __uint128_t>::type;
+    using value_type = U;
     using reference = value_type const&;
     using pointer = value_type const*;
     using difference_type = ptrdiff_t;
 
     // Static array for the conversion from letter to character.
-    static const std::array<value_type, 256> nuc_to_bin = make_nuc2bin_tbl<value_type>();
+    // static const std::array<value_type, 256> nuc_to_bin = make_nuc2bin_tbl<value_type>();
 public:
-    Kmers(const std::string& seq) : sequence(seq) {
-        // TODO: Add some validation of the string?
+    // Unwrap std::string and pass to the cstring constructor.
+    Kmers(const std::string& seq, const int K) : Kmers(seq.data(), K) {} // Requires C++11.
+
+    Kmers(const char * seq, const int K) : sequence(seq), K(K) {
+        // Here I check someone hasn't requested silly K size, before
+        // making the local translation table for this container.
+        assert(K > 0);
+        // Forgive heavy bracket use - I need to get used to if C++ has the operator precedence I'm used to or not.
+        assert(K <= ((std::numeric_limits<value_type>::digits / 2) - 1)); // -1 here to keep space for the sign bits.
+        translation_table = make_nuc2bin_tbl<value_type>();
     }
 
     class iterator: public std::iterator<iterator_category, value_type, difference_type, pointer, reference> {
     public:
-        explicit iterator(const Kmers& parent, const size_t kmerend) : parent(parent), pos(0) {
-            stop = parent.sequence.length();
-            for(int i = 0; i < stop; ++i) {
-                this++;
-            }
+        explicit iterator(const Kmers& parent) : parent(parent), position(parent.sequence) {
+            //for(int i = 0; i < stop; ++i) {
+            //    this++;
+            //}
         }
         reference operator*() const { return std::min(fwmer, rvmer); }
         pointer operator->() const { return std::min(fwmer, rvmer); }
         iterator& operator++() {
-            // Check we are not done.
+            // Check we are not past the sequence data.
+            // Might even do without this assert and just say - hey don't iterate into invalid memory!
+            assert(*position != '\0');
             // Then add the base pointed to by nextbase to rvmer and fwmer.
             // Then increment nextbase
-            assert(!done);
-            char nucleotide = parent.sequence[nextbase];
+            const char nucleotide = *position;
             // Get bits for the nucleotide.
             // The array should be a static and constant array.
             value_type fbits = parent.nuc_to_bin[nucleotide];
             value_type rbits = ~fbits & (value_type) 3;
             fwmer = (fwmer << 2 | fbits);
             rvmer = (rvmer >> 2) | (rbits << ((K - 1) * 2));
-            nextbase == lastbase && done = true;
-            nextbase++;
             return *this;
         }
     private:
         const Kmers& parent;
-        size_t nextbase;
-        size_t lastbase;
+        const char* position;
         value_type fwmer;
         value_type rvmer;
         bool done;
     };
-    iterator begin() { return iterator(this, K); }
+    iterator begin() {}
     iterator end() {}
 private:
-    std::string& sequence;
+    // std::string& sequence;
+    // Doesn't this make it less safe than a std::string reference though? Someone could just free the memory
+    // out from underneath us.
+    const char* sequence;
+    const int K;
+    std::array<U, 256> translation_table;
 };
 
-#endif //SDG_KMERITERATOR_H
+#endif //SDG_KMERS_H
