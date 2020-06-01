@@ -10,6 +10,7 @@
 #include <array>
 #include <limits>
 #include <assert.h>
+#include <iostream>
 
 // I want this function to be able to run at compile time to create the constant static
 // arrays that the Kmers class uses to convert chars to binary.
@@ -61,17 +62,21 @@ public:
 
     class iterator: public std::iterator<iterator_category, value_type, difference_type, pointer, reference> {
     public:
-        explicit iterator(const Kmers& parent) // Do I need this is nested classes can access parent class vars?
-            : parent(parent), position(parent.sequence), last_unknown(0), fwmer(0), rvmer(0) {
-            ++this;
+        explicit iterator(Kmers& p) : parent(p) {
+            position = parent.sequence;
+            last_unknown = 0;
+            fwmer = 0;
+            rvmer = 0;
+            mask = (value_type(1) << (2 * parent.K)) - 1;
         }
+
         reference operator*() const {
             // I want to specialize this on template parameter F but am unsure on how to do it properly.
-            return std::min(fwmer, rvmer);
+            return std::min(fwmer & mask, rvmer & mask);
         }
         pointer operator->() const {
             // I want to specialize this on template parameter F but am unsure on how to do it properly.
-            return std::min(fwmer, rvmer);
+            return std::min(fwmer & mask, rvmer & mask);
         }
         // Advance the iterator to the next valid kmer in the sequence, or to the end of the string
         // (\0), whichever comes first.
@@ -79,18 +84,22 @@ public:
             // Here I disallow the pointer to be advanced past the end of the string (while loop condition).
             // I don't know if such safety is C++ style or not, or if given iterators relationship to
             // pointers, the C++ philosophy is to wash their hands and say "you're on your own".
-            while(*position != '\0' && last_unknown < parent.K) {
+            while(*position != '\0') {
                 // Then add the base pointed to by nextbase to rvmer and fwmer.
                 // Then increment nextbase
+                //std::cout << "Current pos: " << position << std::endl;
+                //std::cout << "Current char: " << *position << std::endl;
                 const char nucleotide = *position;
                 // Get bits for the nucleotide.
                 // The array should be a static and constant array.
                 value_type fbits = parent.translation_table[nucleotide];
                 value_type rbits = ~fbits & (value_type) 3;
                 last_unknown = fbits == 4 ? 0 : last_unknown + 1;
+                //std::cout << "last unknown: " << last_unknown << std::endl;
                 fwmer = (fwmer << 2 | fbits);
                 rvmer = (rvmer >> 2) | (rbits << ((parent.K - 1) * 2));
                 ++position;
+                if(last_unknown >= parent.K) break;
             }
             return *this;
         }
@@ -106,10 +115,14 @@ public:
         const char* position;
         value_type fwmer;
         value_type rvmer;
+        value_type mask;
         size_t last_unknown;
     };
     // An iterator at the first valid Kmer in the sequence.
-    iterator begin() { return iterator(this); }
+    iterator begin() {
+        iterator it(*this);
+        return ++it;
+    }
     // An iterator past all valid Kmers in the sequence (has hit \0 in input string).
     iterator end() {
         iterator it = begin();
