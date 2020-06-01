@@ -11,62 +11,7 @@
 #include <limits>
 #include <assert.h>
 
-// QUESTION: Should SDG get it's own sequence classes that aren't just strings?
-// Check BioSequences.jl for example of what I can do.
-
-/*
-class KmerIterator : public std::iterator<std::input_iterator_tag, uint64_t> {
-    // C++11 (explicit aliases)
-    using iterator_category = std::input_iterator_tag;
-    using value_type = uint64_t;
-    using reference = value_type const&;
-    using pointer = value_type const*;
-    using difference_type = ptrdiff_t;
-
-    // C++11
-    explicit operator bool() const { return !done; }
-    reference operator*() const { return fwmer; }
-    pointer operator->() const { return &fwmer; }
-
-    KmerIterator& operator++() {
-        assert(!done);
-        char nt = seq[pos];
-        value_type fbits = kmerbits[nt]; // Get bits for the nucleotide.
-        value_type rbits = ~fbits & (value_type) 3;
-        fwmer = (fwkmer << 2 | fbits);
-        rvmer = (rvkmer >> 2) | (rbits << ((k - 1) * 2));
-        pos == stop && done = true;
-        pos++;
-        return *this;
-    }
-
-    KmerIterator(const std::string& seq, const uint8_t k) : seq(seq), k(k), done(false), pos(0), fwmer(0), rvmer(0) {
-        size_t filled = 0;
-        size_t i = 0;
-        while(i < seq.length()){
-            nt = reinterpret(UInt8, inbounds_getindex(it.seq, i))
-            @inbounds fbits = UT(kmerbits[nt + 1])
-            rbits = ~fbits & typeof(fbits)(0x03)
-            fwkmer = (fwkmer << 0x02 | fbits)
-            rvkmer = (rvkmer >> 0x02) | (UT(rbits) << unsigned(offset(T, 1)))
-            filled += 1
-            if filled == ksize(T)
-            return MerIterResult(1, T(fwkmer), T(rvkmer)), (i, fwkmer, rvkmer)
-            end
-            i += 1
-        }
-    }
-private:
-    const std::string& seq;
-    const uint8_t k;
-    bool done;
-    size_t pos;
-    value_type fwmer;
-    value_type rvmer;
-};
-*/
-
-// I want this function to be run at compile time to create the constant static
+// I want this function to be able to run at compile time to create the constant static
 // arrays that the Kmers class uses to convert chars to binary.
 template<typename U>
 constexpr std::array<U, 256> make_nuc2bin_tbl(){
@@ -78,9 +23,17 @@ constexpr std::array<U, 256> make_nuc2bin_tbl(){
     return tbl;
 }
 
+// Type traits that determine how Kmers iteration produces values.
+class JustKmers;
+class KmersAndPos;
+
+template<typename F> struct is_formatter { static const bool value = false; };
+template<> struct is_formatter<JustKmers> { static const bool value = true; };
+template<> struct is_formatter<KmersAndPos> { static const bool value = true; };
+
 // A type representing a "lazy" - if you want to call it that, container of all the k-mers in a sequence.
 // Has an input iterator in its scope for iterating from the first k-mer in a sequence to the last.
-template <typename U> class Kmers {
+template <typename U, typename F> class Kmers {
     // C++11 (explicit aliases for input iterator).
     using iterator_category = std::input_iterator_tag;
     using value_type = U;
@@ -97,49 +50,76 @@ public:
     Kmers(const char * seq, const int K) : sequence(seq), K(K) {
         // Here I check someone hasn't requested silly K size, before
         // making the local translation table for this container.
+        // static asserts below?
+        assert(is_formatter<F>::value);
         assert(K > 0);
+        assert(!std::numeric_limits<value_type>::is_signed);
         // Forgive heavy bracket use - I need to get used to if C++ has the operator precedence I'm used to or not.
-        assert(K <= ((std::numeric_limits<value_type>::digits / 2) - 1)); // -1 here to keep space for the sign bits.
+        assert(K <= ((std::numeric_limits<value_type>::digits / 2))); // -1 here to keep space for the sign bits.
         translation_table = make_nuc2bin_tbl<value_type>();
     }
 
     class iterator: public std::iterator<iterator_category, value_type, difference_type, pointer, reference> {
     public:
-        explicit iterator(const Kmers& parent) : parent(parent), position(parent.sequence) {
-            //for(int i = 0; i < stop; ++i) {
-            //    this++;
-            //}
+        explicit iterator(const Kmers& parent) // Do I need this is nested classes can access parent class vars?
+            : parent(parent), position(parent.sequence), last_unknown(0), fwmer(0), rvmer(0) {
+            ++this;
         }
-        reference operator*() const { return std::min(fwmer, rvmer); }
-        pointer operator->() const { return std::min(fwmer, rvmer); }
+        reference operator*() const {
+            // I want to specialize this on template parameter F but am unsure on how to do it properly.
+            return std::min(fwmer, rvmer);
+        }
+        pointer operator->() const {
+            // I want to specialize this on template parameter F but am unsure on how to do it properly.
+            return std::min(fwmer, rvmer);
+        }
+        // Advance the iterator to the next valid kmer in the sequence, or to the end of the string
+        // (\0), whichever comes first.
         iterator& operator++() {
-            // Check we are not past the sequence data.
-            // Might even do without this assert and just say - hey don't iterate into invalid memory!
-            assert(*position != '\0');
-            // Then add the base pointed to by nextbase to rvmer and fwmer.
-            // Then increment nextbase
-            const char nucleotide = *position;
-            // Get bits for the nucleotide.
-            // The array should be a static and constant array.
-            value_type fbits = parent.nuc_to_bin[nucleotide];
-            value_type rbits = ~fbits & (value_type) 3;
-            fwmer = (fwmer << 2 | fbits);
-            rvmer = (rvmer >> 2) | (rbits << ((K - 1) * 2));
+            // Here I disallow the pointer to be advanced past the end of the string (while loop condition).
+            // I don't know if such safety is C++ style or not, or if given iterators relationship to
+            // pointers, the C++ philosophy is to wash their hands and say "you're on your own".
+            while(*position != '\0' && last_unknown < parent.K) {
+                // Then add the base pointed to by nextbase to rvmer and fwmer.
+                // Then increment nextbase
+                const char nucleotide = *position;
+                // Get bits for the nucleotide.
+                // The array should be a static and constant array.
+                value_type fbits = parent.translation_table[nucleotide];
+                value_type rbits = ~fbits & (value_type) 3;
+                last_unknown = fbits == 4 ? 0 : last_unknown + 1;
+                fwmer = (fwmer << 2 | fbits);
+                rvmer = (rvmer >> 2) | (rbits << ((parent.K - 1) * 2));
+                ++position;
+            }
             return *this;
+        }
+        bool reached_end() const {
+            return *position == '\0';
+        }
+        bool operator<(Kmers::iterator other) {
+            // true if both iterators refer to same sequence, and this iterator is at a lower position.
+            return parent.sequence == other.parent.sequence && position < other.position;
         }
     private:
         const Kmers& parent;
         const char* position;
         value_type fwmer;
         value_type rvmer;
-        bool done;
+        size_t last_unknown;
     };
-    iterator begin() {}
-    iterator end() {}
+    // An iterator at the first valid Kmer in the sequence.
+    iterator begin() { return iterator(this); }
+    // An iterator past all valid Kmers in the sequence (has hit \0 in input string).
+    iterator end() {
+        iterator it = begin();
+        while(!it.reached_end()) ++it;
+        return it;
+    }
 private:
     // std::string& sequence;
-    // Doesn't this make it less safe than a std::string reference though? Someone could just free the memory
-    // out from underneath us.
+    // Doesn't this make it less safe than a std::string reference though?
+    // Someone could just free the memory out from underneath us.
     const char* sequence;
     const int K;
     std::array<U, 256> translation_table;

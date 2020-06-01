@@ -9,6 +9,9 @@
 int main() {
     // A test 75 nucleotide long sequence.
     std::string myseq {"ACCAATCGGGATCGTTTATACCTCTCAGGCGATATTAACTGCGGCGACCCGATTGGAGATACGCTATAGCAAGAT"};
-    Kmers<uint64_t> mykmers(myseq, 31);
+    Kmers<uint64_t,JustKmers> mykmers(myseq, 31);
 
+    for(auto it = mykmers.begin(); it < mykmers.end(); ++it) {
+        std::cout << *it << std::endl;
+    }
 }
