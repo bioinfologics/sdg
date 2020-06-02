@@ -165,7 +165,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<LinkedReadsDatastore>(m, "LinkedReadsDatastore", "A Linked Reads Datastore")
             .def("size",&LinkedReadsDatastore::size)
             .def("get_read_sequence",&LinkedReadsDatastore::get_read_sequence)
-            .def_readwrite("mapper",&PairedReadsDatastore::mapper)
+            .def_readwrite("mapper",&LinkedReadsDatastore::mapper)
             ;
 
     py::class_<LinkedReadsMapper>(m, "LinkedReadsMapper", "A Linked reads mapper")
