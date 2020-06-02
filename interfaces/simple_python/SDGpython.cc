@@ -9,6 +9,7 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/views/NodeView.hpp>
 #include <sdglib/mappers/LongReadsRecruiter.hpp>
+//#include <sdglib/mappers/LinkedReadsMapper.hpp>
 #include <sdglib/processors/GraphEditor.hpp>
 #include <sdglib/processors/LinkageUntangler.hpp>
 #include <sdglib/processors/GraphContigger.hpp>
@@ -165,6 +166,17 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("size",&LinkedReadsDatastore::size)
             .def("get_read_sequence",&LinkedReadsDatastore::get_read_sequence)
             ;
+
+    py::class_<LinkedReadsMapper>(m, "LinkedReadsMapper", "A Linked reads mapper")
+            .def("map_reads",&LinkedReadsMapper::map_reads, "reads_to_remap"_a)
+            .def("remap_all_reads",&LinkedReadsMapper::remap_all_reads)
+            .def("map_reads63",&LinkedReadsMapper::map_reads63, "reads_to_remap"_a)
+            .def("remap_all_reads63",&LinkedReadsMapper::remap_all_reads)
+            .def("get_node_tags",&LinkedReadsMapper::get_node_tags, "node_id"_a)
+            .def_readonly("reads_in_node",&LinkedReadsMapper::reads_in_node)
+            .def_readonly("read_to_node",&LinkedReadsMapper::read_to_node)
+            ;
+
     py::class_<LongReadsDatastore>(m, "LongReadsDatastore", "A Long Reads Datastore")
             .def("size",&LongReadsDatastore::size)
             .def("get_read_sequence",&LongReadsDatastore::get_read_sequence)

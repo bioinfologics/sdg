@@ -206,6 +206,8 @@ public:
      */
     void load_from_text(std::string filename);
 
+//    std::vector<sgNodeID_t> select_nodes_subcomponent(std::vector<sgNodeID_t> nodes);
+
     /**
      * Writes the graph to a GFA v1 file, optionally a few nodes can be selected for writing.
      * @param filename Path to the output file

@@ -419,6 +419,15 @@ int32_t DistanceGraph::min_distance(const sgNodeID_t & n1, const sgNodeID_t & n2
         return d;
     }
 }
+//
+//std::vector<sgNodeID_t> DistanceGraph::select_nodes_subcomponent(std::vector<sgNodeID_t> nodes){
+//    // Select vecinity for each node exploring fw and bw
+//    std::vector<sgNodeID_t> visited_nodes;
+//
+//    for (auto nv: nodes){
+//        auto was_visited = std::find()
+//    }
+//}
 
 void DistanceGraph::write_to_gfa1(std::string filename, const std::vector<sgNodeID_t> &selected_nodes, const std::vector<double> &depths) {
     //TODO: change gaps to sequences named gapXX without sequence, but with length
