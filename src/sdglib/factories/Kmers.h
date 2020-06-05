@@ -34,7 +34,7 @@ protected:
     using reference = value_type const&;
     using pointer = value_type const*;
     using difference_type = ptrdiff_t;
-    
+
 public:
     // Unwrap std::string and pass to the cstring constructor.
     Kmers(const std::string& seq, const int K) : Kmers(seq.data(), K) {} // Requires C++11.
@@ -64,7 +64,7 @@ public:
 
         reference operator*() const {
             // I want to specialize this on template parameter F but am unsure on how to do it properly.
-            return std::min(fwmer & mask, rvmer & mask); //
+            return std::min(fwmer & mask, rvmer & mask); // SEGFAULTS if I make it non-canonical - WTF.
         }
         pointer operator->() const {
             // I want to specialize this on template parameter F but am unsure on how to do it properly.
