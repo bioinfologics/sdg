@@ -24,26 +24,17 @@ constexpr std::array<U, 256> make_nuc2bin_tbl(){
     return tbl;
 }
 
-// Type traits that determine how Kmers iteration produces values.
-class JustKmers;
-class KmersAndPos;
-
-template<typename F> struct is_formatter { static const bool value = false; };
-template<> struct is_formatter<JustKmers> { static const bool value = true; };
-template<> struct is_formatter<KmersAndPos> { static const bool value = true; };
-
 // A type representing a "lazy" - if you want to call it that, container of all the k-mers in a sequence.
 // Has an input iterator in its scope for iterating from the first k-mer in a sequence to the last.
-template <typename U, typename F> class Kmers {
+template <typename U> class Kmers {
+protected:
     // C++11 (explicit aliases for input iterator).
     using iterator_category = std::input_iterator_tag;
     using value_type = U;
     using reference = value_type const&;
     using pointer = value_type const*;
     using difference_type = ptrdiff_t;
-
-    // Static array for the conversion from letter to character.
-    // static const std::array<value_type, 256> nuc_to_bin = make_nuc2bin_tbl<value_type>();
+    
 public:
     // Unwrap std::string and pass to the cstring constructor.
     Kmers(const std::string& seq, const int K) : Kmers(seq.data(), K) {} // Requires C++11.
@@ -52,7 +43,6 @@ public:
         // Here I check someone hasn't requested silly K size, before
         // making the local translation table for this container.
         // static asserts below?
-        assert(is_formatter<F>::value);
         assert(K > 0);
         assert(!std::numeric_limits<value_type>::is_signed);
         // Forgive heavy bracket use - I need to get used to if C++ has the operator precedence I'm used to or not.
@@ -71,13 +61,14 @@ public:
             incorporate_char(position);
         }
         bool has_reached_end() { return *position == '\0'; }
+
         reference operator*() const {
             // I want to specialize this on template parameter F but am unsure on how to do it properly.
-            return std::min(fwmer & mask, rvmer & mask);
+            return std::min(fwmer & mask, rvmer & mask); //
         }
         pointer operator->() const {
             // I want to specialize this on template parameter F but am unsure on how to do it properly.
-            return std::min(fwmer & mask, rvmer & mask);
+            return fwmer & mask;
         }
 
         // Advance the iterator to the next valid kmer in the sequence, or to the end of the string
@@ -102,7 +93,7 @@ public:
             // true if both iterators refer to the same sequence, and this iterator is not at the same positon.
             return parent.sequence == other.parent.sequence && position == other.position;
         }
-    private:
+    protected:
         const Kmers& parent;
         const char* position;
         value_type fwmer;
@@ -149,5 +140,42 @@ private:
     const int K;
     std::array<U, 256> translation_table;
 };
+
+template<typename U>
+class CanonicalKmers : public Kmers<U> {
+    using value_type = typename Kmers<U>::value_type;
+    using reference = typename Kmers<U>::reference;
+    using pointer = typename Kmers<U>::pointer;
+    using Kmers<U>::Kmers; // Inherit constructor.
+
+public:
+    class iterator : public Kmers<U>::iterator {
+    public:
+        explicit iterator(CanonicalKmers& p) : Kmers<U>::iterator(p) {}
+        using Kmers<U>::iterator::operator++;
+        reference operator*() const {
+            // I want to specialize this on template parameter F but am unsure on how to do it properly.
+            return std::min(Kmers<U>::iterator::fwmer & Kmers<U>::iterator::mask, Kmers<U>::iterator::rvmer & Kmers<U>::iterator::mask);
+        }
+        pointer operator->() const {
+            // I want to specialize this on template parameter F but am unsure on how to do it properly.
+            return std::min(Kmers<U>::iterator::fwmer & Kmers<U>::iterator::mask, Kmers<U>::iterator::rvmer & Kmers<U>::iterator::mask);
+        }
+    };
+
+    iterator begin() {
+        iterator it(*this);
+        ++it;
+        return it;
+    }
+    // An iterator past all valid Kmers in the sequence (has hit \0 in input string).
+    iterator end() {
+        iterator it = begin();
+        while(!it.has_reached_end()) ++it;
+        return it;
+    }
+};
+
+
 
 #endif //SDG_KMERS_H

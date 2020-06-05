@@ -17,7 +17,8 @@ int main() {
 
     std::cout << "Creating Kmers<uint64_t,JustKmers>, K = 31" << std::endl;
 
-    Kmers<uint64_t,JustKmers> mykmers(myseq, 31);
+    Kmers<uint64_t> mykmers(myseq, 31);
+    CanonicalKmers<uint64_t> mycankmers(myseq, 31);
 
     std::cout << "Testing begin iterator creation" << std::endl;
     auto it = mykmers.begin();
@@ -40,7 +41,24 @@ int main() {
     for(auto it = mykmers.begin(); !it.has_reached_end(); it++) {
         std::cout << ++i << ' ' << std::bitset<64>(*it) << std::endl;
     }
-    
+
     std::cout << std::bitset<64>(*it) << std::endl;
     std::cout << std::bitset<64>(*lastit) << std::endl;
+
+    std::cout << "Testing begin canonical iterator creation" << std::endl;
+    auto canbegin = mycankmers.begin();
+
+    std::cout << "Done" << std::endl << "Testing end iterator creation" << std::endl;
+    auto canlastit = mycankmers.end();
+
+    std::cout << "Done" << std::endl;
+
+    std::cout << "Testing a for loop" << std::endl << std::endl;
+    int cani {0};
+    for(auto canit = mycankmers.begin(); canit != mycankmers.end(); canit++) {
+        std::cout << ++cani << ' ' << std::bitset<64>(*it) << std::endl;
+    }
+
+    std::cout << std::endl << ".end() scans to find the last iterator position" << std::endl;
+    std::cout << "you can also use a condition instead: !it.has_reached_end()" << std::endl << std::endl;
 }
