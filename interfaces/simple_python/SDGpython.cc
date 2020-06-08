@@ -322,7 +322,11 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<GraphPatcher>(m,"GraphPatcher","GraphPatcher")
             .def(py::init<WorkSpace &>(),"ws"_a)
             .def("find_tips_to_reconnect",&GraphPatcher::find_tips_to_reconnect)
+            .def("collapse_reconnection_groups",&GraphPatcher::collapse_reconnection_groups)
+            .def("patch_reconnection_groups",&GraphPatcher::patch_reconnection_groups)
+            .def("create_patch",&GraphPatcher::create_patch,"reconnection_group"_a)
             .def_readonly("reconnection_groups",&GraphPatcher::reconnection_groups);
+
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
 }
