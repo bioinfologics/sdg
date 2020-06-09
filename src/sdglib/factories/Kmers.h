@@ -51,7 +51,7 @@ public:
     public:
         explicit iterator(Kmers& p) : parent(p) {
             position = parent.sequence;
-            last_unknown = 0;
+            valid_nucleotides = 0;
             fwmer = 0;
             rvmer = 0;
             mask = (value_type(1) << (2 * parent.K)) - 1;
@@ -60,12 +60,10 @@ public:
         bool has_reached_end() { return *position == '\0'; }
 
         reference operator*() const {
-            // I want to specialize this on template parameter F but am unsure on how to do it properly.
-            return std::min(fwmer & mask, rvmer & mask); // SEGFAULTS if I make it non-canonical - WTF.
+            return fwmer;
         }
         pointer operator->() const {
-            // I want to specialize this on template parameter F but am unsure on how to do it properly.
-            return fwmer & mask;
+            return fwmer;
         }
 
         // Advance the iterator to the next valid kmer in the sequence, or to the end of the string
@@ -96,7 +94,7 @@ public:
         value_type fwmer;
         value_type rvmer;
         value_type mask;
-        size_t last_unknown;
+        size_t valid_nucleotides;
 
         void scan_right() {
             while(*position != '\0') {
@@ -105,16 +103,16 @@ public:
                 // Get bits for the nucleotide.
                 // The array should be a static and constant array.
                 incorporate_char(nucleotide);
-                if(last_unknown >= parent.K) break;
+                if(valid_nucleotides >= parent.K) break;
             }
         }
 
         void incorporate_char(const char c) {
             value_type fbits = parent.translation_table[c];
             value_type rbits = ~fbits & (value_type) 3;
-            last_unknown = fbits == 4 ? 0 : last_unknown + 1;
-            fwmer = (fwmer << 2 | fbits);
-            rvmer = (rvmer >> 2) | (rbits << ((parent.K - 1) * 2));
+            valid_nucleotides = fbits == 4 ? 0 : valid_nucleotides + 1;
+            fwmer = (fwmer << 2 | fbits) & mask;
+            rvmer = ((rvmer >> 2) | (rbits << ((parent.K - 1) * 2))) & mask;
         }
     };
     // An iterator at the first valid Kmer in the sequence.
