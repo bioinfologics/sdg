@@ -29,12 +29,8 @@ public:
     U rkmer;
     U ckmer;
 
-    U canonical() const {
-        return ckmer;
-    }
-
     bool is_fwd() const {
-        return canonical() == fkmer;
+        return ckmer == fkmer;
     }
 
     bool is_bwd() const {
