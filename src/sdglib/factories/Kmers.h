@@ -62,9 +62,6 @@ public:
         reference operator*() const {
             return fwmer;
         }
-        pointer operator->() const {
-            return fwmer;
-        }
 
         // Advance the iterator to the next valid kmer in the sequence, or to the end of the string
         // (\0), whichever comes first.
