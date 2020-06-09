@@ -21,7 +21,7 @@ int main(int argc, char * argv[]) {
     sdglib::OutputLogLevel=sdglib::LogLevels::DEBUG;
     try
     {
-        cxxopts::Options options("sdg-mapper", "reads-to-graph mapper for sdg worskpaces");
+        cxxopts::Options options("sdg-mapper", "reads-to-graph mapper for sdg workspaces");
 
         options.add_options()
                 ("help", "Print help")
@@ -33,8 +33,8 @@ int main(int argc, char * argv[]) {
                 ("m,max_kmer_repeat", "maximum number of times a kmer appears (LongReadMapper)", cxxopts::value(max_filter)->default_value("200"))
                 ("use_63-mers", "mapping based on 63-mers", cxxopts::value<bool>(use63mers))
                 ("skip_paired", "skip paired read mapping", cxxopts::value<bool>(skip_paired))
-                ("skip_linked", "skip paired read mapping", cxxopts::value<bool>(skip_linked))
-                ("skip_long", "skip paired read mapping", cxxopts::value<bool>(skip_long));
+                ("skip_linked", "skip linked read mapping", cxxopts::value<bool>(skip_linked))
+                ("skip_long", "skip long read mapping", cxxopts::value<bool>(skip_long));
 
 
 
