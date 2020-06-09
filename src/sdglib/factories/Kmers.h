@@ -8,6 +8,7 @@
 #include <limits>
 #include <assert.h>
 #include <iostream>
+#include <cstring>
 
 // I want this function to be able to run at compile time to create the constant static
 // arrays that the Kmers class uses to convert chars to binary.
@@ -49,14 +50,16 @@ public:
 
     class iterator: public std::iterator<iterator_category, value_type, difference_type, pointer, reference> {
     public:
-        explicit iterator(Kmers& p) : parent(p) {
-            position = parent.sequence;
+        explicit iterator(Kmers& p, const size_t offset = 0) : parent(p) {
+            position = p.sequence;
+            position += offset;
             valid_nucleotides = 0;
             fwmer = 0;
-            //rvmer = 0;
+            // TODO: Perhaps move into parent so it is not computed for every iterator or everytime end() is called?
             mask = (value_type(1) << (2 * parent.K)) - 1;
             incorporate_char(position);
         }
+
         bool has_reached_end() { return *position == '\0'; }
 
         reference operator*() const {
@@ -119,8 +122,7 @@ public:
     }
     // An iterator past all valid Kmers in the sequence (has hit \0 in input string).
     iterator end() {
-        iterator it = begin();
-        while(!it.has_reached_end()) ++it;
+        iterator it(*this, strlen(sequence));
         return it;
     }
 private:
@@ -132,6 +134,10 @@ private:
     std::array<U, 256> translation_table;
 };
 
+
+
+
+// LETS NOT WORRY ABOUT THIS FOR NOW.
 template<typename U>
 class CanonicalKmers : public Kmers<U> {
     using value_type = typename Kmers<U>::value_type;
@@ -155,14 +161,14 @@ public:
     };
 
     iterator begin() {
-        iterator it(*this);
+        iterator it(*this, 0);
         ++it;
         return it;
     }
     // An iterator past all valid Kmers in the sequence (has hit \0 in input string).
     iterator end() {
-        iterator it = begin();
-        while(!it.has_reached_end()) ++it;
+        iterator it(*this, 0);
+        it.jump_to_end();
         return it;
     }
 };
