@@ -2,9 +2,6 @@
 // Created by Ben J. Ward (EI) on 27/05/2020.
 //
 
-#ifndef SDG_KMERS_H
-#define SDG_KMERS_H
-
 #pragma once
 
 #include <array>
@@ -175,7 +172,3 @@ public:
         return it;
     }
 };
-
-
-
-#endif //SDG_KMERS_H
