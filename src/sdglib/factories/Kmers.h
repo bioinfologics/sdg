@@ -6,7 +6,7 @@
 
 #include <array>
 #include <limits>
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 #include <cstring>
 
@@ -22,13 +22,35 @@ constexpr std::array<U, 256> make_nuc2bin_tbl(){
     return tbl;
 }
 
-// A type representing a "lazy" - if you want to call it that, container of all the k-mers in a sequence.
-// Has an input iterator in its scope for iterating from the first k-mer in a sequence to the last.
+template<typename U> class Kmer {
+public:
+    size_t pos;
+    U fkmer;
+    U rkmer;
+    U ckmer;
+
+    U canonical() const {
+        return ckmer;
+    }
+
+    bool is_fwd() const {
+        return canonical() == fkmer;
+    }
+
+    bool is_bwd() const {
+        return !is_fwd();
+    }
+
+    void clear() {
+        pos = fkmer = rkmer = ckmer = 0;
+    }
+};
+
 template <typename U> class Kmers {
 protected:
     // C++11 (explicit aliases for input iterator).
     using iterator_category = std::input_iterator_tag;
-    using value_type = U;
+    using value_type = Kmer<U>;
     using reference = value_type const&;
     using pointer = value_type const*;
     using difference_type = ptrdiff_t;
@@ -38,14 +60,10 @@ public:
     Kmers(const std::string& seq, const int K) : Kmers(seq.data(), K) {} // Requires C++11.
 
     Kmers(const char * seq, const int K) : sequence(seq), K(K) {
-        // Here I check someone hasn't requested silly K size, before
-        // making the local translation table for this container.
-        // static asserts below?
         assert(K > 0);
-        assert(!std::numeric_limits<value_type>::is_signed);
-        // Forgive heavy bracket use - I need to get used to if C++ has the operator precedence I'm used to or not.
-        assert(K <= ((std::numeric_limits<value_type>::digits / 2))); // -1 here to keep space for the sign bits.
-        translation_table = make_nuc2bin_tbl<value_type>();
+        assert(!std::numeric_limits<U>::is_signed);
+        assert(K <= ((std::numeric_limits<U>::digits / 2)));
+        translation_table = make_nuc2bin_tbl<U>();
     }
 
     class iterator: public std::iterator<iterator_category, value_type, difference_type, pointer, reference> {
@@ -54,16 +72,21 @@ public:
             position = p.sequence;
             position += offset;
             valid_nucleotides = 0;
-            fwmer = 0;
+            kmer.clear();
+            //kmer.pos = position - p.sequence; // Currently uses 0 based bp co-ords.
             // TODO: Perhaps move into parent so it is not computed for every iterator or everytime end() is called?
-            mask = (value_type(1) << (2 * parent.K)) - 1;
+            mask = (U(1) << (2 * parent.K)) - 1;
             incorporate_char(position);
         }
 
         bool has_reached_end() { return *position == '\0'; }
 
         reference operator*() const {
-            return fwmer;
+            return kmer;
+        }
+
+        pointer operator->() const {
+            return std::addressof(operator*());
         }
 
         // Advance the iterator to the next valid kmer in the sequence, or to the end of the string
@@ -91,8 +114,8 @@ public:
     protected:
         const Kmers& parent;
         const char* position;
-        value_type fwmer;
-        value_type mask;
+        value_type kmer;
+        U mask;
         size_t valid_nucleotides;
 
         void scan_right() {
@@ -102,16 +125,20 @@ public:
                 // Get bits for the nucleotide.
                 // The array should be a static and constant array.
                 incorporate_char(nucleotide);
-                if(valid_nucleotides >= parent.K) break;
+                if(valid_nucleotides >= parent.K){
+                    kmer.pos = ((position - parent.sequence) - parent.K) + 1;
+                    break;
+                }
             }
         }
 
         void incorporate_char(const char c) {
-            value_type fbits = parent.translation_table[c];
-            value_type rbits = ~fbits & (value_type) 3;
+            U fbits = parent.translation_table[c];
+            U rbits = ~fbits & (U) 3;
             valid_nucleotides = fbits == 4 ? 0 : valid_nucleotides + 1;
-            fwmer = (fwmer << 2 | fbits) & mask;
-            //rvmer = ((rvmer >> 2) | (rbits << ((parent.K - 1) * 2))) & mask;
+            kmer.fkmer = (kmer.fkmer << 2 | fbits) & mask;
+            kmer.rkmer = ((kmer.rkmer >> 2) | (rbits << ((parent.K - 1) * 2))) & mask;
+            kmer.ckmer = std::min(kmer.fkmer, kmer.rkmer);
         }
     };
     // An iterator at the first valid Kmer in the sequence.
@@ -132,43 +159,4 @@ private:
     const char* sequence;
     const int K;
     std::array<U, 256> translation_table;
-};
-
-
-
-
-// LETS NOT WORRY ABOUT THIS FOR NOW.
-template<typename U>
-class CanonicalKmers : public Kmers<U> {
-    using value_type = typename Kmers<U>::value_type;
-    using reference = typename Kmers<U>::reference;
-    using pointer = typename Kmers<U>::pointer;
-    using Kmers<U>::Kmers; // Inherit constructor.
-
-public:
-    class iterator : public Kmers<U>::iterator {
-    public:
-        explicit iterator(CanonicalKmers& p) : Kmers<U>::iterator(p) {}
-        using Kmers<U>::iterator::operator++;
-        reference operator*() const {
-            // I want to specialize this on template parameter F but am unsure on how to do it properly.
-            return std::min(Kmers<U>::iterator::fwmer & Kmers<U>::iterator::mask, Kmers<U>::iterator::rvmer & Kmers<U>::iterator::mask);
-        }
-        pointer operator->() const {
-            // I want to specialize this on template parameter F but am unsure on how to do it properly.
-            return std::min(Kmers<U>::iterator::fwmer & Kmers<U>::iterator::mask, Kmers<U>::iterator::rvmer & Kmers<U>::iterator::mask);
-        }
-    };
-
-    iterator begin() {
-        iterator it(*this, 0);
-        ++it;
-        return it;
-    }
-    // An iterator past all valid Kmers in the sequence (has hit \0 in input string).
-    iterator end() {
-        iterator it(*this, 0);
-        it.jump_to_end();
-        return it;
-    }
 };
