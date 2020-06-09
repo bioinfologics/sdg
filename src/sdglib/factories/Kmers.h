@@ -9,6 +9,18 @@
 #include <assert.h>
 #include <iostream>
 
+// I want this function to be able to run at compile time to create the constant static
+// arrays that the Kmers class uses to convert chars to binary.
+template<typename U>
+constexpr std::array<U, 256> make_nuc2bin_tbl(){
+    std::array<U, 256> tbl = {4};
+    tbl['a'] = tbl['A'] = 0;
+    tbl['c'] = tbl['C'] = 1;
+    tbl['g'] = tbl['G'] = 2;
+    tbl['t'] = tbl['T'] = 3;
+    return tbl;
+}
+
 // A type representing a "lazy" - if you want to call it that, container of all the k-mers in a sequence.
 // Has an input iterator in its scope for iterating from the first k-mer in a sequence to the last.
 template <typename U> class Kmers {
