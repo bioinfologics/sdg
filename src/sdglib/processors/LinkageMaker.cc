@@ -4,7 +4,6 @@
 
 #include <atomic>
 #include "GraphMaker.hpp"
-#include "GraphEditor.hpp"
 #include "LinkageUntangler.hpp"
 #include "LinkageMaker.hpp"
 #include <sdglib/mappers/LongReadsMapper.hpp>
@@ -669,7 +668,7 @@ DistanceGraph LinkageMaker::make_longreads_multilinkage(const std::string &longr
 
 
 DistanceGraph LinkageMaker::make_paired10x_multilinkage(const PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore, bool fr,
-                                                        uint64_t read_offset) {
+                                                        uint64_t read_offset, int64_t min_dist_size) {
     check_selected_nodes();
     uint16_t prmidx=0;
     for (; prmidx < dg.sdg.ws.paired_reads_datastores.size(); ++prmidx){
@@ -677,6 +676,25 @@ DistanceGraph LinkageMaker::make_paired10x_multilinkage(const PairedReadsMapper 
     }
     DistanceGraph ldg(dg.sdg);
     uint64_t unmapped(0),same(0),non_neighbours(0),used(0);
+
+    std::vector<int32_t> read_first_pos(prm.read_direction_in_node.size());
+    for (auto &nm:prm.reads_in_node){
+        for (auto &m:nm) read_first_pos[m.read_id]=m.first_pos;
+    }
+    auto sdist=prm.size_distribution();
+    int64_t isize=0;
+    uint64_t max_count=0;
+    if (min_dist_size==-1){
+        if (fr) min_dist_size=0;
+        else min_dist_size=1000;
+    }
+    for (uint64_t i=min_dist_size;i<sdist.size();++i){
+        if (sdist[i]>max_count) {
+            isize=i;
+            max_count=sdist[i];
+        }
+    }
+
     for (uint64_t rid1=1; rid1<prm.read_to_node.size()-1; rid1+=2){
         uint64_t rid2=rid1+1;
         sgNodeID_t n1=prm.read_to_node[rid1];
@@ -710,9 +728,22 @@ DistanceGraph LinkageMaker::make_paired10x_multilinkage(const PairedReadsMapper 
             continue;
         }
         //orient nodes as per connection ends
-        if (fr!=prm.read_direction_in_node[rid1]) n1=-n1;
-        if (fr!=prm.read_direction_in_node[rid2]) n2=-n2;
-        ldg.add_link(n1,n2,0,{SupportType::PairedRead,prmidx,rid1});
+        //if (fr!=prm.read_direction_in_node[rid1]) n1=-n1;
+        //if (fr!=prm.read_direction_in_node[rid2]) n2=-n2;
+
+        int d1,d2;
+        if (fr==prm.read_direction_in_node[rid1]){
+            d1=read_first_pos[rid1];
+            n1=-n1;
+        }
+        else d1=dg.sdg.nodes[n1].sequence.size()-read_first_pos[rid1];
+        if (fr==prm.read_direction_in_node[rid2]) {
+            d2=read_first_pos[rid2];
+            n2=-n2;
+        }
+        else d2=dg.sdg.nodes[n2].sequence.size()-read_first_pos[rid2];
+
+        ldg.add_link(n1,n2,isize-d1-d2,{SupportType::PairedRead,prmidx,rid1});
         ++used;
     }
     sdglib::OutputLog()<<"From lmp10x: "<<unmapped<<" unmapped,  "<<same<<" same,  "<<non_neighbours<<" non-neighbours,  "<<used<<" used"<<std::endl;
@@ -728,14 +759,14 @@ DistanceGraph LinkageMaker::make_paired10x_multilinkage(const PairedReadsMapper 
  * @param min_size minimum size of the read to filter mappings.
  * @param min_tnscore minimum neighbour score on linked reads
  */
-std::vector<std::vector<LongReadMapping>> filter_mappings_with_linked_reads(const LongReadsMapper &lorm, const LinkedReadsMapper &lrm, uint32_t min_size,  float min_tnscore) {
+std::vector<std::vector<LongReadMapping>> LinkageMaker::filter_mappings_with_linked_reads(const LongReadsMapper &lorm, const LinkedReadsMapper &lrm, uint32_t min_size,  float min_tnscore) {
     if (lrm.tag_neighbours.empty()) {
         sdglib::OutputLog()<<"Can't filter mappings because there are no tag_neighbours on the LinkedReadsMapper"<<std::endl;
         return {};
     }
     sdglib::OutputLog()<<"Filtering mappings"<<std::endl;
     std::vector<std::vector<LongReadMapping>> filtered_read_mappings;
-    filtered_read_mappings.resize(lorm.datastore.size());
+    filtered_read_mappings.resize(lorm.datastore.size()+1);
     std::atomic<uint64_t> rshort(0), runmapped(0), rnoresult(0), rfiltered(0);
 #pragma omp parallel
     {
@@ -743,7 +774,7 @@ std::vector<std::vector<LongReadMapping>> filter_mappings_with_linked_reads(cons
         //run hap_filter on every read
 
 #pragma omp for schedule(static, 10)
-        for (uint64_t rid = 0; rid <= lorm.datastore.size()-1; ++rid) {
+        for (uint64_t rid = 0; rid <= lorm.datastore.size(); ++rid) {
             hap_filter.set_read(rid);
             if (hap_filter.read_seq.size()<min_size){
                 ++rshort;

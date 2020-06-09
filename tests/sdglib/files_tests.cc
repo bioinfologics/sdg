@@ -6,7 +6,6 @@
 #include <sdglib/readers/FileReader.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <random>
-#include <sdglib/datastores/ReadPathsDatastore.hpp>
 
 TEST_CASE("Workspace create, read, write") {
     // Long reads
@@ -95,7 +94,7 @@ TEST_CASE("10x reads datastore create, read, write") {
 
     //random number engine
     std::mt19937 gen(10); // Always using same seed to get same results
-    std::uniform_int_distribution<> dis(1, ds.size());
+    std::uniform_int_distribution<> dis(1, ds.size()+1);
 
     std::array<uint64_t, 50> reads_to_check{};
     for (auto &r:reads_to_check){
@@ -144,7 +143,7 @@ TEST_CASE("PE reads datastore create, read, write") {
 
     //random number engine
     std::mt19937 gen(10); // Always using same seed to get same results
-    std::uniform_int_distribution<> dis(1, ds.size());
+    std::uniform_int_distribution<> dis(1, ds.size()+1);
 
     std::array<uint64_t, 50> reads_to_check{};
     for (auto &r:reads_to_check){
@@ -221,11 +220,4 @@ TEST_CASE("Load GFA2") {
     SequenceDistanceGraph sg(ws);
     sg.load_from_gfa("../tests/datasets/graph/test_gfa2.gfa");
     REQUIRE(sg.nodes.size() > 1);
-}
-
-TEST_CASE("Load ReadPaths") {
-
-    ReadPathsDatastore ds("../tests/datasets/test.paths");
-
-    REQUIRE(!ds.read_paths.empty());
 }

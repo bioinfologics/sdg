@@ -6,15 +6,15 @@
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 
-DistanceGraph NodeView::graph() const {
+const DistanceGraph & NodeView::graph() const {
     return *dg;
 }
 
-const std::string NodeView::sequence() const {
+std::string NodeView::sequence() const {
     return dg->sdg.get_node_sequence(id);
 }
 
-const uint64_t NodeView::size() const {
+uint64_t NodeView::size() const {
     return dg->sdg.get_node_size(id);
 }
 
@@ -22,7 +22,7 @@ NodeView NodeView::rc() const {
     return dg->get_nodeview(-id);
 }
 
-const std::vector<LinkView> NodeView::next() const {
+std::vector<LinkView> NodeView::next() const {
     auto fwl=dg->get_fw_links(id);
     std::vector<LinkView> r;
     r.reserve(fwl.size());
@@ -34,7 +34,7 @@ const std::vector<LinkView> NodeView::next() const {
     return r;
 }
 
-const std::vector<LinkView> NodeView::prev() const {
+std::vector<LinkView> NodeView::prev() const {
     auto bwl=dg->get_bw_links(id);
     std::vector<LinkView> r;
     r.reserve(bwl.size());
@@ -46,7 +46,7 @@ const std::vector<LinkView> NodeView::prev() const {
     return r;
 }
 
-const std::vector<NodeView> NodeView::parallels() const {
+std::vector<NodeView> NodeView::parallels() const {
     auto p=prev(),n=next();
     if (p.empty() or n.empty()) return {};
     std::vector<NodeView> pars;
@@ -69,6 +69,11 @@ std::vector<uint16_t> NodeView::kmer_coverage(std::string kcovds_name, std::stri
 
 std::vector<uint16_t> NodeView::kmer_coverage(int kcovds_idx, int kcovds_count_idx) const {
     return dg->sdg.ws.kmer_counters[kcovds_count_idx].project_count(kcovds_count_idx,sequence());
+}
+
+float NodeView::kci() {
+    if (dg->sdg.ws.kmer_counters.empty() or dg->sdg.ws.kmer_counters[0].counts.size()<2) return -1;
+    return dg->sdg.ws.kmer_counters[0].kci(llabs(id));
 }
 
 std::vector<seqID_t> NodeView::get_paired_reads(std::string datastore_name) const {
@@ -136,9 +141,20 @@ std::vector<ReadMapping> NodeView::get_linked_mappings(std::string datastore_nam
     return mappings;
 }
 
-std::vector<LinkedTag> NodeView::get_linked_tags(std::string datastore_name) const {
+std::vector<LinkedTag> NodeView::get_linked_tags(std::string datastore_name, int min_read_count) const {
+
+    std::map<LinkedTag, uint32_t> tag_counts;
+    for (auto mapping: dg->sdg.ws.get_linked_reads_datastore(datastore_name).mapper.reads_in_node[llabs(id)]){
+        auto t = dg->sdg.ws.get_linked_reads_datastore(datastore_name).get_read_tag(mapping.read_id);
+        tag_counts[t]++;
+    }
+
     std::vector<LinkedTag> tags;
-    for (auto t:dg->sdg.ws.get_linked_reads_datastore(datastore_name).mapper.get_node_tags(llabs(id))) tags.push_back(t);
+    for (auto &t: tag_counts) {
+        if (t.second > min_read_count) {
+            tags.push_back(t.first);
+        }
+    }
     return tags;
 }
 
@@ -161,4 +177,14 @@ std::vector<uint64_t> NodeView::get_kmers(int K){
     auto kf = StringKMerFactory(K);
     kf.create_kmers(sequence(), node_kmers);
     return node_kmers;
+};
+
+std::unordered_set<uint64_t> NodeView::get_linked_tags_kmers(std::string datastore_name, int K, int min_tag_cov){
+    // Get tags
+//    auto tags = get_linked_reads(datastore_name);
+    std::set<LinkedTag> tags = dg->sdg.ws.get_linked_reads_datastore(datastore_name).mapper.get_node_tags(llabs(id));
+
+    // Get kmers from tags
+    ReadSequenceBuffer ds_buffer(dg->sdg.ws.get_linked_reads_datastore(datastore_name));
+    return dg->sdg.ws.get_linked_reads_datastore(datastore_name).get_tags_kmers(K, min_tag_cov, tags, ds_buffer);
 };

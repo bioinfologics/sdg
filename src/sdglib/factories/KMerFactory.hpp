@@ -267,6 +267,28 @@ public:
 class StreamKmerFactory128 : public  KMerFactory128 {
 public:
     explicit StreamKmerFactory128(uint8_t k) : KMerFactory128(k){}
+    inline void produce_all_kmers(const char * seq, std::vector<std::pair<bool, __uint128_t>> &mers){
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        last_unknown=0;
+        fkmer=0;
+        rkmer=0;
+        auto s=seq;
+        while (*s!='\0' and *s!='\n') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(true,fkmer);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(false,rkmer);
+                }
+            }
+            ++s;
+        }
+    }
     inline void produce_all_kmers(const char * seq, std::vector<__uint128_t> &mers){
         // TODO: Adjust for when K is larger than what fits in __uint128_t!
         last_unknown=0;
@@ -405,5 +427,14 @@ public:
         }
     }
 };
+
+namespace sdglib {
+    static std::vector<std::pair<bool, uint64_t>> str_to_kmers(std::string s, uint8_t k) {
+        std::vector<std::pair<bool, uint64_t>> r;
+        StreamKmerFactory skf(k);
+        skf.produce_all_kmers(s.c_str(), r);
+        return r;
+    }
+}
 
 #endif //SEQ_SORTER_KMERFACTORY_H

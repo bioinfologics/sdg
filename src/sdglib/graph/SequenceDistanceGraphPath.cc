@@ -54,8 +54,11 @@ std::string SequenceDistanceGraphPath::sequence() const {
                 else {
                     auto ovl =- l->dist;
                     for (auto s1 = s.c_str() + s.size() - ovl, s2 = nseq.c_str(); *s1 != NULL; ++s1, ++s2)
-                        if (*s1 != *s2)
-                            throw std::runtime_error("path overlap is invalid!");
+                        if (*s1 != *s2) {
+                            char buffer[250];
+                            sprintf(buffer,"path overlap is invalid! (%d,%d,%d)",l->source,l->dest,l->dist);
+                            throw std::runtime_error(buffer);
+                        }
                     nseq.erase(0, ovl);
                 }
             }
@@ -136,6 +139,18 @@ size_t SequenceDistanceGraphPath::get_sequence_size_fast() const{
         pnode=-n;
     }
     return size;
+}
+
+bool SequenceDistanceGraphPath::is_valid(bool allow_ns) {
+    for (auto i=0;i<nodes.size()-1;++i) {
+        bool ok=false;
+        for (auto &l:sg.get_fw_links(nodes[i]))
+            if (l.dest==nodes[i+1] and (allow_ns or l.dist<=0)) {ok=true;break;}
+        if (ok) continue;
+        return false;
+
+    }
+    return true;
 }
 
 bool SequenceDistanceGraphPath::is_unitig() {

@@ -5,7 +5,8 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/batch_counter/BatchKmersCounter.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
-#include "cxxopts.hpp"
+#include <sdglib/processors/GraphContigger.hpp>
+#include "cxxopts/cxxopts.hpp"
 
 
 std::unordered_set<__uint128_t, int128_hash> countKmers(const WorkSpace &ws, int k, int min_coverage, int num_batches) {
@@ -19,20 +20,7 @@ std::unordered_set<__uint128_t, int128_hash> countKmers(const WorkSpace &ws, int
     return kmers;
 }
 
-std::vector<__uint128_t> countKmersToList(const WorkSpace &ws, int k, int min_coverage, int num_batches) {
 
-
-    auto kmer_list = BatchKmersCounter::buildKMerCount(k, ws.paired_reads_datastores.back(), min_coverage, ".", ".", num_batches);
-    std::vector<__uint128_t> kmers;
-    kmers.reserve(kmer_list->size);
-    __uint128_t kmer;
-    for (uint64_t i = 0; i < kmer_list->size; ++i) {
-        memcpy(&kmer, &kmer_list->kmers[i], 16);
-        kmers.emplace_back(kmer);
-    }
-    sdglib::sort(kmers.begin(),kmers.end());
-    return kmers;
-}
 
 int main(int argc, char * argv[]) {
     std::cout << "Welcome to sdg-dbg" << std::endl << std::endl;
@@ -90,12 +78,13 @@ int main(int argc, char * argv[]) {
     op.addEntry("Origin datastore: " + pr_file);
     ws.add_paired_reads_datastore(pr_file,"dbg_reads");
 
-    auto kmer_list = countKmersToList(ws, k, min_coverage, num_batches);
+    auto kmer_list = BatchKmersCounter::countKmersToList(ws.paired_reads_datastores.back(), k, min_coverage, num_batches);
     gm2.new_graph_from_kmerlist_trivial128(kmer_list,k);
 
     sdglib::OutputLog() << "DONE! " << ws.sdg.count_active_nodes() << " nodes in graph" << std::endl;
     if (0<tip_size) {
-        gm2.tip_clipping(tip_size);
+        GraphContigger gc(ws);
+        gc.clip_tips(tip_size);
         sdglib::OutputLog() << "Tip clipping DONE! " << ws.sdg.count_active_nodes() << " nodes in graph" << std::endl;
     }
     ws.add_kmer_counter("main", 31).add_count("PE",ws.paired_reads_datastores[0]);

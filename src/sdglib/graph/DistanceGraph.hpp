@@ -34,9 +34,8 @@ class NodeView;
  */
 class DistanceGraph {
 public:
-    explicit DistanceGraph(SequenceDistanceGraph & _sdg, bool resize_links=true);
-    DistanceGraph(SequenceDistanceGraph& sdg, std::ifstream &input_file);
-    DistanceGraph(SequenceDistanceGraph & _sdg, const std::string& name);
+    //explicit DistanceGraph(SequenceDistanceGraph& sdg, std::ifstream &input_file);
+    explicit DistanceGraph(SequenceDistanceGraph & _sdg, const std::string& name="unnamed");
     std::string ls(int level=0,bool recursive=true) const;
     /** @brief Adds a link between source and destination in the links collection.
      * Each link is added from both ends in the collection (see links vector)
@@ -62,6 +61,8 @@ public:
      * @param dest
      */
     bool remove_link(sgNodeID_t source, sgNodeID_t dest);
+
+    bool remove_link(sgNodeID_t source, sgNodeID_t dest,int32_t d, Support s);
 
     /** @brief Removes all the links in the collection from and to a given nodeID
      * TODO: check this one
@@ -170,6 +171,7 @@ public:
      */
     bool are_connected(sgNodeID_t n1, sgNodeID_t n2) const;
     uint32_t link_count(sgNodeID_t n1, sgNodeID_t n2) const;
+    int32_t min_distance(const sgNodeID_t & n1, const sgNodeID_t & n2) const;
 
     /**
      * Get all unitigs from the graph, returns a vector of paths where all nodes are connected 1-1
@@ -225,7 +227,7 @@ public:
      * @param n ID of the SequenceDistanceGraph node
      * @return A NodeView of the node 'n'
      */
-    NodeView get_nodeview(sgNodeID_t n);
+    NodeView get_nodeview(sgNodeID_t n) const;
 
     /**
      * @brief Provides access to the NodeView read-only graph exploration methods for all nodes
@@ -233,7 +235,13 @@ public:
      * @return A NodeView list containing one per node in the graph unless include_disconnected is set to false, then only nodes with links are included
      */
     std::vector<NodeView> get_all_nodeviews(bool include_disconnected=true) const;
-    DistanceGraph& operator=(const DistanceGraph &o);
+
+    /**
+     * @brief Prints the graph stats by kci according to the first kci collection in the ws
+     */
+    void stats_by_kci();
+
+    std::vector<uint64_t> nstats(std::vector<uint64_t> sizes, std::vector<int> stops={25,50,75});
 
     friend std::ostream& operator<<(std::ostream &os, const DistanceGraph &dg);
 
@@ -246,7 +254,7 @@ public:
      * Collection of links for each node of the graph
      * links[node] = [link, link....]
      */
-    std::vector<std::vector<Link>> links;
+    std::vector<std::vector<Link>> links={};
 
     std::string name="SDG";
 

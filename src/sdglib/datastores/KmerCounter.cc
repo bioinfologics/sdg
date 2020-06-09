@@ -57,6 +57,44 @@ void KmerCounter::index_sdg() {
     kindex.resize(c.size());
 }
 
+void KmerCounter::update_graph_counts() {
+    for (auto &c:counts[0])c=0;
+
+    std::vector<uint64_t> nkmers;
+    uint64_t not_found=0;
+
+    if (count_mode==Canonical) {
+        StringKMerFactory skf(k);
+        for (auto &n:ws.sdg.nodes) {
+            nkmers.clear();
+            if (n.sequence.size() >= k) {
+                skf.create_kmers(n.sequence, nkmers);
+                for (auto &kmer:nkmers) {
+                    auto kidx=std::lower_bound(kindex.begin(), kindex.end(), kmer);
+                    if (kidx==kindex.end() or *kidx!=kmer) ++not_found;
+                    else ++counts[0][kidx-kindex.begin()];
+                }
+            }
+        }
+    } else if (count_mode==NonCanonical) {
+        StringKMerFactoryNC skf(k);
+        for (auto &n:ws.sdg.nodes) {
+            nkmers.clear();
+            if (n.sequence.size() >= k) {
+                skf.create_kmers(n.sequence, nkmers);
+                for (auto &kmer:nkmers) {
+                    auto kidx=std::lower_bound(kindex.begin(), kindex.end(), kmer);
+                    if (kidx==kindex.end() or *kidx!=kmer) ++not_found;
+                    else ++counts[0][kidx-kindex.begin()];
+                }
+            }
+        }
+    }
+    if (not_found) sdglib::OutputLog()<<"WARNING: "<<not_found<<" kmers not in index when updating graph counts"<<std::endl;
+    //clear kci cache, as it will be invalid since we don't know if the same k-mers are unique in the graph!
+    kci_cache.clear();
+}
+
 void KmerCounter::add_count(const std::string &count_name, const std::vector<std::string> &filenames, bool fastq) {
     if (std::find(count_names.cbegin(), count_names.cend(), count_name) != count_names.cend()) {
         throw std::runtime_error(count_name + " already exists, please use a different name");
@@ -254,6 +292,68 @@ std::vector<uint16_t> KmerCounter::project_count(const uint16_t count_idx, const
         }
     }
     return kcov;
+}
+
+float KmerCounter::kci(sgNodeID_t node) {
+    try {
+        return kci_cache.at(llabs(node));
+    }
+    catch(const std::out_of_range& oor) {
+        std::vector<uint64_t> skmers;
+        auto &s=ws.sdg.nodes[llabs(node)].sequence;
+        //StringKMerFactory skf(k);
+        //skf.create_kmers(s,skmers);
+        if (count_mode==Canonical) {
+            StringKMerFactory skf(k);
+            skf.create_kmers(s,skmers);
+        } else if (count_mode==NonCanonical) {
+            StringKMerFactoryNC skf(k);
+            skf.create_kmers(s,skmers);
+        }
+        uint64_t totalf=0,count=0;
+        std::vector<uint64_t> freqs;
+        freqs.reserve(skmers.size());
+        for (auto &kmer: skmers){
+            auto nk = std::lower_bound(kindex.begin(), kindex.end(), kmer);
+
+            if (nk!=kindex.end() and *nk == kmer and counts[0][nk-kindex.begin()]==1) {
+                freqs.emplace_back(counts[1][nk-kindex.begin()]);
+            }
+        }
+        std::sort(freqs.begin(),freqs.end());
+        float nkci=(freqs.size()>10 ? freqs[freqs.size()/2]/ kci_peak_f:-1);
+#pragma omp critical
+        {
+            kci_cache[llabs(node)] = nkci;
+        }
+        return nkci;
+    }
+}
+
+void KmerCounter::compute_all_kcis() {
+#pragma omp parallel for
+    for (sgNodeID_t n=1;n<ws.sdg.nodes.size();++n){
+        if (ws.sdg.nodes[n].status==NodeStatus::Active) kci(n);
+    }
+
+}
+
+std::vector<uint64_t> KmerCounter::count_spectra(std::string name, uint16_t maxf, bool unique_in_graph, bool present_in_graph) {
+    std::vector<uint64_t> s(maxf+1);
+    auto &cv=get_count_by_name(name);
+    if (unique_in_graph){
+        for (auto i=0;i<counts[0].size();++i){
+            if (counts[0][i]==1)
+                ++s[(cv[i]>maxf ? maxf : cv[i])];
+        }
+
+    } else {
+        for (auto i=0;i<counts[0].size();++i){
+            if ((not present_in_graph) or counts[0][i]>0)
+                ++s[(cv[i]>maxf ? maxf : cv[i])];
+        }
+    }
+    return s;
 }
 
 std::vector<uint16_t> KmerCounter::project_count(const std::string &count_name, const std::string &s) {

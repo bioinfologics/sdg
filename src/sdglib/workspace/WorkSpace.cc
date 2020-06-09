@@ -130,30 +130,34 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
 
     //distance graphs
     wsfile.read((char *) &count,sizeof(count));
-    distance_graphs.reserve(count);
+    //distance_graphs.reserve(count);
     for (auto i=0;i<count;++i) {
-        distance_graphs.emplace_back(sdg, wsfile);
+        distance_graphs.emplace_back(sdg);
+        distance_graphs.back().read(wsfile);
     }
 
     //paired_reads_datastores
     wsfile.read((char *) &count,sizeof(count));
-    paired_reads_datastores.reserve(count);
+    //paired_reads_datastores.reserve(count);
     for (auto i=0;i<count;++i) {
-        paired_reads_datastores.emplace_back(*this, wsfile);
+        paired_reads_datastores.emplace_back(*this);
+        paired_reads_datastores.back().read(wsfile);
     }
 
     //linked_reads_datastores
     wsfile.read((char *) &count,sizeof(count));
-    linked_reads_datastores.reserve(count);
+    //linked_reads_datastores.reserve(count);
     for (auto i=0;i<count;++i) {
-        linked_reads_datastores.emplace_back(*this, wsfile);
+        linked_reads_datastores.emplace_back(*this);
+        linked_reads_datastores.back().read(wsfile);
     }
 
     //Long reads datastores
     wsfile.read((char *) &count,sizeof(count));
-    long_reads_datastores.reserve(count);
+    //long_reads_datastores.reserve(count);
     for (auto i=0;i<count;++i) {
-        long_reads_datastores.emplace_back(*this, wsfile);
+        long_reads_datastores.emplace_back(*this);
+        long_reads_datastores.back().read(wsfile);
     }
 
     // Kmer counts datastore
@@ -408,14 +412,7 @@ WorkSpace::WorkSpace(const std::string &filename) : sdg(*this) {
     paired_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
     long_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
     kmer_counters.reserve(MAX_WORKSPACE_VECTOR_SIZE);
-    load_from_disk(filename);
-}
-
-WorkSpace::WorkSpace() : sdg(*this) {
-    linked_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
-    paired_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
-    long_reads_datastores.reserve(MAX_WORKSPACE_VECTOR_SIZE);
-    kmer_counters.reserve(MAX_WORKSPACE_VECTOR_SIZE);
+    if (filename!="") load_from_disk(filename);
 }
 
 std::vector<std::string> WorkSpace::list_distance_graphs() {

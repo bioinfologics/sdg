@@ -34,6 +34,21 @@ bool DistanceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
     return false;
 }
 
+bool DistanceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, Support s) {
+    auto & slinks = links[(source > 0 ? source : -source)];
+    auto slinksLen = slinks.size();
+    slinks.erase(std::remove_if(slinks.begin(), slinks.end(), [source,dest,d,s](const Link &l) {
+        return std::tie(source,dest,d,s)==std::tie(l.source,l.dest,l.dist,l.support);
+    }), slinks.end());
+    auto & dlinks = links[(dest > 0 ? dest : -dest)];
+    auto dlinksLen = dlinks.size();
+    dlinks.erase(std::remove_if(dlinks.begin(), dlinks.end(), [source,dest,d,s](const Link &l) {
+        return std::tie(source,dest,d,s)==std::tie(l.dest,l.source,l.dist,l.support);
+    }), dlinks.end());
+    if (slinks.size() != slinksLen or dlinks.size() != dlinksLen) return true;
+    return false;
+}
+
 void DistanceGraph::disconnect_node(sgNodeID_t node) {
     for (auto fwl:get_fw_links(node)) remove_link(fwl.source,fwl.dest);
     for (auto bwl:get_bw_links(node)) remove_link(bwl.source,bwl.dest);
@@ -227,7 +242,10 @@ std::vector<SequenceDistanceGraphPath> DistanceGraph::find_all_paths_between(sgN
     std::vector<sgNodeID_t> pp;
 
     for(auto &fl:get_fw_links(from)) {
-        if (sdg.nodes[llabs(fl.dest)].sequence.size()<=max_size) {
+        if (fl.dest==to and final_paths.empty()) {
+            final_paths.emplace_back(sdg,pp);
+        }
+        else if (sdg.nodes[llabs(fl.dest)].sequence.size()<=max_size) {
             node_entries.emplace_back(-1, fl.dest, 1, sdg.nodes[llabs(fl.dest)].sequence.size());
         }
     }
@@ -383,6 +401,25 @@ uint32_t DistanceGraph::link_count(sgNodeID_t n1, sgNodeID_t n2) const {
     return c;
 }
 
+int32_t DistanceGraph::min_distance(const sgNodeID_t & n1, const sgNodeID_t & n2) const {
+    if (n1>0) {
+        if (n1 >= links.size()) return INT32_MAX;
+        int32_t d = INT32_MAX;
+        for (const Link * l=links[n1].data();l<links[n1].data()+links[n1].size();++l)
+            if (l->dest == n2 and l->source == -n1 and l->dist < d)
+                d = l->dist;
+        return d;
+    }
+    else {
+        if (-n1 >= links.size()) return INT32_MAX;
+        int32_t d = INT32_MAX;
+        for (const Link * l=links[-n1].data();l<links[-n1].data()+links[-n1].size();++l)
+            if (l->dest == n2 and l->source == -n1 and l->dist < d)
+                d = l->dist;
+        return d;
+    }
+}
+
 void DistanceGraph::write_to_gfa1(std::string filename, const std::vector<sgNodeID_t> &selected_nodes, const std::vector<double> &depths) {
     //TODO: change gaps to sequences named gapXX without sequence, but with length
     std::unordered_set<sgNodeID_t > output_nodes(selected_nodes.begin(), selected_nodes.end());
@@ -533,17 +570,8 @@ void DistanceGraph::write(std::ofstream &output_file) {
     sdglib::write_flat_vectorvector(output_file, links);
 }
 
-DistanceGraph::DistanceGraph(SequenceDistanceGraph &_sdg,bool resize_links): sdg(_sdg) {
-    if (resize_links) links.resize(sdg.nodes.size());
-}
-
-DistanceGraph::DistanceGraph(SequenceDistanceGraph &sdg, std::ifstream &input_file) : sdg(sdg) {
-    read(input_file);
-    links.resize(sdg.nodes.size());
-}
-
 DistanceGraph::DistanceGraph(SequenceDistanceGraph &_sdg, const std::string &_name): sdg(_sdg),name(_name) {
-    links.resize(sdg.nodes.size());
+    if (name!="SDG") links.resize(sdg.nodes.size()); //This is a hack to allow paths in a straight-constructed DG.
 }
 
 std::string DistanceGraph::ls(int level, bool recursive) const {
@@ -557,17 +585,7 @@ std::string DistanceGraph::ls(int level, bool recursive) const {
     return ss.str();
 }
 
-DistanceGraph &DistanceGraph::operator=(const DistanceGraph &o) {
-    if (this == &o) return *this;
-
-    sdg = o.sdg;
-    links = o.links;
-    name = o.name;
-
-    return *this;
-}
-
-NodeView DistanceGraph::get_nodeview(sgNodeID_t n) {
+NodeView DistanceGraph::get_nodeview(sgNodeID_t n) const {
     if (n==0 or llabs(n)>=sdg.nodes.size()) throw std::runtime_error("Trying to get a nodeview with invalid node id");
     if (sdg.nodes[llabs(n)].status==NodeStatus::Deleted) throw std::runtime_error("Trying to get a nodeview of a deleted Node");
     return NodeView(this,n);
@@ -596,4 +614,111 @@ std::ostream &operator<<(std::ostream &os, const DistanceGraph &dg) {
 
     os << "DistanceGraph "<< (dg.name.empty() ? "unnamed" : dg.name )<<" ("<<dg.sdg.name<<"): "<<linkcount<<" links";
     return os;
+}
+
+std::vector<uint64_t> DistanceGraph::nstats(std::vector<uint64_t> sizes, std::vector<int> stops){
+    uint64_t t=0;
+    for (auto& s: sizes){
+        t+=s;
+    }
+    stops.push_back(1000);
+
+    uint64_t p=0;
+    uint64_t next_stop=0;
+    std::vector<uint64_t> nxx;
+    // reverse sort sizes
+    std::sort(sizes.begin(), sizes.end(), std::greater<>());
+    for (auto& x: sizes){
+        p+=x;
+        while(p>=t*stops[next_stop]/100){
+            nxx.push_back(x);
+            next_stop+=1;
+        }
+    }
+    return nxx;
+}
+
+void DistanceGraph::stats_by_kci() {
+
+//    // Check the kci peak value is not -1
+//    if (sdg.ws.kmer_counters[0].kci_peak < 0){
+//        std::cout << "KCI peak not set!" << std::endl;
+//        return;
+//    }
+
+    std::vector<uint64_t> nokci_sizes;
+    std::vector<uint64_t> kci0_sizes;
+    std::vector<uint64_t> kci1_sizes;
+    std::vector<uint64_t> kci2_sizes;
+    std::vector<uint64_t> kci3_sizes;
+    std::vector<uint64_t> kci4_sizes;
+
+    uint64_t nokci_tips=0;
+    uint64_t kci0_tips=0;
+    uint64_t kci1_tips=0;
+    uint64_t kci2_tips=0;
+    uint64_t kci3_tips=0;
+    uint64_t kci4_tips=0;
+
+    std::vector<uint64_t> binned_bps(61, 0);
+    std::vector<uint64_t> binned_counts(61, 0);
+
+    for (const NodeView& nv: get_all_nodeviews()){
+        float kci = nv.kci();
+
+        if (kci == -1){
+            nokci_sizes.push_back(nv.size());
+            if (nv.next().empty() or nv.prev().empty()) nokci_tips++;
+        } else if (kci<.5){
+            kci0_sizes.push_back(nv.size());
+            if (nv.next().empty() or nv.prev().empty()) kci0_tips++;
+        } else if (kci<=1.5){
+            kci1_sizes.push_back(nv.size());
+            if (nv.next().empty() or nv.prev().empty()) kci1_tips++;
+        } else if (kci<=2.5){
+            kci2_sizes.push_back(nv.size());
+            if (nv.next().empty() or nv.prev().empty()) kci2_tips++;
+        } else if (kci<=3.5){
+            kci3_sizes.push_back(nv.size());
+            if (nv.next().empty() or nv.prev().empty()) kci3_tips++;
+        } else {
+            kci4_sizes.push_back(nv.size());
+            if (nv.next().empty() or nv.prev().empty()) kci4_tips++;
+        }
+
+        if (kci != -1) binned_bps[std::min((int)(kci*10),60)]+=nv.size();
+        if (kci != -1) binned_counts[std::min((int)(kci*10),60)]++;
+
+    }
+    std::vector<uint64_t> all_sizes;
+    all_sizes.insert( all_sizes.end(), nokci_sizes.begin(), nokci_sizes.end() );
+    all_sizes.insert( all_sizes.end(), kci0_sizes.begin(), kci0_sizes.end() );
+    all_sizes.insert( all_sizes.end(), kci1_sizes.begin(), kci1_sizes.end() );
+    all_sizes.insert( all_sizes.end(), kci2_sizes.begin(), kci2_sizes.end() );
+    all_sizes.insert( all_sizes.end(), kci3_sizes.begin(), kci3_sizes.end() );
+    all_sizes.insert( all_sizes.end(), kci4_sizes.begin(), kci4_sizes.end() );
+
+    uint64_t all_tips = nokci_tips+kci0_tips+kci1_tips+kci2_tips+kci3_tips+kci4_tips;
+
+    auto nstats_nokci = nstats(nokci_sizes);
+    auto nstats_0 = nstats(kci0_sizes);
+    auto nstats_1 = nstats(kci1_sizes);
+    auto nstats_2 = nstats(kci2_sizes);
+    auto nstats_3 = nstats(kci3_sizes);
+    auto nstats_4 = nstats(kci4_sizes);
+    auto all_stats = nstats(all_sizes);
+
+    std::printf(" ---------------------------------------------------------------------------------\n");
+    std::printf("|  KCI  |   Total bp   |  Nodes  |  Tips   |     N25    |     N50    |     N75    |\n");
+    std::printf("|-------+--------------+---------+---------+------------+------------+------------|\n");
+    std::printf("| None  | %12d | %7d | %7d | %10d | %10d | %10d |\n", std::accumulate(nokci_sizes.begin(), nokci_sizes.end(), 0), nokci_sizes.size(), nokci_tips, nstats_nokci[0], nstats_nokci[1], nstats_nokci[2]);
+    std::printf("| < 0.5 | %12d | %7d | %7d | %10d | %10d | %10d |\n", std::accumulate(kci0_sizes.begin(), kci0_sizes.end(), 0), kci0_sizes.size(), kci0_tips, nstats_0[0], nstats_0[1], nstats_0[2]);
+    std::printf("| ~ 1   | %12d | %7d | %7d | %10d | %10d | %10d |\n", std::accumulate(kci1_sizes.begin(), kci1_sizes.end(), 0), kci1_sizes.size(), kci1_tips,  nstats_1[0], nstats_1[1], nstats_1[2]);
+    std::printf("| ~ 2   | %12d | %7d | %7d | %10d | %10d | %10d |\n", std::accumulate(kci2_sizes.begin(), kci2_sizes.end(), 0), kci2_sizes.size(), kci2_tips,  nstats_2[0], nstats_2[1], nstats_2[2]);
+    std::printf("| ~ 3   | %12d | %7d | %7d | %10d | %10d | %10d |\n", std::accumulate(kci3_sizes.begin(), kci3_sizes.end(), 0), kci3_sizes.size(), kci3_tips,  nstats_3[0], nstats_3[1], nstats_3[2]);
+    std::printf("| > 3.5 | %12d | %7d | %7d | %10d | %10d | %10d |\n", std::accumulate(kci4_sizes.begin(), kci4_sizes.end(), 0), kci4_sizes.size(), kci4_tips,  nstats_4[0], nstats_4[1], nstats_4[2]);
+    std::printf("|-------+--------------+---------+---------+------------+------------+------------|\n");
+    std::printf("| All   | %12d | %7d | %7d | %10d | %10d | %10d |\n", std::accumulate(all_sizes.begin(), all_sizes.end(), 0), all_sizes.size(), all_tips, all_stats[0], all_stats[1], all_stats[2]);
+    std::printf(" ---------------------------------------------------------------------------------\n");
+    return;
 }

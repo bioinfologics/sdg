@@ -78,8 +78,6 @@ enum MappingFilterResult {Success, TooShort, NoMappings, NoReadSets, LowCoverage
  * the reads_in_node index is populated by update_indexes() from filtered_read_mappings data.
  */
 class LongReadsMapper {
-    //NKmerIndex assembly_kmers;
-    //SatKmerIndex sat_assembly_kmers;
 public:
 
     const SequenceDistanceGraph & sg;
@@ -111,18 +109,6 @@ public:
     std::string ls(int level=0,bool recursive=true) const;
 
     void print_status() const;
-
-    /** @brief Getter for the defined datastore
-     *
-     * @return The LongReadsDatastore for this mapper
-     */
-    const LongReadsDatastore& getLongReadsDatastore() {return datastore;}
-
-    /** @brief Getter for the defined SequenceDistanceGraph
-     *
-     * @return The SequenceDistanceGraph for this mapper
-     */
-    const SequenceDistanceGraph& getSequenceGraph() {return sg;}
 
     /**
      * Sets mapping parameters
@@ -248,14 +234,7 @@ public:
      *
      * @param readIDs
      */
-
-
     void map_reads_to_best_nodes(const std::unordered_set<uint32_t> &readIDs = {});
-
-    /**
-     * Maps all reads to the graph using libminimap2
-     */
-    void map_reads_with_minimap2();
 
     /**
      * This function maps any sequence to the graph, index needs to be already updated!

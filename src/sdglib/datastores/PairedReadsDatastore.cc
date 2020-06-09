@@ -245,13 +245,23 @@ void PairedReadsDatastore::write_selection(std::ofstream &output_file, std::vect
     }
 }
 
-std::string PairedReadsDatastore::get_read_sequence(size_t readID) {
-    if (readID==0 or readID>size()) return "";
+std::string PairedReadsDatastore::get_read_sequence(seqID_t readID) {
+    if (readID==0 or llabs(readID)>size()) return "";
     char buffer[readsize+1];
-    size_t read_offset_in_file=readpos_offset+(readsize+1)*(readID-1);
+    size_t read_offset_in_file=readpos_offset+(readsize+1)*(llabs(readID)-1);
     fseek(fd,read_offset_in_file,SEEK_SET);
     fread(buffer,readsize+1,1,fd);
+    if (readID<0) return sdglib::str_rc(buffer);
     return std::string(buffer);
+}
+
+seqID_t PairedReadsDatastore::get_read_pair(seqID_t readID) const {
+    if (readID>0) {
+        if (readID % 2) return -readID - 1;
+        return -readID+1;
+    }
+    if (readID % 2) return -readID+1;
+    return -readID-1;
 }
 
 
@@ -339,8 +349,7 @@ PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string read1_file
 
 uint64_t PairedReadsDatastore::size() const {return _size;}
 
-PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::ifstream &infile) : ws(ws), mapper{ws, *this} {
-    read(infile);
+PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws) : ws(ws), mapper(ws, *this) {
 }
 
 PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string _filename, std::ifstream &input_file) : ws(ws), mapper(ws, *this) {
@@ -375,42 +384,12 @@ PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, std::string _filename,
 
 }
 
-PairedReadsDatastore::PairedReadsDatastore(WorkSpace &ws, PairedReadsDatastore &o) : ws(ws), mapper(ws, *this) {
-    readsize = o.readsize;
-    filename = o.filename;
-    readpos_offset = o.readpos_offset;
-    _size = o._size;
-    fd = fopen(o.filename.c_str(), "r");
-    if (!fd) {
-        std::cerr << "Failed to open " << filename <<": " << strerror(errno);
-        throw std::runtime_error("Could not open " + filename);
-    }
-    mapper.reads_in_node = o.mapper.reads_in_node;
-    mapper.read_to_node = o.mapper.read_to_node;
-    mapper.frdist = o.mapper.frdist;
-    mapper.rfdist = o.mapper.rfdist;
-    mapper.read_direction_in_node = o.mapper.read_direction_in_node;
-}
-
 std::string PairedReadsDatastore::ls(int level, bool recursive) const {
     std::stringstream ss;
     std::string spacer(2*level,' ');
     ss<<spacer<<"Paired Reads Datastore "<<name<<": "<<size()<<" reads"<<std::endl;
     if (recursive) ss<<mapper.ls(level+1,true);
     return ss.str();
-}
-
-PairedReadsDatastore& PairedReadsDatastore::operator=(PairedReadsDatastore const &o) {
-    if (&o == this) return *this;
-
-    mapper = o.mapper;
-    filename = o.filename;
-    _size = o._size;
-    readpos_offset = o.readpos_offset;
-    readsize = o.readsize;
-    ws = o.ws;
-    fd = fopen(filename.c_str(), "r");
-    return *this;
 }
 
 std::ostream &operator<<(std::ostream &os, const PairedReadsDatastore &prds) {

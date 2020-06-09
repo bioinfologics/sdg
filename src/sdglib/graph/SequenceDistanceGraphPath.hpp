@@ -38,9 +38,8 @@ public:
         nodes.clear();
     };
 
+    bool is_valid(bool allow_ns=true);
     bool is_unitig();
-    std::vector<sgNodeID_t >& getNodes() {return nodes;}
-    const std::vector<sgNodeID_t >& getNodes() const {return nodes;}
 
     std::vector<sgNodeID_t> nodes;
 

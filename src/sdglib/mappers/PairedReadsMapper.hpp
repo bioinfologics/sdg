@@ -2,8 +2,7 @@
 // Created by Bernardo Clavijo (EI) on 12/05/2018.
 //
 
-#ifndef BSG_PAIREDREADSMAPPER_HPP
-#define BSG_PAIREDREADSMAPPER_HPP
+#pragma once
 
 #include <map>
 #include <unordered_set>
@@ -27,7 +26,7 @@ class WorkSpace;
 class PairedReadsMapper {
 
 public:
-    PairedReadsMapper(const WorkSpace &_ws, PairedReadsDatastore &_datastore);
+    PairedReadsMapper(WorkSpace &_ws, PairedReadsDatastore &_datastore);
 
     /**
      * @brief Provides an overview of the information in the PairedReadsMapper
@@ -42,6 +41,9 @@ public:
 
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
+    void dump_readpaths(std::string filename);
+    void load_readpaths(std::string filename);
+
     /** @brief Maps each read in the data-store to the nodes using unique kmers form the graph
      *
      * Maps each read in the data-store to the nodes using unique kmers form the graph.
@@ -70,11 +72,28 @@ public:
      */
     void remap_all_reads63();
 
-    /** @brief Discards mappings of nodes marked as deleted.
+    /** @brief creates a read path for each read through mapping
      *
-     * Discards mappings of nodes marked as deleted by changing to 0 the mappings in read_to_node[read_id] and clearing the reads_in_node[deletedNode] vector
+     * @return
      */
-    void remove_obsolete_mappings();
+    void path_reads();
+
+    /** @brief creates a read path for each read through mapping
+     *
+     * @return
+     */
+    void path_reads63();
+
+    /** @brief returns a list of possible nodes fw, node needs to appear with same sign in read's path, negative read id means reversed path
+     *
+     * @param read_id
+     * @param node
+     * @param use_pair
+     * @param collapse_pair
+     */
+    std::vector<sgNodeID_t> path_fw(seqID_t read_id,sgNodeID_t node, bool use_pair=true, bool collapse_pair=true) const;
+
+    std::vector<std::vector<sgNodeID_t>> all_paths_fw(sgNodeID_t node, bool use_pair=true, bool collapse_pair=true) const;
 
     /** @brief Estimates the fragment size distribution for the mapped data-store using the mapped pairs.
      *
@@ -106,7 +125,7 @@ public:
      */
     std::vector<uint64_t> get_node_readpairs_ids(sgNodeID_t nodeID);
 
-    const WorkSpace &ws;
+    WorkSpace &ws;
     const PairedReadsDatastore & datastore;
     /**
      * reads_in_node[i] contains all the read ids from the data-store mapped to node i
@@ -132,26 +151,10 @@ public:
      */
     std::vector<uint64_t> frdist; /// Forward reverse distance accumulator
 
+    std::vector<ReadPath> read_paths;
+
+    std::vector<std::vector<int64_t>> paths_in_node;
     static const sdgVersion_t min_compat;
 
 };
 
-/**
- * Analysis of all reads connecting two particular nodes.
- */
-class PairedReadConnectivityDetail {
-public:
-    PairedReadConnectivityDetail(){};
-    PairedReadConnectivityDetail(const PairedReadsMapper & prm, sgNodeID_t source, sgNodeID_t dest);
-    PairedReadConnectivityDetail& operator+=(const PairedReadConnectivityDetail& rhs){
-        orientation_paircount[0] += rhs.orientation_paircount[0];
-        orientation_paircount[1] += rhs.orientation_paircount[1];
-        orientation_paircount[2] += rhs.orientation_paircount[2];
-        orientation_paircount[3] += rhs.orientation_paircount[3];
-        return *this;
-    }
-
-    uint64_t orientation_paircount[4]={0,0,0,0};
-};
-
-#endif //BSG_PAIREDREADSMAPPER_HPP

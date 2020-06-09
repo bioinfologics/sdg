@@ -2,15 +2,15 @@
 // Created by Luis Yanes (EI) on 22/03/2018.
 //
 
-#ifndef BSG_GENERICTYPES_HPP
-#define BSG_GENERICTYPES_HPP
+#pragma once
 
 #include <iostream>
 #include <string>
 #include <tuple>
+#include <vector>
 #include <limits>
 #include <cstdint>
-#include <xxhash.h>
+#include <xxhash/xxhash.h>
 #include "hashing_helper.hpp"
 
 using sgNodeID_t = int64_t; //first node is 1; negatives are RC
@@ -22,9 +22,11 @@ enum class SupportType:uint8_t {Undefined,Operation,SequenceDistanceGraph,Distan
 
 class Support{
 public:
-    SupportType type=SupportType::Undefined;
-    uint16_t index=0;
-    uint64_t id=0;
+    Support(SupportType _type=SupportType::Undefined,uint16_t _index=0,uint64_t _id=0):type(_type),index(_index),id(_id){};
+    bool operator==(const Support &o) const {return std::tie(type,index,id)==std::tie(o.type,o.index,o.id);}
+    SupportType type;
+    uint16_t index;
+    uint64_t id;
 };
 
 /**
@@ -98,4 +100,40 @@ struct int128_hash {
     }
 };
 
-#endif //BSG_GENERICTYPES_HPP
+namespace sdglib {
+    inline std::string str_rc(const std::string &sequence) {
+        std::string rseq;
+        rseq.resize(sequence.size());
+        for (size_t i = 0, j = sequence.size() - 1; i < sequence.size(); ++i, --j) {
+            switch (sequence[j]) {
+                case 'A':
+                    rseq[i] = 'T';
+                    break;
+                case 'C':
+                    rseq[i] = 'G';
+                    break;
+                case 'G':
+                    rseq[i] = 'C';
+                    break;
+                case 'T':
+                    rseq[i] = 'A';
+                    break;
+            }
+        }
+        return rseq;
+    }
+
+    inline void reverse_path(std::vector<sgNodeID_t> &out,const std::vector<sgNodeID_t> &in){
+        out.clear();
+        out.reserve(in.size());
+        for (auto it=in.crbegin();it<in.crend();++it) {
+            out.emplace_back(-*it);
+        }
+    }
+
+    inline std::vector<sgNodeID_t> reverse_path(const std::vector<sgNodeID_t> &in){
+        std::vector<sgNodeID_t> out;
+        sdglib::reverse_path(out,in);
+        return out;
+    }
+}

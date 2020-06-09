@@ -15,7 +15,6 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <chrono>
 #include <sdglib/views/NodeView.hpp>
-#include <deps/minimap2/minimap.h>
 
 struct chain{
     sgNodeID_t node=0;
@@ -335,10 +334,10 @@ std::vector<LongReadMapping> LongReadsMapper::filter_blocks(std::vector<LongRead
 
 void LongReadsMapper::map_reads(const std::unordered_set<uint32_t> &readIDs) {
     mappings.clear();
-    NKmerIndex nkindex;
-    SatKmerIndex skindex;
-    if (sat_kmer_index) skindex=SatKmerIndex(sg,k,max_index_freq);
-    else nkindex=NKmerIndex(sg,k,max_index_freq);
+    std::shared_ptr<NKmerIndex> nkindex;
+    std::shared_ptr<SatKmerIndex> skindex;
+    if (sat_kmer_index) skindex.reset(new SatKmerIndex(sg,k,max_index_freq));
+    else nkindex.reset(new NKmerIndex(sg,k,max_index_freq));
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
     uint32_t num_reads_done(0);
     uint64_t no_matches(0),single_matches(0),multi_matches(0);
@@ -355,7 +354,7 @@ void LongReadsMapper::map_reads(const std::unordered_set<uint32_t> &readIDs) {
         std::vector<unsigned char> candidate_counts(sg.nodes.size()*2);
 
 #pragma omp for schedule(static,1000) reduction(+:no_matches,single_matches,multi_matches,num_reads_done)
-        for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
+        for (uint32_t readID = 1; readID <= datastore.size(); ++readID) {
             if (++num_reads_done%10000 == 0) {
                 sdglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" processing its read #" << num_reads_done << std::endl;
             }
@@ -374,14 +373,14 @@ void LongReadsMapper::map_reads(const std::unordered_set<uint32_t> &readIDs) {
             }
 
             if (sat_kmer_index) {
-                get_sat_kmer_matches(skindex,node_matches, read_kmers);
+                get_sat_kmer_matches(*skindex,node_matches, read_kmers);
             } else {
                 std::vector<bool> kmer_in_assembly(read_kmers.size());
 
                 for (uint64_t i = 0; i < read_kmers.size(); ++i) {
-                    kmer_in_assembly[i] = nkindex.filter(read_kmers[i].second);
+                    kmer_in_assembly[i] = nkindex->filter(read_kmers[i].second);
                 }
-                get_all_kmer_matches(nkindex, node_matches, read_kmers, kmer_in_assembly);
+                get_all_kmer_matches(*nkindex, node_matches, read_kmers, kmer_in_assembly);
             }
 
             //========== 2. Find match candidates in fixed windows ==========
@@ -425,15 +424,15 @@ void LongReadsMapper::map_reads(const std::unordered_set<uint32_t> &readIDs) {
 
 void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t> &readIDs) {
     mappings.clear();
-    NKmerIndex nkindex;
-    SatKmerIndex skindex;
-    if (sat_kmer_index) skindex=SatKmerIndex(sg,k,max_index_freq);
-    else nkindex=NKmerIndex(sg,k,max_index_freq);
+    std::shared_ptr<NKmerIndex> nkindex;
+    std::shared_ptr<SatKmerIndex> skindex;
+    if (sat_kmer_index) skindex.reset(new SatKmerIndex(sg,k,max_index_freq));
+    else nkindex.reset(new NKmerIndex(sg,k,max_index_freq));
     sdglib::OutputLog() << "Index created" << std::endl;
     std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
     uint32_t num_reads_done(0);
     uint64_t no_matches(0),single_matches(0),multi_matches(0);
-#pragma omp parallel
+#pragma omp parallel default(none) shared(thread_mappings,nkindex,skindex,no_matches,single_matches,multi_matches,num_reads_done,readIDs) shared(std::cout)
     {
         StreamKmerFactory skf(k);
         std::vector<std::pair<bool, uint64_t>> read_kmers;
@@ -449,7 +448,7 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
         auto tkhits=t-t,tichain=t-t,techain=t-t,ttoal=t-t;
 
 #pragma omp for schedule(static,200) reduction(+:no_matches,single_matches,multi_matches,num_reads_done)
-        for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
+        for (uint32_t readID = 1; readID <= datastore.size(); ++readID) {
         //for (uint32_t readID = 598822; readID < 598823; ++readID) {
         //for (uint32_t readID = 3024; readID < 3024; ++readID) {
 
@@ -477,14 +476,14 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
             // sort them back in the order they came out of the reads
 
             if (sat_kmer_index) {
-                get_sat_kmer_matches(skindex,node_matches, read_kmers);
+                get_sat_kmer_matches(*skindex,node_matches, read_kmers);
             } else {
                 std::vector<bool> kmer_in_assembly(read_kmers.size());
 
                 for (uint64_t i = 0; i < read_kmers.size(); ++i) {
-                    kmer_in_assembly[i] = nkindex.filter(read_kmers[i].second);
+                    kmer_in_assembly[i] = nkindex->filter(read_kmers[i].second);
                 }
-                get_all_kmer_matches(nkindex, node_matches, read_kmers, kmer_in_assembly);
+                get_all_kmer_matches(*nkindex, node_matches, read_kmers, kmer_in_assembly);
             }
 
             //========== 2. Find best chaining in fixed windows ==========
@@ -526,95 +525,6 @@ void LongReadsMapper::map_reads_to_best_nodes(const std::unordered_set<uint32_t>
     update_indexes();
 }
 
-void LongReadsMapper::map_reads_with_minimap2() {
-    mappings.clear();
-    //first create a temporary .fa file with the node's sequences
-    std::ofstream temp_fa("minimap_temp.fa");
-    for (auto &nv:sg.get_all_nodeviews()){
-        if (nv.size()>= min_size)  {
-            temp_fa<<">"<<nv.node_id()<<std::endl<<nv.sequence()<<std::endl;
-        }
-    }
-    temp_fa.close();
-
-    //now run minimap2 on that sequence and add the mappings as raw mappings
-    //This code is copied from https://github.com/lh3/minimap2/master/example.c
-    mm_idxopt_t iopt;
-    mm_mapopt_t mopt;
-    int n_threads = omp_get_max_threads();
-
-    mm_verbose = 2; // disable message output to stderr
-    mm_set_opt(0, &iopt, &mopt);
-    iopt.k=k;
-    mopt.flag |= MM_F_CIGAR; // perform alignment
-
-
-
-    // open index reader
-    mm_idx_reader_t *r = mm_idx_reader_open("minimap_temp.fa", &iopt, 0);
-    mm_idx_t *mi;
-    std::vector<std::vector<LongReadMapping>> thread_mappings(omp_get_max_threads());
-    while ((mi = mm_idx_reader_read(r, n_threads)) != 0) { // traverse each part of the index
-        mm_mapopt_update(&mopt, mi); // this sets the maximum minimizer occurrence; TODO: set a better default in mm_mapopt_init()!
-#pragma omp parallel
-        {
-            mm_tbuf_t *tbuf = mm_tbuf_init(); // thread buffer; for multi-threading, allocate one tbuf for each thread
-            uint32_t num_reads_done(0);
-            ReadSequenceBuffer sequenceGetter(datastore);
-            auto & private_results=thread_mappings[omp_get_thread_num()];
-#pragma omp for schedule(static,200)
-            for (uint32_t readID = 1; readID < datastore.size(); ++readID) {
-                if (++num_reads_done % 10000 == 0) {
-                    sdglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" processing its read #" << num_reads_done << std::endl;
-
-                }
-
-
-                //if (datastore.read_to_fileRecord[readID].record_size< 2 * min_size ) continue;
-                //========== 1. Get read sequence, kmerise, get all matches ==========
-                auto read_sequence_ptr = sequenceGetter.get_read_sequence(readID);
-                auto read_size = datastore.read_to_fileRecord[readID].record_size;
-
-                mm_reg1_t *reg;
-                int j, i, n_reg;
-                reg = mm_map(mi, read_size, read_sequence_ptr, &n_reg, tbuf, &mopt, 0); // get all hits for the query
-                for (j = 0; j < n_reg; ++j) { // traverse hits and print them out
-                    mm_reg1_t *r = &reg[j];
-                    assert(r->p); // with MM_F_CIGAR, this should not be NULL
-                    LongReadMapping lrm;
-                    lrm.read_id = readID;
-                    lrm.qStart = r->qs;
-                    lrm.qEnd = r->qe -1;
-                    lrm.score = r->score;
-                    lrm.node = std::stold(mi->seq[r->rid].name);
-                    lrm.nStart = r->rs;
-                    lrm.nEnd = r->re;
-                    if (r->rev) {
-                        lrm.nStart = sg.nodes[lrm.node].sequence.size() - r->re ;
-                        lrm.nEnd = sg.nodes[lrm.node].sequence.size() - r->rs - 1;
-                        lrm.node = -lrm.node;
-                    }
-                    private_results.push_back(lrm);
-                    free(r->p);
-                }
-                free(reg);
-            }
-            mm_tbuf_destroy(tbuf);
-        }
-        mm_idx_destroy(mi);
-    }
-    mm_idx_reader_close(r); // close the index reader
-
-    //and finally remove the temporary file
-    std::remove("minimap_temp.fa");
-    for (auto & threadm : thread_mappings) {
-        mappings.insert(mappings.end(),threadm.begin(),threadm.end());
-    }
-    sdglib::OutputLog() << "Updating mapping indexes" <<std::endl;
-    update_indexes();
-
-}
-
 std::vector<LongReadMapping> LongReadsMapper::map_sequence(const NKmerIndex &nkindex, const char * query_sequence_ptr, sgNodeID_t seq_id) {
     std::vector<LongReadMapping> private_results;
 
@@ -651,7 +561,7 @@ void LongReadsMapper::update_indexes() {
     reads_in_node.clear();
     reads_in_node.resize(sg.nodes.size());
     first_mapping.clear();
-    first_mapping.resize(datastore.size(),-1);
+    first_mapping.resize(datastore.size()+1,-1);
     for (int64_t i=0;i<mappings.size();++i){
         auto &m=mappings[i];
         if (first_mapping.size()<=m.read_id) first_mapping.resize(m.read_id+1,-1);
@@ -731,7 +641,7 @@ LongReadsMapper& LongReadsMapper::operator=(const LongReadsMapper &other) {
 
 std::vector<std::vector<LongReadMapping>> LongReadsMapper::filter_mappings_by_size_and_id(int64_t size, float id) const {
     std::vector<std::vector<LongReadMapping>> filtered_read_mappings;
-    filtered_read_mappings.resize(datastore.size());
+    filtered_read_mappings.resize(datastore.size()+1);
     for (auto &m:mappings){
         if (m.nEnd-m.nStart>=size and 100.0*m.score/(m.nEnd-m.nStart)>=id){
             filtered_read_mappings[m.read_id].emplace_back(m);

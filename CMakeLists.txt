@@ -30,13 +30,18 @@ endif (APPLE)
 
 PROJECT (sdg VERSION 0.1)
 
+if (CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 6.0)
+    message(FATAL_ERROR "Unsupported compiler version, please use GCC version 6 or newer")
+endif()
+
 SET(CMAKE_RULE_MESSAGES OFF)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 INCLUDE(FindPythonModule)
 ENABLE_TESTING()
-OPTION(BUILD_TESTING "Build tests." ON)
+OPTION(BUILD_TESTING "Build tests." OFF)
 OPTION(BUILD_DOC "Build documentation" OFF)
-OPTION(BUILD_PYTHON_INTERFACE "Build Python interface" ON)
+OPTION(BUILD_PYTHON_INTERFACE "Build SWIG Python interface" OFF)
+OPTION(BUILD_SIMPLE_PYTHON_INTERFACE "Build pybind11 simple Python  interface" ON)
 OPTION(BUILD_R_INTERFACE "Build R interface" OFF)
 OPTION(BUILD_JULIA_INTERFACE "Build Julia interface" OFF)
 OPTION(BUILD_COV "Build coverage" OFF)
@@ -51,60 +56,83 @@ if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
 endif(CCACHE_FOUND)
 
-# Get the remote url
-execute_process(
-        COMMAND git remote get-url origin
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_ORIGIN_URL
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-# Get the current working branch
-execute_process(
-        COMMAND git rev-parse --abbrev-ref HEAD
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_BRANCH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-# Get the latest abbreviated commit hash of the working branch
-execute_process(
-        COMMAND git log -1 --format=%h
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_COMMIT_HASH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-# Check if the git directory is clean
-execute_process(
-        COMMAND git status -s
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_STATUS
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
 # Fill the version variables in case the compilation isn't done from a git repo
 if("${GIT_ORIGIN_URL}" STREQUAL "")
-    add_definitions("-DGIT_ORIGIN_URL=\"not set\"")
+    # Get the remote url
+    execute_process(
+            COMMAND git remote get-url origin
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE GIT_ORIGIN_URL
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if("${GIT_ORIGIN_URL}" STREQUAL "")
+        add_definitions("-DGIT_ORIGIN_URL=\"not set\"")
+    else()
+        add_definitions("-DGIT_ORIGIN_URL=\"${GIT_ORIGIN_URL}\"")
+    endif()
 else()
     add_definitions("-DGIT_ORIGIN_URL=\"${GIT_ORIGIN_URL}\"")
 endif()
+
 if("${GIT_COMMIT_HASH}" STREQUAL "")
-    add_definitions("-DGIT_COMMIT_HASH=\"experimental\"")
-else()
-    if("${GIT_STATUS}" STREQUAL "")
-        add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+    # Get the latest abbreviated commit hash of the working branch
+    execute_process(
+            COMMAND git log -1 --format=%h
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE GIT_COMMIT_HASH
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    if("${GIT_COMMIT_HASH}" STREQUAL "")
+        add_definitions("-DGIT_COMMIT_HASH=\"experimental\"")
     else()
-        add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH} (dirty)\"")
+        execute_process(
+                COMMAND git log -1 --format=%h
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                OUTPUT_VARIABLE GIT_COMMIT_HASH
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if("${GIT_STATUS}" STREQUAL "")
+            # Check if the git directory is clean
+            execute_process(
+                    COMMAND git status -s
+                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                    OUTPUT_VARIABLE GIT_STATUS
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+
+            if("${GIT_STATUS}" STREQUAL "")
+                add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+            else()
+                add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH} (dirty)\"")
+            endif()
+        endif()
     endif()
+    MESSAGE("STATUS - ${GIT_COMMIT_HASH}")
 endif()
+
+
 if("${GIT_BRANCH}" STREQUAL "")
-    add_definitions("-DGIT_BRANCH=\"not_from_git\"")
+    # Get the current working branch
+    execute_process(
+            COMMAND git rev-parse --abbrev-ref HEAD
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE GIT_BRANCH
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    if("${GIT_BRANCH}" STREQUAL "")
+        add_definitions("-DGIT_BRANCH=\"not_from_git\"")
+    else()
+        add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
+    endif()
 else()
     add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
 endif()
 
 add_definitions("-DMAX_WORKSPACE_VECTOR_SIZE=${MAX_WORKSPACE_VECTOR_SIZE}")
+
+
 
 ## Compiler flags
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -w -Wno-deprecated -std=c++11")
@@ -134,9 +162,7 @@ endif()
 
 ## Include directories
 include_directories("src/")
-include_directories("deps/cxxopts/")
-include_directories("deps/kseqcpp/")
-include_directories("deps/xxhash/")
+include_directories("deps/")
 ## Set sources variables
 
 SET(header_files
@@ -149,8 +175,7 @@ SET(header_files
     src/sdglib/datastores/LinkedReadsDatastore.hpp
     src/sdglib/datastores/LongReadsDatastore.hpp
     src/sdglib/datastores/KmerCounter.hpp
-    src/sdglib/datastores/ReadPathsDatastore.hpp
-    src/sdglib/datastores/ReadSequenceBuffer.hpp
+        src/sdglib/datastores/ReadSequenceBuffer.hpp
     src/sdglib/mappers/LongReadsMapper.hpp
     src/sdglib/mappers/LinkedReadsMapper.hpp
     src/sdglib/mappers/PairedReadsMapper.hpp
@@ -158,9 +183,7 @@ SET(header_files
     src/sdglib/workspace/WorkSpace.hpp
     src/sdglib/processors/GraphEditor.hpp
     src/sdglib/processors/GraphMaker.hpp
-    src/sdglib/processors/LocalHaplotypeAssembler.hpp
-    src/sdglib/processors/HaplotypeConsensus.hpp
-    src/sdglib/indexers/UniqueKmerIndex.hpp
+        src/sdglib/indexers/UniqueKmerIndex.hpp
     src/sdglib/indexers/SatKmerIndex.hpp
     src/sdglib/indexers/NKmerIndex.hpp
     src/sdglib/views/NodeView.hpp
@@ -180,8 +203,7 @@ SET(source_files ${source_files}
     src/sdglib/datastores/LinkedReadsDatastore.cc
     src/sdglib/datastores/LongReadsDatastore.cc
     src/sdglib/datastores/KmerCounter.cc
-    src/sdglib/datastores/ReadPathsDatastore.cc
-    src/sdglib/datastores/ReadSequenceBuffer.cc
+        src/sdglib/datastores/ReadSequenceBuffer.cc
     src/sdglib/mappers/LongReadsMapper.cc
     src/sdglib/mappers/LinkedReadsMapper.cc
     src/sdglib/mappers/PairedReadsMapper.cc
@@ -189,9 +211,7 @@ SET(source_files ${source_files}
     src/sdglib/workspace/WorkSpace.cc
     src/sdglib/processors/GraphEditor.cc
     src/sdglib/processors/GraphMaker.cc
-    src/sdglib/processors/LocalHaplotypeAssembler.cc
-    src/sdglib/processors/HaplotypeConsensus.cc
-    src/sdglib/indexers/UniqueKmerIndex.cc
+        src/sdglib/indexers/UniqueKmerIndex.cc
     src/sdglib/indexers/SatKmerIndex.cc
     src/sdglib/indexers/NKmerIndex.cc
     src/sdglib/views/NodeView.cc
@@ -199,7 +219,7 @@ SET(source_files ${source_files}
     src/sdglib/batch_counter/BatchKmersCounter.cc
     deps/xxhash/xxhash.c
     src/sdglib/mappers/SequenceMapper.cc
-    src/sdglib/processors/LinkageMaker.cc src/sdglib/mappers/GraphSelfAligner.cc src/sdglib/mappers/GraphSelfAligner.hpp)
+    src/sdglib/processors/LinkageMaker.cc src/sdglib/mappers/GraphSelfAligner.cc src/sdglib/mappers/GraphSelfAligner.hpp src/sdglib/processors/GraphContigger.cc src/sdglib/processors/GraphContigger.hpp src/sdglib/mappers/LongReadsRecruiter.cc src/sdglib/mappers/LongReadsRecruiter.hpp src/sdglib/processors/PathFinder.cc src/sdglib/processors/PathFinder.hpp src/sdglib/processors/ThreadAndPopper.cc src/sdglib/processors/ThreadAndPopper.hpp src/sdglib/mappers/PerfectMatcher.cc src/sdglib/mappers/PerfectMatcher.hpp src/sdglib/processors/Strider.cc src/sdglib/processors/Strider.hpp src/sdglib/processors/GraphPatcher.cc src/sdglib/processors/GraphPatcher.hpp)
 
 ## Libraries
 add_library(sdg SHARED
@@ -210,21 +230,8 @@ add_library(sdg_static STATIC
             ${source_files}
             )
 
-add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/deps/minimap2/libminimap2.a
-        COMMAND make
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/deps/minimap2/
-        )
-
-add_custom_target(
-        libminimap2
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/deps/minimap2/libminimap2.a
-)
-
-add_dependencies(sdg libminimap2)
-add_dependencies(sdg_static libminimap2)
-
-target_link_libraries(sdg ${DEPENDENCY_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/deps/minimap2/libminimap2.a)
-target_link_libraries(sdg_static ${DEPENDENCY_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/deps/minimap2/libminimap2.a)
+target_link_libraries(sdg ${DEPENDENCY_LIBS})
+target_link_libraries(sdg_static ${DEPENDENCY_LIBS})
 
 if (BUILD_COV)
     set_target_properties(sdg PROPERTIES
@@ -335,64 +342,35 @@ IF(BUILD_DOC)
     endif (DOXYGEN_FOUND)
 ENDIF()
 
-IF(BUILD_PYTHON_INTERFACE)
+IF(BUILD_SIMPLE_PYTHON_INTERFACE)
+    MESSAGE("Building simple python interface")
     FIND_PACKAGE(PythonInterp 3 REQUIRED)
     FIND_PACKAGE(PythonLibs 3 REQUIRED)
+    ADD_LIBRARY( SDGpython SHARED interfaces/simple_python/SDGpython.cc )
+    TARGET_INCLUDE_DIRECTORIES( SDGpython PUBLIC
+            ${PYTHON_INCLUDE_DIRS}
+            "interfaces/simple_python"
+    )
+    TARGET_LINK_LIBRARIES( SDGpython sdg )
+    # The library must not have any prefix and should be located in
+    # a subfolder that includes the package name. The setup will be
+    # more complicated otherwise.
+    SET_TARGET_PROPERTIES( SDGpython
+            PROPERTIES
+            PREFIX ""
+            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/SDGpython"
+            )
 
-    MESSAGE("Building python interface")
-    FIND_PACKAGE(SWIG REQUIRED)
-    INCLUDE(${SWIG_USE_FILE})
-    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/pysdg/pysdg)
-    configure_file(interfaces/python/__init__.py.in pysdg/pysdg/__init__.py)
-    configure_file(interfaces/SequenceDistanceGraph.i.in SequenceDistanceGraph.i)
-    configure_file(interfaces/python/setup.py.in pysdg/setup.py)
-
-    INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
-
-    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-
-    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY SWIG_MODULE_NAME pysdg)
-
-    SET_SOURCE_FILES_PROPERTIES(${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTIES
-                                                                                CPLUSPLUS ON)
-
-    SET(CMAKE_SWIG_FLAGS "-doxygen")
-    if (NOT APPLE)
-        set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY COMPILE_DEFINITIONS "SWIGWORDSIZE64")
-        set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY GENERATED_COMPILE_DEFINITIONS "SWIGWORDSIZE64")
-    endif()
-
-    SET_PROPERTY(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY CMAKE_SWIG_FLAGS "-doxygen")
-    SWIG_ADD_LIBRARY(pysdg
-                     LANGUAGE python
-                     SOURCES ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i
-                     )
-    SWIG_LINK_LIBRARIES(pysdg ${PYTHON_LIBRARIES} sdg_static)
-    set_target_properties(pysdg PROPERTIES
-                          LIBRARY_OUTPUT_DIRECTORY pysdg/pysdg)
-ENDIF()
-
-IF(BUILD_R_INTERFACE)
-    MESSAGE("Building R interface")
-    FIND_PACKAGE(SWIG REQUIRED)
-    SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
-    FIND_PACKAGE(R REQUIRED)
-    INCLUDE_DIRECTORIES(${R_INCLUDE_DIR})
-    INCLUDE(${SWIG_USE_FILE})
-    set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/rsdg)
-    configure_file(interfaces/SequenceDistanceGraph.i.in SequenceDistanceGraph.i)
-
-    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-    SET_SOURCE_FILES_PROPERTIES(${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTIES CPLUSPLUS ON)
-    set_property(SOURCE ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i PROPERTY SWIG_MODULE_NAME rsdg)
-    SWIG_ADD_LIBRARY(rsdg LANGUAGE r SOURCES ${CMAKE_BINARY_DIR}/SequenceDistanceGraph.i)
-    SWIG_LINK_LIBRARIES(rsdg ${R_LIBRARIES} sdg_static)
-
-    install(TARGETS
-            rsdg
-            RUNTIME DESTINATION rsdg
-            ARCHIVE DESTINATION rsdg
-            LIBRARY DESTINATION rsdg)
+    # This is required for linking the library under Mac OS X. Moreover,
+    # the suffix ensures that the module can be found by the interpreter
+    # later on.
+    IF( APPLE )
+        SET_TARGET_PROPERTIES( SDGpython
+                PROPERTIES
+                LINK_FLAGS "-undefined dynamic_lookup"
+                SUFFIX     ".so"
+                )
+    ENDIF()
 ENDIF()
 
 install(TARGETS
@@ -407,6 +385,7 @@ install(TARGETS
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib)
+
 install(DIRECTORY src/sdglib DESTINATION include
         FILES_MATCHING PATTERN "*.hpp")
 

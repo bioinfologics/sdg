@@ -16,20 +16,26 @@ class LinkView;
  */
 class NodeView {
 public:
-    NodeView(DistanceGraph * _dg,sgNodeID_t _n):dg(_dg),id(_n){};
-    NodeView(NodeView const &o):dg(o.dg), id(o.id) {};
+    NodeView(const DistanceGraph * const _dg,sgNodeID_t _n):dg(_dg),id(_n){};
+    NodeView(NodeView const &o) = default;
     friend std::ostream &operator<<(std::ostream &os, const NodeView &n);
-    DistanceGraph graph() const;
-    const bool operator==(const NodeView &o) const {return (id==o.id) and (dg==o.dg);};
+    std::string str() const{
+        return "NodeView: Node "+std::to_string(id)+" in "+dg->name;
+    }
+    std::string repr() const{
+        return "<NodeView: Node "+std::to_string(id)+" in "+dg->name+">";
+    }
+    const DistanceGraph & graph() const;
+    bool operator==(const NodeView &o) const {return (id==o.id) and (dg==o.dg);};
     /**
      * @return Sequence of the underlying SequenceDistanceGraph node
      */
-    const std::string sequence() const;
+    std::string sequence() const;
 
     /**
      * @return Length of the node sequence in the graph
      */
-    const uint64_t size() const;
+    uint64_t size() const;
 
     /**
      * @return The reverse complement NodeView
@@ -39,21 +45,21 @@ public:
     /**
      * @return A vector of LinkView for the next elements defined by the DistanceGraph
      */
-    const std::vector<LinkView> next() const;
+    std::vector<LinkView> next() const;
     /**
      * @return A vector of LinkView for the previous elements defined by the DistanceGraph
      */
-    const std::vector<LinkView> prev() const;
+    std::vector<LinkView> prev() const;
 
     /**
      * @return A vector of NodeView for all nodes that have the same connections fw and bw than this node
      */
-    const std::vector<NodeView> parallels() const;
+    std::vector<NodeView> parallels() const;
 
     /**
      * @return The id of the underlying SequenceDistanceGraph node
      */
-    const sgNodeID_t node_id() const {return sgNodeID_t(id);};
+    sgNodeID_t node_id() const {return sgNodeID_t(id);};
 
     /**
      * @brief Coverage of each kmer in the node
@@ -71,6 +77,7 @@ public:
      */
     std::vector<uint16_t> kmer_coverage(int kcovds_idx,int kcovds_count_idx) const;
 
+    float kci();
     /**
      * @brief Collect all paired reads from a PairedReadsDatastore referred to by name
      * @param datastore_name Name of the datastore to collect the reads from
@@ -114,9 +121,10 @@ public:
     /**
      * @brief Collect all tags of this node in a LinkedReadsDatastore referred to by name
      * @param datastore_name Name of the datastore to collect the reads from
+     * @param Min number of reads mapped to the node to include a tag in the result
      * @return Vector of all tags that have reads on this node in the LinkedReadsMapper
      */
-    std::vector<LinkedTag> get_linked_tags(std::string datastore_name) const;
+    std::vector<LinkedTag> get_linked_tags(std::string datastore_name, int min_read_count=3) const;
 
     /**
      * Vector of FW distances and neighbours from the nodeview, sorted in ascending distance (median if multi-link) order.
@@ -127,9 +135,13 @@ public:
 
     std::vector<uint64_t> get_kmers(int K);
 
+    std::unordered_set<uint64_t> get_linked_tags_kmers(std::string datastore_name, int K, int min_tag_cov);
+
+
+
 private:
     sgNodeID_t id;
-    DistanceGraph * dg;
+    const DistanceGraph * dg;
 };
 
 /**
@@ -141,7 +153,7 @@ private:
 class LinkView {
 public:
     LinkView(const NodeView &nv,const int32_t &d, const Support &s):node_view(nv),dist(d),sup(s){};
-    LinkView(LinkView const &o):node_view(o.node_view),dist(o.dist),sup(o.sup) {};
+    LinkView(LinkView const &o) = default;
     friend std::ostream &operator<<(std::ostream &os, const LinkView &ndv);
     /**
      * @brief

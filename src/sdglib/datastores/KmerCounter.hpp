@@ -8,6 +8,7 @@
 #include <vector>
 #include <tuple>
 #include <fstream>
+#include <unordered_map>
 
 enum KmerCountMode{Canonical,NonCanonical};
 
@@ -46,6 +47,8 @@ public:
 
     void index_sdg();
 
+    void update_graph_counts();
+
     bool operator==(const KmerCounter &o) const {
         return (std::tie(k, kindex, count_names, counts) == std::tie(o.k, o.kindex, o.count_names, o.counts));
     }
@@ -82,6 +85,12 @@ public:
      */
     void add_count(const std::string & count_name, const LongReadsDatastore & datastore);
 
+    /**TODO
+     * @brief Accumulates the kmer count from the DG's nodes, allowing to filter by size and connection status
+     * @param ds LongReadsDatastore ds
+     */
+    //void add_count(const std::string & count_name, const DistanceGraph & dg, uint32_t min_size=0, bool only_connected=true);
+
     /**
      * @brief Retrieves the counts for each kmer in sequence s from count_name
      * @param count_name Name of the count to query
@@ -97,6 +106,20 @@ public:
      * @return Vector of kmer counts for each kmer in s
      */
     std::vector<uint16_t> project_count(const uint16_t count_idx, const std::string &s);
+
+    void set_kci_peak(float f){
+        if (f!=kci_peak_f){
+            kci_peak_f=f;
+            kci_cache.clear();
+        }
+
+    }
+
+    float kci(int64_t node);
+
+    void compute_all_kcis();
+
+    std::vector<uint64_t> count_spectra(std::string name, uint16_t maxf=1000, bool unique_in_graph=false, bool present_in_graph=true);
 
     void write(std::ofstream & output_file) const;
     void write(std::fstream & output_file) const;
@@ -125,5 +148,7 @@ private:
     const WorkSpace &ws;
     int8_t k;
     KmerCountMode count_mode;
+    float kci_peak_f=-1;
+    std::unordered_map<int64_t, float> kci_cache;
 };
 

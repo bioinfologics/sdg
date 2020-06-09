@@ -4,7 +4,7 @@
 #include <sdglib/datastores/PairedReadsDatastore.hpp>
 #include <sdglib/datastores/LongReadsDatastore.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
-#include "cxxopts.hpp"
+#include "cxxopts/cxxopts.hpp"
 
 uint32_t detect_read_size(const std::string &read_filename) {
     std::vector<uint32_t> read_sizes(100);
