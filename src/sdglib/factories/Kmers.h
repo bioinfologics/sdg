@@ -53,7 +53,7 @@ public:
             position = parent.sequence;
             valid_nucleotides = 0;
             fwmer = 0;
-            rvmer = 0;
+            //rvmer = 0;
             mask = (value_type(1) << (2 * parent.K)) - 1;
             incorporate_char(position);
         }
@@ -89,7 +89,6 @@ public:
         const Kmers& parent;
         const char* position;
         value_type fwmer;
-        value_type rvmer;
         value_type mask;
         size_t valid_nucleotides;
 
@@ -109,7 +108,7 @@ public:
             value_type rbits = ~fbits & (value_type) 3;
             valid_nucleotides = fbits == 4 ? 0 : valid_nucleotides + 1;
             fwmer = (fwmer << 2 | fbits) & mask;
-            rvmer = ((rvmer >> 2) | (rbits << ((parent.K - 1) * 2))) & mask;
+            //rvmer = ((rvmer >> 2) | (rbits << ((parent.K - 1) * 2))) & mask;
         }
     };
     // An iterator at the first valid Kmer in the sequence.
