@@ -12,18 +12,20 @@ Sequence Distance Graph
 
 The Sequence Distance Graph (**SDG**) is a framework to work with genome graphs and sequencing data. It provides a workspace built around a Sequence Distance Graph, datastores for paired, linked and long reads, read mappers, and k-mer counters. It can be used to perform different types of sequence analyses.
 
-SDG can be used as a Python module through its SWIG API. R and Julia support are experimental.
-
-Documentation for the framework can be found at https://bioinfologics.github.io/sdg
-
-Installation
-############
-
 SDG can be run on Linux and MacOS, and requires enough RAM to hold the WorkSpace completely in memory, which will depend on the dataset. Space to hold the uncompressed sequences on the datastores on disk will also be required.
+
+SDG can be used as a Python module through its pybind interface. Older versions used a SWIG interface.
+
+For examples on how to use SDG please visit https://bioinfologics.github.io/sdg_examples/ (please note the examples are based on the release version).
+
+SDG has been published on an F1000 software article: https://f1000research.com/articles/8-1490/v1
+
+Installing SDG releases
+#######################
 
 SDG can be installed via pre-compiled binaries from https://github.com/bioinfologics/sdg/releases. The binaries have been built using Python3 and GCC version 6 from the Ubuntu package manager for the Linux version. The MacOS version dependencies were obtained using Homebrew (Python3, GCC-6 and SWIG).
 
-The installation process requires the following dependencies:
+Compiling the release versions requires the following dependencies:
 
 - GCC 6+
 - CMake 3.14.3+
@@ -35,13 +37,29 @@ The installation process consists of generating the configuration files using CM
 
 .. code-block:: bash
 
+    wget https://github.com/bioinfologics/sdg/archive/v1.0_rc8.tar.gz
+    cd sdg-1.0_rc8
+    mkdir build
+    cd build
+    cmake ../
+    make
+    make test
+    make install
+
+
+Compiling SDG's master branch
+#######################
+
+The master branch is undergoing migration to a new pybind interface and further support for more analyses. Use this at your own risk.
+
+.. code-block:: bash
+
     git pull https://github.com/bioinfologics/sdg
     cd sdg
     mkdir build
     cd build
     cmake ../
     make
-    make test
     make install
 
 
@@ -79,6 +97,4 @@ sdg-mapper
 Maps reads within a *WorkSpace*. An updated *WorkSpace* is produced and dumped to the specified prefix.
 
 
-Examples
-########
-For examples on how to use SDG please visit https://bioinfologics.github.io/sdg_examples/
+
