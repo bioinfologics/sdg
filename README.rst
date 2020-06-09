@@ -96,5 +96,7 @@ sdg-mapper
 
 Maps reads within a *WorkSpace*. An updated *WorkSpace* is produced and dumped to the specified prefix.
 
-
-
+Citing SDG
+#######
+Yanes L, Garcia Accinelli G, Wright J et al. A Sequence Distance Graph framework for genome assembly and analysis [version 1; peer review: 2 approved]. F1000Research 2019, 8:1490
+(https://doi.org/10.12688/f1000research.20233.1)
