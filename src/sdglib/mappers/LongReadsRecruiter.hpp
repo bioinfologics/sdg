@@ -2,8 +2,7 @@
 // Created by Bernardo Clavijo (EI) on 16/01/2020.
 //
 
-#ifndef SDG_LONGREADSRECRUITER_HPP
-#define SDG_LONGREADSRECRUITER_HPP
+#pragma once
 
 
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
@@ -21,6 +20,9 @@ class PerfectMatch{
 public:
     PerfectMatch(sgNodeID_t _node=0,uint32_t _node_position=0,uint32_t _read_position=0,uint16_t _size=0): node(_node),node_position(_node_position),read_position(_read_position),size(_size){};
     //uint64_t read_id; //Not needed because we're using a vector per read.
+    bool operator<(const struct PerfectMatch &other) const{
+        return std::tie(read_position,size,node,node_position)<std::tie(other.read_position,other.size,other.node,other.node_position);
+    }
     sgNodeID_t node;
     uint32_t node_position; //position is the start of the match on positive-node-coordinates
     uint32_t read_position; //position is the start of the match on positive-node-coordinates
@@ -46,6 +48,7 @@ public:
     void dump(std::string filename);
     void load(std::string filename);
     void perfect_mappings(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
+    std::vector<PerfectMatch> reverse_perfect_matches(const std::vector<PerfectMatch> &matches, uint64_t rsize=0);
     void map(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
     void recruit_reads(uint16_t seed_size,uint16_t seed_count,uint64_t first_read=1,uint64_t last_read=0);
     void recruit_threads();
@@ -71,4 +74,3 @@ public:
 };
 
 
-#endif //SDG_LONGREADSRECRUITER_HPP

@@ -242,6 +242,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("thread_and_pop",&LongReadsRecruiter::thread_and_pop)
             .def("path_fw",&LongReadsRecruiter::path_fw,"read_id"_a,"node"_a)
             .def("all_paths_fw",&LongReadsRecruiter::all_paths_fw,"node"_a)
+            .def("reverse_perfect_matches",&LongReadsRecruiter::reverse_perfect_matches,"matches"_a,"read_size"_a=0)
             ;
 
     py::class_<NodePosition>(m,"NodePosition", "A node position in a LRR")

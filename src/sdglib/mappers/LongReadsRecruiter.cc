@@ -87,6 +87,21 @@ void LongReadsRecruiter::perfect_mappings(uint16_t seed_size, uint64_t first_rea
     }
 }
 
+std::vector<PerfectMatch> LongReadsRecruiter::reverse_perfect_matches(const std::vector<PerfectMatch> &matches,uint64_t rsize) {
+    if (matches.empty()) return {};
+    for (const auto &m:matches) if (rsize<m.read_position+m.size) rsize=m.read_position+m.size;
+
+    std::vector<PerfectMatch> rmatches;
+    rmatches.reserve(matches.size());
+
+    for (int i=matches.size()-1;i>=0;--i){
+        const auto &m=matches[i];
+        rmatches.emplace_back(-m.node,sdg.get_node_size(m.node)-m.node_position-m.size,rsize-m.read_position-m.size,m.size);
+    }
+    std::sort(rmatches.begin(),rmatches.end());
+    return rmatches;
+}
+
 void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t last_read) {
     if (seed_size<k) seed_size=k;
     NKmerIndex nki(sdg,k,f);
