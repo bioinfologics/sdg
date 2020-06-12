@@ -224,7 +224,7 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<PerfectMatch>(m,"PerfectMatch", "A perfect match between a read and a node")
-            .def(py::init<sgNodeID_t, uint32_t, uint32_t, uint16_t>(),"_node"_a=0, "_node_position"_a=0, "_read_position"_a=0, "_size"_a=0)
+            .def(py::init<sgNodeID_t,int32_t,int32_t,uint16_t>(),"node"_a=0,"node_position"_a=0,"read_position"_a=0,"size"_a=0,py::return_value_policy::take_ownership)
             .def_readonly("node",&PerfectMatch::node)
             .def_readonly("node_position",&PerfectMatch::node_position)
             .def_readonly("read_position",&PerfectMatch::read_position)
@@ -257,6 +257,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("thread_and_pop",&LongReadsRecruiter::thread_and_pop)
             .def("path_fw",&LongReadsRecruiter::path_fw,"read_id"_a,"node"_a)
             .def("all_paths_fw",&LongReadsRecruiter::all_paths_fw,"node"_a)
+            .def("reverse_perfect_matches",&LongReadsRecruiter::reverse_perfect_matches,"matches"_a,"read_size"_a=0)
             ;
 
     py::class_<NodePosition>(m,"NodePosition", "A node position in a LRR")
@@ -338,7 +339,11 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<GraphPatcher>(m,"GraphPatcher","GraphPatcher")
             .def(py::init<WorkSpace &>(),"ws"_a)
             .def("find_tips_to_reconnect",&GraphPatcher::find_tips_to_reconnect)
+            .def("collapse_reconnection_groups",&GraphPatcher::collapse_reconnection_groups)
+            .def("patch_reconnection_groups",&GraphPatcher::patch_reconnection_groups)
+            .def("create_patch",&GraphPatcher::create_patch,"reconnection_group"_a)
             .def_readonly("reconnection_groups",&GraphPatcher::reconnection_groups);
+
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
 }
