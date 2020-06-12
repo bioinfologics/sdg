@@ -784,9 +784,10 @@ void SequenceDistanceGraph::load_from_gfa1(std::ifstream &gfaf, std::ifstream &f
                 }
                 gap_id.clear();
             }
-
-            add_link(src_id,dest_id,dist);
-            ++lcount;
+            if (not are_connected(src_id,dest_id)) {
+                add_link(src_id, dest_id, dist);
+                ++lcount;
+            }
         }
     }
     if (dist_egt0 > lcount*0.5f) {

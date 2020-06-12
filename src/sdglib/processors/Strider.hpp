@@ -32,5 +32,6 @@ public:
     std::vector<std::vector<sgNodeID_t>> routes_bw;
     std::vector<bool> is_anchor;
     static const std::string logo;
+    bool experimental_striding=false;
 };
 
