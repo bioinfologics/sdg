@@ -210,6 +210,7 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<PerfectMatch>(m,"PerfectMatch", "A perfect match between a read and a node")
+            .def(py::init<sgNodeID_t,uint32_t,uint32_t,uint16_t>(),"node"_a=0,"node_position"_a=0,"read_position"_a=0,"size"_a=0,py::return_value_policy::take_ownership)
             .def_readonly("node",&PerfectMatch::node)
             .def_readonly("node_position",&PerfectMatch::node_position)
             .def_readonly("read_position",&PerfectMatch::read_position)

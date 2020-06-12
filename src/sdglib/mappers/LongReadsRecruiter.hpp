@@ -24,8 +24,8 @@ public:
         return std::tie(read_position,size,node,node_position)<std::tie(other.read_position,other.size,other.node,other.node_position);
     }
     sgNodeID_t node;
-    uint32_t node_position; //position is the start of the match on positive-node-coordinates
-    uint32_t read_position; //position is the start of the match on positive-node-coordinates
+    int32_t node_position; //position is the start of the match on positive-node-coordinates
+    int32_t read_position; //position is the start of the match on positive-node-coordinates
     uint16_t size;
 
 };
