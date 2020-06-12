@@ -18,7 +18,7 @@
 
 class PerfectMatch{
 public:
-    PerfectMatch(sgNodeID_t _node=0,uint32_t _node_position=0,uint32_t _read_position=0,uint16_t _size=0): node(_node),node_position(_node_position),read_position(_read_position),size(_size){};
+    PerfectMatch(sgNodeID_t _node=0,int32_t _node_position=0,int32_t _read_position=0,uint16_t _size=0): node(_node),node_position(_node_position),read_position(_read_position),size(_size){};
     //uint64_t read_id; //Not needed because we're using a vector per read.
     bool operator<(const struct PerfectMatch &other) const{
         return std::tie(read_position,size,node,node_position)<std::tie(other.read_position,other.size,other.node,other.node_position);
