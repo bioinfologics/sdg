@@ -257,6 +257,14 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("all_paths_fw",&LongReadsRecruiter::all_paths_fw,"node"_a)
             ;
 
+    py::class_<PerfectMatch>(m, "PerfectMatch", "A perfect match")
+            .def(py::init<sgNodeID_t, uint32_t, uint32_t, uint16_t>(),"_node"_a=0, "_node_position"_a=0, "_read_position"_a=0, "_size"_a=0)
+            .def_readwrite("node",&PerfectMatch::node)
+            .def_readwrite("node_position",&PerfectMatch::node_position)
+            .def_readwrite("read_position",&PerfectMatch::read_position)
+            .def_readwrite("size",&PerfectMatch::size)
+            ;
+
     py::class_<NodePosition>(m,"NodePosition", "A node position in a LRR")
             .def(py::init<sgNodeID_t ,int32_t ,int32_t >(),"node"_a,"start"_a,"end"_a)
             .def_readwrite("node",&NodePosition::node)
