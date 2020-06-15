@@ -26,6 +26,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<std::vector<uint64_t>>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<int64_t>>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<NodePosition>>);
 PYBIND11_MAKE_OPAQUE(std::vector<ReadPath>);
+PYBIND11_MAKE_OPAQUE(std::vector<bool>);
 
 PYBIND11_MODULE(SDGpython, m) {
 
@@ -37,6 +38,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::bind_vector<std::vector<PerfectMatch>>(m, "VectorPerfectMatch");
     py::bind_vector<std::vector<std::vector<PerfectMatch>>>(m, "VectorVectorPerfectMatch");
     py::bind_vector<std::vector<std::vector<NodePosition>>>(m, "VectorVectorNodePosition");
+    py::bind_vector<std::vector<bool>>(m, "VectorBool");
 
     py::enum_<NodeStatus>(m,"NodeStatus")
             .value("Active",NodeStatus::Active)
