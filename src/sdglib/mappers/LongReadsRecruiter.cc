@@ -2,10 +2,110 @@
 // Created by Bernardo Clavijo (EI) on 16/01/2020.
 //
 
+#include "sdglib/workspace/WorkSpace.hpp"
 #include "LongReadsRecruiter.hpp"
 #include "PerfectMatcher.hpp"
 #include <sdglib/indexers/NKmerIndex.hpp>
 #include <atomic>
+
+std::vector<PerfectMatch> PerfectMatchesFilter::truncate_turnaroud(const std::vector<PerfectMatch> &in) const {
+    std::unordered_map<sgNodeID_t,uint64_t> node_count;
+    std::vector<bool> turn_score;
+
+    //Turn score is true if there's 10% of mathces in opositve direction for this node before this match
+    turn_score.reserve(in.size());
+    for (auto &m:in){
+        ++node_count[m.node];
+        turn_score.emplace_back( ((float) node_count[-m.node]) / (node_count[m.node]+node_count[-m.node]) >.1 );
+    }
+
+    //Turn fw perc counts how many matches have turn_score true from this match until the end of the read
+    std::vector<float> turn_fw_perc;
+    turn_fw_perc.reserve(in.size());
+    uint64_t f=0,b=0;
+    for (auto it=turn_score.crbegin();it<turn_score.crend();++it) {
+        if (*it) b+=1;
+        else f+=1;
+        turn_fw_perc.emplace_back(((float) b)/(b+f));
+    }
+    std::reverse(turn_fw_perc.begin(),turn_fw_perc.end());
+
+    //If a match is "turned" and >70% of remaining matches are turned too, truncate the read there.
+    uint64_t trunc=0;
+    while(++trunc<turn_fw_perc.size()){
+        if (turn_score[trunc] and turn_fw_perc[trunc]>.7) break;
+    }
+    return std::vector<PerfectMatch>(in.begin(),in.begin()+trunc);
+}
+
+std::vector<PerfectMatch> PerfectMatchesFilter::matches_fw_from_node(sgNodeID_t node, const std::vector<PerfectMatch> &in) const {
+    auto last=in.cend();
+    for (auto it=in.cbegin();it<in.cend();++it) if (it->node==node) last=it;
+    std::vector<PerfectMatch> out(last,in.cend());
+    if (out.empty()) return {};
+    auto offset=last->read_position+ws.sdg.get_node_size(node)-last->node_position;
+    for (auto &m:out) m.read_position-=offset;
+    return out;
+}
+
+std::vector<PerfectMatch> PerfectMatchesFilter::clean_linear_groups(const std::vector<PerfectMatch> &in,int group_size,int small_node_size) const {
+    if (in.size()<group_size) return in;
+    std::vector<int> mgroups(in.size());//group for each match
+    std::vector<int> group_elements(in.size()+1);
+    std::vector<int> group_ends(in.size()+1);
+    int group=0;
+
+    for (auto i=0;i<in.size();++i){
+        if (mgroups[i]) continue;
+        mgroups[i]=++group;
+        auto group_node=in[i].node;
+        auto group_pos=in[i].node_position;
+        group_ends[group]=i;
+        group_elements[group]=1;
+        int hits_since_last=0;
+        for (auto j=i+1;j<in.size();++j){
+            if (in[j].node!=group_node or in[j].node_position<group_pos){
+                if (++hits_since_last==5) break;
+            }
+            else {
+                hits_since_last=0;
+                mgroups[j]=group;
+                ++group_elements[group];
+                group_ends[group]=j;
+                group_pos=in[j].node_position;
+            }
+        }
+    }
+
+    int last_big_group=0;
+    int last_big_group_end=0;
+    for (auto i=0;i<in.size();++i){
+        if (i>last_big_group_end) last_big_group=0;
+        if (last_big_group==mgroups[i]) continue;
+        if (group_elements[mgroups[i]]>=group_size){
+            last_big_group=mgroups[i];
+            last_big_group_end=group_ends[last_big_group];
+        }
+        else{
+            if (last_big_group) mgroups[i]=0; //reset group for small matches within large groups
+        }
+    }
+    std::vector<PerfectMatch> out;
+    out.reserve(in.size());
+    for (auto i=0;i<in.size();++i){
+        std::cout<<"mgroups["<<i<<"] =\t"<<mgroups[i]<<std::endl;
+        if (mgroups[i]!=0 and (group_elements[mgroups[i]]>=group_size or ws.sdg.get_node_size(in[i].node)<small_node_size))
+            out.emplace_back(in[i]);
+    }
+    return out;
+}
+
+std::vector<PerfectMatch> PerfectMatchesFilter::merge_and_sort(const std::vector<std::vector<PerfectMatch> > &in) const {
+
+    //merge first, this assumes matches are actually in distance-from-node form, really.
+
+    return {};
+}
 
 LongReadsRecruiter::LongReadsRecruiter(SequenceDistanceGraph &_sdg, const LongReadsDatastore &datastore,uint8_t _k=25, uint16_t _f=50):
     sdg(_sdg),datastore(datastore),k(_k),f(_f) {

@@ -224,6 +224,12 @@ PYBIND11_MODULE(SDGpython, m) {
             })
             ;
 
+    py::class_<PerfectMatchesFilter>(m,"PerfectMatchesFilter","Collection of static methods that filter PerfercMatch vectors")
+            .def(py::init<WorkSpace&>(),"workspace"_a=0,py::return_value_policy::take_ownership)
+            .def("truncate_turnaroud",&PerfectMatchesFilter::truncate_turnaroud,"matches"_a,py::return_value_policy::take_ownership)
+            .def("matches_fw_from_node",&PerfectMatchesFilter::matches_fw_from_node,"node"_a,"matches"_a,py::return_value_policy::take_ownership)
+            .def("clean_linear_groups",&PerfectMatchesFilter::clean_linear_groups,"matches"_a,"group_size"_a=5,"small_node_size"_a=500,py::return_value_policy::take_ownership)
+            ;
 
     py::class_<LongReadsRecruiter>(m, "LongReadsRecruiter", "A full SDG WorkSpace")
             .def(py::init<SequenceDistanceGraph &, const LongReadsDatastore &,uint8_t, uint16_t>(),"sdg"_a,"datastore"_a,"k"_a=25,"f"_a=50)
