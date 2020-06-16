@@ -187,6 +187,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("count_spectra",&KmerCounter::count_spectra,"name"_a,"max_freq"_a=1000,"unique_in_graph"_a=false,"present_in_graph"_a=true)
             .def("update_graph_counts",&KmerCounter::update_graph_counts)
             .def("compute_all_kcis",&KmerCounter::compute_all_kcis)
+            .def("dump_cache",&KmerCounter::dump_cache,"filename"_a)
+            .def("load_cache",&KmerCounter::load_cache,"filename"_a)
             ;
 
     py::class_<WorkSpace>(m, "WorkSpace", "A full SDG WorkSpace")

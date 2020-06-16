@@ -419,3 +419,16 @@ std::ostream &operator<<(std::ostream &os, const KmerCounter &kc) {
     os << "KmerCounter "<< ( kc.name.empty() ? "unnamed":kc.name ) <<": index with "<<kc.kindex.size()<<" "<<std::to_string(kc.k)<<"-mers";
     return os;
 }
+
+void KmerCounter::dump_cache(const std::string filename) {
+    std::ofstream ofs(filename);
+    sdglib::write_string(ofs, std::to_string(kci_peak_f));
+}
+
+void KmerCounter::load_cache(const std::string filename) {
+    std::ifstream ifs(filename);
+    std::string kci_peak_s;
+    sdglib::read_string(ifs,kci_peak_s);
+    kci_peak_f = std::stod(kci_peak_s);
+    kci_cache.clear();
+}
