@@ -94,7 +94,7 @@ public:
     uint16_t f;
     std::vector<std::vector<PerfectMatch>> read_perfect_matches;
     std::vector<std::vector<NodePosition>> read_threads;
-    std::vector<std::vector<uint64_t>> node_reads;
+    std::vector<std::vector<int64_t>> node_reads;
     std::vector<std::vector<int64_t>> node_threads;
     std::vector<std::vector<int32_t>> node_paths;
     std::vector<std::vector<sgNodeID_t>> read_paths;
