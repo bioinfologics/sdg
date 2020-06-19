@@ -407,7 +407,7 @@ void LongReadsRecruiter::recruit_reads(uint16_t seed_size, uint16_t seed_count, 
             if (pmatch.size>=seed_size) {
                 node_match_count[pmatch.node] = node_match_count[pmatch.node] + 1;
                 if (node_match_count[pmatch.node] == seed_count) {
-                    node_reads[llabs(pmatch.node)].emplace_back(rid);
+                    node_reads[llabs(pmatch.node)].emplace_back(pmatch.node>0?rid:-rid);
                 }
             }
         }
