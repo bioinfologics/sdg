@@ -39,6 +39,23 @@ public:
     std::vector<PerfectMatch> merge_and_sort(const std::vector<std::vector<PerfectMatch>> &in) const;
     WorkSpace & ws;
 };
+class LongReadsRecruiter;
+
+class PerfectMatchesMergeSorter{
+public:
+    PerfectMatchesMergeSorter( WorkSpace &_ws):ws(_ws){};
+
+    void init_from_node(sgNodeID_t n,LongReadsRecruiter &lrr, int group_size=5, int small_node_size=500);
+    void drop_slow_reads();
+    void find_next_node();
+    void advance_reads_in_node();
+    std::vector<std::vector<PerfectMatch>> read_matches;
+    std::vector<uint32_t> read_next_match; //-1 means read has been dropped/finished
+    std::vector<uint32_t> read_last_hit_position;
+    std::vector<int32_t> read_dropped_position; //-1 means read has not been dropped
+    sgNodeID_t next_node;
+    WorkSpace & ws;
+};
 
 class NodePosition{
 public:

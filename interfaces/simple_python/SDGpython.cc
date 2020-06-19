@@ -232,6 +232,11 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("merge_and_sort",&PerfectMatchesFilter::merge_and_sort,"vvmatches"_a,py::return_value_policy::take_ownership)
             ;
 
+    py::class_<PerfectMatchesMergeSorter>(m,"PerfectMatchesMergeSorter","A whole class to merge multiple LRs from a node")
+            .def(py::init<WorkSpace&>(),"workspace"_a=0,py::return_value_policy::take_ownership)
+            .def("init_from_node",&PerfectMatchesMergeSorter::init_from_node,"node"_a,"lrr"_a,"group_size"_a=5,"small_node_size"_a=500)
+            ;
+
     py::class_<LongReadsRecruiter>(m, "LongReadsRecruiter", "A full SDG WorkSpace")
             .def(py::init<SequenceDistanceGraph &, const LongReadsDatastore &,uint8_t, uint16_t>(),"sdg"_a,"datastore"_a,"k"_a=25,"f"_a=50)
             .def_readwrite("read_perfect_matches",&LongReadsRecruiter::read_perfect_matches)

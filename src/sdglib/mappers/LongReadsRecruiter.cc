@@ -100,6 +100,8 @@ std::vector<PerfectMatch> PerfectMatchesFilter::clean_linear_groups(const std::v
     return out;
 }
 
+
+
 std::vector<PerfectMatch> PerfectMatchesFilter::merge_and_sort(const std::vector<std::vector<PerfectMatch> > &in) const {
     //merge first, this assumes matches are actually in distance-from-node form, really.
     //first things first, drop matches to any nodes that do not appear in at least X reads.
@@ -118,6 +120,9 @@ std::vector<PerfectMatch> PerfectMatchesFilter::merge_and_sort(const std::vector
         for (auto &m:pms) if (node_readcount[m.node]>=3) filtered_in.back().push_back(m);
     }
 
+    //TODO: a last bit of cleanup, remove unordered matches to the same node, arising from approximate repeats and sequencing errors
+
+
     //now start advancing on each read from the beginning, pick the next read to include using the following criteria:
     // 1 - A read where its next close match to the current node is the one that comes closest next
     // 2 - A read that contains a match to a node that comes before any matches to that node on any other read.
@@ -135,12 +140,22 @@ std::vector<PerfectMatch> PerfectMatchesFilter::merge_and_sort(const std::vector
     std::vector<PerfectMatch> out; //TODO: reserve with the size of all matches?
     sgNodeID_t last_node=0,last_pos=0;
 //    uint64_t pass=0;
+    int cont=0;
     while(finished_reads<filtered_in.size()){
         //First choose which read to advance
         int64_t winner=-1;
         int64_t winner_index=-1;
         int64_t winner_pos=INT64_MAX;
 //        std::cout<<"starting search of the winner"<<std::endl;
+        //TODO: periodically check if reads are goind too fast or falling behind and kill them, if too many killed reads, stop
+
+        //TODO: choose a target node to get to -> a node present in most reads (use a distance since last match in each read)
+
+        //TODO: get all the previous nodes out of the way (include them in some order, these will be minoritary nodes anyway)
+
+        //TODO: go through the target node in all reads -> back to start
+
+
         while (winner==-1) {
 //            if (++pass>200) {
 //                std::cout<<"too many passes, aborting..."<<std::endl;
@@ -154,16 +169,16 @@ std::vector<PerfectMatch> PerfectMatchesFilter::merge_and_sort(const std::vector
                         if (filtered_in[i][j].node_position < winner_pos and filtered_in[i][j].node_position>=last_pos) {
                             //avoid loop problems, by not allowing a massive jump on the read's delta
                             if (next_in_read[i]>0 and filtered_in[i][next_in_read[i]-1].node==last_node and (filtered_in[i][j].node_position-filtered_in[i][next_in_read[i]-1].node_position) * 1.0 / (filtered_in[i][j].read_position-filtered_in[i][next_in_read[i]-1].read_position) < .5 ) {
-//                                std::cout<<"skipping hit on read "<<i<<" @ "<<j<<" because of big jump!"<<std::endl;
+                                std::cout<<"skipping hit on read "<<i<<" @ "<<j<<" because of big jump!"<<std::endl;
                                 continue;
                             }
 
                             winner = i;
                             winner_index = j;
                             winner_pos = filtered_in[i][j].node_position;
-                            //                        std::cout<<"new winner at read "<<i<<" position "<<j<<std::endl;
+//                                                    std::cout<<"new winner at read "<<i<<" position "<<j<<std::endl;
                         }
-                        break;
+                        //break;
                     }
                 }
             }
@@ -171,60 +186,65 @@ std::vector<PerfectMatch> PerfectMatchesFilter::merge_and_sort(const std::vector
             if (winner==-1){
                 bool ln_set=false;
                 //Pick a node that no other read have as preceeded by other nodes.
-//                std::cout<<"trying to find a front-only node "<<std::endl;
+                std::cout<<"trying to find a front-only node "<<std::endl;
+                std::unordered_map<sgNodeID_t,uint64_t> candidates;
+                for (auto i = 0; i < filtered_in.size(); ++i) {
+                    if (next_in_read[i]==-1) continue;
+                    ++candidates[filtered_in[i][next_in_read[i]].node];
+                }
 
 
                 //A node can be in 3 "status": front, absent, later, ideally we want a node that is only front and absent
                 //create a set of all nodes that front, then go through every read
-
-
-                //TODO: penalties: for every read where this appears later, count how many times it appear, and add that to a penalty score, node with the smallest penalty score wins.
+                std::unordered_map<sgNodeID_t,uint64_t> nexts;
                 for (auto i = 0; i < filtered_in.size(); ++i) {
                     if (next_in_read[i] == -1) continue;
-                    auto candidate=filtered_in[i][next_in_read[i]].node;
-                    bool found_later=false;
-                    for (auto ii = 0; ii < filtered_in.size(); ++ii) {
-                        if (next_in_read[ii] == -1) continue;
-                        if (filtered_in[ii][next_in_read[ii]].node==candidate) continue;
-                        for (auto j = next_in_read[ii]+1; j < next_in_read[ii] + 5 and j < filtered_in[ii].size(); ++j) {
-                            if (filtered_in[ii][j].node == candidate) {
-                                found_later=true;
-                                break;
-                            }
-                        }
-                        if (found_later) break;
+                    std::unordered_set<sgNodeID_t> next_nodes;
+                    auto firstnode=filtered_in[i][next_in_read[i]].node;
+                    for (auto j = next_in_read[i]+1; j < next_in_read[i] + 10 and j < filtered_in[i].size(); ++j){
+                        if (filtered_in[i][j].node!=firstnode) next_nodes.insert(filtered_in[i][j].node);
                     }
-                    if (not found_later) {
-                        last_node=candidate;
+                    for (auto &nn:next_nodes) ++nexts[nn];
+                }
+                std::cout<<"candidates are:";
+                for (auto &c:candidates)std::cout<<"    "<<c.first<<" ( "<<c.second<<" - "<<nexts[c.first]<<" )";
+                std::cout<<std::endl;
+
+                //first choice: the most-voted node with no nexts attached
+                auto max_first=0;
+                for (auto &c:candidates) {
+                    if (nexts[c.first]==0 and c.second>max_first) {
+                        max_first=c.first;
+                        last_node=c.first;
                         last_pos=0;
                         ln_set=true;
-                        break;
                     }
                 }
-
                 if (not ln_set) {
-                    //TODO: just pick one at random for now, surely we can do better
-//                    std::cout<<"using any node"<<std::endl;
-                    for (auto i = 0; i < filtered_in.size(); ++i) {
-                        if (next_in_read[i] == -1) continue;
-                        last_node = filtered_in[i][next_in_read[i]].node;
+
+                    //second choice: the node with the least nexts
+                    auto min_nexts = filtered_in.size();
+                    for (auto &c:candidates) {
+                        if (nexts[c.first] < min_nexts) {
+                            min_nexts = nexts[c.first];
+                            last_node = c.first;
+                            last_pos = 0;
+                        }
                     }
                 }
-//                std::cout<<"could not find a continuation from last_node, trying with node "<<last_node<<std::endl;
-
-                //first make a set of all possible next nodes
-
-                //
+                std::cout<<"could not find a continuation from last_node, trying with node "<<last_node<<std::endl;
+                if (++cont>3) break;
             }
+            else cont=0;
         }
 //        if (++pass>1000) break;
         //Now advance the read, set last_node and last_pos
         //std::cout<<"read "<<winner<<" wins with the match at position "<<winner_index<<std::endl;
         auto &m=filtered_in[winner][winner_index];
-//        std::cout<<"WINNER read #"<<winner<<" @ "<<winner_index<<" -> "<<m.node<<" @ "<<m.node_position<<std::endl;
+        std::cout<<"WINNER read #"<<winner<<" @ "<<winner_index<<" -> "<<m.node<<" @ "<<m.node_position<<std::endl;
         for (;next_in_read[winner]<=winner_index;++next_in_read[winner]) {
             auto &m=filtered_in[winner][next_in_read[winner]];
-//            std::cout<<"inserting read #"<<winner<<" @ "<<next_in_read[winner]<<" -> "<<m.node<<" @ "<<m.node_position<<std::endl;
+            std::cout<<"inserting read #"<<winner<<" @ "<<next_in_read[winner]<<" -> "<<m.node<<" @ "<<m.node_position<<std::endl;
             out.emplace_back(filtered_in[winner][next_in_read[winner]]);
         }
 //        std::cout<<"after matches insertion there is "<<out.size()<<" matches in the output collection"<<std::endl;
@@ -239,9 +259,25 @@ std::vector<PerfectMatch> PerfectMatchesFilter::merge_and_sort(const std::vector
     return out;
 }
 
+void PerfectMatchesMergeSorter::init_from_node(sgNodeID_t n, LongReadsRecruiter & lrr, int group_size, int small_node_size) {
+    PerfectMatchesFilter pmf(ws);
+    //get all reads in the node
+    read_matches.clear();
+    read_matches.reserve(lrr.node_reads[llabs(n)].size());
+    for (auto rid:lrr.node_reads[llabs(n)]){
+        read_matches.emplace_back( pmf.clean_linear_groups( pmf.truncate_turnaroud(
+            rid>0 ? lrr.read_perfect_matches[rid] :
+            lrr.reverse_perfect_matches(lrr.read_perfect_matches[-rid],lrr.datastore.read_to_fileRecord[-rid].record_size)
+            ),group_size,small_node_size));
+        if (read_matches.back().empty()) read_matches.pop_back();
+    }
+    read_last_hit_position.resize(read_matches.size(),-1);
+    read_dropped_position.resize(read_matches.size(),-1);
+    read_next_match.resize(read_matches.size(),-0);
 
+}
 
-LongReadsRecruiter::LongReadsRecruiter(SequenceDistanceGraph &_sdg, const LongReadsDatastore &datastore,uint8_t _k=25, uint16_t _f=50):
+LongReadsRecruiter::LongReadsRecruiter(SequenceDistanceGraph &_sdg, const LongReadsDatastore &datastore,uint8_t _k, uint16_t _f):
     sdg(_sdg),datastore(datastore),k(_k),f(_f) {
     reset_recruitment();
 };
