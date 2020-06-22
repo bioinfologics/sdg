@@ -47,7 +47,7 @@ SequenceDistanceGraphPath Strider::stride_out(sgNodeID_t n) {
 }
 
 SequenceDistanceGraphPath
-Strider::stride_out_in_order(sgNodeID_t n, float winner_margin, bool use_pair, bool collapse_pair, bool verbose) {
+Strider::stride_out_in_order(sgNodeID_t n, int min_votes, float winner_margin, bool use_pair, bool collapse_pair, bool verbose) {
     std::vector<std::vector<sgNodeID_t>> read_paths;
     for (auto prds:paired_datastores) {
         auto new_read_paths = prds->mapper.all_paths_fw(n, use_pair, collapse_pair);
@@ -92,7 +92,7 @@ Strider::stride_out_in_order(sgNodeID_t n, float winner_margin, bool use_pair, b
                 winner_votes=v;
             }
         }
-        if (winner==0 or total_votes<2 or winner_votes<total_votes*winner_margin) {
+        if (winner==0 or total_votes<min_votes or winner_votes<total_votes*winner_margin) {
             if (verbose) {
                 std::cout << "  can't find winner, options are:";
                 for (const auto & l: nv.next()) std::cout<<" "<<l;
@@ -142,9 +142,9 @@ void Strider::stride_from_anchors(uint32_t min_size, float min_kci, float max_kc
         if (nv.kci()<min_kci or nv.kci()>max_kci) continue;
         ++anchors;
         is_anchor[nid]=true;
-        routes_fw[nid]= stride_out_in_order(nid, 0, false, false, false).nodes;
+        routes_fw[nid]= stride_out_in_order(nid).nodes;
         if (routes_fw[nid].size()>1) ++found_fw;
-        routes_bw[nid]= stride_out_in_order(-nid, 0, false, false, false).nodes;
+        routes_bw[nid]= stride_out_in_order(-nid).nodes;
         if (routes_bw[nid].size()>1) ++found_bw;
     }
     sdglib::OutputLog()<<"Strider found "<<found_fw<<" forward and "<<found_bw<<" backward routes from "<< anchors << " anchors"<<std::endl;

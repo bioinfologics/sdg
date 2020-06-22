@@ -43,6 +43,9 @@ void PairedReadsMapper::write(std::ofstream &output_file) {
     sdglib::write_flat_vector(output_file, read_to_node);
     //mappings
     sdglib::write_flat_vectorvector(output_file, reads_in_node);
+
+    // write read_paths
+    sdglib::write_flat_vector(output_file, read_paths);
 }
 
 void PairedReadsMapper::read(std::ifstream &input_file) {
@@ -69,6 +72,7 @@ void PairedReadsMapper::read(std::ifstream &input_file) {
 
     sdglib::read_flat_vectorvector(input_file, reads_in_node);
 
+    sdglib::read_flat_vector(input_file, read_paths);
     populate_orientation();
 }
 

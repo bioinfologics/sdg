@@ -18,7 +18,7 @@ public:
     //walk out from a node
     SequenceDistanceGraphPath stride_out(sgNodeID_t n);
 
-    SequenceDistanceGraphPath stride_out_in_order(sgNodeID_t n, float winner_margin=0.75, bool use_pair = true, bool collapse_pair = true,
+    SequenceDistanceGraphPath stride_out_in_order(sgNodeID_t n, int min_votes=2, float winner_margin=.75, bool use_pair = true, bool collapse_pair = true,
                                                       bool verbose = false);
 
     void stride_from_anchors(uint32_t min_size=1,float min_kci=0.5, float max_kci=1.5);
