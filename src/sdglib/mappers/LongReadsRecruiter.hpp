@@ -79,7 +79,7 @@ public:
     void perfect_mappings(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
     std::vector<PerfectMatch> reverse_perfect_matches(const std::vector<PerfectMatch> &matches, uint64_t rsize=0);
     void map(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
-    void recruit_reads(uint16_t seed_size,uint16_t seed_count,uint64_t first_read=1,uint64_t last_read=0);
+    void recruit_reads(uint16_t seed_size,uint16_t seed_count,int64_t first_read=1,int64_t last_read=0);
     void recruit_threads();
     void reset_recruitment();
     void thread_and_pop();

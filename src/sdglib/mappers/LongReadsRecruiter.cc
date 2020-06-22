@@ -598,12 +598,12 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
 }
 
 //TODO: add read position and node position to match
-void LongReadsRecruiter::recruit_reads(uint16_t seed_size, uint16_t seed_count, uint64_t first_read,
-                                       uint64_t last_read) {
+void LongReadsRecruiter::recruit_reads(uint16_t seed_size, uint16_t seed_count, int64_t first_read,
+                                       int64_t last_read) {
     node_reads.clear();
     node_reads.resize(sdg.nodes.size());
     if (last_read==0) last_read=datastore.size();
-    for (auto rid=first_read;rid<=last_read;++rid) {
+    for (int64_t rid=first_read;rid<=last_read;++rid) {
         std::map<sgNodeID_t, uint32_t> node_match_count;
         for (const auto &pmatch:read_perfect_matches[rid]) {
             if (pmatch.size>=seed_size) {
