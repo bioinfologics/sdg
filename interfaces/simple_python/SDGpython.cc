@@ -234,7 +234,17 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<PerfectMatchesMergeSorter>(m,"PerfectMatchesMergeSorter","A whole class to merge multiple LRs from a node")
             .def(py::init<WorkSpace&>(),"workspace"_a=0,py::return_value_policy::take_ownership)
-            .def("init_from_node",&PerfectMatchesMergeSorter::init_from_node,"node"_a,"lrr"_a,"group_size"_a=5,"small_node_size"_a=500)
+            .def("init_from_node",&PerfectMatchesMergeSorter::init_from_node,"node"_a,"lrr"_a,"min_reads"_a=3, "group_size"_a=5,"small_node_size"_a=500)
+            .def("find_next_node",&PerfectMatchesMergeSorter::find_next_node,"d"_a=1000,"candidate_percentaje"_a=0.5,"first_percentaje"_a=0.8)
+            .def("advance_reads_to_node",&PerfectMatchesMergeSorter::advance_reads_to_node)
+            .def("advance_reads_through_node",&PerfectMatchesMergeSorter::advance_reads_through_node)
+            .def("drop_conflictive_reads",&PerfectMatchesMergeSorter::drop_conflictive_reads)
+            .def_readwrite("next_node",&PerfectMatchesMergeSorter::next_node)
+            .def_readwrite("read_matches",&PerfectMatchesMergeSorter::read_matches)
+            .def_readwrite("read_next_match",&PerfectMatchesMergeSorter::read_next_match)
+            .def_readwrite("read_dropped_position",&PerfectMatchesMergeSorter::read_dropped_position)
+            .def_readwrite("read_last_hit_position",&PerfectMatchesMergeSorter::read_last_hit_position)
+            .def_readwrite("out",&PerfectMatchesMergeSorter::out)
             ;
 
     py::class_<LongReadsRecruiter>(m, "LongReadsRecruiter", "A full SDG WorkSpace")

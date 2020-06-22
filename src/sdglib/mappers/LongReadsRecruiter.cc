@@ -259,21 +259,187 @@ std::vector<PerfectMatch> PerfectMatchesFilter::merge_and_sort(const std::vector
     return out;
 }
 
-void PerfectMatchesMergeSorter::init_from_node(sgNodeID_t n, LongReadsRecruiter & lrr, int group_size, int small_node_size) {
+void PerfectMatchesMergeSorter::init_from_node(sgNodeID_t n, LongReadsRecruiter & lrr, int min_reads, int group_size, int small_node_size) {
     PerfectMatchesFilter pmf(ws);
     //get all reads in the node
     read_matches.clear();
     read_matches.reserve(lrr.node_reads[llabs(n)].size());
+    std::unordered_map<sgNodeID_t,uint64_t> node_read_count;
+    std::unordered_set<sgNodeID_t> read_nodes;
+    //add matches, reversed if need be, cleaned and fw from node
     for (auto rid:lrr.node_reads[llabs(n)]){
-        read_matches.emplace_back( pmf.clean_linear_groups( pmf.truncate_turnaroud(
+        read_matches.emplace_back( pmf.matches_fw_from_node(n,pmf.clean_linear_groups( pmf.truncate_turnaroud(
             rid>0 ? lrr.read_perfect_matches[rid] :
             lrr.reverse_perfect_matches(lrr.read_perfect_matches[-rid],lrr.datastore.read_to_fileRecord[-rid].record_size)
-            ),group_size,small_node_size));
+            ),group_size,small_node_size)));
+
         if (read_matches.back().empty()) read_matches.pop_back();
+        else {
+            read_nodes.clear();
+            for (auto &m:read_matches.back()) read_nodes.insert(m.node);
+            for (auto &n:read_nodes) ++node_read_count[n];
+        }
     }
-    read_last_hit_position.resize(read_matches.size(),-1);
+    //remove any nodes not in enough reads
+    for (auto &rm:read_matches){
+        rm.erase(std::remove_if(rm.begin(),rm.end(),[&node_read_count,&min_reads](PerfectMatch &m){return node_read_count[m.node]<min_reads;}),rm.end());
+    }
+    //remove any newly empty reads due to node filtering
+    read_matches.erase(std::remove_if(read_matches.begin(), read_matches.end(),[](std::vector<PerfectMatch> &v){return v.empty();}),read_matches.end());
+
+    read_last_hit_position.resize(read_matches.size(),0);
     read_dropped_position.resize(read_matches.size(),-1);
     read_next_match.resize(read_matches.size(),-0);
+
+}
+
+void PerfectMatchesMergeSorter::find_next_node(int d,float candidate_percentaje, float first_percentaje) {
+    next_node=0;
+    //explore the next x bp of reads, mark nodes appearing there.
+    std::unordered_set<sgNodeID_t> read_nodes;
+    std::unordered_map<sgNodeID_t,uint64_t> node_read_count;
+    //count in how many reads each node appears, only use next hits up to last_hit_position + d
+    uint64_t used_reads=0;
+    for (auto i=0;i<read_matches.size();++i) {
+        if (read_next_match[i]==-1) continue;
+        ++used_reads;
+        read_nodes.clear();
+        for (auto it=read_matches[i].cbegin()+read_next_match[i];
+            it<read_matches[i].cend() and it->read_position-read_last_hit_position[i]<d;
+            ++it)
+            read_nodes.insert(it->node);
+        for (auto &n:read_nodes) ++node_read_count[n];
+    }
+    //any node that appears in 80% of the reads is a safe node to get to, check which one of them comes first and check any nodes that come before
+    //TODO: consider that some reads just won't be long enough to get to the node! Compute distance to first match of node in read and only use reads that get there
+    std::cout<<used_reads<<" reads have hits to candidate nodes"<<std::endl;
+    std::unordered_set<sgNodeID_t> popular_nodes;
+    for (auto &nc:node_read_count){
+//        if (nc.second>3)
+//            std::cout<<"Node "<<nc.first<<" is present on "<<nc.second<<" reads"<<std::endl;
+        if (nc.second>used_reads*candidate_percentaje) {
+//            std::cout<<"Node "<<nc.first<<" is present on more than 80% of counted reads"<<std::endl;
+            popular_nodes.insert(nc.first);
+        }
+    }
+    //pick the earliest of the popular nodes
+    std::unordered_map<sgNodeID_t,uint64_t> first_node_read_count;
+    uint64_t total_reads_with_first=0;
+    for (auto i=0;i<read_matches.size();++i) {
+        if (read_next_match[i] == -1) continue;
+        for (auto it=read_matches[i].cbegin()+read_next_match[i];
+             it<read_matches[i].cend() and it->read_position-read_last_hit_position[i]<d;
+             ++it)
+            if (popular_nodes.count(it->node)) {
+                ++first_node_read_count[it->node];
+                ++total_reads_with_first;
+                break;
+            }
+    }
+    for (auto fnc:first_node_read_count){
+        std::cout<<"Popular node "<<fnc.first<<" is the first of the popular nodes in "<<fnc.second<<" / "<< node_read_count[fnc.first] <<" reads "<<std::endl;
+        if (fnc.second>first_percentaje*node_read_count[fnc.first]) {
+            if (next_node!=0) {
+                std::cout<<"there's more than one potential next node, this version of the algorithm can't deal with that"<<std::endl;
+                next_node=0;
+                break;
+            }
+            next_node=fnc.first;
+        }
+    }
+
+}
+
+void PerfectMatchesMergeSorter::advance_reads_to_node() {
+    //TODO: as of now this only skips the intermediate nodes, sorry!
+    /*std::unordered_map<sgNodeID_t,uint64_t> pre_nodes;
+    std::unordered_set<sgNodeID_t> seen_pre_nodes;
+    for (auto i=0;i<read_matches.size();++i) {
+        if (read_next_match[i] == -1) continue;
+        seen_pre_nodes.clear();
+        for (auto it = read_matches[i].cbegin() + read_next_match[i];
+             it < read_matches[i].cend();
+             ++it) {
+            //std::cout << "Read " << i << " hits node " << it->node << " before getting to next node" << std::endl;
+            if (it->node == next_node) {
+                for (auto &pn:seen_pre_nodes) ++pre_nodes[pn];
+                break;
+            }
+            seen_pre_nodes.insert(it->node);
+        }
+    }
+    for (auto &pn:pre_nodes){
+        //std::cout<<"Pre node "<<pn.first<<" is present in "<<pn.second<<" reads"<<std::endl;
+    }*/
+    //TODO: compute a reasonable distance to the node and drop all other reads
+    for (auto i = 0; i < read_matches.size(); ++i) {
+        if (read_next_match[i] == -1) continue;
+        for (auto it = read_matches[i].cbegin() + read_next_match[i];
+             it < read_matches[i].cend();
+             ++it) {
+            //std::cout << "Read " << i << " hits node " << it->node << " before getting to next node" << std::endl;
+            if (it->node == next_node) {
+                read_next_match[i]=it-read_matches[i].cbegin();
+                break;
+            }
+        }
+    }
+}
+void PerfectMatchesMergeSorter::advance_reads_through_node() {
+
+    int64_t last_pos=0;
+
+    while (true) {
+        int winner=-1;
+        int64_t winner_index=0;
+        int64_t winner_pos=INT64_MAX;
+        for (auto i = 0; i < read_matches.size(); ++i) {
+            if (read_next_match[i] == -1) continue;
+            for (auto j = read_next_match[i]; j < read_next_match[i] + 5 and j < read_matches[i].size(); ++j) {
+                if (read_matches[i][j].node == next_node) {
+                    if (read_matches[i][j].node_position < winner_pos and
+                        read_matches[i][j].node_position >= last_pos) {
+                        //avoid loop problems, by not allowing a massive jump on the read's delta
+                        if (read_next_match[i] > 0 and read_matches[i][read_next_match[i] - 1].node == next_node and
+                            (read_matches[i][j].node_position - read_matches[i][read_next_match[i] - 1].node_position) *
+                            1.0 /
+                            (read_matches[i][j].read_position - read_matches[i][read_next_match[i] - 1].read_position) <
+                            .5) {
+                            //std::cout << "skipping hit on read " << i << " @ " << j << " because of big jump!" << std::endl;
+                            continue;
+                        }
+
+                        winner = i;
+                        winner_index = j;
+                        winner_pos = read_matches[i][j].node_position;
+                        //std::cout<<"new winner at read "<<i<<" position "<<j<<std::endl;
+                    }
+                    //break;
+                }
+            }
+        }
+        if (winner==-1) break;
+
+        auto &m=read_matches[winner][winner_index];
+        //std::cout<<"WINNER read #"<<winner<<" @ "<<winner_index<<" -> "<<m.node<<" @ "<<m.node_position<<std::endl;
+        for (;read_next_match[winner]<=winner_index;++read_next_match[winner]) {
+            auto &m=read_matches[winner][read_next_match[winner]];
+            //std::cout<<"inserting read #"<<winner<<" @ "<<read_next_match[winner]<<" -> "<<m.node<<" @ "<<m.node_position<<std::endl;
+            out.emplace_back(read_matches[winner][read_next_match[winner]]);
+        }
+//        std::cout<<"after matches insertion there is "<<out.size()<<" matches in the output collection"<<std::endl;
+        last_pos=out.back().node_position;
+        read_last_hit_position[winner]=out.back().read_position;
+
+        if (read_next_match[winner]==read_matches[winner].size()) {
+            read_next_match[winner]=-1;
+            //++finished_reads;
+        }
+
+    }
+}
+
+void PerfectMatchesMergeSorter::drop_conflictive_reads() {
 
 }
 
