@@ -260,6 +260,8 @@ std::vector<PerfectMatch> PerfectMatchesFilter::merge_and_sort(const std::vector
 }
 
 void PerfectMatchesMergeSorter::init_from_node(sgNodeID_t n, LongReadsRecruiter & lrr, int min_reads, int group_size, int small_node_size) {
+    out.clear();
+
     PerfectMatchesFilter pmf(ws);
     //get all reads in the node
     read_matches.clear();
