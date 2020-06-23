@@ -149,10 +149,10 @@ void Strider::stride_from_anchors(uint32_t min_size, float min_kci, float max_kc
     sdglib::OutputLog()<<"Strider found "<<found_fw<<" forward and "<<found_bw<<" backward routes from "<< anchors << " anchors"<<std::endl;
 }
 
-std::vector<Link> Strider::link_out_by_lr(sgNodeID_t n,int d) {
+std::vector<Link> Strider::link_out_by_lr(sgNodeID_t n,int d, int min_reads, int group_size, int small_node_size) {
     PerfectMatchesMergeSorter pmms(ws);
     for (auto &llr:long_recruiters) {
-        pmms.init_from_node(n, *llr);
+        pmms.init_from_node(n, *llr, min_reads, group_size, small_node_size);
         std::vector<int32_t> prev_status;
         for (pmms.find_next_node(d); pmms.next_node!=0 and pmms.read_next_match!=prev_status; pmms.find_next_node(d)){
             prev_status=pmms.read_next_match;//This is a cheap exit to avoid when pmms get stuck in the last node
