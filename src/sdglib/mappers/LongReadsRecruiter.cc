@@ -259,7 +259,7 @@ std::vector<PerfectMatch> PerfectMatchesFilter::merge_and_sort(const std::vector
     return out;
 }
 
-void PerfectMatchesMergeSorter::init_from_node(sgNodeID_t n, LongReadsRecruiter & lrr, int min_reads, int group_size, int small_node_size) {
+void PerfectMatchesMergeSorter::init_from_node(sgNodeID_t n, const LongReadsRecruiter & lrr, int min_reads, int group_size, int small_node_size) {
     out.clear();
 
     PerfectMatchesFilter pmf(ws);
@@ -270,6 +270,7 @@ void PerfectMatchesMergeSorter::init_from_node(sgNodeID_t n, LongReadsRecruiter 
     std::unordered_set<sgNodeID_t> read_nodes;
     //add matches, reversed if need be, cleaned and fw from node
     for (auto rid:lrr.node_reads[llabs(n)]){
+        if (n<0) rid=-rid;
         read_matches.emplace_back( pmf.matches_fw_from_node(n,pmf.clean_linear_groups( pmf.truncate_turnaroud(
             rid>0 ? lrr.read_perfect_matches[rid] :
             lrr.reverse_perfect_matches(lrr.read_perfect_matches[-rid],lrr.datastore.read_to_fileRecord[-rid].record_size)

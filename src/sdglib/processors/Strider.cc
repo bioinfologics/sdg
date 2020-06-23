@@ -149,6 +149,77 @@ void Strider::stride_from_anchors(uint32_t min_size, float min_kci, float max_kc
     sdglib::OutputLog()<<"Strider found "<<found_fw<<" forward and "<<found_bw<<" backward routes from "<< anchors << " anchors"<<std::endl;
 }
 
+std::vector<Link> Strider::link_out_by_lr(sgNodeID_t n,int d) {
+    PerfectMatchesMergeSorter pmms(ws);
+    for (auto &llr:long_recruiters) {
+        pmms.init_from_node(n, *llr);
+
+        for (pmms.find_next_node(d); pmms.next_node!=0; pmms.find_next_node(d)){
+            pmms.advance_reads_to_node();
+            pmms.advance_reads_through_node();
+        }
+    }
+    std::vector<bool> used(pmms.out.size());
+    std::vector<Link> links;
+    std::vector<int64_t> offsets;
+    offsets.reserve(pmms.out.size());
+    uint64_t last_nodepos=0;
+    for (auto i=0;i<pmms.out.size();++i){
+        if (used[i]) continue;
+        int skipped=0;
+        offsets.clear();
+        for (auto j=i;j<pmms.out.size();++j){
+            if (pmms.out[j].node==pmms.out[i].node and pmms.out[j].node_position>=last_nodepos){
+                offsets.emplace_back(pmms.out[j].read_position-pmms.out[j].node_position);
+                last_nodepos=pmms.out[j].node_position;
+                used[j]=true;
+            }
+            else {
+                ++skipped;
+                if (skipped>=5) break;
+            }
+        }
+        if (offsets.size()>5) {
+            //mean for first 10 is used as distance
+            //TODO: use mean of last 10 to correct the distance to the next node
+            int64_t t=0,c=0;
+            for (auto i=0;i<10 and i<offsets.size();++i){
+                t+=offsets[i];
+                ++c;
+            }
+            if (links.empty() or links.back().dest != pmms.out[i].node or t/c - links.back().dist > ws.sdg.get_node_size(pmms.out[i].node)*.9)
+            links.emplace_back(-n,pmms.out[i].node,t/c);
+        }
+    }
+    return links;
+}
+
+void Strider::link_from_anchors(uint32_t min_size, float min_kci, float max_kci) {
+    std::cout<<std::endl<<logo<<std::endl;
+    sdglib::OutputLog()<<"Gone linking..."<<std::endl;
+    links_fw.clear();
+    links_bw.clear();
+    is_anchor.clear();
+    links_fw.resize(ws.sdg.nodes.size());
+    links_bw.resize(ws.sdg.nodes.size());
+    is_anchor.resize(ws.sdg.nodes.size());
+    if (min_size==0) min_size=1;//a min_size of 0 would get deleted nodes and such
+    uint64_t anchors=0,found_fw=0,found_bw=0;
+#pragma omp parallel for reduction(+:anchors) reduction(+:found_fw) reduction(+:found_bw)
+    for (auto nid=1;nid<ws.sdg.nodes.size();++nid) {
+        if (ws.sdg.get_node_size(nid)<min_size) continue;
+        auto nv=ws.sdg.get_nodeview(nid);
+        if (nv.kci()<min_kci or nv.kci()>max_kci) continue;
+        ++anchors;
+        is_anchor[nid]=true;
+        links_fw[nid]=link_out_by_lr(nid);
+        if (links_fw[nid].size()>1) ++found_fw;
+        links_bw[nid]=link_out_by_lr(-nid);
+        if (links_bw[nid].size()>1) ++found_bw;
+    }
+    sdglib::OutputLog()<<"Strider found "<<found_fw<<" forward and "<<found_bw<<" backward routes from "<< anchors << " anchors"<<std::endl;
+}
+
 void Strider::route_vs_readpaths_stats() {
     uint64_t p_finished80=0;
     uint64_t end_in_tip=0;

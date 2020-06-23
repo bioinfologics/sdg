@@ -81,6 +81,17 @@ PYBIND11_MODULE(SDGpython, m) {
         //.def_readonly("support", &Node::support)
             ;
 
+    py::class_<Link>(m,"Link","A raw DG Link")
+            .def_readwrite("source",&Link::source)
+            .def_readwrite("dest",&Link::dest)
+            .def_readwrite("dist",&Link::dist)
+            .def_readwrite("support",&Link::support)
+            .def("__repr__",
+                 [](const Link &l) {
+                     return "<Link ( " + std::to_string(l.source) + " , " + std::to_string(l.dest) + " ), d = " + std::to_string(l.dist) + " bp>";
+                 })
+            ;
+
     py::class_<LinkView>(m,"LinkView","A view for a Link in a Distance Graph")
             .def("node",&LinkView::node)
             .def("distance",&LinkView::distance)
@@ -344,7 +355,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("add_datastore",py::overload_cast<const PairedReadsDatastore &>(&Strider::add_datastore))
             .def("add_datastore",py::overload_cast<const LongReadsRecruiter &>(&Strider::add_datastore))
             .def("stride_out",&Strider::stride_out,"node"_a,py::return_value_policy::take_ownership)
-            .def("stride_out_in_order",&Strider::stride_out_in_order,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true,"verbose"_a=false,py::return_value_policy::take_ownership);
+            .def("stride_out_in_order",&Strider::stride_out_in_order,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true,"verbose"_a=false,py::return_value_policy::take_ownership)
+            .def("link_out_by_lr",&Strider::link_out_by_lr,"node"_a,"d"_a=2000,py::return_value_policy::take_ownership);
 
     py::class_<GraphPatcher>(m,"GraphPatcher","GraphPatcher")
             .def(py::init<WorkSpace &>(),"ws"_a)
