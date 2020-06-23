@@ -30,6 +30,35 @@ public:
 
 };
 
+class PerfectMatchesFilter {
+public:
+    PerfectMatchesFilter( WorkSpace &_ws):ws(_ws){};
+    std::vector<PerfectMatch> truncate_turnaroud (const std::vector<PerfectMatch> &in) const;
+    std::vector<PerfectMatch> matches_fw_from_node (sgNodeID_t node, const std::vector<PerfectMatch> &in) const;
+    std::vector<PerfectMatch> clean_linear_groups(const std::vector<PerfectMatch> &in, int group_size=5,int small_node_size=500) const;
+    std::vector<PerfectMatch> merge_and_sort(const std::vector<std::vector<PerfectMatch>> &in) const;
+    WorkSpace & ws;
+};
+class LongReadsRecruiter;
+
+class PerfectMatchesMergeSorter{
+public:
+    PerfectMatchesMergeSorter( WorkSpace &_ws):ws(_ws){};
+
+    void init_from_node(sgNodeID_t n,const LongReadsRecruiter &lrr, int min_reads=3, int group_size=5, int small_node_size=500);
+    void drop_conflictive_reads();
+    void find_next_node(int d=1000,float candidate_percentaje=.6, float first_percentaje=.95);
+    void advance_reads_to_node();
+    void advance_reads_through_node();
+    std::vector<std::vector<PerfectMatch>> read_matches;
+    std::vector<int32_t> read_next_match; //-1 means read has been dropped/finished
+    std::vector<int32_t> read_last_hit_position;
+    std::vector<int32_t> read_dropped_position; //-1 means read has not been dropped
+    std::vector<PerfectMatch> out;
+    sgNodeID_t next_node;
+    WorkSpace & ws;
+};
+
 class NodePosition{
 public:
     NodePosition(sgNodeID_t _node,int32_t _start,int32_t _end): node(_node),start(_start),end(_end){};
@@ -50,7 +79,7 @@ public:
     void perfect_mappings(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
     std::vector<PerfectMatch> reverse_perfect_matches(const std::vector<PerfectMatch> &matches, uint64_t rsize=0);
     void map(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
-    void recruit_reads(uint16_t seed_size,uint16_t seed_count,uint64_t first_read=1,uint64_t last_read=0);
+    void recruit_reads(uint16_t seed_size,uint16_t seed_count,int64_t first_read=1,int64_t last_read=0);
     void recruit_threads();
     void reset_recruitment();
     void thread_and_pop();
@@ -67,7 +96,7 @@ public:
     uint16_t f;
     std::vector<std::vector<PerfectMatch>> read_perfect_matches;
     std::vector<std::vector<NodePosition>> read_threads;
-    std::vector<std::vector<uint64_t>> node_reads;
+    std::vector<std::vector<int64_t>> node_reads;
     std::vector<std::vector<int64_t>> node_threads;
     std::vector<std::vector<int32_t>> node_paths;
     std::vector<std::vector<sgNodeID_t>> read_paths;

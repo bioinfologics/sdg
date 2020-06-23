@@ -9,7 +9,6 @@
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/views/NodeView.hpp>
 #include <sdglib/mappers/LongReadsRecruiter.hpp>
-//#include <sdglib/mappers/LinkedReadsMapper.hpp>
 #include <sdglib/processors/GraphEditor.hpp>
 #include <sdglib/processors/LinkageUntangler.hpp>
 #include <sdglib/processors/GraphContigger.hpp>
@@ -27,6 +26,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<std::vector<uint64_t>>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<int64_t>>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<NodePosition>>);
 PYBIND11_MAKE_OPAQUE(std::vector<ReadPath>);
+PYBIND11_MAKE_OPAQUE(std::vector<bool>);
 
 PYBIND11_MODULE(SDGpython, m) {
 
@@ -38,6 +38,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::bind_vector<std::vector<PerfectMatch>>(m, "VectorPerfectMatch");
     py::bind_vector<std::vector<std::vector<PerfectMatch>>>(m, "VectorVectorPerfectMatch");
     py::bind_vector<std::vector<std::vector<NodePosition>>>(m, "VectorVectorNodePosition");
+    py::bind_vector<std::vector<bool>>(m, "VectorBool");
 
     py::enum_<NodeStatus>(m,"NodeStatus")
             .value("Active",NodeStatus::Active)
@@ -78,6 +79,17 @@ PYBIND11_MODULE(SDGpython, m) {
                      return "<Node with " + std::to_string(n.sequence.size()) + " bp>";
                  })
         //.def_readonly("support", &Node::support)
+            ;
+
+    py::class_<Link>(m,"Link","A raw DG Link")
+            .def_readwrite("source",&Link::source)
+            .def_readwrite("dest",&Link::dest)
+            .def_readwrite("dist",&Link::dist)
+            .def_readwrite("support",&Link::support)
+            .def("__repr__",
+                 [](const Link &l) {
+                     return "<Link ( " + std::to_string(l.source) + " , " + std::to_string(l.dest) + " ), d = " + std::to_string(l.dist) + " bp>";
+                 })
             ;
 
     py::class_<LinkView>(m,"LinkView","A view for a Link in a Distance Graph")
@@ -164,23 +176,10 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("dump_readpaths",&PairedReadsMapper::dump_readpaths)
             .def("load_readpaths",&PairedReadsMapper::load_readpaths)
             ;
-    
     py::class_<LinkedReadsDatastore>(m, "LinkedReadsDatastore", "A Linked Reads Datastore")
             .def("size",&LinkedReadsDatastore::size)
             .def("get_read_sequence",&LinkedReadsDatastore::get_read_sequence)
-            .def_readwrite("mapper",&LinkedReadsDatastore::mapper)
             ;
-
-    py::class_<LinkedReadsMapper>(m, "LinkedReadsMapper", "A Linked reads mapper")
-            .def("map_reads",&LinkedReadsMapper::map_reads, "reads_to_remap"_a)
-            .def("remap_all_reads",&LinkedReadsMapper::remap_all_reads)
-            .def("map_reads63",&LinkedReadsMapper::map_reads63, "reads_to_remap"_a)
-            .def("remap_all_reads63",&LinkedReadsMapper::remap_all_reads)
-            .def("get_node_tags",&LinkedReadsMapper::get_node_tags, "node_id"_a)
-            .def_readonly("reads_in_node",&LinkedReadsMapper::reads_in_node)
-            .def_readonly("read_to_node",&LinkedReadsMapper::read_to_node)
-            ;
-
     py::class_<LongReadsDatastore>(m, "LongReadsDatastore", "A Long Reads Datastore")
             .def("size",&LongReadsDatastore::size)
             .def("get_read_sequence",&LongReadsDatastore::get_read_sequence)
@@ -236,6 +235,28 @@ PYBIND11_MODULE(SDGpython, m) {
             })
             ;
 
+    py::class_<PerfectMatchesFilter>(m,"PerfectMatchesFilter","Collection of static methods that filter PerfercMatch vectors")
+            .def(py::init<WorkSpace&>(),"workspace"_a=0,py::return_value_policy::take_ownership)
+            .def("truncate_turnaroud",&PerfectMatchesFilter::truncate_turnaroud,"matches"_a,py::return_value_policy::take_ownership)
+            .def("matches_fw_from_node",&PerfectMatchesFilter::matches_fw_from_node,"node"_a,"matches"_a,py::return_value_policy::take_ownership)
+            .def("clean_linear_groups",&PerfectMatchesFilter::clean_linear_groups,"matches"_a,"group_size"_a=5,"small_node_size"_a=500,py::return_value_policy::take_ownership)
+            .def("merge_and_sort",&PerfectMatchesFilter::merge_and_sort,"vvmatches"_a,py::return_value_policy::take_ownership)
+            ;
+
+    py::class_<PerfectMatchesMergeSorter>(m,"PerfectMatchesMergeSorter","A whole class to merge multiple LRs from a node")
+            .def(py::init<WorkSpace&>(),"workspace"_a=0,py::return_value_policy::take_ownership)
+            .def("init_from_node",&PerfectMatchesMergeSorter::init_from_node,"node"_a,"lrr"_a,"min_reads"_a=3, "group_size"_a=5,"small_node_size"_a=500)
+            .def("find_next_node",&PerfectMatchesMergeSorter::find_next_node,"d"_a=1000,"candidate_percentaje"_a=0.5,"first_percentaje"_a=0.8)
+            .def("advance_reads_to_node",&PerfectMatchesMergeSorter::advance_reads_to_node)
+            .def("advance_reads_through_node",&PerfectMatchesMergeSorter::advance_reads_through_node)
+            .def("drop_conflictive_reads",&PerfectMatchesMergeSorter::drop_conflictive_reads)
+            .def_readwrite("next_node",&PerfectMatchesMergeSorter::next_node)
+            .def_readwrite("read_matches",&PerfectMatchesMergeSorter::read_matches)
+            .def_readwrite("read_next_match",&PerfectMatchesMergeSorter::read_next_match)
+            .def_readwrite("read_dropped_position",&PerfectMatchesMergeSorter::read_dropped_position)
+            .def_readwrite("read_last_hit_position",&PerfectMatchesMergeSorter::read_last_hit_position)
+            .def_readwrite("out",&PerfectMatchesMergeSorter::out)
+            ;
 
     py::class_<LongReadsRecruiter>(m, "LongReadsRecruiter", "A full SDG WorkSpace")
             .def(py::init<SequenceDistanceGraph &, const LongReadsDatastore &,uint8_t, uint16_t>(),"sdg"_a,"datastore"_a,"k"_a=25,"f"_a=50)
@@ -334,7 +355,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("add_datastore",py::overload_cast<const PairedReadsDatastore &>(&Strider::add_datastore))
             .def("add_datastore",py::overload_cast<const LongReadsRecruiter &>(&Strider::add_datastore))
             .def("stride_out",&Strider::stride_out,"node"_a,py::return_value_policy::take_ownership)
-            .def("stride_out_in_order", &Strider::stride_out_in_order,"node"_a, "min_votes"_a=2, "winner_margin"_a=.75,"use_pair"_a=true,"collapse_pair"_a=true,"verbose"_a=false,py::return_value_policy::take_ownership);
+            .def("stride_out_in_order",&Strider::stride_out_in_order,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true,"verbose"_a=false,py::return_value_policy::take_ownership)
+            .def("link_out_by_lr",&Strider::link_out_by_lr,"node"_a,"d"_a=2000, "min_reads"_a=3, "group_size"_a=5, "small_node_size"_a=500,py::return_value_policy::take_ownership);
 
     py::class_<GraphPatcher>(m,"GraphPatcher","GraphPatcher")
             .def(py::init<WorkSpace &>(),"ws"_a)

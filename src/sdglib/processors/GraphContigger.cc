@@ -325,7 +325,7 @@ void GraphContigger::clip_tips(int tip_size, int rounds) {
             if (nv.size()<=tip_size and (nv.prev().size()==0 or nv.next().size()==0))
                 to_delete.insert(nv.node_id());
         }
-        //std::cout << "Nodes to delete: " << to_delete.size() << std::endl;
+        std::cout << "Nodes to delete: " << to_delete.size() << std::endl;
         for (auto n:to_delete) ws.sdg.remove_node(n);
         auto utc = ws.sdg.join_all_unitigs();
         if (to_delete.empty() and utc==0) break;
