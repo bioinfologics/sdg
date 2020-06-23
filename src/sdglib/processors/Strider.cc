@@ -47,7 +47,7 @@ SequenceDistanceGraphPath Strider::stride_out(sgNodeID_t n) {
 }
 
 SequenceDistanceGraphPath
-Strider::stride_out_in_order(sgNodeID_t n, int min_votes, float winner_margin, bool use_pair, bool collapse_pair, bool verbose) {
+Strider::stride_out_in_order(sgNodeID_t n, bool use_pair, bool collapse_pair, bool verbose) {
     std::vector<std::vector<sgNodeID_t>> read_paths;
     for (auto prds:paired_datastores) {
         auto new_read_paths = prds->mapper.all_paths_fw(n, use_pair, collapse_pair);
@@ -92,7 +92,7 @@ Strider::stride_out_in_order(sgNodeID_t n, int min_votes, float winner_margin, b
                 winner_votes=v;
             }
         }
-        if (winner==0 or total_votes<min_votes or winner_votes<total_votes*winner_margin) {
+        if (winner==0 or total_votes<2 or winner_votes<total_votes*.75) {
             if (verbose) {
                 std::cout << "  can't find winner, options are:";
                 for (const auto & l: nv.next()) std::cout<<" "<<l;
