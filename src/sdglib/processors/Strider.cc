@@ -153,8 +153,9 @@ std::vector<Link> Strider::link_out_by_lr(sgNodeID_t n,int d) {
     PerfectMatchesMergeSorter pmms(ws);
     for (auto &llr:long_recruiters) {
         pmms.init_from_node(n, *llr);
-
-        for (pmms.find_next_node(d); pmms.next_node!=0; pmms.find_next_node(d)){
+        std::vector<int32_t> prev_status;
+        for (pmms.find_next_node(d); pmms.next_node!=0 and pmms.read_next_match!=prev_status; pmms.find_next_node(d)){
+            prev_status=pmms.read_next_match;//This is a cheap exit to avoid when pmms get stuck in the last node
             pmms.advance_reads_to_node();
             pmms.advance_reads_through_node();
         }
