@@ -24,7 +24,7 @@ public:
 
     void stride_from_anchors(uint32_t min_size=1,float min_kci=0.5, float max_kci=1.5);
 
-    void link_from_anchors(uint32_t min_size=1,float min_kci=0.5, float max_kci=1.5);
+    void link_from_anchors(uint32_t min_size=1,float min_kci=0.5, float max_kci=1.5, int d=2000, int min_reads=3, int group_size=5, int small_node_size=500);
 
     void route_vs_readpaths_stats();
 
