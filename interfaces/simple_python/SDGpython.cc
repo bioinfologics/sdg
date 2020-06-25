@@ -239,7 +239,7 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<PerfectMatchesFilter>(m,"PerfectMatchesFilter","Collection of static methods that filter PerfercMatch vectors")
             .def(py::init<WorkSpace&>(),"workspace"_a=0,py::return_value_policy::take_ownership)
-            .def("truncate_turnaroud",&PerfectMatchesFilter::truncate_turnaroud,"matches"_a,py::return_value_policy::take_ownership)
+            .def("truncate_turnaround",&PerfectMatchesFilter::truncate_turnaround,"matches"_a,py::return_value_policy::take_ownership)
             .def("matches_fw_from_node",&PerfectMatchesFilter::matches_fw_from_node,"node"_a,"matches"_a,py::return_value_policy::take_ownership)
             .def("clean_linear_groups",&PerfectMatchesFilter::clean_linear_groups,"matches"_a,"group_size"_a=5,"small_node_size"_a=500,py::return_value_policy::take_ownership)
             .def("merge_and_sort",&PerfectMatchesFilter::merge_and_sort,"vvmatches"_a,py::return_value_policy::take_ownership)

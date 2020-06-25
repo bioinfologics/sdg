@@ -8,7 +8,7 @@
 #include <sdglib/indexers/NKmerIndex.hpp>
 #include <atomic>
 
-std::vector<PerfectMatch> PerfectMatchesFilter::truncate_turnaroud(const std::vector<PerfectMatch> &in) const {
+std::vector<PerfectMatch> PerfectMatchesFilter::truncate_turnaround(const std::vector<PerfectMatch> &in) const {
     std::unordered_map<sgNodeID_t,uint64_t> node_count;
     std::vector<bool> turn_score;
 
@@ -271,10 +271,10 @@ void PerfectMatchesMergeSorter::init_from_node(sgNodeID_t n, const LongReadsRecr
     //add matches, reversed if need be, cleaned and fw from node
     for (auto rid:lrr.node_reads[llabs(n)]){
         if (n<0) rid=-rid;
-        read_matches.emplace_back( pmf.matches_fw_from_node(n,pmf.clean_linear_groups( pmf.truncate_turnaroud(
+        read_matches.emplace_back( pmf.matches_fw_from_node(n, pmf.truncate_turnaround( pmf.clean_linear_groups(
             rid>0 ? lrr.read_perfect_matches[rid] :
             lrr.reverse_perfect_matches(lrr.read_perfect_matches[-rid],lrr.datastore.read_to_fileRecord[-rid].record_size)
-            ),group_size,small_node_size)));
+            ,group_size,small_node_size)));
 
         if (read_matches.back().empty()) read_matches.pop_back();
         else {

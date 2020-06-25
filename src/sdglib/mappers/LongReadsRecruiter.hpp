@@ -33,7 +33,7 @@ public:
 class PerfectMatchesFilter {
 public:
     PerfectMatchesFilter( WorkSpace &_ws):ws(_ws){};
-    std::vector<PerfectMatch> truncate_turnaroud (const std::vector<PerfectMatch> &in) const;
+    std::vector<PerfectMatch> truncate_turnaround (const std::vector<PerfectMatch> &in) const;
     std::vector<PerfectMatch> matches_fw_from_node (sgNodeID_t node, const std::vector<PerfectMatch> &in) const;
     std::vector<PerfectMatch> clean_linear_groups(const std::vector<PerfectMatch> &in, int group_size=5,int small_node_size=500) const;
     std::vector<PerfectMatch> merge_and_sort(const std::vector<std::vector<PerfectMatch>> &in) const;
