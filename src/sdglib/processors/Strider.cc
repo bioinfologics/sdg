@@ -214,9 +214,9 @@ void Strider::link_from_anchors(uint32_t min_size, float min_kci, float max_kci,
         ++anchors;
         is_anchor[nid]=true;
         links_fw[nid]=link_out_by_lr(nid, d, min_reads, group_size, small_node_size);
-        if (links_fw[nid].size()>1) ++found_fw;
+        if (!links_fw[nid].empty()) ++found_fw;
         links_bw[nid]=link_out_by_lr(-nid, d, min_reads, group_size, small_node_size);
-        if (links_bw[nid].size()>1) ++found_bw;
+        if (!links_bw[nid].empty()) ++found_bw;
     }
     sdglib::OutputLog()<<"Strider found "<<found_fw<<" forward and "<<found_bw<<" backward routes from "<< anchors << " anchors"<<std::endl;
 }
