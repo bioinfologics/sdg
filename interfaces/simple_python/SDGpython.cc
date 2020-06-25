@@ -351,6 +351,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("experimental_striding",&Strider::experimental_striding)
             .def_readonly("routes_fw",&Strider::routes_fw)
             .def_readonly("routes_bw",&Strider::routes_bw)
+            .def_readonly("links_fw",&Strider::links_fw)
+            .def_readonly("links_bw",&Strider::links_bw)
             .def_readonly("is_anchor",&Strider::is_anchor)
             .def("route_vs_readpaths_stats",&Strider::route_vs_readpaths_stats)
             .def("stride_from_anchors",&Strider::stride_from_anchors,"min_size"_a=1,"min_kci"_a=.5,"max_kci"_a=1.5)
