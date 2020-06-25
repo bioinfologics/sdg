@@ -274,7 +274,7 @@ void PerfectMatchesMergeSorter::init_from_node(sgNodeID_t n, const LongReadsRecr
         read_matches.emplace_back( pmf.matches_fw_from_node(n, pmf.truncate_turnaround( pmf.clean_linear_groups(
             rid>0 ? lrr.read_perfect_matches[rid] :
             lrr.reverse_perfect_matches(lrr.read_perfect_matches[-rid],lrr.datastore.read_to_fileRecord[-rid].record_size)
-            ,group_size,small_node_size)));
+            ,group_size,small_node_size))));
 
         if (read_matches.back().empty()) read_matches.pop_back();
         else {
