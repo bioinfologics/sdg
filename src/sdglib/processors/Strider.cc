@@ -16,6 +16,7 @@ void Strider::dump(std::string filename) {
     sdglib::write_flat_vectorvector(ofs,routes_bw);
     sdglib::write_flat_vectorvector(ofs,links_fw);
     sdglib::write_flat_vectorvector(ofs,links_bw);
+    sdglib::write_bool_vector(ofs,is_anchor);
 }
 
 void Strider::load(std::string filename) {
@@ -24,6 +25,7 @@ void Strider::load(std::string filename) {
     sdglib::read_flat_vectorvector(ifs,routes_bw);
     sdglib::read_flat_vectorvector(ifs,links_fw);
     sdglib::read_flat_vectorvector(ifs,links_bw);
+    sdglib::read_bool_vector(ifs,is_anchor);
 }
 
 inline uint32_t get_votes(std::unordered_map<sgNodeID_t,uint32_t> votes, sgNodeID_t node){
@@ -164,12 +166,12 @@ void Strider::stride_from_anchors(uint32_t min_size, float min_kci, float max_kc
     sdglib::OutputLog()<<"Strider found "<<found_fw<<" forward and "<<found_bw<<" backward routes from "<< anchors << " anchors"<<std::endl;
 }
 
-std::vector<Link> Strider::link_out_by_lr(sgNodeID_t n,int d, int min_reads, int group_size, int small_node_size, bool verbose) {
+std::vector<Link> Strider::link_out_by_lr(sgNodeID_t n,int d, int min_reads, int group_size, int small_node_size, float candidate_percentaje, float first_percentaje, bool verbose) {
     PerfectMatchesMergeSorter pmms(ws);
     for (auto &llr:long_recruiters) {
         pmms.init_from_node(n, *llr, min_reads, group_size, small_node_size);
         std::vector<int32_t> prev_status;
-        for (pmms.find_next_node(d, verbose); pmms.next_node!=0 and pmms.read_next_match!=prev_status; pmms.find_next_node(d, verbose)){
+        for (pmms.find_next_node(d, candidate_percentaje, first_percentaje, verbose); pmms.next_node!=0 and pmms.read_next_match!=prev_status; pmms.find_next_node(d, verbose)){
             prev_status=pmms.read_next_match;//This is a cheap exit to avoid when pmms get stuck in the last node
             pmms.advance_reads_to_node();
             pmms.advance_reads_through_node();
@@ -210,7 +212,7 @@ std::vector<Link> Strider::link_out_by_lr(sgNodeID_t n,int d, int min_reads, int
     return links;
 }
 
-void Strider::link_from_anchors(uint32_t min_size, float min_kci, float max_kci, int d, int min_reads, int group_size, int small_node_size) {
+void Strider::link_from_anchors(uint32_t min_size, float min_kci, float max_kci, int d, int min_reads, int group_size, int small_node_size, float candidate_percentaje ,float first_percentaje) {
     std::cout<<std::endl<<logo<<std::endl;
     sdglib::OutputLog()<<"Gone linking..."<<std::endl;
     links_fw.clear();
@@ -228,9 +230,9 @@ void Strider::link_from_anchors(uint32_t min_size, float min_kci, float max_kci,
         if (nv.kci()<min_kci or nv.kci()>max_kci) continue;
         ++anchors;
         is_anchor[nid]=true;
-        links_fw[nid]=link_out_by_lr(nid, d, min_reads, group_size, small_node_size);
+        links_fw[nid]=link_out_by_lr(nid, d, min_reads, group_size, small_node_size, candidate_percentaje, first_percentaje);
         if (!links_fw[nid].empty()) ++found_fw;
-        links_bw[nid]=link_out_by_lr(-nid, d, min_reads, group_size, small_node_size);
+        links_bw[nid]=link_out_by_lr(-nid, d, min_reads, group_size, small_node_size, candidate_percentaje, first_percentaje);
         if (!links_bw[nid].empty()) ++found_bw;
     }
     sdglib::OutputLog()<<"Strider found "<<found_fw<<" forward and "<<found_bw<<" backward routes from "<< anchors << " anchors"<<std::endl;
