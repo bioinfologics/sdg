@@ -250,7 +250,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<PerfectMatchesMergeSorter>(m,"PerfectMatchesMergeSorter","A whole class to merge multiple LRs from a node")
             .def(py::init<WorkSpace&>(),"workspace"_a=0,py::return_value_policy::take_ownership)
             .def("init_from_node",&PerfectMatchesMergeSorter::init_from_node,"node"_a,"lrr"_a,"min_reads"_a=3, "group_size"_a=5,"small_node_size"_a=500)
-            .def("find_next_node",&PerfectMatchesMergeSorter::find_next_node,"d"_a=1000,"candidate_percentaje"_a=0.5,"first_percentaje"_a=0.8, "verbose"_a=false)
+            .def("find_next_node",&PerfectMatchesMergeSorter::find_next_node,"d"_a=2000,"candidate_percentaje"_a=0.5,"first_percentaje"_a=0.8, "verbose"_a=false)
             .def("advance_reads_to_node",&PerfectMatchesMergeSorter::advance_reads_to_node)
             .def("advance_reads_through_node",&PerfectMatchesMergeSorter::advance_reads_through_node)
             .def("drop_conflictive_reads",&PerfectMatchesMergeSorter::drop_conflictive_reads)
@@ -360,12 +360,12 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("load",&Strider::load,"filename"_a)
             .def("route_vs_readpaths_stats",&Strider::route_vs_readpaths_stats)
             .def("stride_from_anchors",&Strider::stride_from_anchors,"min_size"_a=1,"min_kci"_a=.5,"max_kci"_a=1.5)
-            .def("link_from_anchors",&Strider::link_from_anchors,"min_size"_a=1,"min_kci"_a=.5,"max_kci"_a=1.5,"d"_a=2000, "min_reads"_a=3, "group_size"_a=5, "small_node_size"_a=500)
+            .def("link_from_anchors",&Strider::link_from_anchors,"min_size"_a=1,"min_kci"_a=.5,"max_kci"_a=1.5,"d"_a=2000, "min_reads"_a=3, "group_size"_a=5, "small_node_size"_a=500,"candidate_percentaje"_a=0.5,"first_percentaje"_a=0.8)
             .def("add_datastore",py::overload_cast<const PairedReadsDatastore &>(&Strider::add_datastore))
             .def("add_datastore",py::overload_cast<const LongReadsRecruiter &>(&Strider::add_datastore))
             .def("stride_out",&Strider::stride_out,"node"_a,py::return_value_policy::take_ownership)
             .def("stride_out_in_order",&Strider::stride_out_in_order,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true,"verbose"_a=false,py::return_value_policy::take_ownership)
-            .def("link_out_by_lr",&Strider::link_out_by_lr,"node"_a,"d"_a=2000, "min_reads"_a=3, "group_size"_a=5, "small_node_size"_a=500, "verbose"_a=false, py::return_value_policy::take_ownership);
+            .def("link_out_by_lr",&Strider::link_out_by_lr,"node"_a,"d"_a=2000, "min_reads"_a=3, "group_size"_a=5, "small_node_size"_a=500, "candidate_percentaje"_a=0.5, "first_percentaje"_a=0.8, "verbose"_a=false, py::return_value_policy::take_ownership);
 
     py::class_<GraphPatcher>(m,"GraphPatcher","GraphPatcher")
             .def(py::init<WorkSpace &>(),"ws"_a)

@@ -58,6 +58,18 @@ namespace sdglib {
         if (count > 0) for (auto &v:vv) write_flat_vector(ofs,v);
     }
 
+    template<typename T>
+    inline void write_bool_vector(std::ofstream &ofs, const std::vector<T> &v) {
+        uint64_t count=v.size();
+        ofs.write(reinterpret_cast<const char *>(&count),sizeof(count));
+        for(auto i = 0; i < count;) {
+            unsigned char aggr = 0;
+            for(unsigned char mask = 1; mask > 0 && i < count; ++i, mask <<= 1)
+                if(v.at(i)) aggr |= mask;
+            ofs.write((const char*)&aggr, sizeof(unsigned char));
+        }
+    }
+
     inline void read_string(std::ifstream &ifs, std::string &v) {
         uint64_t count;
         ifs.read(reinterpret_cast<char *>(&count),sizeof(count));
@@ -86,6 +98,21 @@ namespace sdglib {
         ifs.read(reinterpret_cast<char *>(&count),sizeof(count));
         vv.resize(count);
         if (count > 0) for (auto &v:vv) read_flat_vector<T>(ifs,v);
+    }
+
+    template<typename T>
+    inline void read_bool_vector(std::ifstream &ifs, std::vector<T> &v) {
+        uint64_t count;
+        ifs.read(reinterpret_cast<char *>(&count),sizeof(count));
+        v.resize(count);
+        for(std::vector<bool>::size_type i = 0; i < count;)
+        {
+            unsigned char aggr;
+            ifs.read((char*)&aggr, sizeof(unsigned char));
+            for(unsigned char mask = 1; mask > 0 && i < count; ++i, mask <<= 1)
+                v.at(i) = aggr & mask;
+        }
+        //if (count > 0) ifs.read(reinterpret_cast<char *>(v.data()),sizeof(T)*count);
     }
 
     inline void seek_string(std::fstream &wsfile) {

@@ -296,7 +296,7 @@ void PerfectMatchesMergeSorter::init_from_node(sgNodeID_t n, const LongReadsRecr
 
 }
 
-void PerfectMatchesMergeSorter::find_next_node(int d,float candidate_percentaje, float first_percentaje, bool verbose) {
+void PerfectMatchesMergeSorter::find_next_node(int d, float candidate_percentaje, float first_percentaje, bool verbose) {
     next_node=0;
     //explore the next x bp of reads, mark nodes appearing there.
     std::unordered_set<sgNodeID_t> read_nodes;

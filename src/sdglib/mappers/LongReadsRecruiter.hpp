@@ -47,7 +47,7 @@ public:
 
     void init_from_node(sgNodeID_t n,const LongReadsRecruiter &lrr, int min_reads=3, int group_size=5, int small_node_size=500);
     void drop_conflictive_reads();
-    void find_next_node(int d=1000,float candidate_percentaje=.6, float first_percentaje=.95, bool verbose=false);
+    void find_next_node(int d=2000, float candidate_percentaje=.6, float first_percentaje=.95, bool verbose=false);
     void advance_reads_to_node();
     void advance_reads_through_node();
     std::vector<std::vector<PerfectMatch>> read_matches;
