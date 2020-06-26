@@ -129,6 +129,8 @@ public:
     void read_counts(std::ifstream &count_file);
     int8_t get_k(){return k;};
 
+    void dump_cache(const std::string filename);
+    void load_cache(const std::string filename);
 
     /**
      * @brief Retrieves a count by name

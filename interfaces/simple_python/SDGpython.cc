@@ -27,6 +27,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<std::vector<int64_t>>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<NodePosition>>);
 PYBIND11_MAKE_OPAQUE(std::vector<ReadPath>);
 PYBIND11_MAKE_OPAQUE(std::vector<bool>);
+PYBIND11_MAKE_OPAQUE(std::vector<std::vector<Link>>);
 
 PYBIND11_MODULE(SDGpython, m) {
 
@@ -37,6 +38,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::bind_vector<std::vector<ReadPath>>(m, "VectorReadPath");
     py::bind_vector<std::vector<PerfectMatch>>(m, "VectorPerfectMatch");
     py::bind_vector<std::vector<std::vector<PerfectMatch>>>(m, "VectorVectorPerfectMatch");
+    py::bind_vector<std::vector<std::vector<Link>>>(m, "VectorVectorLink");
     py::bind_vector<std::vector<std::vector<NodePosition>>>(m, "VectorVectorNodePosition");
     py::bind_vector<std::vector<bool>>(m, "VectorBool");
 
@@ -200,6 +202,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("count_spectra",&KmerCounter::count_spectra,"name"_a,"max_freq"_a=1000,"unique_in_graph"_a=false,"present_in_graph"_a=true)
             .def("update_graph_counts",&KmerCounter::update_graph_counts)
             .def("compute_all_kcis",&KmerCounter::compute_all_kcis)
+            .def("dump_cache",&KmerCounter::dump_cache,"filename"_a)
+            .def("load_cache",&KmerCounter::load_cache,"filename"_a)
             ;
 
     py::class_<WorkSpace>(m, "WorkSpace", "A full SDG WorkSpace")
@@ -237,7 +241,7 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<PerfectMatchesFilter>(m,"PerfectMatchesFilter","Collection of static methods that filter PerfercMatch vectors")
             .def(py::init<WorkSpace&>(),"workspace"_a=0,py::return_value_policy::take_ownership)
-            .def("truncate_turnaroud",&PerfectMatchesFilter::truncate_turnaroud,"matches"_a,py::return_value_policy::take_ownership)
+            .def("truncate_turnaround",&PerfectMatchesFilter::truncate_turnaround,"matches"_a,py::return_value_policy::take_ownership)
             .def("matches_fw_from_node",&PerfectMatchesFilter::matches_fw_from_node,"node"_a,"matches"_a,py::return_value_policy::take_ownership)
             .def("clean_linear_groups",&PerfectMatchesFilter::clean_linear_groups,"matches"_a,"group_size"_a=5,"small_node_size"_a=500,py::return_value_policy::take_ownership)
             .def("merge_and_sort",&PerfectMatchesFilter::merge_and_sort,"vvmatches"_a,py::return_value_policy::take_ownership)
@@ -246,7 +250,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<PerfectMatchesMergeSorter>(m,"PerfectMatchesMergeSorter","A whole class to merge multiple LRs from a node")
             .def(py::init<WorkSpace&>(),"workspace"_a=0,py::return_value_policy::take_ownership)
             .def("init_from_node",&PerfectMatchesMergeSorter::init_from_node,"node"_a,"lrr"_a,"min_reads"_a=3, "group_size"_a=5,"small_node_size"_a=500)
-            .def("find_next_node",&PerfectMatchesMergeSorter::find_next_node,"d"_a=1000,"candidate_percentaje"_a=0.5,"first_percentaje"_a=0.8)
+            .def("find_next_node",&PerfectMatchesMergeSorter::find_next_node,"d"_a=1000,"candidate_percentaje"_a=0.5,"first_percentaje"_a=0.8, "verbose"_a=false)
             .def("advance_reads_to_node",&PerfectMatchesMergeSorter::advance_reads_to_node)
             .def("advance_reads_through_node",&PerfectMatchesMergeSorter::advance_reads_through_node)
             .def("drop_conflictive_reads",&PerfectMatchesMergeSorter::drop_conflictive_reads)
@@ -349,15 +353,19 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("experimental_striding",&Strider::experimental_striding)
             .def_readonly("routes_fw",&Strider::routes_fw)
             .def_readonly("routes_bw",&Strider::routes_bw)
+            .def_readonly("links_fw",&Strider::links_fw)
+            .def_readonly("links_bw",&Strider::links_bw)
             .def_readonly("is_anchor",&Strider::is_anchor)
+            .def("dump",&Strider::dump,"filename"_a)
+            .def("load",&Strider::load,"filename"_a)
             .def("route_vs_readpaths_stats",&Strider::route_vs_readpaths_stats)
             .def("stride_from_anchors",&Strider::stride_from_anchors,"min_size"_a=1,"min_kci"_a=.5,"max_kci"_a=1.5)
-            .def("link_from_anchors",&Strider::link_from_anchors,"min_size"_a=1,"min_kci"_a=.5,"max_kci"_a=1.5)
+            .def("link_from_anchors",&Strider::link_from_anchors,"min_size"_a=1,"min_kci"_a=.5,"max_kci"_a=1.5,"d"_a=2000, "min_reads"_a=3, "group_size"_a=5, "small_node_size"_a=500)
             .def("add_datastore",py::overload_cast<const PairedReadsDatastore &>(&Strider::add_datastore))
             .def("add_datastore",py::overload_cast<const LongReadsRecruiter &>(&Strider::add_datastore))
             .def("stride_out",&Strider::stride_out,"node"_a,py::return_value_policy::take_ownership)
             .def("stride_out_in_order",&Strider::stride_out_in_order,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true,"verbose"_a=false,py::return_value_policy::take_ownership)
-            .def("link_out_by_lr",&Strider::link_out_by_lr,"node"_a,"d"_a=2000, "min_reads"_a=3, "group_size"_a=5, "small_node_size"_a=500,py::return_value_policy::take_ownership);
+            .def("link_out_by_lr",&Strider::link_out_by_lr,"node"_a,"d"_a=2000, "min_reads"_a=3, "group_size"_a=5, "small_node_size"_a=500, "verbose"_a=false, py::return_value_policy::take_ownership);
 
     py::class_<GraphPatcher>(m,"GraphPatcher","GraphPatcher")
             .def(py::init<WorkSpace &>(),"ws"_a)
