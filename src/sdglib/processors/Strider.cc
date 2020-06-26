@@ -172,7 +172,7 @@ std::vector<Link> Strider::link_out_by_lr(sgNodeID_t n,int d, int min_reads, int
     for (auto &llr:long_recruiters) {
         pmms.init_from_node(n, *llr, min_reads, group_size, small_node_size);
         std::vector<int32_t> prev_status;
-        for (pmms.find_next_node(d, candidate_percentaje, first_percentaje, verbose); pmms.next_node!=0 and pmms.read_next_match!=prev_status; pmms.find_next_node(d, verbose)){
+        for (pmms.find_next_node(d, candidate_percentaje, first_percentaje, verbose); pmms.next_node!=0 and pmms.read_next_match!=prev_status; pmms.find_next_node(d, candidate_percentaje, first_percentaje, verbose)){
             prev_status=pmms.read_next_match;//This is a cheap exit to avoid when pmms get stuck in the last node
             pmms.advance_reads_to_node();
             pmms.advance_reads_through_node();
