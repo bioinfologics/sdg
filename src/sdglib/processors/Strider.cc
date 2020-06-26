@@ -10,6 +10,21 @@ const std::string Strider::logo="                    80CLfft11G\n               
 Strider::Strider(WorkSpace & _ws):ws(_ws){
 };
 
+void Strider::dump(std::string filename) {
+    std::ofstream ofs(filename);
+    sdglib::write_flat_vectorvector(ofs,routes_fw);
+    sdglib::write_flat_vectorvector(ofs,routes_bw);
+    sdglib::write_flat_vectorvector(ofs,links_fw);
+    sdglib::write_flat_vectorvector(ofs,links_bw);
+}
+
+void Strider::load(std::string filename) {
+    std::ifstream ifs(filename);
+    sdglib::read_flat_vectorvector(ifs,routes_fw);
+    sdglib::read_flat_vectorvector(ifs,routes_bw);
+    sdglib::read_flat_vectorvector(ifs,links_fw);
+    sdglib::read_flat_vectorvector(ifs,links_bw);
+}
 
 inline uint32_t get_votes(std::unordered_map<sgNodeID_t,uint32_t> votes, sgNodeID_t node){
     auto it=votes.find(node);
@@ -149,12 +164,12 @@ void Strider::stride_from_anchors(uint32_t min_size, float min_kci, float max_kc
     sdglib::OutputLog()<<"Strider found "<<found_fw<<" forward and "<<found_bw<<" backward routes from "<< anchors << " anchors"<<std::endl;
 }
 
-std::vector<Link> Strider::link_out_by_lr(sgNodeID_t n,int d, int min_reads, int group_size, int small_node_size) {
+std::vector<Link> Strider::link_out_by_lr(sgNodeID_t n,int d, int min_reads, int group_size, int small_node_size, bool verbose) {
     PerfectMatchesMergeSorter pmms(ws);
     for (auto &llr:long_recruiters) {
         pmms.init_from_node(n, *llr, min_reads, group_size, small_node_size);
         std::vector<int32_t> prev_status;
-        for (pmms.find_next_node(d); pmms.next_node!=0 and pmms.read_next_match!=prev_status; pmms.find_next_node(d)){
+        for (pmms.find_next_node(d, verbose); pmms.next_node!=0 and pmms.read_next_match!=prev_status; pmms.find_next_node(d, verbose)){
             prev_status=pmms.read_next_match;//This is a cheap exit to avoid when pmms get stuck in the last node
             pmms.advance_reads_to_node();
             pmms.advance_reads_through_node();

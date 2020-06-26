@@ -296,7 +296,7 @@ void PerfectMatchesMergeSorter::init_from_node(sgNodeID_t n, const LongReadsRecr
 
 }
 
-void PerfectMatchesMergeSorter::find_next_node(int d,float candidate_percentaje, float first_percentaje) {
+void PerfectMatchesMergeSorter::find_next_node(int d,float candidate_percentaje, float first_percentaje, bool verbose) {
     next_node=0;
     //explore the next x bp of reads, mark nodes appearing there.
     std::unordered_set<sgNodeID_t> read_nodes;
@@ -315,13 +315,10 @@ void PerfectMatchesMergeSorter::find_next_node(int d,float candidate_percentaje,
     }
     //any node that appears in 80% of the reads is a safe node to get to, check which one of them comes first and check any nodes that come before
     //TODO: consider that some reads just won't be long enough to get to the node! Compute distance to first match of node in read and only use reads that get there
-    std::cout<<used_reads<<" reads have hits to candidate nodes"<<std::endl;
+    if (verbose) std::cout<<used_reads<<" reads have hits to candidate nodes"<<std::endl;
     std::unordered_set<sgNodeID_t> popular_nodes;
     for (auto &nc:node_read_count){
-//        if (nc.second>3)
-//            std::cout<<"Node "<<nc.first<<" is present on "<<nc.second<<" reads"<<std::endl;
         if (nc.second>used_reads*candidate_percentaje) {
-//            std::cout<<"Node "<<nc.first<<" is present on more than 80% of counted reads"<<std::endl;
             popular_nodes.insert(nc.first);
         }
     }
@@ -340,10 +337,10 @@ void PerfectMatchesMergeSorter::find_next_node(int d,float candidate_percentaje,
             }
     }
     for (auto fnc:first_node_read_count){
-        std::cout<<"Popular node "<<fnc.first<<" is the first of the popular nodes in "<<fnc.second<<" / "<< node_read_count[fnc.first] <<" reads "<<std::endl;
+        if (verbose) std::cout<<"Popular node "<<fnc.first<<" is the first of the popular nodes in "<<fnc.second<<" / "<< node_read_count[fnc.first] <<" reads "<<std::endl;
         if (fnc.second>first_percentaje*node_read_count[fnc.first]) {
             if (next_node!=0) {
-                std::cout<<"there's more than one potential next node, this version of the algorithm can't deal with that"<<std::endl;
+                if (verbose) std::cout<<"there's more than one potential next node, this version of the algorithm can't deal with that"<<std::endl;
                 next_node=0;
                 break;
             }
