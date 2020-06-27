@@ -542,6 +542,8 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
     if (seed_size<k) seed_size=k;
     NKmerIndex nki(sdg,k,f);
     if (last_read==0) last_read=datastore.size();
+    auto total_reads = datastore.size();
+    auto maped_reads_count=0;
 #pragma omp parallel shared(nki)
     {
         StreamKmerFactory skf(k);
@@ -591,7 +593,8 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
             }
             read_perfect_matches[rid] = private_read_perfect_matches;
             if (++private_mapped_reads%5000==0) {
-                sdglib::OutputLog()<<private_mapped_reads<<" reads mapped on thread "<<omp_get_thread_num()<<std::endl;
+                maped_reads_count+=5000;
+                sdglib::OutputLog()<<private_mapped_reads<<" reads mapped on thread "<<omp_get_thread_num() << ". Progress: " << maped_reads_count << "/"<< total_reads <<std::endl;
             }
         }
     }
