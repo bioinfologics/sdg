@@ -131,7 +131,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("remove_transitive_links",&DistanceGraph::remove_transitive_links,"radius"_a=10)
             .def("fw_neighbours_by_distance",&DistanceGraph::fw_neighbours_by_distance,"node_id"_a,"min_links"_a=3)
             .def("get_nodeview",&DistanceGraph::get_nodeview)
-            .def("get_all_nodeviews",&DistanceGraph::get_all_nodeviews,"include_disconnected"_a=true,"Returns a vector with NodeViews for all active nodes",py::return_value_policy::move)
+            .def("get_all_nodeviews",&DistanceGraph::get_all_nodeviews,"both_directions"_a=false,"include_disconnected"_a=true,"Returns a vector with NodeViews for all active nodes",py::return_value_policy::move)
             .def_readwrite("name",&DistanceGraph::name)
             .def("write_to_gfa1",&DistanceGraph::write_to_gfa1,"filename"_a,"selected_nodes"_a=std::vector<sgNodeID_t>(),"depths"_a=std::vector<sgNodeID_t>())
             .def("write_to_gfa2",&DistanceGraph::write_to_gfa2)
