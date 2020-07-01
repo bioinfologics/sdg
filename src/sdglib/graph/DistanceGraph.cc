@@ -15,8 +15,10 @@ void DistanceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, Supp
     if (llabs(dest)>=links.size()) links.resize(llabs(dest)+1);
     Link l(source,dest,d,support);
     links[llabs(source)].emplace_back(l);
-    std::swap(l.source,l.dest);
-    links[llabs(dest)].emplace_back(l);
+    if (l.source!=l.dest) {
+        std::swap(l.source, l.dest);
+        links[llabs(dest)].emplace_back(l);
+    }
 }
 
 void DistanceGraph::copy_links(const DistanceGraph &other) {
