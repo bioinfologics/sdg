@@ -15,8 +15,10 @@ void DistanceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, Supp
     if (llabs(dest)>=links.size()) links.resize(llabs(dest)+1);
     Link l(source,dest,d,support);
     links[llabs(source)].emplace_back(l);
-    std::swap(l.source,l.dest);
-    links[llabs(dest)].emplace_back(l);
+    if (l.source!=l.dest) {
+        std::swap(l.source, l.dest);
+        links[llabs(dest)].emplace_back(l);
+    }
 }
 
 void DistanceGraph::copy_links(const DistanceGraph &other) {
@@ -600,17 +602,24 @@ NodeView DistanceGraph::get_nodeview(sgNodeID_t n) const {
     return NodeView(this,n);
 }
 
-std::vector<NodeView> DistanceGraph::get_all_nodeviews(bool include_disconnected) const {
+std::vector<NodeView> DistanceGraph::get_all_nodeviews(bool both_directions, bool include_disconnected) const {
     uint64_t c=0;
     for (auto nidx=0;nidx<sdg.nodes.size();++nidx) {
         auto &n=sdg.nodes[nidx];
-        if (n.status!=NodeStatus::Deleted and (include_disconnected or !links[nidx].empty())) ++c;
+        if (n.status!=NodeStatus::Deleted and (include_disconnected or !links[nidx].empty())) {
+            ++c;
+            if (both_directions) ++c;
+        }
     }
     std::vector<NodeView> nvs;
     nvs.reserve(c);
     for (auto nidx=0;nidx<sdg.nodes.size();++nidx) {
         auto &n=sdg.nodes[nidx];
-        if (n.status!=NodeStatus::Deleted and (include_disconnected or !links[nidx].empty())) nvs.emplace_back(this,nidx);
+        if (n.status!=NodeStatus::Deleted and (include_disconnected or !links[nidx].empty())) {
+            nvs.emplace_back(this,nidx);
+            if (both_directions) nvs.emplace_back(this,-nidx);
+        }
+
     }
     return nvs;
 }
