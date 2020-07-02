@@ -65,14 +65,13 @@ public:
     class iterator: public std::iterator<iterator_category, value_type, difference_type, pointer, reference> {
     public:
         explicit iterator(Kmers& p, const size_t offset = 0) : parent(p) {
-            position = p.sequence;
-            position += offset;
+            position = p.sequence + offset;
             valid_nucleotides = 0;
             kmer.clear();
             //kmer.pos = position - p.sequence; // Currently uses 0 based bp co-ords.
             // TODO: Perhaps move into parent so it is not computed for every iterator or everytime end() is called?
             mask = (U(1) << (2 * parent.K)) - 1;
-            incorporate_char(position);
+            incorporate_char(*position);
         }
 
         bool has_reached_end() { return *position == '\0'; }
@@ -91,6 +90,7 @@ public:
             scan_right();
             return *this;
         }
+
         bool operator<(Kmers::iterator other) {
             // true if both iterators refer to same sequence, and this iterator is at a lower position.
             return parent.sequence == other.parent.sequence && position < other.position;
