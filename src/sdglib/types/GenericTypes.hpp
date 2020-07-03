@@ -18,15 +18,15 @@ using seqID_t = int32_t; //first sequence is 0;
 
 enum class NodeStatus:uint8_t {Active, Deleted};
 
-enum class SupportType:uint8_t {Undefined,Operation,SequenceDistanceGraph,DistanceGraph,PairedRead,LinkedRead,LinkedTag,LongRead,ReadPath,KmerCoverage};
+enum class SupportType:uint8_t {Undefined,Operation,SequenceDistanceGraph,DistanceGraph,PairedRead,LinkedRead,LinkedTag,LongRead,ReadPath,KmerCoverage,StriderLink};
 
 class Support{
 public:
-    Support(SupportType _type=SupportType::Undefined,uint16_t _index=0,uint64_t _id=0):type(_type),index(_index),id(_id){};
+    Support(SupportType _type=SupportType::Undefined,uint16_t _index=0,int64_t _id=0):type(_type),index(_index),id(_id){};
     bool operator==(const Support &o) const {return std::tie(type,index,id)==std::tie(o.type,o.index,o.id);}
     SupportType type;
     uint16_t index;
-    uint64_t id;
+    int64_t id;
 };
 
 /**
