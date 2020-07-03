@@ -138,6 +138,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("stats_by_kci",&DistanceGraph::stats_by_kci)
             .def("are_connected",&DistanceGraph::are_connected,"node1"_a, "node2"_a)
             .def("find_all_paths_between",&DistanceGraph::find_all_paths_between,"from"_a,"to"_a,"max_size"_a,"max_nodes"_a,"abort_on_loops"_a)
+            .def("get_all_lines",&DistanceGraph::get_all_lines,"min_nodes"_a, "min_total_size"_a=0)
             ;
 
     py::class_<SequenceDistanceGraph,DistanceGraph>(m, "SequenceDistanceGraph", "A Sequence Distance Graph")
