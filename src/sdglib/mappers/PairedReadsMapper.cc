@@ -383,7 +383,7 @@ void PairedReadsMapper::path_reads() {
         PerfectMatchExtender pme(ws.sdg,k);
         ReadSequenceBuffer sequence_reader(datastore);
 #pragma omp for
-        for (auto rid=1;rid<=datastore.size();++rid){
+        for (uint64_t rid=1;rid<=datastore.size();++rid){
 //        for (auto rid=937;rid<=937;++rid){
             //sdt::cout<<std::endl<<"Processing read "<<rid<<std::endl;
             const auto seq=std::string(sequence_reader.get_read_sequence(rid));
