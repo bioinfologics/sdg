@@ -58,6 +58,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .value("stLongRead",SupportType::LongRead)
             .value("stReadPath",SupportType::ReadPath)
             .value("stKmerCoverage",SupportType::KmerCoverage)
+            .value("stStriderLink",SupportType::StriderLink)
             .export_values();
 
     py::enum_<KmerCountMode>(m,"KmerCountMode")
@@ -66,7 +67,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .export_values();
 
     py::class_<Support>(m,"Support","Support for an operation or piece of data")
-            .def(py::init<SupportType,uint16_t,uint64_t>(),"","support"_a=SupportType::Undefined,"index"_a=0,"id"_a=0)
+            .def(py::init<SupportType,uint16_t,int64_t>(),"","support"_a=SupportType::Undefined,"index"_a=0,"id"_a=0)
             .def_readonly("type",&Support::type)
             .def_readonly("index",&Support::index)
             .def_readonly("id",&Support::id)
@@ -84,6 +85,7 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<Link>(m,"Link","A raw DG Link")
+            .def(py::init<sgNodeID_t, sgNodeID_t, int32_t, Support>(),"","src"_a,"dest"_a,"dist"_a,"support"_a=Support())
             .def_readwrite("source",&Link::source)
             .def_readwrite("dest",&Link::dest)
             .def_readwrite("dist",&Link::dist)
@@ -130,6 +132,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("remove_link",py::overload_cast<sgNodeID_t , sgNodeID_t, int32_t, Support >(&DistanceGraph::remove_link))
             .def("remove_transitive_links",&DistanceGraph::remove_transitive_links,"radius"_a=10)
             .def("fw_neighbours_by_distance",&DistanceGraph::fw_neighbours_by_distance,"node_id"_a,"min_links"_a=3)
+            .def("fw_reached_nodes",&DistanceGraph::fw_reached_nodes,"node_id"_a,"radius"_a=10)
             .def("get_nodeview",&DistanceGraph::get_nodeview)
             .def("get_all_nodeviews",&DistanceGraph::get_all_nodeviews,"both_directions"_a=false,"include_disconnected"_a=true,"Returns a vector with NodeViews for all active nodes",py::return_value_policy::move)
             .def_readwrite("name",&DistanceGraph::name)
