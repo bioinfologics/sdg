@@ -22,13 +22,15 @@ uint32_t LineFiller::score_function(std::vector<sgNodeID_t> path) {
 }
 
 void LineFiller::populate_matches(){
-
+    sdglib::OutputLog() << "Starting "<< std::endl;
     node_matches.resize(ws.sdg.nodes.size(), 0);
+    sdglib::OutputLog() << "Vector resized "<< std::endl;
     for (const auto &matches: lrr.read_perfect_matches){
         for (const auto& match: matches){
-            node_matches[match.node]+=match.size;
+            node_matches[abs(match.node)]+=match.size;
         }
     }
+    sdglib::OutputLog() << "Done "<< std::endl;
 }
 
 std::vector<sgNodeID_t> LineFiller::line_fill(std::vector<sgNodeID_t> anchor_path){
