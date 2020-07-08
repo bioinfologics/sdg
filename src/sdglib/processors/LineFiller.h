@@ -15,15 +15,11 @@ class LineFiller {
 public:
     LineFiller(WorkSpace & _ws, LongReadsRecruiter& _lrr):ws(_ws), lrr(_lrr){};
 
-    uint32_t score_function(std::vector<sgNodeID_t> path);
+    std::vector<sgNodeID_t> score_function(sgNodeID_t n1, sgNodeID_t n2, std::vector<SequenceDistanceGraphPath> paths);
     std::vector<sgNodeID_t> line_fill(std::vector<sgNodeID_t> anchor_path);
-
-
-    void populate_matches();
 
     WorkSpace & ws;
     LongReadsRecruiter& lrr;
-    std::vector<int> node_matches;
 };
 
 

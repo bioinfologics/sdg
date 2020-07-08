@@ -379,7 +379,6 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<LineFiller>(m, "LineFiller", "LineFiller")
             .def(py::init<WorkSpace &, LongReadsRecruiter&>(), "ws"_a, "lrr"_a)
-            .def("populate_matches",&LineFiller::populate_matches)
             .def("line_fill", &LineFiller::line_fill, "anchor_path"_a);
 
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
