@@ -7,13 +7,13 @@
 
 uint32_t LineFiller::score_function(std::vector<sgNodeID_t> path) {
 
-    // Get set of absolute nodes
-    std::vector<sgNodeID_t> abs_nodes;
-    abs_nodes.reserve(path.size());
-    for(const auto &node: path){
-        abs_nodes.push_back(abs(node));
-    }
-
+//    // Get set of absolute nodes
+//    std::vector<sgNodeID_t> abs_nodes;
+//    abs_nodes.reserve(path.size());
+//    for(const auto &node: path){
+//        abs_nodes.push_back(abs(node));
+//    }
+//    std::cout << "Scoreing path ..." << std::endl;
     uint32_t path_score = 0;
     for (const auto &node: path){
         path_score+=node_matches[abs(node)];
@@ -54,7 +54,7 @@ std::vector<sgNodeID_t> LineFiller::line_fill(std::vector<sgNodeID_t> anchor_pat
         else{
             auto max_score = 0;
             auto max_score_index = 0;
-            for (auto p=0; p<paths_between.size(); ++i){
+            for (auto p=0; p<paths_between.size(); ++p){
                 auto score = score_function(paths_between[p].nodes);
                 if (score>max_score){
                     max_score = score;
