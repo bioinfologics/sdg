@@ -11,12 +11,12 @@ std::vector<sgNodeID_t> LineFiller::score_function(sgNodeID_t n1, sgNodeID_t n2,
 
     auto reads_n1 = lrr.node_reads[abs(n1)];
     auto reads_n2 = lrr.node_reads[abs(n2)];
-    std::cout << "Reads in n1: "<< reads_n1.size()<< " reads in n2: "<< reads_n2.size() << std::endl;
+//    std::cout << "Reads in n1: "<< reads_n1.size()<< " reads in n2: "<< reads_n2.size() << std::endl;
 
     // Get all matches for both ends of the gap
     std::vector<int64_t> shared_reads;
     std::set_intersection(reads_n1.begin(), reads_n1.end(), reads_n2.begin(), reads_n2.end(),  std::back_inserter(shared_reads), [](int64_t r1, int64_t r2){return abs(r1) < abs(r2);});
-    std::cout << "Shared reads: " << shared_reads.size() << std::endl;
+//    std::cout << "Shared reads: " << shared_reads.size() << std::endl;
 
     std::vector<PerfectMatch> shared_matches;
     for (const auto& rid: shared_reads){
@@ -24,7 +24,7 @@ std::vector<sgNodeID_t> LineFiller::score_function(sgNodeID_t n1, sgNodeID_t n2,
             shared_matches.push_back(match);
         }
     }
-    std::cout << "Shared matches: "<< shared_matches.size() << std::endl;
+//    std::cout << "Shared matches: "<< shared_matches.size() << std::endl;
 
     int32_t max_score = 0;
     int32_t max_score_index = 0;
@@ -50,7 +50,7 @@ std::vector<sgNodeID_t> LineFiller::score_function(sgNodeID_t n1, sgNodeID_t n2,
 
         pos++;
     }
-    std::cout << "Max score: "<< max_score<< " max position: "<< max_score_index << std::endl;
+//    std::cout << "Max score: "<< max_score<< " max position: "<< max_score_index << std::endl;
     return paths[max_score_index].nodes;
 }
 
@@ -59,11 +59,11 @@ std::vector<sgNodeID_t> LineFiller::line_fill(std::vector<sgNodeID_t> anchor_pat
     for (auto i=0; i<anchor_path.size()-1; ++i){
         auto n1 = anchor_path[i];
         auto n2 = anchor_path[i+1];
-        std::cout << "Filling gap between "<< n1 << " and " << n2 << std::endl;
+//        std::cout << "Filling gap between "<< n1 << " and " << n2 << std::endl;
         final_path.push_back(n1);
 
         auto paths_between = ws.sdg.find_all_paths_between(n1, n2, 10000, 100, false);
-        std::cout << "Paths between "<< n1 << " and " << n2 << " --> "<< paths_between.size() << std::endl;
+//        std::cout << "Paths between "<< n1 << " and " << n2 << " --> "<< paths_between.size() << std::endl;
 
         if (paths_between.size() == 0){
             continue;
@@ -84,12 +84,12 @@ std::vector<sgNodeID_t> LineFiller::line_fill(std::vector<sgNodeID_t> anchor_pat
 }
 
 std::vector<std::vector<sgNodeID_t >> LineFiller::fill_all_paths(std::vector<std::vector<sgNodeID_t >> lines){
-    std::vector<std::vector<sgNodeID_t>> final_lines;
-    int cont=0;
-    for (const auto& line: lines){
-        std::cout << "Processing line " << cont << "/" << lines.size() <<std::endl;
-        final_lines.push_back(line_fill(line));
-        cont++;
+    std::vector<std::vector<sgNodeID_t>> final_lines(lines.size());
+#pragma omp parallel for
+    for (auto l=0; l<lines.size(); ++l){
+        auto line = lines[l];
+        std::cout << "Processing line " << l << "/" << lines.size() <<std::endl;
+        final_lines[l] = line_fill(line);
     }
     return final_lines;
 };
