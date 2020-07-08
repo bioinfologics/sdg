@@ -42,24 +42,28 @@ std::vector<sgNodeID_t> LineFiller::line_fill(std::vector<sgNodeID_t> anchor_pat
         final_path.push_back(n1);
 
         auto paths_between = ws.sdg.find_all_paths_between(n1, n2, 10000, 100, false);
+        std::cout << "Paths between "<< n1 << " and " << n2 << " --> "<< paths_between.size() << std::endl;
 
-        if (paths_between.size() == 0) continue;
-        if (paths_between.size() == 1){
+        if (paths_between.size() == 0){
+            continue;
+        }
+        else if (paths_between.size() == 1){
             final_path.insert(final_path.end(), paths_between[0].nodes.begin(), paths_between[0].nodes.end());
             continue;
         }
-
-
-        auto max_score = 0;
-        auto max_score_index = 0;
-        for (auto p=0; p<paths_between.size(); ++i){
-            auto score = score_function(paths_between[p].nodes);
-            if (score>max_score){
-                max_score = score;
-                max_score_index = p;
+        else{
+            auto max_score = 0;
+            auto max_score_index = 0;
+            for (auto p=0; p<paths_between.size(); ++i){
+                auto score = score_function(paths_between[p].nodes);
+                if (score>max_score){
+                    max_score = score;
+                    max_score_index = p;
+                }
             }
+            final_path.insert(final_path.end(), paths_between[max_score_index].nodes.begin(), paths_between[max_score_index].nodes.end());
         }
-        final_path.insert(final_path.end(), paths_between[max_score_index].nodes.begin(), paths_between[max_score_index].nodes.end());
+
     }
     final_path.push_back(anchor_path[anchor_path.size()]);
     return final_path;
