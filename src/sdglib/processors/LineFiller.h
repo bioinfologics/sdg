@@ -18,6 +18,8 @@ public:
     std::vector<sgNodeID_t> score_function(sgNodeID_t n1, sgNodeID_t n2, std::vector<SequenceDistanceGraphPath> paths);
     std::vector<sgNodeID_t> line_fill(std::vector<sgNodeID_t> anchor_path);
 
+    std::vector<std::vector<sgNodeID_t >> fill_all_paths(std::vector<std::vector<sgNodeID_t >> lines);
+
     WorkSpace & ws;
     LongReadsRecruiter& lrr;
 };

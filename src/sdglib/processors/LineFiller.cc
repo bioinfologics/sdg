@@ -15,7 +15,7 @@ std::vector<sgNodeID_t> LineFiller::score_function(sgNodeID_t n1, sgNodeID_t n2,
 
     // Get all matches for both ends of the gap
     std::vector<int64_t> shared_reads;
-    std::set_intersection(reads_n1.begin(), reads_n1.end(), reads_n2.begin(), reads_n2.end(),  std::back_inserter(shared_reads));
+    std::set_intersection(reads_n1.begin(), reads_n1.end(), reads_n2.begin(), reads_n2.end(),  std::back_inserter(shared_reads), [](int64_t r1, int64_t r2){return abs(r1) < abs(r2);});
     std::cout << "Shared reads: " << shared_reads.size() << std::endl;
 
     std::vector<PerfectMatch> shared_matches;
@@ -79,6 +79,17 @@ std::vector<sgNodeID_t> LineFiller::line_fill(std::vector<sgNodeID_t> anchor_pat
         }
 
     }
-    final_path.push_back(anchor_path[anchor_path.size()]);
+    //final_path.push_back(anchor_path[anchor_path.size()]);
     return final_path;
 }
+
+std::vector<std::vector<sgNodeID_t >> LineFiller::fill_all_paths(std::vector<std::vector<sgNodeID_t >> lines){
+    std::vector<std::vector<sgNodeID_t>> final_lines;
+    int cont=0;
+    for (const auto& line: lines){
+        std::cout << "Processing line " << cont << "/" << lines.size() <<std::endl;
+        final_lines.push_back(line_fill(line));
+        cont++;
+    }
+    return final_lines;
+};
