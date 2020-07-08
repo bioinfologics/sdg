@@ -219,7 +219,8 @@ SET(source_files ${source_files}
     src/sdglib/batch_counter/BatchKmersCounter.cc
     deps/xxhash/xxhash.c
     src/sdglib/mappers/SequenceMapper.cc
-    src/sdglib/processors/LinkageMaker.cc src/sdglib/mappers/GraphSelfAligner.cc src/sdglib/mappers/GraphSelfAligner.hpp src/sdglib/processors/GraphContigger.cc src/sdglib/processors/GraphContigger.hpp src/sdglib/mappers/LongReadsRecruiter.cc src/sdglib/mappers/LongReadsRecruiter.hpp src/sdglib/processors/PathFinder.cc src/sdglib/processors/PathFinder.hpp src/sdglib/processors/ThreadAndPopper.cc src/sdglib/processors/ThreadAndPopper.hpp src/sdglib/mappers/PerfectMatcher.cc src/sdglib/mappers/PerfectMatcher.hpp src/sdglib/processors/Strider.cc src/sdglib/processors/Strider.hpp src/sdglib/processors/GraphPatcher.cc src/sdglib/processors/GraphPatcher.hpp)
+    src/sdglib/processors/LinkageMaker.cc src/sdglib/mappers/GraphSelfAligner.cc src/sdglib/mappers/GraphSelfAligner.hpp src/sdglib/processors/GraphContigger.cc src/sdglib/processors/GraphContigger.hpp src/sdglib/mappers/LongReadsRecruiter.cc src/sdglib/mappers/LongReadsRecruiter.hpp src/sdglib/processors/PathFinder.cc src/sdglib/processors/PathFinder.hpp src/sdglib/processors/ThreadAndPopper.cc src/sdglib/processors/ThreadAndPopper.hpp src/sdglib/mappers/PerfectMatcher.cc src/sdglib/mappers/PerfectMatcher.hpp src/sdglib/processors/Strider.cc src/sdglib/processors/Strider.hpp src/sdglib/processors/GraphPatcher.cc src/sdglib/processors/GraphPatcher.hpp
+    src/sdglib/processors/LineFiller.h src/sdglib/processors/LineFiller.cc)
 
 ## Libraries
 add_library(sdg SHARED
