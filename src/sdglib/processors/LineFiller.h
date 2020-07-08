@@ -19,7 +19,7 @@ public:
     std::vector<sgNodeID_t> line_fill(std::vector<sgNodeID_t> anchor_path);
 
 
-    void populate_matches(const LongReadsRecruiter& lrr);
+    void populate_matches();
 
     WorkSpace & ws;
     LongReadsRecruiter& lrr;

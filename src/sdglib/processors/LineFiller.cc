@@ -21,7 +21,7 @@ uint32_t LineFiller::score_function(std::vector<sgNodeID_t> path) {
     return path_score;
 }
 
-void LineFiller::populate_matches(const LongReadsRecruiter& lrr){
+void LineFiller::populate_matches(){
 
     node_matches.resize(ws.sdg.nodes.size(), 0);
     for (const auto &matches: lrr.read_perfect_matches){
