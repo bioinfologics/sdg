@@ -382,10 +382,12 @@ void PairedReadsMapper::path_reads() {
         std::vector<sgNodeID_t> rp;
         PerfectMatchExtender pme(ws.sdg,k);
         ReadSequenceBuffer sequence_reader(datastore);
+        uint32_t offset;
 #pragma omp for
         for (auto rid=1;rid<=datastore.size();++rid){
 //        for (auto rid=937;rid<=937;++rid){
             //sdt::cout<<std::endl<<"Processing read "<<rid<<std::endl;
+            offset=0;
             const auto seq=std::string(sequence_reader.get_read_sequence(rid));
             read_kmers.clear();
             skf.produce_all_kmers(seq.c_str(),read_kmers);
@@ -412,6 +414,7 @@ void PairedReadsMapper::path_reads() {
                     pme.set_best_path();
                     const auto & pmebp=pme.best_path;
                     if (pme.last_readpos==datastore.readsize-1 or pme.last_readpos-rki>=63) {//TODO: hardcoded 63bp hit or end
+                        if (rp.empty() and not pmebp.empty()) offset=pme.best_path_offset;
                         for (const auto &nid:pmebp)
                             if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
                         if (!pmebp.empty())
@@ -423,6 +426,7 @@ void PairedReadsMapper::path_reads() {
 
             }
             read_paths[rid].path=rp;
+            read_paths[rid].offset=offset;
             //TODO: keep the offset of the first match!
         }
     }

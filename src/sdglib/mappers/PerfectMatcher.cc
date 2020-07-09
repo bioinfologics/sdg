@@ -141,6 +141,12 @@ void PerfectMatchExtender::set_best_path(){ //set extension_size when returning 
 
     while (next_index!=-1) {
         best_path.emplace_back(matchparts[next_index].node);
+        if (matchparts[next_index].previous_part==-1) {
+            if (matchparts[next_index].node>0)
+                best_path_offset=matchparts[next_index].node_position + matchparts[next_index].offset - matchparts[next_index].read_position;
+            else
+                best_path_offset=matchparts[next_index].node_position + matchparts[next_index].read_position + 1 - matchparts[next_index].offset;
+        }
         next_index=matchparts[next_index].previous_part;
     }
     std::reverse(best_path.begin(),best_path.end());

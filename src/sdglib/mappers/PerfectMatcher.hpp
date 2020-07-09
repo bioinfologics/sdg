@@ -43,6 +43,7 @@ public:
     std::vector<PerfectMatchPart> matchparts;
     std::vector<PerfectMatch> best_path_matches;
     std::vector<sgNodeID_t> best_path;
+    uint32_t best_path_offset;
     uint64_t last_readpos;
     uint64_t last_nodepos;
     std::string readseq;
