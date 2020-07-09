@@ -384,7 +384,7 @@ void PairedReadsMapper::path_reads() {
         ReadSequenceBuffer sequence_reader(datastore);
         uint32_t offset;
 #pragma omp for
-        for (auto rid=1;rid<=datastore.size();++rid){
+        for (uint64_t rid=1;rid<=datastore.size();++rid){
 //        for (auto rid=937;rid<=937;++rid){
             //sdt::cout<<std::endl<<"Processing read "<<rid<<std::endl;
             offset=0;
