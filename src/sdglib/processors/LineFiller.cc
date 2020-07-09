@@ -79,12 +79,13 @@ std::vector<sgNodeID_t> LineFiller::line_fill(std::vector<sgNodeID_t> anchor_pat
         }
 
     }
-    //final_path.push_back(anchor_path[anchor_path.size()]);
+    final_path.push_back(anchor_path[anchor_path.size()-1]);
     return final_path;
 }
 
 std::vector<std::vector<sgNodeID_t >> LineFiller::fill_all_paths(std::vector<std::vector<sgNodeID_t >> lines){
-    std::vector<std::vector<sgNodeID_t>> final_lines(lines.size());
+
+    final_lines.resize(lines.size());
     auto total_ready = 0;
 #pragma omp parallel for
     for (auto l=0; l<lines.size(); ++l){

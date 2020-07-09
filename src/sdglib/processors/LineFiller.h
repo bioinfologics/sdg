@@ -22,6 +22,7 @@ public:
 
     WorkSpace & ws;
     LongReadsRecruiter& lrr;
+    std::vector<std::vector<sgNodeID_t>> final_lines;
 };
 
 
