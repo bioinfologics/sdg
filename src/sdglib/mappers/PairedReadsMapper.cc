@@ -372,7 +372,7 @@ void PairedReadsMapper::path_reads() {
     read_paths.resize(datastore.size()+1);
     uint8_t k=31;
     NKmerIndex nki(ws.sdg,k,50);//TODO: hardcoded parameters!!
-    //sdt::cout<<"Index created!"<<std::endl;
+    sdglib::OutputLog()<<"Index created!"<<std::endl;
     //if (last_read==0) last_read=datastore.size();
 #pragma omp parallel shared(nki)
     {
