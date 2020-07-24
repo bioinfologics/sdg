@@ -24,7 +24,7 @@ void GraphContigger::pop_bubbles(const PairedReadsDatastore &prds, int bubble_si
     ws.sdg.join_all_unitigs();
 }
 
-void GraphContigger::solve_canonical_repeats_with_single_paths(const PairedReadsDatastore & prds,int min_support, int max_noise, float snr) {
+void GraphContigger::solve_canonical_repeats_with_single_paths(const PairedReadsDatastore & prds,int min_support, int max_noise, float snr, bool join_unitigs, bool dry_run, bool verbose) {
     GraphEditor ge(ws);
     uint64_t repeats=0;
     uint64_t solved_repeats=0;
@@ -81,13 +81,25 @@ void GraphContigger::solve_canonical_repeats_with_single_paths(const PairedReads
         //sdglib::OutputLog()<<"queueing expansion "<<nv<<std::endl;
         ge.queue_node_expansion(nv.node_id(),{{-through_ranking[0].second.first,through_ranking[0].second.second},{-through_ranking[1].second.first,through_ranking[1].second.second}});
         ++solved_repeats;
+        if (verbose){
+            std::cout << "---" << std::endl;
+            std::cout << "Solving: " << nv.node_id() << std::endl;
+            std::cout << "seq"<<llabs(through_ranking[0].second.first) << ",seq"<<llabs(nv.node_id())<<",seq"<<llabs(through_ranking[0].second.second) << std::endl;
+            std::cout << "seq"<<llabs(through_ranking[1].second.first) << ",seq"<<llabs(nv.node_id())<<",seq"<<llabs(through_ranking[1].second.second) << std::endl;
+        }
     }
     sdglib::OutputLog()<<"Contigger repeat_expansion: "<<solved_repeats<<" / "<<repeats<<std::endl;
-    ge.apply_all();
-    ws.sdg.join_all_unitigs();
+    if (!dry_run){
+        ge.apply_all();
+    }
+
+    if (join_unitigs){
+        ws.sdg.join_all_unitigs();
+    }
+
 }
 
-void GraphContigger::solve_canonical_repeats_with_paired_paths(const PairedReadsDatastore & prds,int min_support, int max_noise, float snr) {
+void GraphContigger::solve_canonical_repeats_with_paired_paths(const PairedReadsDatastore & prds,int min_support, int max_noise, float snr, bool join_unitigs, bool dry_run=false, bool verbose=false) {
     GraphEditor ge(ws);
     uint64_t repeats=0;
     uint64_t solved_repeats=0;
@@ -163,12 +175,21 @@ void GraphContigger::solve_canonical_repeats_with_paired_paths(const PairedReads
             for (auto &best:in_best_through) paths_through.emplace_back(-best.first,best.second);
             ge.queue_node_expansion(nv.node_id(),paths_through);
 
+            if (verbose){
+                std::cout << "" << std::endl;
+            }
+
 
             //C
         }
     }
-    ge.apply_all();
-    ws.sdg.join_all_unitigs();
+    if (!dry_run){
+        ge.apply_all();
+    }
+
+    if (join_unitigs){
+        ws.sdg.join_all_unitigs();
+    }
 }
 
 void GraphContigger::solve_canonical_repeats_with_long_reads(const LongReadsRecruiter &lrr, float max_side_kci, int min_support, int max_noise, float snr) {

@@ -29,7 +29,6 @@ Compiling the release versions requires the following dependencies:
 
 - GCC 6+
 - CMake 3.14.3+
-- SWIG 4.0.0 (For Python interface)
 - Python 3.7+ (For Python interface)
 - Git LFS (For tests)
 
@@ -41,25 +40,9 @@ The installation process consists of generating the configuration files using CM
     cd sdg-1.0_rc8
     mkdir build
     cd build
-    cmake ../
+    cmake -DBUILD_SIMPLE_PYTHON_INTERFACE=on ../
     make
     make test
-    make install
-
-
-Compiling SDG's master branch
-#######################
-
-The master branch is undergoing migration to a new pybind interface and further support for more analyses. Use this at your own risk.
-
-.. code-block:: bash
-
-    git pull https://github.com/bioinfologics/sdg
-    cd sdg
-    mkdir build
-    cd build
-    cmake ../
-    make
     make install
 
 
