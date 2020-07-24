@@ -174,15 +174,18 @@ void GraphContigger::solve_canonical_repeats_with_paired_paths(const PairedReads
             std::vector<std::pair<sgNodeID_t ,sgNodeID_t >> paths_through;
             for (auto &best:in_best_through) paths_through.emplace_back(-best.first,best.second);
             ge.queue_node_expansion(nv.node_id(),paths_through);
+            ++solved_repeats;
 
             if (verbose){
-                std::cout << "" << std::endl;
+                std::cout << "---" << std::endl;
+                std::cout << "Solving: " << nv.node_id() << std::endl;
+                std::cout << "seq"<<paths_through[0].first << ",seq"<<llabs(nv.node_id())<<",seq"<<paths_through[0].second << std::endl;
+                std::cout << "seq"<<paths_through[1].first << ",seq"<<llabs(nv.node_id())<<",seq"<<paths_through[1].second << std::endl;
             }
-
-
             //C
         }
     }
+    sdglib::OutputLog()<<"Contigger repeat_expansion: "<<solved_repeats<<" / "<<repeats<<std::endl;
     if (!dry_run){
         ge.apply_all();
     }
