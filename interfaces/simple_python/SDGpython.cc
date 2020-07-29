@@ -13,6 +13,7 @@
 #include <sdglib/processors/LinkageUntangler.hpp>
 #include <sdglib/processors/GraphContigger.hpp>
 #include <sdglib/processors/GraphMaker.hpp>
+#include <sdglib/processors/LinkageMaker.hpp>
 #include <sdglib/processors/GraphPatcher.hpp>
 #include <sdglib/processors/PathFinder.hpp>
 #include <sdglib/processors/Strider.hpp>
@@ -193,6 +194,17 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("get_read_size",[](const LongReadsDatastore &ds,__uint64_t rid) {
                 return ds.read_to_fileRecord[rid].record_size;
             })
+            .def_readwrite("mapper",&LongReadsDatastore::mapper)
+            ;
+
+    py::class_<LongReadsMapper>(m, "LongReadsMapper", "A Long Reads Mapper")
+            .def("print_status",&LongReadsMapper::print_status)
+            .def("set_params",&LongReadsMapper::set_params, "_k"_a=15, "_max_index_freq"_a=200, "_min_size"_a=1000, "_min_chain"_a=50, "_max_jump"_a=500, "_max_delta_change"_a= 60)
+            .def("map_reads",&LongReadsMapper::map_reads, "readIDs"_a=std::unordered_set<uint32_t>())
+            .def_readonly("reads_in_node",&LongReadsMapper::reads_in_node)
+            .def_readonly("mappings",&LongReadsMapper::mappings)
+            .def_readonly("read_paths",&LongReadsMapper::read_paths)
+            .def_readwrite("k",&LongReadsMapper::k)
             ;
 
     py::class_<KmerCounter>(m, "KmerCounters", "A kmer counter container")
@@ -314,6 +326,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<LinkageUntangler>(m,"LinkageUntangler", "A linkage untangler")
             .def(py::init<const DistanceGraph &>())
             .def_readonly("selected_nodes",&LinkageUntangler::selected_nodes)
+            .def("select_by_size",&LinkageUntangler::select_by_size, "min_size"_a, "max_size"_a=0)
             .def("select_all",&LinkageUntangler::select_all)
             .def("select_linear_anchors",&LinkageUntangler::select_linear_anchors,"min_links"_a=3,"min_transitive_links"_a=2)
             .def("make_nextselected_linkage",&LinkageUntangler::make_nextselected_linkage,"min_links"_a=3)
@@ -333,6 +346,12 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("solve_canonical_repeats_with_single_paths",&GraphContigger::solve_canonical_repeats_with_single_paths,"datastore"_a,"min_support"_a,"max_noise"_a,"snr"_a=10, "join_unitigs"_a=true, "dry_run"_a=false, "verbose"_a=false)
             .def("solve_canonical_repeats_with_paired_paths",&GraphContigger::solve_canonical_repeats_with_paired_paths,"datastore"_a,"min_support"_a,"max_noise"_a,"snr"_a=10, "join_unitigs"_a=true, "dry_run"_a=false, "verbose"_a=false)
             .def("solve_canonical_repeats_with_long_reads",&GraphContigger::solve_canonical_repeats_with_long_reads,"recruiter"_a,"max_kci"_a,"min_support"_a,"max_noise"_a,"snr"_a=10)
+            ;
+
+    py::class_<LinkageMaker>(m, "LinkageMaker", "Makes linkage")
+            .def(py::init<SequenceDistanceGraph &>())
+            .def("select_by_size",&LinkageMaker::select_by_size,"min_size"_a,"max_size"_a=0)
+            .def("make_longreads_multilinkage",&LinkageMaker::make_longreads_multilinkage,"lorm"_a, "min_map_size"_a=1000, "min_map_id"_a=.1, "real_read_size"_a=true, "unmapped_end"_a=1000)
             ;
 
     py::class_<PathFinder>(m,"PathFinder","PathFinder")

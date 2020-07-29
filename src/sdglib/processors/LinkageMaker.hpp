@@ -134,7 +134,7 @@ public:
 
     DistanceGraph make_longreads_multilinkage(const LongReadsMapper &lorm, uint64_t min_map_size=1000, float min_map_id=.1, bool real_read_size=true, int32_t unmapped_end=1000);
 
-    DistanceGraph make_longreads_multilinkage(const std::string &datastore_name, uint64_t min_map_size=1000, float min_map_id=.1, bool real_read_size=true, int32_t unmapped_end=1000);
+//    DistanceGraph make_longreads_multilinkage(const std::string &datastore_name, uint64_t min_map_size=1000, float min_map_id=.1, bool real_read_size=true, int32_t unmapped_end=1000);
     /**
      * Creates a multilinkage digraph using the Nano10X pipeline
      * @param lorm long read mapper

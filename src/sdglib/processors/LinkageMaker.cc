@@ -659,11 +659,11 @@ DistanceGraph LinkageMaker::make_longreads_multilinkage(const LongReadsMapper &l
     return ldg;
 }
 
-DistanceGraph LinkageMaker::make_longreads_multilinkage(const std::string &longreads_datastore_name, uint64_t min_map_size,
-                                                        float min_map_id, bool real_read_size, int32_t unmapped_end) {
-    const auto& lorm = dg.sdg.ws.get_long_reads_datastore(longreads_datastore_name).mapper;
-    make_longreads_multilinkage(lorm, min_map_size, min_map_id, real_read_size, unmapped_end);
-}
+//DistanceGraph LinkageMaker::make_longreads_multilinkage(const std::string &longreads_datastore_name, uint64_t min_map_size,
+//                                                        float min_map_id, bool real_read_size, int32_t unmapped_end) {
+//    const auto& lorm = dg.sdg.ws.get_long_reads_datastore(longreads_datastore_name).mapper;
+//    make_longreads_multilinkage(lorm, min_map_size, min_map_id, real_read_size, unmapped_end);
+//}
 
 
 
