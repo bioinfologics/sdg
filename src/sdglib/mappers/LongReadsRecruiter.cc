@@ -541,6 +541,7 @@ std::vector<PerfectMatch> LongReadsRecruiter::reverse_perfect_matches(const std:
 void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t last_read) {
     if (seed_size<k) seed_size=k;
     NKmerIndex nki(sdg,k,f);
+    sdglib::OutputLog()<<"Index created!"<<std::endl;
     if (last_read==0) last_read=datastore.size();
     auto total_reads = datastore.size();
     auto maped_reads_count=0;
