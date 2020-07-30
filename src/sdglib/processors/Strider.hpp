@@ -18,7 +18,9 @@ public:
     //walk out from a node
     SequenceDistanceGraphPath stride_out(sgNodeID_t n);
 
-    SequenceDistanceGraphPath stride_out_in_order(sgNodeID_t n, bool use_pair = true, bool collapse_pair = true, bool verbose = false);
+    SequenceDistanceGraphPath stride_single_strict(sgNodeID_t n, int min_reads=3, float max_noise=.1);
+
+    SequenceDistanceGraphPath stride_out_in_order(sgNodeID_t n, bool use_pair=true, bool collapse_pair=true, bool verbose=false);
 
     std::vector<Link> link_out_by_lr(sgNodeID_t n, int d=2000, int min_reads=3, int group_size=5, int small_node_size=500, float candidate_percentaje=.6, float first_percentaje=.95, bool verbose=false);
 

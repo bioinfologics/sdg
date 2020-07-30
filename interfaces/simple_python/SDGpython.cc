@@ -8,6 +8,7 @@
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/views/NodeView.hpp>
+#include <sdglib/views/TangleView.hpp>
 #include <sdglib/mappers/LongReadsRecruiter.hpp>
 #include <sdglib/processors/GraphEditor.hpp>
 #include <sdglib/processors/LinkageUntangler.hpp>
@@ -125,6 +126,15 @@ PYBIND11_MODULE(SDGpython, m) {
                  })
             ;
 
+    py::class_<TangleView>(m,"TangleView","A view for an unresolved section in a Distance Graph")
+            .def_readonly("internals",&TangleView::internals)
+            .def_readonly("frontiers",&TangleView::frontiers)
+            .def("__repr__",
+                 [](const TangleView &tv) {
+                     return "<TangleView: " + std::to_string(tv.internals.size()) + " internals and " + std::to_string(tv.frontiers.size()) + " frontiers in graph " + tv.dg->name + ">";
+                 })
+            ;
+
     py::class_<DistanceGraph>(m, "DistanceGraph", "A Distance Graph")
             .def_property_readonly("sdg", [] (const DistanceGraph &dg) {return &dg.sdg;},py::return_value_policy::reference)
             .def(py::init<SequenceDistanceGraph &, const std::string &>(),"","sdg"_a,"name"_a="unnamed")
@@ -137,6 +147,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("fw_reached_nodes",&DistanceGraph::fw_reached_nodes,"node_id"_a,"radius"_a=10)
             .def("get_nodeview",&DistanceGraph::get_nodeview)
             .def("get_all_nodeviews",&DistanceGraph::get_all_nodeviews,"both_directions"_a=false,"include_disconnected"_a=true,"Returns a vector with NodeViews for all active nodes",py::return_value_policy::move)
+            .def("get_all_tangleviews",&DistanceGraph::get_all_tangleviews,"f_size"_a=500,"f_min_kci"_a=-1,"f_max_kci"_a=-1,"include_disconnected"_a=true,"Returns a vector with TangleViews for all tangles",py::return_value_policy::move)
             .def_readwrite("name",&DistanceGraph::name)
             .def("write_to_gfa1",&DistanceGraph::write_to_gfa1,"filename"_a,"selected_nodes"_a=std::vector<sgNodeID_t>(),"depths"_a=std::vector<sgNodeID_t>())
             .def("write_to_gfa2",&DistanceGraph::write_to_gfa2)
@@ -388,6 +399,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("add_datastore",py::overload_cast<const PairedReadsDatastore &>(&Strider::add_datastore))
             .def("add_datastore",py::overload_cast<const LongReadsRecruiter &>(&Strider::add_datastore))
             .def("stride_out",&Strider::stride_out,"node"_a,py::return_value_policy::take_ownership)
+            .def("stride_single_strict",&Strider::stride_single_strict,"node"_a,"min_reads"_a=3,"max_noise"_a=.1,py::return_value_policy::take_ownership)
             .def("stride_out_in_order",&Strider::stride_out_in_order,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true,"verbose"_a=false,py::return_value_policy::take_ownership)
             .def("link_out_by_lr",&Strider::link_out_by_lr,"node"_a,"d"_a=2000, "min_reads"_a=3, "group_size"_a=5, "small_node_size"_a=500, "candidate_percentaje"_a=0.5, "first_percentaje"_a=0.8, "verbose"_a=false, py::return_value_policy::take_ownership);
 

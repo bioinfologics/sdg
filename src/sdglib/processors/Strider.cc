@@ -62,6 +62,39 @@ SequenceDistanceGraphPath Strider::stride_out(sgNodeID_t n) {
     }
     return p;
 }
+SequenceDistanceGraphPath Strider::stride_single_strict(sgNodeID_t n, int min_reads, float max_noise) {
+    if (max_noise>.5) return SequenceDistanceGraphPath(ws.sdg);
+    std::vector<std::vector<sgNodeID_t>> read_paths;
+    for (auto prds:paired_datastores) {
+        auto new_read_paths = prds->mapper.all_paths_fw(n, false); //don't use pairs
+        read_paths.insert(read_paths.end(),new_read_paths.begin(),new_read_paths.end());
+    }
+    SequenceDistanceGraphPath p(ws.sdg);
+    p.nodes.emplace_back(n);
+    std::vector<bool> finished(read_paths.size());
+    std::vector<bool> dropped(read_paths.size());
+    for(int i=0;p.nodes.size()>i;++i){
+        std::unordered_map<sgNodeID_t,uint32_t> votes;
+        int f=0,d=0,v=0;
+        for (auto ip=0;ip<read_paths.size();++ip){
+            if (read_paths[ip].size()<=i) finished[ip]=true;
+
+            if (finished[ip]) ++f;
+            else if (dropped[ip]) ++d;
+            else {
+                ++votes[read_paths[ip][i]];
+                ++v;
+            }
+        }
+        for (auto &nc:votes) if ( nc.second > min_reads and nc.second >v * (1-max_noise) ) p.nodes.emplace_back(nc.first);
+        for (auto ip=0;ip<read_paths.size();++ip){
+            if (not finished[ip] and read_paths[ip][i]!=p.nodes.back()) dropped[ip]=true;
+        }
+
+    }
+    return p;
+
+}
 
 SequenceDistanceGraphPath
 Strider::stride_out_in_order(sgNodeID_t n, bool use_pair, bool collapse_pair, bool verbose) {
@@ -224,7 +257,7 @@ void Strider::link_from_anchors(uint32_t min_size, float min_kci, float max_kci,
     is_anchor.resize(ws.sdg.nodes.size());
     if (min_size==0) min_size=1;//a min_size of 0 would get deleted nodes and such
     uint64_t anchors=0,found_fw=0,found_bw=0;
-#pragma omp parallel for reduction(+:anchors) reduction(+:found_fw) reduction(+:found_bw)
+#pragma omp parallel for reduction(+:anchors) reduction(+:found_fw) reduction(+:found_bw) schedule(static,1000)
     for (auto nid=1;nid<ws.sdg.nodes.size();++nid) {
         if (ws.sdg.get_node_size(nid)<min_size) continue;
         auto nv=ws.sdg.get_nodeview(nid);
