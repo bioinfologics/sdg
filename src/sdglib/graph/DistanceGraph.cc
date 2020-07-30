@@ -672,10 +672,14 @@ std::vector<TangleView> DistanceGraph::get_all_tangleviews(int fsize, float fmin
                 if (t.frontiers[i].node_id()==-t.frontiers[j].node_id()) reclassified_frontiers.insert(llabs(t.frontiers[i].node_id()));
             }
         }
+        std::set<sgNodeID_t> used_frontiers;
         std::vector<NodeView> new_frontiers;
         for (auto &fnv:t.frontiers) {
             if (reclassified_frontiers.count(llabs(fnv.node_id()))==0) new_frontiers.emplace_back(fnv);
-            else if (fnv.node_id()>0) t.internals.emplace_back(fnv);
+            else if (fnv.node_id()>0 and used_frontiers.count(fnv.node_id())==0) {
+                t.internals.emplace_back(fnv);
+                used_frontiers.emplace(fnv.node_id());
+            }
         }
         std::swap(t.frontiers,new_frontiers);
 
