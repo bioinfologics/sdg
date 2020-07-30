@@ -8,6 +8,7 @@
 #include <sdglib/utilities/OutputLog.hpp>
 #include "SequenceDistanceGraph.hpp"
 #include <sdglib/views/NodeView.hpp>
+#include <sdglib/views/TangleView.hpp>
 #include <sstream>
 
 void DistanceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, Support support) {
@@ -613,6 +614,74 @@ std::vector<NodeView> DistanceGraph::get_all_nodeviews(bool both_directions, boo
 
     }
     return nvs;
+}
+
+std::vector<TangleView> DistanceGraph::get_all_tangleviews(int fsize, float fmin_kci, float fmax_kci, bool include_disconnected) const {
+//    std::cout<<"Tangles of size < "<<fsize<<" with "<<fmin_kci<<" < KCI < "<<fmax_kci<<" disconnected: "<<include_disconnected<<std::endl;
+    std::vector<TangleView> tangles;
+    std::vector<bool> used(sdg.nodes.size());
+    for (auto nid=0;nid<sdg.nodes.size();++nid) {
+        if (used[nid]) continue;
+        auto &n=sdg.nodes[nid];
+        if (n.status==NodeStatus::Deleted or n.sequence.size()>=fsize) continue;
+        auto nv=get_nodeview(nid);
+        if (fmin_kci>=0 and nv.kci()<fmin_kci) continue;
+        if (fmax_kci>=0 and nv.kci()>fmax_kci) continue;
+//        std::cout<<"New tangle from node "<<nid<<std::endl;
+        TangleView t(this,{},{nid});
+        used[nid]=true;
+        std::set<sgNodeID_t> to_explore={nid};
+        std::set<sgNodeID_t> explored;
+        while(to_explore.size() > 0 ){
+//            std::cout<<"  Exploring "<<to_explore.size()<<" nodes"<<std::endl;
+            std::set<sgNodeID_t> new_to_explore;
+            for (auto &inid:to_explore) {
+//                std::cout<<"    Links from "<<inid<<std::endl;
+                bool f=false;
+                {
+                    auto nv = get_nodeview(inid);//non-const for kci usage
+                    if (nv.size() >= fsize and (fmin_kci < 0 or fmin_kci < nv.kci()) and
+                        (fmax_kci < 0 or fmax_kci > nv.kci()))
+                        f = true;
+                }
+
+                for (auto &l:links[llabs(inid)]){
+                    if (f and l.source!=inid) continue; //frontiers only explore on same end
+                    if (explored.count(l.dest)>0) continue;
+                    auto nv = get_nodeview(l.dest);//non-const for kci usage
+                    if (nv.size() >= fsize and (fmin_kci < 0 or fmin_kci < nv.kci()) and
+                        (fmax_kci < 0 or fmax_kci > nv.kci())) {
+                        t.frontiers.emplace_back(this, l.dest);
+                    }
+                    else {
+                        if (used[llabs(l.dest)]) continue;
+                        t.internals.emplace_back(this,llabs(l.dest));
+                        used[llabs(l.dest)]=true;
+                    }
+                    if (explored.count(l.dest)==0) new_to_explore.emplace(l.dest);
+                }
+
+                explored.emplace(inid);
+            }
+            std::swap(new_to_explore,to_explore);
+        }
+        //Any frontier that is connected in both sides is actually internal
+        std::set<sgNodeID_t> reclassified_frontiers;
+        for (auto i=0;i+1<t.frontiers.size();++i) {
+            for (auto j=i+1;j<t.frontiers.size();++j) {
+                if (t.frontiers[i].node_id()==-t.frontiers[j].node_id()) reclassified_frontiers.insert(llabs(t.frontiers[i].node_id()));
+            }
+        }
+        std::vector<NodeView> new_frontiers;
+        for (auto &fnv:t.frontiers) {
+            if (reclassified_frontiers.count(llabs(fnv.node_id()))==0) new_frontiers.emplace_back(fnv);
+            else if (fnv.node_id()>0) t.internals.emplace_back(fnv);
+        }
+        std::swap(t.frontiers,new_frontiers);
+
+        if (include_disconnected or t.frontiers.size()>0) tangles.emplace_back(t);
+    }
+    return tangles;
 }
 
 std::ostream &operator<<(std::ostream &os, const DistanceGraph &dg) {

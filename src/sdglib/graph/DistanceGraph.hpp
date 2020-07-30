@@ -21,8 +21,10 @@
 #include <sdglib/utilities/OutputLog.hpp>
 
 
+
 class SequenceDistanceGraph;//fwd declaration (to break circular dependence)
 class NodeView;
+class TangleView;
 /**
  * This is a description of the graph creating new linkage, the nodes are referenced from the original graph.
  *
@@ -235,6 +237,8 @@ public:
      * @return A NodeView list containing one per node in the graph unless include_disconnected is set to false, then only nodes with links are included
      */
     std::vector<NodeView> get_all_nodeviews(bool both_directions=false, bool include_disconnected=true) const;
+
+    std::vector<TangleView> get_all_tangleviews(int fsize=500, float fmin_kci=-1, float fmax_kci=-1, bool include_disconnected=true) const;
 
     /**
      * @brief Prints the graph stats by kci according to the first kci collection in the ws
