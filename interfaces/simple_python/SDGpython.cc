@@ -367,6 +367,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("add_datastore",py::overload_cast<const PairedReadsDatastore &>(&Strider::add_datastore))
             .def("add_datastore",py::overload_cast<const LongReadsRecruiter &>(&Strider::add_datastore))
             .def("stride_out",&Strider::stride_out,"node"_a,py::return_value_policy::take_ownership)
+            .def("stride_single_strict",&Strider::stride_single_strict,"node"_a,"min_reads"_a=3,"max_noise"_a=.1,py::return_value_policy::take_ownership)
             .def("stride_out_in_order",&Strider::stride_out_in_order,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true,"verbose"_a=false,py::return_value_policy::take_ownership)
             .def("link_out_by_lr",&Strider::link_out_by_lr,"node"_a,"d"_a=2000, "min_reads"_a=3, "group_size"_a=5, "small_node_size"_a=500, "candidate_percentaje"_a=0.5, "first_percentaje"_a=0.8, "verbose"_a=false, py::return_value_policy::take_ownership);
 
