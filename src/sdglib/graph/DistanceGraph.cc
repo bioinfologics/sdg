@@ -632,6 +632,7 @@ std::vector<TangleView> DistanceGraph::get_all_tangleviews(int fsize, float fmin
         used[nid]=true;
         std::set<sgNodeID_t> to_explore={nid};
         std::set<sgNodeID_t> explored;
+        std::set<sgNodeID_t> frontier_ids;
         while(to_explore.size() > 0 ){
 //            std::cout<<"  Exploring "<<to_explore.size()<<" nodes"<<std::endl;
             std::set<sgNodeID_t> new_to_explore;
@@ -651,7 +652,7 @@ std::vector<TangleView> DistanceGraph::get_all_tangleviews(int fsize, float fmin
                     auto nv = get_nodeview(l.dest);//non-const for kci usage
                     if (nv.size() >= fsize and (fmin_kci < 0 or fmin_kci < nv.kci()) and
                         (fmax_kci < 0 or fmax_kci > nv.kci())) {
-                        t.frontiers.emplace_back(this, l.dest);
+                        frontier_ids.emplace(l.dest);
                     }
                     else {
                         if (used[llabs(l.dest)]) continue;
@@ -665,24 +666,23 @@ std::vector<TangleView> DistanceGraph::get_all_tangleviews(int fsize, float fmin
             }
             std::swap(new_to_explore,to_explore);
         }
+
         //Any frontier that is connected in both sides is actually internal
         std::set<sgNodeID_t> reclassified_frontiers;
-        for (auto i=0;i+1<t.frontiers.size();++i) {
-            for (auto j=i+1;j<t.frontiers.size();++j) {
-                if (t.frontiers[i].node_id()==-t.frontiers[j].node_id()) reclassified_frontiers.insert(llabs(t.frontiers[i].node_id()));
+        std::vector<sgNodeID_t> frontiers(frontier_ids.begin(),frontier_ids.end());
+        for (auto i=0;i+1<frontiers.size();++i) {
+            for (auto j=i+1;j<frontiers.size();++j) {
+                if (frontiers[i]==-frontiers[j]) reclassified_frontiers.insert(llabs(frontiers[i]));
             }
         }
         std::set<sgNodeID_t> used_frontiers;
-        std::vector<NodeView> new_frontiers;
-        for (auto &fnv:t.frontiers) {
-            if (reclassified_frontiers.count(llabs(fnv.node_id()))==0) new_frontiers.emplace_back(fnv);
-            else if (fnv.node_id()>0 and used_frontiers.count(fnv.node_id())==0) {
-                t.internals.emplace_back(fnv);
-                used_frontiers.emplace(fnv.node_id());
+        for (auto &fnid:frontiers) {
+            if (reclassified_frontiers.count(llabs(fnid))==0) t.frontiers.emplace_back(this,fnid);
+            else if (fnid>0 and used_frontiers.count(fnid)==0) {
+                t.internals.emplace_back(this,fnid);
+                used_frontiers.emplace(fnid);
             }
         }
-        std::swap(t.frontiers,new_frontiers);
-
         if (include_disconnected or t.frontiers.size()>0) tangles.emplace_back(t);
     }
     return tangles;
@@ -720,7 +720,7 @@ std::vector<uint64_t> DistanceGraph::nstats(std::vector<uint64_t> sizes, std::ve
     return nxx;
 }
 
-void DistanceGraph::stats_by_kci() {
+std::string DistanceGraph::stats_by_kci() {
 
 //    // Check the kci peak value is not -1
 //    if (sdg.ws.kmer_counters[0].kci_peak < 0){
@@ -789,18 +789,19 @@ void DistanceGraph::stats_by_kci() {
     auto nstats_3 = nstats(kci3_sizes);
     auto nstats_4 = nstats(kci4_sizes);
     auto all_stats = nstats(all_sizes);
-
-    std::printf(" -----------------------------------------------------------------------------------\n");
-    std::printf("|  KCI  |    Total bp   |   Nodes  |  Tips   |     N25    |     N50    |     N75    |\n");
-    std::printf("|-------+---------------+----------+---------+------------+------------+------------|\n");
-    std::printf("| None  | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(nokci_sizes.begin(), nokci_sizes.end(), (uint64_t) 0), nokci_sizes.size(), nokci_tips, nstats_nokci[0], nstats_nokci[1], nstats_nokci[2]);
-    std::printf("| < 0.5 | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci0_sizes.begin(), kci0_sizes.end(), (uint64_t) 0), kci0_sizes.size(), kci0_tips, nstats_0[0], nstats_0[1], nstats_0[2]);
-    std::printf("| ~ 1   | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci1_sizes.begin(), kci1_sizes.end(), (uint64_t) 0), kci1_sizes.size(), kci1_tips,  nstats_1[0], nstats_1[1], nstats_1[2]);
-    std::printf("| ~ 2   | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci2_sizes.begin(), kci2_sizes.end(), (uint64_t) 0), kci2_sizes.size(), kci2_tips,  nstats_2[0], nstats_2[1], nstats_2[2]);
-    std::printf("| ~ 3   | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci3_sizes.begin(), kci3_sizes.end(), (uint64_t) 0), kci3_sizes.size(), kci3_tips,  nstats_3[0], nstats_3[1], nstats_3[2]);
-    std::printf("| > 3.5 | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci4_sizes.begin(), kci4_sizes.end(), (uint64_t) 0), kci4_sizes.size(), kci4_tips,  nstats_4[0], nstats_4[1], nstats_4[2]);
-    std::printf("|-------+---------------+----------+---------+------------+------------+------------|\n");
-    std::printf("| All   | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(all_sizes.begin(), all_sizes.end(), (uint64_t) 0), all_sizes.size(), all_tips, all_stats[0], all_stats[1], all_stats[2]);
-    std::printf(" -----------------------------------------------------------------------------------\n");
-    return;
+    char buffer[2048];
+    std::sprintf(buffer," -----------------------------------------------------------------------------------\n");
+    std::sprintf(buffer+std::strlen(buffer),"|  KCI  |    Total bp   |   Nodes  |  Tips   |     N25    |     N50    |     N75    |\n");
+    std::sprintf(buffer+std::strlen(buffer),"|-------+---------------+----------+---------+------------+------------+------------|\n");
+    std::sprintf(buffer+std::strlen(buffer),"| None  | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(nokci_sizes.begin(), nokci_sizes.end(), (uint64_t) 0), nokci_sizes.size(), nokci_tips, nstats_nokci[0], nstats_nokci[1], nstats_nokci[2]);
+    std::sprintf(buffer+std::strlen(buffer),"| < 0.5 | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci0_sizes.begin(), kci0_sizes.end(), (uint64_t) 0), kci0_sizes.size(), kci0_tips, nstats_0[0], nstats_0[1], nstats_0[2]);
+    std::sprintf(buffer+std::strlen(buffer),"| ~ 1   | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci1_sizes.begin(), kci1_sizes.end(), (uint64_t) 0), kci1_sizes.size(), kci1_tips,  nstats_1[0], nstats_1[1], nstats_1[2]);
+    std::sprintf(buffer+std::strlen(buffer),"| ~ 2   | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci2_sizes.begin(), kci2_sizes.end(), (uint64_t) 0), kci2_sizes.size(), kci2_tips,  nstats_2[0], nstats_2[1], nstats_2[2]);
+    std::sprintf(buffer+std::strlen(buffer),"| ~ 3   | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci3_sizes.begin(), kci3_sizes.end(), (uint64_t) 0), kci3_sizes.size(), kci3_tips,  nstats_3[0], nstats_3[1], nstats_3[2]);
+    std::sprintf(buffer+std::strlen(buffer),"| > 3.5 | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci4_sizes.begin(), kci4_sizes.end(), (uint64_t) 0), kci4_sizes.size(), kci4_tips,  nstats_4[0], nstats_4[1], nstats_4[2]);
+    std::sprintf(buffer+std::strlen(buffer),"|-------+---------------+----------+---------+------------+------------+------------|\n");
+    std::sprintf(buffer+std::strlen(buffer),"| All   | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(all_sizes.begin(), all_sizes.end(), (uint64_t) 0), all_sizes.size(), all_tips, all_stats[0], all_stats[1], all_stats[2]);
+    std::sprintf(buffer+std::strlen(buffer)," -----------------------------------------------------------------------------------\n");
+    std::cout<<buffer;
+    return std::string(buffer);
 }
