@@ -245,7 +245,7 @@ public:
     /**
      * @brief Prints the graph stats by kci according to the first kci collection in the ws
      */
-    void stats_by_kci();
+    std::string stats_by_kci();
 
     std::vector<uint64_t> nstats(std::vector<uint64_t> sizes, std::vector<int> stops={25,50,75});
 
