@@ -29,6 +29,8 @@ PYBIND11_MAKE_OPAQUE(std::vector<std::vector<NodePosition>>);
 PYBIND11_MAKE_OPAQUE(std::vector<ReadPath>);
 PYBIND11_MAKE_OPAQUE(std::vector<bool>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<Link>>);
+PYBIND11_MAKE_OPAQUE(std::vector<NodeView>);
+PYBIND11_MAKE_OPAQUE(std::vector<TangleView>);
 
 PYBIND11_MODULE(SDGpython, m) {
 
@@ -42,6 +44,9 @@ PYBIND11_MODULE(SDGpython, m) {
     py::bind_vector<std::vector<std::vector<Link>>>(m, "VectorVectorLink");
     py::bind_vector<std::vector<std::vector<NodePosition>>>(m, "VectorVectorNodePosition");
     py::bind_vector<std::vector<bool>>(m, "VectorBool");
+    py::bind_vector<std::vector<NodeView>>(m, "VectorNodeView");
+    py::bind_vector<std::vector<TangleView>>(m, "VectorTangleView");
+
 
     py::enum_<NodeStatus>(m,"NodeStatus")
             .value("Active",NodeStatus::Active)
@@ -145,7 +150,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("fw_reached_nodes",&DistanceGraph::fw_reached_nodes,"node_id"_a,"radius"_a=10)
             .def("get_nodeview",&DistanceGraph::get_nodeview)
             .def("get_all_nodeviews",&DistanceGraph::get_all_nodeviews,"both_directions"_a=false,"include_disconnected"_a=true,"Returns a vector with NodeViews for all active nodes",py::return_value_policy::move)
-            .def("get_all_tangleviews",&DistanceGraph::get_all_tangleviews,"f_size"_a=500,"f_min_kci"_a=-1,"f_max_kci"_a=-1,"include_disconnected"_a=true,"Returns a vector with TangleViews for all tangles",py::return_value_policy::move)
+            .def("get_all_tangleviews",&DistanceGraph::get_all_tangleviews,"f_size"_a=500,"f_min_kci"_a=-1,"f_max_kci"_a=-1,"include_disconnected"_a=true,"Returns a vector with TangleViews for all tangles",py::return_value_policy::take_ownership)
             .def_readwrite("name",&DistanceGraph::name)
             .def("write_to_gfa1",&DistanceGraph::write_to_gfa1,"filename"_a,"selected_nodes"_a=std::vector<sgNodeID_t>(),"depths"_a=std::vector<sgNodeID_t>())
             .def("write_to_gfa2",&DistanceGraph::write_to_gfa2)
