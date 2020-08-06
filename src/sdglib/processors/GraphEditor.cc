@@ -68,7 +68,7 @@ bool GraphEditor::queue_node_deletion(sgNodeID_t node) {
     std::vector<sgNodeID_t> connected_ends(ws.sdg.links[llabs(node)].size());
     for (auto l:ws.sdg.links[llabs(node)]) connected_ends.emplace_back(l.dest);
     GraphEditorNodeDeletion op(node,connected_ends);
-    if (not queue_allows(op)) return false;
+    //if (not queue_allows(op)) return false;
     //TODO: do we validate that the expansion is valid?
     queue_mark_inputs(op);
     op.index=next_op++;
@@ -78,7 +78,7 @@ bool GraphEditor::queue_node_deletion(sgNodeID_t node) {
 
 bool GraphEditor::queue_link_deletion(sgNodeID_t src, sgNodeID_t dest) {
     GraphEditorLinkDeletion op(src,dest);
-    if (not queue_allows(op)) return false;
+    //if (not queue_allows(op)) return false;
     //TODO: do we validate that the expansion is valid?
     queue_mark_inputs(op);
     op.index=next_op++;
