@@ -699,6 +699,7 @@ std::ostream &operator<<(std::ostream &os, const DistanceGraph &dg) {
 }
 
 std::vector<uint64_t> DistanceGraph::nstats(std::vector<uint64_t> sizes, std::vector<int> stops){
+    if (sizes.empty()) return std::vector<uint64_t>(stops.size(),0);
     uint64_t t=0;
     for (auto& s: sizes){
         t+=s;
@@ -745,7 +746,7 @@ std::string DistanceGraph::stats_by_kci() {
     std::vector<uint64_t> binned_bps(61, 0);
     std::vector<uint64_t> binned_counts(61, 0);
 
-    for (const NodeView& nv: get_all_nodeviews()){
+    for (NodeView& nv: get_all_nodeviews()){
         float kci = nv.kci();
 
         if (kci == -1){
@@ -789,7 +790,7 @@ std::string DistanceGraph::stats_by_kci() {
     auto nstats_3 = nstats(kci3_sizes);
     auto nstats_4 = nstats(kci4_sizes);
     auto all_stats = nstats(all_sizes);
-    char buffer[2048];
+    char buffer[10000]={0};
     std::sprintf(buffer," -----------------------------------------------------------------------------------\n");
     std::sprintf(buffer+std::strlen(buffer),"|  KCI  |    Total bp   |   Nodes  |  Tips   |     N25    |     N50    |     N75    |\n");
     std::sprintf(buffer+std::strlen(buffer),"|-------+---------------+----------+---------+------------+------------+------------|\n");
@@ -802,6 +803,5 @@ std::string DistanceGraph::stats_by_kci() {
     std::sprintf(buffer+std::strlen(buffer),"|-------+---------------+----------+---------+------------+------------+------------|\n");
     std::sprintf(buffer+std::strlen(buffer),"| All   | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(all_sizes.begin(), all_sizes.end(), (uint64_t) 0), all_sizes.size(), all_tips, all_stats[0], all_stats[1], all_stats[2]);
     std::sprintf(buffer+std::strlen(buffer)," -----------------------------------------------------------------------------------\n");
-    std::cout<<buffer;
     return std::string(buffer);
 }
