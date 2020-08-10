@@ -60,23 +60,44 @@ void KmerCounter::index_sdg() {
 void KmerCounter::update_graph_counts() {
     for (auto &c:counts[0])c=0;
 
-    std::vector<uint64_t> nkmers;
+
     uint64_t not_found=0;
 
     if (count_mode==Canonical) {
-        StringKMerFactory skf(k);
-        for (auto &n:ws.sdg.nodes) {
-            nkmers.clear();
-            if (n.sequence.size() >= k) {
-                skf.create_kmers(n.sequence, nkmers);
-                for (auto &kmer:nkmers) {
-                    auto kidx=std::lower_bound(kindex.begin(), kindex.end(), kmer);
-                    if (kidx==kindex.end() or *kidx!=kmer) ++not_found;
-                    else ++counts[0][kidx-kindex.begin()];
+#pragma omp parallel
+        {
+            std::vector<uint64_t> nkmers;
+            std::vector<int64_t> nkmerspos;
+            StringKMerFactory skf(k);
+#pragma omp for schedule(static,1000) reduction(+:not_found)
+            for (auto &n:ws.sdg.nodes) {
+
+                if (n.sequence.size() >= k) {
+                    nkmers.clear();
+                    skf.create_kmers(n.sequence, nkmers);
+                    nkmerspos.clear();
+                    nkmerspos.resize(nkmers.size());
+                    for (uint64_t i=0;i<nkmers.size();++i) {
+                        auto &kmer=nkmers[i];
+                        auto kidx = std::lower_bound(kindex.begin(), kindex.end(), kmer);
+                        if (kidx == kindex.end() or *kidx != kmer) {
+                            ++not_found;
+                            nkmerspos[i]=-1;
+                        }
+                        else {
+                            nkmerspos[i]=kidx - kindex.begin();
+                            //++counts[0][kidx - kindex.begin()];
+                        }
+                    }
+#pragma omp critical
+                    for (auto &p:nkmerspos) {
+                        if (p!=-1) ++counts[0][p];
+                    }
                 }
             }
         }
     } else if (count_mode==NonCanonical) {
+        std::vector<uint64_t> nkmers;
         StringKMerFactoryNC skf(k);
         for (auto &n:ws.sdg.nodes) {
             nkmers.clear();
