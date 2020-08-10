@@ -70,8 +70,8 @@ void KmerCounter::update_graph_counts() {
             std::vector<int64_t> nkmerspos;
             StringKMerFactory skf(k);
 #pragma omp for schedule(static,1000) reduction(+:not_found)
-            for (auto &n:ws.sdg.nodes) {
-
+            for (sgNodeID_t nid=0;nid<ws.sdg.nodes.size();++nid) {
+                const auto &n=ws.sdg.nodes[nid];
                 if (n.sequence.size() >= k) {
                     nkmers.clear();
                     skf.create_kmers(n.sequence, nkmers);
