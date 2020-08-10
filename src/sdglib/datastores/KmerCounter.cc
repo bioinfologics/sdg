@@ -331,7 +331,7 @@ float KmerCounter::kci(sgNodeID_t node) {
 }
 
 void KmerCounter::compute_all_kcis() {
-#pragma omp parallel for
+#pragma omp parallel for schedule(static,1000)
     for (sgNodeID_t n=1;n<ws.sdg.nodes.size();++n){
         if (ws.sdg.nodes[n].status==NodeStatus::Active) kci(n);
     }

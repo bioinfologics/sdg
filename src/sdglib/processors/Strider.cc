@@ -184,7 +184,7 @@ void Strider::stride_from_anchors(uint32_t min_size, float min_kci, float max_kc
     is_anchor.resize(ws.sdg.nodes.size());
     if (min_size==0) min_size=1;//a min_size of 0 would get deleted nodes and such
     uint64_t anchors=0,found_fw=0,found_bw=0;
-#pragma omp parallel for reduction(+:anchors) reduction(+:found_fw) reduction(+:found_bw)
+#pragma omp parallel for reduction(+:anchors) reduction(+:found_fw) reduction(+:found_bw) schedule(static,1000)
     for (auto nid=1;nid<ws.sdg.nodes.size();++nid) {
         if (ws.sdg.get_node_size(nid)<min_size) continue;
         auto nv=ws.sdg.get_nodeview(nid);
