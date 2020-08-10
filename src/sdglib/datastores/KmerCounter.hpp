@@ -107,6 +107,8 @@ public:
      */
     std::vector<uint16_t> project_count(const uint16_t count_idx, const std::string &s);
 
+    float get_kci_peak() { return kci_peak_f;}
+
     void set_kci_peak(float f){
         if (f!=kci_peak_f){
             kci_peak_f=f;

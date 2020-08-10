@@ -10,6 +10,7 @@
 #include <sdglib/views/NodeView.hpp>
 #include <sdglib/views/TangleView.hpp>
 #include <sstream>
+#include <sdglib/workspace/WorkSpace.hpp>
 
 void DistanceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, Support support) {
     if (llabs(source)>=links.size()) links.resize(llabs(source)+1);
@@ -704,7 +705,6 @@ std::vector<uint64_t> DistanceGraph::nstats(std::vector<uint64_t> sizes, std::ve
     for (auto& s: sizes){
         t+=s;
     }
-    stops.push_back(1000);
 
     uint64_t p=0;
     uint64_t next_stop=0;
@@ -713,7 +713,7 @@ std::vector<uint64_t> DistanceGraph::nstats(std::vector<uint64_t> sizes, std::ve
     std::sort(sizes.begin(), sizes.end(), std::greater<>());
     for (auto& x: sizes){
         p+=x;
-        while(p>=t*stops[next_stop]/100){
+        while(next_stop<=stops.size() and p>=t*stops[next_stop]/100){
             nxx.push_back(x);
             next_stop+=1;
         }
@@ -724,10 +724,9 @@ std::vector<uint64_t> DistanceGraph::nstats(std::vector<uint64_t> sizes, std::ve
 std::string DistanceGraph::stats_by_kci() {
 
 //    // Check the kci peak value is not -1
-//    if (sdg.ws.kmer_counters[0].kci_peak < 0){
-//        std::cout << "KCI peak not set!" << std::endl;
-//        return;
-//    }
+    if (sdg.ws.kmer_counters[0].get_kci_peak() < 0){
+        return "KCI peak not set!";
+    }
 
     std::vector<uint64_t> nokci_sizes;
     std::vector<uint64_t> kci0_sizes;
