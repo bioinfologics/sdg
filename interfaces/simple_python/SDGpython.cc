@@ -137,6 +137,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<TangleView>(m,"TangleView","A view for an unresolved section in a Distance Graph")
             .def_readonly("internals",&TangleView::internals)
             .def_readonly("frontiers",&TangleView::frontiers)
+            .def("classify_tangle",&TangleView::classify_tangle)
             .def("__repr__",
                  [](const TangleView &tv) {
                      return "<TangleView: " + std::to_string(tv.internals.size()) + " internals and " + std::to_string(tv.frontiers.size()) + " frontiers in graph " + tv.dg->name + ">";

@@ -17,6 +17,10 @@ class TangleView {
 public:
     TangleView(DistanceGraph const * dg, const std::vector<sgNodeID_t> & _frontiers,const std::vector<sgNodeID_t> & _internals);
     bool is_complete();
+    void dump_subgraph(int radious=2);
+
+    std::string classify_tangle() const;
+
     std::vector<NodeView> frontiers;
     std::vector<NodeView> internals;
     const DistanceGraph * dg;
