@@ -137,9 +137,9 @@ public:
 
     std::unordered_set<uint64_t> get_linked_tags_kmers(std::string datastore_name, int K, int min_tag_cov);
 
-    bool is_tip();
-    bool is_bubble_side();
-    bool is_canonical_repeat();
+    bool is_tip() const;
+    bool is_bubble_side() const;
+    bool is_canonical_repeat() const;
 
 private:
     sgNodeID_t id;

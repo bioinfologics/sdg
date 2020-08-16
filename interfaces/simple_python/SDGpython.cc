@@ -160,6 +160,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("write_to_gfa1",&DistanceGraph::write_to_gfa1,"filename"_a,"selected_nodes"_a=std::vector<sgNodeID_t>(),"depths"_a=std::vector<sgNodeID_t>())
             .def("write_to_gfa2",&DistanceGraph::write_to_gfa2)
             .def("stats_by_kci",&DistanceGraph::stats_by_kci)
+            .def("simple_structure_stats",&DistanceGraph::simple_structure_stats)
             .def("are_connected",&DistanceGraph::are_connected,"node1"_a, "node2"_a)
             .def("find_all_paths_between",&DistanceGraph::find_all_paths_between,"from"_a,"to"_a,"max_size"_a,"max_nodes"_a,"abort_on_loops"_a)
             .def("get_all_lines",&DistanceGraph::get_all_lines,"min_nodes"_a, "min_total_size"_a=0)

@@ -247,6 +247,8 @@ public:
      */
     std::string stats_by_kci();
 
+    std::string simple_structure_stats() const;
+
     std::vector<uint64_t> nstats(std::vector<uint64_t> sizes, std::vector<int> stops={25,50,75});
 
     friend std::ostream& operator<<(std::ostream &os, const DistanceGraph &dg);

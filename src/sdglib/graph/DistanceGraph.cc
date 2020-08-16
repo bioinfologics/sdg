@@ -804,3 +804,20 @@ std::string DistanceGraph::stats_by_kci() {
     std::sprintf(buffer+std::strlen(buffer)," -----------------------------------------------------------------------------------\n");
     return std::string(buffer);
 }
+
+std::string DistanceGraph::simple_structure_stats() const{
+    char buffer[10000]={0};
+    uint64_t total=0;
+    uint64_t canreps=0;
+    uint64_t bubsides=0;
+    uint64_t tips=0;
+
+    for (const auto& nv: get_all_nodeviews()){
+        total++;
+        if (nv.is_canonical_repeat()) canreps++;
+        if (nv.is_bubble_side()) bubsides++;
+        if (nv.is_tip()) tips++;
+    }
+    std::sprintf(buffer, "%d tips, %d canonical repeats and %d bubble sides out of %1d nodes\n", tips, canreps, bubsides, total);
+    return std::string(buffer);
+}
