@@ -818,6 +818,6 @@ std::string DistanceGraph::simple_structure_stats() const{
         if (nv.is_bubble_side()) bubsides++;
         if (nv.is_tip()) tips++;
     }
-    std::sprintf(buffer, "%d tips, %d canonical repeats and %d bubble sides out of %1d nodes\n", tips, canreps, bubsides, total);
+    std::sprintf(buffer, "%lld tips, %lld canonical repeats and %lld bubble sides out of %lld nodes\n", tips, canreps, bubsides, total);
     return std::string(buffer);
 }
