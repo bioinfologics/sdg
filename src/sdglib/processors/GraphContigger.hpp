@@ -21,7 +21,8 @@ public:
     void extend_to_repeats(int max_size=300);
 
     bool solve_bubble(TangleView &t, Strider &s, GraphEditor &ge);
-
+    bool solve_repeat(TangleView &t, Strider &s, GraphEditor &ge);
+    bool solve_tip(TangleView &t, Strider &s, GraphEditor &ge);
 private:
     WorkSpace &ws;
 };

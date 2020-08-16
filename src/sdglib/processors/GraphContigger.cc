@@ -412,10 +412,12 @@ bool GraphContigger::solve_bubble(TangleView &t, Strider &s, GraphEditor &ge) {
     // Return false if the bubble is not solved and tue is if't solved and adds an operation to the ge and return the ge response
 
     std::vector<sgNodeID_t> fapath_all=s.stride_out_in_order(t.frontiers[0].rc().node_id()).nodes;
-    std::vector<sgNodeID_t> fapath (fapath_all.begin(), fapath_all.begin()+3);
+    int offset = fapath_all.size()<3 ? fapath_all.size() : 3;
+    std::vector<sgNodeID_t> fapath (fapath_all.begin(), fapath_all.begin()+offset);
 
     std::vector<sgNodeID_t> fbpath_all=s.stride_out_in_order(t.frontiers[1].rc().node_id()).nodes;
-    std::vector<sgNodeID_t> fbpath (fbpath_all.begin(), fbpath_all.begin()+3);
+    offset = fbpath_all.size()<3 ? fbpath_all.size() : 3;
+    std::vector<sgNodeID_t> fbpath (fbpath_all.begin(), fbpath_all.begin()+offset);
     std::reverse(fbpath.begin(), fbpath.end());
     std::transform(fbpath.begin(), fbpath.end(), fbpath.begin(), [](sgNodeID_t i){return i*-1;});
 
@@ -431,3 +433,54 @@ bool GraphContigger::solve_bubble(TangleView &t, Strider &s, GraphEditor &ge) {
     }
     return false;
 }
+
+bool GraphContigger::solve_repeat(TangleView &t, Strider &s, GraphEditor &ge) {
+    sgNodeID_t rnid=t.internals[0].node_id();
+    std::vector<NodeView> ins;
+    std::vector<sgNodeID_t> inids;
+    for (const auto& pn: t.internals[0].prev()){
+        ins.push_back(pn.node());
+        inids.push_back(pn.node().node_id());
+    }
+    std::vector<NodeView> outs;
+    std::vector<sgNodeID_t>outids;
+    for (const auto& nn: t.internals[0].next()){
+        outs.push_back(nn.node());
+        outids.push_back(nn.node().node_id());
+    }
+    if (ins.size() != outs.size()) return false;
+
+    std::vector<std::vector<sgNodeID_t >> solutions;
+    for (const auto& inv: ins){
+        auto fpath_all=s.stride_out_in_order(inv.node_id()).nodes;
+        int offset = fpath_all.size()<3 ? fpath_all.size() : 3;
+        std::vector<sgNodeID_t> fpath(fpath_all.begin(), fpath_all.begin()+offset);
+        if (fpath.size()==3 and fpath[1]==rnid and std::find(outids.begin(), outids.end(), fpath[2]) != outids.end()) {
+            std::vector<sgNodeID_t> bpath_all=s.stride_out_in_order(-fpath[2]).nodes;
+            int offset = bpath_all.size()<3 ? bpath_all.size() : 3;
+            std::vector<sgNodeID_t> bpath (bpath_all.begin(), bpath_all.begin()+offset);
+            std::reverse(bpath.begin(), bpath.end());
+            std::transform(bpath.begin(), bpath.end(), bpath.begin(), [](sgNodeID_t i){return i*-1;});
+
+            if (bpath == fpath) solutions.push_back(fpath);
+        }
+    }
+    if (solutions.size() != ins.size()) return false;
+    std::vector<std::pair<sgNodeID_t,sgNodeID_t>> transp_solutions;
+    for (const auto& s: solutions){
+        transp_solutions.push_back(std::make_pair(-s[0], s[2]));
+    }
+    ge.queue_node_expansion(rnid,transp_solutions);
+    return true;
+}
+
+bool GraphContigger::solve_tip(TangleView &t, Strider &s, GraphEditor &ge){
+    //just check that each frontier connects to the other one through reads
+    auto f0s = s.stride_out_in_order(-t.frontiers[0].node_id()).nodes;
+    auto f1s = s.stride_out_in_order(-t.frontiers[1].node_id()).nodes;
+    if (f0s.size()>1 and f0s[1]==t.frontiers[1].node_id() and f1s.size()>1 and f1s[1]==t.frontiers[0].node_id()){
+        return ge.queue_node_deletion(t.internals[0].node_id());
+//        return true;
+    }
+    return false;
+};
