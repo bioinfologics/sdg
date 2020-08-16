@@ -117,6 +117,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<NodeView>(m,"NodeView","A view for a Node in a Distance Graph")
             .def("node_id",&NodeView::node_id)
             .def("rc",&NodeView::rc)
+            .def("is_tip",&NodeView::is_tip)
             .def("sequence",&NodeView::sequence)
             .def("size",&NodeView::size)
             .def("prev",&NodeView::prev,"A list with LinkViews to previous nodes",py::return_value_policy::move)

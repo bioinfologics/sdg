@@ -188,3 +188,10 @@ std::unordered_set<uint64_t> NodeView::get_linked_tags_kmers(std::string datasto
     ReadSequenceBuffer ds_buffer(dg->sdg.ws.get_linked_reads_datastore(datastore_name));
     return dg->sdg.ws.get_linked_reads_datastore(datastore_name).get_tags_kmers(K, min_tag_cov, tags, ds_buffer);
 };
+
+bool NodeView::is_tip(){
+    if((prev().size()==0 and next().size()>0) or (next().size()==0 and prev().size()>0)) {
+        return true;
+    }
+    return false;
+};

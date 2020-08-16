@@ -40,11 +40,10 @@ void PairedReadsMapper::write(std::ofstream &output_file) {
     SDG_FILETYPE type(PairedMap_FT);
     output_file.write((char *) &type, sizeof(type));
 
+    // TODO: to activate the path persistance comment the first 2 lines and uncomment the next 2
     sdglib::write_flat_vector(output_file, read_to_node);
-    //mappings
     sdglib::write_flat_vectorvector(output_file, reads_in_node);
-
-    // write read_paths
+//    sdglib::write_flat_vectorvector(output_file, paths_in_node);
 //    sdglib::write_flat_vector(output_file, read_paths);
 }
 
@@ -68,10 +67,12 @@ void PairedReadsMapper::read(std::ifstream &input_file) {
         throw std::runtime_error("PairedReadsMapper file Incompatible file type");
     }
 
+
+
+    // TODO: to activate the path persistance comment the first 2 lines and uncomment the next 2
     sdglib::read_flat_vector(input_file, read_to_node);
-
     sdglib::read_flat_vectorvector(input_file, reads_in_node);
-
+//    sdglib::read_flat_vectorvector(input_file, paths_in_node);
 //    sdglib::read_flat_vector(input_file, read_paths);
     populate_orientation();
 }
