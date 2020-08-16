@@ -189,9 +189,29 @@ std::unordered_set<uint64_t> NodeView::get_linked_tags_kmers(std::string datasto
     return dg->sdg.ws.get_linked_reads_datastore(datastore_name).get_tags_kmers(K, min_tag_cov, tags, ds_buffer);
 };
 
-bool NodeView::is_tip(){
+bool NodeView::is_tip() {
     if((prev().size()==0 and next().size()>0) or (next().size()==0 and prev().size()>0)) {
         return true;
     }
     return false;
-};
+}
+
+bool NodeView::is_bubble_side() {
+    if ( parallels().size()== 1 and prev().size()==1 and next().size()==1 and prev()[0].node().next().size()==2 and next()[0].node().prev().size()==2) {
+        return true;
+    }
+    return false;
+}
+
+bool NodeView::is_canonical_repeat() {
+    if(prev().size()>1 and next().size()>1 and prev().size()==next().size()) {
+        for (const auto &pl: prev()) {
+            if (pl.node().next().size() > 1) return false;
+        }
+        for (const auto &nl: next()) {
+            if (nl.node().prev().size() > 1) return false;
+        }
+        return true;
+    }
+    return false;
+}

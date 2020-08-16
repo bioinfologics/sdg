@@ -118,6 +118,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("node_id",&NodeView::node_id)
             .def("rc",&NodeView::rc)
             .def("is_tip",&NodeView::is_tip)
+            .def("is_bubble_side",&NodeView::is_bubble_side)
+            .def("is_canonical_repeat",&NodeView::is_canonical_repeat)
             .def("sequence",&NodeView::sequence)
             .def("size",&NodeView::size)
             .def("prev",&NodeView::prev,"A list with LinkViews to previous nodes",py::return_value_policy::move)
