@@ -5,10 +5,15 @@
 #include "GraphContigger.hpp"
 #include "GraphEditor.hpp"
 #include <sdglib/views/NodeView.hpp>
+#include <sdglib/views/TangleView.hpp>
 
 
 void GraphContigger::pop_bubbles(const PairedReadsDatastore &prds, int bubble_size, int min_support, int max_noise,
                                     float snr) {
+
+    if (prds.mapper.paths_in_node.size() == 0){
+        throw std::runtime_error("Path reads first");
+    }
     std::set<sgNodeID_t> to_delete;
     for (auto &nv:ws.sdg.get_all_nodeviews()) {
         if (nv.size() > bubble_size) continue;
@@ -401,4 +406,28 @@ void GraphContigger::extend_to_repeats(int max_size) {
 //            #TODO: tip check? is it even needed now?
 //            #print([[-x.node().node_id(), nv.next()[0].node().node_id()] for x in nv.prev()])
 //            e.queue_node_expansion(nv.node_id(),[[-x.node().node_id(), nv.next()[0].node().node_id()] for x in nv.prev()])
+}
+
+bool GraphContigger::solve_bubble(TangleView &t, Strider &s, GraphEditor &ge) {
+    // Return false if the bubble is not solved and tue is if't solved and adds an operation to the ge and return the ge response
+
+    std::vector<sgNodeID_t> fapath_all=s.stride_out_in_order(t.frontiers[0].rc().node_id()).nodes;
+    std::vector<sgNodeID_t> fapath (fapath_all.begin(), fapath_all.begin()+3);
+
+    std::vector<sgNodeID_t> fbpath_all=s.stride_out_in_order(t.frontiers[1].rc().node_id()).nodes;
+    std::vector<sgNodeID_t> fbpath (fbpath_all.begin(), fbpath_all.begin()+3);
+    std::reverse(fbpath.begin(), fbpath.end());
+    std::transform(fbpath.begin(), fbpath.end(), fbpath.begin(), [](sgNodeID_t i){return i*-1;});
+
+    if (fapath.size()<2) fapath=fbpath;
+    if (fbpath.size()<2) fbpath=fapath;
+    if (fapath.size()<2) return false;
+
+    if (fapath==fbpath and std::abs(t.internals[0].node_id()) == std::abs(fapath[1])){
+        return ge.queue_node_deletion(t.internals[1].node_id());
+    }
+    if (fapath==fbpath and std::abs(t.internals[1].node_id()) == std::abs(fapath[1])){
+        return ge.queue_node_deletion(t.internals[0].node_id());
+    }
+    return false;
 }

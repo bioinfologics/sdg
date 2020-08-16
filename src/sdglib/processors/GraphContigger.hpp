@@ -5,7 +5,8 @@
 #pragma once
 #include <sdglib/workspace/WorkSpace.hpp>
 #include <sdglib/mappers/LongReadsRecruiter.hpp>
-
+#include <sdglib/processors/Strider.hpp>
+#include <sdglib/processors/GraphEditor.hpp>
 
 class GraphContigger {
 public:
@@ -18,6 +19,8 @@ public:
     void solve_canonical_repeats_with_paired_paths(const PairedReadsDatastore & prds,int min_support=6, int max_noise=5, float snr=10, bool join_unitigs = true, bool dry_run=false, bool verbose=false);
     void solve_canonical_repeats_with_long_reads(const LongReadsRecruiter & lrr, float max_side_kci=1.5, int min_support=6, int max_noise=5, float snr=10);
     void extend_to_repeats(int max_size=300);
+
+    bool solve_bubble(TangleView &t, Strider &s, GraphEditor &ge);
 
 private:
     WorkSpace &ws;

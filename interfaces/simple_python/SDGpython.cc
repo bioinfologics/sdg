@@ -367,6 +367,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("solve_canonical_repeats_with_single_paths",&GraphContigger::solve_canonical_repeats_with_single_paths,"datastore"_a,"min_support"_a,"max_noise"_a,"snr"_a=10, "join_unitigs"_a=true, "dry_run"_a=false, "verbose"_a=false)
             .def("solve_canonical_repeats_with_paired_paths",&GraphContigger::solve_canonical_repeats_with_paired_paths,"datastore"_a,"min_support"_a,"max_noise"_a,"snr"_a=10, "join_unitigs"_a=true, "dry_run"_a=false, "verbose"_a=false)
             .def("solve_canonical_repeats_with_long_reads",&GraphContigger::solve_canonical_repeats_with_long_reads,"recruiter"_a,"max_kci"_a,"min_support"_a,"max_noise"_a,"snr"_a=10)
+            .def("solve_bubble",&GraphContigger::solve_bubble, "t"_a, "s"_a, "ge"_a)
             ;
 
     py::class_<LinkageMaker>(m, "LinkageMaker", "Makes linkage")
