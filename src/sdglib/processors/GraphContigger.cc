@@ -594,3 +594,140 @@ std::vector<sgNodeID_t> GraphContigger::end_to_end_solution(std::vector<sgNodeID
     }
     return std::vector<sgNodeID_t>();
 }
+
+bool GraphContigger::solve_canonical_repeat(GraphEditor& ge, NodeView &nv, PairedReadsDatastore& peds, int min_support=5, int max_noise=10, int snr=10, bool verbose=false){
+    if (verbose) std::cout<< "Solving " << nv.node_id() << ", "<< nv.size() << "bp" << std::endl;
+    std::vector<sgNodeID_t > out_nids;
+    for (const auto &on: nv.next()) out_nids.push_back(on.node().node_id());
+
+    std::vector<std::pair<sgNodeID_t, sgNodeID_t>> sols;
+    for (const auto& lnv: nv.prev()){
+        auto pnv = lnv.node();
+        std::map<sgNodeID_t,int> c;
+        for (const auto& p: peds.mapper.all_paths_fw(pnv.node_id(), false)) {
+            if (p[0] != nv.node_id()) {
+                c[p[0]]++;
+            } else if (p.size() > 1) {
+                c[p[1]]++;
+            }
+        }
+
+        if (verbose) {
+            std::cout << "Cuentas de paths" << std::endl;
+            for (const auto &cuentas: c) std::cout << cuentas.first <<','<<cuentas.second << std::endl;
+        }
+
+        auto t = 0;
+        for (const auto &v: c) t+=v.second;
+        if (t<min_support){
+            if (verbose) std::cout << "FW too few paths! -> " << t << std::endl;
+            return false;
+        }
+        // Pick winner
+//        auto winner = std::max_element(c.begin(), c.end(), [](const p1, const p2){return (p1.second<p2.second)});
+        int winner=0;
+        int votes=0;
+        if (verbose) std::cout<<"Counter votes FW -> "<< nv.node_id()<<std::endl;
+        for (const auto& counts: c) {
+            if (verbose) std::cout<<counts.first<<":"<<counts.second<<std::endl;
+            if (votes<counts.second) {
+                votes = counts.second;
+                winner = counts.first;
+            }
+        }
+        std::cout << "FW Winner: " << winner << ", votes: " << votes << ", total: "<< t << std::endl;
+        if (votes<min_support){
+            if (verbose) std::cout << "FW winner poorly supported! -> " << winner << ":" << votes << std::endl;
+            return false;
+        }
+        int noise=t-votes;
+        if (std::find(out_nids.begin(), out_nids.end(), winner)!=out_nids.end() and noise*snr<=votes and noise<max_noise) {
+            sols.push_back(std::make_pair(-pnv.node_id(), winner));
+        } else {
+            if (verbose) std::cout << "FW Not a clear winner!" << std::endl;
+            return false;
+        }
+    }
+    if (verbose) {
+        std::cout << "Printing solutions" << std::endl;
+        for (const auto &s: sols) {
+            std::cout << s.first<<","<<s.second<<std::endl;
+        }
+    }
+    std::unordered_set<sgNodeID_t> unique_ends;
+    for (const auto &s: sols) {
+        unique_ends.emplace(s.second);
+    }
+    if (sols.size()<nv.prev().size() or sols.size()>unique_ends.size()) {
+        if (verbose) std::cout << "Solutions not match" << std::endl;
+        return false;
+    }
+    std::vector<sgNodeID_t> in_nids;
+    for (const auto& x: nv.prev()){
+        in_nids.push_back(-x.node().node_id());
+    }
+    std::vector<std::pair<sgNodeID_t, sgNodeID_t>> sols2;
+    for (const auto& lnv: nv.next()){
+        auto nnv = lnv.node();
+        std::map<sgNodeID_t,int> c;
+        for (const auto& p: peds.mapper.all_paths_fw(-nnv.node_id(), false)) {
+            if (p[0] != -nv.node_id()) {
+                c[p[0]]++;
+            } else if (p.size() > 1) {
+                c[p[1]]++;
+            }
+        }
+        auto t = 0;
+        for (const auto &v: c) t+=v.second;
+        if (t<min_support){
+            if (verbose) std::cout << "BW too few paths! -> " << t << std::endl;
+            return false;
+        }
+        // Pick winner
+        int winner=0;
+        int votes=0;
+        if (verbose) std::cout<<"Counter votes BW -> "<< nv.node_id()<<std::endl;
+        for (const auto& counts: c) {
+            if (verbose) std::cout<<counts.first<<":"<<counts.second<<std::endl;
+            if (votes<counts.second) {
+                votes = counts.second;
+                winner = counts.first;
+            }
+        }
+        std::cout << "BW Winner: " << winner << ", votes: " << votes << ", total: "<< t << std::endl;
+        if (votes<min_support){
+            if (verbose) std::cout << "BW winner poorly supported! ->"<< winner << ":" << votes << std::endl;
+            return false;
+        }
+        int noise=t-votes;
+        if (verbose){
+            std::cout << "printing in_nids" << std::endl;
+            for (const auto &i: in_nids) std::cout << i << std::endl;
+        }
+        if (std::find(in_nids.begin(), in_nids.end(), winner)!=in_nids.end() and noise*snr<=votes and noise<max_noise) {
+            sols2.push_back(std::make_pair(winner, nnv.node_id()));
+        } else {
+            if (verbose) std::cout << "BW Not a clear winner! -> " << winner << ":" << votes << std::endl;
+            return false;
+        }
+    }
+    if (verbose) {
+        std::cout << "Printing solutions2" << std::endl;
+        for (const auto &s: sols2) {
+            std::cout << s.first<<","<<s.second<<std::endl;
+        }
+    }
+    std::sort(sols.begin(), sols.end());
+    std::sort(sols2.begin(), sols2.end());
+    if (sols!=sols2) {
+        if (verbose){
+            std::cout << "FW and BW solutions not the same" << std::endl;
+            for (auto i=0; i<sols.size();++i){
+                std::cout << sols[i].first<<sols[i].second<<sols2[i].first<<sols2[i].second<<std::endl;
+            }
+        }
+        return false;
+    }
+    ge.queue_node_expansion(nv.node_id(), sols);
+    return true;
+}
