@@ -22,8 +22,8 @@ public:
 
     // graph simplification
     bool solve_canonical_repeat(GraphEditor& ge, NodeView &nv, PairedReadsDatastore& peds, int min_support=5, int max_noise=10, int snr=10, bool verbose=false);
-    bool clip_tip();
-    bool pop_error_bubbble();
+    bool clip_tip(GraphEditor& ge, const NodeView &_nv, PairedReadsDatastore& peds, int min_support=5, int max_noise=10, int snr=10, bool verbose=false);
+    bool pop_error_bubbble(GraphEditor& ge, NodeView &nv1, NodeView &nv2, PairedReadsDatastore& peds, int min_support=5, int max_noise=10, int snr=10, bool verbose=false);
 
 
     // Tangle resolution

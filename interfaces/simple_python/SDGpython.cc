@@ -372,6 +372,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("solve_tip",&GraphContigger::solve_tip, "t"_a, "s"_a, "ge"_a)
             .def("solve_unclassified",&GraphContigger::solve_unclassified, "t"_a, "s"_a, "ge"_a)
             .def("solve_canonical_repeat",&GraphContigger::solve_canonical_repeat, "ge"_a, "nv"_a, "peds"_a, "min_support"_a=5, "max_noise"_a=10, "snr"_a=10, "verbose"_a=false)
+            .def("clip_tip",&GraphContigger::clip_tip, "ge"_a, "nv"_a, "peds"_a, "min_support"_a=5, "max_noise"_a=10, "snr"_a=10, "verbose"_a=false)
+            .def("pop_error_bubble",&GraphContigger::pop_error_bubbble, "ge"_a, "nv1"_a, "nv2"_a, "peds"_a, "min_support"_a=5, "max_noise"_a=10, "snr"_a=10, "verbose"_a=false)
             ;
 
     py::class_<LinkageMaker>(m, "LinkageMaker", "Makes linkage")

@@ -684,6 +684,7 @@ bool GraphContigger::solve_canonical_repeat(GraphEditor& ge, NodeView &nv, Paire
             return false;
         }
         // Pick winner
+//        auto winner = std::max_element(c.begin(), c.end(), [](p1, p2)[return p1.second<p2.second])
         int winner=0;
         int votes=0;
         if (verbose) std::cout<<"Counter votes BW -> "<< nv.node_id()<<std::endl;
@@ -731,3 +732,64 @@ bool GraphContigger::solve_canonical_repeat(GraphEditor& ge, NodeView &nv, Paire
     ge.queue_node_expansion(nv.node_id(), sols);
     return true;
 }
+
+bool GraphContigger::clip_tip(GraphEditor& ge, const NodeView &_nv, PairedReadsDatastore& peds, int min_support, int max_noise, int snr, bool verbose){
+    // TODO: small difference vs python version, couldn't find the reason yet
+    auto nv (_nv);
+    if (nv.prev().size()==0) nv=nv.rc();
+    if (nv.prev().size()!=1 or nv.next().size()!=0) return false;
+    int ayes=0;
+    int nays=0;
+    for (const auto &p: peds.mapper.all_paths_fw(nv.prev()[0].node().node_id(), false)){
+        if (p[0] == nv.node_id()) {
+            ayes++;
+        } else {
+            nays++;
+        }
+    }
+    if (ayes<=max_noise and ayes*snr<=nays and nays>=min_support) {
+        ge.queue_node_deletion(std::abs(nv.node_id()));
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool GraphContigger::pop_error_bubbble(GraphEditor& ge, NodeView &nv1, NodeView &nv2, PairedReadsDatastore& peds, int min_support, int max_noise, int snr, bool verbose) {
+//    auto nv1(_nv1);
+//    auto nv2(_nv2);
+    if (!nv1.is_bubble_side()) return false;
+
+    if (nv1.parallels()[0].node_id() != nv2.node_id() or std::abs(nv1.node_id())>std::abs(nv2.node_id())) return false;
+    int v1=0;
+    int v2=0;
+    int vo=0;
+    for (const auto&p: peds.mapper.all_paths_fw(nv1.prev()[0].node().node_id(), false)) {
+        if (p[0] == nv1.node_id()){
+            v1++;
+        } else if (p[0] == nv2.node_id()) {
+            v2++;
+        } else{
+            vo++;
+        }
+    }
+    for (const auto &p: peds.mapper.all_paths_fw(-nv1.next()[0].node().node_id(), false)) {
+        if (p[0] == -nv1.node_id()) {
+            v1++;
+        } else if (p[0] == -nv2.node_id()) {
+            v2++;
+        } else {
+            vo++;
+        }
+    }
+    if (v1>min_support and v2+vo<max_noise and v1>=snr*(v2+vo)) {
+        ge.queue_node_deletion(nv2.node_id());
+        return true;
+    }
+    if (v2>min_support and v1+vo<max_noise and v2>=snr*(v1+vo)) {
+        ge.queue_node_deletion(nv1.node_id());
+        return true;
+    }
+    return false;
+}
+
