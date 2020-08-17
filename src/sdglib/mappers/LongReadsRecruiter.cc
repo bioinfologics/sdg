@@ -9,6 +9,7 @@
 #include <atomic>
 
 std::vector<PerfectMatch> PerfectMatchesFilter::truncate_turnaround(const std::vector<PerfectMatch> &in) const {
+    if (in.empty()) return {};
     std::unordered_map<sgNodeID_t,uint64_t> node_count;
     std::vector<bool> turn_score;
 
