@@ -491,13 +491,11 @@ bool GraphContigger::solve_unclassified(TangleView &t, Strider &s, GraphEditor &
 
 //    std::unordered_map<sgNodeID_t , std::vector<sgNodeID_t>> sols;
 //    for (const auto& fnid: fnids) sols.insert(std::make_pair(fnid, std::vector<sgNodeID_t>()));
-    std::cout << "ACA1" << std::endl;
     std::unordered_map<sgNodeID_t , std::vector<sgNodeID_t>> fs;
     for (const auto&f: t.frontiers) {
         fs.insert(std::make_pair(-f.node_id(), s.stride_out_in_order(-f.node_id()).nodes));
     }
 
-    std::cout << "ACA2" << std::endl;
     std::unordered_map<sgNodeID_t , std::vector<sgNodeID_t>> ns;
     for (const auto&nv: t.internals){
 
@@ -512,7 +510,6 @@ bool GraphContigger::solve_unclassified(TangleView &t, Strider &s, GraphEditor &
         ns.insert(std::make_pair(nv.node_id(), tpath));
     }
 
-    std::cout << "ACA3" << std::endl;
     std::vector<std::vector<sgNodeID_t >> sols;
     std::vector<std::vector<sgNodeID_t>> map_values;
     for (const auto &v: fs){map_values.push_back(v.second);}
@@ -522,12 +519,10 @@ bool GraphContigger::solve_unclassified(TangleView &t, Strider &s, GraphEditor &
     for (const auto& x: map_values){
         auto sol=end_to_end_solution(x, fnids);
         if (sol.size()>0 and std::find(sols.begin(), sols.end(), sol)==sols.end()){
-            std::cout << "ACA4 expandiendo sols" << std::endl;
             sols.push_back(sol);
         }
     }
 
-    std::cout << "ACA5 " << sols.size() << std::endl;
     std::unordered_set<sgNodeID_t> temp_set;
     for (const auto &x: sols){
         temp_set.emplace(x[0]);
@@ -536,7 +531,6 @@ bool GraphContigger::solve_unclassified(TangleView &t, Strider &s, GraphEditor &
         temp_set.emplace(-x.back());
     }
 
-    std::cout << "ACA6" << std::endl;
     if (sols.size() == fnids.size()/2 and temp_set.size() == fnids.size()){
         for (const auto &x: sols){
             try {
@@ -549,7 +543,6 @@ bool GraphContigger::solve_unclassified(TangleView &t, Strider &s, GraphEditor &
         for (const auto &x: t.internals) ge.queue_node_deletion(x.node_id());
         return true;
     }
-    std::cout << "ACA7" << std::endl;
     return false;
 }
 
@@ -582,12 +575,10 @@ std::vector<sgNodeID_t> GraphContigger::end_to_end_solution(std::vector<sgNodeID
                                     csol.push_back(a[0]);
                                     csol.push_back(n);
                                 } else {
-                                    std::cout << "SALIDA1" << std::endl;
                                     return sol;
                                 }
                             }
                         } else {
-                            std::cout << "SALIDA2" << std::endl;
                             for (auto &s: sol) {
                                 std::cout << s << ",";
                             }
@@ -595,14 +586,11 @@ std::vector<sgNodeID_t> GraphContigger::end_to_end_solution(std::vector<sgNodeID
                             return sol;
                         }
                     }
-                    std::cout << "SALIDA3" << std::endl;
                     return csol;
                 }
             }
-            std::cout << "SALIDA4" << std::endl;
             return std::vector<sgNodeID_t>();
         }
     }
-    std::cout << "SALIDA5" << std::endl;
     return std::vector<sgNodeID_t>();
 }
