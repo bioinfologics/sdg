@@ -370,6 +370,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("solve_bubble",&GraphContigger::solve_bubble, "t"_a, "s"_a, "ge"_a)
             .def("solve_repeat",&GraphContigger::solve_repeat, "t"_a, "s"_a, "ge"_a)
             .def("solve_tip",&GraphContigger::solve_tip, "t"_a, "s"_a, "ge"_a)
+            .def("solve_unclassified",&GraphContigger::solve_unclassified, "t"_a, "s"_a, "ge"_a)
             ;
 
     py::class_<LinkageMaker>(m, "LinkageMaker", "Makes linkage")

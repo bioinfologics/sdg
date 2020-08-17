@@ -480,7 +480,129 @@ bool GraphContigger::solve_tip(TangleView &t, Strider &s, GraphEditor &ge){
     auto f1s = s.stride_out_in_order(-t.frontiers[1].node_id()).nodes;
     if (f0s.size()>1 and f0s[1]==t.frontiers[1].node_id() and f1s.size()>1 and f1s[1]==t.frontiers[0].node_id()){
         return ge.queue_node_deletion(t.internals[0].node_id());
-//        return true;
     }
     return false;
-};
+}
+
+bool GraphContigger::solve_unclassified(TangleView &t, Strider &s, GraphEditor &ge){
+
+    std::vector<sgNodeID_t> fnids;
+    for (const auto& f: t.frontiers) fnids.push_back(f.node_id());
+
+//    std::unordered_map<sgNodeID_t , std::vector<sgNodeID_t>> sols;
+//    for (const auto& fnid: fnids) sols.insert(std::make_pair(fnid, std::vector<sgNodeID_t>()));
+    std::cout << "ACA1" << std::endl;
+    std::unordered_map<sgNodeID_t , std::vector<sgNodeID_t>> fs;
+    for (const auto&f: t.frontiers) {
+        fs.insert(std::make_pair(-f.node_id(), s.stride_out_in_order(-f.node_id()).nodes));
+    }
+
+    std::cout << "ACA2" << std::endl;
+    std::unordered_map<sgNodeID_t , std::vector<sgNodeID_t>> ns;
+    for (const auto&nv: t.internals){
+
+        std::vector<sgNodeID_t> tpath;
+        auto stride_back = s.stride_out_in_order(-nv.node_id()).nodes;
+        for (auto i=stride_back.rbegin(); i<stride_back.rend()-1; ++i){
+            tpath.push_back(*i*-1);
+        }
+        for (const auto &i: s.stride_out_in_order(nv.node_id()).nodes){
+            tpath.push_back(i-1);
+        }
+        ns.insert(std::make_pair(nv.node_id(), tpath));
+    }
+
+    std::cout << "ACA3" << std::endl;
+    std::vector<std::vector<sgNodeID_t >> sols;
+    std::vector<std::vector<sgNodeID_t>> map_values;
+    for (const auto &v: fs){map_values.push_back(v.second);}
+    for (const auto &v: ns){map_values.push_back(v.second);}
+
+
+    for (const auto& x: map_values){
+        auto sol=end_to_end_solution(x, fnids);
+        if (sol.size()>0 and std::find(sols.begin(), sols.end(), sol)==sols.end()){
+            std::cout << "ACA4 expandiendo sols" << std::endl;
+            sols.push_back(sol);
+        }
+    }
+
+    std::cout << "ACA5 " << sols.size() << std::endl;
+    std::unordered_set<sgNodeID_t> temp_set;
+    for (const auto &x: sols){
+        temp_set.emplace(x[0]);
+    }
+    for (const auto &x: sols){
+        temp_set.emplace(-x.back());
+    }
+
+    std::cout << "ACA6" << std::endl;
+    if (sols.size() == fnids.size()/2 and temp_set.size() == fnids.size()){
+        for (const auto &x: sols){
+            try {
+                auto ps=SequenceDistanceGraphPath(ws.sdg,x).sequence();
+            } catch (...) {
+                return false;
+            }
+        }
+        for (const auto &x: sols) ge.queue_path_detachment(x, true);
+        for (const auto &x: t.internals) ge.queue_node_deletion(x.node_id());
+        return true;
+    }
+    std::cout << "ACA7" << std::endl;
+    return false;
+}
+
+std::vector<sgNodeID_t> GraphContigger::end_to_end_solution(std::vector<sgNodeID_t> p, std::vector<sgNodeID_t> fnids){
+    for (auto i=0; i<p.size(); ++i){
+        if (std::find(fnids.begin(), fnids.end(), -p[i]) != fnids.end()) {
+            for (auto j=i+1; j<p.size(); ++j) {
+                if (std::find(fnids.begin(), fnids.end(), p[j])!=fnids.end()){
+                    std::vector<sgNodeID_t> sol;
+                    if (std::abs(p[i])<std::abs(p[j])){
+                        for (auto x=i; x<j+1; ++x) sol.push_back(p[x]);
+                    } else {
+                        for (auto x=i; x<j+1; ++x) sol.push_back(-p[x]);
+                        std::reverse(sol.begin(), sol.end());
+                    }
+                    std::vector<sgNodeID_t> csol;
+                    csol.push_back(sol[0]);
+                    for (auto x=1; i<sol.size(); ++x){
+                        auto n=sol[x];
+                        auto fw_reached_nodes_1 = ws.sdg.fw_reached_nodes(csol.back(),1);
+                        auto fw_reached_nodes_2 = ws.sdg.fw_reached_nodes(csol.back(),2);
+                        if (std::find(fw_reached_nodes_1.begin(), fw_reached_nodes_1.end(), n)!=fw_reached_nodes_1.end()) {
+                            csol.push_back(n);
+                        } else if (std::find(fw_reached_nodes_2.begin(), fw_reached_nodes_2.end(), n)!=fw_reached_nodes_2.end()) {
+                            std::vector<sgNodeID_t> a;
+                            for (const auto& skipped: ws.sdg.fw_reached_nodes(csol.back(),1)) {
+                                auto fw_skipped = ws.sdg.fw_reached_nodes(skipped,1);
+                                if (std::find(fw_skipped.begin(), fw_skipped.end(), n)!=fw_skipped.end()) a.push_back(skipped);
+                                if (a.size()==1) {
+                                    csol.push_back(a[0]);
+                                    csol.push_back(n);
+                                } else {
+                                    std::cout << "SALIDA1" << std::endl;
+                                    return sol;
+                                }
+                            }
+                        } else {
+                            std::cout << "SALIDA2" << std::endl;
+                            for (auto &s: sol) {
+                                std::cout << s << ",";
+                            }
+                            std::cout << std::endl;
+                            return sol;
+                        }
+                    }
+                    std::cout << "SALIDA3" << std::endl;
+                    return csol;
+                }
+            }
+            std::cout << "SALIDA4" << std::endl;
+            return std::vector<sgNodeID_t>();
+        }
+    }
+    std::cout << "SALIDA5" << std::endl;
+    return std::vector<sgNodeID_t>();
+}

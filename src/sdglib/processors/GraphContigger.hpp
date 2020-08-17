@@ -23,6 +23,10 @@ public:
     bool solve_bubble(TangleView &t, Strider &s, GraphEditor &ge);
     bool solve_repeat(TangleView &t, Strider &s, GraphEditor &ge);
     bool solve_tip(TangleView &t, Strider &s, GraphEditor &ge);
+    bool solve_unclassified(TangleView &t, Strider &s, GraphEditor &ge);
+
+    std::vector<sgNodeID_t> end_to_end_solution(std::vector<sgNodeID_t> p, std::vector<sgNodeID_t> fnids);
+
 private:
     WorkSpace &ws;
 };
