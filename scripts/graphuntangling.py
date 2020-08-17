@@ -1,3 +1,6 @@
+import SDGpython as SDG
+from collections import Counter
+
 def solve_bubble(t,s,ge):
     #This checks if a bubble can be due to a sequencing error and queues a node deletion on the error node
     fapath=s.stride_out_in_order(t.frontiers[0].rc().node_id()).nodes[:3]
@@ -38,7 +41,7 @@ def solve_tip(t,s,ge):
         return True
     return False
 
-def end_to_end_solution(p,fnids):
+def end_to_end_solution(sdg,p,fnids):
     for i in range(len(p)):
         if -p[i] in fnids:
             for j in range(i+1,len(p)):
@@ -48,12 +51,12 @@ def end_to_end_solution(p,fnids):
                     #go through sol, if there's a single-option missing node, add it
                     csol=[sol[0]]
                     for n in sol[1:]:
-                        if n in ws.sdg.fw_reached_nodes(csol[-1],1):
+                        if n in sdg.fw_reached_nodes(csol[-1],1):
                             csol.append(n)
-                        elif n in ws.sdg.fw_reached_nodes(csol[-1],2):
+                        elif n in sdg.fw_reached_nodes(csol[-1],2):
                             a=[]
-                            for skipped in ws.sdg.fw_reached_nodes(csol[-1],1):
-                                if n in ws.sdg.fw_reached_nodes(skipped,1):
+                            for skipped in sdg.fw_reached_nodes(csol[-1],1):
+                                if n in sdg.fw_reached_nodes(skipped,1):
                                     a.append(skipped)
                             if len(a)==1:
                                 csol.append(a[0])
@@ -66,7 +69,7 @@ def end_to_end_solution(p,fnids):
             return []
     return []
 
-def solve_unclassified(t,s,ge):
+def solve_unclassified(sdg,t,s,ge):
     #first stride from all frontiers:
     fs={}
     fnids=[x.node_id() for x in t.frontiers]
@@ -80,7 +83,7 @@ def solve_unclassified(t,s,ge):
     #for x in ns: print(x,ns[x])
     sols=[]
     for x in list(fs.values())+list(ns.values()):
-        sol=end_to_end_solution(x,fnids)
+        sol=end_to_end_solution(sdg,x,fnids)
         if sol and sol not in sols:
             sols.append(sol)
     #for x in sols: print(x)
@@ -88,7 +91,7 @@ def solve_unclassified(t,s,ge):
         #print("UNCLASSIFIED SOLVED:")
         for x in sols:
             try:
-                ps=SDG.SequenceDistanceGraphPath(ws.sdg,x).sequence()
+                ps=SDG.SequenceDistanceGraphPath(sdg,x).sequence()
             except:
                 return False
         for x in sols: ge.queue_path_detachment(x,True)
@@ -96,7 +99,7 @@ def solve_unclassified(t,s,ge):
         return True
     return False
 
-def solve_all_tangles(ws,fsize=220,fminkci=-1,fmaxkci=-1,apply=False):
+def solve_all_tangles(ws,peds,fsize=220,fminkci=-1,fmaxkci=-1,apply=False):
     total=solved=unsolved=0
     s=SDG.Strider(ws)
     s.add_datastore(peds)
@@ -116,7 +119,7 @@ def solve_all_tangles(ws,fsize=220,fminkci=-1,fmaxkci=-1,apply=False):
             if solve_repeat(t,s,ge): solved[tc]+=1
             else: unsolved[tc]+=1
         else:
-            if solve_unclassified(t,s,ge): solved[tc]+=1
+            if solve_unclassified(ws.sdg,t,s,ge): solved[tc]+=1
             else: unsolved[tc]+=1
         total+=1
     print("Total tangles: %d " % (total) )

@@ -1,3 +1,4 @@
+import SDGpython as SDG
 from collections import Counter
 
 def is_canonical_repeat(nv):
@@ -125,7 +126,7 @@ def pop_error_bubble(ge,nv1,nv2,peds,min_support=5,max_noise=10,snr=10):
         return True
     return False
 
-def solve_all_canonical(peds,size=1000,apply=False):
+def solve_all_canonical(ws,peds,size=1000,apply=False):
     ge=SDG.GraphEditor(ws)
     total=solved=0
     for nv in ws.sdg.get_all_nodeviews():
@@ -138,7 +139,7 @@ def solve_all_canonical(peds,size=1000,apply=False):
         ge.apply_all()
         ws.sdg.join_all_unitigs()
 
-def clip_all_tips(peds,size=300,apply=False):
+def clip_all_tips(ws,peds,size=300,apply=False):
     ge=SDG.GraphEditor(ws)
     total=solved=0
     for nv in ws.sdg.get_all_nodeviews():
@@ -151,7 +152,7 @@ def clip_all_tips(peds,size=300,apply=False):
         ge.apply_all()
         ws.sdg.join_all_unitigs()
 
-def pop_all_error_bubbles(peds,size=1000,apply=False):
+def pop_all_error_bubbles(ws,peds,size=1000,apply=False):
     ge=SDG.GraphEditor(ws)
     total=solved=0
     for nv in ws.sdg.get_all_nodeviews():

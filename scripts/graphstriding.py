@@ -1,4 +1,7 @@
-def strider_run_from_cpp():
+import SDGpython as SDG
+from collections import Counter
+
+def strider_run_from_cpp(ws, kc, peds, s):
 
     linear_anchors=set()
     for nv in ws.sdg.get_all_nodeviews():
