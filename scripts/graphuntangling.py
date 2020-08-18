@@ -70,6 +70,7 @@ def end_to_end_solution(sdg,p,fnids):
     return []
 
 def solve_unclassified(sdg,t,s,ge):
+    if len(t.frontiers)+len(t.internals)>100: return False
     #first stride from all frontiers:
     fs={}
     fnids=[x.node_id() for x in t.frontiers]
