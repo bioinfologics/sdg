@@ -755,6 +755,60 @@ bool GraphContigger::clip_tip(GraphEditor& ge, const NodeView &_nv, PairedReadsD
     }
 }
 
+void GraphContigger::solve_all_canonical(GraphEditor& ge, PairedReadsDatastore &peds, int size, bool apply){
+    int total=0;
+    int solved=0;
+    for (auto& nv: ws.sdg.get_all_nodeviews()){
+        if (nv.size()<=size and nv.is_canonical_repeat()) {
+            total++;
+            if (solve_canonical_repeat(ge, nv, peds)){
+                solved++;
+            }
+        }
+    }
+    std::cout << solved << "/" << total << " canonical repeats solved!" << std::endl;
+    if (apply) {
+        ge.apply_all();
+        ws.sdg.join_all_unitigs();
+    }
+}
+
+void GraphContigger::clip_all_tips(GraphEditor &ge, PairedReadsDatastore &peds, int size, bool apply) {
+    int total=0;
+    int solved=0;
+    for (auto &nv: ws.sdg.get_all_nodeviews()){
+        if (nv.size()<=size and nv.is_tip()){
+            total++;
+            if (clip_tip(ge, nv, peds)){
+                solved++;
+            }
+        }
+    }
+    std::cout << solved << "/" << total << " canonical repeats solved!" << std::endl;
+    if (apply) {
+        ge.apply_all();
+        ws.sdg.join_all_unitigs();
+    }
+}
+
+void GraphContigger::pop_all_error_bubbles(GraphEditor &ge, PairedReadsDatastore &peds, int size, bool apply){
+    int total=0;
+    int solved=0;
+    for (auto &nv: ws.sdg.get_all_nodeviews()){
+        if (nv.size()<=size and nv.is_bubble_side() and std::abs(nv.node_id())<std::abs(nv.parallels()[0].node_id())) {
+            total++;
+            if (pop_error_bubbble(ge, nv, nv.parallels()[0], peds)){
+                solved++;
+            }
+        }
+    }
+    std::cout << solved << "/" << total << " canonical repeats solved!" << std::endl;
+    if (apply) {
+        ge.apply_all();
+        ws.sdg.join_all_unitigs();
+    }
+}
+
 bool GraphContigger::pop_error_bubbble(GraphEditor& ge, NodeView &nv1, NodeView &nv2, PairedReadsDatastore& peds, int min_support, int max_noise, int snr, bool verbose) {
 //    auto nv1(_nv1);
 //    auto nv2(_nv2);
@@ -793,3 +847,58 @@ bool GraphContigger::pop_error_bubbble(GraphEditor& ge, NodeView &nv1, NodeView 
     return false;
 }
 
+void GraphContigger::solve_all_tangles(WorkSpace &ws, PairedReadsDatastore &peds, int fsize, int fminkci, int fmaxkci, bool apply){
+    uint64_t total=0;
+    auto s=Strider(ws);
+    s.add_datastore(peds);
+    auto ge=GraphEditor(ws);
+
+    std::unordered_map<std::string, uint64_t> solved;
+    std::unordered_map<std::string, uint64_t> unsolved;
+
+    for (auto &t: ws.sdg.get_all_tangleviews(fsize, fminkci, fmaxkci)) {
+        auto tc = t.classify_tangle();
+        if (tc == "tip"){
+            if (solve_tip(t, s, ge)){
+                solved[tc]++;
+            } else {
+                unsolved[tc]++;
+            }
+        } else if (tc=="bubble") {
+            if (solve_bubble(t, s, ge)) {
+                solved[tc]++;
+            } else {
+                unsolved[tc]++;
+            }
+        } else if (tc.find("repeat") != std::string::npos) {
+            if (solve_repeat(t, s, ge)) {
+                solved[tc]++;
+            } else {
+                unsolved[tc]++;
+            }
+        } else {
+            if (solve_unclassified(t, s, ge)){
+                solved[tc]++;
+            } else {
+                unsolved[tc]++;
+            }
+        }
+        total++;
+    }
+    std::cout << "Total tangles: " << total << std::endl;
+    std::cout << "Solved: ";
+    for (const auto &k: solved) {
+        std::cout << k.first << "," << k.second;
+    }
+    std::cout << std::endl;
+    std::cout << "Unsolved: ";
+    for (const auto &k: unsolved) {
+        std::cout << k.first << "," << k.second;
+    }
+    std::cout << std::endl;
+
+    if (apply){
+        ge.apply_all();
+        ws.sdg.join_all_unitigs();
+    }
+}

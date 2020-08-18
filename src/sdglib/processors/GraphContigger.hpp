@@ -25,14 +25,18 @@ public:
     bool clip_tip(GraphEditor& ge, const NodeView &_nv, PairedReadsDatastore& peds, int min_support=5, int max_noise=10, int snr=10, bool verbose=false);
     bool pop_error_bubbble(GraphEditor& ge, NodeView &nv1, NodeView &nv2, PairedReadsDatastore& peds, int min_support=5, int max_noise=10, int snr=10, bool verbose=false);
 
-
+    void solve_all_canonical(GraphEditor& ge, PairedReadsDatastore &peds, int size=1000, bool apply=false);
+    void clip_all_tips(GraphEditor& ge, PairedReadsDatastore &peds, int size=300, bool apply=false);
+    void pop_all_error_bubbles(GraphEditor& ge, PairedReadsDatastore &peds, int size=300, bool apply=false);
+    
     // Tangle resolution
     bool solve_bubble(TangleView &t, Strider &s, GraphEditor &ge);
     bool solve_repeat(TangleView &t, Strider &s, GraphEditor &ge);
     bool solve_tip(TangleView &t, Strider &s, GraphEditor &ge);
     bool solve_unclassified(TangleView &t, Strider &s, GraphEditor &ge);
-
     std::vector<sgNodeID_t> end_to_end_solution(std::vector<sgNodeID_t> p, std::vector<sgNodeID_t> fnids);
+
+    void solve_all_tangles(WorkSpace &ws, PairedReadsDatastore& peds, int fsize=220, int fminkci=-1, int fmaxkci=-1, bool apply=false);
 
 private:
     WorkSpace &ws;

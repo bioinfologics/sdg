@@ -374,6 +374,10 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("solve_canonical_repeat",&GraphContigger::solve_canonical_repeat, "ge"_a, "nv"_a, "peds"_a, "min_support"_a=5, "max_noise"_a=10, "snr"_a=10, "verbose"_a=false)
             .def("clip_tip",&GraphContigger::clip_tip, "ge"_a, "nv"_a, "peds"_a, "min_support"_a=5, "max_noise"_a=10, "snr"_a=10, "verbose"_a=false)
             .def("pop_error_bubble",&GraphContigger::pop_error_bubbble, "ge"_a, "nv1"_a, "nv2"_a, "peds"_a, "min_support"_a=5, "max_noise"_a=10, "snr"_a=10, "verbose"_a=false)
+            .def("solve_all_tangles",&GraphContigger::solve_all_tangles, "ws"_a, "peds"_a, "fsize"_a=220, "fminkci"_a=-1, "fmaxkci"_a=-1, "apply"_a=false)
+            .def("solve_all_canonical",&GraphContigger::solve_all_canonical, "ge"_a, "peds"_a, "size"_a=1000, "apply"_a=false)
+            .def("clip_all_tips",&GraphContigger::clip_all_tips, "ge"_a, "peds"_a, "size"_a=1000, "apply"_a=false)
+            .def("pop_all_error_bubbles",&GraphContigger::pop_all_error_bubbles, "ge"_a, "peds"_a, "size"_a=1000, "apply"_a=false)
             ;
 
     py::class_<LinkageMaker>(m, "LinkageMaker", "Makes linkage")
@@ -418,7 +422,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("stride_out",&Strider::stride_out,"node"_a,py::return_value_policy::take_ownership)
             .def("stride_single_strict",&Strider::stride_single_strict,"node"_a,"min_reads"_a=3,"max_noise"_a=.1,py::return_value_policy::take_ownership)
             .def("stride_out_in_order",&Strider::stride_out_in_order,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true,"verbose"_a=false,py::return_value_policy::take_ownership)
-            .def("link_out_by_lr",&Strider::link_out_by_lr,"node"_a,"d"_a=2000, "min_reads"_a=3, "group_size"_a=5, "small_node_size"_a=500, "candidate_percentaje"_a=0.5, "first_percentaje"_a=0.8, "verbose"_a=false, py::return_value_policy::take_ownership);
+            .def("link_out_by_lr",&Strider::link_out_by_lr,"node"_a,"d"_a=2000, "min_reads"_a=3, "group_size"_a=5, "small_node_size"_a=500, "candidate_percentaje"_a=0.5, "first_percentaje"_a=0.8, "verbose"_a=false, py::return_value_policy::take_ownership)
+            ;
 
     py::class_<GraphPatcher>(m,"GraphPatcher","GraphPatcher")
             .def(py::init<WorkSpace &>(),"ws"_a)
