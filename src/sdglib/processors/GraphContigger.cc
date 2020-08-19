@@ -579,10 +579,10 @@ std::vector<sgNodeID_t> GraphContigger::end_to_end_solution(std::vector<sgNodeID
                                 }
                             }
                         } else {
-                            for (auto &s: sol) {
-                                std::cout << s << ",";
-                            }
-                            std::cout << std::endl;
+//                            for (auto &s: sol) {
+//                                std::cout << s << ",";
+//                            }
+//                            std::cout << std::endl;
                             return sol;
                         }
                     }
@@ -784,7 +784,7 @@ void GraphContigger::clip_all_tips(GraphEditor &ge, PairedReadsDatastore &peds, 
             }
         }
     }
-    std::cout << solved << "/" << total << " canonical repeats solved!" << std::endl;
+    std::cout << solved << "/" << total << " tips solved!" << std::endl;
     if (apply) {
         ge.apply_all();
         ws.sdg.join_all_unitigs();
