@@ -28,7 +28,7 @@ public:
     void solve_all_canonical(GraphEditor& ge, PairedReadsDatastore &peds, int size=1000, bool apply=false);
     void clip_all_tips(GraphEditor& ge, PairedReadsDatastore &peds, int size=300, bool apply=false);
     void pop_all_error_bubbles(GraphEditor& ge, PairedReadsDatastore &peds, int size=300, bool apply=false);
-    
+
     // Tangle resolution
     bool solve_bubble(TangleView &t, Strider &s, GraphEditor &ge);
     bool solve_repeat(TangleView &t, Strider &s, GraphEditor &ge);

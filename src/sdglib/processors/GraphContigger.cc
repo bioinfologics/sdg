@@ -485,7 +485,7 @@ bool GraphContigger::solve_tip(TangleView &t, Strider &s, GraphEditor &ge){
 }
 
 bool GraphContigger::solve_unclassified(TangleView &t, Strider &s, GraphEditor &ge){
-
+    if (t.frontiers.size()+t.internals.size()>200) return false;
     std::vector<sgNodeID_t> fnids;
     for (const auto& f: t.frontiers) fnids.push_back(f.node_id());
 
