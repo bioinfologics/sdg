@@ -189,7 +189,7 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<PairedReadsMapper>(m, "PairedReadsMapper", "A Paired Reads Mapper")
             .def("path_reads63",&PairedReadsMapper::path_reads63)
-            .def("path_reads",&PairedReadsMapper::path_reads)
+            .def("path_reads",&PairedReadsMapper::path_reads,"k"_a=63,"max_freq"_a=200)
             .def_readonly("paths_in_node",&PairedReadsMapper::paths_in_node)
             .def_readonly("read_paths",&PairedReadsMapper::read_paths)
             .def("path_fw",&PairedReadsMapper::path_fw,"read_id"_a,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true)

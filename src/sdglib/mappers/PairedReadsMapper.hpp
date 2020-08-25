@@ -76,7 +76,7 @@ public:
      *
      * @return
      */
-    void path_reads();
+    void path_reads(uint8_t k=63,int filter=200);
 
     /** @brief creates a read path for each read through mapping
      *

@@ -360,7 +360,7 @@ void PairedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
 
 
 
-void PairedReadsMapper::path_reads() {
+void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
     //TODO: when a path jumps nodes implied by overlaps included nodes, add them
     //read pather
     // - Starts from a (multi)63-mer match -> add all starts to PME
@@ -370,64 +370,127 @@ void PairedReadsMapper::path_reads() {
     int64_t match_offset;
     read_paths.clear();
     read_paths.resize(datastore.size()+1);
-    uint8_t k=31;
-    NKmerIndex nki(ws.sdg,k,50);//TODO: hardcoded parameters!!
-    sdglib::OutputLog()<<"Index created!"<<std::endl;
-    //if (last_read==0) last_read=datastore.size();
+    if (k<=31) {
+        NKmerIndex nki(ws.sdg, k, _filter);//TODO: hardcoded parameters!!
+        sdglib::OutputLog() << "Index created!" << std::endl;
+        //if (last_read==0) last_read=datastore.size();
 #pragma omp parallel shared(nki)
-    {
-        StreamKmerFactory skf(k);
-        std::vector<std::pair<bool,uint64_t >> read_kmers; //TODO: type should be defined in the kmerisers
-        std::vector<std::vector<std::pair<int32_t,int32_t >>> kmer_matches; //TODO: type should be defined in the index class
-        std::vector<sgNodeID_t> rp;
-        PerfectMatchExtender pme(ws.sdg,k);
-        ReadSequenceBuffer sequence_reader(datastore);
-        uint32_t offset;
+        {
+            StreamKmerFactory skf(k);
+            std::vector<std::pair<bool, uint64_t >> read_kmers; //TODO: type should be defined in the kmerisers
+            std::vector<std::vector<std::pair<int32_t, int32_t >>> kmer_matches; //TODO: type should be defined in the index class
+            std::vector<sgNodeID_t> rp;
+            PerfectMatchExtender pme(ws.sdg, k);
+            ReadSequenceBuffer sequence_reader(datastore);
+            uint32_t offset;
 #pragma omp for
-        for (uint64_t rid=1;rid<=datastore.size();++rid){
+            for (uint64_t rid = 1; rid <= datastore.size(); ++rid) {
 //        for (auto rid=937;rid<=937;++rid){
-            //sdt::cout<<std::endl<<"Processing read "<<rid<<std::endl;
-            offset=0;
-            const auto seq=std::string(sequence_reader.get_read_sequence(rid));
-            read_kmers.clear();
-            skf.produce_all_kmers(seq.c_str(),read_kmers);
-            rp.clear();
-            pme.set_read(seq);
-            for (auto rki=0;rki<read_kmers.size();++rki){
-                auto kmatch=nki.find(read_kmers[rki].second);
-                if (kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second){
-                    pme.reset();
+                //sdt::cout<<std::endl<<"Processing read "<<rid<<std::endl;
+                offset = 0;
+                const auto seq = std::string(sequence_reader.get_read_sequence(rid));
+                read_kmers.clear();
+                skf.produce_all_kmers(seq.c_str(), read_kmers);
+                rp.clear();
+                pme.set_read(seq);
+                for (auto rki = 0; rki < read_kmers.size(); ++rki) {
+                    auto kmatch = nki.find(read_kmers[rki].second);
+                    if (kmatch != nki.end() and kmatch->kmer == read_kmers[rki].second) {
+                        pme.reset();
 //                    std::cout<<std::endl<<"PME reset done"<<std::endl;
 //                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
-                    for (;kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second;++kmatch) {
+                        for (; kmatch != nki.end() and kmatch->kmer == read_kmers[rki].second; ++kmatch) {
 //                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
-                        auto contig=kmatch->contigID;
-                        int64_t pos=kmatch->offset-1;
-                        if (pos<0) {
-                            contig=-contig;
-                            pos=-pos-2;
+                            auto contig = kmatch->contigID;
+                            int64_t pos = kmatch->offset - 1;
+                            if (pos < 0) {
+                                contig = -contig;
+                                pos = -pos - 2;
+                            }
+                            if (!read_kmers[rki].first) contig = -contig;
+                            pme.add_starting_match(contig, rki, pos);
                         }
-                        if (!read_kmers[rki].first) contig=-contig;
-                        pme.add_starting_match(contig, rki, pos);
-                    }
-                    pme.extend_fw();
-                    pme.set_best_path();
-                    const auto & pmebp=pme.best_path;
-                    if (pme.last_readpos==datastore.readsize-1 or pme.last_readpos-rki>=63) {//TODO: hardcoded 63bp hit or end
-                        if (rp.empty() and not pmebp.empty()) offset=pme.best_path_offset;
-                        for (const auto &nid:pmebp)
-                            if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
-                        if (!pmebp.empty())
-                            rki = pme.last_readpos + 1 - k; //avoid extra index lookups for kmers already used once
-                    }
+                        pme.extend_fw();
+                        pme.set_best_path();
+                        const auto &pmebp = pme.best_path;
+                        if (pme.last_readpos == datastore.readsize - 1 or
+                            pme.last_readpos - rki >= 63) {//TODO: hardcoded 63bp hit or end
+                            if (rp.empty() and not pmebp.empty()) offset = pme.best_path_offset;
+                            for (const auto &nid:pmebp)
+                                if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
+                            if (!pmebp.empty())
+                                rki = pme.last_readpos + 1 - k; //avoid extra index lookups for kmers already used once
+                        }
 //                    //TODO: matches shold be extended left to avoid unneeded indeterminaiton when an error occurrs in an overlap region and the new hit matches a further part of the genome.
 //                    std::cout<<"rki after match extension: "<<rki<<" / "<<read_kmers.size()<<std::endl;
-                }
+                    }
 
+                }
+                read_paths[rid].path = rp;
+                read_paths[rid].offset = offset;
+                //TODO: keep the offset of the first match!
             }
-            read_paths[rid].path=rp;
-            read_paths[rid].offset=offset;
-            //TODO: keep the offset of the first match!
+        }
+    }
+    else if (k<64) {
+        NKmerIndex128 nki(ws.sdg,k,_filter);//TODO: hardcoded parameters!!
+        sdglib::OutputLog()<<"Index created!"<<std::endl;
+        //if (last_read==0) last_read=datastore.size();
+#pragma omp parallel shared(nki)
+        {
+            StreamKmerFactory128 skf(k);
+            std::vector<std::pair<bool,__uint128_t >> read_kmers; //TODO: type should be defined in the kmerisers
+            std::vector<std::vector<std::pair<int32_t,int32_t >>> kmer_matches; //TODO: type should be defined in the index class
+            std::vector<sgNodeID_t> rp;
+            PerfectMatchExtender pme(ws.sdg,k);
+            ReadSequenceBuffer sequence_reader(datastore);
+            uint32_t offset;
+#pragma omp for
+            for (uint64_t rid=1;rid<=datastore.size();++rid){
+//        for (auto rid=937;rid<=937;++rid){
+                //sdt::cout<<std::endl<<"Processing read "<<rid<<std::endl;
+                offset=0;
+                const auto seq=std::string(sequence_reader.get_read_sequence(rid));
+                read_kmers.clear();
+                skf.produce_all_kmers(seq.c_str(),read_kmers);
+                rp.clear();
+                pme.set_read(seq);
+                for (auto rki=0;rki<read_kmers.size();++rki){
+                    auto kmatch=nki.find(read_kmers[rki].second);
+                    if (kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second){
+                        pme.reset();
+//                    std::cout<<std::endl<<"PME reset done"<<std::endl;
+//                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
+                        for (;kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second;++kmatch) {
+//                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
+                            auto contig=kmatch->contigID;
+                            int64_t pos=kmatch->offset-1;
+                            if (pos<0) {
+                                contig=-contig;
+                                pos=-pos-2;
+                            }
+                            if (!read_kmers[rki].first) contig=-contig;
+                            pme.add_starting_match(contig, rki, pos);
+                        }
+                        pme.extend_fw();
+                        pme.set_best_path();
+                        const auto & pmebp=pme.best_path;
+                        if (pme.last_readpos==datastore.readsize-1 or pme.last_readpos-rki>=63) {//TODO: hardcoded 63bp hit or end
+                            if (rp.empty() and not pmebp.empty()) offset=pme.best_path_offset;
+                            for (const auto &nid:pmebp)
+                                if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
+                            if (!pmebp.empty())
+                                rki = pme.last_readpos + 1 - k; //avoid extra index lookups for kmers already used once
+                        }
+//                    //TODO: matches shold be extended left to avoid unneeded indeterminaiton when an error occurrs in an overlap region and the new hit matches a further part of the genome.
+//                    std::cout<<"rki after match extension: "<<rki<<" / "<<read_kmers.size()<<std::endl;
+                    }
+
+                }
+                read_paths[rid].path=rp;
+                read_paths[rid].offset=offset;
+                //TODO: keep the offset of the first match!
+            }
         }
     }
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Creating paths_in_node"<<std::endl;
