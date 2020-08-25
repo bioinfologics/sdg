@@ -73,13 +73,13 @@ PYBIND11_MODULE(SDGpython, m) {
             .export_values();
 
     py::class_<Support>(m,"Support","Support for an operation or piece of data")
-            .def(py::init<SupportType,uint16_t,int64_t>(),"","support"_a=SupportType::Undefined,"index"_a=0,"id"_a=0)
+            .def(py::init<SupportType,uint16_t,int64_t>(),"","support"_a=SupportType::Undefined,"index"_a=0,"id"_a=0,py::return_value_policy::take_ownership)
             .def_readonly("type",&Support::type)
             .def_readonly("index",&Support::index)
             .def_readonly("id",&Support::id)
             ;
     py::class_<Node>(m, "Node", "A node in a Sequence Distance Graph")
-            .def(py::init<const std::string &>(),"","sequence"_a)
+            .def(py::init<const std::string &>(),"","sequence"_a,py::return_value_policy::take_ownership)
             .def_readonly("sequence", &Node::sequence)
             .def("is_canonical", &Node::is_canonical)
             .def_readonly("status", &Node::status)
@@ -91,7 +91,7 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<Link>(m,"Link","A raw DG Link")
-            .def(py::init<sgNodeID_t, sgNodeID_t, int32_t, Support>(),"","src"_a,"dest"_a,"dist"_a,"support"_a=Support())
+            .def(py::init<sgNodeID_t, sgNodeID_t, int32_t, Support>(),"","src"_a,"dest"_a,"dist"_a,"support"_a=Support(),py::return_value_policy::take_ownership)
             .def_readwrite("source",&Link::source)
             .def_readwrite("dest",&Link::dest)
             .def_readwrite("dist",&Link::dist)
@@ -140,7 +140,7 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<DistanceGraph>(m, "DistanceGraph", "A Distance Graph")
             .def_property_readonly("sdg", [] (const DistanceGraph &dg) {return &dg.sdg;},py::return_value_policy::reference)
-            .def(py::init<SequenceDistanceGraph &, const std::string &>(),"","sdg"_a,"name"_a="unnamed")
+            .def(py::init<SequenceDistanceGraph &, const std::string &>(),"","sdg"_a,"name"_a="unnamed",py::return_value_policy::take_ownership)
             .def("add_link",&DistanceGraph::add_link,"source"_a,"dest"_a,"distance"_a,"support"_a=Support() )
             .def("disconnect_node",&DistanceGraph::disconnect_node)
             .def("remove_link",py::overload_cast<sgNodeID_t , sgNodeID_t >(&DistanceGraph::remove_link))
@@ -150,7 +150,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("fw_reached_nodes",&DistanceGraph::fw_reached_nodes,"node_id"_a,"radius"_a=10)
             .def("get_nodeview",&DistanceGraph::get_nodeview)
             .def("get_all_nodeviews",&DistanceGraph::get_all_nodeviews,"both_directions"_a=false,"include_disconnected"_a=true,"Returns a vector with NodeViews for all active nodes",py::return_value_policy::move)
-            .def("get_all_tangleviews",&DistanceGraph::get_all_tangleviews,"f_size"_a=500,"f_min_kci"_a=-1,"f_max_kci"_a=-1,"include_disconnected"_a=true,"Returns a vector with TangleViews for all tangles",py::return_value_policy::take_ownership)
+            .def("get_all_tangleviews",&DistanceGraph::get_all_tangleviews,"f_size"_a=500,"f_min_kci"_a=-1,"f_max_kci"_a=-1,"include_disconnected"_a=true,"Returns a vector with TangleViews for all tangles",py::return_value_policy::move)
             .def_readwrite("name",&DistanceGraph::name)
             .def("write_to_gfa1",&DistanceGraph::write_to_gfa1,"filename"_a,"selected_nodes"_a=std::vector<sgNodeID_t>(),"depths"_a=std::vector<sgNodeID_t>())
             .def("write_to_gfa2",&DistanceGraph::write_to_gfa2)
@@ -170,7 +170,7 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<SequenceDistanceGraphPath>(m, "SequenceDistanceGraphPath", "SequenceDistanceGraphPath")
-            .def(py::init<const SequenceDistanceGraph &,const std::vector<sgNodeID_t> >(),"","sdg"_a,"nodes"_a)
+            .def(py::init<const SequenceDistanceGraph &,const std::vector<sgNodeID_t> >(),"","sdg"_a,"nodes"_a,py::return_value_policy::take_ownership)
             .def("sequence", &SequenceDistanceGraphPath::sequence)
             .def_readwrite("nodes", &SequenceDistanceGraphPath::nodes)
             ;
@@ -282,7 +282,7 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<LongReadsRecruiter>(m, "LongReadsRecruiter", "A full SDG WorkSpace")
-            .def(py::init<SequenceDistanceGraph &, const LongReadsDatastore &,uint8_t, uint16_t>(),"sdg"_a,"datastore"_a,"k"_a=25,"f"_a=50)
+            .def(py::init<SequenceDistanceGraph &, const LongReadsDatastore &,uint8_t, uint16_t>(),"sdg"_a,"datastore"_a,"k"_a=25,"f"_a=50,py::return_value_policy::take_ownership)
             .def_readwrite("read_perfect_matches",&LongReadsRecruiter::read_perfect_matches)
             .def_readwrite("node_reads",&LongReadsRecruiter::node_reads)
             .def_readwrite("read_threads",&LongReadsRecruiter::read_threads)
@@ -305,7 +305,7 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<NodePosition>(m,"NodePosition", "A node position in a LRR")
-            .def(py::init<sgNodeID_t ,int32_t ,int32_t >(),"node"_a,"start"_a,"end"_a)
+            .def(py::init<sgNodeID_t ,int32_t ,int32_t >(),"node"_a,"start"_a,"end"_a,py::return_value_policy::take_ownership)
             .def_readwrite("node",&NodePosition::node)
             .def_readwrite("start",&NodePosition::start)
             .def_readwrite("end",&NodePosition::end)
@@ -316,7 +316,7 @@ PYBIND11_MODULE(SDGpython, m) {
 
 
     py::class_<GraphEditor>(m,"GraphEditor", "A graph editor with operation queue")
-            .def(py::init<WorkSpace &>())
+            .def(py::init<WorkSpace &>(),py::return_value_policy::take_ownership)
             .def("queue_node_deletion",&GraphEditor::queue_node_deletion)
             .def("queue_link_deletion",&GraphEditor::queue_link_deletion)
             .def("queue_node_expansion",&GraphEditor::queue_node_expansion)
@@ -326,7 +326,7 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<LinkageUntangler>(m,"LinkageUntangler", "A linkage untangler")
-            .def(py::init<const DistanceGraph &>())
+            .def(py::init<const DistanceGraph &>(),py::return_value_policy::take_ownership)
             .def_readonly("selected_nodes",&LinkageUntangler::selected_nodes)
             .def("select_all",&LinkageUntangler::select_all)
             .def("select_linear_anchors",&LinkageUntangler::select_linear_anchors,"min_links"_a=3,"min_transitive_links"_a=2)
@@ -334,13 +334,13 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<GraphMaker>(m,"GraphMaker","DBG construccion")
-            .def(py::init<SequenceDistanceGraph &>())
+            .def(py::init<SequenceDistanceGraph &>(),py::return_value_policy::take_ownership)
             .def("new_graph_from_paired_datastore",&GraphMaker::new_graph_from_paired_datastore)
             .def("new_graph_from_long_datastore",&GraphMaker::new_graph_from_long_datastore)
             ;
 
     py::class_<GraphContigger>(m,"GraphContigger","Paired end contigger")
-            .def(py::init<WorkSpace &>())
+            .def(py::init<WorkSpace &>(),py::return_value_policy::take_ownership)
             .def("reconnect_tips",&GraphContigger::reconnect_tips,"datastore"_a,"min_links"_a=3)
             .def("clip_tips",&GraphContigger::clip_tips,"size"_a,"rounds"_a=10)
             .def("pop_bubbles",&GraphContigger::pop_bubbles,"datastore"_a,"bubble_size"_a=200,"min_support"_a=4,"max_noise"_a=3,"snr"_a=10)
@@ -350,7 +350,7 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<PathFinder>(m,"PathFinder","PathFinder")
-            .def(py::init<WorkSpace &,sgNodeID_t, sgNodeID_t, uint8_t>(),"ws"_a,"n1"_a,"n2"_a,"k"_a)
+            .def(py::init<WorkSpace &,sgNodeID_t, sgNodeID_t, uint8_t>(),"ws"_a,"n1"_a,"n2"_a,"k"_a,py::return_value_policy::take_ownership)
             .def("index_paths",&PathFinder::index_paths,"paths"_a)
             .def("seq_to_pathpos",&PathFinder::seq_to_pathpos,"path_id"_a,"seq"_a)
             .def("load_lrseqs",&PathFinder::load_lrseqs,"dg"_a,"lrr"_a,"ovl_extension"_a=300)
@@ -359,7 +359,7 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<PFScoredPath>(m,"PFScoredPath","PFScoredPath")
-            .def(py::init<PathFinder &, sgNodeID_t ,sgNodeID_t>(),"pf"_a,"from"_a,"to"_a)
+            .def(py::init<PathFinder &, sgNodeID_t ,sgNodeID_t>(),"pf"_a,"from"_a,"to"_a,py::return_value_policy::take_ownership)
             .def("find_hits",&PFScoredPath::find_hits)
             .def_readonly("read_hitpos",&PFScoredPath::read_hitpos,py::return_value_policy::reference)
             .def_readwrite("path",&PFScoredPath::path,py::return_value_policy::reference)
@@ -367,7 +367,7 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<Strider>(m,"Strider","Strider")
-            .def(py::init<WorkSpace &>(),"ws"_a)
+            .def(py::init<WorkSpace &>(),"ws"_a,py::return_value_policy::take_ownership)
             .def_readonly_static("logo",&Strider::logo)
             .def_readwrite("experimental_striding",&Strider::experimental_striding)
             .def_readonly("routes_fw",&Strider::routes_fw)
@@ -388,7 +388,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("link_out_by_lr",&Strider::link_out_by_lr,"node"_a,"d"_a=2000, "min_reads"_a=3, "group_size"_a=5, "small_node_size"_a=500, "candidate_percentaje"_a=0.5, "first_percentaje"_a=0.8, "verbose"_a=false, py::return_value_policy::take_ownership);
 
     py::class_<GraphPatcher>(m,"GraphPatcher","GraphPatcher")
-            .def(py::init<WorkSpace &>(),"ws"_a)
+            .def(py::init<WorkSpace &>(),"ws"_a,py::return_value_policy::take_ownership)
             .def("find_tips_to_reconnect",&GraphPatcher::find_tips_to_reconnect)
             .def("collapse_reconnection_groups",&GraphPatcher::collapse_reconnection_groups)
             .def("patch_reconnection_groups",&GraphPatcher::patch_reconnection_groups)
