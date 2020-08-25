@@ -163,6 +163,66 @@ public:
     }
 };
 
+class StringKMerFactory128 : protected KMerFactory128 {
+public:
+    explicit StringKMerFactory128(uint8_t k) : KMerFactory128(k) {
+        fkmer=0;
+        rkmer=0;
+        last_unknown=0;
+    }
+
+    ~StringKMerFactory128() {}
+
+    // TODO: Adjust for when K is larger than what fits in __uint128_t!
+    const bool create_kmers(const std::string &s, std::vector<std::pair<bool, __uint128_t>> &mers) {
+        fkmer=0;
+        rkmer=0;
+        last_unknown=0;
+        __uint128_t p(0);
+        mers.reserve(mers.size()+s.size());
+        while (p < s.size()) {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(s[p], fkmer, rkmer, last_unknown);
+            p++;
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(true, fkmer);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(false, rkmer);
+                }
+            }
+        }
+        return false;
+    }
+
+    const bool create_kmers(const std::string &s, std::vector<__uint128_t> &mers) {
+        fkmer=0;
+        rkmer=0;
+        last_unknown=0;
+        __uint128_t p(0);
+        mers.reserve(mers.size()+s.size());
+        while (p < s.size()) {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            fillKBuf(s[p], fkmer, rkmer, last_unknown);
+            p++;
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(fkmer);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(rkmer);
+                }
+            }
+        }
+        return false;
+    }
+};
+
 class StringKMerFactoryNC : protected KMerFactory {
 public:
     explicit StringKMerFactoryNC(uint8_t k) : KMerFactory(k) {
