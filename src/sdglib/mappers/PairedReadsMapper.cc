@@ -515,7 +515,7 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
     }
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"pathing finished"<<std::endl;
 
-};
+}
 
 bool inline are_complement(const char &A,const char &B){
     return (A=='A' and B=='T') or (A=='C' and B=='G') or (A=='G' and B=='C') or (A=='T' and B=='A');

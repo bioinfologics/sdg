@@ -34,7 +34,7 @@ public:
 class LinkedReadsMapper {
 
 public:
-    LinkedReadsMapper(const WorkSpace &_ws, LinkedReadsDatastore &_datastore);
+    LinkedReadsMapper(WorkSpace &_ws, LinkedReadsDatastore &_datastore);
 
     /**
      * @brief Provides an overview of the information in the LinkedReadsMapper
@@ -49,6 +49,8 @@ public:
 
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
+    void dump_readpaths(std::string filename);
+    void load_readpaths(std::string filename);
 
     /** @brief Maps the provided LinkedReadsDatastore to the provided graph, saves the results to the reads_in_node and nodes_in_read collections.
      * The mapper only considers unique perfect matches, if a single kmer from the read matches 2 different nodes the read is marked as multi-mapping and the mapping is discarded.
@@ -83,14 +85,11 @@ public:
      */
     void remap_all_reads63();
 
-    /** @brief Clears the mappings for the nodes marked as deleted (sg.nodes[n].status==NodeStatus::Deleted) in the graph.
+    /** @brief creates a read path for each read through mapping
+     *
+     * @return
      */
-    void remove_obsolete_mappings();
-
-    /*void remap_reads();
-    uint64_t process_reads_from_file(uint8_t, uint16_t, std::unordered_map<uint64_t , graphPosition> &, std::string , uint64_t, bool tags=false, std::unordered_set<uint64_t> const & reads_to_remap={});
-    void save_to_disk(std::string filename);
-    void load_from_disk(std::string filename);*/
+    void path_reads(uint8_t k=63,int filter=200);
 
     /** @brief Prints the count of pairs mapped.
      *
@@ -152,7 +151,7 @@ public:
     */
     void populate_orientation();
 
-    const WorkSpace &ws;
+    WorkSpace &ws;
 
     LinkedReadsDatastore &datastore;
 
@@ -179,6 +178,9 @@ public:
      *  tag_neighbours[nodeID] = [collection of 10 determined neighbours (see TagNeighbour) ...]
      */
     std::vector<std::vector<TagNeighbour>> tag_neighbours; //not persisted yet!
+    std::vector<ReadPath> read_paths;
+
+    std::vector<std::vector<int64_t>> paths_in_node;
 
     static const sdgVersion_t min_compat;
 };
