@@ -106,26 +106,6 @@ public:
     std::set<LinkedTag> get_node_tags(sgNodeID_t n);
 
     /**
-     * Returns a tags_to_nodes type map, a collection of tags with an associated vector of nodes where each tag mapped
-     * Each tag can map to more than one node ( multiple reads mapping to different nodes with the same tag ) map[tag] = [node1, node2, noden...]
-     * TODO: tags should be plural
-     * @param min_nodes minimum amount of nodes in the vector for a tag to be considered
-     * @param selected_nodes mask to the nodes to be considered (optional)
-     * @return map of tags to nodes
-     */
-    std::map<LinkedTag, std::vector<sgNodeID_t>> get_tag_nodes(uint32_t min_nodes = 2,
-                                                               const std::vector<bool> &selected_nodes = {});
-
-    /** @brief Returns a collection of pairs of nodeIDs that share more than min_shared tags between them
-     * Returns a list of pairs of nodes that are neighbours according to 10x reads.
-     * This is th eone that makes the reflective thing
-     * @param min_shared
-     * @param selected_nodes
-     * @return
-     */
-    std::vector<std::pair<sgNodeID_t , sgNodeID_t >> get_tag_neighbour_nodes(uint32_t min_shared,const std::vector<bool> & selected_nodes={});
-
-    /**
      * Creates a nieghbours matrix with all nodes where for each node the function finds all nodes that have tags that
      * cover min_score of the total tags of each node.
      *

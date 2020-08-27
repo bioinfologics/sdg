@@ -529,82 +529,10 @@ void LinkedReadsMapper::print_status() const {
 
 std::set<LinkedTag> LinkedReadsMapper::get_node_tags(sgNodeID_t n) {
     std::set<LinkedTag> tags;
-    for (auto &rm:reads_in_node[(n>0?n:-n)])
-        tags.insert(datastore.get_read_tag(rm.read_id));
+    for (auto &p:paths_in_node[(n>0?n:-n)])
+        tags.insert(datastore.get_read_tag(llabs(p)));
     if (tags.count(0)>0) tags.erase(0);
     return tags;
-}
-
-std::map<LinkedTag, std::vector<sgNodeID_t>> LinkedReadsMapper::get_tag_nodes(uint32_t min_nodes,
-                                                                             const std::vector<bool> &selected_nodes) {
-    //Approach: node->tags->nodes (checks how many different tags join this node to every other node).
-
-    std::map<LinkedTag, std::vector<sgNodeID_t>> tag_nodes;
-    LinkedTag curr_tag=0,new_tag=0;
-    std::set<sgNodeID_t> curr_nodes;
-    sgNodeID_t curr_node;
-    for (size_t i=1;i<read_to_node.size();++i){
-        new_tag=datastore.get_read_tag(i);
-        curr_node=llabs(read_to_node[i]);
-        if (new_tag==curr_tag){
-           if (curr_node!=0 and (selected_nodes.empty() or selected_nodes[curr_node]))
-               curr_nodes.insert(curr_node);
-        }
-        else {
-            if (curr_nodes.size()>=min_nodes and curr_tag>0){
-                tag_nodes[curr_tag].reserve(curr_nodes.size());
-                for (auto &n:curr_nodes)
-                    tag_nodes[curr_tag].emplace_back(n);
-            }
-            curr_tag=new_tag;
-            curr_nodes.clear();
-            if (curr_node!=0 and (selected_nodes.empty() or selected_nodes[curr_node]))
-                curr_nodes.insert(curr_node);
-        }
-    }
-    if (curr_nodes.size()>=min_nodes and curr_tag>0){
-        tag_nodes[curr_tag].reserve(curr_nodes.size());
-        for (auto &n:curr_nodes)
-            tag_nodes[curr_tag].emplace_back(n);
-    }
-
-    return tag_nodes;
-}
-
-std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadsMapper::get_tag_neighbour_nodes(uint32_t min_shared,
-                                                                                           const std::vector<bool> &selected_nodes) {
-    std::vector<std::pair<sgNodeID_t , sgNodeID_t >> tns;
-
-    auto nodes_in_tags= get_tag_nodes(2, selected_nodes);
-
-    std::unordered_map<sgNodeID_t , std::vector<LinkedTag>> tags_in_node;
-    sdglib::OutputLog()<<"There are "<<nodes_in_tags.size()<<" informative tags"<<std::endl;
-    for (auto &t:nodes_in_tags){
-        for (auto n:t.second) tags_in_node[n].push_back(t.first);
-    }
-
-    sdglib::OutputLog()<<"all structures ready"<<std::endl;
-#pragma omp parallel firstprivate(tags_in_node,nodes_in_tags)
-    {
-        std::vector<uint32_t> shared_with(ws.sdg.nodes.size());
-        std::vector<std::pair<sgNodeID_t, sgNodeID_t >> tnsl;
-#pragma omp for schedule(static,100)
-        for (auto n = 1; n < ws.sdg.nodes.size(); ++n) {
-            if (!selected_nodes[n]) continue;
-            if (tags_in_node[n].size()<min_shared) continue;
-
-            bzero(shared_with.data(), sizeof(uint32_t) * shared_with.size()); //clearing with bzero is the fastest way?
-            for (auto t:tags_in_node[n])
-                for (auto n:nodes_in_tags[t]) ++shared_with[n];
-            for (auto i = n + 1; i < shared_with.size(); ++i) {
-                if (shared_with[i] >= min_shared) tnsl.emplace_back(n, i);
-            }
-
-        }
-#pragma omp critical
-        tns.insert(tns.end(),tnsl.begin(),tnsl.end());
-    }
-    return tns;
 }
 
 void LinkedReadsMapper::compute_all_tag_neighbours(int min_size, float min_score, int min_mapped_reads_per_tag) {

@@ -127,8 +127,6 @@ public:
     //Linkage creation methods (work on selected nodes)
     std::map<std::pair<sgNodeID_t, sgNodeID_t>, uint64_t> shared_read_paths(int min_shared, std::vector<size_t> libraries, bool r1rev, bool r2rev);
 
-    DistanceGraph make_tag_linkage(int min_tags, bool use_kmer_paths=false);
-
     //supporting methods
     std::vector<Link> mappings_to_multilinkage(const std::vector<LongReadMapping> &lorm_mappings, uint32_t read_size, int32_t unmapped_end=1000);
 
