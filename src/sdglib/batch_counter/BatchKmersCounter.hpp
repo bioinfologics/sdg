@@ -77,6 +77,8 @@ public:
 
     static std::vector<__uint128_t> countKmersToList(const LongReadsDatastore &ds, int k, int min_coverage, int num_batches);
 
+    static void countKmersToGraphNodes(SequenceDistanceGraph &sdg, const PairedReadsDatastore &ds, int k, int min_coverage, int max_coverage, int num_batches);
+
 };
 
 

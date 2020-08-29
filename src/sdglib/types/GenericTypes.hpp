@@ -136,4 +136,27 @@ namespace sdglib {
         sdglib::reverse_path(out,in);
         return out;
     }
+
+    inline std::string kmer_to_sequence(__uint128_t kmer, uint8_t k) {
+        std::string seq;
+        seq.reserve(k);
+        for (int shift=(k-1)*2;shift>=0;shift-=2) {
+            //std::cout<<"kmer: "
+            switch ((kmer>>shift)%4){
+                case 0:
+                    seq.push_back('A');
+                    break;
+                case 1:
+                    seq.push_back('C');
+                    break;
+                case 2:
+                    seq.push_back('G');
+                    break;
+                case 3:
+                    seq.push_back('T');
+                    break;
+            }
+        }
+        return seq;
+    }
 }

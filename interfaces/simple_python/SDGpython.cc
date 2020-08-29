@@ -17,6 +17,7 @@
 #include <sdglib/processors/GraphPatcher.hpp>
 #include <sdglib/processors/PathFinder.hpp>
 #include <sdglib/processors/Strider.hpp>
+#include <sdglib/batch_counter/BatchKmersCounter.hpp>
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -410,4 +411,5 @@ PYBIND11_MODULE(SDGpython, m) {
 
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
+    m.def("count_kmers_as_graph_nodes",&BatchKmersCounter::countKmersToGraphNodes,py::return_value_policy::take_ownership,"sdg"_a,"peds"_a,"k"_a,"min_coverage"_a, "max_coverage"_a, "num_batches"_a);
 }
