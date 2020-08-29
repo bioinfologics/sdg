@@ -16,7 +16,6 @@
 class PairedReadsDatastore;
 class UniqueKmerIndex;
 class Unique63merIndex;
-class PairedReadConnectivityDetail; //Forward declaration
 class WorkSpace;
 
 /**

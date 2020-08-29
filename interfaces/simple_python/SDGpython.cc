@@ -18,6 +18,7 @@
 #include <sdglib/processors/GraphPatcher.hpp>
 #include <sdglib/processors/PathFinder.hpp>
 #include <sdglib/processors/Strider.hpp>
+#include <sdglib/batch_counter/BatchKmersCounter.hpp>
 #include <sdglib/processors/LineFiller.h>
 
 namespace py = pybind11;
@@ -127,6 +128,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("parallels",&NodeView::parallels,"A list with NodeViews of parallel nodes",py::return_value_policy::move)
             .def("kmer_coverage",py::overload_cast<std::string, std::string>(&NodeView::kmer_coverage, py::const_))
             .def("kci",&NodeView::kci)
+            .def("linked_tags",&NodeView::get_linked_tags,"dsname"_a,"min_reads"_a=3)
             .def("__eq__", &NodeView::operator==, py::is_operator())
             .def("__repr__",
                  [](const NodeView &nv) {
@@ -196,7 +198,6 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<PairedReadsMapper>(m, "PairedReadsMapper", "A Paired Reads Mapper")
-            .def("path_reads63",&PairedReadsMapper::path_reads63)
             .def("path_reads",&PairedReadsMapper::path_reads,"k"_a=63,"max_freq"_a=200)
             .def_readonly("paths_in_node",&PairedReadsMapper::paths_in_node)
             .def_readonly("read_paths",&PairedReadsMapper::read_paths)
@@ -205,10 +206,23 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("dump_readpaths",&PairedReadsMapper::dump_readpaths)
             .def("load_readpaths",&PairedReadsMapper::load_readpaths)
             ;
+
+    py::class_<LinkedReadsMapper>(m, "LinkedReadsMapper", "A Paired Reads Mapper")
+            .def("path_reads",&LinkedReadsMapper::path_reads,"k"_a=63,"max_freq"_a=200)
+            .def_readonly("paths_in_node",&LinkedReadsMapper::paths_in_node)
+            .def_readonly("read_paths",&LinkedReadsMapper::read_paths)
+            .def("dump_readpaths",&LinkedReadsMapper::dump_readpaths)
+            .def("load_readpaths",&LinkedReadsMapper::load_readpaths)
+            ;
+
     py::class_<LinkedReadsDatastore>(m, "LinkedReadsDatastore", "A Linked Reads Datastore")
             .def("size",&LinkedReadsDatastore::size)
             .def("get_read_sequence",&LinkedReadsDatastore::get_read_sequence)
+            .def("get_read_tag",&LinkedReadsDatastore::get_read_tag)
+            .def("get_read_pair",&LinkedReadsDatastore::get_read_pair,"read_id"_a)
+            .def_readwrite("mapper",&LinkedReadsDatastore::mapper)
             ;
+
     py::class_<LongReadsDatastore>(m, "LongReadsDatastore", "A Long Reads Datastore")
             .def("size",&LongReadsDatastore::size)
             .def("get_read_sequence",&LongReadsDatastore::get_read_sequence)
@@ -441,4 +455,5 @@ PYBIND11_MODULE(SDGpython, m) {
 
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
+    m.def("count_kmers_as_graph_nodes",&BatchKmersCounter::countKmersToGraphNodes,py::return_value_policy::take_ownership,"sdg"_a,"peds"_a,"k"_a,"min_coverage"_a, "max_coverage"_a, "num_batches"_a);
 }

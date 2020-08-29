@@ -581,7 +581,7 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
                     pme.extend_fw();
                     pme.set_best_path();
                     const auto & pmebp=pme.best_path;
-                    if (pme.last_readpos-rki>=seed_size) {
+                    if (pme.last_readpos-rki>=seed_size-1) {
                         if (!pmebp.empty()) {
                             rki = pme.last_readpos + 1 - k; //avoid extra index lookups for kmers already used once
                             pme.make_path_as_perfect_matches();

@@ -8,6 +8,7 @@
 #include <atomic>
 #include <sstream>
 #include "sdglib/factories/KMerIDXFactory.hpp"
+#include "sdglib/mappers/PerfectMatcher.hpp"
 #include <sdglib/datastores/LinkedReadsDatastore.hpp>
 #include <sdglib/utilities/omp_safe.hpp>
 #include <sdglib/workspace/WorkSpace.hpp>
@@ -16,7 +17,7 @@
 
 const sdgVersion_t LinkedReadsMapper::min_compat = 0x0003;
 
-LinkedReadsMapper::LinkedReadsMapper(const WorkSpace &_ws, LinkedReadsDatastore &_datastore) :
+LinkedReadsMapper::LinkedReadsMapper(WorkSpace &_ws, LinkedReadsDatastore &_datastore) :
 ws(_ws),
 datastore(_datastore)
 {
@@ -79,6 +80,56 @@ void LinkedReadsMapper::read(std::ifstream &input_file) {
     populate_orientation();
 
 
+}
+
+void LinkedReadsMapper::dump_readpaths(std::string filename) {
+    std::ofstream opf(filename);
+    uint64_t count;
+
+    //dump operations
+    count = read_paths.size();
+    opf.write((char *) &count, sizeof(count));
+    for (const auto &p:read_paths) {
+        opf.write((char *) &p.offset, sizeof(p.offset));
+        sdglib::write_flat_vector(opf, p.path);
+    }
+}
+
+void LinkedReadsMapper::load_readpaths(std::string filename) {
+    std::ifstream ipf(filename);
+    uint64_t count;
+
+    //dump operations
+    ipf.read((char *) &count, sizeof(count));
+    read_paths.resize(count);
+    for (auto &p:read_paths) {
+        ipf.read((char *) &p.offset, sizeof(p.offset));
+        auto &pp=p.path;
+        sdglib::read_flat_vector(ipf,pp);
+    }
+
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Reserving paths_in_node"<<std::endl;
+    //first pass, size computing for vector allocation;
+    std::vector<uint64_t> path_counts(ws.sdg.nodes.size());
+    for (auto i=0;i<read_paths.size();++i){
+        const auto &p=read_paths[i];
+        for (const auto &n:p.path){
+            ++path_counts[llabs(n)];
+        }
+    }
+
+    paths_in_node.clear();
+    paths_in_node.resize(path_counts.size());
+    for (auto i=0;i<path_counts.size();++i) paths_in_node[i].reserve(path_counts[i]);
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Filling paths_in_node"<<std::endl;
+    for (auto i=0;i<read_paths.size();++i){
+        const auto &p=read_paths[i];
+        for (const auto &n:p.path){
+            auto pid=(n<0 ? -i : i);
+            if (paths_in_node[llabs(n)].empty() or paths_in_node[llabs(n)].back()!=pid) paths_in_node[llabs(n)].emplace_back(pid);
+        }
+    }
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"paths_in_node filled"<<std::endl;
 }
 
 void LinkedReadsMapper::remap_all_reads() {
@@ -198,6 +249,163 @@ void LinkedReadsMapper::remap_all_reads63() {
     map_reads63();
 }
 
+void LinkedReadsMapper::path_reads(uint8_t k,int _filter) {
+    //TODO: when a path jumps nodes implied by overlaps included nodes, add them
+    //read pather
+    // - Starts from a (multi)63-mer match -> add all starts to PME
+    // - extends and check if there's a best path.
+    // - uses the index to check if there is further hits, starting from the kmer that includes 1bp beyond the extended match. (cycle)
+    sgNodeID_t match_node;
+    int64_t match_offset;
+    read_paths.clear();
+    read_paths.resize(datastore.size()+1);
+    if (k<=31) {
+        NKmerIndex nki(ws.sdg, k, _filter);//TODO: hardcoded parameters!!
+        sdglib::OutputLog() << "Index created!" << std::endl;
+        //if (last_read==0) last_read=datastore.size();
+#pragma omp parallel shared(nki)
+        {
+            StreamKmerFactory skf(k);
+            std::vector<std::pair<bool, uint64_t >> read_kmers; //TODO: type should be defined in the kmerisers
+            std::vector<std::vector<std::pair<int32_t, int32_t >>> kmer_matches; //TODO: type should be defined in the index class
+            std::vector<sgNodeID_t> rp;
+            PerfectMatchExtender pme(ws.sdg, k);
+            ReadSequenceBuffer sequence_reader(datastore);
+            uint32_t offset;
+#pragma omp for
+            for (uint64_t rid = 1; rid <= datastore.size(); ++rid) {
+//        for (auto rid=937;rid<=937;++rid){
+                //sdt::cout<<std::endl<<"Processing read "<<rid<<std::endl;
+                offset = 0;
+                const auto seq = std::string(sequence_reader.get_read_sequence(rid));
+                read_kmers.clear();
+                skf.produce_all_kmers(seq.c_str(), read_kmers);
+                rp.clear();
+                pme.set_read(seq);
+                for (auto rki = 0; rki < read_kmers.size(); ++rki) {
+                    auto kmatch = nki.find(read_kmers[rki].second);
+                    if (kmatch != nki.end() and kmatch->kmer == read_kmers[rki].second) {
+                        pme.reset();
+//                    std::cout<<std::endl<<"PME reset done"<<std::endl;
+//                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
+                        for (; kmatch != nki.end() and kmatch->kmer == read_kmers[rki].second; ++kmatch) {
+//                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
+                            auto contig = kmatch->contigID;
+                            int64_t pos = kmatch->offset - 1;
+                            if (pos < 0) {
+                                contig = -contig;
+                                pos = -pos - 2;
+                            }
+                            if (!read_kmers[rki].first) contig = -contig;
+                            pme.add_starting_match(contig, rki, pos);
+                        }
+                        pme.extend_fw();
+                        pme.set_best_path();
+                        const auto &pmebp = pme.best_path;
+                        if (pme.last_readpos == datastore.readsize - 1 or
+                            pme.last_readpos - rki >= 63) {//TODO: hardcoded 63bp hit or end
+                            if (rp.empty() and not pmebp.empty()) offset = pme.best_path_offset;
+                            for (const auto &nid:pmebp)
+                                if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
+                            if (!pmebp.empty())
+                                rki = pme.last_readpos + 1 - k; //avoid extra index lookups for kmers already used once
+                        }
+//                    //TODO: matches shold be extended left to avoid unneeded indeterminaiton when an error occurrs in an overlap region and the new hit matches a further part of the genome.
+//                    std::cout<<"rki after match extension: "<<rki<<" / "<<read_kmers.size()<<std::endl;
+                    }
+
+                }
+                read_paths[rid].path = rp;
+                read_paths[rid].offset = offset;
+                //TODO: keep the offset of the first match!
+            }
+        }
+    }
+    else if (k<64) {
+        NKmerIndex128 nki(ws.sdg,k,_filter);//TODO: hardcoded parameters!!
+        sdglib::OutputLog()<<"Index created!"<<std::endl;
+        //if (last_read==0) last_read=datastore.size();
+#pragma omp parallel shared(nki)
+        {
+            StreamKmerFactory128 skf(k);
+            std::vector<std::pair<bool,__uint128_t >> read_kmers; //TODO: type should be defined in the kmerisers
+            std::vector<std::vector<std::pair<int32_t,int32_t >>> kmer_matches; //TODO: type should be defined in the index class
+            std::vector<sgNodeID_t> rp;
+            PerfectMatchExtender pme(ws.sdg,k);
+            ReadSequenceBuffer sequence_reader(datastore);
+            uint32_t offset;
+#pragma omp for
+            for (uint64_t rid=1;rid<=datastore.size();++rid){
+//        for (auto rid=937;rid<=937;++rid){
+                //sdt::cout<<std::endl<<"Processing read "<<rid<<std::endl;
+                offset=0;
+                const auto seq=std::string(sequence_reader.get_read_sequence(rid));
+                read_kmers.clear();
+                skf.produce_all_kmers(seq.c_str(),read_kmers);
+                rp.clear();
+                pme.set_read(seq);
+                for (auto rki=0;rki<read_kmers.size();++rki){
+                    auto kmatch=nki.find(read_kmers[rki].second);
+                    if (kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second){
+                        pme.reset();
+//                    std::cout<<std::endl<<"PME reset done"<<std::endl;
+//                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
+                        for (;kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second;++kmatch) {
+//                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
+                            auto contig=kmatch->contigID;
+                            int64_t pos=kmatch->offset-1;
+                            if (pos<0) {
+                                contig=-contig;
+                                pos=-pos-2;
+                            }
+                            if (!read_kmers[rki].first) contig=-contig;
+                            pme.add_starting_match(contig, rki, pos);
+                        }
+                        pme.extend_fw();
+                        pme.set_best_path();
+                        const auto & pmebp=pme.best_path;
+                        if (pme.last_readpos==datastore.readsize-1 or pme.last_readpos-rki>=63) {//TODO: hardcoded 63bp hit or end
+                            if (rp.empty() and not pmebp.empty()) offset=pme.best_path_offset;
+                            for (const auto &nid:pmebp)
+                                if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
+                            if (!pmebp.empty())
+                                rki = pme.last_readpos + 1 - k; //avoid extra index lookups for kmers already used once
+                        }
+//                    //TODO: matches shold be extended left to avoid unneeded indeterminaiton when an error occurrs in an overlap region and the new hit matches a further part of the genome.
+//                    std::cout<<"rki after match extension: "<<rki<<" / "<<read_kmers.size()<<std::endl;
+                    }
+
+                }
+                read_paths[rid].path=rp;
+                read_paths[rid].offset=offset;
+                //TODO: keep the offset of the first match!
+            }
+        }
+    }
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Creating paths_in_node"<<std::endl;
+    //first pass, size computing for vector allocation;
+    std::vector<uint64_t> path_counts(ws.sdg.nodes.size());
+    for (auto i=0;i<read_paths.size();++i){
+        const auto &p=read_paths[i];
+        for (const auto &n:p.path){
+            ++path_counts[llabs(n)];
+        }
+    }
+
+    paths_in_node.clear();
+    paths_in_node.resize(path_counts.size());
+    for (auto i=0;i<path_counts.size();++i) paths_in_node[i].reserve(path_counts[i]);
+    for (auto i=0;i<read_paths.size();++i){
+        const auto &p=read_paths[i];
+        for (const auto &n:p.path){
+            auto pid=(n<0 ? -i : i);
+            if (paths_in_node[llabs(n)].empty() or paths_in_node[llabs(n)].back()!=pid) paths_in_node[llabs(n)].emplace_back(pid);
+        }
+    }
+    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"pathing finished"<<std::endl;
+
+}
+
 void LinkedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_remap) {
     Unique63merIndex ukindex(ws.sdg);
     reads_in_node.resize(ws.sdg.nodes.size());
@@ -303,46 +511,6 @@ void LinkedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
     populate_orientation();
 }
 
-///**
-// * @brief Mapping of paired end read files.
-// *
-// * Reads are mapped through a unique k-mer index in process_reads_from_file.
-// * R1 and R2 are processed independently. R1 gets odds ids, R2 gets the next even id, so [1,2] and [3,4] are pairs.
-// *
-// * @todo fix and test 10x tags processing
-// * @todo enable some basic 10x tag statistics
-// * @todo add support for LMP reads (i.e FR reads)
-// * @todo add distribution computing on the fly
-// * @todo support other kind of indexes and variable k-mer size
-// */
-//void LinkedReadsMapper::map_reads(std::string filename1, std::string filename2, prmReadType read_type, uint64_t max_mem) {
-//    read1filename=std::move(filename1);
-//    read2filename=std::move(filename2);
-//    readType=read_type;
-//    memlimit=max_mem;
-//    remap_reads();
-//}
-
-void LinkedReadsMapper::remove_obsolete_mappings(){
-    uint64_t nodes=0,reads=0;
-    std::set<sgNodeID_t> updated_nodes;
-    for (auto n=1;n<ws.sdg.nodes.size();++n) {
-        if (ws.sdg.nodes[n].status==NodeStatus::Deleted) {
-            updated_nodes.insert(n);
-            updated_nodes.insert(-n);
-            reads_in_node[n > 0 ? n : -n].clear();
-            ++nodes;
-        }
-    }
-    for (auto &read_node:read_to_node) {
-        if (updated_nodes.count(read_node) !=0 ) {
-            read_node=0;
-            ++reads;
-        }
-    }
-    std::cout << "obsolete mappings removed from "<<nodes<<" nodes, total "<<reads<<" reads."<<std::endl;
-}
-
 void LinkedReadsMapper::print_status() const {
     uint64_t none=0,single=0,both=0,same=0;
     for (uint64_t r1=1;r1<read_to_node.size();r1+=2){
@@ -361,82 +529,10 @@ void LinkedReadsMapper::print_status() const {
 
 std::set<LinkedTag> LinkedReadsMapper::get_node_tags(sgNodeID_t n) {
     std::set<LinkedTag> tags;
-    for (auto &rm:reads_in_node[(n>0?n:-n)])
-        tags.insert(datastore.get_read_tag(rm.read_id));
+    for (auto &p:paths_in_node[(n>0?n:-n)])
+        tags.insert(datastore.get_read_tag(llabs(p)));
     if (tags.count(0)>0) tags.erase(0);
     return tags;
-}
-
-std::map<LinkedTag, std::vector<sgNodeID_t>> LinkedReadsMapper::get_tag_nodes(uint32_t min_nodes,
-                                                                             const std::vector<bool> &selected_nodes) {
-    //Approach: node->tags->nodes (checks how many different tags join this node to every other node).
-
-    std::map<LinkedTag, std::vector<sgNodeID_t>> tag_nodes;
-    LinkedTag curr_tag=0,new_tag=0;
-    std::set<sgNodeID_t> curr_nodes;
-    sgNodeID_t curr_node;
-    for (size_t i=1;i<read_to_node.size();++i){
-        new_tag=datastore.get_read_tag(i);
-        curr_node=llabs(read_to_node[i]);
-        if (new_tag==curr_tag){
-           if (curr_node!=0 and (selected_nodes.empty() or selected_nodes[curr_node]))
-               curr_nodes.insert(curr_node);
-        }
-        else {
-            if (curr_nodes.size()>=min_nodes and curr_tag>0){
-                tag_nodes[curr_tag].reserve(curr_nodes.size());
-                for (auto &n:curr_nodes)
-                    tag_nodes[curr_tag].emplace_back(n);
-            }
-            curr_tag=new_tag;
-            curr_nodes.clear();
-            if (curr_node!=0 and (selected_nodes.empty() or selected_nodes[curr_node]))
-                curr_nodes.insert(curr_node);
-        }
-    }
-    if (curr_nodes.size()>=min_nodes and curr_tag>0){
-        tag_nodes[curr_tag].reserve(curr_nodes.size());
-        for (auto &n:curr_nodes)
-            tag_nodes[curr_tag].emplace_back(n);
-    }
-
-    return tag_nodes;
-}
-
-std::vector<std::pair<sgNodeID_t , sgNodeID_t >> LinkedReadsMapper::get_tag_neighbour_nodes(uint32_t min_shared,
-                                                                                           const std::vector<bool> &selected_nodes) {
-    std::vector<std::pair<sgNodeID_t , sgNodeID_t >> tns;
-
-    auto nodes_in_tags= get_tag_nodes(2, selected_nodes);
-
-    std::unordered_map<sgNodeID_t , std::vector<LinkedTag>> tags_in_node;
-    sdglib::OutputLog()<<"There are "<<nodes_in_tags.size()<<" informative tags"<<std::endl;
-    for (auto &t:nodes_in_tags){
-        for (auto n:t.second) tags_in_node[n].push_back(t.first);
-    }
-
-    sdglib::OutputLog()<<"all structures ready"<<std::endl;
-#pragma omp parallel firstprivate(tags_in_node,nodes_in_tags)
-    {
-        std::vector<uint32_t> shared_with(ws.sdg.nodes.size());
-        std::vector<std::pair<sgNodeID_t, sgNodeID_t >> tnsl;
-#pragma omp for schedule(static,100)
-        for (auto n = 1; n < ws.sdg.nodes.size(); ++n) {
-            if (!selected_nodes[n]) continue;
-            if (tags_in_node[n].size()<min_shared) continue;
-
-            bzero(shared_with.data(), sizeof(uint32_t) * shared_with.size()); //clearing with bzero is the fastest way?
-            for (auto t:tags_in_node[n])
-                for (auto n:nodes_in_tags[t]) ++shared_with[n];
-            for (auto i = n + 1; i < shared_with.size(); ++i) {
-                if (shared_with[i] >= min_shared) tnsl.emplace_back(n, i);
-            }
-
-        }
-#pragma omp critical
-        tns.insert(tns.end(),tnsl.begin(),tnsl.end());
-    }
-    return tns;
 }
 
 void LinkedReadsMapper::compute_all_tag_neighbours(int min_size, float min_score, int min_mapped_reads_per_tag) {

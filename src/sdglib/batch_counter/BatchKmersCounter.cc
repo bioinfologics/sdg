@@ -649,3 +649,14 @@ std::vector<__uint128_t> BatchKmersCounter::countKmersToList(const LongReadsData
     sdglib::sort(kmers.begin(),kmers.end());
     return kmers;
 }
+
+void BatchKmersCounter::countKmersToGraphNodes(SequenceDistanceGraph &sdg, const PairedReadsDatastore &ds, int k, int min_coverage,
+                                                                int max_coverage, int num_batches) {
+    auto kmer_list = BatchKmersCounter::buildKMerCount(k, ds, min_coverage, ".", ".", num_batches);
+
+    for (uint64_t i = 0; i < kmer_list->size; ++i) {
+        if (kmer_list->kmers[i].count<=max_coverage)
+            sdg.add_node(sdglib::kmer_to_sequence(kmer_list->kmers[i].kdata,k));
+    }
+
+}

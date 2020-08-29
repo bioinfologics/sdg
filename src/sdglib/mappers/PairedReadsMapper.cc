@@ -377,7 +377,7 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
     read_paths.resize(datastore.size()+1);
     if (k<=31) {
         NKmerIndex nki(ws.sdg, k, _filter);//TODO: hardcoded parameters!!
-        sdglib::OutputLog() << "Index created!" << std::endl;
+        sdglib::OutputLog() << "64bit index created!" << std::endl;
         //if (last_read==0) last_read=datastore.size();
 #pragma omp parallel shared(nki)
         {
@@ -405,7 +405,7 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
 //                    std::cout<<std::endl<<"PME reset done"<<std::endl;
 //                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
                         for (; kmatch != nki.end() and kmatch->kmer == read_kmers[rki].second; ++kmatch) {
-//                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
+//                            std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
                             auto contig = kmatch->contigID;
                             int64_t pos = kmatch->offset - 1;
                             if (pos < 0) {
@@ -413,13 +413,17 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
                                 pos = -pos - 2;
                             }
                             if (!read_kmers[rki].first) contig = -contig;
+//                            std::cout<<"PME starting "<<rki<<" -> "<<contig<<":"<<pos<<std::endl;
                             pme.add_starting_match(contig, rki, pos);
                         }
                         pme.extend_fw();
                         pme.set_best_path();
                         const auto &pmebp = pme.best_path;
-                        if (pme.last_readpos == datastore.readsize - 1 or
-                            pme.last_readpos - rki >= 63) {//TODO: hardcoded 63bp hit or end
+//                        std::cout<<"Best path:";
+//                        for (auto n:pmebp) std::cout<<" "<<n;
+//                        std::cout<<std::endl;
+//                        std::cout<<"last read pos: "<<pme.last_readpos<<std::endl;
+                        if (not pmebp.empty()) {
                             if (rp.empty() and not pmebp.empty()) offset = pme.best_path_offset;
                             for (const auto &nid:pmebp)
                                 if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
@@ -480,7 +484,7 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
                         pme.extend_fw();
                         pme.set_best_path();
                         const auto & pmebp=pme.best_path;
-                        if (pme.last_readpos==datastore.readsize-1 or pme.last_readpos-rki>=63) {//TODO: hardcoded 63bp hit or end
+                        if (not pmebp.empty()) {
                             if (rp.empty() and not pmebp.empty()) offset=pme.best_path_offset;
                             for (const auto &nid:pmebp)
                                 if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
@@ -520,7 +524,7 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
     }
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"pathing finished"<<std::endl;
 
-};
+}
 
 bool inline are_complement(const char &A,const char &B){
     return (A=='A' and B=='T') or (A=='C' and B=='G') or (A=='G' and B=='C') or (A=='T' and B=='A');
