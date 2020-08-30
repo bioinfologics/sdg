@@ -392,6 +392,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("dump",&Strider::dump,"filename"_a)
             .def("load",&Strider::load,"filename"_a)
             .def("route_vs_readpaths_stats",&Strider::route_vs_readpaths_stats)
+            .def("join_stride_single_strict_from_all",&Strider::join_stride_single_strict_from_all)
             .def("stride_from_anchors",&Strider::stride_from_anchors,"min_size"_a=1,"min_kci"_a=.5,"max_kci"_a=1.5)
             .def("link_from_anchors",&Strider::link_from_anchors,"min_size"_a=1,"min_kci"_a=.5,"max_kci"_a=1.5,"d"_a=2000, "min_reads"_a=3, "group_size"_a=5, "small_node_size"_a=500,"candidate_percentaje"_a=0.5,"first_percentaje"_a=0.8)
             .def("add_datastore",py::overload_cast<const PairedReadsDatastore &>(&Strider::add_datastore))
