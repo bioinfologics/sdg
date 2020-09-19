@@ -38,6 +38,10 @@ public:
 
     void solve_all_tangles(WorkSpace &ws, PairedReadsDatastore& peds, int fsize=220, int fminkci=-1, int fmaxkci=-1, bool apply=false);
 
+    // Unique kmers pipeline
+    std::vector<std::string> contig_reduction_to_unique_kmers(int min_cov, int max_cov);
+
+
 private:
     WorkSpace &ws;
 };

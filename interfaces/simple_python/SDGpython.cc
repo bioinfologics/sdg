@@ -129,6 +129,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("kmer_coverage",py::overload_cast<std::string, std::string>(&NodeView::kmer_coverage, py::const_))
             .def("kci",&NodeView::kci)
             .def("linked_tags",&NodeView::get_linked_tags,"dsname"_a,"min_reads"_a=3)
+            .def("get_kmers",&NodeView::get_kmers, "K"_a=31)
             .def("__eq__", &NodeView::operator==, py::is_operator())
             .def("__repr__",
                  [](const NodeView &nv) {
@@ -392,6 +393,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("solve_all_canonical",&GraphContigger::solve_all_canonical, "ge"_a, "peds"_a, "size"_a=1000, "apply"_a=false)
             .def("clip_all_tips",&GraphContigger::clip_all_tips, "ge"_a, "peds"_a, "size"_a=1000, "apply"_a=false)
             .def("pop_all_error_bubbles",&GraphContigger::pop_all_error_bubbles, "ge"_a, "peds"_a, "size"_a=1000, "apply"_a=false)
+            .def("contig_reduction_to_unique_kmers",&GraphContigger::contig_reduction_to_unique_kmers, "min_cov"_a, "max_cov"_a)
             ;
 
     py::class_<LinkageMaker>(m, "LinkageMaker", "Makes linkage")
@@ -452,6 +454,18 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("line_fill", &LineFiller::line_fill, "anchor_path"_a)
             .def("fill_all_paths", &LineFiller::fill_all_paths, "lines"_a)
             .def_readonly("final_lines", &LineFiller::final_lines);
+
+//    // async testing
+//    struct SupportsAsync {};
+//    py::class_<SupportsAsync>(m, "SupportsAsync")
+//            .def(py::init<>())
+//            .def("__await__", [](const SupportsAsync& self) -> py::object {
+//                static_cast<void>(self);
+//                py::object loop = py::module::import("asyncio.events").attr("get_event_loop")();
+//                py::object f = loop.attr("create_future")();
+//                f.attr("set_result")(5);
+//                return f.attr("__await__")();
+//            });
 
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
