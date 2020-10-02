@@ -206,6 +206,9 @@ inline bool in_sorted_vector(const std::vector<T> &V,T VAL) {
 
 void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_t> & kmerlist,uint8_t k) {
     //TODO: add a bloom filter to speed this up
+    sg.nodes.clear();
+    sg.links.clear();
+    sg.oldnames.clear();
     sdglib::OutputLog()<<"Constructing Graph from "<<kmerlist.size()<<" "<<std::to_string(k)<<"-mers"<<std::endl;
     std::string s;
     s.reserve(1000000); //avoid contig-sequence growth
@@ -391,6 +394,9 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
 
 void GraphMaker::new_graph_from_kmerlist_trivial64(const std::vector<__uint64_t> & kmerlist,uint8_t k) {
     //TODO: add a bloom filter to speed this up
+    sg.nodes.clear();
+    sg.links.clear();
+    sg.oldnames.clear();
     sdglib::OutputLog()<<"Constructing Graph from "<<kmerlist.size()<<" "<<std::to_string(k)<<"-mers"<<std::endl;
     //for (auto &kmer:kmerlist) std::cout<<kmer_to_sequence(kmer,k)<<std::endl;
     std::string s;
