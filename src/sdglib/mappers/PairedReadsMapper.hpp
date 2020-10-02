@@ -124,6 +124,11 @@ public:
      */
     std::vector<uint64_t> get_node_readpairs_ids(sgNodeID_t nodeID);
 
+    /** Get the most conected neighbour of a node
+     *
+     */
+    sgNodeID_t get_node_inmediate_neighbours(sgNodeID_t node);
+
     WorkSpace &ws;
     const PairedReadsDatastore & datastore;
     /**

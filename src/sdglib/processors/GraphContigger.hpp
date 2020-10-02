@@ -40,7 +40,7 @@ public:
 
     // Unique kmers pipeline
     std::vector<std::string> contig_reduction_to_unique_kmers(int min_cov, int max_cov);
-
+    std::map<uint64_t, std::vector<sgNodeID_t >> group_nodes(PairedReadsDatastore peds);
 
 private:
     WorkSpace &ws;

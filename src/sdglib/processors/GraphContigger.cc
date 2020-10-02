@@ -918,3 +918,46 @@ std::vector<std::string> GraphContigger::contig_reduction_to_unique_kmers(int mi
     }
     return seqs;
 }
+
+std::map<uint64_t, std::vector<sgNodeID_t >> GraphContigger::group_nodes(PairedReadsDatastore peds){
+    std::cout << "Starting group nodes" << std::endl;
+    std::map<uint64_t, std::vector<sgNodeID_t >> groups;
+    std::unordered_set<sgNodeID_t> non_visited;
+    std::unordered_set<sgNodeID_t> visited;
+    std::cout << "Creating set" << std::endl;
+    for (const auto &nv: ws.sdg.get_all_nodeviews()){
+        non_visited.emplace(abs(nv.node_id()));
+    }
+
+    std::cout << "Starting while" << std::endl;
+
+    while (non_visited.size()>0){
+
+        // equivalent to set.pop()
+        auto node = *non_visited.begin();
+        non_visited.erase(non_visited.begin());
+
+        auto central_node = node;
+        visited.emplace(abs(node));
+        auto next_node = peds.mapper.get_node_inmediate_neighbours(node);
+        std::vector<sgNodeID_t > group;
+        group.push_back(node);
+
+        while (next_node != 0 and std::find(visited.begin(), visited.end(), abs(next_node)) == visited.end()){
+
+            visited.emplace(abs(next_node));
+            non_visited.erase(abs(next_node));
+            group.push_back(node);
+            node = next_node;
+            next_node = peds.mapper.get_node_inmediate_neighbours(node);
+        }
+        std::cout << "Grupo: " << central_node << ": ";
+        for (const auto &g: group){
+            std::cout << g << ", ";
+        }
+        std::cout<<std::endl;
+
+        groups[central_node] = group;
+    }
+    return groups;
+}

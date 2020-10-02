@@ -206,6 +206,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("all_paths_fw",&PairedReadsMapper::all_paths_fw,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true)
             .def("dump_readpaths",&PairedReadsMapper::dump_readpaths)
             .def("load_readpaths",&PairedReadsMapper::load_readpaths)
+            .def("get_node_inmediate_neighbours",&PairedReadsMapper::get_node_inmediate_neighbours, "node"_a)
             ;
 
     py::class_<LinkedReadsMapper>(m, "LinkedReadsMapper", "A Paired Reads Mapper")
@@ -394,6 +395,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("clip_all_tips",&GraphContigger::clip_all_tips, "ge"_a, "peds"_a, "size"_a=1000, "apply"_a=false)
             .def("pop_all_error_bubbles",&GraphContigger::pop_all_error_bubbles, "ge"_a, "peds"_a, "size"_a=1000, "apply"_a=false)
             .def("contig_reduction_to_unique_kmers",&GraphContigger::contig_reduction_to_unique_kmers, "min_cov"_a, "max_cov"_a)
+            .def("group_nodes",&GraphContigger::group_nodes, "peds"_a)
             ;
 
     py::class_<LinkageMaker>(m, "LinkageMaker", "Makes linkage")

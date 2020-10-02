@@ -795,3 +795,27 @@ std::ostream &operator<<(std::ostream &os, const PairedReadsMapper &prm) {
     os << "Paired Reads Mapper: "<<mapped<<" mapped reads, "<<unmapped<<" unmapped";
     return os;
 }
+
+sgNodeID_t PairedReadsMapper::get_node_inmediate_neighbours(sgNodeID_t node){
+    // 0 returning node is equivalent to None (in python)
+    sgNodeID_t next_node=0;
+    std::unordered_map<sgNodeID_t, int> counter;
+    for(const auto &path: all_paths_fw(node)){
+        for (const auto &node: path){
+            counter[node]++;
+        }
+    }
+
+    std::vector<std::pair<sgNodeID_t, int>> count_vector;
+    for (const auto &x: counter){
+        count_vector.push_back(x);
+    }
+    std::sort(count_vector.begin(), count_vector.end(), [](std::pair<sgNodeID_t, int>& a, std::pair<sgNodeID_t, int>& b){return a.second>b.second;});
+
+    for (const auto& cand: count_vector){
+        if (cand.first != 0 and cand.second>10){
+            return cand.first;
+        }
+    }
+    return next_node;
+}
