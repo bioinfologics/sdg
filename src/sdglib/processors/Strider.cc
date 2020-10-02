@@ -174,6 +174,23 @@ Strider::stride_out_in_order(sgNodeID_t n, bool use_pair, bool collapse_pair, bo
     return p;
 }
 
+void Strider::join_stride_single_strict_from_all() {
+    std::cout<<std::endl<<logo<<std::endl;
+    sdglib::OutputLog()<<"Gone striding..."<<std::endl;
+#pragma omp parallel for schedule(static,1000)
+    for (auto nid=1;nid<ws.sdg.nodes.size();++nid) {
+        auto fw=stride_single_strict(nid).nodes;
+        if (fw.size()>1 and not ws.sdg.are_connected(-fw[0],fw[1]) and ws.sdg.get_node_sequence(fw[0]).substr(1,30)==ws.sdg.get_node_sequence(fw[1]).substr(0,30))
+#pragma omp critical
+            ws.sdg.add_link(-fw[0],fw[1],-30);
+        auto bw=stride_single_strict(-nid).nodes;
+        if (bw.size()>1 and not ws.sdg.are_connected(-bw[0],bw[1]) and ws.sdg.get_node_sequence(bw[0]).substr(1,30)==ws.sdg.get_node_sequence(bw[1]).substr(0,30))
+#pragma omp critical
+            ws.sdg.add_link(-bw[0],bw[1],-30);
+    }
+    ws.sdg.join_all_unitigs();
+}
+
 void Strider::stride_from_anchors(uint32_t min_size, float min_kci, float max_kci) {
     std::cout<<std::endl<<logo<<std::endl;
     sdglib::OutputLog()<<"Gone striding..."<<std::endl;
@@ -189,7 +206,7 @@ void Strider::stride_from_anchors(uint32_t min_size, float min_kci, float max_kc
     for (auto nid=1;nid<ws.sdg.nodes.size();++nid) {
         if (ws.sdg.get_node_size(nid)<min_size) continue;
         auto nv=ws.sdg.get_nodeview(nid);
-        if (nv.kci()<min_kci or nv.kci()>max_kci) continue;
+        if ((min_kci>=0 and nv.kci()<min_kci) or (max_kci>=0 and nv.kci()>max_kci)) continue;
         ++anchors;
         is_anchor[nid]=true;
         routes_fw[nid]= stride_out_in_order(nid).nodes;
@@ -261,7 +278,7 @@ void Strider::link_from_anchors(uint32_t min_size, float min_kci, float max_kci,
     for (auto nid=1;nid<ws.sdg.nodes.size();++nid) {
         if (ws.sdg.get_node_size(nid)<min_size) continue;
         auto nv=ws.sdg.get_nodeview(nid);
-        if (nv.kci()<min_kci or nv.kci()>max_kci) continue;
+        if ((min_kci>=0 and nv.kci()<min_kci) or (max_kci>=0 and nv.kci()>max_kci)) continue;
         ++anchors;
         is_anchor[nid]=true;
         links_fw[nid]=link_out_by_lr(nid, d, min_reads, group_size, small_node_size, candidate_percentaje, first_percentaje);

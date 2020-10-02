@@ -307,7 +307,7 @@ void PerfectMatchesMergeSorter::find_next_node(int d, float candidate_percentaje
     for (auto i=0;i<read_matches.size();++i) {
         if (read_next_match[i]==-1) continue;
         ++used_reads;
-        read_nodes.clear();
+        read_nodes.clear()
         for (auto it=read_matches[i].cbegin()+read_next_match[i];
             it<read_matches[i].cend() and it->read_position-read_last_hit_position[i]<d;
             ++it)
