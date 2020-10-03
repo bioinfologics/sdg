@@ -75,7 +75,7 @@ public:
      *
      * @return
      */
-    void path_reads(uint8_t k=63,int filter=200);
+    void path_reads(uint8_t k=63,int filter=200, bool fill_offsets=false);
 
     /** @brief creates a read path for each read through mapping
      *
@@ -156,6 +156,8 @@ public:
     std::vector<uint64_t> frdist; /// Forward reverse distance accumulator
 
     std::vector<ReadPath> read_paths;
+
+    std::vector<std::vector<std::pair<uint32_t,uint32_t>>> read_path_offsets;
 
     std::vector<std::vector<int64_t>> paths_in_node;
     static const sdgVersion_t min_compat;

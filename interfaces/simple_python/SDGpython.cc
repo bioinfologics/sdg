@@ -29,6 +29,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<std::vector<PerfectMatch>>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<uint64_t>>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<int64_t>>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<NodePosition>>);
+PYBIND11_MAKE_OPAQUE(std::vector<std::vector<std::pair<uint32_t,uint32_t>>>);
 PYBIND11_MAKE_OPAQUE(std::vector<ReadPath>);
 PYBIND11_MAKE_OPAQUE(std::vector<bool>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<Link>>);
@@ -41,6 +42,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::bind_vector<std::vector<std::vector<uint64_t>>>(m, "VectorVectorU64");
     py::bind_vector<std::vector<int64_t>>(m, "Vector64");
     py::bind_vector<std::vector<std::vector<int64_t>>>(m, "VectorVector64");
+    py::bind_vector<std::vector<std::vector<std::pair<uint32_t,uint32_t>>>>(m, "VectorVectorPairU32");
     py::bind_vector<std::vector<ReadPath>>(m, "VectorReadPath");
     py::bind_vector<std::vector<PerfectMatch>>(m, "VectorPerfectMatch");
     py::bind_vector<std::vector<std::vector<PerfectMatch>>>(m, "VectorVectorPerfectMatch");
@@ -199,9 +201,10 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<PairedReadsMapper>(m, "PairedReadsMapper", "A Paired Reads Mapper")
-            .def("path_reads",&PairedReadsMapper::path_reads,"k"_a=63,"max_freq"_a=200)
+            .def("path_reads",&PairedReadsMapper::path_reads,"k"_a=63,"max_freq"_a=200,"fill_offsets"_a=true)
             .def_readonly("paths_in_node",&PairedReadsMapper::paths_in_node)
             .def_readonly("read_paths",&PairedReadsMapper::read_paths)
+            .def_readonly("read_path_offsets",&PairedReadsMapper::read_path_offsets)
             .def("path_fw",&PairedReadsMapper::path_fw,"read_id"_a,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true)
             .def("all_paths_fw",&PairedReadsMapper::all_paths_fw,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true)
             .def("dump_readpaths",&PairedReadsMapper::dump_readpaths)

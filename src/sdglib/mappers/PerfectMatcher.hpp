@@ -34,15 +34,17 @@ public:
     void reset();
     void add_starting_match(sgNodeID_t node_id, uint64_t read_offset, uint64_t node_offset);
     void extend_fw();
-    void set_best_path(); //Todo: return pointer to the last part?
+    void set_best_path(bool fill_offsets=false); //Todo: return pointer to the last part?
     void make_path_as_perfect_matches();
 
 
     DistanceGraph & dg;
     uint8_t k;
+    uint32_t start_mp_readpos;
     std::vector<PerfectMatchPart> matchparts;
     std::vector<PerfectMatch> best_path_matches;
     std::vector<sgNodeID_t> best_path;
+    std::vector<std::pair<uint32_t,uint32_t>> best_path_offsets;
     uint32_t best_path_offset;
     uint64_t last_readpos;
     uint64_t last_nodepos;

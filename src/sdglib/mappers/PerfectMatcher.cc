@@ -35,6 +35,7 @@ void PerfectMatchPart::extend(const std::string & readseq,const std::string & no
 void PerfectMatchExtender::reset(){
     matchparts.clear();
     best_path.clear();
+    best_path_offsets.clear();
     last_readpos=0;
 }
 
@@ -66,7 +67,9 @@ void PerfectMatchExtender::extend_fw(){
     //TODO: this could be extended backwards in the original hit to add diferentiation on overlap-transitioned hits after an error.
 //        std::cout<<"extend_fw called with "<<matchparts.size()<<" starting matchparts"<<std::endl;
     //First, check if any matchparts overlap with each other and start the hit in the OVL, if they do, invalidate the incoming
-
+    if (not matchparts.empty()){
+        start_mp_readpos=matchparts[0].read_position-k;
+    }
     for(uint64_t from=0;from<matchparts.size();++from){
         for(uint64_t to=0;to<matchparts.size();++to){
             if (from==to) continue;
@@ -104,7 +107,7 @@ void PerfectMatchExtender::extend_fw(){
         }
     }
 }
-void PerfectMatchExtender::set_best_path(){ //set extension_size when returning a path that was extended.
+void PerfectMatchExtender::set_best_path(bool fill_offsets){ //set extension_size when returning a path that was extended.
     //find if there is a single part that goes further in the read than all the others.
     uint64_t best_length=0;
     int64_t next_index=0;
@@ -141,6 +144,14 @@ void PerfectMatchExtender::set_best_path(){ //set extension_size when returning 
 
     while (next_index!=-1) {
         best_path.emplace_back(matchparts[next_index].node);
+        if (fill_offsets) {
+            const auto & m=matchparts[next_index];
+            auto msize=m.read_position;
+            if (m.previous_part!=-1) msize-=matchparts[m.previous_part].read_position;
+            else msize-=start_mp_readpos;
+            if (m.node>0) best_path_offsets.emplace_back(m.read_position-msize+1,m.node_position-msize+1);
+            else best_path_offsets.emplace_back(m.read_position-msize+1,dg.get_nodeview(m.node).size()-m.node_position-msize);
+        }
         if (matchparts[next_index].previous_part==-1) {
             if (matchparts[next_index].node>0)
                 best_path_offset=matchparts[next_index].node_position + matchparts[next_index].offset - matchparts[next_index].read_position;

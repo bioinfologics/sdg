@@ -365,7 +365,7 @@ void PairedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to
 
 
 
-void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
+void PairedReadsMapper::path_reads(uint8_t k,int _filter,bool fill_offsets) {
     //TODO: when a path jumps nodes implied by overlaps included nodes, add them
     //read pather
     // - Starts from a (multi)63-mer match -> add all starts to PME
@@ -375,6 +375,7 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
     int64_t match_offset;
     read_paths.clear();
     read_paths.resize(datastore.size()+1);
+    if (fill_offsets) read_path_offsets.resize(datastore.size()+1);
     if (k<=31) {
         NKmerIndex nki(ws.sdg, k, _filter);//TODO: hardcoded parameters!!
         sdglib::OutputLog() << "64bit index created!" << std::endl;
@@ -385,6 +386,7 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
             std::vector<std::pair<bool, uint64_t >> read_kmers; //TODO: type should be defined in the kmerisers
             std::vector<std::vector<std::pair<int32_t, int32_t >>> kmer_matches; //TODO: type should be defined in the index class
             std::vector<sgNodeID_t> rp;
+            std::vector<std::pair<uint32_t,uint32_t>> ro;
             PerfectMatchExtender pme(ws.sdg, k);
             ReadSequenceBuffer sequence_reader(datastore);
             uint32_t offset;
@@ -397,6 +399,7 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
                 read_kmers.clear();
                 skf.produce_all_kmers(seq.c_str(), read_kmers);
                 rp.clear();
+                ro.clear();
                 pme.set_read(seq);
                 for (auto rki = 0; rki < read_kmers.size(); ++rki) {
                     auto kmatch = nki.find(read_kmers[rki].second);
@@ -417,7 +420,8 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
                             pme.add_starting_match(contig, rki, pos);
                         }
                         pme.extend_fw();
-                        pme.set_best_path();
+                        if (fill_offsets) pme.set_best_path(true);
+                        else pme.set_best_path();
                         const auto &pmebp = pme.best_path;
 //                        std::cout<<"Best path:";
 //                        for (auto n:pmebp) std::cout<<" "<<n;
@@ -425,8 +429,13 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
 //                        std::cout<<"last read pos: "<<pme.last_readpos<<std::endl;
                         if (not pmebp.empty()) {
                             if (rp.empty() and not pmebp.empty()) offset = pme.best_path_offset;
-                            for (const auto &nid:pmebp)
-                                if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
+                            for (uint64_t pnidx=0;pnidx<pmebp.size();++pnidx) {
+                                const auto &nid=pmebp[pnidx];
+                                if (rp.empty() or nid != rp.back()) {
+                                    rp.emplace_back(nid);
+                                    if (fill_offsets) ro.emplace_back(pme.best_path_offsets[pnidx]);
+                                }
+                            }
                             if (!pmebp.empty())
                                 rki = pme.last_readpos + 1 - k; //avoid extra index lookups for kmers already used once
                         }
@@ -437,6 +446,7 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
                 }
                 read_paths[rid].path = rp;
                 read_paths[rid].offset = offset;
+                if (fill_offsets) read_path_offsets[rid]=ro;
                 //TODO: keep the offset of the first match!
             }
         }
@@ -451,6 +461,7 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
             std::vector<std::pair<bool,__uint128_t >> read_kmers; //TODO: type should be defined in the kmerisers
             std::vector<std::vector<std::pair<int32_t,int32_t >>> kmer_matches; //TODO: type should be defined in the index class
             std::vector<sgNodeID_t> rp;
+            std::vector<std::pair<uint32_t,uint32_t>> ro;
             PerfectMatchExtender pme(ws.sdg,k);
             ReadSequenceBuffer sequence_reader(datastore);
             uint32_t offset;
@@ -463,6 +474,7 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
                 read_kmers.clear();
                 skf.produce_all_kmers(seq.c_str(),read_kmers);
                 rp.clear();
+                ro.clear();
                 pme.set_read(seq);
                 for (auto rki=0;rki<read_kmers.size();++rki){
                     auto kmatch=nki.find(read_kmers[rki].second);
@@ -482,12 +494,18 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter) {
                             pme.add_starting_match(contig, rki, pos);
                         }
                         pme.extend_fw();
-                        pme.set_best_path();
-                        const auto & pmebp=pme.best_path;
+                        if (fill_offsets) pme.set_best_path(true);
+                        else pme.set_best_path();
+                        const auto &pmebp = pme.best_path;
                         if (not pmebp.empty()) {
-                            if (rp.empty() and not pmebp.empty()) offset=pme.best_path_offset;
-                            for (const auto &nid:pmebp)
-                                if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
+                            if (rp.empty() and not pmebp.empty()) offset = pme.best_path_offset;
+                            for (uint64_t pnidx=0;pnidx<pmebp.size();++pnidx) {
+                                const auto &nid=pmebp[pnidx];
+                                if (rp.empty() or nid != rp.back()) {
+                                    rp.emplace_back(nid);
+                                    if (fill_offsets) ro.emplace_back(pme.best_path_offsets[pnidx]);
+                                }
+                            }
                             if (!pmebp.empty())
                                 rki = pme.last_readpos + 1 - k; //avoid extra index lookups for kmers already used once
                         }
