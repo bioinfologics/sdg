@@ -546,7 +546,7 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
     if (last_read==0) last_read=datastore.size();
     auto total_reads = datastore.size();
     auto maped_reads_count=0;
-#pragma omp parallel shared(nki)
+//#pragma omp parallel shared(nki)
     {
         StreamKmerFactory skf(k);
         std::vector<std::pair<bool,uint64_t >> read_kmers; //TODO: type should be defined in the kmerisers
@@ -554,7 +554,7 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
         PerfectMatchExtender pme(sdg,k);
         ReadSequenceBuffer sequence_reader(datastore);
         uint64_t private_mapped_reads=0;
-#pragma omp for
+//#pragma omp for
         for (auto rid=first_read;rid<=last_read;++rid){
             std::vector<PerfectMatch> private_read_perfect_matches;
             const auto seq=std::string(sequence_reader.get_read_sequence(rid));
@@ -565,10 +565,10 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
                 auto kmatch=nki.find(read_kmers[rki].second);
                 if (kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second){
                     pme.reset();
-//                    std::cout<<std::endl<<"PME reset done"<<std::endl;
-//                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
+                    std::cout<<std::endl<<"PME reset done"<<std::endl;
+                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
                     for (;kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second;++kmatch) {
-//                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
+                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
                         auto contig=kmatch->contigID;
                         int64_t pos=kmatch->offset-1;
                         if (pos<0) {
@@ -597,7 +597,7 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
                         }
                     }
 //                    //TODO: matches shold be extended left to avoid unneeded indeterminaiton when an error occurrs in an overlap region and the new hit matches a further part of the genome.
-//                    std::cout<<"rki after match extension: "<<rki<<" / "<<read_kmers.size()<<std::endl;
+                    std::cout<<"rki after match extension: "<<rki<<" / "<<read_kmers.size()<<std::endl;
                 }
 
             }
