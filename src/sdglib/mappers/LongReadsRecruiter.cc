@@ -559,7 +559,7 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
 
             std::vector<PerfectMatch> private_read_perfect_matches;
             const auto seq=std::string(sequence_reader.get_read_sequence(rid));
-            std::cout<<"Read "<< rid << " --> " << seq << std::endl;
+//            std::cout<<"Read "<< rid << " --> " << seq << std::endl;
             read_kmers.clear();
             skf.produce_all_kmers(seq.c_str(),read_kmers);
             pme.set_read(seq);
