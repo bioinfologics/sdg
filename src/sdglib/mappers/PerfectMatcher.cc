@@ -84,13 +84,13 @@ void PerfectMatchExtender::extend_fw(){
     for(uint64_t next=0;next<matchparts.size();++next){
         //extend, if end of node add all nexts as unextended parts.
         if (matchparts[next].invalid) continue;
-//            std::cout<<"extending matchpart "<<next<<" to node "<<matchparts[next].node<<" with current readpos="<<matchparts[next].read_position<<" and nodepos="<<matchparts[next].node_position<<std::endl;
+            std::cout<<"extending matchpart "<<next<<" to node "<<matchparts[next].node<<" with current readpos="<<matchparts[next].read_position<<" and nodepos="<<matchparts[next].node_position<<std::endl;
         matchparts[next].extend(readseq,dg.sdg.nodes[llabs(matchparts[next].node)].sequence);
-//            std::cout<<" -> readpos="<<matchparts[next].read_position<<(matchparts[next].completed_read ? " (completed)":"")<<", nodepos="<<matchparts[next].node_position<<(matchparts[next].completed_node ? " (completed)":"")<<std::endl;
+            std::cout<<" -> readpos="<<matchparts[next].read_position<<(matchparts[next].completed_read ? " (completed)":"")<<", nodepos="<<matchparts[next].node_position<<(matchparts[next].completed_node ? " (completed)":"")<<std::endl;
         if (matchparts[next].completed_node and not matchparts[next].completed_read){
             for (const auto & l: dg.get_nodeview(matchparts[next].node).next()){
                 if (l.distance()>-k+1) continue;
-//                    std::cout<<"extending to next node "<<l.node().node_id()<<std::endl;
+                    std::cout<<"extending to next node "<<l.node().node_id()<<std::endl;
                 matchparts.emplace_back();//add next node part, pointing to this one as previous.
                 auto &mp=matchparts.back();
                 mp.node=l.node().node_id();
