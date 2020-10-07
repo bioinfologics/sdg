@@ -599,7 +599,7 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
                         }
                     }
 //                    //TODO: matches shold be extended left to avoid unneeded indeterminaiton when an error occurrs in an overlap region and the new hit matches a further part of the genome.
-                    std::cout<<"rki after match extension: "<<rki<<" / "<<read_kmers.size()<<std::endl;
+//                    std::cout<<"rki after match extension: "<<rki<<" / "<<read_kmers.size()<<std::endl;
                 }
 
             }
