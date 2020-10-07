@@ -546,7 +546,7 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
     if (last_read==0) last_read=datastore.size();
     auto total_reads = datastore.size();
     auto maped_reads_count=0;
-//#pragma omp parallel shared(nki)
+#pragma omp parallel shared(nki)
     {
         StreamKmerFactory skf(k);
         std::vector<std::pair<bool,uint64_t >> read_kmers; //TODO: type should be defined in the kmerisers
@@ -554,10 +554,12 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
         PerfectMatchExtender pme(sdg,k);
         ReadSequenceBuffer sequence_reader(datastore);
         uint64_t private_mapped_reads=0;
-//#pragma omp for
+#pragma omp for
         for (auto rid=first_read;rid<=last_read;++rid){
+
             std::vector<PerfectMatch> private_read_perfect_matches;
             const auto seq=std::string(sequence_reader.get_read_sequence(rid));
+            std::cout<<"Read "<< rid << " --> " << seq << std::endl;
             read_kmers.clear();
             skf.produce_all_kmers(seq.c_str(),read_kmers);
             pme.set_read(seq);
@@ -565,10 +567,10 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
                 auto kmatch=nki.find(read_kmers[rki].second);
                 if (kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second){
                     pme.reset();
-                    std::cout<<std::endl<<"PME reset done"<<std::endl;
-                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
+//                    std::cout<<std::endl<<"PME reset done"<<std::endl;
+//                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
                     for (;kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second;++kmatch) {
-                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
+//                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
                         auto contig=kmatch->contigID;
                         int64_t pos=kmatch->offset-1;
                         if (pos<0) {
@@ -585,13 +587,13 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
                         if (!pmebp.empty()) {
                             rki = pme.last_readpos + 1 - k; //avoid extra index lookups for kmers already used once
                             pme.make_path_as_perfect_matches();
-                            if (private_read_perfect_matches.size()<1000){
-                                private_read_perfect_matches.insert(private_read_perfect_matches.end(),pme.best_path_matches.begin(),pme.best_path_matches.end());
-                            } else {
-                                std::cout<<" Discarded a read because matches to too many contigs" <<std::endl;
-                                private_read_perfect_matches.clear();
-                                break;
-                            }
+//                            if (private_read_perfect_matches.size()<1000){
+                            private_read_perfect_matches.insert(private_read_perfect_matches.end(),pme.best_path_matches.begin(),pme.best_path_matches.end());
+//                            } else {
+//                                std::cout<<" Discarded a read because matches to too many contigs" <<std::endl;
+//                                private_read_perfect_matches.clear();
+//                                break;
+//                            }
 
 
                         }
