@@ -585,7 +585,14 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
                         if (!pmebp.empty()) {
                             rki = pme.last_readpos + 1 - k; //avoid extra index lookups for kmers already used once
                             pme.make_path_as_perfect_matches();
-                            private_read_perfect_matches.insert(private_read_perfect_matches.end(),pme.best_path_matches.begin(),pme.best_path_matches.end());
+                            if (private_read_perfect_matches.size()<1000){
+                                private_read_perfect_matches.insert(private_read_perfect_matches.end(),pme.best_path_matches.begin(),pme.best_path_matches.end());
+                            } else {
+                                std::cout<<" Discarded a read because matches to too many contigs" <<std::endl;
+                                private_read_perfect_matches.clear();
+                            }
+
+
                         }
                     }
 //                    //TODO: matches shold be extended left to avoid unneeded indeterminaiton when an error occurrs in an overlap region and the new hit matches a further part of the genome.
