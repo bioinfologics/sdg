@@ -590,6 +590,7 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
                             } else {
                                 std::cout<<" Discarded a read because matches to too many contigs" <<std::endl;
                                 private_read_perfect_matches.clear();
+                                break;
                             }
 
 
