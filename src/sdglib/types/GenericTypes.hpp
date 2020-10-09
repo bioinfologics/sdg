@@ -14,7 +14,7 @@
 #include "hashing_helper.hpp"
 
 using sgNodeID_t = int64_t; //first node is 1; negatives are RC
-using seqID_t = int32_t; //first sequence is 0;
+using seqID_t = int64_t; //first sequence is 0;
 
 enum class NodeStatus:uint8_t {Active, Deleted};
 
