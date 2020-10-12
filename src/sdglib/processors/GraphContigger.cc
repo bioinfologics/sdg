@@ -903,13 +903,17 @@ void GraphContigger::solve_all_tangles(WorkSpace &ws, PairedReadsDatastore &peds
     }
 }
 
-std::vector<std::string> GraphContigger::contig_reduction_to_unique_kmers(int min_cov, int max_cov){
+std::vector<std::string> GraphContigger::contig_reduction_to_unique_kmers(int min_cov, int max_cov, uint32_t max_run_size){
     std::vector<std::string> seqs;
     for (const auto& nv: ws.sdg.get_all_nodeviews()){
         auto c = nv.kmer_coverage("pek31", "pe");
         int i=0;
         while(i<c.size()){
-            while(i<c.size() and (c[i]<min_cov or c[i]>max_cov)) i++;
+            uint32_t run_size=0;
+            while(i<c.size() and (c[i]<min_cov or c[i]>max_cov) and run_size<100){
+                i++;
+                run_size++;
+            }
             if (i==c.size()) break;
             auto si=i;
             while(i<c.size() and c[i]>=min_cov and c[i]<=max_cov) i++;

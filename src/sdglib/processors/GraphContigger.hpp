@@ -39,7 +39,7 @@ public:
     void solve_all_tangles(WorkSpace &ws, PairedReadsDatastore& peds, int fsize=220, int fminkci=-1, int fmaxkci=-1, bool apply=false);
 
     // Unique kmers pipeline
-    std::vector<std::string> contig_reduction_to_unique_kmers(int min_cov, int max_cov);
+    std::vector<std::string> contig_reduction_to_unique_kmers(int min_cov, int max_cov, uint32_t max_run_size=100);
     std::map<uint64_t, std::vector<sgNodeID_t >> group_nodes(PairedReadsDatastore peds);
 
 private:
