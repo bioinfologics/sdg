@@ -909,14 +909,17 @@ std::vector<std::string> GraphContigger::contig_reduction_to_unique_kmers(int mi
         auto c = nv.kmer_coverage("pek31", "pe");
         int i=0;
         while(i<c.size()){
-            uint32_t run_size=0;
-            while(i<c.size() and (c[i]<min_cov or c[i]>max_cov) and run_size<100){
+
+            while(i<c.size() and (c[i]<min_cov or c[i]>max_cov)){
                 i++;
-                run_size++;
             }
             if (i==c.size()) break;
             auto si=i;
-            while(i<c.size() and c[i]>=min_cov and c[i]<=max_cov) i++;
+            uint32_t run_size=0;
+            while(i<c.size() and c[i]>=min_cov and c[i]<=max_cov and run_size<=max_run_size){
+                run_size++;
+                i++;
+            }
             seqs.push_back(nv.sequence().substr(si, i-si+30));
         }
     }
