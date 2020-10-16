@@ -7,6 +7,7 @@
 #include "PerfectMatcher.hpp"
 #include <sdglib/indexers/NKmerIndex.hpp>
 #include <atomic>
+#include <sdglib/views/NodeView.hpp>
 
 std::vector<PerfectMatch> PerfectMatchesFilter::truncate_turnaround(const std::vector<PerfectMatch> &in) const {
     if (in.empty()) return {};
@@ -873,4 +874,78 @@ void LongReadsRecruiter::thread_and_pop() {
     for (auto rid=1;rid<read_perfect_matches.size();++rid){
         for (auto const & n:read_paths[rid]) node_paths[abs(n)].emplace_back( n>0 ? rid : -rid);
     }
+}
+
+
+void HaplotypePuller::start_from_read_nodes(int64_t rid){
+    for (const auto& match: lrr.read_threads[rid]){
+        node_ids.insert(match.node);
+    }
+    read_ids.insert(rid);
+}
+
+void HaplotypePuller::start_node_neighbourhood(sgNodeID_t nid, int min_reads=10) {
+
+    for (const auto& pp: nodes_in_threads_fw(dg.get_nodeview(nid))){
+        if (pp.second>min_reads){
+            node_ids.insert(pp.first);
+        }
+    }
+    for (const auto& pp: nodes_in_threads_fw(dg.get_nodeview(-nid))){
+        if (pp.second>min_reads){
+            node_ids.insert(-pp.first);
+        }
+    }
+}
+
+std::map<sgNodeID_t, int> HaplotypePuller::nodes_in_threads_fw(const NodeView nv){
+    std::map<sgNodeID_t, int> c;
+    std::vector<int64_t> reads;
+    for (const auto& x: nv.next()){
+        reads.push_back(x.support().id);
+    }
+    std::vector<NodeView> to_explore{nv};
+    while (to_explore.size()>0){
+        std::vector<NodeView> new_to_explore;
+        for (const auto& nnv: to_explore){
+            for (const auto& ln: nnv.next()){
+                if (find(reads.begin(), reads.end(), ln.support().id)!=reads.end()){
+                    if (c.find(ln.node().node_id())== c.end()){
+                        c[ln.node().node_id()]=0;
+                    }
+                    c[ln.node().node_id()]++;
+                }
+            }
+        }
+        to_explore=new_to_explore;
+    }
+    return c;
+}
+
+std::pair<int, int> HaplotypePuller::nodes_fw_inout(sgNodeID_t nid, int min_c){
+    NodeView nv = dg.get_nodeview(nid);
+    int nodes_in=0;
+    int nodes_out=0;
+    for (const auto & c: nodes_in_threads_fw(nv)){
+        if (c.second<min_c) continue;
+        if (node_ids.find(nid)!=node_ids.end()){
+            nodes_in++;
+        } else{
+            nodes_out++;
+        }
+    }
+    return std::make_pair(nodes_in, nodes_out);
+}
+
+float HaplotypePuller::nodes_fw_perc(sgNodeID_t nid, int min_c){
+    auto nodes_inout = nodes_fw_inout(nid, min_c);
+    return (float)nodes_inout.first/((float)nodes_inout.first+(float)nodes_inout.second);
+}
+
+float HaplotypePuller::nodes_all_perc(sgNodeID_t nid, int min_c){
+    auto fnodes_inout=nodes_fw_inout(nid,min_c);
+    auto bnodes_inout=nodes_fw_inout(-nid,min_c);
+    auto nodes_in=bnodes_inout.first+fnodes_inout.first;
+    auto nodes_out=bnodes_inout.second+fnodes_inout.second;
+    return (float)nodes_in/((float)nodes_in+(float)nodes_out);
 }

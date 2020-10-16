@@ -461,6 +461,15 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("fill_all_paths", &LineFiller::fill_all_paths, "lines"_a)
             .def_readonly("final_lines", &LineFiller::final_lines);
 
+    py::class_<HaplotypePuller>(m, "HaplotypePuller", "HaplotypePuller")
+            .def(py::init<DistanceGraph &, LongReadsRecruiter&>(), "dg"_a, "lrr"_a)
+            .def("start_from_read_nodes", &HaplotypePuller::start_from_read_nodes, "rid"_a)
+            .def("start_node_neighbourhood", &HaplotypePuller::start_node_neighbourhood, "nid"_a, "min_reads"_a=10)
+            .def("nodes_fw_inout", &HaplotypePuller::nodes_fw_inout, "nid"_a, "min_c"_a=2)
+            .def("nodes_fw_perc", &HaplotypePuller::nodes_fw_perc, "nid"_a, "min_c"_a=2)
+            .def("nodes_all_perc", &HaplotypePuller::nodes_all_perc, "nid"_a, "min_c"_a=2)
+            .def("nodes_in_threads_fw", &HaplotypePuller::nodes_in_threads_fw, "nv"_a);
+
 //    // async testing
 //    struct SupportsAsync {};
 //    py::class_<SupportsAsync>(m, "SupportsAsync")

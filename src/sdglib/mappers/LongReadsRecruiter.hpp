@@ -102,4 +102,22 @@ public:
     std::vector<std::vector<sgNodeID_t>> read_paths;
 };
 
+class HaplotypePuller{
+public:
+    HaplotypePuller(DistanceGraph& dg, LongReadsRecruiter& lrr){};
+
+    void start_from_read_nodes(int64_t rid);
+    void start_node_neighbourhood(sgNodeID_t nid, int min_reads=10);
+    std::pair<int, int> nodes_fw_inout(sgNodeID_t nid, int min_c=2);
+    float nodes_fw_perc(sgNodeID_t nid, int min_c=2);
+    float nodes_all_perc(sgNodeID_t nid, int min_c=2);
+
+    std::map<sgNodeID_t, int> nodes_in_threads_fw(const NodeView nv);
+
+    DistanceGraph& dg;
+    LongReadsRecruiter& lrr;
+    std::unordered_set<sgNodeID_t > node_ids;
+    std::unordered_set<int64_t > read_ids;
+
+};
 
