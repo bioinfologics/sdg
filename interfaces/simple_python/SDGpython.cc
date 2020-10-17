@@ -340,6 +340,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("path_fw",&LongReadsRecruiter::path_fw,"read_id"_a,"node"_a)
             .def("all_paths_fw",&LongReadsRecruiter::all_paths_fw,"node"_a)
             .def("reverse_perfect_matches",&LongReadsRecruiter::reverse_perfect_matches,"matches"_a,"read_size"_a=0)
+            .def("haplotype_puller_filter",&LongReadsRecruiter::haplotype_puller_filter,"dg"_a, "lrr"_a, "rid"_a=0)
+            .def("filter_all_hap_reads",&LongReadsRecruiter::filter_all_hap_reads,"dg"_a, "lrr"_a)
             ;
 
     py::class_<NodePosition>(m,"NodePosition", "A node position in a LRR")

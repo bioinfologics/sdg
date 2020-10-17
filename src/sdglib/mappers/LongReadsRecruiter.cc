@@ -877,6 +877,47 @@ void LongReadsRecruiter::thread_and_pop() {
 }
 
 
+void LongReadsRecruiter::haplotype_puller_filter(DistanceGraph& ddg, LongReadsRecruiter& lrr, int64_t rid){
+    std::cout << "Processing read: " << rid << std::endl;
+    auto hp=HaplotypePuller(ddg, lrr);
+//    std::cout << "Processing read-2: " << rid << std::endl;
+    hp.start_from_read_nodes(rid);
+
+//    std::cout << "Scoring read: " << rid << std::endl;
+    std::vector<std::pair<sgNodeID_t, float>> scores;
+    for (const auto & x: read_threads[rid]){
+        auto s = hp.nodes_all_perc(x.node);
+        scores.push_back(std::make_pair(x.node, s));
+    }
+
+//    std::cout << "Selecting bad nodes read: " << rid << std::endl;
+    std::unordered_set<sgNodeID_t > bad_nodes;
+    for (auto i=1; i<scores.size()-1;++i){
+//        std::cout << "i: " << i << " scores.size(): " << scores.size()<< std::endl;
+        if (scores[i].second < scores[i-1].second or scores[i].second < scores[i+1].second) {
+            bad_nodes.insert(scores[i].first);
+        }
+    }
+
+//    std::cout << "Filtering read: " << rid << std::endl;
+    std::vector<NodePosition> good_matches;
+    for (const auto& x: read_threads[rid]){
+        if (bad_nodes.find((x.node))==bad_nodes.end()){
+            good_matches.push_back(x);
+        }
+    }
+    read_threads[rid] = good_matches;
+
+}
+
+void LongReadsRecruiter::filter_all_hap_reads(DistanceGraph& ddg, LongReadsRecruiter& lrr){
+#pragma omp parallel for
+    for (auto i=1; i<read_threads.size(); ++i){
+        haplotype_puller_filter(ddg, lrr, i);
+    }
+}
+
+
 void HaplotypePuller::start_from_read_nodes(int64_t rid){
     for (const auto& match: lrr.read_threads[rid]){
         node_ids.insert(match.node);
@@ -948,3 +989,8 @@ float HaplotypePuller::nodes_all_perc(sgNodeID_t nid, int min_c){
     auto nodes_out=bnodes_inout.second+fnodes_inout.second;
     return (float)nodes_in/((float)nodes_in+(float)nodes_out);
 }
+
+//void HaplotypePuller::haplotype_puller_filter(int64_t rid){
+//
+//    auto hp=HaplotypePuller()
+//}

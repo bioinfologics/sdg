@@ -90,6 +90,10 @@ public:
     void thread_reads(uint32_t end_size, uint16_t matches); //uses endmatches_to_positions
     DistanceGraph dg_from_threads(bool multi_link=false);
 
+    void haplotype_puller_filter(DistanceGraph& ddg, LongReadsRecruiter& lrr, int64_t rid);
+
+    void filter_all_hap_reads(DistanceGraph& ddg, LongReadsRecruiter& lrr);
+
     SequenceDistanceGraph & sdg;
     const LongReadsDatastore &datastore;
     uint8_t k;
@@ -104,7 +108,7 @@ public:
 
 class HaplotypePuller{
 public:
-    HaplotypePuller(DistanceGraph& dg, LongReadsRecruiter& lrr):dg(dg), lrr(lrr){};
+    HaplotypePuller(DistanceGraph &dg, LongReadsRecruiter& lrr): dg(dg), lrr(lrr) {};
 
     void start_from_read_nodes(int64_t rid);
     void start_node_neighbourhood(sgNodeID_t nid, int min_reads=10);
