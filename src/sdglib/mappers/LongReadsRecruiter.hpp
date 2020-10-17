@@ -104,7 +104,7 @@ public:
 
 class HaplotypePuller{
 public:
-    HaplotypePuller(DistanceGraph& dg, LongReadsRecruiter& lrr){};
+    HaplotypePuller(DistanceGraph& dg, LongReadsRecruiter& lrr):dg(dg), lrr(lrr){};
 
     void start_from_read_nodes(int64_t rid);
     void start_node_neighbourhood(sgNodeID_t nid, int min_reads=10);

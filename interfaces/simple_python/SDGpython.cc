@@ -468,7 +468,9 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("nodes_fw_inout", &HaplotypePuller::nodes_fw_inout, "nid"_a, "min_c"_a=2)
             .def("nodes_fw_perc", &HaplotypePuller::nodes_fw_perc, "nid"_a, "min_c"_a=2)
             .def("nodes_all_perc", &HaplotypePuller::nodes_all_perc, "nid"_a, "min_c"_a=2)
-            .def("nodes_in_threads_fw", &HaplotypePuller::nodes_in_threads_fw, "nv"_a);
+            .def("nodes_in_threads_fw", &HaplotypePuller::nodes_in_threads_fw, "nv"_a)
+            .def_readwrite("node_ids",&HaplotypePuller::node_ids)
+            .def_readwrite("read_ids",&HaplotypePuller::read_ids);
 
 //    // async testing
 //    struct SupportsAsync {};

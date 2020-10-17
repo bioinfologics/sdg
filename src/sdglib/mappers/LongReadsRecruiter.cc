@@ -885,14 +885,13 @@ void HaplotypePuller::start_from_read_nodes(int64_t rid){
 }
 
 void HaplotypePuller::start_node_neighbourhood(sgNodeID_t nid, int min_reads=10) {
-
     for (const auto& pp: nodes_in_threads_fw(dg.get_nodeview(nid))){
-        if (pp.second>min_reads){
+        if (pp.second>=min_reads){
             node_ids.insert(pp.first);
         }
     }
     for (const auto& pp: nodes_in_threads_fw(dg.get_nodeview(-nid))){
-        if (pp.second>min_reads){
+        if (pp.second>=min_reads){
             node_ids.insert(-pp.first);
         }
     }
@@ -900,18 +899,18 @@ void HaplotypePuller::start_node_neighbourhood(sgNodeID_t nid, int min_reads=10)
 
 std::map<sgNodeID_t, int> HaplotypePuller::nodes_in_threads_fw(const NodeView nv){
     std::map<sgNodeID_t, int> c;
-    std::vector<int64_t> reads;
+    std::unordered_set<int64_t> reads;
     for (const auto& x: nv.next()){
-        reads.push_back(x.support().id);
+        reads.insert(x.support().id);
     }
     std::vector<NodeView> to_explore{nv};
     while (to_explore.size()>0){
         std::vector<NodeView> new_to_explore;
         for (const auto& nnv: to_explore){
             for (const auto& ln: nnv.next()){
-                if (find(reads.begin(), reads.end(), ln.support().id)!=reads.end()){
-                    if (c.find(ln.node().node_id())== c.end()){
-                        c[ln.node().node_id()]=0;
+                if (reads.find(ln.support().id) != reads.end()){
+                    if (c.find(ln.node().node_id()) == c.end()){
+                        new_to_explore.push_back(ln.node());
                     }
                     c[ln.node().node_id()]++;
                 }
@@ -928,10 +927,10 @@ std::pair<int, int> HaplotypePuller::nodes_fw_inout(sgNodeID_t nid, int min_c){
     int nodes_out=0;
     for (const auto & c: nodes_in_threads_fw(nv)){
         if (c.second<min_c) continue;
-        if (node_ids.find(nid)!=node_ids.end()){
-            nodes_in++;
+        if (node_ids.find(c.first)!=node_ids.end()){
+            nodes_in+=c.second;
         } else{
-            nodes_out++;
+            nodes_out+=c.second;
         }
     }
     return std::make_pair(nodes_in, nodes_out);
