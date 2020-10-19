@@ -23,7 +23,7 @@ std::string CountFilter::get_pattern(NodeView nv) {
             std::string p="";
             for (auto cni=0;cni<value_count_names.size();++cni){
                 auto vcf=nv.kmer_coverage(kcname,value_count_names[cni]);
-                for (auto i=0;i<vcf.size();++i) {
+                for (auto i:fkpos) {
                     if (vcf[i]<value_count_mins[cni]) {
                         p.append("0");
                         break;
