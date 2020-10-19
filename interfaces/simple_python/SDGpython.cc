@@ -17,6 +17,7 @@
 #include <sdglib/processors/GraphPatcher.hpp>
 #include <sdglib/processors/PathFinder.hpp>
 #include <sdglib/processors/Strider.hpp>
+#include <sdglib/processors/CountFilter.hpp>
 #include <sdglib/batch_counter/BatchKmersCounter.hpp>
 
 namespace py = pybind11;
@@ -414,6 +415,9 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("create_patch",&GraphPatcher::create_patch,"reconnection_group"_a)
             .def_readonly("reconnection_groups",&GraphPatcher::reconnection_groups);
 
+    py::class_<CountFilter>(m,"CountFilter","CountFilter")
+            .def(py::init<std::string, std::string , int , std::vector<std::string>, std::vector<int>>(),"kcname"_a, "filter_count_name"_a, "filter_count_max"_a, "value_count_names"_a, "value_count_mins"_a)
+            .def("get_pattern",&CountFilter::get_pattern,"nv"_a);
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
     m.def("count_kmers_as_graph_nodes",&BatchKmersCounter::countKmersToGraphNodes,py::return_value_policy::take_ownership,"sdg"_a,"peds"_a,"k"_a,"min_coverage"_a, "max_coverage"_a, "num_batches"_a);
