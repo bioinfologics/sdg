@@ -821,3 +821,36 @@ std::string DistanceGraph::simple_structure_stats() const{
     std::sprintf(buffer, "%lld tips, %lld canonical repeats and %lld bubble sides out of %lld nodes\n", tips, canreps, bubsides, total);
     return std::string(buffer);
 }
+
+std::unordered_set<sgNodeID_t> DistanceGraph::get_connected_component(sgNodeID_t nid, bool signed_nodes=true){
+    std::unordered_set<sgNodeID_t > component_nodes = {nid};
+    std::unordered_set<sgNodeID_t > last_added = {nid};
+
+    // while nodes are still beaing added
+    while (last_added.size()>0){
+        std::unordered_set<sgNodeID_t > new_last_added;
+        // For all the outer layer of discovered nodes
+        for (const auto& node: last_added){
+            auto nv = get_nodeview(node);
+            // Check FW and BW for new nodes and add to the collection and to the outer layer list
+            for (const auto& o: nv.next()){
+                auto onid = o.node().node_id();
+                if (!signed_nodes) onid = abs(onid);
+                if (component_nodes.find(onid)==component_nodes.end()){
+                    component_nodes.insert(onid);
+                    new_last_added.insert(onid);
+                }
+            }
+            for (const auto& o: nv.prev()){
+                auto onid = o.node().node_id();
+                if (!signed_nodes) onid = abs(onid);
+                if (component_nodes.find(onid)==component_nodes.end()){
+                    component_nodes.insert(onid);
+                    new_last_added.insert(onid);
+                }
+            }
+        }
+        last_added = new_last_added;
+    }
+    return component_nodes;
+}
