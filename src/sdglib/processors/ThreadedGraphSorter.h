@@ -20,9 +20,12 @@ public:
 //    add_read
 //    sort_graph
 
-    // De la otra celda
+    /*
+     * Returns a list of reads linking to or from the spec nodeview
+     * TODO: Change nv for node maybe!?
+     * */
     std::vector<uint64_t > rids_from_node(NodeView nv);
-//    shared_reads
+    uint64_t shared_reads(NodeView nv1, NodeView nv2);
 //    pop_node
 //    multipop_node
 //    make_summary_connection_graph
