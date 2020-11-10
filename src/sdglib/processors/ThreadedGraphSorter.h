@@ -26,7 +26,9 @@ public:
      * */
     std::vector<uint64_t > rids_from_node(NodeView nv);
     uint64_t shared_reads(NodeView nv1, NodeView nv2);
-//    pop_node
+
+    bool pop_node(sgNodeID_t node_id, uint64_t read);
+
 //    multipop_node
 //    make_summary_connection_graph
 //    write_connected_nodes_graph

@@ -482,6 +482,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def(py::init<DistanceGraph &>(), "trg_nt"_a)
             .def("rids_from_node", &ThreadedGraphSorter::rids_from_node, "nv"_a)
             .def("shared_reads", &ThreadedGraphSorter::shared_reads, "nv1"_a, "nv2"_a)
+            .def("pop_node", &ThreadedGraphSorter::pop_node, "node_id"_a, "read"_a)
             ;
 
 //    // async testing
