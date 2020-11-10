@@ -226,7 +226,7 @@ SET(source_files ${source_files}
 ## Libraries
 add_library(sdg SHARED
             ${source_files}
-            )
+        src/sdglib/processors/ThreadedGraphSorter.cc src/sdglib/processors/ThreadedGraphSorter.h)
 
 add_library(sdg_static STATIC
             ${source_files}

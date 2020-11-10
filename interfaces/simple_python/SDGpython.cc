@@ -21,6 +21,7 @@
 #include <sdglib/processors/CountFilter.hpp>
 #include <sdglib/batch_counter/BatchKmersCounter.hpp>
 #include <sdglib/processors/LineFiller.h>
+#include <sdglib/processors/ThreadedGraphSorter.h>
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -474,7 +475,13 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("nodes_all_perc", &HaplotypePuller::nodes_all_perc, "nid"_a, "min_c"_a=2)
             .def("nodes_in_threads_fw", &HaplotypePuller::nodes_in_threads_fw, "nv"_a)
             .def_readwrite("node_ids",&HaplotypePuller::node_ids)
-            .def_readwrite("read_ids",&HaplotypePuller::read_ids);
+            .def_readwrite("read_ids",&HaplotypePuller::read_ids)
+            ;
+
+    py::class_<ThreadedGraphSorter>(m, "ThreadedGraphSorter", "ThreadedGraphSorter")
+            .def(py::init<DistanceGraph &>(), "trg_nt"_a)
+            .def("rids_from_node", &ThreadedGraphSorter::rids_from_node, "nv"_a)
+            ;
 
 //    // async testing
 //    struct SupportsAsync {};
