@@ -109,10 +109,10 @@ void ThreadedGraphSorter::write_connected_nodes_graph(std::string filename){
     dg.write_to_gfa1(filename, sn);
 }
 
-std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> ThreadedGraphSorter::sort_cc(std::vector<sgNodeID_t> cc){
+std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
     //uses relative position propagation to create a total order for a connected component
     //    returns a dict of nodes to starting positions, and a sorted list of nodes with their positions
-
+    std::cout << "Starting" << std::endl;
     // Next nodes to process
     std::vector<sgNodeID_t > next_nodes;
     // Map with the nodes positions
@@ -120,39 +120,45 @@ std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> ThreadedGra
 
     // check no node on the CC appears in both directions.
     for (const auto&x: cc){
-        if (std::find(cc.begin(), cc.end(), -x)!=cc.end()){
+        if (cc.find(-x) != cc.end()){
             return std::make_pair(node_pos, next_nodes);
         }
     }
 
+    std::cout << "Checkpoint 1" << std::endl;
     // now start from each node without prev as 0
+    // Nodes with no prev are the inital nodes in the partial order
     for (const auto& x: cc){
         if (dg.get_nodeview(x).prev().empty()){
             next_nodes.push_back(x);
         }
-        // Nodes with no prev are the inital nodes in the partial order
         node_pos[x]=0;
     }
+    std::cout << "Checkpoint 2" << std::endl;
 
     // Propagate position FW
-    std::vector<std::vector<sgNodeID_t >> discovered_paths;
+//    std::vector<std::vector<sgNodeID_t >> discovered_paths;
+    auto pass=0;
     while (!next_nodes.empty()) {
+        for (const auto &nn: next_nodes){
+            std::cout << nn << " ";
+        }
+        std::cout << std::endl;
         std::vector<sgNodeID_t > new_next_nodes;
         for (const auto& nid: next_nodes){
             for (const auto& l: dg.get_nodeview(nid).next()){
-                auto nid_node_position = node_pos[nid];
-                auto nid_node_size = dg.get_nodeview(nid).size();
-                auto linked_node_id = l.node().node_id();
-                auto linked_node_position = node_pos[linked_node_id];
                 // TODO: does this work like this --> if nid node ends after the linked node the next node is moved fw and the linked node is added to the list to place
-                if (nid_node_position+nid_node_size+l.distance()>linked_node_position){
-                    node_pos[linked_node_id] = nid_node_position+nid_node_size+l.distance();
-                    new_next_nodes.push_back(linked_node_id);
+                if (node_pos[nid]+dg.get_nodeview(nid).size()+l.distance()>node_pos[l.node().node_id()]){
+                    node_pos[l.node().node_id()] = node_pos[nid]+dg.get_nodeview(nid).size()+l.distance();
+                    new_next_nodes.push_back(l.node().node_id());
                 }
             }
         }
-        discovered_paths.push_back(next_nodes);
+//        discovered_paths.push_back(next_nodes);
         next_nodes=new_next_nodes;
+        if (++pass>cc.size()){
+            return std::make_pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >>({}, {});
+        };
     }
     // move all nodes with no next to the end by asigning the max position to all nodes with no next
     int64_t lastp=0;
@@ -167,6 +173,7 @@ std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> ThreadedGra
 
     // move every node up to its limit fw
     bool updated=true;
+    pass=0;
     while (updated){
         updated=false;
         //sort node_pos by the second element
@@ -177,7 +184,8 @@ std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> ThreadedGra
 
         for (const auto& mp: sorted_node_pos){
             auto nid = mp.first;
-            auto p = mp.second;
+//            auto p = mp.second;
+            auto p = node_pos[mp.first];
             auto nid_node_size = dg.get_nodeview(nid).size();
 
             if (!dg.get_nodeview(nid).next().empty()){
@@ -195,9 +203,13 @@ std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> ThreadedGra
 
             }
         }
+        if (++pass>cc.size()){
+            return std::make_pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >>({}, {});
+        };
     }
     // move every node up to its limit bw
     updated=true;
+    pass=0;
     while(updated){
         updated=false;
         // TODO: This sorted_node_pos could be copies once to the vector outside the loop and then work with the vector until return
@@ -207,16 +219,16 @@ std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> ThreadedGra
 
         for (const auto& mp: sorted_node_pos){
             auto nid = mp.first;
-            auto p = mp.second;
+            auto p = node_pos[mp.first];
             auto nid_node_size = dg.get_nodeview(nid).size();
 
-            if (!dg.get_nodeview(nid).next().empty()){
+            if (!dg.get_nodeview(nid).prev().empty()){
                 // get min distance between the nid and the others, means the next node
                 int64_t np = 0;
-                for (const auto& l: dg.get_nodeview(nid).next()){
+                for (const auto& l: dg.get_nodeview(nid).prev()){
                     auto linked_node_id = l.node().node_id();
-                    if (node_pos[linked_node_id]+l.distance()+nid_node_size > np)
-                        np = node_pos[linked_node_id]+l.distance()+nid_node_size;
+                    if (node_pos[linked_node_id]+l.distance()+l.node().size() > np)
+                        np = node_pos[linked_node_id]+l.distance()+l.node().size();
                 }
                 if (np!=node_pos[nid]){
                     node_pos[nid]=np;
@@ -224,7 +236,11 @@ std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> ThreadedGra
                 }
             }
         }
+        if (++pass>cc.size()){
+            return std::make_pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >>({}, {});
+        };
     }
+
     return std::make_pair(node_pos, next_nodes);
 }
 
