@@ -8,6 +8,8 @@
 
 #include <sdglib/views/NodeView.hpp>
 
+std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc);
+
 class ThreadedGraphSorter {
 public:
     // TODO read ids (rids) are uint64_t type always, should we define a rid type?? YES
@@ -16,7 +18,6 @@ public:
 //    start_from_read
 //    evaluate_read
 //    evaluate_read_nodeorder
-//    add_realted_nodes_and_reads
 //    add_read
 //    sort_graph
 
@@ -37,7 +38,7 @@ public:
     // TODO: this is not filtering the nodes, for some reason refuses to take the connected only parameter in get_all_nodeviews
     void write_connected_nodes_graph(std::string filename);
 
-    std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> sort_cc(std::vector<sgNodeID_t> cc);
+
 
     const DistanceGraph & dg;
 };

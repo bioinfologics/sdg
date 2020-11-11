@@ -109,7 +109,7 @@ void ThreadedGraphSorter::write_connected_nodes_graph(std::string filename){
     dg.write_to_gfa1(filename, sn);
 }
 
-std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
+std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
     //uses relative position propagation to create a total order for a connected component
     //    returns a dict of nodes to starting positions, and a sorted list of nodes with their positions
     std::cout << "Starting" << std::endl;
@@ -121,7 +121,7 @@ std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> sort_cc(con
     // check no node on the CC appears in both directions.
     for (const auto&x: cc){
         if (cc.find(-x) != cc.end()){
-            return std::make_pair(node_pos, next_nodes);
+            return {};
         }
     }
 
@@ -157,7 +157,7 @@ std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> sort_cc(con
 //        discovered_paths.push_back(next_nodes);
         next_nodes=new_next_nodes;
         if (++pass>cc.size()){
-            return std::make_pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >>({}, {});
+            return {};
         };
     }
     // move all nodes with no next to the end by asigning the max position to all nodes with no next
@@ -204,7 +204,7 @@ std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> sort_cc(con
             }
         }
         if (++pass>cc.size()){
-            return std::make_pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >>({}, {});
+            return {};
         };
     }
     // move every node up to its limit bw
@@ -237,10 +237,10 @@ std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> sort_cc(con
             }
         }
         if (++pass>cc.size()){
-            return std::make_pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >>({}, {});
+            return {};
         };
     }
 
-    return std::make_pair(node_pos, next_nodes);
+    return node_pos;
 }
 

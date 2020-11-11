@@ -485,7 +485,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("pop_node", &ThreadedGraphSorter::pop_node, "node_id"_a, "read"_a)
             .def("multipop_node", &ThreadedGraphSorter::multipop_node, "node_id"_a, "read"_a)
             .def("write_connected_nodes_graph", &ThreadedGraphSorter::write_connected_nodes_graph, "filename"_a)
-            .def("sort_cc", &ThreadedGraphSorter::sort_cc, "cc"_a)
+//            .def("sort_cc", &ThreadedGraphSorter::sort_cc, "cc"_a)
             ;
 
 //    // async testing
@@ -506,4 +506,5 @@ PYBIND11_MODULE(SDGpython, m) {
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
     m.def("count_kmers_as_graph_nodes",&BatchKmersCounter::countKmersToGraphNodes,py::return_value_policy::take_ownership,"sdg"_a,"peds"_a,"k"_a,"min_coverage"_a, "max_coverage"_a, "num_batches"_a);
+    m.def("sort_cc", &sort_cc, "dg"_a, "cc"_a);
 }
