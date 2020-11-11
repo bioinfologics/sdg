@@ -483,6 +483,9 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("rids_from_node", &ThreadedGraphSorter::rids_from_node, "nv"_a)
             .def("shared_reads", &ThreadedGraphSorter::shared_reads, "nv1"_a, "nv2"_a)
             .def("pop_node", &ThreadedGraphSorter::pop_node, "node_id"_a, "read"_a)
+            .def("multipop_node", &ThreadedGraphSorter::multipop_node, "node_id"_a, "read"_a)
+            .def("write_connected_nodes_graph", &ThreadedGraphSorter::write_connected_nodes_graph, "filename"_a)
+            .def("sort_cc", &ThreadedGraphSorter::sort_cc, "cc"_a)
             ;
 
 //    // async testing

@@ -29,10 +29,16 @@ public:
 
     bool pop_node(sgNodeID_t node_id, uint64_t read);
 
-//    multipop_node
-//    make_summary_connection_graph
-//    write_connected_nodes_graph
-//    sort_cc
+    bool multipop_node(sgNodeID_t node_id, uint64_t read);
+
+    // Not implemented bc not used in the pipeline
+//    DistanceGraph make_summary_connection_graph(DistanceGraph& mdg, int links_to_connect=3){};
+
+    // TODO: this is not filtering the nodes, for some reason refuses to take the connected only parameter in get_all_nodeviews
+    void write_connected_nodes_graph(std::string filename);
+
+    std::pair<std::map<sgNodeID_t , int64_t >, std::vector<sgNodeID_t >> sort_cc(std::vector<sgNodeID_t> cc);
+
     const DistanceGraph & dg;
 };
 
