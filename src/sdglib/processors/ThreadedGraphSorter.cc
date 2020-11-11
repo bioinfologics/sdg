@@ -99,9 +99,7 @@ bool ThreadedGraphSorter::multipop_node(sgNodeID_t node_id, uint64_t read){
 void ThreadedGraphSorter::write_connected_nodes_graph(std::string filename){
     std::vector<sgNodeID_t > sn;
 
-    // TODO: for some reason the include_diconnected parameters is giving an error!
-//    for (const auto& nv: dg.get_all_nodeviews(include_disconnected=false)){
-    for (const auto& nv: dg.get_all_nodeviews()){
+    for (const auto& nv: dg.get_all_nodeviews(false, false)){
         if (!dg.links[llabs(nv.node_id())].empty()){
             sn.push_back(nv.node_id());
         }
@@ -244,3 +242,8 @@ std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_
     return node_pos;
 }
 
+TheGreedySorter::TheGreedySorter(const DistanceGraph &_trg_nt) {
+//    const trg_nt = _trg_nt;
+//    std::vector<sgNodeID_t > all_nodes;
+//    for (const auto& n: trg_nt.get_all_nodeviews())
+}

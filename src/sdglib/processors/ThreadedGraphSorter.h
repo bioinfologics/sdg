@@ -13,13 +13,7 @@ std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_
 class ThreadedGraphSorter {
 public:
     // TODO read ids (rids) are uint64_t type always, should we define a rid type?? YES
-    ThreadedGraphSorter(const DistanceGraph & _dg): dg(_dg){};
-//    __init__
-//    start_from_read
-//    evaluate_read
-//    evaluate_read_nodeorder
-//    add_read
-//    sort_graph
+    ThreadedGraphSorter(const DistanceGraph & _dg){};
 
     /*
      * Returns a list of reads linking to or from the spec nodeview
@@ -43,5 +37,15 @@ public:
     const DistanceGraph & dg;
 };
 
+class TheGreedySorter {
+public:
+    TheGreedySorter(const DistanceGraph& trg_nt);
+    //    start_from_read
+    //    evaluate_read
+    //    evaluate_read_nodeorder
+    //    add_read
+    //    sort_graph
+
+};
 
 #endif //SDG_THREADEDGRAPHSORTER_H
