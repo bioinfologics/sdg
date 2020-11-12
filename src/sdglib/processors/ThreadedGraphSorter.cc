@@ -28,6 +28,7 @@ std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_
         node_pos[x]=0;
     }
 
+
     // Propagate position FW
     auto pass=0;
     while (!next_nodes.empty()) {
@@ -46,6 +47,7 @@ std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_
             return {};
         };
     }
+
     // move all nodes with no next to the end by asigning the max position to all nodes with no next
     int64_t lastp=0;
     for (const auto& mi: node_pos){
@@ -92,6 +94,7 @@ std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_
             return {};
         };
     }
+
     // move every node up to its limit bw
     updated=true;
     pass=0;
@@ -242,7 +245,8 @@ void TheGreedySorter::initialize() {
         }
     }
     std::cout << "discarded " << dlinks << " links" << std::endl;
-    std::cout << "TheGreedySorter created with" << all_nodes.size() << "nodes and reads "<< all_reads.size() << std::endl;
+    std::cout << "TheGreedySorter created with " << all_nodes.size() << "nodes and reads "<< all_reads.size() << std::endl;
+    std::cout << "TheGreedySorter created with " << all_nodes.size() << "nodes and reads "<< all_reads.size() << std::endl;
 }
 
 std::vector<uint64_t > TheGreedySorter::rids_from_node(NodeView nv){
@@ -364,7 +368,10 @@ void TheGreedySorter::start_from_read(uint64_t rid, int min_confirmation){
 }
 
 std::map<sgNodeID_t , int64_t > TheGreedySorter::sort_graph(){
-    return sort_cc(dg, dg.get_connected_component(used_nodes[0]));
+
+    auto cc =  dg.get_connected_component(used_nodes[0]);
+    return sort_cc(dg, cc);
+
 }
 
 std::pair<int, int> TheGreedySorter::evaluate_read(uint64_t rid, bool print_pos){

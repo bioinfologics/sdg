@@ -38,12 +38,13 @@ public:
     TheGreedySorter(const DistanceGraph& _trg_nt):trg_nt(_trg_nt), dg(_trg_nt.sdg){};
 
     void initialize();
+
     std::vector<uint64_t > rids_from_node(NodeView nv);
     uint64_t shared_reads(NodeView nv1, NodeView nv2);
     bool pop_node(sgNodeID_t node_id, uint64_t read);
     void start_from_read(uint64_t rid, int min_confirmation);
-    std::pair<int, int> evaluate_read(uint64_t rid, bool print_pos=false);
-    std::vector<int32_t > evaluate_read_nodeorder(uint64_t rid, bool print_pos=false);
+    std::pair<int, int> evaluate_read(uint64_t rid, bool print_pos);
+    std::vector<int32_t > evaluate_read_nodeorder(uint64_t rid, bool print_pos);
     void add_read(uint64_t rid, int min_confirmation=2);
 //    void TheGreedySorter::extend_solution(int min_support=2, int min_shared=10, int min_new=10);
 
@@ -52,7 +53,7 @@ public:
     std::map<sgNodeID_t , int64_t > sort_graph();
 
     const DistanceGraph& trg_nt;
-    const SequenceDistanceGraph& dg;
+    DistanceGraph dg;
 
     std::vector<sgNodeID_t > all_nodes;
     std::unordered_set<uint64_t > all_reads;
