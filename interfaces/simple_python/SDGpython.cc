@@ -485,7 +485,19 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("pop_node", &ThreadedGraphSorter::pop_node, "node_id"_a, "read"_a)
             .def("multipop_node", &ThreadedGraphSorter::multipop_node, "node_id"_a, "read"_a)
             .def("write_connected_nodes_graph", &ThreadedGraphSorter::write_connected_nodes_graph, "filename"_a)
-//            .def("sort_cc", &ThreadedGraphSorter::sort_cc, "cc"_a)
+            ;
+
+    py::class_<TheGreedySorter>(m, "TheGreedySorter", "TheGreedySorter")
+            .def(py::init<DistanceGraph &>(), "trg_nt"_a)
+            .def("initialize", &TheGreedySorter::initialize)
+            .def("start_from_read", &TheGreedySorter::start_from_read, "rid"_a, "min_confirmation"_a=2)
+            .def("evaluate_read", &TheGreedySorter::evaluate_read, "rid"_a, "print_pos"_a=true)
+            .def("evaluate_read_nodeorder", &TheGreedySorter::evaluate_read_nodeorder, "rid"_a, "print_pos"_a=true)
+            .def_readwrite("all_nodes", &TheGreedySorter::all_nodes)
+            .def_readwrite("all_reads", &TheGreedySorter::all_reads)
+            .def_readwrite("used_nodes", &TheGreedySorter::used_nodes)
+            .def_readwrite("used_reads", &TheGreedySorter::used_reads)
+            .def_readwrite("read_ends", &TheGreedySorter::read_ends)
             ;
 
 //    // async testing
@@ -503,6 +515,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<CountFilter>(m,"CountFilter","CountFilter")
             .def(py::init<std::string, std::string , int , std::vector<std::string>, std::vector<int>>(),"kcname"_a, "filter_count_name"_a, "filter_count_max"_a, "value_count_names"_a, "value_count_mins"_a)
             .def("get_pattern",&CountFilter::get_pattern,"nv"_a);
+
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
     m.def("count_kmers_as_graph_nodes",&BatchKmersCounter::countKmersToGraphNodes,py::return_value_policy::take_ownership,"sdg"_a,"peds"_a,"k"_a,"min_coverage"_a, "max_coverage"_a, "num_batches"_a);

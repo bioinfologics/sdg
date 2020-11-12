@@ -56,7 +56,7 @@ bool ThreadedGraphSorter::pop_node(sgNodeID_t node_id, uint64_t read){
         dg.remove_link(-lp[0].node().node_id(), node_id, lp[0].distance(), lp[0].support());
         return true;
     } else if (ln.size() == 1 and lp.empty()) {
-        dg.remove_link(-node_id, lp[0].node().node_id(), lp[0].distance(), lp[0].support());
+        dg.remove_link(-node_id, ln[0].node().node_id(), ln[0].distance(), ln[0].support());
         return true;
     }
 
@@ -242,8 +242,277 @@ std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_
     return node_pos;
 }
 
-TheGreedySorter::TheGreedySorter(const DistanceGraph &_trg_nt) {
-//    const trg_nt = _trg_nt;
-//    std::vector<sgNodeID_t > all_nodes;
-//    for (const auto& n: trg_nt.get_all_nodeviews())
+void TheGreedySorter::initialize() {
+
+    for (const auto& n: trg_nt.get_all_nodeviews(false, false)){
+        all_nodes.push_back(n.node_id());
+    }
+
+    std::unordered_set<uint64_t > discarded_reads;
+    for (const auto& nv: trg_nt.get_all_nodeviews(false, false)){
+        std::unordered_map<uint64_t, int> c;
+        for (const auto& lv: nv.next()){
+            all_reads.insert(lv.support().id);
+            c[lv.support().id]++;
+        }
+        for (const auto& lv: nv.prev()){
+            all_reads.insert(lv.support().id);
+            c[lv.support().id]++;
+        }
+
+        for (const auto& rc: c){
+            if (rc.second>2){
+                std::cout << "node" << nv.node_id() << " has " << rc.second << " links from read " << rc.first << std::endl;
+                discarded_reads.insert(rc.first);
+            }
+        }
+    }
+    std::cout << "Discarding " << discarded_reads.size() << " reads that have >2 links on at least one node" << std::endl;
+    // dete reads from all_reads
+    for (const auto& dr: discarded_reads)
+        all_reads.erase(dr);
+
+    // remode all links from discarded reads
+    int dlinks=0;
+    for (const auto& nv: trg_nt.get_all_nodeviews(false, false)){
+        for (const auto& l: nv.next()){
+            if (discarded_reads.find(l.support().id) != discarded_reads.end()){
+                dlinks++;
+                trg_nt.remove_link(-nv.node_id(), l.node().node_id(), l.distance(), l.support());
+            }
+        }
+    }
+
+    std::cout << dlinks << " links discarded" << std::endl;
+//    std::vector<sgNodeID_t > used_nodes;
+//    std::vector<sgNodeID_t > used_reads;
+//    std::map<uint64_t, std::vector<sgNodeID_t >> read_ends;
+    for (const auto& nv: trg_nt.get_all_nodeviews(false, false)){
+        std::unordered_set<sgNodeID_t > frids;
+        for (const auto& x: nv.next())
+            frids.insert(x.support().id);
+
+        std::unordered_set<sgNodeID_t > brids;
+        for (const auto& x: nv.prev())
+            brids.insert(x.support().id);
+
+        for (const auto& rid: frids){
+            if (brids.find(rid)==brids.end()){
+                if (read_ends.find(rid)==read_ends.end()){
+                    read_ends[rid]={};
+                }
+                read_ends[rid].push_back(nv.node_id());
+            }
+        }
+
+        for (const auto& rid: brids){
+            if (frids.find(rid) == frids.end()) {
+                if (read_ends.find(rid)==read_ends.end()) {
+                    read_ends[rid]={};
+                }
+                read_ends[rid].push_back(-nv.node_id());
+            }
+        }
+    }
+    std::cout << "TheGreedySorter created with" << all_nodes.size() << "nodes and reads "<< all_reads.size() << std::endl;
+}
+
+std::vector<uint64_t > TheGreedySorter::rids_from_node(NodeView nv){
+    // TODO: report that the rids are uint64_t but the ids in support are int64_t
+    std::unordered_set<uint64_t > rids;
+    for (const auto& lv: nv.next()){
+        rids.insert((uint64_t)lv.support().id);
+    }
+    for (const auto& lv: nv.prev()){
+        rids.insert((uint64_t)lv.support().id);
+    }
+    return std::vector<uint64_t >(rids.begin(), rids.end());
+}
+
+uint64_t TheGreedySorter::shared_reads(NodeView nv1, NodeView nv2){
+    uint64_t shared=0;
+    auto r1 = rids_from_node(nv1);
+    auto r2 = rids_from_node(nv2);
+    std::sort(r1.begin(), r1.end());
+    std::sort(r2.begin(), r2.end());
+
+    int pr1=0;
+    int pr2=0;
+    while (pr1<r1.size() and pr2<r2.size()){
+        if (r1[pr1]<r2[pr2]){
+            pr1++;
+        } else if (r1[pr1]>r2[pr2]){
+            pr2++;
+        } else {
+            shared++;
+            pr1++;
+            pr2++;
+        }
+    }
+    return shared;
+}
+
+bool TheGreedySorter::pop_node(sgNodeID_t node_id, uint64_t read){
+    auto nv = dg.get_nodeview(node_id);
+    std::vector<LinkView> ln;
+    std::vector<LinkView> lp;
+    // Get reads supporting node connections
+    for (const auto& lv: nv.next()){
+        if (lv.support().id == read) ln.push_back(lv);
+    }
+    for (const auto& lv: nv.prev()){
+        if (lv.support().id == read) lp.push_back(lv);
+    }
+
+    // Tip case
+    if (ln.empty() and lp.size()==1){
+        dg.remove_link(-lp[0].node().node_id(), node_id, lp[0].distance(), lp[0].support());
+        return true;
+    } else if (ln.size() == 1 and lp.empty()) {
+        dg.remove_link(-node_id, ln[0].node().node_id(), ln[0].distance(), ln[0].support());
+        return true;
+    }
+
+    // TODO ask here!! --> node is tip or it's connected to itself???
+    if (ln.size()!=1 or lp.size()!=1 or llabs(ln[0].node().node_id()) == llabs(node_id) or llabs(lp[0].node().node_id()) == llabs(node_id))
+        return false;
+    // Pops the node from the line
+    uint32_t td = ln[0].distance()+nv.size()+lp[0].distance();
+    dg.add_link(-lp[0].node().node_id(), ln[0].node().node_id(), td, lp[0].support());
+    dg.remove_link(-node_id,ln[0].node().node_id(),ln[0].distance(),ln[0].support());
+    dg.remove_link(-lp[0].node().node_id(),node_id,lp[0].distance(),lp[0].support());
+    return true;
+}
+
+void TheGreedySorter::start_from_read(uint64_t rid, int min_confirmation){
+    // only pick the safest nodes alongside a read (i.e. they have a minimum number of confirming other reads shared)
+    auto nv = trg_nt.get_nodeview(read_ends[rid][0]);
+    int links_added=0;
+    while (true){
+        std::vector<LinkView> vlf;
+        for (const auto& x: nv.next()){
+            if (x.support().id == rid){
+                vlf.push_back(x);
+            }
+        }
+        if (vlf.empty())
+            break;
+        auto lf = vlf[0];
+//        std::cout << "Adding link" << -nv.node_id() << "-->" << lf.node().node_id() << "(" << lf.distance() << " " << lf.support().id << ")" << std::endl;
+        dg.add_link(-nv.node_id(), lf.node().node_id(), lf.distance(), lf.support());
+        nv = lf.node();
+        links_added++;
+    }
+
+    std::cout << links_added<< " links added" << std::endl;
+    bool popped=true;
+    int nodes_popped=0;
+    while (popped) {
+        popped=false;
+        int nvs_analysed = 0;
+        for (const auto& nn: dg.get_all_nodeviews(true, false)){
+            nvs_analysed++;
+            if (!nn.next().empty()){
+                if (shared_reads(trg_nt.get_nodeview(nn.node_id()), trg_nt.get_nodeview(nn.next()[0].node().node_id())) <= min_confirmation ) {
+                    pop_node(nn.node_id(), rid);
+                    popped=true;
+                    nodes_popped++;
+                }
+            }
+        }
+        if (nvs_analysed<10){
+            std::cout<< "Aborting since there are less than 10 nodes left" << std::endl;
+            break;
+        }
+    }
+    std::cout << nodes_popped << " nodes popped" << std::endl;
+    for (const auto& nn: dg.get_all_nodeviews(false, false)){
+        used_nodes.push_back(nn.node_id());
+    }
+    used_reads.push_back(rid);
+}
+
+std::map<sgNodeID_t , int64_t > TheGreedySorter::sort_graph(){
+    return sort_cc(dg, dg.get_connected_component(used_nodes[0]));
+}
+
+std::pair<int, int> TheGreedySorter::evaluate_read(uint64_t rid, bool print_pos){
+    // Walk through a read in the original graph, count how many nodes are in the sorted graph, then check their order
+    std::map<sgNodeID_t , int64_t > current_node_pos;
+    if (print_pos){
+        current_node_pos = sort_graph();
+    }
+
+    auto nv = trg_nt.get_nodeview(read_ends[rid][0]);
+    int used = 0;
+    int unused = 0;
+    while (true) {
+        auto nnv = dg.get_nodeview(nv.node_id());
+        if (!nnv.prev().empty() or !nnv.next().empty()){
+            used++;
+            if(print_pos){
+                if (current_node_pos.find(nv.node_id()) != current_node_pos.end())
+                    std::cout << current_node_pos[nv.node_id()] << std::endl;
+                if (current_node_pos.find(-nv.node_id()) != current_node_pos.end())
+                    std::cout << -current_node_pos[-nv.node_id()] << std::endl;
+            }
+        } else {
+            unused++;
+            if (print_pos) std::cout << "unplaced" << std::endl;
+        }
+
+        std::vector<LinkView > lf;
+        for (const auto& x: nv.next()){
+            if (x.support().id == rid){
+                lf.push_back(x);
+            }
+        }
+        if (lf.empty()) break;
+        nv=lf[0].node();
+    }
+    return std::make_pair(used, unused);
+}
+
+std::vector<int32_t > TheGreedySorter::evaluate_read_nodeorder(uint64_t rid, bool print_pos){
+    auto nv = trg_nt.get_nodeview(read_ends[rid][0]);
+    auto current_node_pos = sort_graph();
+
+    int32_t ordered = 0;
+    int32_t unordered = 0;
+    int32_t unused = 0;
+
+    uint32_t last_pos = 0;
+    while (true) {
+        // in the original it's none, here i'm using the null node
+        uint32_t p=0;
+        if (current_node_pos.find(nv.node_id()) != current_node_pos.end()){
+            p = current_node_pos[nv.node_id()];
+        }
+        else if (current_node_pos.find(-nv.node_id()) != current_node_pos.end()) {
+            p = -current_node_pos[-nv.node_id()];
+        }
+        else{
+            p = 0;
+        }
+
+        if (p==0){
+            unused++;
+        } else if (last_pos ==0 or last_pos<p) {
+            last_pos = p;
+            ordered++;
+        } else {
+            std::cout << "Node "<< nv.node_id() <<" is unordered in read "<< rid << std::endl;
+            unordered++;
+        }
+
+        std::vector<LinkView > lf;
+        for (const auto& x: nv.next()){
+            if (x.support().id == rid){
+                lf.push_back(x);
+            }
+        }
+        if (lf.empty()) break;
+        nv = lf[0].node();
+    }
+    return {ordered, unordered, unused};
 }
