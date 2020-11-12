@@ -112,7 +112,6 @@ void ThreadedGraphSorter::write_connected_nodes_graph(std::string filename){
 std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
     //uses relative position propagation to create a total order for a connected component
     //    returns a dict of nodes to starting positions, and a sorted list of nodes with their positions
-    std::cout << "Starting" << std::endl;
     // Next nodes to process
     std::vector<sgNodeID_t > next_nodes;
     // Map with the nodes positions
@@ -125,7 +124,6 @@ std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_
         }
     }
 
-    std::cout << "Checkpoint 1" << std::endl;
     // now start from each node without prev as 0
     // Nodes with no prev are the inital nodes in the partial order
     for (const auto& x: cc){
@@ -134,16 +132,11 @@ std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_
         }
         node_pos[x]=0;
     }
-    std::cout << "Checkpoint 2" << std::endl;
 
     // Propagate position FW
 //    std::vector<std::vector<sgNodeID_t >> discovered_paths;
     auto pass=0;
     while (!next_nodes.empty()) {
-        for (const auto &nn: next_nodes){
-            std::cout << nn << " ";
-        }
-        std::cout << std::endl;
         std::vector<sgNodeID_t > new_next_nodes;
         for (const auto& nid: next_nodes){
             for (const auto& l: dg.get_nodeview(nid).next()){
