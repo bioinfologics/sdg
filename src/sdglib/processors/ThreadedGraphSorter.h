@@ -19,12 +19,11 @@ public:
      * Returns a list of reads linking to or from the spec nodeview
      * TODO: Change nv for node maybe!?
      * */
-    std::vector<uint64_t > rids_from_node(NodeView nv);
-    uint64_t shared_reads(NodeView nv1, NodeView nv2);
+//    std::vector<uint64_t > rids_from_node(NodeView nv);
+//    uint64_t shared_reads(NodeView nv1, NodeView nv2);
 
-    bool pop_node(sgNodeID_t node_id, uint64_t read);
-
-    bool multipop_node(sgNodeID_t node_id, uint64_t read);
+//    bool pop_node(sgNodeID_t node_id, uint64_t read);
+//    bool multipop_node(sgNodeID_t node_id, uint64_t read);
 
     // Not implemented bc not used in the pipeline
 //    DistanceGraph make_summary_connection_graph(DistanceGraph& mdg, int links_to_connect=3){};
@@ -50,11 +49,11 @@ public:
 
     std::vector<int32_t > evaluate_read_nodeorder(uint64_t rid, bool print_pos=false);
 
-    //    add_read
+    void add_read(uint64_t rid, int min_confirmation=2);
+
     std::map<sgNodeID_t , int64_t > sort_graph();
 
     const DistanceGraph& trg_nt;
-
     const SequenceDistanceGraph& dg;
 
     std::vector<sgNodeID_t > all_nodes;
