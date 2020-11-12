@@ -517,6 +517,26 @@ void TheGreedySorter::add_read(uint64_t rid, int min_confirmation){
     used_reads.push_back(rid);
 }
 
+//void TheGreedySorter::extend_solution(int min_support, int min_shared, int min_new){
+//    bool finished=false;
+//    for (auto step=0; step<1000;++step){
+//        std::cout << "Starting expansio step --> " << step << std::endl;
+//        auto s = sort_graph()[1];
+//        std::cout << "Current sorted size: " << s[-1].second - s.begining().second << std::endl;
+//        int32_t added = 0;
+//
+////        [[x[0] for x in s[:30]],[x[0] for x in s[-30:]]]
+//        std::vector<std::map<sgNodeID_t , int64_t >> s_f30;
+//        int cont=0;
+//        for (const auto& x: s){
+//            if (con)
+//        }
+//
+//        for (const auto& x: )
+//
+//    }
+//}
+
 void TheGreedySorter::write_connected_nodes_graph(std::string filename){
     std::vector<sgNodeID_t > sn;
 

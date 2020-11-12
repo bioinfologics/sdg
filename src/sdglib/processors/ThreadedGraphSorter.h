@@ -45,6 +45,7 @@ public:
     std::pair<int, int> evaluate_read(uint64_t rid, bool print_pos=false);
     std::vector<int32_t > evaluate_read_nodeorder(uint64_t rid, bool print_pos=false);
     void add_read(uint64_t rid, int min_confirmation=2);
+//    void TheGreedySorter::extend_solution(int min_support=2, int min_shared=10, int min_new=10);
 
     void write_connected_nodes_graph(std::string filename);
 
