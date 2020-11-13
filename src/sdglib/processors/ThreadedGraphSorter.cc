@@ -154,7 +154,8 @@ TheGreedySorter::TheGreedySorter(const DistanceGraph& _trg_nt, sgNodeID_t foundi
     }
 
     std::cout << "finding read ends" << std::endl;
-    for (const auto& nv: trg_nt.get_all_nodeviews(false, false)){
+    for (const auto& nid:all_nodes){
+        auto nv=trg_nt.get_nodeview(nid);
         // fill fw and bw rids support vectors
         std::unordered_set<sgNodeID_t > frids;
         for (const auto& x: nv.next())
