@@ -822,7 +822,7 @@ std::string DistanceGraph::simple_structure_stats() const{
     return std::string(buffer);
 }
 
-std::unordered_set<sgNodeID_t> DistanceGraph::get_connected_component(sgNodeID_t nid, bool signed_nodes=true){
+std::unordered_set<sgNodeID_t> DistanceGraph::get_connected_component(sgNodeID_t nid, bool signed_nodes) const{
     std::unordered_set<sgNodeID_t > component_nodes = {nid};
     std::unordered_set<sgNodeID_t > last_added = {nid};
 
@@ -853,4 +853,16 @@ std::unordered_set<sgNodeID_t> DistanceGraph::get_connected_component(sgNodeID_t
         last_added = new_last_added;
     }
     return component_nodes;
+}
+
+std::vector<std::unordered_set<sgNodeID_t>> DistanceGraph::get_all_connected_components(uint64_t min_nodes) const {
+    std::vector<std::unordered_set<sgNodeID_t>> ccs;
+    std::vector<bool> used(sdg.nodes.size());
+    for (auto &nv:get_all_nodeviews()){
+        if (used[nv.node_id()]) continue;
+        ccs.push_back(get_connected_component(nv.node_id(),false));
+        for (auto const &nid: ccs.back()) used[nid]=true;
+        if (ccs.back().size()<min_nodes) ccs.pop_back();
+    }
+    return ccs;
 }

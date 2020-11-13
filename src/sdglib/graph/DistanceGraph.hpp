@@ -248,7 +248,9 @@ public:
     std::string stats_by_kci();
     std::string simple_structure_stats() const;
 
-    std::unordered_set<sgNodeID_t> get_connected_component(sgNodeID_t nid, bool signed_nodes=true);
+    std::unordered_set<sgNodeID_t> get_connected_component(sgNodeID_t nid, bool signed_nodes=true) const;
+
+    std::vector<std::unordered_set<sgNodeID_t>> get_all_connected_components(uint64_t min_nodes=1) const;
 
     std::vector<uint64_t> nstats(std::vector<uint64_t> sizes, std::vector<int> stops={25,50,75});
 
