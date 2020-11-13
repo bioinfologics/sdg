@@ -478,18 +478,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("read_ids",&HaplotypePuller::read_ids)
             ;
 
-//    py::class_<ThreadedGraphSorter>(m, "ThreadedGraphSorter", "ThreadedGraphSorter")
-//            .def(py::init<DistanceGraph &>(), "trg_nt"_a)
-////            .def("rids_from_node", &ThreadedGraphSorter::rids_from_node, "nv"_a)
-////            .def("shared_reads", &ThreadedGraphSorter::shared_reads, "nv1"_a, "nv2"_a)
-////            .def("pop_node", &ThreadedGraphSorter::pop_node, "node_id"_a, "read"_a)
-////            .def("multipop_node", &ThreadedGraphSorter::multipop_node, "node_id"_a, "read"_a)
-//
-//            ;
-
     py::class_<TheGreedySorter>(m, "TheGreedySorter", "TheGreedySorter")
             .def(py::init<const DistanceGraph &>(), "trg_nt"_a)
-            .def("initialize", &TheGreedySorter::initialize)
             .def("start_from_read", &TheGreedySorter::start_from_read, "rid"_a, "min_confirmation"_a=2)
             .def("evaluate_read", &TheGreedySorter::evaluate_read, "rid"_a, "print_pos"_a=false)
             .def("evaluate_read_nodeorder", &TheGreedySorter::evaluate_read_nodeorder, "rid"_a, "print_pos"_a=false)
@@ -505,18 +495,6 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("read_ends", &TheGreedySorter::read_ends)
             .def_readonly("dg", &TheGreedySorter::dg)
             ;
-
-//    // async testing
-//    struct SupportsAsync {};
-//    py::class_<SupportsAsync>(m, "SupportsAsync")
-//            .def(py::init<>())
-//            .def("__await__", [](const SupportsAsync& self) -> py::object {
-//                static_cast<void>(self);
-//                py::object loop = py::module::import("asyncio.events").attr("get_event_loop")();
-//                py::object f = loop.attr("create_future")();
-//                f.attr("set_result")(5);
-//                return f.attr("__await__")();
-//            });
 
     py::class_<CountFilter>(m,"CountFilter","CountFilter")
             .def(py::init<std::string, std::string , int , std::vector<std::string>, std::vector<int>>(),"kcname"_a, "filter_count_name"_a, "filter_count_max"_a, "value_count_names"_a, "value_count_mins"_a)

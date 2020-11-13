@@ -35,9 +35,7 @@ std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_
 
 class TheGreedySorter {
 public:
-    TheGreedySorter(const DistanceGraph& _trg_nt):trg_nt(_trg_nt), dg(_trg_nt.sdg){};
-
-    void initialize();
+    TheGreedySorter(const DistanceGraph& _trg_nt);
 
     std::vector<uint64_t > rids_from_node(NodeView nv);
     uint64_t shared_reads(NodeView nv1, NodeView nv2);
@@ -61,6 +59,9 @@ public:
     std::vector<sgNodeID_t > used_reads;
     std::map<uint64_t, std::vector<sgNodeID_t >> read_ends;
 
+private:
+    bool order_is_valid=false;
+    std::map<sgNodeID_t , int64_t > order;
 };
 
 #endif //SDG_THREADEDGRAPHSORTER_H
