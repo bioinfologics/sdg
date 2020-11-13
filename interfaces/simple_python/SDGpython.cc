@@ -478,28 +478,32 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("read_ids",&HaplotypePuller::read_ids)
             ;
 
-    py::class_<ThreadedGraphSorter>(m, "ThreadedGraphSorter", "ThreadedGraphSorter")
-            .def(py::init<DistanceGraph &>(), "trg_nt"_a)
-//            .def("rids_from_node", &ThreadedGraphSorter::rids_from_node, "nv"_a)
-//            .def("shared_reads", &ThreadedGraphSorter::shared_reads, "nv1"_a, "nv2"_a)
-//            .def("pop_node", &ThreadedGraphSorter::pop_node, "node_id"_a, "read"_a)
-//            .def("multipop_node", &ThreadedGraphSorter::multipop_node, "node_id"_a, "read"_a)
-//            .def("write_connected_nodes_graph", &ThreadedGraphSorter::write_connected_nodes_graph, "filename"_a)
-            ;
+//    py::class_<ThreadedGraphSorter>(m, "ThreadedGraphSorter", "ThreadedGraphSorter")
+//            .def(py::init<DistanceGraph &>(), "trg_nt"_a)
+////            .def("rids_from_node", &ThreadedGraphSorter::rids_from_node, "nv"_a)
+////            .def("shared_reads", &ThreadedGraphSorter::shared_reads, "nv1"_a, "nv2"_a)
+////            .def("pop_node", &ThreadedGraphSorter::pop_node, "node_id"_a, "read"_a)
+////            .def("multipop_node", &ThreadedGraphSorter::multipop_node, "node_id"_a, "read"_a)
+//
+//            ;
 
     py::class_<TheGreedySorter>(m, "TheGreedySorter", "TheGreedySorter")
-            .def(py::init<DistanceGraph &>(), "trg_nt"_a)
+            .def(py::init<const DistanceGraph &>(), "trg_nt"_a)
             .def("initialize", &TheGreedySorter::initialize)
             .def("start_from_read", &TheGreedySorter::start_from_read, "rid"_a, "min_confirmation"_a=2)
-            .def("evaluate_read", &TheGreedySorter::evaluate_read, "rid"_a, "print_pos"_a=true)
-            .def("evaluate_read_nodeorder", &TheGreedySorter::evaluate_read_nodeorder, "rid"_a, "print_pos"_a=true)
+            .def("evaluate_read", &TheGreedySorter::evaluate_read, "rid"_a, "print_pos"_a=false)
+            .def("evaluate_read_nodeorder", &TheGreedySorter::evaluate_read_nodeorder, "rid"_a, "print_pos"_a=false)
             .def("shared_reads", &TheGreedySorter::shared_reads, "nv1"_a, "nv2"_a)
+            .def("rids_from_node", &TheGreedySorter::rids_from_node, "nv"_a)
             .def("add_read", &TheGreedySorter::add_read, "rid"_a, "min_confirmation"_a)
+            .def("sort_graph", &TheGreedySorter::sort_graph)
+            .def("write_connected_nodes_graph", &TheGreedySorter::write_connected_nodes_graph, "filename"_a)
             .def_readwrite("all_nodes", &TheGreedySorter::all_nodes)
             .def_readwrite("all_reads", &TheGreedySorter::all_reads)
             .def_readwrite("used_nodes", &TheGreedySorter::used_nodes)
             .def_readwrite("used_reads", &TheGreedySorter::used_reads)
             .def_readwrite("read_ends", &TheGreedySorter::read_ends)
+            .def_readonly("dg", &TheGreedySorter::dg)
             ;
 
 //    // async testing
