@@ -131,20 +131,25 @@ std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_
     return node_pos;
 }
 
-TheGreedySorter::TheGreedySorter(const DistanceGraph& _trg_nt):trg_nt(_trg_nt), dg(_trg_nt.sdg){
+TheGreedySorter::TheGreedySorter(const DistanceGraph& _trg_nt, sgNodeID_t founding_node):trg_nt(_trg_nt), dg(_trg_nt.sdg){
+
 
     // fill all nodes vector
-    for (const auto& n: trg_nt.get_all_nodeviews(false, false)){
-        all_nodes.push_back(n.node_id());
+    if (founding_node){
+        for (const auto &nid:trg_nt.get_connected_component(founding_node,false))
+            all_nodes.push_back(nid);
+    }
+    else {
+        for (const auto &n: trg_nt.get_all_nodeviews(false, false))
+            all_nodes.push_back(n.node_id());
     }
 
-    for (const auto& nv: trg_nt.get_all_nodeviews(false, false)){
-        for (const auto& lv: nv.next()){
+    for (const auto& nid:all_nodes){
+        auto nv=trg_nt.get_nodeview(nid);
+        for (const auto& lv: nv.next())
             all_reads.insert(lv.support().id);
-        }
-        for (const auto& lv: nv.prev()){
+        for (const auto& lv: nv.prev())
             all_reads.insert(lv.support().id);
-        }
 
     }
 
