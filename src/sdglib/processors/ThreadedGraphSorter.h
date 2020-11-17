@@ -9,6 +9,7 @@
 #include <sdglib/views/NodeView.hpp>
 
 std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc);
+bool pop_node(DistanceGraph& dg, sgNodeID_t node_id, uint64_t read);
 
 //class ThreadedGraphSorter {
 //public:
