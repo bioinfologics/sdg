@@ -483,6 +483,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def(py::init<const DistanceGraph &, sgNodeID_t>(), "trg_nt"_a,"founding_node"_a=0)
             .def("start_from_read", &TheGreedySorter::start_from_read, "rid"_a, "min_confirmation"_a=2)
             .def("evaluate_read", &TheGreedySorter::evaluate_read, "rid"_a, "print_pos"_a=false)
+            .def("thread_node_positions", &TheGreedySorter::thread_node_positions, "rid"_a)
             .def("evaluate_read_nodeorder", &TheGreedySorter::evaluate_read_nodeorder, "rid"_a, "print_pos"_a=false)
             .def("shared_reads", &TheGreedySorter::shared_reads, "nv1"_a, "nv2"_a)
             .def("rids_from_node", &TheGreedySorter::rids_from_node, "nv"_a)

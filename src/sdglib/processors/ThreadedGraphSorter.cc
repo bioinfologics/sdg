@@ -373,6 +373,35 @@ std::pair<int, int> TheGreedySorter::evaluate_read(uint64_t rid, bool print_pos)
     return std::make_pair(used, unused);
 }
 
+std::vector<int64_t > TheGreedySorter::thread_node_positions(int64_t rid){
+    std::vector<int64_t > np;
+    auto nv = trg_nt.get_nodeview(rid>0 ? read_ends[rid][0]:read_ends[-rid][1]);
+    auto current_node_pos = sort_graph();
+
+    while (true) {
+        // in the original it's none, here i'm using the null node
+        if (current_node_pos.find(nv.node_id()) != current_node_pos.end()){
+            np.emplace_back(current_node_pos[nv.node_id()]);
+        }
+        else if (current_node_pos.find(-nv.node_id()) != current_node_pos.end()) {
+            np.emplace_back(-current_node_pos[-nv.node_id()]);
+        }
+        else{
+            np.emplace_back(-10000000000);
+        }
+
+        std::vector<LinkView > lf;
+        for (const auto& x: nv.next()){
+            if (x.support().id == rid){
+                lf.push_back(x);
+            }
+        }
+        if (lf.empty()) break;
+        nv = lf[0].node();
+    }
+    return np;
+}
+
 std::vector<int32_t > TheGreedySorter::evaluate_read_nodeorder(uint64_t rid, bool print_pos){
     auto nv = trg_nt.get_nodeview(read_ends[rid][0]);
     auto current_node_pos = sort_graph();
@@ -386,7 +415,7 @@ std::vector<int32_t > TheGreedySorter::evaluate_read_nodeorder(uint64_t rid, boo
     // TODO: check here i'm using 0 as a None, this might be the cause of the node difference or more!!!!!! <-------
     while (true) {
         // in the original it's none, here i'm using the null node
-        uint32_t p=0;
+        int32_t p=0;
         if (current_node_pos.find(nv.node_id()) != current_node_pos.end()){
             p = current_node_pos[nv.node_id()];
         }

@@ -43,6 +43,7 @@ public:
     bool pop_node(sgNodeID_t node_id, uint64_t read);
     void start_from_read(uint64_t rid, int min_confirmation);
     std::pair<int, int> evaluate_read(uint64_t rid, bool print_pos);
+    std::vector<int64_t> thread_node_positions(int64_t rid);
     std::vector<int32_t > evaluate_read_nodeorder(uint64_t rid, bool print_pos);
     void add_read(uint64_t rid, int min_confirmation=2);
 //    void TheGreedySorter::extend_solution(int min_support=2, int min_shared=10, int min_new=10);
