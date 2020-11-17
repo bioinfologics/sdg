@@ -392,7 +392,7 @@ std::vector<int64_t > TheGreedySorter::thread_node_positions(int64_t rid){
 
         std::vector<LinkView > lf;
         for (const auto& x: nv.next()){
-            if (x.support().id == rid){
+            if (x.support().id == abs(rid)){
                 lf.push_back(x);
             }
         }
