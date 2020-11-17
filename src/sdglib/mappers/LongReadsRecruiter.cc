@@ -714,12 +714,12 @@ void LongReadsRecruiter::thread_reads(uint32_t end_size, uint16_t matches) {
     }
 }
 
-DistanceGraph LongReadsRecruiter::dg_from_threads(bool multi_link, bool remove_duplicated) {
+DistanceGraph LongReadsRecruiter::dg_from_threads(bool multi_link, bool remove_duplicated, int min_thread_nodes) {
     DistanceGraph dg(sdg,"LRRthreads");
     std::unordered_set<sgNodeID_t> seen,duplicated;
     for (auto rid=1;rid<read_threads.size();++rid) {
         auto &pos=read_threads[rid];
-        if (pos.empty()) continue;
+        if (pos.size()<min_thread_nodes) continue;
         if (remove_duplicated) {
             seen.clear();
             duplicated.clear();
