@@ -262,6 +262,12 @@ bool TheGreedySorter::pop_node(sgNodeID_t node_id, uint64_t read){
 void TheGreedySorter::start_from_read(uint64_t rid, int min_confirmation){
     order_is_valid=false;
     // only pick the safest nodes alongside a read (i.e. they have a minimum number of confirming other reads shared)
+    std::cout << "Checkpoint 0" << std::endl;
+    if(read_ends[rid].empty()){
+        std::cout<< "No reads to start from!." << std::endl;
+        return;
+    }
+
     auto nv = trg_nt.get_nodeview(read_ends[rid][0]);
     int links_added=0;
     while (true){
@@ -280,7 +286,6 @@ void TheGreedySorter::start_from_read(uint64_t rid, int min_confirmation){
         nv = lf.node();
         links_added++;
     }
-
     std::cout << links_added<< " links added" << std::endl;
     // Pop all nodes with no minim support confirmation bw or fw
     bool popped=true;
@@ -313,6 +318,11 @@ void TheGreedySorter::start_from_read(uint64_t rid, int min_confirmation){
 
 std::map<sgNodeID_t , int64_t > TheGreedySorter::sort_graph(){
     if (!order_is_valid){
+        if (used_nodes.empty()){
+            std::cout << "No nodes, no order" << std::endl;
+            // No node, returns empty order
+            return {};
+        }
         auto cc =  dg.get_connected_component(used_nodes[0]);
         order=sort_cc(dg, cc);
         order_is_valid=true;
