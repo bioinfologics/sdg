@@ -497,6 +497,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("used_reads", &TheGreedySorter::used_reads)
             .def_readwrite("read_ends", &TheGreedySorter::read_ends)
             .def_readonly("dg", &TheGreedySorter::dg)
+            .def_property_readonly("trg_nt", [](const TheGreedySorter &tgs){return tgs.trg_nt;},py::return_value_policy::reference)
             ;
 
     py::class_<CountFilter>(m,"CountFilter","CountFilter")
