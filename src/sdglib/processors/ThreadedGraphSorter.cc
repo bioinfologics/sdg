@@ -270,6 +270,7 @@ bool TheGreedySorter::remove_node(sgNodeID_t node_id) {
         if (pop_node(node_id,l.support().id)) popped=true;
     }
     used_nodes.erase(node_id);
+    used_nodes.erase(-node_id);
     return popped;
 }
 
