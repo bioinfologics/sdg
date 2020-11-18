@@ -269,6 +269,7 @@ bool TheGreedySorter::remove_node(sgNodeID_t node_id) {
     for (auto l:nv.prev()){
         if (pop_node(node_id,l.support().id)) popped=true;
     }
+    used_nodes.erase(node_id);
     return popped;
 }
 
@@ -329,7 +330,7 @@ void TheGreedySorter::start_from_read(uint64_t rid, int min_confirmation){
     }
     std::cout << nodes_popped << " nodes popped" << std::endl;
     for (const auto& nn: dg.get_all_nodeviews(false, false)){
-        used_nodes.push_back(nn.node_id());
+        used_nodes.insert(nn.node_id());
     }
     used_reads.push_back(rid);
 }
@@ -341,7 +342,7 @@ std::map<sgNodeID_t , int64_t > TheGreedySorter::sort_graph(){
             // No node, returns empty order
             return {};
         }
-        auto cc =  dg.get_connected_component(used_nodes[0]);
+        auto cc =  dg.get_connected_component(*used_nodes.begin());
         order=sort_cc(dg, cc);
         order_is_valid=true;
     }
@@ -523,7 +524,7 @@ void TheGreedySorter::add_read(uint64_t rid, int min_confirmation){
     }
     std::cout << nodes_popped << " nodes popped" << std::endl;
     for (const auto& nv: dg.get_all_nodeviews(false, false)){
-        used_nodes.push_back(nv.node_id());
+        used_nodes.insert(nv.node_id());
     }
     used_reads.push_back(rid);
 }

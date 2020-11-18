@@ -58,7 +58,7 @@ public:
 
     std::vector<sgNodeID_t > all_nodes;
     std::unordered_set<uint64_t > all_reads;
-    std::vector<sgNodeID_t > used_nodes;
+    std::set<sgNodeID_t > used_nodes;
     std::vector<sgNodeID_t > used_reads;
     std::map<uint64_t, std::vector<sgNodeID_t >> read_ends;
 
