@@ -259,6 +259,19 @@ bool TheGreedySorter::pop_node(sgNodeID_t node_id, uint64_t read){
     return ::pop_node(dg,node_id,read);
 }
 
+bool TheGreedySorter::remove_node(sgNodeID_t node_id) {
+    auto nv=dg.get_nodeview(node_id);
+    bool popped=false;
+    for (auto l:nv.next()){
+        if (pop_node(node_id,l.support().id)) popped=true;
+    }
+
+    for (auto l:nv.prev()){
+        if (pop_node(node_id,l.support().id)) popped=true;
+    }
+    return popped;
+}
+
 void TheGreedySorter::start_from_read(uint64_t rid, int min_confirmation){
     for (auto nv:dg.get_all_nodeviews(false,false)){
         dg.disconnect_node(nv.node_id());

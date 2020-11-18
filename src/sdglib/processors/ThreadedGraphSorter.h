@@ -41,6 +41,7 @@ public:
     std::vector<uint64_t > rids_from_node(NodeView nv);
     uint64_t shared_reads(NodeView nv1, NodeView nv2);
     bool pop_node(sgNodeID_t node_id, uint64_t read);
+    bool remove_node(sgNodeID_t node_id);
     void start_from_read(uint64_t rid, int min_confirmation);
     std::pair<int, int> evaluate_read(uint64_t rid, bool print_pos);
     std::vector<int64_t> thread_node_positions(int64_t rid);
