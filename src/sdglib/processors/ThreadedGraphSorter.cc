@@ -260,9 +260,14 @@ bool TheGreedySorter::pop_node(sgNodeID_t node_id, uint64_t read){
 }
 
 void TheGreedySorter::start_from_read(uint64_t rid, int min_confirmation){
+    for (auto nv:dg.get_all_nodeviews(false,false)){
+        dg.disconnect_node(nv.node_id());
+    }
+    used_reads.clear();
+    used_nodes.clear();
     order_is_valid=false;
     // only pick the safest nodes alongside a read (i.e. they have a minimum number of confirming other reads shared)
-    std::cout << "Checkpoint 0" << std::endl;
+
     if(read_ends[rid].empty()){
         std::cout<< "No reads to start from!." << std::endl;
         return;
