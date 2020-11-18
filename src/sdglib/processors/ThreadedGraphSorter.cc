@@ -4,6 +4,100 @@
 
 #include "ThreadedGraphSorter.h"
 
+std::vector<int32_t > assess_node_happiness(sgNodeID_t nid, std::unordered_map<sgNodeID_t , uint32_t> order, DistanceGraph& trg_nt){
+    // Check that nid or -nid is not in order
+    if (order.find(nid)==order.end())
+        nid*=-1;
+    if (order.find(nid)==order.end())
+        return {};
+
+    auto nv=trg_nt.get_nodeview(nid);
+    std::unordered_set<uint64_t > rids;
+    for (const auto &lv: nv.prev())
+        rids.insert(lv.support().id);
+    for (const auto &lv: nv.next())
+        rids.insert(lv.support().id);
+
+    auto npos = order[nid];
+    int32_t disconnected=0;
+    int32_t happy=0;
+    int32_t unhappy=0;
+    for (const auto &rid: rids){
+        int happy_fw=-1;
+        std::vector<LinkView > nnvs;
+        for (const auto& l: nv.next()){
+            if (l.support().id==rid){
+                nnvs.push_back(l);
+            }
+        }
+        while (!nnvs.empty()){
+            auto nnv=nnvs[0].node();
+            if (order.find(nnv.node_id())!=order.end()){
+                if (order[nnv.node_id()]>npos){
+                    happy_fw=1;
+                } else {
+                    happy_fw=0;
+                    break;
+                }
+            }
+            nnvs.clear();
+            for (const auto& l: nnv.next()){
+                if (l.support().id == rid){
+                    nnvs.push_back(l);
+                }
+            }
+        }
+        int happy_bw=-1;
+        std::vector<LinkView > pnvs;
+        for (const auto& l: nv.prev()){
+            if (l.support().id==rid){
+                pnvs.push_back(l);
+            }
+        }
+        while (!pnvs.empty()){
+            auto pnv = pnvs[0].node();
+            if (order.find(pnv.node_id())!=order.end()){
+                if (order[pnv.node_id()]<npos){
+                    happy_bw=1;
+                } else {
+                    happy_bw=0;
+                    break;
+                }
+            }
+            pnvs.clear();
+            for (const auto& l: pnv.prev()){
+                if (l.support().id == rid){
+                    pnvs.push_back(l);
+                }
+            }
+        }
+        if (happy_fw==1 and happy_bw==1){
+            std::cout << "Happy hfw: " << happy_fw << " hbw: " << happy_bw << std::endl;
+            happy++;
+        } else if (happy_fw==0 or happy_bw==0){
+            std::cout << "Unhappy hfw: " << happy_fw << " hbw: " << happy_bw << std::endl;
+            unhappy++;
+        } else {
+            std::cout << "Disconnected: " << happy_fw << " hbw: " << happy_bw << std::endl;
+            disconnected++;
+        }
+    }
+    return {happy, unhappy, disconnected};
+}
+
+void pop_node_from_all(DistanceGraph& dg, sgNodeID_t nid){
+    auto nv = dg.get_nodeview(nid);
+    std::vector<uint64_t > rids;
+    for (const auto& rid: nv.next())
+        rids.push_back(rid.support().id);
+    for (const auto& rid: nv.prev())
+        rids.push_back(rid.support().id);
+
+    for (const auto &rid: rids)
+        pop_node(dg, nid, rid);
+}
+
+
 std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
     //uses relative position propagation to create a total order for a connected component
     //    returns a dict of nodes to starting positions, and a sorted list of nodes with their positions
@@ -262,7 +356,7 @@ bool TheGreedySorter::pop_node(sgNodeID_t node_id, uint64_t read){
 void TheGreedySorter::start_from_read(uint64_t rid, int min_confirmation){
     order_is_valid=false;
     // only pick the safest nodes alongside a read (i.e. they have a minimum number of confirming other reads shared)
-    std::cout << "Checkpoint 0" << std::endl;
+
     if(read_ends[rid].empty()){
         std::cout<< "No reads to start from!." << std::endl;
         return;

@@ -7,9 +7,10 @@
 
 
 #include <sdglib/views/NodeView.hpp>
-
+std::vector<int32_t > assess_node_happiness(sgNodeID_t nid, std::unordered_map<sgNodeID_t , uint32_t> order, DistanceGraph& trg_nt);
 std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc);
 bool pop_node(DistanceGraph& dg, sgNodeID_t node_id, uint64_t read);
+void pop_node_from_all(DistanceGraph& dg, sgNodeID_t nid);
 
 //class ThreadedGraphSorter {
 //public:
