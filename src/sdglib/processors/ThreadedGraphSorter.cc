@@ -5,7 +5,7 @@
 #include "ThreadedGraphSorter.h"
 enum Happiness {unknown=-1,unhappy=0,happy=1};
 
-std::array<uint64_t,3> assess_node_happiness(sgNodeID_t nid, std::unordered_map<sgNodeID_t , uint32_t> order, DistanceGraph& trg_nt){
+std::array<uint64_t,3> assess_node_happiness(sgNodeID_t nid, const std::unordered_map<sgNodeID_t , uint32_t> & order, const DistanceGraph& trg_nt){
     // Check that nid or -nid is not in order
     if (order.find(nid)==order.end())
         nid*=-1;
