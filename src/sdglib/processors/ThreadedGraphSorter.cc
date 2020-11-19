@@ -3,13 +3,14 @@
 //
 
 #include "ThreadedGraphSorter.h"
+enum Happiness {unknown=-1,unhappy=0,happy=1};
 
-std::vector<int32_t > assess_node_happiness(sgNodeID_t nid, std::unordered_map<sgNodeID_t , uint32_t> order, DistanceGraph& trg_nt){
+std::array<uint64_t,3> assess_node_happiness(sgNodeID_t nid, std::unordered_map<sgNodeID_t , uint32_t> order, DistanceGraph& trg_nt){
     // Check that nid or -nid is not in order
     if (order.find(nid)==order.end())
         nid*=-1;
     if (order.find(nid)==order.end())
-        return {};
+        return {0,0,0};
 
     auto nv=trg_nt.get_nodeview(nid);
     std::unordered_set<uint64_t > rids;
@@ -19,12 +20,12 @@ std::vector<int32_t > assess_node_happiness(sgNodeID_t nid, std::unordered_map<s
         rids.insert(lv.support().id);
 
     auto npos = order[nid];
-    int32_t disconnected=0;
-    int32_t happy=0;
-    int32_t unhappy=0;
+    uint64_t disconnected=0;
+    uint64_t happy=0;
+    uint64_t unhappy=0;
     for (const auto &rid: rids){
-        int happy_fw=-1;
-        std::vector<LinkView > nnvs;
+        Happiness happy_fw=Happiness::unknown;
+        std::vector<LinkView > nnvs; //TODO: replace for a single nodeview with nid=0 if not yet filled.
         for (const auto& l: nv.next()){
             if (l.support().id==rid){
                 nnvs.push_back(l);
@@ -34,9 +35,9 @@ std::vector<int32_t > assess_node_happiness(sgNodeID_t nid, std::unordered_map<s
             auto nnv=nnvs[0].node();
             if (order.find(nnv.node_id())!=order.end()){
                 if (order[nnv.node_id()]>npos){
-                    happy_fw=1;
+                    happy_fw=Happiness::happy;
                 } else {
-                    happy_fw=0;
+                    happy_fw=Happiness::unhappy;
                     break;
                 }
             }
@@ -47,7 +48,7 @@ std::vector<int32_t > assess_node_happiness(sgNodeID_t nid, std::unordered_map<s
                 }
             }
         }
-        int happy_bw=-1;
+        int happy_bw=Happiness::unknown;
         std::vector<LinkView > pnvs;
         for (const auto& l: nv.prev()){
             if (l.support().id==rid){
@@ -58,9 +59,9 @@ std::vector<int32_t > assess_node_happiness(sgNodeID_t nid, std::unordered_map<s
             auto pnv = pnvs[0].node();
             if (order.find(pnv.node_id())!=order.end()){
                 if (order[pnv.node_id()]<npos){
-                    happy_bw=1;
+                    happy_bw=Happiness::happy;
                 } else {
-                    happy_bw=0;
+                    happy_bw=Happiness::unhappy;
                     break;
                 }
             }
@@ -71,15 +72,18 @@ std::vector<int32_t > assess_node_happiness(sgNodeID_t nid, std::unordered_map<s
                 }
             }
         }
-        if (happy_fw==1 and happy_bw==1){
-            std::cout << "Happy hfw: " << happy_fw << " hbw: " << happy_bw << std::endl;
-            happy++;
-        } else if (happy_fw==0 or happy_bw==0){
-            std::cout << "Unhappy hfw: " << happy_fw << " hbw: " << happy_bw << std::endl;
+
+        if (happy_fw==Happiness::unhappy or happy_bw==Happiness::unhappy){
+            //At least one end is unhappy, glass half empty !
             unhappy++;
-        } else {
-            std::cout << "Disconnected: " << happy_fw << " hbw: " << happy_bw << std::endl;
+        }
+        else if (happy_fw==Happiness::unknown and happy_bw==Happiness::unknown){
+            //We don't really know how we feel
             disconnected++;
+        }
+        else {
+            //At least one end is happy, and no ends are unhappy, glass half full !
+            happy++;
         }
     }
     return {happy, unhappy, disconnected};
