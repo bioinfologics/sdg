@@ -492,6 +492,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("remove_node", &TheGreedySorter::remove_node, "nid"_a)
             .def("pop_node", &TheGreedySorter::pop_node, "nid"_a,"read_id"_a)
             .def("write_connected_nodes_graph", &TheGreedySorter::write_connected_nodes_graph, "filename"_a)
+            .def("update_read_nodes_in_order", &TheGreedySorter::update_read_nodes_in_order)
+            .def("node_belonging_scores", &TheGreedySorter::node_belonging_scores, "nid"_a)
             .def_readwrite("all_nodes", &TheGreedySorter::all_nodes)
             .def_readwrite("all_reads", &TheGreedySorter::all_reads)
             .def_readwrite("used_nodes", &TheGreedySorter::used_nodes)

@@ -317,6 +317,31 @@ TheGreedySorter::TheGreedySorter(const DistanceGraph& _trg_nt, sgNodeID_t foundi
     std::cout << "TheGreedySorter created with " << all_nodes.size() << " nodes and "<< all_reads.size() <<" reads"<<std::endl;
 }
 
+void TheGreedySorter::update_read_nodes_in_order() {
+    read_nodes_in_order.clear();
+    std::set<uint64_t> rids;
+    for (auto nv:dg.get_all_nodeviews(false,false)){
+        rids.clear();
+        for (auto const &l:nv.next())
+            rids.insert(l.support().id);
+        for (auto const &l:nv.prev())
+            rids.insert(l.support().id);
+        for (auto rid:rids) read_nodes_in_order[rid]+=1;
+    }
+}
+
+std::vector<uint64_t> TheGreedySorter::node_belonging_scores(uint64_t nid) {
+    auto nv=trg_nt.get_nodeview(nid);
+    std::set<uint64_t> rids;
+    for (auto const &l:nv.next())
+        rids.insert(l.support().id);
+    for (auto const &l:nv.prev())
+        rids.insert(l.support().id);
+    std::vector<uint64_t> scores;
+    for (auto rid:rids)  scores.push_back(read_nodes_in_order[rid]);
+    return scores;
+}
+
 std::vector<uint64_t > TheGreedySorter::rids_from_node(NodeView nv){
     // TODO: report that the rids are uint64_t but the ids in support are int64_t
     std::unordered_set<uint64_t > rids;
