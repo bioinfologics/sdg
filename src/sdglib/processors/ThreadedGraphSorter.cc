@@ -3,6 +3,104 @@
 //
 
 #include "ThreadedGraphSorter.h"
+enum Happiness {unknown=-1,unhappy=0,happy=1};
+
+std::array<uint64_t,3> assess_node_happiness(sgNodeID_t nid, std::unordered_map<sgNodeID_t , uint32_t> order, DistanceGraph& trg_nt){
+    // Check that nid or -nid is not in order
+    if (order.find(nid)==order.end())
+        nid*=-1;
+    if (order.find(nid)==order.end())
+        return {0,0,0};
+
+    auto nv=trg_nt.get_nodeview(nid);
+    std::unordered_set<uint64_t > rids;
+    for (const auto &lv: nv.prev())
+        rids.insert(lv.support().id);
+    for (const auto &lv: nv.next())
+        rids.insert(lv.support().id);
+
+    auto npos = order[nid];
+    uint64_t disconnected=0;
+    uint64_t happy=0;
+    uint64_t unhappy=0;
+    for (const auto &rid: rids){
+        Happiness happy_fw=Happiness::unknown;
+        std::vector<LinkView > nnvs; //TODO: replace for a single nodeview with nid=0 if not yet filled.
+        for (const auto& l: nv.next()){
+            if (l.support().id==rid){
+                nnvs.push_back(l);
+            }
+        }
+        while (!nnvs.empty()){
+            auto nnv=nnvs[0].node();
+            if (order.find(nnv.node_id())!=order.end()){
+                if (order[nnv.node_id()]>npos){
+                    happy_fw=Happiness::happy;
+                } else {
+                    happy_fw=Happiness::unhappy;
+                    break;
+                }
+            }
+            nnvs.clear();
+            for (const auto& l: nnv.next()){
+                if (l.support().id == rid){
+                    nnvs.push_back(l);
+                }
+            }
+        }
+        int happy_bw=Happiness::unknown;
+        std::vector<LinkView > pnvs;
+        for (const auto& l: nv.prev()){
+            if (l.support().id==rid){
+                pnvs.push_back(l);
+            }
+        }
+        while (!pnvs.empty()){
+            auto pnv = pnvs[0].node();
+            if (order.find(pnv.node_id())!=order.end()){
+                if (order[pnv.node_id()]<npos){
+                    happy_bw=Happiness::happy;
+                } else {
+                    happy_bw=Happiness::unhappy;
+                    break;
+                }
+            }
+            pnvs.clear();
+            for (const auto& l: pnv.prev()){
+                if (l.support().id == rid){
+                    pnvs.push_back(l);
+                }
+            }
+        }
+
+        if (happy_fw==Happiness::unhappy or happy_bw==Happiness::unhappy){
+            //At least one end is unhappy, glass half empty !
+            unhappy++;
+        }
+        else if (happy_fw==Happiness::unknown and happy_bw==Happiness::unknown){
+            //We don't really know how we feel
+            disconnected++;
+        }
+        else {
+            //At least one end is happy, and no ends are unhappy, glass half full !
+            happy++;
+        }
+    }
+    return {happy, unhappy, disconnected};
+}
+
+void pop_node_from_all(DistanceGraph& dg, sgNodeID_t nid){
+    auto nv = dg.get_nodeview(nid);
+    std::vector<uint64_t > rids;
+    for (const auto& rid: nv.next())
+        rids.push_back(rid.support().id);
+    for (const auto& rid: nv.prev())
+        rids.push_back(rid.support().id);
+
+    for (const auto &rid: rids)
+        pop_node(dg, nid, rid);
+}
+
 
 std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
     //uses relative position propagation to create a total order for a connected component
