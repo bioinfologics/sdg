@@ -510,4 +510,6 @@ PYBIND11_MODULE(SDGpython, m) {
     m.def("count_kmers_as_graph_nodes",&BatchKmersCounter::countKmersToGraphNodes,py::return_value_policy::take_ownership,"sdg"_a,"peds"_a,"k"_a,"min_coverage"_a, "max_coverage"_a, "num_batches"_a);
     m.def("sort_cc", &sort_cc, "dg"_a, "cc"_a);
     m.def("pop_node", &pop_node, "dg"_a, "node_id"_a, "read_id"_a);
+    m.def("assess_node_happiness", &assess_node_happiness, "nid"_a, "order"_a, "trg_ng"_a);
+    m.def("pop_node_from_all", &pop_node_from_all, "dg"_a, "nid"_a);
 }
