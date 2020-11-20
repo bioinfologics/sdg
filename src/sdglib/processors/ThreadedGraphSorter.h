@@ -46,6 +46,7 @@ public:
     bool remove_node(sgNodeID_t node_id);
     void start_from_read(uint64_t rid, int min_confirmation);
     std::pair<int, int> evaluate_read(uint64_t rid, bool print_pos);
+    std::vector<int64_t> thread_nodes(int64_t rid);
     std::vector<int64_t> thread_node_positions(int64_t rid);
     std::vector<int32_t > evaluate_read_nodeorder(uint64_t rid, bool print_pos);
     void add_read(uint64_t rid, int min_confirmation=2);

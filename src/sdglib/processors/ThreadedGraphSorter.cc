@@ -516,6 +516,22 @@ std::pair<int, int> TheGreedySorter::evaluate_read(uint64_t rid, bool print_pos)
     return std::make_pair(used, unused);
 }
 
+std::vector<int64_t> TheGreedySorter::thread_nodes(int64_t rid) {
+    std::vector<int64_t > tn;
+    auto nv = trg_nt.get_nodeview(rid>0 ? read_ends[rid][0]:read_ends[-rid][1]);
+    tn.emplace_back(nv.node_id());
+    for (int c=1;tn.size()==c;++c){
+        for (const auto& x: nv.next()){
+            if (x.support().id==abs(rid)) {
+                nv=x.node();
+                tn.emplace_back(nv.node_id());
+                break;
+            }
+        }
+    }
+    return tn;
+}
+
 std::vector<int64_t > TheGreedySorter::thread_node_positions(int64_t rid){
     std::vector<int64_t > np;
     auto nv = trg_nt.get_nodeview(rid>0 ? read_ends[rid][0]:read_ends[-rid][1]);
