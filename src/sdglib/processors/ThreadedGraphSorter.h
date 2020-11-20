@@ -38,13 +38,15 @@ void pop_node_from_all(DistanceGraph& dg, sgNodeID_t nid);
 class TheGreedySorter {
 public:
     TheGreedySorter(const DistanceGraph& _trg_nt, sgNodeID_t founding_node=0);
-
+    void update_read_nodes_in_order();
+    std::vector<uint64_t> node_belonging_scores(int64_t nid);
     std::vector<uint64_t > rids_from_node(NodeView nv);
     uint64_t shared_reads(NodeView nv1, NodeView nv2);
     bool pop_node(sgNodeID_t node_id, uint64_t read);
     bool remove_node(sgNodeID_t node_id);
     void start_from_read(uint64_t rid, int min_confirmation);
     std::pair<int, int> evaluate_read(uint64_t rid, bool print_pos);
+    std::vector<int64_t> thread_nodes(int64_t rid);
     std::vector<int64_t> thread_node_positions(int64_t rid);
     std::vector<int32_t > evaluate_read_nodeorder(uint64_t rid, bool print_pos);
     void add_read(uint64_t rid, int min_confirmation=2);
@@ -66,6 +68,7 @@ public:
 private:
     bool order_is_valid=false;
     std::map<sgNodeID_t , int64_t > order;
+    std::map<uint64_t,uint64_t> read_nodes_in_order;
 };
 
 #endif //SDG_THREADEDGRAPHSORTER_H

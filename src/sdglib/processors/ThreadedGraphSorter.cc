@@ -317,6 +317,32 @@ TheGreedySorter::TheGreedySorter(const DistanceGraph& _trg_nt, sgNodeID_t foundi
     std::cout << "TheGreedySorter created with " << all_nodes.size() << " nodes and "<< all_reads.size() <<" reads"<<std::endl;
 }
 
+void TheGreedySorter::update_read_nodes_in_order() {
+    read_nodes_in_order.clear();
+    std::set<uint64_t> rids;
+    for (auto nvo:dg.get_all_nodeviews(false,false)){
+        auto nv=trg_nt.get_nodeview(nvo.node_id());
+        rids.clear();
+        for (auto const &l:nv.next())
+            rids.insert(l.support().id);
+        for (auto const &l:nv.prev())
+            rids.insert(l.support().id);
+        for (auto rid:rids) read_nodes_in_order[rid]+=1;
+    }
+}
+
+std::vector<uint64_t> TheGreedySorter::node_belonging_scores(int64_t nid) {
+    auto nv=trg_nt.get_nodeview(nid);
+    std::set<uint64_t> rids;
+    for (auto const &l:nv.next())
+        rids.insert(l.support().id);
+    for (auto const &l:nv.prev())
+        rids.insert(l.support().id);
+    std::vector<uint64_t> scores;
+    for (auto rid:rids)  scores.push_back(read_nodes_in_order[rid]);
+    return scores;
+}
+
 std::vector<uint64_t > TheGreedySorter::rids_from_node(NodeView nv){
     // TODO: report that the rids are uint64_t but the ids in support are int64_t
     std::unordered_set<uint64_t > rids;
@@ -489,6 +515,22 @@ std::pair<int, int> TheGreedySorter::evaluate_read(uint64_t rid, bool print_pos)
         }
     }
     return std::make_pair(used, unused);
+}
+
+std::vector<int64_t> TheGreedySorter::thread_nodes(int64_t rid) {
+    std::vector<int64_t > tn;
+    auto nv = trg_nt.get_nodeview(rid>0 ? read_ends[rid][0]:read_ends[-rid][1]);
+    tn.emplace_back(nv.node_id());
+    for (int c=1;tn.size()==c;++c){
+        for (const auto& x: nv.next()){
+            if (x.support().id==abs(rid)) {
+                nv=x.node();
+                tn.emplace_back(nv.node_id());
+                break;
+            }
+        }
+    }
+    return tn;
 }
 
 std::vector<int64_t > TheGreedySorter::thread_node_positions(int64_t rid){
