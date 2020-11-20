@@ -320,7 +320,7 @@ TheGreedySorter::TheGreedySorter(const DistanceGraph& _trg_nt, sgNodeID_t foundi
 void TheGreedySorter::update_read_nodes_in_order() {
     read_nodes_in_order.clear();
     std::set<uint64_t> rids;
-    for (auto nv:dg.get_all_nodeviews(false,false)){
+    for (auto nv:trg_nt.get_all_nodeviews(false,false)){
         rids.clear();
         for (auto const &l:nv.next())
             rids.insert(l.support().id);
@@ -330,7 +330,7 @@ void TheGreedySorter::update_read_nodes_in_order() {
     }
 }
 
-std::vector<uint64_t> TheGreedySorter::node_belonging_scores(uint64_t nid) {
+std::vector<uint64_t> TheGreedySorter::node_belonging_scores(int64_t nid) {
     auto nv=trg_nt.get_nodeview(nid);
     std::set<uint64_t> rids;
     for (auto const &l:nv.next())

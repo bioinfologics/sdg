@@ -39,7 +39,7 @@ class TheGreedySorter {
 public:
     TheGreedySorter(const DistanceGraph& _trg_nt, sgNodeID_t founding_node=0);
     void update_read_nodes_in_order();
-    std::vector<uint64_t> node_belonging_scores(uint64_t nid);
+    std::vector<uint64_t> node_belonging_scores(int64_t nid);
     std::vector<uint64_t > rids_from_node(NodeView nv);
     uint64_t shared_reads(NodeView nv1, NodeView nv2);
     bool pop_node(sgNodeID_t node_id, uint64_t read);
