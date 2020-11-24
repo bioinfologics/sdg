@@ -728,7 +728,7 @@ void LongReadsRecruiter::simple_thread_reads() {
         std::sort(read_threads[rid].begin(),read_threads[rid].end());
         //eliminate any consecutive node position to the same node
         int ri=0,wi=0;
-        for (;ri<read_perfect_matches[rid].size();++ri){
+        for (;ri<read_threads[rid].size();++ri){
             if (read_threads[rid][ri].node!=read_threads[rid][wi].node) {
                 read_threads[rid][++wi]=read_threads[rid][ri];
             }
