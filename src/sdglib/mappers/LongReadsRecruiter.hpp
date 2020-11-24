@@ -61,7 +61,7 @@ public:
 
 class NodePosition{
 public:
-    NodePosition(sgNodeID_t _node,int32_t _start,int32_t _end): node(_node),start(_start),end(_end){};
+    NodePosition(sgNodeID_t _node=0,int32_t _start=0,int32_t _end=0): node(_node),start(_start),end(_end){};
     //uint64_t read_id; //Not needed because we're using a vector per read.
     bool operator<(const struct NodePosition &other) const{
         return std::tie(start,end,node)<std::tie(other.start,other.end,other.node);

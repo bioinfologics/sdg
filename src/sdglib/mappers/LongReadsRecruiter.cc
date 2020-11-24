@@ -733,7 +733,7 @@ void LongReadsRecruiter::simple_thread_reads() {
                 read_threads[rid][++wi]=read_threads[rid][ri];
             }
         }
-        read_threads.resize(wi+1);
+        read_threads[rid].resize(wi+1);
     }
 }
 
