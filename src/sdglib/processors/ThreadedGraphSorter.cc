@@ -6,6 +6,14 @@
 enum Happiness {unknown=-1,unhappy=0,happy=1};
 
 std::array<uint64_t,3> assess_node_happiness(sgNodeID_t nid, const std::unordered_map<sgNodeID_t , uint32_t> & order, const DistanceGraph& trg_nt){
+    /*
+     * Checks node happinnes in a given order by comparing the position in the proposed order with the position in the linkage graph created with the reads (trg_nt).
+     *
+     * Return an array of 3 scores [happy count, unhappy count, disconnected count]
+     *  - Happy count is the number of reads where the order in the proposed order matches the order in the reads (threaded graph) both fw and bw.
+     *  - The unhappy count is the number of reads were the order proposed don't match the order in the threading reads either fw or bw.
+     *  - The disconnected count is the number of reads where the proposed order don't match fw and bw.
+     * */
     // Check that nid or -nid is not in order
     if (order.find(nid)==order.end())
         nid*=-1;
@@ -25,14 +33,14 @@ std::array<uint64_t,3> assess_node_happiness(sgNodeID_t nid, const std::unordere
     uint64_t unhappy=0;
     for (const auto &rid: rids){
         Happiness happy_fw=Happiness::unknown;
-        std::vector<LinkView > nnvs; //TODO: replace for a single nodeview with nid=0 if not yet filled.
-        for (const auto& l: nv.next()){
-            if (l.support().id==rid){
-                nnvs.push_back(l);
+        std::vector<LinkView > nlvs; //TODO: replace for a single nodeview with nid=0 if not yet filled.
+        for (const auto& lv: nv.next()){
+            if (lv.support().id==rid){
+                nlvs.push_back(lv);
             }
         }
-        while (!nnvs.empty()){
-            auto nnv=nnvs[0].node();
+        while (!nlvs.empty()){
+            auto nnv=nlvs[0].node();
             if (order.find(nnv.node_id())!=order.end()){
                 if (order[nnv.node_id()]>npos){
                     happy_fw=Happiness::happy;
@@ -41,10 +49,10 @@ std::array<uint64_t,3> assess_node_happiness(sgNodeID_t nid, const std::unordere
                     break;
                 }
             }
-            nnvs.clear();
+            nlvs.clear();
             for (const auto& l: nnv.next()){
                 if (l.support().id == rid){
-                    nnvs.push_back(l);
+                    nlvs.push_back(l);
                 }
             }
         }
@@ -104,7 +112,7 @@ void pop_node_from_all(DistanceGraph& dg, sgNodeID_t nid){
 
 std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
     //uses relative position propagation to create a total order for a connected component
-    //    returns a dict of nodes to starting positions, and a sorted list of nodes with their positions
+    //    returns a dict of nodes to starting positions
     // Next nodes to process
     std::vector<sgNodeID_t > next_nodes;
     // Map with the nodes positions
