@@ -88,6 +88,7 @@ public:
 
     std::vector<NodePosition> endmatches_to_positions(uint64_t rid,int32_t end_size, uint16_t matches);
     void thread_reads(uint32_t end_size, uint16_t matches); //uses endmatches_to_positions
+    void simple_thread_reads();
     DistanceGraph dg_from_threads(bool multi_link=false, bool remove_duplicated=false, int min_thread_nodes=1);
 
     void haplotype_puller_filter(DistanceGraph& ddg, LongReadsRecruiter& lrr, int64_t rid);
