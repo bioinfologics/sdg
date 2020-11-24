@@ -714,6 +714,29 @@ void LongReadsRecruiter::thread_reads(uint32_t end_size, uint16_t matches) {
     }
 }
 
+void LongReadsRecruiter::simple_thread_reads() {
+    read_threads.clear();
+    read_threads.resize(read_perfect_matches.size());
+    for (auto rid=1;rid<read_perfect_matches.size();++rid){
+        read_threads[rid].reserve(read_perfect_matches[rid].size());
+        for (auto &rpm:read_perfect_matches[rid]) {
+            //make each perfect match into a node position
+            read_threads[rid].emplace_back(rpm.node, rpm.read_position - rpm.node_position,
+                                           rpm.read_position - rpm.node_position + sdg.get_node_size(rpm.node));
+        }
+        //sort the node positions
+        std::sort(read_threads[rid].begin(),read_threads[rid].end());
+        //eliminate any consecutive node position to the same node
+        int ri=0,wi=0;
+        for (;ri<read_perfect_matches[rid].size();++ri){
+            if (read_threads[rid][ri].node!=read_threads[rid][wi].node) {
+                read_threads[rid][++wi]=read_threads[rid][ri];
+            }
+        }
+        read_threads.resize(wi+1);
+    }
+}
+
 DistanceGraph LongReadsRecruiter::dg_from_threads(bool multi_link, bool remove_duplicated, int min_thread_nodes) {
     DistanceGraph dg(sdg,"LRRthreads");
     std::unordered_set<sgNodeID_t> seen,duplicated;
