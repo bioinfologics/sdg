@@ -107,39 +107,84 @@ std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thr
     int hops=10;//maximum number of fw/bw jumps until hitting a read in the order to be happy/unhappy
     float disconnection_rate=.2;
 
-    std::unordered_map<int64_t,std::vector<int64_t>> nodepos_in_reads;//for every read present in any node, get a list of all nodes in it
+    std::unordered_map<int64_t,std::vector<std::pair<int64_t,uint16_t>>> nodepos_in_reads;//for every read present in any node, get a list of all nodes in it
     for (auto i=0;i<thread.size();++i){
         auto nid=thread[i].node;
+        for (auto &l:trg.get_nodeview(nid).prev()){
+            if (nodepos_in_reads.count(l.support().id)==0) nodepos_in_reads[l.support().id]={};
+            else if (nodepos_in_reads[l.support().id].back().first==i){
+                if ( nodepos_in_reads[l.support().id].back().second>l.support().index)
+                    nodepos_in_reads[l.support().id].back().second=l.support().index;
+                continue;
+            }
+
+            nodepos_in_reads[l.support().id].emplace_back(i,l.support().index);
+        }
         for (auto &l:trg.get_nodeview(nid).next()){
             if (nodepos_in_reads.count(l.support().id)==0) nodepos_in_reads[l.support().id]={};
-            else if (nodepos_in_reads[l.support().id].back()==i) continue;
-            nodepos_in_reads[l.support().id].emplace_back(i);
+            else if (nodepos_in_reads[l.support().id].back().first==i){
+                if ( nodepos_in_reads[l.support().id].back().second>l.support().index)
+                    nodepos_in_reads[l.support().id].back().second=-l.support().index; //indexes are negative if the node is bw in thread
+                continue;
+            }
+
+            nodepos_in_reads[l.support().id].emplace_back(i,l.support().index);
         }
     }
     //First check: chimeric junctions -> i.e links that are crossed by very few reads
     std::vector<uint64_t> max_read_coverage(thread.size()-1);//coverage across each transition of the thread
     for (auto &rnp:nodepos_in_reads){
-        for (auto i=rnp.second.front();i<rnp.second.back();++i) ++max_read_coverage[i];
+        for (auto i=rnp.second.front().first;i<rnp.second.back().first;++i) ++max_read_coverage[i];
     }
-    for (auto &mrc:max_read_coverage) std::cout<<" "<<mrc;
-    std::cout<<std::endl;
-    std::vector<uint64_t> happy_fw(thread.size());
-    std::vector<uint64_t> happy_bw(thread.size());
-    std::vector<uint64_t> unhappy_fw(thread.size());
-    std::vector<uint64_t> unhappy_bw(thread.size());
-    std::vector<uint64_t> disconnected_fw(thread.size());
-    std::vector<uint64_t> disconnected_bw(thread.size());
+    //for (auto &mrc:max_read_coverage) std::cout<<" "<<mrc;
+    //std::cout<<std::endl;
+    //TODO: we could "rescue" chimeras by splitting at the position of unsupported linkage
+    for (auto i=5;i<max_read_coverage.size()-5;++i) if (max_read_coverage[i]<3) return {};
+
+    //std::vector<uint64_t> happy_fw(thread.size());
+    //std::vector<uint64_t> happy_bw(thread.size());
+    //std::vector<uint64_t> unhappy_fw(thread.size());
+    //std::vector<uint64_t> unhappy_bw(thread.size());
+    //std::vector<uint64_t> disconnected_fw(thread.size());
+    //std::vector<uint64_t> disconnected_bw(thread.size());
     std::vector<uint64_t> happy(thread.size());
     std::vector<uint64_t> unhappy(thread.size());
     std::vector<uint64_t> disconnected(thread.size());
 
-    //now compute all scores as fast as we can, that is, by taking first/last and pairs of nodes in the map and adding to their scores
-    //all nodes that are first and last in a read's map can be disconnected (if far enough along the thread)
+    //TODO: this is a very fast approximation to the thing, but not as bad as it could be, could be better if considering ends of read
+    for (auto &rnps:nodepos_in_reads){
+        for (auto i=0;i<rnps.second.size();++i){
+            //assess each node's happiness in this read
+            Happiness fh=Happiness::unknown;
+            Happiness bh=Happiness::unknown;
 
-    //every consecutive pair of nodes in the same read can be both happy or unhappy for that read/direction
+            if (i!=0){
+                if ((rnps.second[i-1].second>0) == (rnps.second[i].second>0) and rnps.second[i-1].second<rnps.second[i].second)
+                    bh=Happiness::happy;
+                else
+                    bh=Happiness::unhappy;
+            }
 
-    //now
-    return {};
+            if (i!=rnps.second.size()-1){
+                if ((rnps.second[i].second>0) == (rnps.second[i+1].second>0) and rnps.second[i].second<rnps.second[i+1].second)
+                    fh=Happiness::happy;
+                else
+                    fh=Happiness::unhappy;
+            }
+            if (fh==Happiness::unhappy or bh==Happiness::unhappy) ++unhappy[rnps.second[i].first];
+            else if (fh==Happiness::happy or bh==Happiness::happy) ++happy[rnps.second[i].first];
+            else ++disconnected[rnps.second[i].first];
+        }
+    }
+    //now just copy the components that are still happy
+    std::vector<NodePosition> happy_nodes;
+    happy_nodes.reserve(thread.size());
+    for (auto i=0;i<thread.size();++i){
+        if (unhappy[i]>max_unhappy) continue;
+        if ((happy[i]+unhappy[i]+disconnected[i])*disconnection_rate<disconnected[i]) continue;
+        happy_nodes.push_back(thread[i]);
+    }
+    return happy_nodes;
 }
 
 std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
