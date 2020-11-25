@@ -101,6 +101,46 @@ void pop_node_from_all(DistanceGraph& dg, sgNodeID_t nid){
         pop_node(dg, nid, rid);
 }
 
+std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thread,const DistanceGraph & trg){
+    int max_unhappy=1;
+
+    int hops=10;//maximum number of fw/bw jumps until hitting a read in the order to be happy/unhappy
+    float disconnection_rate=.2;
+
+    std::unordered_map<int64_t,std::vector<int64_t>> nodepos_in_reads;//for every read present in any node, get a list of all nodes in it
+    for (auto i=0;i<thread.size();++i){
+        auto nid=thread[i].node;
+        for (auto &l:trg.get_nodeview(nid).next()){
+            if (nodepos_in_reads.count(l.support().id)==0) nodepos_in_reads[l.support().id]={};
+            else if (nodepos_in_reads[l.support().id].back()==i) continue;
+            nodepos_in_reads[l.support().id].emplace_back(i);
+        }
+    }
+    //First check: chimeric junctions -> i.e links that are crossed by very few reads
+    std::vector<uint64_t> max_read_coverage(thread.size()-1);//coverage across each transition of the thread
+    for (auto &rnp:nodepos_in_reads){
+        for (auto i=rnp.second.front();i<rnp.second.back();++i) ++max_read_coverage[i];
+    }
+    for (auto &mrc:max_read_coverage) std::cout<<" "<<mrc;
+    std::cout<<std::endl;
+    std::vector<uint64_t> happy_fw(thread.size());
+    std::vector<uint64_t> happy_bw(thread.size());
+    std::vector<uint64_t> unhappy_fw(thread.size());
+    std::vector<uint64_t> unhappy_bw(thread.size());
+    std::vector<uint64_t> disconnected_fw(thread.size());
+    std::vector<uint64_t> disconnected_bw(thread.size());
+    std::vector<uint64_t> happy(thread.size());
+    std::vector<uint64_t> unhappy(thread.size());
+    std::vector<uint64_t> disconnected(thread.size());
+
+    //now compute all scores as fast as we can, that is, by taking first/last and pairs of nodes in the map and adding to their scores
+    //all nodes that are first and last in a read's map can be disconnected (if far enough along the thread)
+
+    //every consecutive pair of nodes in the same read can be both happy or unhappy for that read/direction
+
+    //now
+    return {};
+}
 
 std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
     //uses relative position propagation to create a total order for a connected component

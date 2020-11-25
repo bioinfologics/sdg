@@ -7,10 +7,14 @@
 
 
 #include <sdglib/views/NodeView.hpp>
+#include <sdglib/mappers/LongReadsRecruiter.hpp>
 std::array<uint64_t,3> assess_node_happiness(sgNodeID_t nid, const std::unordered_map<sgNodeID_t , uint32_t> &order, const DistanceGraph& trg_nt);
 std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc);
 bool pop_node(DistanceGraph& dg, sgNodeID_t node_id, uint64_t read);
 void pop_node_from_all(DistanceGraph& dg, sgNodeID_t nid);
+
+//This takes a thread and pops all unhappy/disconnected nodes from it, returns an empty thread if theres too many of them
+std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thread,const DistanceGraph & trg);
 
 //class ThreadedGraphSorter {
 //public:
