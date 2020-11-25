@@ -9,12 +9,12 @@
 #include <sdglib/views/NodeView.hpp>
 #include <sdglib/mappers/LongReadsRecruiter.hpp>
 std::array<uint64_t,3> assess_node_happiness(sgNodeID_t nid, const std::unordered_map<sgNodeID_t , uint32_t> &order, const DistanceGraph& trg_nt);
-std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc);
+std::unordered_map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc);
 bool pop_node(DistanceGraph& dg, sgNodeID_t node_id, uint64_t read);
 void pop_node_from_all(DistanceGraph& dg, sgNodeID_t nid);
 
 //This takes a thread and pops all unhappy/disconnected nodes from it, returns an empty thread if theres too many of them
-std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thread,const DistanceGraph & trg);
+std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thread,const DistanceGraph & trg, int max_unhappy=1, float disconnection_rate=.3);
 
 //class ThreadedGraphSorter {
 //public:
@@ -58,7 +58,7 @@ public:
 
     void write_connected_nodes_graph(std::string filename);
 
-    std::map<sgNodeID_t , int64_t > sort_graph();
+    std::unordered_map<sgNodeID_t , int64_t > sort_graph();
 
     const DistanceGraph& trg_nt;
     DistanceGraph dg;
@@ -67,12 +67,12 @@ public:
     std::unordered_set<uint64_t > all_reads;
     std::set<sgNodeID_t > used_nodes;
     std::vector<sgNodeID_t > used_reads;
-    std::map<uint64_t, std::vector<sgNodeID_t >> read_ends;
+    std::unordered_map<uint64_t, std::vector<sgNodeID_t >> read_ends;
 
 private:
     bool order_is_valid=false;
-    std::map<sgNodeID_t , int64_t > order;
-    std::map<uint64_t,uint64_t> read_nodes_in_order;
+    std::unordered_map<sgNodeID_t , int64_t > order;
+    std::unordered_map<uint64_t,uint64_t> read_nodes_in_order;
 };
 
 #endif //SDG_THREADEDGRAPHSORTER_H

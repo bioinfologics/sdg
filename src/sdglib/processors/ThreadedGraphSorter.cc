@@ -101,11 +101,7 @@ void pop_node_from_all(DistanceGraph& dg, sgNodeID_t nid){
         pop_node(dg, nid, rid);
 }
 
-std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thread,const DistanceGraph & trg){
-    int max_unhappy=1;
-
-    int hops=10;//maximum number of fw/bw jumps until hitting a read in the order to be happy/unhappy
-    float disconnection_rate=.2;
+std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thread,const DistanceGraph & trg, int max_unhappy, float disconnection_rate){
 
     std::unordered_map<int64_t,std::vector<std::pair<int64_t,uint16_t>>> nodepos_in_reads;//for every read present in any node, get a list of all nodes in it
     for (auto i=0;i<thread.size();++i){
@@ -187,13 +183,13 @@ std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thr
     return happy_nodes;
 }
 
-std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
+std::unordered_map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
     //uses relative position propagation to create a total order for a connected component
     //    returns a dict of nodes to starting positions, and a sorted list of nodes with their positions
     // Next nodes to process
     std::vector<sgNodeID_t > next_nodes;
     // Map with the nodes positions
-    std::map<sgNodeID_t , int64_t > node_pos;
+    std::unordered_map<sgNodeID_t , int64_t > node_pos;
 
     // check no node on the CC appears in both directions.
     for (const auto&x: cc){
@@ -545,7 +541,7 @@ void TheGreedySorter::start_from_read(uint64_t rid, int min_confirmation){
     used_reads.push_back(rid);
 }
 
-std::map<sgNodeID_t , int64_t > TheGreedySorter::sort_graph(){
+std::unordered_map<sgNodeID_t , int64_t > TheGreedySorter::sort_graph(){
     if (!order_is_valid){
         if (used_nodes.empty()){
             std::cout << "No nodes, no order" << std::endl;
@@ -561,7 +557,7 @@ std::map<sgNodeID_t , int64_t > TheGreedySorter::sort_graph(){
 
 std::pair<int, int> TheGreedySorter::evaluate_read(uint64_t rid, bool print_pos){
     // Walk through a read in the original graph, count how many nodes are in the sorted graph, then check their order
-    std::map<sgNodeID_t , int64_t > current_node_pos;
+    std::unordered_map<sgNodeID_t , int64_t > current_node_pos;
     if (print_pos){
         current_node_pos = sort_graph();
     }
