@@ -761,9 +761,10 @@ DistanceGraph LongReadsRecruiter::dg_from_threads(bool multi_link, bool remove_d
             }
         }
         else {
+            uint16_t lidx=0;
             for (auto i = 0; i < pos.size() - 1; ++i) {
                 if (remove_duplicated and ( duplicated.count(llabs(pos[i].node))  or duplicated.count(llabs(pos[i+1].node)) ) ) continue;
-                dg.add_link(-pos[i].node, pos[i + 1].node, pos[i + 1].start - pos[i].end, {SupportType::LongRead, 0, static_cast<uint64_t>(rid)});
+                dg.add_link(-pos[i].node, pos[i + 1].node, pos[i + 1].start - pos[i].end, {SupportType::LongRead, lidx++, static_cast<uint64_t>(rid)});
             }
         }
     }

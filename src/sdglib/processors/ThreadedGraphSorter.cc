@@ -109,14 +109,95 @@ void pop_node_from_all(DistanceGraph& dg, sgNodeID_t nid){
         pop_node(dg, nid, rid);
 }
 
+std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thread,const DistanceGraph & trg, int max_unhappy, float disconnection_rate){
 
-std::map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
+    std::unordered_map<int64_t,std::vector<std::pair<int64_t,uint16_t>>> nodepos_in_reads;//for every read present in any node, get a list of all nodes in it
+    for (auto i=0;i<thread.size();++i){
+        auto nid=thread[i].node;
+        for (auto &l:trg.get_nodeview(nid).prev()){
+            if (nodepos_in_reads.count(l.support().id)==0) nodepos_in_reads[l.support().id]={};
+            else if (nodepos_in_reads[l.support().id].back().first==i){
+                if ( nodepos_in_reads[l.support().id].back().second>l.support().index)
+                    nodepos_in_reads[l.support().id].back().second=l.support().index;
+                continue;
+            }
+
+            nodepos_in_reads[l.support().id].emplace_back(i,l.support().index);
+        }
+        for (auto &l:trg.get_nodeview(nid).next()){
+            if (nodepos_in_reads.count(l.support().id)==0) nodepos_in_reads[l.support().id]={};
+            else if (nodepos_in_reads[l.support().id].back().first==i){
+                if ( nodepos_in_reads[l.support().id].back().second>l.support().index)
+                    nodepos_in_reads[l.support().id].back().second=-l.support().index; //indexes are negative if the node is bw in thread
+                continue;
+            }
+
+            nodepos_in_reads[l.support().id].emplace_back(i,l.support().index);
+        }
+    }
+    //First check: chimeric junctions -> i.e links that are crossed by very few reads
+    std::vector<uint64_t> max_read_coverage(thread.size()-1);//coverage across each transition of the thread
+    for (auto &rnp:nodepos_in_reads){
+        for (auto i=rnp.second.front().first;i<rnp.second.back().first;++i) ++max_read_coverage[i];
+    }
+    //for (auto &mrc:max_read_coverage) std::cout<<" "<<mrc;
+    //std::cout<<std::endl;
+    //TODO: we could "rescue" chimeras by splitting at the position of unsupported linkage
+    for (auto i=5;i<max_read_coverage.size()-5;++i) if (max_read_coverage[i]<3) return {};
+
+    //std::vector<uint64_t> happy_fw(thread.size());
+    //std::vector<uint64_t> happy_bw(thread.size());
+    //std::vector<uint64_t> unhappy_fw(thread.size());
+    //std::vector<uint64_t> unhappy_bw(thread.size());
+    //std::vector<uint64_t> disconnected_fw(thread.size());
+    //std::vector<uint64_t> disconnected_bw(thread.size());
+    std::vector<uint64_t> happy(thread.size());
+    std::vector<uint64_t> unhappy(thread.size());
+    std::vector<uint64_t> disconnected(thread.size());
+
+    //TODO: this is a very fast approximation to the thing, but not as bad as it could be, could be better if considering ends of read
+    for (auto &rnps:nodepos_in_reads){
+        for (auto i=0;i<rnps.second.size();++i){
+            //assess each node's happiness in this read
+            Happiness fh=Happiness::unknown;
+            Happiness bh=Happiness::unknown;
+
+            if (i!=0){
+                if ((rnps.second[i-1].second>0) == (rnps.second[i].second>0) and rnps.second[i-1].second<rnps.second[i].second)
+                    bh=Happiness::happy;
+                else
+                    bh=Happiness::unhappy;
+            }
+
+            if (i!=rnps.second.size()-1){
+                if ((rnps.second[i].second>0) == (rnps.second[i+1].second>0) and rnps.second[i].second<rnps.second[i+1].second)
+                    fh=Happiness::happy;
+                else
+                    fh=Happiness::unhappy;
+            }
+            if (fh==Happiness::unhappy or bh==Happiness::unhappy) ++unhappy[rnps.second[i].first];
+            else if (fh==Happiness::happy or bh==Happiness::happy) ++happy[rnps.second[i].first];
+            else ++disconnected[rnps.second[i].first];
+        }
+    }
+    //now just copy the components that are still happy
+    std::vector<NodePosition> happy_nodes;
+    happy_nodes.reserve(thread.size());
+    for (auto i=0;i<thread.size();++i){
+        if (unhappy[i]>max_unhappy) continue;
+        if ((happy[i]+unhappy[i]+disconnected[i])*disconnection_rate<disconnected[i]) continue;
+        happy_nodes.push_back(thread[i]);
+    }
+    return happy_nodes;
+}
+
+std::unordered_map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
     //uses relative position propagation to create a total order for a connected component
     //    returns a dict of nodes to starting positions
     // Next nodes to process
     std::vector<sgNodeID_t > next_nodes;
     // Map with the nodes positions
-    std::map<sgNodeID_t , int64_t > node_pos;
+    std::unordered_map<sgNodeID_t , int64_t > node_pos;
 
     // check no node on the CC appears in both directions.
     for (const auto&x: cc){
@@ -292,7 +373,9 @@ TheGreedySorter::TheGreedySorter(const DistanceGraph& _trg_nt, sgNodeID_t foundi
     }
 
     std::cout << "finding read ends" << std::endl;
-    for (const auto& nid:all_nodes){
+#pragma omp parallel for
+    for (auto i=0;i<all_nodes.size();++i){
+        const auto &nid=all_nodes[i];
         auto nv=trg_nt.get_nodeview(nid);
         // fill fw and bw rids support vectors
         std::unordered_set<sgNodeID_t > frids;
@@ -305,19 +388,25 @@ TheGreedySorter::TheGreedySorter(const DistanceGraph& _trg_nt, sgNodeID_t foundi
         // Checks if this rid is at the end of the available support
         for (const auto& rid: frids){
             if (brids.find(rid)==brids.end()){
-                if (read_ends.find(rid)==read_ends.end()){
-                    read_ends[rid]={};
+                #pragma omp critical
+                {
+                    if (read_ends.find(rid)==read_ends.end()){
+                        read_ends[rid]={};
                 }
-                read_ends[rid].push_back(nv.node_id());
+                    read_ends[rid].push_back(nv.node_id());
+                }
             }
         }
         // Checks if this rid is at the end of the available support
         for (const auto& rid: brids){
             if (frids.find(rid) == frids.end()) {
-                if (read_ends.find(rid)==read_ends.end()) {
-                    read_ends[rid]={};
+                #pragma omp critical
+                {
+                    if (read_ends.find(rid)==read_ends.end()) {
+                        read_ends[rid]={};
+                    }
+                    read_ends[rid].push_back(-nv.node_id());
                 }
-                read_ends[rid].push_back(-nv.node_id());
             }
         }
     }
@@ -468,7 +557,7 @@ void TheGreedySorter::start_from_read(uint64_t rid, int min_confirmation){
     used_reads.push_back(rid);
 }
 
-std::map<sgNodeID_t , int64_t > TheGreedySorter::sort_graph(){
+std::unordered_map<sgNodeID_t , int64_t > TheGreedySorter::sort_graph(){
     if (!order_is_valid){
         if (used_nodes.empty()){
             std::cout << "No nodes, no order" << std::endl;
@@ -484,7 +573,7 @@ std::map<sgNodeID_t , int64_t > TheGreedySorter::sort_graph(){
 
 std::pair<int, int> TheGreedySorter::evaluate_read(uint64_t rid, bool print_pos){
     // Walk through a read in the original graph, count how many nodes are in the sorted graph, then check their order
-    std::map<sgNodeID_t , int64_t > current_node_pos;
+    std::unordered_map<sgNodeID_t , int64_t > current_node_pos;
     if (print_pos){
         current_node_pos = sort_graph();
     }
@@ -707,4 +796,10 @@ void TheGreedySorter::write_connected_nodes_graph(std::string filename){
         }
     }
     dg.write_to_gfa1(filename, sn);
+}
+
+std::pair<sgNodeID_t,sgNodeID_t> TheGreedySorter::get_thread_ends(int64_t rid){
+    if (read_ends.count(llabs(rid))==0) return {0,0};
+    auto &v=read_ends[llabs(rid)];
+    return {v[0],v[1]};
 }
