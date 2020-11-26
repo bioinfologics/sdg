@@ -365,7 +365,9 @@ TheGreedySorter::TheGreedySorter(const DistanceGraph& _trg_nt, sgNodeID_t foundi
     }
 
     std::cout << "finding read ends" << std::endl;
-    for (const auto& nid:all_nodes){
+#pragma omp parallel for
+    for (auto i=0;i<all_nodes.size();++i){
+        const auto &nid=all_nodes[i];
         auto nv=trg_nt.get_nodeview(nid);
         // fill fw and bw rids support vectors
         std::unordered_set<sgNodeID_t > frids;
@@ -378,19 +380,25 @@ TheGreedySorter::TheGreedySorter(const DistanceGraph& _trg_nt, sgNodeID_t foundi
         // Checks if this rid is at the end of the available support
         for (const auto& rid: frids){
             if (brids.find(rid)==brids.end()){
-                if (read_ends.find(rid)==read_ends.end()){
-                    read_ends[rid]={};
+                #pragma omp critical
+                {
+                    if (read_ends.find(rid)==read_ends.end()){
+                        read_ends[rid]={};
                 }
-                read_ends[rid].push_back(nv.node_id());
+                    read_ends[rid].push_back(nv.node_id());
+                }
             }
         }
         // Checks if this rid is at the end of the available support
         for (const auto& rid: brids){
             if (frids.find(rid) == frids.end()) {
-                if (read_ends.find(rid)==read_ends.end()) {
-                    read_ends[rid]={};
+                #pragma omp critical
+                {
+                    if (read_ends.find(rid)==read_ends.end()) {
+                        read_ends[rid]={};
+                    }
+                    read_ends[rid].push_back(-nv.node_id());
                 }
-                read_ends[rid].push_back(-nv.node_id());
             }
         }
     }
@@ -780,4 +788,10 @@ void TheGreedySorter::write_connected_nodes_graph(std::string filename){
         }
     }
     dg.write_to_gfa1(filename, sn);
+}
+
+std::pair<sgNodeID_t,sgNodeID_t> TheGreedySorter::get_thread_ends(int64_t rid){
+    if (read_ends.count(llabs(rid))==0) return {0,0};
+    auto &v=read_ends[llabs(rid)];
+    return {v[0],v[1]};
 }

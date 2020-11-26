@@ -49,6 +49,7 @@ public:
     bool pop_node(sgNodeID_t node_id, uint64_t read);
     bool remove_node(sgNodeID_t node_id);
     void start_from_read(uint64_t rid, int min_confirmation);
+    std::pair<sgNodeID_t,sgNodeID_t> get_thread_ends(int64_t rid);
     std::pair<int, int> evaluate_read(uint64_t rid, bool print_pos);
     std::vector<int64_t> thread_nodes(int64_t rid);
     std::vector<int64_t> thread_node_positions(int64_t rid);
