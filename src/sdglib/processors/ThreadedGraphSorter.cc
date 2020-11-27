@@ -193,6 +193,7 @@ void make_all_threads_happy(LongReadsRecruiter & lrr, DistanceGraph &trg, int ma
         for (auto i = 0; i < lrr.read_threads.size(); ++i) {
             if (++tptc==10000) {
                 if (++ptc % 10 == 0) sdglib::OutputLog() << ptc*10000 << " threads processed" << std::endl;
+                tptc=0;
             }
             if (lrr.read_threads[i].size() > 20) {
                 lrr.read_threads[i] = make_thread_happy(lrr.read_threads[i], trg, max_unhappy, disconnection_rate);
