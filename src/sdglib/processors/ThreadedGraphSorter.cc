@@ -3,6 +3,7 @@
 //
 
 #include "ThreadedGraphSorter.h"
+#include <atomic>
 enum Happiness {unknown=-1,unhappy=0,happy=1};
 
 std::array<uint64_t,3> assess_node_happiness(sgNodeID_t nid, const std::unordered_map<sgNodeID_t , uint32_t> & order, const DistanceGraph& trg_nt){
@@ -184,8 +185,10 @@ std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thr
 }
 
 void make_all_threads_happy(LongReadsRecruiter & lrr, DistanceGraph &trg, int max_unhappy, float disconnection_rate){
-#pragma omp for
+    std::atomic<uint64_t> ptc(0);
+#pragma omp parallel for
     for (auto i=0;i<lrr.read_threads.size();++i){
+        if (++ptc%100000==0) std::cout<<ptc<<"threads processed"<<std::endl;
         if (lrr.read_threads[i].size()>20){
             lrr.read_threads[i]=make_thread_happy(lrr.read_threads[i],trg,max_unhappy,disconnection_rate);
         }
