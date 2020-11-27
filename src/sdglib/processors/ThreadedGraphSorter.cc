@@ -192,6 +192,7 @@ void make_all_threads_happy(LongReadsRecruiter & lrr, DistanceGraph &trg, int ma
         if (lrr.read_threads[i].size()>20){
             lrr.read_threads[i]=make_thread_happy(lrr.read_threads[i],trg,max_unhappy,disconnection_rate);
         }
+        else lrr.read_threads[i]={};
     }
 }
 
