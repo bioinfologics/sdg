@@ -188,7 +188,7 @@ void make_all_threads_happy(LongReadsRecruiter & lrr, DistanceGraph &trg, int ma
     std::atomic<uint64_t> ptc(0);
 #pragma omp parallel for
     for (auto i=0;i<lrr.read_threads.size();++i){
-        if (++ptc%100000==0) std::cout<<ptc<<"threads processed"<<std::endl;
+        if (++ptc%1000000==0) sdglib::OutputLog()<<ptc<<" threads processed"<<std::endl;
         if (lrr.read_threads[i].size()>20){
             lrr.read_threads[i]=make_thread_happy(lrr.read_threads[i],trg,max_unhappy,disconnection_rate);
         }
