@@ -186,13 +186,19 @@ std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thr
 
 void make_all_threads_happy(LongReadsRecruiter & lrr, DistanceGraph &trg, int max_unhappy, float disconnection_rate){
     std::atomic<uint64_t> ptc(0);
-#pragma omp parallel for
-    for (auto i=0;i<lrr.read_threads.size();++i){
-        if (++ptc%1000000==0) sdglib::OutputLog()<<ptc<<" threads processed"<<std::endl;
-        if (lrr.read_threads[i].size()>20){
-            lrr.read_threads[i]=make_thread_happy(lrr.read_threads[i],trg,max_unhappy,disconnection_rate);
+#pragma omp parallel
+    {
+        uint64_t tptc=0;
+#pragma omp for schedule(dynamic, 10000)
+        for (auto i = 0; i < lrr.read_threads.size(); ++i) {
+            if (++tptc==10000) {
+                if (++ptc % 10 == 0) sdglib::OutputLog() << ptc*10000 << " threads processed" << std::endl;
+            }
+            if (lrr.read_threads[i].size() > 20) {
+                lrr.read_threads[i] = make_thread_happy(lrr.read_threads[i], trg, max_unhappy, disconnection_rate);
+            }
+            else lrr.read_threads[i] = {};
         }
-        else lrr.read_threads[i]={};
     }
 }
 
