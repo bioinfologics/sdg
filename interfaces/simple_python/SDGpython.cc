@@ -518,4 +518,5 @@ PYBIND11_MODULE(SDGpython, m) {
     m.def("assess_node_happiness", &assess_node_happiness, "nid"_a, "order"_a, "trg_ng"_a);
     m.def("pop_node_from_all", &pop_node_from_all, "dg"_a, "nid"_a);
     m.def("make_thread_happy", &make_thread_happy, "thread"_a, "trg"_a, "max_unhappy"_a=1, "disconnection_rate"_a=.3);
+    m.def("make_all_threads_happy", &make_thread_happy, "lrr"_a, "trg"_a, "max_unhappy"_a=1, "disconnection_rate"_a=.3);
 }

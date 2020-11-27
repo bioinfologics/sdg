@@ -183,6 +183,15 @@ std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thr
     return happy_nodes;
 }
 
+void make_all_threads_happy(LongReadsRecruiter & lrr, DistanceGraph &trg, int max_unhappy, float disconnection_rate){
+#pragma omp for
+    for (auto i=0;i<lrr.read_threads.size();++i){
+        if (lrr.read_threads[i].size()>20){
+            lrr.read_threads[i]=make_thread_happy(lrr.read_threads[i],trg,max_unhappy,disconnection_rate);
+        }
+    }
+}
+
 std::unordered_map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
     //uses relative position propagation to create a total order for a connected component
     //    returns a dict of nodes to starting positions, and a sorted list of nodes with their positions
