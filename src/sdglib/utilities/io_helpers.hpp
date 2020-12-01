@@ -129,6 +129,7 @@ namespace sdglib {
     inline void read_flat_unorderedmap(std::ifstream &ifs, std::unordered_map<T1,T2> &u) {
         uint64_t count;
         ifs.read(reinterpret_cast<char *>(&count),sizeof(count));
+        u.clear();
         u.reserve(count);
         T1 key;
         T2 value;
