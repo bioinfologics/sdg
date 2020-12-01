@@ -132,11 +132,10 @@ std::vector<NodePosition> ReadThreadsGraph::get_thread(int64_t thread_id) {
     std::vector<NodePosition> thread;
     auto ti=thread_info[llabs(thread_id)];
     auto s=ti.start;
-    auto e=ti.end;
-    int64_t lc=0;
+        int64_t lc=0;
     int link_increment=1;
     if (thread_id<0) {
-        std::swap(s,e);
+        s=ti.end;
         link_increment=-1;
         lc=ti.link_count-1;
     }
@@ -144,7 +143,7 @@ std::vector<NodePosition> ReadThreadsGraph::get_thread(int64_t thread_id) {
     uint64_t p=0;
     sgNodeID_t nid=0;
     do {
-        if (nid==0) nid=e;
+        if (nid==0) nid=s;
         else {
             p+=sdg.get_node_size(nid);
             auto ln=next_in_thread(nid,thread_id,lc);
