@@ -8,6 +8,7 @@
 #include <sdglib/indexers/NKmerIndex.hpp>
 #include <atomic>
 #include <sdglib/views/NodeView.hpp>
+#include <sdglib/graph/ReadThreadsGraph.hpp>
 
 std::vector<PerfectMatch> PerfectMatchesFilter::truncate_turnaround(const std::vector<PerfectMatch> &in) const {
     if (in.empty()) return {};
@@ -457,10 +458,20 @@ void LongReadsRecruiter::dump(std::string filename) {
     sdglib::write_flat_vectorvector(ofs,read_perfect_matches);
 }
 
+void LongReadsRecruiter::dump_threads(std::string filename) {
+    std::ofstream ofs(filename);
+    sdglib::write_flat_vectorvector(ofs,read_threads);
+}
+
 void LongReadsRecruiter::load(std::string filename) {
     std::ifstream ifs(filename);
     sdglib::read_flat_vectorvector(ifs,node_reads);
     sdglib::read_flat_vectorvector(ifs,read_perfect_matches);
+}
+
+void LongReadsRecruiter::load_threads(std::string filename) {
+    std::ifstream ifs(filename);
+    sdglib::read_flat_vectorvector(ifs,read_threads);
 }
 
 void LongReadsRecruiter::reset_recruitment() {
@@ -771,6 +782,13 @@ DistanceGraph LongReadsRecruiter::dg_from_threads(bool multi_link, bool remove_d
     return dg;
 }
 
+ReadThreadsGraph LongReadsRecruiter::rtg_from_threads(bool remove_duplicated, int min_thread_nodes) {
+    ReadThreadsGraph rtg(sdg);
+    for (auto rid=1;rid<read_threads.size();++rid) {
+        rtg.add_thread(rid,read_threads[rid],remove_duplicated,min_thread_nodes);
+    }
+    return rtg;
+}
 
 
 //*********************** WELL INTENTIONED WARNING ****************************

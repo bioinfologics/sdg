@@ -7,6 +7,7 @@
 
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
 #include <sdglib/datastores/LongReadsDatastore.hpp>
+class ReadThreadsGraph;//fw declaration
 
 //TODO: OMP
 //TODO: translate kmer positions on negative node to equivalent bp positions?
@@ -75,7 +76,9 @@ class LongReadsRecruiter {
 public:
     LongReadsRecruiter(SequenceDistanceGraph &sdg, const LongReadsDatastore &datastore,uint8_t k=25, uint16_t f=50);
     void dump(std::string filename);
+    void dump_threads(std::string filename);
     void load(std::string filename);
+    void load_threads(std::string filename);
     void perfect_mappings(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
     std::vector<PerfectMatch> reverse_perfect_matches(const std::vector<PerfectMatch> &matches, uint64_t rsize=0);
     void map(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
@@ -90,6 +93,7 @@ public:
     void thread_reads(uint32_t end_size, uint16_t matches); //uses endmatches_to_positions
     void simple_thread_reads();
     DistanceGraph dg_from_threads(bool multi_link=false, bool remove_duplicated=false, int min_thread_nodes=1);
+    ReadThreadsGraph rtg_from_threads(bool remove_duplicated=false, int min_thread_nodes=1);
 
     void haplotype_puller_filter(DistanceGraph& ddg, LongReadsRecruiter& lrr, int64_t rid);
 

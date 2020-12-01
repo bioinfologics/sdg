@@ -70,6 +70,16 @@ namespace sdglib {
         }
     }
 
+    template<typename T1,typename T2>
+    inline void write_flat_unorderedmap(std::ofstream &ofs, const std::unordered_map<T1,T2> &u) {
+        uint64_t count=u.size();
+        ofs.write(reinterpret_cast<const char *>(&count),sizeof(count));
+        for (auto e:u) {
+            ofs.write(reinterpret_cast<const char *>(&e.first),sizeof(T1));
+            ofs.write(reinterpret_cast<const char *>(&e.second),sizeof(T2));
+        }
+    }
+
     inline void read_string(std::ifstream &ifs, std::string &v) {
         uint64_t count;
         ifs.read(reinterpret_cast<char *>(&count),sizeof(count));
@@ -113,6 +123,21 @@ namespace sdglib {
                 v.at(i) = aggr & mask;
         }
         //if (count > 0) ifs.read(reinterpret_cast<char *>(v.data()),sizeof(T)*count);
+    }
+
+    template<typename T1,typename T2>
+    inline void read_flat_unorderedmap(std::ifstream &ifs, std::unordered_map<T1,T2> &u) {
+        uint64_t count;
+        ifs.read(reinterpret_cast<char *>(&count),sizeof(count));
+        u.clear();
+        u.reserve(count);
+        T1 key;
+        T2 value;
+        for (auto i=0;i<count;++i) {
+            ifs.read(reinterpret_cast<char *>(&key),sizeof(key));
+            ifs.read(reinterpret_cast<char *>(&value),sizeof(value));
+            u[key]=value;
+        }
     }
 
     inline void seek_string(std::fstream &wsfile) {

@@ -13,8 +13,10 @@ std::unordered_map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::
 bool pop_node(DistanceGraph& dg, sgNodeID_t node_id, uint64_t read);
 void pop_node_from_all(DistanceGraph& dg, sgNodeID_t nid);
 
+
 //This takes a thread and pops all unhappy/disconnected nodes from it, returns an empty thread if theres too many of them
 std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thread,const DistanceGraph & trg, int max_unhappy=1, float disconnection_rate=.3);
+void make_all_threads_happy(LongReadsRecruiter & lrr, DistanceGraph &trg, int max_unhappy=1, float disconnection_rate=.3);
 
 //class ThreadedGraphSorter {
 //public:
