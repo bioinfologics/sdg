@@ -6,6 +6,7 @@
 
 #include <sdglib/graph/DistanceGraph.hpp>
 #include <sdglib/mappers/LongReadsRecruiter.hpp>
+#include <sdglib/views/NodeView.hpp>
 
 
 class ThreadInfo{
@@ -23,19 +24,26 @@ class ReadThreadsGraph : public DistanceGraph {
 public:
     explicit ReadThreadsGraph(SequenceDistanceGraph & sdg,const std::string &_name="RTG"): DistanceGraph(sdg,_name) {};
 
-    //DistanceGraph subgraph_from_node(sgNodeID_t nid, uint32_t max_distance, int min_links);
-    bool add_thread(int64_t thread_id,const std::vector<NodePosition> & node_positions, bool remove_duplicated=true, int min_thread_nodes=2);
-    bool remove_thread(int64_t thread_id);
-    NodeView get_thread_start_nodeview(int64_t thread_id);
-    NodeView get_thread_end_nodeview(int64_t thread_id);
     void dump(std::string filename);
     void load(std::string filename);
 
+    //ReadThreadsGraph subgraph_from_node(sgNodeID_t nid, uint32_t max_distance, int min_links);
+    bool add_thread(int64_t thread_id,const std::vector<NodePosition> & node_positions, bool remove_duplicated=true, int min_thread_nodes=2);
+    bool remove_thread(int64_t thread_id);
+
+    NodeView get_thread_start_nodeview(int64_t thread_id);
+    NodeView get_thread_end_nodeview(int64_t thread_id);
+    LinkView next_in_thread(sgNodeID_t nid, int64_t thread_id,int64_t link_index=-1);
+    LinkView prev_in_thread(sgNodeID_t nid, int64_t thread_id,int64_t link_index=1);
+    std::vector<sgNodeID_t> all_nids_fw_in_thread(sgNodeID_t nid, int64_t thread_id);
+
+
+
 
     // std::vector<std::pair<int64_t,sgNodeID_t>> sort_graph();
-    //bool pop_node(sgNodeID_t node_id,int64_t thread_id);
-    //bool pop_node_from_all(sgNodeID_t node_id);
-    //std::vector<NodePosition> get_thread(int64_t thread_id);
+    bool pop_node(sgNodeID_t node_id,int64_t thread_id);
+    bool pop_node_from_all(sgNodeID_t node_id);
+    std::vector<NodePosition> get_thread(int64_t thread_id);
     //bool split_thread_at(int64_t thread_id, int lidx); FUTURE
 
     std::unordered_map<int64_t,ThreadInfo> thread_info;

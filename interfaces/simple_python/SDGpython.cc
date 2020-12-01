@@ -189,12 +189,19 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<ReadThreadsGraph,DistanceGraph>(m, "ReadThreadsGraph", "A Read Threads Graph")
             .def(py::init<SequenceDistanceGraph &, const std::string &>(),"","sdg"_a,"name"_a="unnamed",py::return_value_policy::take_ownership)
+            .def("dump",&ReadThreadsGraph::dump, "filename"_a)
+            .def("load",&ReadThreadsGraph::load, "filename"_a)
             .def("add_thread",&ReadThreadsGraph::add_thread, "thread_id"_a, "thread"_a,"remove_duplicated"_a=true,"min_nodes"_a=2)
             .def("remove_thread",&ReadThreadsGraph::remove_thread, "thread_id"_a)
+            .def("get_thread",&ReadThreadsGraph::get_thread, "thread_id"_a)
             .def("get_thread_start_nodeview",&ReadThreadsGraph::get_thread_start_nodeview, "thread_id"_a)
             .def("get_thread_end_nodeview",&ReadThreadsGraph::get_thread_end_nodeview, "thread_id"_a)
-            .def("dump",&ReadThreadsGraph::dump, "filename"_a)
-            .def("load",&ReadThreadsGraph::load, "filename"_a);
+            .def("next_in_thread",&ReadThreadsGraph::next_in_thread, "nid"_a,"thread_id"_a,"link_index"_a=-1)
+            .def("prev_in_thread",&ReadThreadsGraph::prev_in_thread, "nid"_a,"thread_id"_a,"link_index"_a=-1)
+            .def("all_nids_fw_in_thread",&ReadThreadsGraph::all_nids_fw_in_thread, "nid"_a,"thread_id"_a)
+            .def("pop_node",&ReadThreadsGraph::pop_node,"node_id"_a,"thread_id"_a)
+            .def("pop_node_from_all",&ReadThreadsGraph::pop_node_from_all,"node_id"_a)
+            ;
 
 
     py::class_<SequenceDistanceGraphPath>(m, "SequenceDistanceGraphPath", "SequenceDistanceGraphPath")
