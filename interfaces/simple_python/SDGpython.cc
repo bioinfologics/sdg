@@ -22,6 +22,7 @@
 #include <sdglib/batch_counter/BatchKmersCounter.hpp>
 #include <sdglib/processors/LineFiller.h>
 #include <sdglib/processors/ThreadedGraphSorter.h>
+#include <sdglib/graph/ReadThreadsGraph.hpp>
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -186,6 +187,16 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("load_from_fasta",&SequenceDistanceGraph::load_from_fasta)
             ;
 
+    py::class_<ReadThreadsGraph,DistanceGraph>(m, "ReadThreadsGraph", "A Read Threads Graph")
+            .def(py::init<SequenceDistanceGraph &, const std::string &>(),"","sdg"_a,"name"_a="unnamed",py::return_value_policy::take_ownership)
+            .def("add_thread",&ReadThreadsGraph::add_thread, "thread_id"_a, "thread"_a,"remove_duplicated"_a=true,"min_nodes"_a=2)
+            .def("remove_thread",&ReadThreadsGraph::remove_thread, "thread_id"_a)
+            .def("get_thread_start_nodeview",&ReadThreadsGraph::get_thread_start_nodeview, "thread_id"_a)
+            .def("get_thread_end_nodeview",&ReadThreadsGraph::get_thread_end_nodeview, "thread_id"_a)
+            .def("dump",&ReadThreadsGraph::dump, "filename"_a)
+            .def("load",&ReadThreadsGraph::load, "filename"_a);
+
+
     py::class_<SequenceDistanceGraphPath>(m, "SequenceDistanceGraphPath", "SequenceDistanceGraphPath")
             .def(py::init<const SequenceDistanceGraph &,const std::vector<sgNodeID_t> >(),"","sdg"_a,"nodes"_a,py::return_value_policy::take_ownership)
             .def("sequence", &SequenceDistanceGraphPath::sequence)
@@ -323,7 +334,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("out",&PerfectMatchesMergeSorter::out)
             ;
 
-    py::class_<LongReadsRecruiter>(m, "LongReadsRecruiter", "A full SDG WorkSpace")
+    py::class_<LongReadsRecruiter>(m, "LongReadsRecruiter", "Long reads exact mapper, threader, etd")
             .def(py::init<SequenceDistanceGraph &, const LongReadsDatastore &,uint8_t, uint16_t>(),"sdg"_a,"datastore"_a,"k"_a=25,"f"_a=50,py::return_value_policy::take_ownership)
             .def_readwrite("read_perfect_matches",&LongReadsRecruiter::read_perfect_matches)
             .def_readwrite("node_reads",&LongReadsRecruiter::node_reads)
@@ -332,7 +343,9 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("read_paths",&LongReadsRecruiter::read_paths)
             .def_readwrite("node_paths",&LongReadsRecruiter::node_paths)
             .def("dump",&LongReadsRecruiter::dump,"filename"_a)
+            .def("dump_threads",&LongReadsRecruiter::dump,"filename"_a)
             .def("load",&LongReadsRecruiter::load,"filename"_a)
+            .def("load_threads",&LongReadsRecruiter::load,"filename"_a)
             .def("map_old",&LongReadsRecruiter::perfect_mappings,"hit_size"_a=21,"first_read"_a=1,"last_read"_a=0)
             .def("map",&LongReadsRecruiter::map,"hit_size"_a=21,"first_read"_a=1,"last_read"_a=0)
             .def("recruit",&LongReadsRecruiter::recruit_reads,"hit_size"_a=21,"hit_count"_a=1,"first_read"_a=1,"last_read"_a=0)
@@ -340,6 +353,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("thread_reads",&LongReadsRecruiter::thread_reads,"end_size"_a=500,"end_matches"_a=2)
             .def("simple_thread_reads",&LongReadsRecruiter::simple_thread_reads)
             .def("dg_from_threads",&LongReadsRecruiter::dg_from_threads,"multi_link"_a=false,"remove_duplicated"_a=false,"min_thread_nodes"_a=1)
+            .def("rtg_from_threads",&LongReadsRecruiter::rtg_from_threads,"remove_duplicated"_a=false,"min_thread_nodes"_a=1)
             .def("endmatches_to_positions",&LongReadsRecruiter::endmatches_to_positions)
             .def("thread_and_pop",&LongReadsRecruiter::thread_and_pop)
             .def("path_fw",&LongReadsRecruiter::path_fw,"read_id"_a,"node"_a)

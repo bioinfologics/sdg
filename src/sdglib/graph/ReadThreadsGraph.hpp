@@ -24,7 +24,7 @@ public:
     explicit ReadThreadsGraph(SequenceDistanceGraph & sdg,const std::string &_name="RTG"): DistanceGraph(sdg,_name) {};
 
     //DistanceGraph subgraph_from_node(sgNodeID_t nid, uint32_t max_distance, int min_links);
-    bool add_thread(int64_t thread_id,const std::vector<NodePosition> & node_positions, bool remove_duplicated, int min_thread_nodes);
+    bool add_thread(int64_t thread_id,const std::vector<NodePosition> & node_positions, bool remove_duplicated=true, int min_thread_nodes=2);
     bool remove_thread(int64_t thread_id);
     NodeView get_thread_start_nodeview(int64_t thread_id);
     NodeView get_thread_end_nodeview(int64_t thread_id);
