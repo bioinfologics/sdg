@@ -4,9 +4,16 @@
 
 #pragma once
 
-#include <sdglib/mappers/LongReadsRecruiter.hpp>
 #include <sdglib/graph/DistanceGraph.hpp>
+#include <sdglib/mappers/LongReadsRecruiter.hpp>
 
+
+class ThreadInfo{
+public:
+    sgNodeID_t start=0;
+    sgNodeID_t end=0;
+    uint16_t link_count=0;
+};
 
 /**
  * The ReadThreadsGraph is a DistanceGraph where the links form read threads, it has added conditions and functions to
@@ -14,17 +21,23 @@
  */
 class ReadThreadsGraph : public DistanceGraph {
 public:
-    explicit ReadThreadsGraph(SequenceDistanceGraph & sdg): DistanceGraph(sdg,"SDG") {};
+    explicit ReadThreadsGraph(SequenceDistanceGraph & sdg,const std::string &_name="RTG"): DistanceGraph(sdg,_name) {};
 
     //DistanceGraph subgraph_from_node(sgNodeID_t nid, uint32_t max_distance, int min_links);
     bool add_thread(int64_t thread_id,const std::vector<NodePosition> & node_positions, bool remove_duplicated, int min_thread_nodes);
     bool remove_thread(int64_t thread_id);
+    NodeView get_thread_start_nodeview(int64_t thread_id);
+    NodeView get_thread_end_nodeview(int64_t thread_id);
+    void dump(std::string filename);
+    void load(std::string filename);
+
+
     // std::vector<std::pair<int64_t,sgNodeID_t>> sort_graph();
     //bool pop_node(sgNodeID_t node_id,int64_t thread_id);
     //bool pop_node_from_all(sgNodeID_t node_id);
     //std::vector<NodePosition> get_thread(int64_t thread_id);
     //bool split_thread_at(int64_t thread_id, int lidx); FUTURE
 
-    std::unordered_map<int64_t,std::pair<sgNodeID_t,sgNodeID_t>> thread_ends;
+    std::unordered_map<int64_t,ThreadInfo> thread_info;
     //TODO: maybe save the exact positions of nodes in threads to directly compute distances between any two?
 };

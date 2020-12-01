@@ -5,6 +5,18 @@
 #include "ReadThreadsGraph.hpp"
 #include <sdglib/views/NodeView.hpp>
 
+void ReadThreadsGraph::dump(std::string filename) {
+    std::ofstream ofs(filename);
+    DistanceGraph::write(ofs);
+    sdglib::write_flat_unorderedmap(ofs,thread_info);
+}
+
+void ReadThreadsGraph::load(std::string filename) {
+    std::ifstream ifs(filename);
+    DistanceGraph::read(ifs);
+    sdglib::read_flat_unorderedmap(ifs,thread_info);
+}
+
 bool ReadThreadsGraph::add_thread(int64_t thread_id, const std::vector<NodePosition> &node_positions, bool remove_duplicated, int min_thread_nodes) {
     std::unordered_set<sgNodeID_t> seen,duplicated;
     if (node_positions.size()<min_thread_nodes) return false;
@@ -31,16 +43,14 @@ bool ReadThreadsGraph::add_thread(int64_t thread_id, const std::vector<NodePosit
     }
     if (last_valid_i==-1) return false;
     sgNodeID_t end2=-node_positions[last_valid_i].node;
-    thread_ends[thread_id]={end1,end2};
+    thread_info[thread_id]={end1, end2, lidx};
     return true;
 }
 
 bool ReadThreadsGraph::remove_thread(int64_t thread_id) {
     thread_id=llabs(thread_id);
-    if (thread_ends.count(thread_id)==0) return false;
-    auto ends=thread_ends[thread_id];
-    thread_ends.erase(thread_id);
-    auto next_nid=ends.first;
+    if (thread_info.count(thread_id) == 0) return false;
+    auto next_nid=thread_info[thread_id].start;
     int16_t next_link=0;
     bool link_deleted=false;
     do {
@@ -56,6 +66,14 @@ bool ReadThreadsGraph::remove_thread(int64_t thread_id) {
         }
 
     } while (link_deleted);
+    thread_info.erase(thread_id);
     return true;
 }
 
+NodeView ReadThreadsGraph::get_thread_start_nodeview(int64_t thread_id) {
+    return get_nodeview((thread_id>0 ? thread_info[thread_id].start : thread_info[-thread_id].end));
+}
+
+NodeView ReadThreadsGraph::get_thread_end_nodeview(int64_t thread_id) {
+    return get_thread_start_nodeview(-thread_id);
+}
