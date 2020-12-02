@@ -151,7 +151,7 @@ ReadThreadsGraph ReadThreadsGraph::local_graph(sgNodeID_t nid, uint64_t distance
         std::vector<NodePosition> new_thread;
         new_thread.reserve(thread.size());
         for (const auto &np:thread) {
-            if ((np.start < first_start and np.end >= first_start - distance) or
+            if (llabs(np.node)==nid or (np.start < first_start and np.end >= first_start - distance) or
                 (np.end > last_end and np.start <= last_end + distance))
                 new_thread.push_back(np);
         }
