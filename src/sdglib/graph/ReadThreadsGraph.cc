@@ -70,12 +70,12 @@ bool ReadThreadsGraph::remove_thread(int64_t thread_id) {
     return true;
 }
 
-NodeView ReadThreadsGraph::get_thread_start_nodeview(int64_t thread_id) {
+NodeView ReadThreadsGraph::thread_start_nodeview(int64_t thread_id) {
     return get_nodeview((thread_id>0 ? thread_info[thread_id].start : thread_info[-thread_id].end));
 }
 
-NodeView ReadThreadsGraph::get_thread_end_nodeview(int64_t thread_id) {
-    return get_thread_start_nodeview(-thread_id);
+NodeView ReadThreadsGraph::thread_end_nodeview(int64_t thread_id) {
+    return thread_start_nodeview(-thread_id);
 }
 
 LinkView ReadThreadsGraph::next_in_thread(sgNodeID_t nid, int64_t thread_id, int64_t link_index) {
@@ -128,6 +128,39 @@ std::vector<sgNodeID_t> ReadThreadsGraph::all_nids_fw_in_thread(sgNodeID_t nid, 
     return nodes;
 }
 
+ReadThreadsGraph ReadThreadsGraph::local_graph(sgNodeID_t nid, uint64_t distance, uint16_t min_links) {
+    ReadThreadsGraph lrtg(sdg,"local_rtg_"+std::to_string(nid)+"_"+std::to_string(distance)+"_"+std::to_string(min_links));
+    nid=llabs(nid);
+    for (auto tid:node_threads(nid)){
+        auto thread=get_thread(tid);
+        //find first start and last end of node
+        uint64_t first_start=10000000000,last_end=0;
+        for (const auto &np:thread){
+            if (llabs(np.node)==nid){
+                if (np.start<first_start) first_start=np.start;
+                if (np.end>last_end) last_end=np.end;
+            }
+        }
+        //copy only nodes within the range into the new thread
+        std::vector<NodePosition> new_thread;
+        new_thread.reserve(thread.size());
+        for (const auto &np:thread) {
+            if ((np.start < first_start and np.end >= first_start - distance) or
+                (np.end > last_end and np.start <= last_end + distance))
+                new_thread.push_back(np);
+        }
+        //insert new thread into the local graph
+        lrtg.add_thread(tid,new_thread);
+    }
+    //for each node in the new graph, if it doesnt have enough links, pop from all
+    for (auto nv:lrtg.get_all_nodeviews(false,false)){
+        if (lrtg.node_threads(nv.node_id()).size()<min_links) lrtg.pop_node_from_all(nv.node_id());
+    }
+
+    return lrtg;
+
+}
+
 std::vector<NodePosition> ReadThreadsGraph::get_thread(int64_t thread_id) {
     std::vector<NodePosition> thread;
     if (thread_info.count(llabs(thread_id))==0) return {};
@@ -147,7 +180,7 @@ std::vector<NodePosition> ReadThreadsGraph::get_thread(int64_t thread_id) {
         if (nid==0) nid=s;
         else {
             p+=sdg.get_node_size(nid);
-            auto ln=next_in_thread(nid,thread_id,lc);
+            auto ln=next_in_thread(nid,llabs(thread_id),lc);
             nid=ln.node().node_id();
             p+=ln.distance();
             lc+=link_increment;
@@ -175,9 +208,7 @@ bool ReadThreadsGraph::pop_node(sgNodeID_t node_id, int64_t thread_id) {
 }
 
 bool ReadThreadsGraph::pop_node_from_all(sgNodeID_t node_id) {
-    std::unordered_set<sgNodeID_t> thread_ids;
-    for (auto l: get_nodeview(node_id).next()) thread_ids.insert(l.support().id);
-    for (auto l: get_nodeview(node_id).prev()) thread_ids.insert(l.support().id);
+    auto thread_ids=node_threads(node_id);
     if (thread_ids.size()==0) return false;
     for(auto tid:thread_ids) pop_node(node_id,tid);
     return true;
