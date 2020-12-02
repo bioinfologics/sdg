@@ -114,6 +114,12 @@ LinkView ReadThreadsGraph::prev_in_thread(sgNodeID_t nid, int64_t thread_id, int
     return LinkView(NodeView(this,pnid),d,s);
 }
 
+std::unordered_set<uint64_t> ReadThreadsGraph::node_threads(sgNodeID_t nid) {
+    std::unordered_set<uint64_t> thread_ids;
+    for (auto l: get_nodeview(nid).next()) thread_ids.insert(l.support().id);
+    for (auto l: get_nodeview(nid).prev()) thread_ids.insert(l.support().id);
+    return thread_ids;
+}
 
 std::vector<sgNodeID_t> ReadThreadsGraph::all_nids_fw_in_thread(sgNodeID_t nid, int64_t thread_id) {
     //TODO: this won't work if the thread has duplicated nodes.

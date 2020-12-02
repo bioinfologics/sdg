@@ -199,6 +199,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("next_in_thread",&ReadThreadsGraph::next_in_thread, "nid"_a,"thread_id"_a,"link_index"_a=-1)
             .def("prev_in_thread",&ReadThreadsGraph::prev_in_thread, "nid"_a,"thread_id"_a,"link_index"_a=-1)
             .def("all_nids_fw_in_thread",&ReadThreadsGraph::all_nids_fw_in_thread, "nid"_a,"thread_id"_a)
+            .def("local_graph",&ReadThreadsGraph::local_graph, "node_id"_a,"distance"_a,"min_links"_a)
             .def("pop_node",&ReadThreadsGraph::pop_node,"node_id"_a,"thread_id"_a)
             .def("pop_node_from_all",&ReadThreadsGraph::pop_node_from_all,"node_id"_a)
             ;
