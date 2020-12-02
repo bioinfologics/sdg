@@ -130,9 +130,10 @@ std::vector<sgNodeID_t> ReadThreadsGraph::all_nids_fw_in_thread(sgNodeID_t nid, 
 
 std::vector<NodePosition> ReadThreadsGraph::get_thread(int64_t thread_id) {
     std::vector<NodePosition> thread;
+    if (thread_info.count(llabs(thread_id))==0) return {};
     auto ti=thread_info[llabs(thread_id)];
     auto s=ti.start;
-        int64_t lc=0;
+    int64_t lc=0;
     int link_increment=1;
     if (thread_id<0) {
         s=ti.end;
