@@ -134,13 +134,13 @@ std::vector<sgNodeID_t> ReadThreadsGraph::all_nids_fw_in_thread(sgNodeID_t nid, 
     return nodes;
 }
 
-ReadThreadsGraph ReadThreadsGraph::local_graph(sgNodeID_t nid, uint64_t distance, uint16_t min_links) {
+ReadThreadsGraph ReadThreadsGraph::local_graph(sgNodeID_t nid, int64_t distance, uint16_t min_links) {
     ReadThreadsGraph lrtg(sdg,"local_rtg_"+std::to_string(nid)+"_"+std::to_string(distance)+"_"+std::to_string(min_links));
     nid=llabs(nid);
     for (auto tid:node_threads(nid)){
         auto thread=get_thread(tid);
         //find first start and last end of node
-        uint64_t first_start=10000000000,last_end=0;
+        int64_t first_start=10000000000,last_end=0;
         for (const auto &np:thread){
             if (llabs(np.node)==nid){
                 if (np.start<first_start) first_start=np.start;

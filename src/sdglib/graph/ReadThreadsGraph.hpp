@@ -36,7 +36,7 @@ public:
     LinkView next_in_thread(sgNodeID_t nid, int64_t thread_id,int64_t link_index=-1);
     LinkView prev_in_thread(sgNodeID_t nid, int64_t thread_id,int64_t link_index=1);
     std::vector<sgNodeID_t> all_nids_fw_in_thread(sgNodeID_t nid, int64_t thread_id);
-    ReadThreadsGraph local_graph(sgNodeID_t nid,uint64_t distance,uint16_t min_links);
+    ReadThreadsGraph local_graph(sgNodeID_t nid,int64_t distance,uint16_t min_links);
 
 
     std::unordered_set<uint64_t> node_threads(sgNodeID_t nid);
