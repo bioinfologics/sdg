@@ -204,6 +204,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("pop_node_from_all",&ReadThreadsGraph::pop_node_from_all,"node_id"_a)
             .def("flip_thread",&ReadThreadsGraph::flip_thread,"thread_id"_a)
             .def("node_threads",&ReadThreadsGraph::node_threads,"node_id"_a)
+            .def("node_thread_neighbours",&ReadThreadsGraph::node_thread_neighbours,"node_id"_a)
             ;
 
 

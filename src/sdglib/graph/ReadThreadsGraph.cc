@@ -124,12 +124,25 @@ std::unordered_set<uint64_t> ReadThreadsGraph::node_threads(sgNodeID_t nid) {
 std::vector<sgNodeID_t> ReadThreadsGraph::all_nids_fw_in_thread(sgNodeID_t nid, int64_t thread_id) {
     //TODO: this won't work if the thread has duplicated nodes.
     std::vector<sgNodeID_t> nodes;
-    auto end1=-thread_info[llabs(thread_id)].start;
-    auto end2=-thread_info[llabs(thread_id)].end;
-    auto nnid=nid;
-    while (nnid!=end1 and nnid!=end2) {
-        nnid=next_in_thread(nid,thread_id).node().node_id();
-        nodes.emplace_back(nnid);
+    int ncf=0;
+    int ncb=0;
+    int np=-1;
+    auto t=get_thread(thread_id);
+    for (auto i=0;i<t.size();++i){
+        if (t[i].node==nid) {
+            ++ncf;
+            np=i;
+        }
+        else if (t[i].node==nid) {
+            ++ncb;
+            np=i;
+        }
+    }
+    if (ncf==1 and ncb==0){
+        for (int i=np+1;i<t.size();++i) nodes.emplace_back(t[i].node);
+    }
+    if (ncf==0 and ncb==1){
+        for (int i=np-1;i<-1;--i) nodes.emplace_back(-t[i].node);
     }
     return nodes;
 }
@@ -204,6 +217,14 @@ bool ReadThreadsGraph::flip_thread(int64_t thread_id) {
     remove_thread(thread_id);
     add_thread(thread_id,rt);
     return true;
+}
+
+std::unordered_map<sgNodeID_t, uint64_t> ReadThreadsGraph::node_thread_neighbours(sgNodeID_t nid) {
+    std::unordered_map<sgNodeID_t, uint64_t> counts;
+    for (auto tid:node_threads(nid)){
+        for (auto &np:get_thread(tid)) counts[llabs(np.node)]+=1;
+    }
+    return counts;
 }
 
 bool ReadThreadsGraph::pop_node(sgNodeID_t node_id, int64_t thread_id) {
