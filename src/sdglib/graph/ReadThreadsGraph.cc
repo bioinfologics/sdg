@@ -265,7 +265,7 @@ std::vector<std::pair<uint64_t,sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_po
                 }
                 if (supported<min_supported) private_popping_list.emplace_back(tid,nid);
             }
-            if (++nc%10000) sdglib::OutputLog()<<nc<<" nodes analysed"<<std::endl;
+            if (++nc%10000==0) sdglib::OutputLog()<<nc<<" nodes analysed"<<std::endl;
         }
 #pragma omp critical
         popping_list.insert(popping_list.end(),private_popping_list.cbegin(),private_popping_list.cend());
@@ -290,6 +290,42 @@ bool ReadThreadsGraph::pop_node(sgNodeID_t node_id, int64_t thread_id) {
     remove_thread(thread_id);
     add_thread(thread_id,new_thread,false);
     return true;
+}
+
+bool ReadThreadsGraph::pop_nodes(std::vector<sgNodeID_t> node_ids, int64_t thread_id) {
+    //Remove node, if node was start, update thread info to make the next node
+    //check what happens when the node appears more than once in the thread
+    //renumber links
+    //update link count on threadinfo
+    //or.... just get the thread out, remove the positions that have the node, and add the thread back.
+    std::unordered_set<sgNodeID_t> nids;
+    for (auto &nid:node_ids) nids.insert(llabs(nid));
+    thread_id=llabs(thread_id);
+    auto thread=get_thread(thread_id);
+    std::vector<NodePosition> new_thread;
+    new_thread.reserve(thread.size());
+    for (auto np:thread) if (nids.count(llabs(np.node))==0) new_thread.push_back(np);
+    if (thread.size()==new_thread.size()) return false;
+    remove_thread(thread_id);
+    add_thread(thread_id,new_thread,false);
+    return true;
+}
+
+void ReadThreadsGraph::apply_popping_list(const std::vector<std::pair<uint64_t, sgNodeID_t>> &popping_list) {
+    //if list is not sorted, this will be as slow as popping each node, or more!
+    std::vector<sgNodeID_t> node_ids;
+    if (popping_list.empty()) return;
+    int64_t last_tid=popping_list[0].first;
+    for (auto &tn:popping_list){
+        if (tn.first!=last_tid){
+            pop_nodes(node_ids,last_tid);
+            node_ids.clear();
+            last_tid=tn.first;
+        }
+        node_ids.emplace_back(tn.second);
+
+    }
+    pop_nodes(node_ids,last_tid);
 }
 
 bool ReadThreadsGraph::pop_node_from_all(sgNodeID_t node_id) {
