@@ -38,15 +38,18 @@ public:
     std::vector<sgNodeID_t> all_nids_fw_in_thread(sgNodeID_t nid, int64_t thread_id);
     ReadThreadsGraph local_graph(sgNodeID_t nid,int64_t distance,uint16_t min_links);
 
-
     std::unordered_set<uint64_t> node_threads(sgNodeID_t nid);
     // std::vector<std::pair<int64_t,sgNodeID_t>> sort_graph();
     bool pop_node(sgNodeID_t node_id,int64_t thread_id);
+    bool pop_nodes(std::vector<sgNodeID_t> node_ids, int64_t thread_id);
     bool pop_node_from_all(sgNodeID_t node_id);
     std::vector<NodePosition> get_thread(int64_t thread_id);
     bool flip_thread(int64_t thread_id);
     //bool split_thread_at(int64_t thread_id, int lidx); FUTURE
-
+    std::unordered_map<sgNodeID_t,uint64_t> node_thread_neighbours(sgNodeID_t nid);
+    int clean_node(sgNodeID_t node_id, int min_supported=4, int min_support=1);
+    std::vector<std::pair<uint64_t,sgNodeID_t>> clean_all_nodes_popping_list(int min_supported=4, int min_support=1);
+    void apply_popping_list(const std::vector<std::pair<uint64_t,sgNodeID_t>> &popping_list);
     std::unordered_map<int64_t,ThreadInfo> thread_info;
     //TODO: maybe save the exact positions of nodes in threads to directly compute distances between any two?
 };

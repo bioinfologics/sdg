@@ -4,6 +4,7 @@
 
 #include "ReadThreadsGraph.hpp"
 #include <sdglib/views/NodeView.hpp>
+#include <atomic>
 
 void ReadThreadsGraph::dump(std::string filename) {
     std::ofstream ofs(filename);
@@ -124,12 +125,25 @@ std::unordered_set<uint64_t> ReadThreadsGraph::node_threads(sgNodeID_t nid) {
 std::vector<sgNodeID_t> ReadThreadsGraph::all_nids_fw_in_thread(sgNodeID_t nid, int64_t thread_id) {
     //TODO: this won't work if the thread has duplicated nodes.
     std::vector<sgNodeID_t> nodes;
-    auto end1=-thread_info[llabs(thread_id)].start;
-    auto end2=-thread_info[llabs(thread_id)].end;
-    auto nnid=nid;
-    while (nnid!=end1 and nnid!=end2) {
-        nnid=next_in_thread(nid,thread_id).node().node_id();
-        nodes.emplace_back(nnid);
+    int ncf=0;
+    int ncb=0;
+    int np=-1;
+    auto t=get_thread(thread_id);
+    for (auto i=0;i<t.size();++i){
+        if (t[i].node==nid) {
+            ++ncf;
+            np=i;
+        }
+        else if (t[i].node==nid) {
+            ++ncb;
+            np=i;
+        }
+    }
+    if (ncf==1 and ncb==0){
+        for (int i=np+1;i<t.size();++i) nodes.emplace_back(t[i].node);
+    }
+    if (ncf==0 and ncb==1){
+        for (int i=np-1;i<-1;--i) nodes.emplace_back(-t[i].node);
     }
     return nodes;
 }
@@ -206,6 +220,61 @@ bool ReadThreadsGraph::flip_thread(int64_t thread_id) {
     return true;
 }
 
+std::unordered_map<sgNodeID_t, uint64_t> ReadThreadsGraph::node_thread_neighbours(sgNodeID_t nid) {
+    std::unordered_map<sgNodeID_t, uint64_t> counts;
+    for (auto tid:node_threads(nid)){
+        for (auto &np:get_thread(tid)) counts[llabs(np.node)]+=1;
+    }
+    return counts;
+}
+
+int ReadThreadsGraph::clean_node(sgNodeID_t nid, int min_supported, int min_support) {
+    auto n1tn=node_thread_neighbours(nid);
+    std::vector<sgNodeID_t> to_pop;
+    for (auto &tid:node_threads(nid)){
+        int supported=0,unsupported=0;
+        for (auto np:get_thread(tid)){
+            if (n1tn[llabs(np.node)]>min_support) ++supported;
+            else ++unsupported;
+        }
+        if (supported<min_supported) to_pop.emplace_back(tid);
+    }
+
+    for (auto tid:to_pop)
+        pop_node(nid,tid);
+    return to_pop.size();
+}
+
+std::vector<std::pair<uint64_t,sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_popping_list( int min_supported,
+                                                                                       int min_support) {
+    std::vector<std::pair<uint64_t,sgNodeID_t>> popping_list;
+    auto all_nvs=get_all_nodeviews(false,false);
+    std::atomic<uint64_t> nc(0);
+#pragma omp parallel
+    {
+        std::vector<std::pair<uint64_t,sgNodeID_t>> private_popping_list;
+#pragma omp for
+        for (auto i=0;i<all_nvs.size();++i){
+            auto nid=all_nvs[i].node_id();
+            auto n1tn=node_thread_neighbours(nid);
+            for (auto &tid:node_threads(nid)){
+                int supported=0,unsupported=0;
+                for (auto np:get_thread(tid)){
+                    if (n1tn[llabs(np.node)]>min_support) ++supported;
+                    else ++unsupported;
+                }
+                if (supported<min_supported) private_popping_list.emplace_back(tid,nid);
+            }
+            if (++nc%10000==0) sdglib::OutputLog()<<nc<<" nodes analysed"<<std::endl;
+        }
+#pragma omp critical
+        popping_list.insert(popping_list.end(),private_popping_list.cbegin(),private_popping_list.cend());
+
+    };
+    std::sort(popping_list.begin(),popping_list.end());
+    return popping_list;
+}
+
 bool ReadThreadsGraph::pop_node(sgNodeID_t node_id, int64_t thread_id) {
     //Remove node, if node was start, update thread info to make the next node
     //check what happens when the node appears more than once in the thread
@@ -221,6 +290,42 @@ bool ReadThreadsGraph::pop_node(sgNodeID_t node_id, int64_t thread_id) {
     remove_thread(thread_id);
     add_thread(thread_id,new_thread,false);
     return true;
+}
+
+bool ReadThreadsGraph::pop_nodes(std::vector<sgNodeID_t> node_ids, int64_t thread_id) {
+    //Remove node, if node was start, update thread info to make the next node
+    //check what happens when the node appears more than once in the thread
+    //renumber links
+    //update link count on threadinfo
+    //or.... just get the thread out, remove the positions that have the node, and add the thread back.
+    std::unordered_set<sgNodeID_t> nids;
+    for (auto &nid:node_ids) nids.insert(llabs(nid));
+    thread_id=llabs(thread_id);
+    auto thread=get_thread(thread_id);
+    std::vector<NodePosition> new_thread;
+    new_thread.reserve(thread.size());
+    for (auto np:thread) if (nids.count(llabs(np.node))==0) new_thread.push_back(np);
+    if (thread.size()==new_thread.size()) return false;
+    remove_thread(thread_id);
+    add_thread(thread_id,new_thread,false);
+    return true;
+}
+
+void ReadThreadsGraph::apply_popping_list(const std::vector<std::pair<uint64_t, sgNodeID_t>> &popping_list) {
+    //if list is not sorted, this will be as slow as popping each node, or more!
+    std::vector<sgNodeID_t> node_ids;
+    if (popping_list.empty()) return;
+    int64_t last_tid=popping_list[0].first;
+    for (auto &tn:popping_list){
+        if (tn.first!=last_tid){
+            pop_nodes(node_ids,last_tid);
+            node_ids.clear();
+            last_tid=tn.first;
+        }
+        node_ids.emplace_back(tn.second);
+
+    }
+    pop_nodes(node_ids,last_tid);
 }
 
 bool ReadThreadsGraph::pop_node_from_all(sgNodeID_t node_id) {

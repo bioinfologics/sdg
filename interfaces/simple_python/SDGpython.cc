@@ -201,9 +201,14 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("all_nids_fw_in_thread",&ReadThreadsGraph::all_nids_fw_in_thread, "nid"_a,"thread_id"_a)
             .def("local_graph",&ReadThreadsGraph::local_graph, "node_id"_a,"distance"_a,"min_links"_a)
             .def("pop_node",&ReadThreadsGraph::pop_node,"node_id"_a,"thread_id"_a)
+            .def("pop_nodes",&ReadThreadsGraph::pop_nodes,"node_ids"_a,"thread_id"_a)
             .def("pop_node_from_all",&ReadThreadsGraph::pop_node_from_all,"node_id"_a)
             .def("flip_thread",&ReadThreadsGraph::flip_thread,"thread_id"_a)
             .def("node_threads",&ReadThreadsGraph::node_threads,"node_id"_a)
+            .def("node_thread_neighbours",&ReadThreadsGraph::node_thread_neighbours,"node_id"_a)
+            .def("clean_node",&ReadThreadsGraph::clean_node,"node_id"_a,"min_supported"_a=4,"min_support"_a=1)
+            .def("clean_all_nodes_popping_list",&ReadThreadsGraph::clean_all_nodes_popping_list,"min_supported"_a=4,"min_support"_a=1)
+            .def("apply_popping_list",&ReadThreadsGraph::apply_popping_list,"popping_list"_a)
             ;
 
 
