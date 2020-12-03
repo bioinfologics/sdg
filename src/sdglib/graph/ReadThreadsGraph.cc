@@ -201,6 +201,7 @@ bool ReadThreadsGraph::flip_thread(int64_t thread_id) {
     thread_id=llabs(thread_id);
     if (thread_info.count(llabs(thread_id))==0) return false;
     auto rt=get_thread(-thread_id);
+    remove_thread(thread_id);
     add_thread(thread_id,rt);
     return true;
 }
