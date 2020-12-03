@@ -196,6 +196,15 @@ std::vector<NodePosition> ReadThreadsGraph::get_thread(int64_t thread_id) {
     return thread;
 }
 
+//TODO: this could be much faster by reversing the ends in thread info and updating the link index all along.
+bool ReadThreadsGraph::flip_thread(int64_t thread_id) {
+    thread_id=llabs(thread_id);
+    if (thread_info.count(llabs(thread_id))==0) return false;
+    auto rt=get_thread(-thread_id);
+    add_thread(thread_id,rt);
+    return true;
+}
+
 bool ReadThreadsGraph::pop_node(sgNodeID_t node_id, int64_t thread_id) {
     //Remove node, if node was start, update thread info to make the next node
     //check what happens when the node appears more than once in the thread

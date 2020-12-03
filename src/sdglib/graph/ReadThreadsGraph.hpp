@@ -44,6 +44,7 @@ public:
     bool pop_node(sgNodeID_t node_id,int64_t thread_id);
     bool pop_node_from_all(sgNodeID_t node_id);
     std::vector<NodePosition> get_thread(int64_t thread_id);
+    bool flip_thread(int64_t thread_id);
     //bool split_thread_at(int64_t thread_id, int lidx); FUTURE
 
     std::unordered_map<int64_t,ThreadInfo> thread_info;
