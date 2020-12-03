@@ -4,6 +4,7 @@
 
 #include "ReadThreadsGraph.hpp"
 #include <sdglib/views/NodeView.hpp>
+#include <atomic>
 
 void ReadThreadsGraph::dump(std::string filename) {
     std::ofstream ofs(filename);
@@ -236,12 +237,42 @@ int ReadThreadsGraph::clean_node(sgNodeID_t nid, int min_supported, int min_supp
             if (n1tn[llabs(np.node)]>min_support) ++supported;
             else ++unsupported;
         }
-        if (unsupported<min_support) to_pop.emplace_back(tid);
+        if (supported<min_supported) to_pop.emplace_back(tid);
     }
 
     for (auto tid:to_pop)
         pop_node(nid,tid);
     return to_pop.size();
+}
+
+std::vector<std::pair<uint64_t,sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_popping_list( int min_supported,
+                                                                                       int min_support) {
+    std::vector<std::pair<uint64_t,sgNodeID_t>> popping_list;
+    auto all_nvs=get_all_nodeviews(false,false);
+    std::atomic<uint64_t> nc(0);
+#pragma omp parallel
+    {
+        std::vector<std::pair<uint64_t,sgNodeID_t>> private_popping_list;
+#pragma omp for
+        for (auto i=0;i<all_nvs.size();++i){
+            auto nid=all_nvs[i].node_id();
+            auto n1tn=node_thread_neighbours(nid);
+            for (auto &tid:node_threads(nid)){
+                int supported=0,unsupported=0;
+                for (auto np:get_thread(tid)){
+                    if (n1tn[llabs(np.node)]>min_support) ++supported;
+                    else ++unsupported;
+                }
+                if (supported<min_supported) private_popping_list.emplace_back(tid,nid);
+            }
+            if (++nc%10000) sdglib::OutputLog()<<nc<<" nodes analysed"<<std::endl;
+        }
+#pragma omp critical
+        popping_list.insert(popping_list.end(),private_popping_list.cbegin(),private_popping_list.cend());
+
+    };
+    std::sort(popping_list.begin(),popping_list.end());
+    return popping_list;
 }
 
 bool ReadThreadsGraph::pop_node(sgNodeID_t node_id, int64_t thread_id) {

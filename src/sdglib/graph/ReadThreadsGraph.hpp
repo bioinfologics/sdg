@@ -48,6 +48,7 @@ public:
     //bool split_thread_at(int64_t thread_id, int lidx); FUTURE
     std::unordered_map<sgNodeID_t,uint64_t> node_thread_neighbours(sgNodeID_t nid);
     int clean_node(sgNodeID_t node_id, int min_supported=4, int min_support=1);
+    std::vector<std::pair<uint64_t,sgNodeID_t>> clean_all_nodes_popping_list(int min_supported=4, int min_support=1);
     std::unordered_map<int64_t,ThreadInfo> thread_info;
     //TODO: maybe save the exact positions of nodes in threads to directly compute distances between any two?
 };
