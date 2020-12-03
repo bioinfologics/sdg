@@ -227,6 +227,23 @@ std::unordered_map<sgNodeID_t, uint64_t> ReadThreadsGraph::node_thread_neighbour
     return counts;
 }
 
+int ReadThreadsGraph::clean_node(sgNodeID_t nid, int min_supported, int min_support) {
+    auto n1tn=node_thread_neighbours(nid);
+    std::vector<sgNodeID_t> to_pop;
+    for (auto &tid:node_threads(nid)){
+        int supported=0,unsupported=0;
+        for (auto np:get_thread(tid)){
+            if (n1tn[llabs(np.node)]>min_support) ++supported;
+            else ++unsupported;
+        }
+        if (unsupported<min_support) to_pop.emplace_back(tid);
+    }
+
+    for (auto tid:to_pop)
+        pop_node(nid,tid);
+    return to_pop.size();
+}
+
 bool ReadThreadsGraph::pop_node(sgNodeID_t node_id, int64_t thread_id) {
     //Remove node, if node was start, update thread info to make the next node
     //check what happens when the node appears more than once in the thread
