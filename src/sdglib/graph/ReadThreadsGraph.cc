@@ -134,13 +134,13 @@ std::vector<sgNodeID_t> ReadThreadsGraph::all_nids_fw_in_thread(sgNodeID_t nid, 
     return nodes;
 }
 
-ReadThreadsGraph ReadThreadsGraph::local_graph(sgNodeID_t nid, uint64_t distance, uint16_t min_links) {
+ReadThreadsGraph ReadThreadsGraph::local_graph(sgNodeID_t nid, int64_t distance, uint16_t min_links) {
     ReadThreadsGraph lrtg(sdg,"local_rtg_"+std::to_string(nid)+"_"+std::to_string(distance)+"_"+std::to_string(min_links));
     nid=llabs(nid);
     for (auto tid:node_threads(nid)){
         auto thread=get_thread(tid);
         //find first start and last end of node
-        uint64_t first_start=10000000000,last_end=0;
+        int64_t first_start=10000000000,last_end=0;
         for (const auto &np:thread){
             if (llabs(np.node)==nid){
                 if (np.start<first_start) first_start=np.start;
@@ -151,7 +151,7 @@ ReadThreadsGraph ReadThreadsGraph::local_graph(sgNodeID_t nid, uint64_t distance
         std::vector<NodePosition> new_thread;
         new_thread.reserve(thread.size());
         for (const auto &np:thread) {
-            if ((np.start < first_start and np.end >= first_start - distance) or
+            if (llabs(np.node)==nid or (np.start < first_start and np.end >= first_start - distance) or
                 (np.end > last_end and np.start <= last_end + distance))
                 new_thread.push_back(np);
         }
@@ -194,6 +194,16 @@ std::vector<NodePosition> ReadThreadsGraph::get_thread(int64_t thread_id) {
         thread.emplace_back(nid,p,p+sdg.get_node_size(nid));
     } while (lc>=0 and lc<ti.link_count);
     return thread;
+}
+
+//TODO: this could be much faster by reversing the ends in thread info and updating the link index all along.
+bool ReadThreadsGraph::flip_thread(int64_t thread_id) {
+    thread_id=llabs(thread_id);
+    if (thread_info.count(llabs(thread_id))==0) return false;
+    auto rt=get_thread(-thread_id);
+    remove_thread(thread_id);
+    add_thread(thread_id,rt);
+    return true;
 }
 
 bool ReadThreadsGraph::pop_node(sgNodeID_t node_id, int64_t thread_id) {

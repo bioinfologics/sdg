@@ -36,7 +36,7 @@ public:
     LinkView next_in_thread(sgNodeID_t nid, int64_t thread_id,int64_t link_index=-1);
     LinkView prev_in_thread(sgNodeID_t nid, int64_t thread_id,int64_t link_index=1);
     std::vector<sgNodeID_t> all_nids_fw_in_thread(sgNodeID_t nid, int64_t thread_id);
-    ReadThreadsGraph local_graph(sgNodeID_t nid,uint64_t distance,uint16_t min_links);
+    ReadThreadsGraph local_graph(sgNodeID_t nid,int64_t distance,uint16_t min_links);
 
 
     std::unordered_set<uint64_t> node_threads(sgNodeID_t nid);
@@ -44,6 +44,7 @@ public:
     bool pop_node(sgNodeID_t node_id,int64_t thread_id);
     bool pop_node_from_all(sgNodeID_t node_id);
     std::vector<NodePosition> get_thread(int64_t thread_id);
+    bool flip_thread(int64_t thread_id);
     //bool split_thread_at(int64_t thread_id, int lidx); FUTURE
 
     std::unordered_map<int64_t,ThreadInfo> thread_info;
