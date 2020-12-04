@@ -245,6 +245,31 @@ int ReadThreadsGraph::clean_node(sgNodeID_t nid, int min_supported, int min_supp
     return to_pop.size();
 }
 
+std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_repeat_nodes_popping_list(int max_threads) {
+    std::vector<std::pair<uint64_t,sgNodeID_t>> popping_list;
+    auto all_nvs=get_all_nodeviews(false,false);
+    std::atomic<uint64_t> nc(0);
+#pragma omp parallel
+    {
+        std::vector<std::pair<uint64_t,sgNodeID_t>> private_popping_list;
+#pragma omp for
+        for (auto i=0;i<all_nvs.size();++i){
+            auto nid=all_nvs[i].node_id();
+            auto nts=node_threads(nid);
+            if (nts.size()>max_threads){
+                for (auto tid:nts)
+                    private_popping_list.emplace_back(tid,nid);
+            }
+            if (++nc%10000==0) sdglib::OutputLog()<<nc<<" nodes analysed"<<std::endl;
+        }
+#pragma omp critical
+        popping_list.insert(popping_list.end(),private_popping_list.cbegin(),private_popping_list.cend());
+
+    };
+    std::sort(popping_list.begin(),popping_list.end());
+    return popping_list;
+}
+
 std::vector<std::pair<uint64_t,sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_popping_list( int min_supported,
                                                                                        int min_support) {
     std::vector<std::pair<uint64_t,sgNodeID_t>> popping_list;
