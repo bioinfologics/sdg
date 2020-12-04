@@ -288,7 +288,7 @@ std::vector<std::pair<uint64_t,sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_po
                     if (n1tn[llabs(np.node)]>min_support) ++supported;
                     else ++unsupported;
                 }
-                if (supported<min_supported) private_popping_list.emplace_back(tid,nid);
+                if (supported<=min_supported) private_popping_list.emplace_back(tid,nid);
             }
             if (++nc%10000==0) sdglib::OutputLog()<<nc<<" nodes analysed"<<std::endl;
         }
