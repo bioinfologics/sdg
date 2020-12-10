@@ -130,7 +130,7 @@ std::vector<sgNodeID_t> ReadThreadsGraph::all_nids_fw_in_thread(sgNodeID_t nid, 
     int np=-1;
     auto t=get_thread(thread_id);
     for (auto i=0;i<t.size();++i){
-        if (t[i].node==nid) {
+        if (t[i].node==-nid) {
             ++ncf;
             np=i;
         }
