@@ -18,7 +18,11 @@ public:
 
 /**
  * The ReadThreadsGraph is a DistanceGraph where the links form read threads, it has added conditions and functions to
- * work directly with threads, as to make it more efficient
+ * work directly with threads, as to make it more efficient.
+ *
+ * The thread graph starts empty, threads are added node by node according to need from a donor read thread graph,
+ * this graph is usually created using the function
+ *
  */
 class ReadThreadsGraph : public DistanceGraph {
 public:
@@ -28,8 +32,8 @@ public:
     void load(std::string filename);
 
     //ReadThreadsGraph subgraph_from_node(sgNodeID_t nid, uint32_t max_distance, int min_links);
-    /**
-     * Add thread to the RTG
+    /** @brief Add thread to the RTG
+     *
      * @param thread_id id of the thread (rid)
      * @param node_positions Vector of NodePosition of the thread
      * @param remove_duplicated if True the thread is deduplicated before is added to the graph
@@ -38,29 +42,30 @@ public:
      */
     bool add_thread(int64_t thread_id,const std::vector<NodePosition> & node_positions, bool remove_duplicated=true, int min_thread_nodes=2);
 
-    /**
-     * Remove a thread from the graph
+    /** @brief Remove a thread from the graph
+     *
      * @param thread_id id of the thread to be removed
      * @return
      */
     bool remove_thread(int64_t thread_id);
 
-    /**
-     * Get the NodeView at the start of the thread
+    /** @brief Get the NodeView at the start of a thread
+     *
      * @param thread_id id of the thread
-     * @return nodeview of the start of the thread
+     * @return nodeview of the start of the selected thread
      */
     NodeView thread_start_nodeview(int64_t thread_id);
 
-    /**
-     * Get the NodeView at the end of the thread
+    /** @brief Get the NodeView at the end of the thread
+     *
      * @param thread_id id of the thread
      * @return NodeView of the and of the thread
      */
     NodeView thread_end_nodeview(int64_t thread_id);
 
-    /**
-     * Get the next link from a node in a thread, if there is more than one or no links throws an exception
+    /** @brief Get the next link from a node in a thread
+     *
+     * If there is more than one or no links throws an exception
      *
      * @param nid node id to get the next index from
      * @param thread_id thread id to get the links from
@@ -68,17 +73,18 @@ public:
      * @return LinkView describing the next link
      */
     LinkView next_in_thread(sgNodeID_t nid, int64_t thread_id,int64_t link_index=-1);
-    /**
-     * Same as next_in_thread but with prev
-     * @param nid
-     * @param thread_id
-     * @param link_index
-     * @return
+
+    /** @brief Same as next_in_thread but with prev
+     *
+     * @param nid node id to get the prev index from
+     * @param thread_id thread id to get the links from
+     * @param link_index order of the link to get (default -1 gets any order)
+     * @return LinkView describing the prev link
      */
     LinkView prev_in_thread(sgNodeID_t nid, int64_t thread_id,int64_t link_index=1);
 
-    /**
-     * From a thread id get all node ids starting from a node.
+    /** @brief From a thread id get all node ids starting from a node.
+     *
      * If nid not in thread_id or nid not exactly once in the selected thread, returns an empty vector
      * @param nid node id to start from
      * @param thread_id thread id
@@ -86,8 +92,8 @@ public:
      */
     std::vector<sgNodeID_t> all_nids_fw_in_thread(sgNodeID_t nid, int64_t thread_id);
 
-    /**
-     * Construct the vecinity thread graph starting from a node
+    /** @brief Construct the neighbouring thread graph starting from a node
+     *
      * @param nid central node
      * @param distance Maximum distance to include a node counting from the central node
      * @param min_links number of links in the thread graph to include a node
@@ -95,15 +101,16 @@ public:
      */
     ReadThreadsGraph local_graph(sgNodeID_t nid,int64_t distance,uint16_t min_links);
 
-    /**
-     * Get all threads that go over the node
+    /** @brief Get all thread ids that go across the node
+     *
      * @param nid node id to get the threads from
      * @return set of thread ids
      */
     std::unordered_set<uint64_t> node_threads(sgNodeID_t nid);
     // std::vector<std::pair<int64_t,sgNodeID_t>> sort_graph();
-    /**
-     * Removes the selected node from the selected thread in the graph (inplace).
+
+    /** @brief Removes the node nid from the thread thread_id in the graph (inplace)
+     *
      * @param node_id node to be removed from the thread, the function is not sign sensitive, removes the node in any
      * direction
      * @param thread_id id of the thread to remove the node from
@@ -111,24 +118,25 @@ public:
      */
     bool pop_node(sgNodeID_t node_id,int64_t thread_id);
 
-    /**
-     * Removes a group of nodes from a thread in the graph (inplace)
+    /** @brief Removes a group of nodes from a thread in the graph (inplace)
+     *
      * @param node_ids vector of node ids to be removed
      * @param thread_id thread_id id of the thread to remove the node from
      * @return true if at least one of the nodes was removed, otherwise false
      */
     bool pop_nodes(std::vector<sgNodeID_t> node_ids, int64_t thread_id);
 
-    /**
-     * Pop the node from all the threads in the graph (inplace). (the pop_node function was executed for all
+    /** @brief Pop the node from all the threads in the graph (inplace)
+     * 
+     * The pop_node function was executed for all
      * threads where the node is present).
      * @param node_id Node id to be popped
      * @return false if the node is not present in any thread true otherwise
      */
     bool pop_node_from_all(sgNodeID_t node_id);
 
-    /**
-     * Get a list of node positions for the thread
+    /** @brief Get a thread as an ordered vector of node positions describing the thread
+     *
      * @param thread_id thread id
      * @return vector of NodePositions for that specific thread
      */
@@ -137,7 +145,8 @@ public:
     bool flip_thread(int64_t thread_id);
     //bool split_thread_at(int64_t thread_id, int lidx); FUTURE
 
-    /**
+    /** @brief Get all the reaching nodes from a graph with the thread support count
+     *
      * Get a map containing all neighbouring nodes to the central node with the corresponding link count
      * @param nid node of interest id
      * @return map where the keys are the neigbouring nodes and the values are the link count for each node in the
