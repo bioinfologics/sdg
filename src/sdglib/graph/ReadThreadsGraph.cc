@@ -300,6 +300,104 @@ std::vector<std::pair<uint64_t,sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_po
     return popping_list;
 }
 
+std::unordered_map<uint64_t,std::set<sgNodeID_t>> ReadThreadsGraph::thread_nodesets(){
+    std::unordered_map<uint64_t,std::set<sgNodeID_t>> tns;
+    for (auto &nv:sdg.get_all_nodeviews(false,false)) {
+        auto nid = nv.node_id();
+        for (auto &tid:node_threads(nid)) {
+            tns[tid].insert(nid);
+        }
+    }
+    return tns;
+}
+
+size_t nodeset_intersection_size(const std::set<sgNodeID_t>& v1, const std::set<sgNodeID_t>& v2)
+{
+    size_t s=0;
+    for (auto p1=v1.cbegin(),p2=v2.cbegin();p1!=v1.cend() and p2!=v2.cend();){
+        if (*p1==*p2) {
+            ++s;
+            ++p1;
+            ++p2;
+        }
+        else if (*p1<*p2) ++p1;
+        else ++p2;
+    }
+    return s;
+}
+
+std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_by_thread_clustering_popping_list(
+        int min_shared, float max_second_perc) {
+    std::vector<std::pair<uint64_t,sgNodeID_t>> popping_list;
+    auto all_nvs=get_all_nodeviews(false,false);
+    std::atomic<uint64_t> nc(0);
+    auto tns=thread_nodesets();
+#pragma omp parallel
+    {
+        std::vector<std::pair<uint64_t,sgNodeID_t>> private_popping_list;
+        std::unordered_map<uint64_t,std::vector<uint64_t>> tconns;
+#pragma omp for
+        for (auto i=0;i<all_nvs.size();++i){
+            auto nid=all_nvs[i].node_id();
+            auto ntids=node_threads(nid);
+
+            //first analyse connections between threads (all-vs-all, but restricted to the node, caching would work too)
+            tconns.clear();
+            for (auto &tid1:ntids)
+                for (auto &tid2:ntids)
+                    if (nodeset_intersection_size(tns[tid1],tns[tid2])>=min_shared) tconns[tid1].emplace_back(tid2);
+            //now cluster threads in the more rudimentary way possible
+            std::vector<std::set<uint64_t>> tclusters;
+            std::unordered_set<uint64_t> used_tids;
+            std::vector<uint64_t>to_explore_tids;
+            for (auto &tid1:ntids){
+                if (used_tids.count(tid1)) continue;
+                tclusters.push_back({tid1});
+                used_tids.insert(tid1);
+                auto to_explore_tids=tconns[tid1];
+                while (not to_explore_tids.empty()){
+                    std::vector<uint64_t> next_to_explore;
+                    for (auto &tid2:to_explore_tids){
+                        if (used_tids.count(tid2)) continue;
+                        tclusters.back().insert(tid2);
+                        used_tids.insert(tid2);
+                        for (auto &tid3:tconns[tid2]){
+                            if (used_tids.count(tid3)) continue;
+                            next_to_explore.push_back(tid3);
+                        }
+                    }
+                    to_explore_tids=next_to_explore;
+                }
+            }
+            //now analyse this clustering
+            if (tclusters.size()==1) continue; //all is as should be
+            //reverse ordering by size
+            std::sort(tclusters.begin(),tclusters.end(),[](const std::set<uint64_t> &a, const std::set<uint64_t> &b){return a.size() < b.size();});
+            //now take those decisions
+            if (tclusters[0].size()*max_second_perc<tclusters[1].size()){
+                //second cluster is too big, pop from all!
+                for (auto &tid:ntids){
+                    private_popping_list.push_back({tid,nid});
+                }
+            }
+            else {
+                //pop from everywhere but the first cluster
+                for (auto &tid:ntids){
+                    if (tclusters[0].count(tid)) continue;
+                    private_popping_list.push_back({tid,nid});
+                }
+            }
+
+            if (++nc%10000==0) sdglib::OutputLog()<<nc<<" nodes analysed"<<std::endl;
+        }
+#pragma omp critical
+        popping_list.insert(popping_list.end(),private_popping_list.cbegin(),private_popping_list.cend());
+
+    };
+    std::sort(popping_list.begin(),popping_list.end());
+    return popping_list;
+}
+
 bool ReadThreadsGraph::pop_node(sgNodeID_t node_id, int64_t thread_id) {
     //Remove node, if node was start, update thread info to make the next node
     //check what happens when the node appears more than once in the thread

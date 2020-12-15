@@ -45,11 +45,13 @@ public:
     bool pop_node_from_all(sgNodeID_t node_id);
     std::vector<NodePosition> get_thread(int64_t thread_id);
     bool flip_thread(int64_t thread_id);
+    std::unordered_map<uint64_t,std::set<sgNodeID_t>> thread_nodesets();
     //bool split_thread_at(int64_t thread_id, int lidx); FUTURE
     std::unordered_map<sgNodeID_t,uint64_t> node_thread_neighbours(sgNodeID_t nid);
     int clean_node(sgNodeID_t node_id, int min_supported=4, int min_support=1);
     std::vector<std::pair<uint64_t,sgNodeID_t>> clean_repeat_nodes_popping_list(int max_threads=200);
     std::vector<std::pair<uint64_t,sgNodeID_t>> clean_all_nodes_popping_list(int min_supported=4, int min_support=1);
+    std::vector<std::pair<uint64_t,sgNodeID_t>> clean_all_nodes_by_thread_clustering_popping_list(int min_shared=4, float max_second_perc=.1);
     void apply_popping_list(const std::vector<std::pair<uint64_t,sgNodeID_t>> &popping_list);
     std::unordered_map<int64_t,ThreadInfo> thread_info;
     //TODO: maybe save the exact positions of nodes in threads to directly compute distances between any two?
