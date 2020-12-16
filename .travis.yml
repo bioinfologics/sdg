@@ -4,25 +4,25 @@ sudo: false
 
 jobs:
   include:
-    - stage: compile osx
-      os: osx
-      osx_image: xcode10.1
-      before_install:
-        - brew install gcc@6
-        - brew install git-lfs
-        - git lfs install
-      before_script:
-        - git lfs pull
-      env:
-        - CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6"
-      deploy:
-        provider: releases
-        api_key: $GITHUB_TOKEN
-        draft: true
-        skip_cleanup: true
-        file: build/sdg-${TRAVIS_OS_NAME}.tar.gz
-        on:
-          tags: true
+#    - stage: compile osx
+#      os: osx
+#      osx_image: xcode10.1
+#      before_install:
+#        - brew install gcc@6
+#        - brew install git-lfs
+#        - git lfs install
+#      before_script:
+#        - git lfs pull
+#      env:
+#        - CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc-6 -DCMAKE_CXX_COMPILER=g++-6"
+#      deploy:
+#        provider: releases
+#        api_key: $GITHUB_TOKEN
+#        draft: true
+#        skip_cleanup: true
+#        file: build/sdg-${TRAVIS_OS_NAME}.tar.gz
+#        on:
+#          tags: true
     - stage: compile linux
       os: linux
       before_script:
