@@ -11,4 +11,5 @@ SDG Classes
     sdglib/classes/LinkedReadsMapper.rst
     sdglib/classes/LongReadsMapper.rst
     sdglib/classes/LinkageMaker.rst
+    sdglib/classes/ReadThreadsGraph.rst
 

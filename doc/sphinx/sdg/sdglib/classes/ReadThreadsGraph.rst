@@ -1,0 +1,5 @@
+ReadThreadsGraph
+=========
+
+.. doxygenclass:: ReadThreadsGraph
+   :members:
