@@ -1,0 +1,5 @@
+LinkageMaker
+============
+
+.. doxygenclass:: LinkageMaker
+    :members:

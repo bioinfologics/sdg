@@ -1,0 +1,395 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>LinkedReadsMapper &mdash; SDG  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="LongReadsMapper" href="LongReadsMapper.html" />
+    <link rel="prev" title="PairedReadsMapper" href="PairedReadsMapper.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> SDG
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../README.html">Sequence Distance Graph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">SDGlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workspace/README.html">Workspace</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../_sdglib_toc.html">SDG Classes</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="WorkSpace.html">WorkSpace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="DistanceGraph.html">DistanceGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SequenceDistanceGraph.html">SequenceDistanceGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="NodeView.html">NodeView</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkView.html">LinkView</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PairedReadsMapper.html">PairedReadsMapper</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">LinkedReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LongReadsMapper.html">LongReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkageMaker.html">LinkageMaker</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SDG</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../_sdglib_toc.html">SDG Classes</a> &raquo;</li>
+        
+      <li>LinkedReadsMapper</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/sdg/sdglib/classes/LinkedReadsMapper.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="linkedreadsmapper">
+<h1>LinkedReadsMapper<a class="headerlink" href="#linkedreadsmapper" title="Permalink to this headline">¶</a></h1>
+<dl class="cpp class">
+<dt id="_CPPv417LinkedReadsMapper">
+<span id="_CPPv317LinkedReadsMapper"></span><span id="_CPPv217LinkedReadsMapper"></span><span id="LinkedReadsMapper"></span><span class="target" id="class_linked_reads_mapper"></span><em class="property">class </em><code class="sig-name descname">LinkedReadsMapper</code><a class="headerlink" href="#_CPPv417LinkedReadsMapper" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A mapper for linked reads from a LinkedReadsDatastore. </p>
+<p>Supports partial remapping of unmapped reads or of a selection list. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Functions</p>
+<dl class="cpp function">
+<dt id="_CPPv4NK17LinkedReadsMapper2lsEib">
+<span id="_CPPv3NK17LinkedReadsMapper2lsEib"></span><span id="_CPPv2NK17LinkedReadsMapper2lsEib"></span><span id="LinkedReadsMapper::ls__i.bC"></span><span class="target" id="class_linked_reads_mapper_1a8634dab1d0cf5a3bf0f8e4f90e83c96c"></span>std::string <code class="sig-name descname">ls</code><span class="sig-paren">(</span>int <em>level</em> = 0, bool <em>recursive</em> = true<span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK17LinkedReadsMapper2lsEib" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Provides an overview of the information in the <a class="reference internal" href="#class_linked_reads_mapper"><span class="std std-ref">LinkedReadsMapper</span></a>. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>A text summary of the information contained in a <a class="reference internal" href="#class_linked_reads_mapper"><span class="std std-ref">LinkedReadsMapper</span></a> </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">level</span></code>: Base indentation level to use on the result </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">recursive</span></code>: Whether it should explore or not the rest of the hierarchy </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17LinkedReadsMapper9map_readsERKNSt13unordered_setI8uint64_tEE">
+<span id="_CPPv3N17LinkedReadsMapper9map_readsERKNSt13unordered_setI8uint64_tEE"></span><span id="_CPPv2N17LinkedReadsMapper9map_readsERKNSt13unordered_setI8uint64_tEE"></span><span id="LinkedReadsMapper::map_reads__std::unordered_set:uint64_t:CR"></span><span class="target" id="class_linked_reads_mapper_1ac1fcec58a0efcdde0672d9958ba389c9"></span>void <code class="sig-name descname">map_reads</code><span class="sig-paren">(</span>std::unordered_set&lt;uint64_t&gt; <em class="property">const</em> &amp;<em>reads_to_remap</em> = {}<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17LinkedReadsMapper9map_readsERKNSt13unordered_setI8uint64_tEE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Maps the provided LinkedReadsDatastore to the provided graph, saves the results to the reads_in_node and nodes_in_read collections. The mapper only considers unique perfect matches, if a single kmer from the read matches 2 different nodes the read is marked as multi-mapping and the mapping is discarded. If a reads_to_remap set is passed to the function only the selected set of reads is mapped, the rest of the mappings remains as they are. </p>
+<p>To access the results see the reads_in_node and nodes_in_read collections in this class</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">reads_to_remap</span></code>: set of readsIDs to remap </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17LinkedReadsMapper15remap_all_readsEv">
+<span id="_CPPv3N17LinkedReadsMapper15remap_all_readsEv"></span><span id="_CPPv2N17LinkedReadsMapper15remap_all_readsEv"></span><span id="LinkedReadsMapper::remap_all_reads"></span><span class="target" id="class_linked_reads_mapper_1aae56d7d76ebd37b567ba4a720d0859d2"></span>void <code class="sig-name descname">remap_all_reads</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17LinkedReadsMapper15remap_all_readsEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Clears the reads_in_node and nodes_in_read collections and runs the <a class="reference internal" href="#class_linked_reads_mapper_1ac1fcec58a0efcdde0672d9958ba389c9"><span class="std std-ref">map_reads()</span></a> function with no selected set (maps all reads again) </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17LinkedReadsMapperaSERK17LinkedReadsMapper">
+<span id="_CPPv3N17LinkedReadsMapperaSERK17LinkedReadsMapper"></span><span id="_CPPv2N17LinkedReadsMapperaSERK17LinkedReadsMapper"></span><span id="LinkedReadsMapper::assign-operator__LinkedReadsMapperCR"></span><span class="target" id="class_linked_reads_mapper_1a96e464fd7f176eed47a15d83036c1585"></span><a class="reference internal" href="#_CPPv417LinkedReadsMapper" title="LinkedReadsMapper">LinkedReadsMapper</a> &amp;<code class="sig-name descname">operator=</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv417LinkedReadsMapper" title="LinkedReadsMapper">LinkedReadsMapper</a> &amp;<em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17LinkedReadsMapperaSERK17LinkedReadsMapper" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Checks that the graph and datastore are the same and if they are assigns reads_in_node and nodes_in_read collections</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p></p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">other</span></code>: <a class="reference internal" href="#class_linked_reads_mapper"><span class="std std-ref">LinkedReadsMapper</span></a> to compare with </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17LinkedReadsMapper11map_reads63ERKNSt13unordered_setI8uint64_tEE">
+<span id="_CPPv3N17LinkedReadsMapper11map_reads63ERKNSt13unordered_setI8uint64_tEE"></span><span id="_CPPv2N17LinkedReadsMapper11map_reads63ERKNSt13unordered_setI8uint64_tEE"></span><span id="LinkedReadsMapper::map_reads63__std::unordered_set:uint64_t:CR"></span><span class="target" id="class_linked_reads_mapper_1a1abdd78185f575f55d9d2b23e92109ba"></span>void <code class="sig-name descname">map_reads63</code><span class="sig-paren">(</span>std::unordered_set&lt;uint64_t&gt; <em class="property">const</em> &amp;<em>reads_to_remap</em> = {}<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17LinkedReadsMapper11map_reads63ERKNSt13unordered_setI8uint64_tEE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This is the same as <a class="reference internal" href="#class_linked_reads_mapper_1ac1fcec58a0efcdde0672d9958ba389c9"><span class="std std-ref">map_reads()</span></a> but using k63 <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">reads_to_remap</span></code>: Optional argument of set of reads to map. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17LinkedReadsMapper17remap_all_reads63Ev">
+<span id="_CPPv3N17LinkedReadsMapper17remap_all_reads63Ev"></span><span id="_CPPv2N17LinkedReadsMapper17remap_all_reads63Ev"></span><span id="LinkedReadsMapper::remap_all_reads63"></span><span class="target" id="class_linked_reads_mapper_1a93b9a9850439357c24b8202ec225fda2"></span>void <code class="sig-name descname">remap_all_reads63</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17LinkedReadsMapper17remap_all_reads63Ev" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Clears the reads_in_node and nodes_in_read collections and remaps reads to regenerate them. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17LinkedReadsMapper10path_readsE7uint8_ti">
+<span id="_CPPv3N17LinkedReadsMapper10path_readsE7uint8_ti"></span><span id="_CPPv2N17LinkedReadsMapper10path_readsE7uint8_ti"></span><span id="LinkedReadsMapper::path_reads__uint8_t.i"></span><span class="target" id="class_linked_reads_mapper_1aa6c41cd064c8a96d9bc18655ea226e4b"></span>void <code class="sig-name descname">path_reads</code><span class="sig-paren">(</span>uint8_t <em>k</em> = 63, int <em>filter</em> = 200<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17LinkedReadsMapper10path_readsE7uint8_ti" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>creates a read path for each read through mapping </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p></p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK17LinkedReadsMapper12print_statusEv">
+<span id="_CPPv3NK17LinkedReadsMapper12print_statusEv"></span><span id="_CPPv2NK17LinkedReadsMapper12print_statusEv"></span><span id="LinkedReadsMapper::print_statusC"></span><span class="target" id="class_linked_reads_mapper_1aaf00185c2e89a7bd86d7c3a250483d20"></span>void <code class="sig-name descname">print_status</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK17LinkedReadsMapper12print_statusEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Prints the count of pairs mapped. </p>
+<p>Prints the count of pairs mapped where no end mapped, a single end mapped and both ends mapped and of those how many mapped to a single node. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17LinkedReadsMapper13get_node_tagsE10sgNodeID_t">
+<span id="_CPPv3N17LinkedReadsMapper13get_node_tagsE10sgNodeID_t"></span><span id="_CPPv2N17LinkedReadsMapper13get_node_tagsE10sgNodeID_t"></span><span id="LinkedReadsMapper::get_node_tags__sgNodeID_t"></span><span class="target" id="class_linked_reads_mapper_1a864ae6af6f99afb0715a843e43462ccd"></span>std::set&lt;LinkedTag&gt; <code class="sig-name descname">get_node_tags</code><span class="sig-paren">(</span>sgNodeID_t <em>n</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17LinkedReadsMapper13get_node_tagsE10sgNodeID_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Given a nodeID returns a set of all tags mapped to that node. If there are no mapped tags returns an empty set. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>set of bsg10xtags </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code>: nodeID </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17LinkedReadsMapper26compute_all_tag_neighboursEifi">
+<span id="_CPPv3N17LinkedReadsMapper26compute_all_tag_neighboursEifi"></span><span id="_CPPv2N17LinkedReadsMapper26compute_all_tag_neighboursEifi"></span><span id="LinkedReadsMapper::compute_all_tag_neighbours__i.float.i"></span><span class="target" id="class_linked_reads_mapper_1a3089f43d1afb88717fd0f7fcf6f9a20c"></span>void <code class="sig-name descname">compute_all_tag_neighbours</code><span class="sig-paren">(</span>int <em>min_size</em>, float <em>min_score</em>, int <em>min_mapped_reads_per_tag</em> = 2<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17LinkedReadsMapper26compute_all_tag_neighboursEifi" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Creates a nieghbours matrix with all nodes where for each node the function finds all nodes that have tags that cover min_score of the total tags of each node.</p>
+<p>Example:<ul class="simple">
+<li><p>node A has reads with tags 5, 5, 6, 7, 8</p></li>
+<li><p>node B has reads with tags 5, 8, 9, 9, 10</p></li>
+</ul>
+</p>
+<p>Then B tags cover 3/6=0.5 of A reads, and A tags cover 2/5=0.4 of B reads. If min_score=.5 then B is in A’s neighbours, but A is not in B’s</p>
+<p>Results are stored in the tag_neighbours vector <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">min_size</span></code>: </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min_score</span></code>: </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min_mapped_reads_per_tag</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17LinkedReadsMapper20populate_orientationEv">
+<span id="_CPPv3N17LinkedReadsMapper20populate_orientationEv"></span><span id="_CPPv2N17LinkedReadsMapper20populate_orientationEv"></span><span id="LinkedReadsMapper::populate_orientation"></span><span class="target" id="class_linked_reads_mapper_1afc188286dec4900627dd026b9f649535"></span>void <code class="sig-name descname">populate_orientation</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17LinkedReadsMapper20populate_orientationEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Populates the read_direction_in_node collection for the dataset. </p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Members</p>
+<dl class="cpp var">
+<dt id="_CPPv4N17LinkedReadsMapper13reads_in_nodeE">
+<span id="_CPPv3N17LinkedReadsMapper13reads_in_nodeE"></span><span id="_CPPv2N17LinkedReadsMapper13reads_in_nodeE"></span><span id="LinkedReadsMapper::reads_in_node__std::vector:std::vector:ReadMapping::"></span><span class="target" id="class_linked_reads_mapper_1a77d1a60a5a75fb87b72d1958872e5e75"></span>std::vector&lt;std::vector&lt;ReadMapping&gt;&gt; <code class="sig-name descname">reads_in_node</code><a class="headerlink" href="#_CPPv4N17LinkedReadsMapper13reads_in_nodeE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Collection of read mappings reads_in_node[nodeID] = [vector of mappings to nodeID… ] </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N17LinkedReadsMapper12read_to_nodeE">
+<span id="_CPPv3N17LinkedReadsMapper12read_to_nodeE"></span><span id="_CPPv2N17LinkedReadsMapper12read_to_nodeE"></span><span id="LinkedReadsMapper::read_to_node__std::vector:sgNodeID_t:"></span><span class="target" id="class_linked_reads_mapper_1a0af83566cc67f729a783fe6d7ff33833"></span>std::vector&lt;sgNodeID_t&gt; <code class="sig-name descname">read_to_node</code><a class="headerlink" href="#_CPPv4N17LinkedReadsMapper12read_to_nodeE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Read to node index read_to_node[readID] = nodeID where the read is mapped to </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N17LinkedReadsMapper22read_direction_in_nodeE">
+<span id="_CPPv3N17LinkedReadsMapper22read_direction_in_nodeE"></span><span id="_CPPv2N17LinkedReadsMapper22read_direction_in_nodeE"></span><span id="LinkedReadsMapper::read_direction_in_node__std::vector:b:"></span><span class="target" id="class_linked_reads_mapper_1a1368dfa6d54e2c48a935984760ad0aed"></span>std::vector&lt;bool&gt; <code class="sig-name descname">read_direction_in_node</code><a class="headerlink" href="#_CPPv4N17LinkedReadsMapper22read_direction_in_nodeE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>read_direction_in_node[i] has the direction with wich read i was mapped in the corresponding mapping (in read_to_node[i]) </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N17LinkedReadsMapper14tag_neighboursE">
+<span id="_CPPv3N17LinkedReadsMapper14tag_neighboursE"></span><span id="_CPPv2N17LinkedReadsMapper14tag_neighboursE"></span><span id="LinkedReadsMapper::tag_neighbours__std::vector:std::vector:TagNeighbour::"></span><span class="target" id="class_linked_reads_mapper_1a99cc0de000b5d55780e79262702e840f"></span>std::vector&lt;std::vector&lt;TagNeighbour&gt;&gt; <code class="sig-name descname">tag_neighbours</code><a class="headerlink" href="#_CPPv4N17LinkedReadsMapper14tag_neighboursE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Collection of neighbouring nodes Completed using <a class="reference internal" href="#class_linked_reads_mapper_1a3089f43d1afb88717fd0f7fcf6f9a20c"><span class="std std-ref">compute_all_tag_neighbours()</span></a> tag_neighbours[nodeID] = [collection of 10 determined neighbours (see TagNeighbour) …] </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="LongReadsMapper.html" class="btn btn-neutral float-right" title="LongReadsMapper" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="PairedReadsMapper.html" class="btn btn-neutral float-left" title="PairedReadsMapper" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2019, Bernardo J. Clavijo, Gonzalo Garcia, Luis J. Yanes, Benjamin Ward
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

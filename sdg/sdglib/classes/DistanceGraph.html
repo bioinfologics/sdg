@@ -1,0 +1,596 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>DistanceGraph &mdash; SDG  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="SequenceDistanceGraph" href="SequenceDistanceGraph.html" />
+    <link rel="prev" title="WorkSpace" href="WorkSpace.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> SDG
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../README.html">Sequence Distance Graph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">SDGlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workspace/README.html">Workspace</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../_sdglib_toc.html">SDG Classes</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="WorkSpace.html">WorkSpace</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">DistanceGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SequenceDistanceGraph.html">SequenceDistanceGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="NodeView.html">NodeView</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkView.html">LinkView</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PairedReadsMapper.html">PairedReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkedReadsMapper.html">LinkedReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LongReadsMapper.html">LongReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkageMaker.html">LinkageMaker</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SDG</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../_sdglib_toc.html">SDG Classes</a> &raquo;</li>
+        
+      <li>DistanceGraph</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/sdg/sdglib/classes/DistanceGraph.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="distancegraph">
+<h1>DistanceGraph<a class="headerlink" href="#distancegraph" title="Permalink to this headline">¶</a></h1>
+<dl class="cpp class">
+<dt id="_CPPv413DistanceGraph">
+<span id="_CPPv313DistanceGraph"></span><span id="_CPPv213DistanceGraph"></span><span id="DistanceGraph"></span><span class="target" id="class_distance_graph"></span><em class="property">class </em><code class="sig-name descname">DistanceGraph</code><a class="headerlink" href="#_CPPv413DistanceGraph" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This is a description of the graph creating new linkage, the nodes are referenced from the original graph.</p>
+<p>The LinkageDIgraph has links describing structure in the graph but not the nodes, the nodes are references from sg original graph, the linkage digraph references to the nodes of a sequence digraph and only contains the links. It’s usually used to encode solutions from algorithms.</p>
+<p>Each link is represented on each node it appears as -A,B on A and -B,A on B </p>
+<p>Subclassed by <a class="reference internal" href="SequenceDistanceGraph.html#class_sequence_distance_graph"><span class="std std-ref">SequenceDistanceGraph</span></a></p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Functions</p>
+<dl class="cpp function">
+<dt id="_CPPv4N13DistanceGraph8add_linkE10sgNodeID_t10sgNodeID_t7int32_t7Support">
+<span id="_CPPv3N13DistanceGraph8add_linkE10sgNodeID_t10sgNodeID_t7int32_t7Support"></span><span id="_CPPv2N13DistanceGraph8add_linkE10sgNodeID_t10sgNodeID_t7int32_t7Support"></span><span id="DistanceGraph::add_link__sgNodeID_t.sgNodeID_t.int32_t.Support"></span><span class="target" id="class_distance_graph_1a974838d2940043315059f1aed85122f8"></span>void <code class="sig-name descname">add_link</code><span class="sig-paren">(</span>sgNodeID_t <em>source</em>, sgNodeID_t <em>dest</em>, int32_t <em>d</em>, Support <em>support</em> = {}<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N13DistanceGraph8add_linkE10sgNodeID_t10sgNodeID_t7int32_t7Support" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Adds a link between source and destination in the links collection. Each link is added from both ends in the collection (see links vector) The link is directed. </p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">source</span></code>: Source node + or - end </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dest</span></code>: Destination node + or - end </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">d</span></code>: Distance (overlap if it’s negative) </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">read_id</span></code>: id of the read supporting the link (experimental) </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N13DistanceGraph10copy_linksERK13DistanceGraph">
+<span id="_CPPv3N13DistanceGraph10copy_linksERK13DistanceGraph"></span><span id="_CPPv2N13DistanceGraph10copy_linksERK13DistanceGraph"></span><span id="DistanceGraph::copy_links__DistanceGraphCR"></span><span class="target" id="class_distance_graph_1a2085e0ff7a2e5c1f94ccaee0bd2c5bc4"></span>void <code class="sig-name descname">copy_links</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv413DistanceGraph" title="DistanceGraph">DistanceGraph</a> &amp;<em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N13DistanceGraph10copy_linksERK13DistanceGraph" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Given a LDG adds all the connection of that LDG to the current LDG links collection.</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">other</span></code>: LDG instance </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N13DistanceGraph11remove_linkE10sgNodeID_t10sgNodeID_t">
+<span id="_CPPv3N13DistanceGraph11remove_linkE10sgNodeID_t10sgNodeID_t"></span><span id="_CPPv2N13DistanceGraph11remove_linkE10sgNodeID_t10sgNodeID_t"></span><span id="DistanceGraph::remove_link__sgNodeID_t.sgNodeID_t"></span><span class="target" id="class_distance_graph_1ab21236d96ae6c8a8dc995e7a9cd349c3"></span>bool <code class="sig-name descname">remove_link</code><span class="sig-paren">(</span>sgNodeID_t <em>source</em>, sgNodeID_t <em>dest</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N13DistanceGraph11remove_linkE10sgNodeID_t10sgNodeID_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>If the link between source and dest exists removes the link from the link collection TODO: this is broken in a Multi-Distance Graph. </p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">source</span></code>: </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dest</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N13DistanceGraph15disconnect_nodeE10sgNodeID_t">
+<span id="_CPPv3N13DistanceGraph15disconnect_nodeE10sgNodeID_t"></span><span id="_CPPv2N13DistanceGraph15disconnect_nodeE10sgNodeID_t"></span><span id="DistanceGraph::disconnect_node__sgNodeID_t"></span><span class="target" id="class_distance_graph_1a4a5e8188842da0e5974a8403ae5e0489"></span>void <code class="sig-name descname">disconnect_node</code><span class="sig-paren">(</span>sgNodeID_t <em>node</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N13DistanceGraph15disconnect_nodeE10sgNodeID_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Removes all the links in the collection from and to a given nodeID TODO: check this one. </p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">node</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK13DistanceGraph12get_fw_linksE10sgNodeID_t">
+<span id="_CPPv3NK13DistanceGraph12get_fw_linksE10sgNodeID_t"></span><span id="_CPPv2NK13DistanceGraph12get_fw_linksE10sgNodeID_t"></span><span id="DistanceGraph::get_fw_links__sgNodeID_tC"></span><span class="target" id="class_distance_graph_1a95c27775cbc1120205a16b50f34200a5"></span>std::vector&lt;Link&gt; <code class="sig-name descname">get_fw_links</code><span class="sig-paren">(</span>sgNodeID_t <em>n</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK13DistanceGraph12get_fw_linksE10sgNodeID_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Given a nodeID returns a vector of links forward from that node if there is no fw links returns an empty vector</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>vector of links forward of the provided node </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code>: nodeID </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK13DistanceGraph12get_bw_linksE10sgNodeID_t">
+<span id="_CPPv3NK13DistanceGraph12get_bw_linksE10sgNodeID_t"></span><span id="_CPPv2NK13DistanceGraph12get_bw_linksE10sgNodeID_t"></span><span id="DistanceGraph::get_bw_links__sgNodeID_tC"></span><span class="target" id="class_distance_graph_1af46e93130c2ed8525493fd6afbef681d"></span>std::vector&lt;Link&gt; <code class="sig-name descname">get_bw_links</code><span class="sig-paren">(</span>sgNodeID_t <em>n</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK13DistanceGraph12get_bw_linksE10sgNodeID_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Given a nodeID returns a vector of links backwards from that node if there is no bw links returns an empty vector</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>vector of links backwards of the provided node </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code>: nodeID </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N13DistanceGraph8get_linkE10sgNodeID_t10sgNodeID_t">
+<span id="_CPPv3N13DistanceGraph8get_linkE10sgNodeID_t10sgNodeID_t"></span><span id="_CPPv2N13DistanceGraph8get_linkE10sgNodeID_t10sgNodeID_t"></span><span id="DistanceGraph::get_link__sgNodeID_t.sgNodeID_t"></span><span class="target" id="class_distance_graph_1a61d8b1e0c3d22abf97bcdb2066df6001"></span>Link <code class="sig-name descname">get_link</code><span class="sig-paren">(</span>sgNodeID_t <em>source</em>, sgNodeID_t <em>dest</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N13DistanceGraph8get_linkE10sgNodeID_t10sgNodeID_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>DEPRECATED!!!!!!!!!! TODO: delete</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p></p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">source</span></code>: </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dest</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK13DistanceGraph14get_next_nodesE10sgNodeID_t">
+<span id="_CPPv3NK13DistanceGraph14get_next_nodesE10sgNodeID_t"></span><span id="_CPPv2NK13DistanceGraph14get_next_nodesE10sgNodeID_t"></span><span id="DistanceGraph::get_next_nodes__sgNodeID_tC"></span><span class="target" id="class_distance_graph_1a91777eb01ea22dfe4450e33fbc23973a"></span>std::vector&lt;sgNodeID_t&gt; <code class="sig-name descname">get_next_nodes</code><span class="sig-paren">(</span>sgNodeID_t <em>n</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK13DistanceGraph14get_next_nodesE10sgNodeID_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Find node IDs for forward nodes of n TODO: sort-uniq (for multi distances) <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>Returns a vector of forward node IDs </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code>: Node to search neighbours for </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK13DistanceGraph14get_prev_nodesE10sgNodeID_t">
+<span id="_CPPv3NK13DistanceGraph14get_prev_nodesE10sgNodeID_t"></span><span id="_CPPv2NK13DistanceGraph14get_prev_nodesE10sgNodeID_t"></span><span id="DistanceGraph::get_prev_nodes__sgNodeID_tC"></span><span class="target" id="class_distance_graph_1a0b75eaaeacb2ec0c754c1fe9ef8f5024"></span>std::vector&lt;sgNodeID_t&gt; <code class="sig-name descname">get_prev_nodes</code><span class="sig-paren">(</span>sgNodeID_t <em>n</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK13DistanceGraph14get_prev_nodesE10sgNodeID_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Find node IDs for backward nodes of n TODO: sort-uniq (for multi_distances) <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>Returns a vector of backward node IDs </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code>: Node to search neighbours for </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK13DistanceGraph16fw_reached_nodesE10sgNodeID_ti">
+<span id="_CPPv3NK13DistanceGraph16fw_reached_nodesE10sgNodeID_ti"></span><span id="_CPPv2NK13DistanceGraph16fw_reached_nodesE10sgNodeID_ti"></span><span id="DistanceGraph::fw_reached_nodes__sgNodeID_t.iC"></span><span class="target" id="class_distance_graph_1a444d9670b201beae99a2a33c5ee22237"></span>std::set&lt;sgNodeID_t&gt; <code class="sig-name descname">fw_reached_nodes</code><span class="sig-paren">(</span>sgNodeID_t <em>n</em>, int <em>radius</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK13DistanceGraph16fw_reached_nodesE10sgNodeID_ti" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Given a nodeID returns a set of all fw nodes present up to radius (# jump) away TODO: merge with other similar functions and deprecate. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>set of nodeIDs </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code>: nodeID </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">radius</span></code>: number of jumps to consider </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK13DistanceGraph25fw_neighbours_by_distanceE10sgNodeID_ti">
+<span id="_CPPv3NK13DistanceGraph25fw_neighbours_by_distanceE10sgNodeID_ti"></span><span id="_CPPv2NK13DistanceGraph25fw_neighbours_by_distanceE10sgNodeID_ti"></span><span id="DistanceGraph::fw_neighbours_by_distance__sgNodeID_t.iC"></span><span class="target" id="class_distance_graph_1ac2e6c7af4be58d708753f38581aeaad5"></span>std::vector&lt;std::pair&lt;int, sgNodeID_t&gt;&gt; <code class="sig-name descname">fw_neighbours_by_distance</code><span class="sig-paren">(</span>sgNodeID_t <em>n</em>, int <em>min_links</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK13DistanceGraph25fw_neighbours_by_distanceE10sgNodeID_ti" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Vector of FW distances and neighbours from n, sorted in ascending distance (median if multi-link) order. <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p></p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code>: </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min_links</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK13DistanceGraph19get_connected_nodesEv">
+<span id="_CPPv3NK13DistanceGraph19get_connected_nodesEv"></span><span id="_CPPv2NK13DistanceGraph19get_connected_nodesEv"></span><span id="DistanceGraph::get_connected_nodesC"></span><span class="target" id="class_distance_graph_1af42abbacecdea07b1bb3b6014bd4204c"></span>std::unordered_set&lt;sgNodeID_t&gt; <code class="sig-name descname">get_connected_nodes</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK13DistanceGraph19get_connected_nodesEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Returns all the nodeIDs with connections in the link collection. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>set of nodeIDs </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK13DistanceGraph22find_all_paths_betweenE10sgNodeID_t10sgNodeID_t7int64_tib">
+<span id="_CPPv3NK13DistanceGraph22find_all_paths_betweenE10sgNodeID_t10sgNodeID_t7int64_tib"></span><span id="_CPPv2NK13DistanceGraph22find_all_paths_betweenE10sgNodeID_t10sgNodeID_t7int64_tib"></span><span id="DistanceGraph::find_all_paths_between__sgNodeID_t.sgNodeID_t.int64_t.i.bC"></span><span class="target" id="class_distance_graph_1a56014fab8e1067603860cf8adc5a7786"></span>std::vector&lt;SequenceDistanceGraphPath&gt; <code class="sig-name descname">find_all_paths_between</code><span class="sig-paren">(</span>sgNodeID_t <em>from</em>, sgNodeID_t <em>to</em>, int64_t <em>max_size</em>, int <em>max_nodes</em> = 20, bool <em>abort_on_loops</em> = true<span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK13DistanceGraph22find_all_paths_betweenE10sgNodeID_t10sgNodeID_t7int64_tib" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Explore in a growing radius and returns all possible paths within limits between 2 node ends. <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p></p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">from</span></code>: </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">to</span></code>: </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_size</span></code>: </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_nodes</span></code>: </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">abort_on_loops</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N13DistanceGraph23remove_transitive_linksEi">
+<span id="_CPPv3N13DistanceGraph23remove_transitive_linksEi"></span><span id="_CPPv2N13DistanceGraph23remove_transitive_linksEi"></span><span id="DistanceGraph::remove_transitive_links__i"></span><span class="target" id="class_distance_graph_1a5bd5977777d366132002c490c69395b2"></span>void <code class="sig-name descname">remove_transitive_links</code><span class="sig-paren">(</span>int <em>radius</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N13DistanceGraph23remove_transitive_linksEi" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Removes transitive connections form the link collection. </p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">radius</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N13DistanceGraph19report_connectivityEv">
+<span id="_CPPv3N13DistanceGraph19report_connectivityEv"></span><span id="_CPPv2N13DistanceGraph19report_connectivityEv"></span><span id="DistanceGraph::report_connectivity"></span><span class="target" id="class_distance_graph_1a203851f14f44a771bf81e11a57a15305"></span>void <code class="sig-name descname">report_connectivity</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N13DistanceGraph19report_connectivityEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Prints to screen connectivity statistics for the link collection. </p>
+<p>Prints the number of nodes with linkage in the following categories 1-1, 1-0, 1-N, N-N, 0-0 </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK13DistanceGraph13are_connectedE10sgNodeID_t10sgNodeID_t">
+<span id="_CPPv3NK13DistanceGraph13are_connectedE10sgNodeID_t10sgNodeID_t"></span><span id="_CPPv2NK13DistanceGraph13are_connectedE10sgNodeID_t10sgNodeID_t"></span><span id="DistanceGraph::are_connected__sgNodeID_t.sgNodeID_tC"></span><span class="target" id="class_distance_graph_1a7b0a9730d8bba2f9b648d3171bfb76d8"></span>bool <code class="sig-name descname">are_connected</code><span class="sig-paren">(</span>sgNodeID_t <em>n1</em>, sgNodeID_t <em>n2</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK13DistanceGraph13are_connectedE10sgNodeID_t10sgNodeID_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>returns true if n1 and n2 are connected in the link collection and false otherwise </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>true if the nodes are connected false otherwise </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n1</span></code>: nodeID n1 </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n2</span></code>: nodeID n2 </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK13DistanceGraph13get_all_linesE8uint16_t8uint64_t">
+<span id="_CPPv3NK13DistanceGraph13get_all_linesE8uint16_t8uint64_t"></span><span id="_CPPv2NK13DistanceGraph13get_all_linesE8uint16_t8uint64_t"></span><span id="DistanceGraph::get_all_lines__uint16_t.uint64_tC"></span><span class="target" id="class_distance_graph_1ace99c1c646ffc6dfcf77ecf95c7f23f6"></span>std::vector&lt;std::vector&lt;sgNodeID_t&gt;&gt; <code class="sig-name descname">get_all_lines</code><span class="sig-paren">(</span>uint16_t <em>min_nodes</em>, uint64_t <em>min_total_size</em> = 0<span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK13DistanceGraph13get_all_linesE8uint16_t8uint64_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Get all unitigs from the graph, returns a vector of paths where all nodes are connected 1-1</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>vetor of paths </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">min_nodes</span></code>: minimum ammount of nodes in the unitig to be considered </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min_total_size</span></code>: min size of the unitig to be considered </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK13DistanceGraph12find_bubblesE8uint32_t8uint32_t">
+<span id="_CPPv3NK13DistanceGraph12find_bubblesE8uint32_t8uint32_t"></span><span id="_CPPv2NK13DistanceGraph12find_bubblesE8uint32_t8uint32_t"></span><span id="DistanceGraph::find_bubbles__uint32_t.uint32_tC"></span><span class="target" id="class_distance_graph_1ab33f1ffd91d6e88cb0b189be012204fb"></span>std::vector&lt;std::pair&lt;sgNodeID_t, sgNodeID_t&gt;&gt; <code class="sig-name descname">find_bubbles</code><span class="sig-paren">(</span>uint32_t <em>min_size</em>, uint32_t <em>max_size</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK13DistanceGraph12find_bubblesE8uint32_t8uint32_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Finds perfect bubble structures in the graph ( prev -&gt; [n1 | n2] -&gt; next )and returns a vector of pairs being each element of the pair an alternative phase of the bubble</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p></p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">min_size</span></code>: </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_size</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N13DistanceGraph12dump_to_textENSt6stringE">
+<span id="_CPPv3N13DistanceGraph12dump_to_textENSt6stringE"></span><span id="_CPPv2N13DistanceGraph12dump_to_textENSt6stringE"></span><span id="DistanceGraph::dump_to_text__ss"></span><span class="target" id="class_distance_graph_1a041bdb69e626f93ba2c2e6c721057a8b"></span>void <code class="sig-name descname">dump_to_text</code><span class="sig-paren">(</span>std::string <em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N13DistanceGraph12dump_to_textENSt6stringE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Dumps the LinkageDiGraph (links) to filename <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">filename</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N13DistanceGraph14load_from_textENSt6stringE">
+<span id="_CPPv3N13DistanceGraph14load_from_textENSt6stringE"></span><span id="_CPPv2N13DistanceGraph14load_from_textENSt6stringE"></span><span id="DistanceGraph::load_from_text__ss"></span><span class="target" id="class_distance_graph_1a2159b221dfd095354f8969535f0282d6"></span>void <code class="sig-name descname">load_from_text</code><span class="sig-paren">(</span>std::string <em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N13DistanceGraph14load_from_textENSt6stringE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Loads the LinkageDiGraph (links) from filename <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">filename</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N13DistanceGraph13write_to_gfa1ENSt6stringERKNSt6vectorI10sgNodeID_tEERKNSt6vectorIdEE">
+<span id="_CPPv3N13DistanceGraph13write_to_gfa1ENSt6stringERKNSt6vectorI10sgNodeID_tEERKNSt6vectorIdEE"></span><span id="_CPPv2N13DistanceGraph13write_to_gfa1ENSt6stringERKNSt6vectorI10sgNodeID_tEERKNSt6vectorIdEE"></span><span id="DistanceGraph::write_to_gfa1__ss.std::vector:sgNodeID_t:CR.std::vector:double:CR"></span><span class="target" id="class_distance_graph_1aaf0455160347286a585853a89b7a777a"></span>void <code class="sig-name descname">write_to_gfa1</code><span class="sig-paren">(</span>std::string <em>filename</em>, <em class="property">const</em> std::vector&lt;sgNodeID_t&gt; &amp;<em>selected_nodes</em> = {}, <em class="property">const</em> std::vector&lt;double&gt; &amp;<em>depths</em> = {}<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N13DistanceGraph13write_to_gfa1ENSt6stringERKNSt6vectorI10sgNodeID_tEERKNSt6vectorIdEE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Writes the graph to a GFA v1 file, optionally a few nodes can be selected for writing. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">filename</span></code>: Path to the output file </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">selected_nodes</span></code>: List of the nodes to write </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">depths</span></code>: If nodes are selected, a depth vector can be used to specify coverage in the GFA </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N13DistanceGraph13write_to_gfa2ENSt6stringERKNSt6vectorI10sgNodeID_tEERKNSt6vectorIdEE">
+<span id="_CPPv3N13DistanceGraph13write_to_gfa2ENSt6stringERKNSt6vectorI10sgNodeID_tEERKNSt6vectorIdEE"></span><span id="_CPPv2N13DistanceGraph13write_to_gfa2ENSt6stringERKNSt6vectorI10sgNodeID_tEERKNSt6vectorIdEE"></span><span id="DistanceGraph::write_to_gfa2__ss.std::vector:sgNodeID_t:CR.std::vector:double:CR"></span><span class="target" id="class_distance_graph_1a731b6467bdcb49b57cc71508c0860903"></span>void <code class="sig-name descname">write_to_gfa2</code><span class="sig-paren">(</span>std::string <em>filename</em>, <em class="property">const</em> std::vector&lt;sgNodeID_t&gt; &amp;<em>selected_nodes</em> = {}, <em class="property">const</em> std::vector&lt;double&gt; &amp;<em>depths</em> = {}<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N13DistanceGraph13write_to_gfa2ENSt6stringERKNSt6vectorI10sgNodeID_tEERKNSt6vectorIdEE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Writes the graph to a GFA v2 file, optionally a few nodes can be selected for writing. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">filename</span></code>: Path to the output file </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">selected_nodes</span></code>: List of the nodes to write </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">depths</span></code>: If nodes are selected, a depth vector can be used to specify coverage in the GFA </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK13DistanceGraph12get_nodeviewE10sgNodeID_t">
+<span id="_CPPv3NK13DistanceGraph12get_nodeviewE10sgNodeID_t"></span><span id="_CPPv2NK13DistanceGraph12get_nodeviewE10sgNodeID_t"></span><span id="DistanceGraph::get_nodeview__sgNodeID_tC"></span><span class="target" id="class_distance_graph_1ab521f5627651c523225c453f355220ab"></span><a class="reference internal" href="NodeView.html#_CPPv48NodeView" title="NodeView">NodeView</a> <code class="sig-name descname">get_nodeview</code><span class="sig-paren">(</span>sgNodeID_t <em>n</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK13DistanceGraph12get_nodeviewE10sgNodeID_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Provides access to a single node <a class="reference internal" href="NodeView.html#class_node_view"><span class="std std-ref">NodeView</span></a> graph exploration. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>A <a class="reference internal" href="NodeView.html#class_node_view"><span class="std std-ref">NodeView</span></a> of the node ‘n’ </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code>: ID of the <a class="reference internal" href="SequenceDistanceGraph.html#class_sequence_distance_graph"><span class="std std-ref">SequenceDistanceGraph</span></a> node </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK13DistanceGraph17get_all_nodeviewsEbb">
+<span id="_CPPv3NK13DistanceGraph17get_all_nodeviewsEbb"></span><span id="_CPPv2NK13DistanceGraph17get_all_nodeviewsEbb"></span><span id="DistanceGraph::get_all_nodeviews__b.bC"></span><span class="target" id="class_distance_graph_1a61cc1239f5a4f0dcc11e4142ca258c59"></span>std::vector&lt;<a class="reference internal" href="NodeView.html#_CPPv48NodeView" title="NodeView">NodeView</a>&gt; <code class="sig-name descname">get_all_nodeviews</code><span class="sig-paren">(</span>bool <em>both_directions</em> = false, bool <em>include_disconnected</em> = true<span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK13DistanceGraph17get_all_nodeviewsEbb" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Provides access to the <a class="reference internal" href="NodeView.html#class_node_view"><span class="std std-ref">NodeView</span></a> read-only graph exploration methods for all nodes. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>A <a class="reference internal" href="NodeView.html#class_node_view"><span class="std std-ref">NodeView</span></a> list containing one per node in the graph unless include_disconnected is set to false, then only nodes with links are included </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">include_disconnected</span></code>: If set to false and a node is disconnected, it won’t be included in the result </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N13DistanceGraph12stats_by_kciEv">
+<span id="_CPPv3N13DistanceGraph12stats_by_kciEv"></span><span id="_CPPv2N13DistanceGraph12stats_by_kciEv"></span><span id="DistanceGraph::stats_by_kci"></span><span class="target" id="class_distance_graph_1ad6a7d6b62ed7017246645efd37f5f5cb"></span>std::string <code class="sig-name descname">stats_by_kci</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N13DistanceGraph12stats_by_kciEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Prints the graph stats by kci according to the first kci collection in the ws. </p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Members</p>
+<dl class="cpp var">
+<dt id="_CPPv4N13DistanceGraph5linksE">
+<span id="_CPPv3N13DistanceGraph5linksE"></span><span id="_CPPv2N13DistanceGraph5linksE"></span><span id="DistanceGraph::links__std::vector:std::vector:Link::"></span><span class="target" id="class_distance_graph_1ac19780b8ee195fbf92e722444c042b79"></span>std::vector&lt;std::vector&lt;Link&gt;&gt; <code class="sig-name descname">links</code> = {}<a class="headerlink" href="#_CPPv4N13DistanceGraph5linksE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Collection of links for each node of the graph links[node] = [link, link….] </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="SequenceDistanceGraph.html" class="btn btn-neutral float-right" title="SequenceDistanceGraph" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="WorkSpace.html" class="btn btn-neutral float-left" title="WorkSpace" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2019, Bernardo J. Clavijo, Gonzalo Garcia, Luis J. Yanes, Benjamin Ward
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

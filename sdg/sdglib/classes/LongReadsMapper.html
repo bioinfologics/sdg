@@ -1,0 +1,547 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>LongReadsMapper &mdash; SDG  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="LinkageMaker" href="LinkageMaker.html" />
+    <link rel="prev" title="LinkedReadsMapper" href="LinkedReadsMapper.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> SDG
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../README.html">Sequence Distance Graph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">SDGlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workspace/README.html">Workspace</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../_sdglib_toc.html">SDG Classes</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="WorkSpace.html">WorkSpace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="DistanceGraph.html">DistanceGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SequenceDistanceGraph.html">SequenceDistanceGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="NodeView.html">NodeView</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkView.html">LinkView</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PairedReadsMapper.html">PairedReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkedReadsMapper.html">LinkedReadsMapper</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">LongReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkageMaker.html">LinkageMaker</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SDG</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../_sdglib_toc.html">SDG Classes</a> &raquo;</li>
+        
+      <li>LongReadsMapper</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/sdg/sdglib/classes/LongReadsMapper.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="longreadsmapper">
+<h1>LongReadsMapper<a class="headerlink" href="#longreadsmapper" title="Permalink to this headline">¶</a></h1>
+<dl class="cpp class">
+<dt id="_CPPv415LongReadsMapper">
+<span id="_CPPv315LongReadsMapper"></span><span id="_CPPv215LongReadsMapper"></span><span id="LongReadsMapper"></span><span class="target" id="class_long_reads_mapper"></span><em class="property">class </em><code class="sig-name descname">LongReadsMapper</code><a class="headerlink" href="#_CPPv415LongReadsMapper" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Long read mapping to SequenceGraph, computation and storage of the raw alignments and filtered alignments.</p>
+<p>The mappings are filled via small k-mers to a multi-&lt;node,position&gt; index and a chain search. filtered_read_mappings is filled by calling one of the filter_mappings_* methods, which can use extra data. the reads_in_node index is populated by <a class="reference internal" href="#class_long_reads_mapper_1ab02dfb04b25a8f2022b27deeb92c434f"><span class="std std-ref">update_indexes()</span></a> from filtered_read_mappings data. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Functions</p>
+<dl class="cpp function">
+<dt id="_CPPv4N15LongReadsMapper15LongReadsMapperERK21SequenceDistanceGraphRK18LongReadsDatastore7uint8_tb">
+<span id="_CPPv3N15LongReadsMapper15LongReadsMapperERK21SequenceDistanceGraphRK18LongReadsDatastore7uint8_tb"></span><span id="_CPPv2N15LongReadsMapper15LongReadsMapperERK21SequenceDistanceGraphRK18LongReadsDatastore7uint8_tb"></span><span id="LongReadsMapper::LongReadsMapper__SequenceDistanceGraphCR.LongReadsDatastoreCR.uint8_t.b"></span><span class="target" id="class_long_reads_mapper_1af4adab4e563a394222755f99c24bc723"></span><code class="sig-name descname">LongReadsMapper</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="SequenceDistanceGraph.html#_CPPv421SequenceDistanceGraph" title="SequenceDistanceGraph">SequenceDistanceGraph</a> &amp;<em>_sdg</em>, <em class="property">const</em> LongReadsDatastore &amp;<em>ds</em>, uint8_t <em>k</em> = 15, bool <em>sat_index</em> = false<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N15LongReadsMapper15LongReadsMapperERK21SequenceDistanceGraphRK18LongReadsDatastore7uint8_tb" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Minimum number of matches of a node to consider it for mappings. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK15LongReadsMapper2lsEib">
+<span id="_CPPv3NK15LongReadsMapper2lsEib"></span><span id="_CPPv2NK15LongReadsMapper2lsEib"></span><span id="LongReadsMapper::ls__i.bC"></span><span class="target" id="class_long_reads_mapper_1a3062450e23797447e8abaae7a3e81b23"></span>std::string <code class="sig-name descname">ls</code><span class="sig-paren">(</span>int <em>level</em> = 0, bool <em>recursive</em> = true<span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK15LongReadsMapper2lsEib" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Provides an overview of the information in the <a class="reference internal" href="#class_long_reads_mapper"><span class="std std-ref">LongReadsMapper</span></a>. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>A text summary of the information contained in a <a class="reference internal" href="#class_long_reads_mapper"><span class="std std-ref">LongReadsMapper</span></a> </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">level</span></code>: Base indentation level to use on the result </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">recursive</span></code>: Whether it should explore or not the rest of the hierarchy </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N15LongReadsMapper10set_paramsE7uint8_tiiiii">
+<span id="_CPPv3N15LongReadsMapper10set_paramsE7uint8_tiiiii"></span><span id="_CPPv2N15LongReadsMapper10set_paramsE7uint8_tiiiii"></span><span id="LongReadsMapper::set_params__uint8_t.i.i.i.i.i"></span><span class="target" id="class_long_reads_mapper_1adab43f98549286f7f9c516afd7832d91"></span>void <code class="sig-name descname">set_params</code><span class="sig-paren">(</span>uint8_t <em>_k</em> = 15, int <em>_max_index_freq</em> = 200, int <em>_min_size</em> = 1000, int <em>_min_chain</em> = 50, int <em>_max_jump</em> = 500, int <em>_max_delta_change</em> = 60<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N15LongReadsMapper10set_paramsE7uint8_tiiiii" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Sets mapping parameters <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">_k</span></code>: kmer size for mapping </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">_min_size</span></code>: Minimum length of chained matches to report mappings. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">_min_chain</span></code>: Minimum number of chained matches to report mappings. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">_max_jump</span></code>: Joins kmer hits within max_jump distance in a node. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">_max_delta_change</span></code>: Maximum delta change </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK15LongReadsMapper26get_raw_mappings_from_readE8uint64_t">
+<span id="_CPPv3NK15LongReadsMapper26get_raw_mappings_from_readE8uint64_t"></span><span id="_CPPv2NK15LongReadsMapper26get_raw_mappings_from_readE8uint64_t"></span><span id="LongReadsMapper::get_raw_mappings_from_read__uint64_tC"></span><span class="target" id="class_long_reads_mapper_1ad8ec37d5541d70e8da061d3bcea0c3ed"></span>std::vector&lt;LongReadMapping&gt; <code class="sig-name descname">get_raw_mappings_from_read</code><span class="sig-paren">(</span>uint64_t <em>read_id</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK15LongReadsMapper26get_raw_mappings_from_readE8uint64_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Copies all mappings to read from raw mappings into a vector and returns it. <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p></p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">read_id</span></code>: ID of the read to get the mappings for </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N15LongReadsMapper20get_sat_kmer_matchesERK12SatKmerIndexRNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEERNSt6vectorINSt4pairIb8uint64_tEEEE">
+<span id="_CPPv3N15LongReadsMapper20get_sat_kmer_matchesERK12SatKmerIndexRNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEERNSt6vectorINSt4pairIb8uint64_tEEEE"></span><span id="_CPPv2N15LongReadsMapper20get_sat_kmer_matchesERK12SatKmerIndexRNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEERNSt6vectorINSt4pairIb8uint64_tEEEE"></span><span id="LongReadsMapper::get_sat_kmer_matches__SatKmerIndexCR.std::vector:std::vector:std::pair:int32_t.int32_t:::R.std::vector:std::pair:b.uint64_t::R"></span><span class="target" id="class_long_reads_mapper_1a27eef6793bbaf41572face62502fad23"></span>void <code class="sig-name descname">get_sat_kmer_matches</code><span class="sig-paren">(</span><em class="property">const</em> SatKmerIndex &amp;<em>sat_assembly_kmers</em>, std::vector&lt;std::vector&lt;std::pair&lt;int32_t, int32_t&gt;&gt;&gt; &amp;<em>matches</em>, std::vector&lt;std::pair&lt;bool, uint64_t&gt;&gt; &amp;<em>read_kmers</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N15LongReadsMapper20get_sat_kmer_matchesERK12SatKmerIndexRNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEERNSt6vectorINSt4pairIb8uint64_tEEEE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Populates the matches container with the matches between all kmers from one read and the <em>saturated</em> index of the graph. The index is a filtered set of kmers from the graph constructed using update_graph_index() or similar. A match is a perfect Kmer match between the read and the graph index</p>
+<p>matches are stored as kmer_index_in_read-&gt;kmer_match-&gt;match_description: matches[kmer_index_in_read][kmer_match].first = node_id for a match of that kmer in the graph, sign indicates orientation matches[kmer_index_in_read][kmer_match].second = offset for a match of that kmer for corresponding node_id (.first), the offsets are always calculated from the begining of the read</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sat_assembly_kmers</span></code>: kmer index </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">matches</span></code>: structure to store kmer mappings </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">read_kmers</span></code>: contains read kmers with orientations </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N15LongReadsMapper20get_all_kmer_matchesERK10NKmerIndexRNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEERKNSt6vectorINSt4pairIb8uint64_tEEEERKNSt6vectorIbEE">
+<span id="_CPPv3N15LongReadsMapper20get_all_kmer_matchesERK10NKmerIndexRNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEERKNSt6vectorINSt4pairIb8uint64_tEEEERKNSt6vectorIbEE"></span><span id="_CPPv2N15LongReadsMapper20get_all_kmer_matchesERK10NKmerIndexRNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEERKNSt6vectorINSt4pairIb8uint64_tEEEERKNSt6vectorIbEE"></span><span id="LongReadsMapper::get_all_kmer_matches__NKmerIndexCR.std::vector:std::vector:std::pair:int32_t.int32_t:::R.std::vector:std::pair:b.uint64_t::CR.std::vector:b:CR"></span><span class="target" id="class_long_reads_mapper_1a90b8aa27fd4044acff4008b5288f04de"></span>void <code class="sig-name descname">get_all_kmer_matches</code><span class="sig-paren">(</span><em class="property">const</em> NKmerIndex &amp;<em>assembly_kmers</em>, std::vector&lt;std::vector&lt;std::pair&lt;int32_t, int32_t&gt;&gt;&gt; &amp;<em>matches</em>, <em class="property">const</em> std::vector&lt;std::pair&lt;bool, uint64_t&gt;&gt; &amp;<em>read_kmers</em>, <em class="property">const</em> std::vector&lt;bool&gt; &amp;<em>kmer_in_asm</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N15LongReadsMapper20get_all_kmer_matchesERK10NKmerIndexRNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEERKNSt6vectorINSt4pairIb8uint64_tEEEERKNSt6vectorIbEE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Populates the matches container with the matches between all kmers from one read and the index of the graph. The index is a filtered set of kmers from the graph constructed using update_graph_index() or similar. A match is a perfect Kmer match between the read and the graph index</p>
+<p>matches are stored as kmer_index_in_read-&gt;kmer_match-&gt;match_description:<ul class="simple">
+<li><p>matches[kmer_index_in_read][kmer_match].first = node_id for a match of that kmer in the graph, sign indicates orientation</p></li>
+<li><p>matches[kmer_index_in_read][kmer_match].second = offset for a match of that kmer for corresponding node_id (.first), the offsets are always calculated from the begining of the read</p></li>
+</ul>
+</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sat_assembly_kmers</span></code>: kmer index </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">matches</span></code>: structure to store kmer mappings </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">read_kmers</span></code>: contains read kmers with orientations </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N15LongReadsMapper16count_candidatesERNSt6vectorIhEERNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEE8uint32_t">
+<span id="_CPPv3N15LongReadsMapper16count_candidatesERNSt6vectorIhEERNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEE8uint32_t"></span><span id="_CPPv2N15LongReadsMapper16count_candidatesERNSt6vectorIhEERNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEE8uint32_t"></span><span id="LongReadsMapper::count_candidates__std::vector:unsigned-c:R.std::vector:std::vector:std::pair:int32_t.int32_t:::R.uint32_t"></span><span class="target" id="class_long_reads_mapper_1ac048b460f7c185a816f2e7f504e02ab4"></span>void <code class="sig-name descname">count_candidates</code><span class="sig-paren">(</span>std::vector&lt;unsigned char&gt; &amp;<em>candidate_counts</em>, std::vector&lt;std::vector&lt;std::pair&lt;int32_t, int32_t&gt;&gt;&gt; &amp;<em>matches</em>, uint32_t <em>read_kmers_size</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N15LongReadsMapper16count_candidatesERNSt6vectorIhEERNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEE8uint32_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Using the populated matches collection (see het_all_kmer_matches()) returns a collection of nodeIDs that have more than 50 matches with that particular read.</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>set of nodeIDs of nodes with more than 50 matches to the read </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">matches</span></code>: matches vector </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">read_kmers_size</span></code>: number of kmers in the read </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N15LongReadsMapper16alignment_blocksE8uint32_tRNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEE8uint32_tRKNSt6vectorIhEE">
+<span id="_CPPv3N15LongReadsMapper16alignment_blocksE8uint32_tRNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEE8uint32_tRKNSt6vectorIhEE"></span><span id="_CPPv2N15LongReadsMapper16alignment_blocksE8uint32_tRNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEE8uint32_tRKNSt6vectorIhEE"></span><span id="LongReadsMapper::alignment_blocks__uint32_t.std::vector:std::vector:std::pair:int32_t.int32_t:::R.uint32_t.std::vector:unsigned-c:CR"></span><span class="target" id="class_long_reads_mapper_1ae0c3339162e95030babaecb59740fbe8"></span>std::vector&lt;LongReadMapping&gt; <code class="sig-name descname">alignment_blocks</code><span class="sig-paren">(</span>uint32_t <em>readID</em>, std::vector&lt;std::vector&lt;std::pair&lt;int32_t, int32_t&gt;&gt;&gt; &amp;<em>matches</em>, uint32_t <em>read_kmers_size</em>, <em class="property">const</em> std::vector&lt;unsigned char&gt; &amp;<em>candidate_counts</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N15LongReadsMapper16alignment_blocksE8uint32_tRNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEE8uint32_tRKNSt6vectorIhEE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This function will check for continuous blocks of alignments between the read and the window candidates produced by window_candidates() using the matches prudiced by get_allKmer_matches() The result is a vector af LongReadMappings where each element describes a mapping of a block of the read to a block of a node (see struct LongReadMapping)</p>
+<p>Each LongReadMapping describes a chain of matching kmers in the read and the node where the matches advance at the same pace (within a jumping distance allowance)</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>collection of readtonode mappings (LongReadMapping) </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">readID</span></code>: id of the analyzed read </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">matches</span></code>: matches collection produced by get_allKmer_matches() </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">read_kmers_size</span></code>: Number of kmers in the read </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">candidates</span></code>: collection of candidate matches produced by window_candidates() </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N15LongReadsMapper13filter_blocksERNSt6vectorI15LongReadMappingEERNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEE8uint32_t">
+<span id="_CPPv3N15LongReadsMapper13filter_blocksERNSt6vectorI15LongReadMappingEERNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEE8uint32_t"></span><span id="_CPPv2N15LongReadsMapper13filter_blocksERNSt6vectorI15LongReadMappingEERNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEE8uint32_t"></span><span id="LongReadsMapper::filter_blocks__std::vector:LongReadMapping:R.std::vector:std::vector:std::pair:int32_t.int32_t:::R.uint32_t"></span><span class="target" id="class_long_reads_mapper_1a92f6a44feaa90adc1fb4cce98bab4b7b"></span>std::vector&lt;LongReadMapping&gt; <code class="sig-name descname">filter_blocks</code><span class="sig-paren">(</span>std::vector&lt;LongReadMapping&gt; &amp;<em>blocks</em>, std::vector&lt;std::vector&lt;std::pair&lt;int32_t, int32_t&gt;&gt;&gt; &amp;<em>matches</em>, uint32_t <em>read_kmers_size</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N15LongReadsMapper13filter_blocksERNSt6vectorI15LongReadMappingEERNSt6vectorINSt6vectorINSt4pairI7int32_t7int32_tEEEEEE8uint32_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Given a list of blocks the filter will discard overlapping blocks keeping those with the max span and score combination</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>Filtered, non overlapping collection of mapping blocks (LongReadMapping) </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">blocks</span></code>: Maping blocks produced by <a class="reference internal" href="#class_long_reads_mapper_1ae0c3339162e95030babaecb59740fbe8"><span class="std std-ref">alignment_blocks()</span></a> </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">matches</span></code>: Matches produced by <a class="reference internal" href="#class_long_reads_mapper_1a90b8aa27fd4044acff4008b5288f04de"><span class="std std-ref">get_all_kmer_matches()</span></a> </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">read_kmers_size</span></code>: Number of kmers in the read </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N15LongReadsMapper9map_readsERKNSt13unordered_setI8uint32_tEE">
+<span id="_CPPv3N15LongReadsMapper9map_readsERKNSt13unordered_setI8uint32_tEE"></span><span id="_CPPv2N15LongReadsMapper9map_readsERKNSt13unordered_setI8uint32_tEE"></span><span id="LongReadsMapper::map_reads__std::unordered_set:uint32_t:CR"></span><span class="target" id="class_long_reads_mapper_1a8135050c46d2bbaa3ce6cf92b7166481"></span>void <code class="sig-name descname">map_reads</code><span class="sig-paren">(</span><em class="property">const</em> std::unordered_set&lt;uint32_t&gt; &amp;<em>readIDs</em> = {}<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N15LongReadsMapper9map_readsERKNSt13unordered_setI8uint32_tEE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Function to map a read to the graph in 4 steps using the methods in this class</p>
+<p>//========== 1. Get read sequence, kmerise, get all matches ========== //========== 2. Find match candidates in fixed windows ========== //========== 3. Create alignment blocks from candidates ========== //========== 4. Construct mapping path ==========</p>
+<p>Results are stored in the mappings collection of this object</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">readIDs</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N15LongReadsMapper23map_reads_to_best_nodesERKNSt13unordered_setI8uint32_tEE">
+<span id="_CPPv3N15LongReadsMapper23map_reads_to_best_nodesERKNSt13unordered_setI8uint32_tEE"></span><span id="_CPPv2N15LongReadsMapper23map_reads_to_best_nodesERKNSt13unordered_setI8uint32_tEE"></span><span id="LongReadsMapper::map_reads_to_best_nodes__std::unordered_set:uint32_t:CR"></span><span class="target" id="class_long_reads_mapper_1a8d61a020c9ea192fe2ef7b66bd77aba9"></span>void <code class="sig-name descname">map_reads_to_best_nodes</code><span class="sig-paren">(</span><em class="property">const</em> std::unordered_set&lt;uint32_t&gt; &amp;<em>readIDs</em> = {}<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N15LongReadsMapper23map_reads_to_best_nodesERKNSt13unordered_setI8uint32_tEE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Function to map a read to the graph in 5 steps using the methods in this class</p>
+<p>//========== 1. Get read sequence, kmerise, get all matches ========== //========== 2. Find match candidates winning in at least a window ========== //========== 3. 1st level-chaining ========== //========== 4. Maximum lenght chaining ========== //========== 4. Discard all matches that are not winners (can tie) on all their windows ==========</p>
+<p>Results are stored in the mappings collection of this object</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">readIDs</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N15LongReadsMapper12map_sequenceERK10NKmerIndexPKc10sgNodeID_t">
+<span id="_CPPv3N15LongReadsMapper12map_sequenceERK10NKmerIndexPKc10sgNodeID_t"></span><span id="_CPPv2N15LongReadsMapper12map_sequenceERK10NKmerIndexPKc10sgNodeID_t"></span><span id="LongReadsMapper::map_sequence__NKmerIndexCR.cCP.sgNodeID_t"></span><span class="target" id="class_long_reads_mapper_1a0a71a3f79df1e86b7181bfc82b1689c4"></span>std::vector&lt;LongReadMapping&gt; <code class="sig-name descname">map_sequence</code><span class="sig-paren">(</span><em class="property">const</em> NKmerIndex &amp;<em>knindex</em>, <em class="property">const</em> char *<em>query_sequence_ptr</em>, sgNodeID_t <em>seq_id</em> = 0<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N15LongReadsMapper12map_sequenceERK10NKmerIndexPKc10sgNodeID_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This function maps any sequence to the graph, index needs to be already updated! WARNING: this is slow, not meant for high throughput <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>LongReadMappings for the sequence </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">query_sequence_ptr</span></code>: Sequence to align to the index </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N15LongReadsMapper14update_indexesEv">
+<span id="_CPPv3N15LongReadsMapper14update_indexesEv"></span><span id="_CPPv2N15LongReadsMapper14update_indexesEv"></span><span id="LongReadsMapper::update_indexes"></span><span class="target" id="class_long_reads_mapper_1ab02dfb04b25a8f2022b27deeb92c434f"></span>void <code class="sig-name descname">update_indexes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N15LongReadsMapper14update_indexesEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Updates reads_in_nodes </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK15LongReadsMapper40filter_and_chain_matches_by_offset_groupERNSt6vectorI15LongReadMappingEEb">
+<span id="_CPPv3NK15LongReadsMapper40filter_and_chain_matches_by_offset_groupERNSt6vectorI15LongReadMappingEEb"></span><span id="_CPPv2NK15LongReadsMapper40filter_and_chain_matches_by_offset_groupERNSt6vectorI15LongReadMappingEEb"></span><span id="LongReadsMapper::filter_and_chain_matches_by_offset_group__std::vector:LongReadMapping:R.bC"></span><span class="target" id="class_long_reads_mapper_1a27e9ccde32d68b88339396c45a587e7c"></span>std::vector&lt;LongReadMapping&gt; <code class="sig-name descname">filter_and_chain_matches_by_offset_group</code><span class="sig-paren">(</span>std::vector&lt;LongReadMapping&gt; &amp;<em>matches</em>, bool <em>verbose</em> = false<span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK15LongReadsMapper40filter_and_chain_matches_by_offset_groupERNSt6vectorI15LongReadMappingEEb" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This goes read by read, and transforms the filtered mappings into path-mappings, by: 1) chaining coherent successive mappings 2) removing secondary mappings 3) Pathing between mappings as far as the read supports a single path </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK15LongReadsMapper23remove_shadowed_matchesERKNSt6vectorI15LongReadMappingEE">
+<span id="_CPPv3NK15LongReadsMapper23remove_shadowed_matchesERKNSt6vectorI15LongReadMappingEE"></span><span id="_CPPv2NK15LongReadsMapper23remove_shadowed_matchesERKNSt6vectorI15LongReadMappingEE"></span><span id="LongReadsMapper::remove_shadowed_matches__std::vector:LongReadMapping:CRC"></span><span class="target" id="class_long_reads_mapper_1ae276a89db786b60ebd2615ffbedd8543"></span>std::vector&lt;LongReadMapping&gt; <code class="sig-name descname">remove_shadowed_matches</code><span class="sig-paren">(</span><em class="property">const</em> std::vector&lt;LongReadMapping&gt; &amp;<em>matches</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK15LongReadsMapper23remove_shadowed_matchesERKNSt6vectorI15LongReadMappingEE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Eliminates matches that are contained within another bigger better match (more span and more score) <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>vector of de-shadowed LongReadMappings </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">matches</span></code>: set of matched to de-shadow, usually all the matches within a read </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">verbose</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK15LongReadsMapper21improve_read_mappingsERKNSt6vectorI15LongReadMappingEE">
+<span id="_CPPv3NK15LongReadsMapper21improve_read_mappingsERKNSt6vectorI15LongReadMappingEE"></span><span id="_CPPv2NK15LongReadsMapper21improve_read_mappingsERKNSt6vectorI15LongReadMappingEE"></span><span id="LongReadsMapper::improve_read_mappings__std::vector:LongReadMapping:CRC"></span><span class="target" id="class_long_reads_mapper_1a958902a6b2fc6c1e26599b7fcac76be4"></span>std::vector&lt;LongReadMapping&gt; <code class="sig-name descname">improve_read_mappings</code><span class="sig-paren">(</span><em class="property">const</em> std::vector&lt;LongReadMapping&gt; &amp;<em>mappings</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK15LongReadsMapper21improve_read_mappingsERKNSt6vectorI15LongReadMappingEE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Performs the de-shadowing process for each read <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>A collection of the LongReadMappings </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">rid</span></code>: ID of the read to improve </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">correct_on_ws</span></code>: rewrite the LongReadMappings on the workspace </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Members</p>
+<dl class="cpp var">
+<dt id="_CPPv4N15LongReadsMapper14max_index_freqE">
+<span id="_CPPv3N15LongReadsMapper14max_index_freqE"></span><span id="_CPPv2N15LongReadsMapper14max_index_freqE"></span><span id="LongReadsMapper::max_index_freq__i"></span><span class="target" id="class_long_reads_mapper_1a96e9aefc34d7fd29df9cd32bb9ddf99f"></span>int <code class="sig-name descname">max_index_freq</code> = 200<a class="headerlink" href="#_CPPv4N15LongReadsMapper14max_index_freqE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="xrefsect">
+<dt>
+<em>Todo:</em></dt>
+<dd><p>: Describe exactly what each of these do!! </p>
+</dd></dl>
+
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N15LongReadsMapper1kE">
+<span id="_CPPv3N15LongReadsMapper1kE"></span><span id="_CPPv2N15LongReadsMapper1kE"></span><span id="LongReadsMapper::k__uint8_t"></span><span class="target" id="class_long_reads_mapper_1a0a266a277c5f1ea1f51e9dcceca53cce"></span>uint8_t <code class="sig-name descname">k</code> = 15<a class="headerlink" href="#_CPPv4N15LongReadsMapper1kE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Maximum number of occurrences of kmers in index to be considered. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N15LongReadsMapper8min_sizeE">
+<span id="_CPPv3N15LongReadsMapper8min_sizeE"></span><span id="_CPPv2N15LongReadsMapper8min_sizeE"></span><span id="LongReadsMapper::min_size__i"></span><span class="target" id="class_long_reads_mapper_1a66e92e007cdb4028409f3455e33f88b8"></span>int <code class="sig-name descname">min_size</code> = 1000<a class="headerlink" href="#_CPPv4N15LongReadsMapper8min_sizeE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Kmer size used for mappings. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N15LongReadsMapper9min_chainE">
+<span id="_CPPv3N15LongReadsMapper9min_chainE"></span><span id="_CPPv2N15LongReadsMapper9min_chainE"></span><span id="LongReadsMapper::min_chain__i"></span><span class="target" id="class_long_reads_mapper_1acf5c5273ca8e0d86de9f60bf41cfb4b9"></span>int <code class="sig-name descname">min_chain</code> = 50<a class="headerlink" href="#_CPPv4N15LongReadsMapper9min_chainE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Minimum length of chained matches to report mappings. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N15LongReadsMapper8max_jumpE">
+<span id="_CPPv3N15LongReadsMapper8max_jumpE"></span><span id="_CPPv2N15LongReadsMapper8max_jumpE"></span><span id="LongReadsMapper::max_jump__i"></span><span class="target" id="class_long_reads_mapper_1a09eaeccc9804600cf407c5e44257d8ab"></span>int <code class="sig-name descname">max_jump</code> = 500<a class="headerlink" href="#_CPPv4N15LongReadsMapper8max_jumpE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Minimum number of chained matches to report mappings. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N15LongReadsMapper21max_hits_to_candidateE">
+<span id="_CPPv3N15LongReadsMapper21max_hits_to_candidateE"></span><span id="_CPPv2N15LongReadsMapper21max_hits_to_candidateE"></span><span id="LongReadsMapper::max_hits_to_candidate__i"></span><span class="target" id="class_long_reads_mapper_1a59e00cf7705da11fed35f728c4b535e4"></span>int <code class="sig-name descname">max_hits_to_candidate</code> = 4<a class="headerlink" href="#_CPPv4N15LongReadsMapper21max_hits_to_candidateE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Joins kmer hits within max_jump distance in a node. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N15LongReadsMapper16max_delta_changeE">
+<span id="_CPPv3N15LongReadsMapper16max_delta_changeE"></span><span id="_CPPv2N15LongReadsMapper16max_delta_changeE"></span><span id="LongReadsMapper::max_delta_change__i"></span><span class="target" id="class_long_reads_mapper_1adb43527ffa7d27fa56166b2059a91873"></span>int <code class="sig-name descname">max_delta_change</code> = 60<a class="headerlink" href="#_CPPv4N15LongReadsMapper16max_delta_changeE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Maximum number of hits to a candidate node, filters kmers with too many offsets in the node. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N15LongReadsMapper30min_number_of_node_occurrencesE">
+<span id="_CPPv3N15LongReadsMapper30min_number_of_node_occurrencesE"></span><span id="_CPPv2N15LongReadsMapper30min_number_of_node_occurrencesE"></span><span id="LongReadsMapper::min_number_of_node_occurrences__i"></span><span class="target" id="class_long_reads_mapper_1a70e420e564ecbd6000b985ce0d7f89cc"></span>int <code class="sig-name descname">min_number_of_node_occurrences</code> = 50<a class="headerlink" href="#_CPPv4N15LongReadsMapper30min_number_of_node_occurrencesE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Maximum delta change. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N15LongReadsMapper9datastoreE">
+<span id="_CPPv3N15LongReadsMapper9datastoreE"></span><span id="_CPPv2N15LongReadsMapper9datastoreE"></span><span id="LongReadsMapper::datastore__LongReadsDatastoreCR"></span><span class="target" id="class_long_reads_mapper_1a21db04164344ee9d7298c032be826722"></span><em class="property">const</em> LongReadsDatastore &amp;<code class="sig-name descname">datastore</code><a class="headerlink" href="#_CPPv4N15LongReadsMapper9datastoreE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This updates the filtered mappings by taking the elements from the path mapping that have the right size and neighbourhood conditions </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N15LongReadsMapper8mappingsE">
+<span id="_CPPv3N15LongReadsMapper8mappingsE"></span><span id="_CPPv2N15LongReadsMapper8mappingsE"></span><span id="LongReadsMapper::mappings__std::vector:LongReadMapping:"></span><span class="target" id="class_long_reads_mapper_1aea570f2585119c31bbb546011dfccf3f"></span>std::vector&lt;LongReadMapping&gt; <code class="sig-name descname">mappings</code><a class="headerlink" href="#_CPPv4N15LongReadsMapper8mappingsE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Flat list of mappings from the reads </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N15LongReadsMapper17all_paths_betweenE">
+<span id="_CPPv3N15LongReadsMapper17all_paths_betweenE"></span><span id="_CPPv2N15LongReadsMapper17all_paths_betweenE"></span><span id="LongReadsMapper::all_paths_between__std::unordered_map:std::pair:sgNodeID_t.sgNodeID_t:.std::vector:SequenceDistanceGraphPath::"></span><span class="target" id="class_long_reads_mapper_1afd6c348aeb69ed63d9877da7d57d9b1f"></span>std::unordered_map&lt;std::pair&lt;sgNodeID_t, sgNodeID_t&gt;, std::vector&lt;SequenceDistanceGraphPath&gt;&gt; <code class="sig-name descname">all_paths_between</code><a class="headerlink" href="#_CPPv4N15LongReadsMapper17all_paths_betweenE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This structure holds “all paths” between consecutive backbone anchors</p>
+<p>(Maybe in canonical from-&gt;to orientation?) </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N15LongReadsMapper13reads_in_nodeE">
+<span id="_CPPv3N15LongReadsMapper13reads_in_nodeE"></span><span id="_CPPv2N15LongReadsMapper13reads_in_nodeE"></span><span id="LongReadsMapper::reads_in_node__std::vector:std::vector:uint64_t::"></span><span class="target" id="class_long_reads_mapper_1a56da3b41dad56cb98bef30e9d1d3611d"></span>std::vector&lt;std::vector&lt;uint64_t&gt;&gt; <code class="sig-name descname">reads_in_node</code><a class="headerlink" href="#_CPPv4N15LongReadsMapper13reads_in_nodeE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Stores an index of all reads that map to a node. This index can be queried restrict search of particular mappings. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="LinkageMaker.html" class="btn btn-neutral float-right" title="LinkageMaker" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="LinkedReadsMapper.html" class="btn btn-neutral float-left" title="LinkedReadsMapper" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2019, Bernardo J. Clavijo, Gonzalo Garcia, Luis J. Yanes, Benjamin Ward
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

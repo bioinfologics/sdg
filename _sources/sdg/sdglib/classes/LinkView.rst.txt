@@ -1,0 +1,5 @@
+LinkView
+=========
+
+.. doxygenclass:: LinkView
+   :members:

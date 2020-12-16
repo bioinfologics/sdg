@@ -1,0 +1,412 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PairedReadsMapper &mdash; SDG  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="LinkedReadsMapper" href="LinkedReadsMapper.html" />
+    <link rel="prev" title="LinkView" href="LinkView.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> SDG
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../README.html">Sequence Distance Graph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">SDGlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workspace/README.html">Workspace</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../_sdglib_toc.html">SDG Classes</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="WorkSpace.html">WorkSpace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="DistanceGraph.html">DistanceGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SequenceDistanceGraph.html">SequenceDistanceGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="NodeView.html">NodeView</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkView.html">LinkView</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">PairedReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkedReadsMapper.html">LinkedReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LongReadsMapper.html">LongReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkageMaker.html">LinkageMaker</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SDG</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../_sdglib_toc.html">SDG Classes</a> &raquo;</li>
+        
+      <li>PairedReadsMapper</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/sdg/sdglib/classes/PairedReadsMapper.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="pairedreadsmapper">
+<h1>PairedReadsMapper<a class="headerlink" href="#pairedreadsmapper" title="Permalink to this headline">¶</a></h1>
+<dl class="cpp class">
+<dt id="_CPPv417PairedReadsMapper">
+<span id="_CPPv317PairedReadsMapper"></span><span id="_CPPv217PairedReadsMapper"></span><span id="PairedReadsMapper"></span><span class="target" id="class_paired_reads_mapper"></span><em class="property">class </em><code class="sig-name descname">PairedReadsMapper</code><a class="headerlink" href="#_CPPv417PairedReadsMapper" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A mapper for linked reads from a PairedReadsDatastore. Supports partial remapping of unmapped reads or of a selection list. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Functions</p>
+<dl class="cpp function">
+<dt id="_CPPv4NK17PairedReadsMapper2lsEib">
+<span id="_CPPv3NK17PairedReadsMapper2lsEib"></span><span id="_CPPv2NK17PairedReadsMapper2lsEib"></span><span id="PairedReadsMapper::ls__i.bC"></span><span class="target" id="class_paired_reads_mapper_1a5e8604fef3f01fd84fdd5250bd9ffbe9"></span>std::string <code class="sig-name descname">ls</code><span class="sig-paren">(</span>int <em>level</em> = 0, bool <em>recursive</em> = true<span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK17PairedReadsMapper2lsEib" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Provides an overview of the information in the <a class="reference internal" href="#class_paired_reads_mapper"><span class="std std-ref">PairedReadsMapper</span></a>. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>A text summary of the information contained in a <a class="reference internal" href="#class_paired_reads_mapper"><span class="std std-ref">PairedReadsMapper</span></a> </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">level</span></code>: Base indentation level to use on the result </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">recursive</span></code>: Whether it should explore or not the rest of the hierarchy </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17PairedReadsMapper9map_readsERKNSt13unordered_setI8uint64_tEE">
+<span id="_CPPv3N17PairedReadsMapper9map_readsERKNSt13unordered_setI8uint64_tEE"></span><span id="_CPPv2N17PairedReadsMapper9map_readsERKNSt13unordered_setI8uint64_tEE"></span><span id="PairedReadsMapper::map_reads__std::unordered_set:uint64_t:CR"></span><span class="target" id="class_paired_reads_mapper_1a170e29fe68c9d1ccf9dab98c63213f56"></span>void <code class="sig-name descname">map_reads</code><span class="sig-paren">(</span>std::unordered_set&lt;uint64_t&gt; <em class="property">const</em> &amp;<em>reads_to_remap</em> = {}<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17PairedReadsMapper9map_readsERKNSt13unordered_setI8uint64_tEE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Maps each read in the data-store to the nodes using unique kmers form the graph. </p>
+<p>Maps each read in the data-store to the nodes using unique kmers form the graph. Reads are mapped only if the placing in the graph is unique, if one or more kmers of a read maps to a different node the mapping for that read is discarded. Results are stored in this.read_to_node and this.reads_in_node</p>
+<p>If a set of reads ids is passed the mapper will only remap those reads.</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">reads_to_remap</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17PairedReadsMapper15remap_all_readsEv">
+<span id="_CPPv3N17PairedReadsMapper15remap_all_readsEv"></span><span id="_CPPv2N17PairedReadsMapper15remap_all_readsEv"></span><span id="PairedReadsMapper::remap_all_reads"></span><span class="target" id="class_paired_reads_mapper_1ac61f00a40ff80ca8b07f0d1c21233da6"></span>void <code class="sig-name descname">remap_all_reads</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17PairedReadsMapper15remap_all_readsEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Clears this.read_to_node and this.reads_in_node collections and reruns <a class="reference internal" href="#class_paired_reads_mapper_1a170e29fe68c9d1ccf9dab98c63213f56"><span class="std std-ref">map_reads()</span></a> </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17PairedReadsMapper11map_reads63ERKNSt13unordered_setI8uint64_tEE">
+<span id="_CPPv3N17PairedReadsMapper11map_reads63ERKNSt13unordered_setI8uint64_tEE"></span><span id="_CPPv2N17PairedReadsMapper11map_reads63ERKNSt13unordered_setI8uint64_tEE"></span><span id="PairedReadsMapper::map_reads63__std::unordered_set:uint64_t:CR"></span><span class="target" id="class_paired_reads_mapper_1af22b724239015f446d636871b1ffbfdb"></span>void <code class="sig-name descname">map_reads63</code><span class="sig-paren">(</span>std::unordered_set&lt;uint64_t&gt; <em class="property">const</em> &amp;<em>reads_to_remap</em> = {}<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17PairedReadsMapper11map_reads63ERKNSt13unordered_setI8uint64_tEE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>same as <a class="reference internal" href="#class_paired_reads_mapper_1a170e29fe68c9d1ccf9dab98c63213f56"><span class="std std-ref">map_reads()</span></a> but using k=63 </p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">reads_to_remap</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17PairedReadsMapper17remap_all_reads63Ev">
+<span id="_CPPv3N17PairedReadsMapper17remap_all_reads63Ev"></span><span id="_CPPv2N17PairedReadsMapper17remap_all_reads63Ev"></span><span id="PairedReadsMapper::remap_all_reads63"></span><span class="target" id="class_paired_reads_mapper_1ae51df2edb1b1d432c4241bc923861ad3"></span>void <code class="sig-name descname">remap_all_reads63</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17PairedReadsMapper17remap_all_reads63Ev" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Same as remap_all_reads but using map_reads63. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17PairedReadsMapper10path_readsE7uint8_tib">
+<span id="_CPPv3N17PairedReadsMapper10path_readsE7uint8_tib"></span><span id="_CPPv2N17PairedReadsMapper10path_readsE7uint8_tib"></span><span id="PairedReadsMapper::path_reads__uint8_t.i.b"></span><span class="target" id="class_paired_reads_mapper_1abfb6b18a2d387a7e395abe9e4bb4e0bb"></span>void <code class="sig-name descname">path_reads</code><span class="sig-paren">(</span>uint8_t <em>k</em> = 63, int <em>filter</em> = 200, bool <em>fill_offsets</em> = false<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17PairedReadsMapper10path_readsE7uint8_tib" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>creates a read path for each read through mapping </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p></p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17PairedReadsMapper12path_reads63Ev">
+<span id="_CPPv3N17PairedReadsMapper12path_reads63Ev"></span><span id="_CPPv2N17PairedReadsMapper12path_reads63Ev"></span><span id="PairedReadsMapper::path_reads63"></span><span class="target" id="class_paired_reads_mapper_1aaeff9e11f97d39c6d3d3ab82e607430b"></span>void <code class="sig-name descname">path_reads63</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17PairedReadsMapper12path_reads63Ev" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>creates a read path for each read through mapping </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p></p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK17PairedReadsMapper7path_fwE7seqID_t10sgNodeID_tbb">
+<span id="_CPPv3NK17PairedReadsMapper7path_fwE7seqID_t10sgNodeID_tbb"></span><span id="_CPPv2NK17PairedReadsMapper7path_fwE7seqID_t10sgNodeID_tbb"></span><span id="PairedReadsMapper::path_fw__seqID_t.sgNodeID_t.b.bC"></span><span class="target" id="class_paired_reads_mapper_1a5e3cda848e1a33a250cb5a722450eb25"></span>std::vector&lt;sgNodeID_t&gt; <code class="sig-name descname">path_fw</code><span class="sig-paren">(</span>seqID_t <em>read_id</em>, sgNodeID_t <em>node</em>, bool <em>use_pair</em> = true, bool <em>collapse_pair</em> = true<span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK17PairedReadsMapper7path_fwE7seqID_t10sgNodeID_tbb" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>returns a list of possible nodes fw, node needs to appear with same sign in read’s path, negative read id means reversed path </p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">read_id</span></code>: </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">node</span></code>: </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">use_pair</span></code>: </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">collapse_pair</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17PairedReadsMapper17size_distributionEv">
+<span id="_CPPv3N17PairedReadsMapper17size_distributionEv"></span><span id="_CPPv2N17PairedReadsMapper17size_distributionEv"></span><span id="PairedReadsMapper::size_distribution"></span><span class="target" id="class_paired_reads_mapper_1aed97d37136f0dd5efb781befae1c42c7"></span>std::vector&lt;uint64_t&gt; <code class="sig-name descname">size_distribution</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17PairedReadsMapper17size_distributionEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Estimates the fragment size distribution for the mapped data-store using the mapped pairs. </p>
+<p>Estimates the fragment size distribution for the mapped data-store using the mapped pairs. The result is also stored in this.rfdist and this.frdist. and one of the vectors is also returned depending on majority of the orientations of the reads</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>distance count vector, the same as this.rfdist or this.frdist depending on the majority of the orientations of the reads </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17PairedReadsMapper20populate_orientationEv">
+<span id="_CPPv3N17PairedReadsMapper20populate_orientationEv"></span><span id="_CPPv2N17PairedReadsMapper20populate_orientationEv"></span><span id="PairedReadsMapper::populate_orientation"></span><span class="target" id="class_paired_reads_mapper_1a50368f30b4e83d3e4a768ba7cb5cafe3"></span>void <code class="sig-name descname">populate_orientation</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17PairedReadsMapper20populate_orientationEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Populates the read_direction_in_node collection for the dataset. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK17PairedReadsMapper12print_statusEv">
+<span id="_CPPv3NK17PairedReadsMapper12print_statusEv"></span><span id="_CPPv2NK17PairedReadsMapper12print_statusEv"></span><span id="PairedReadsMapper::print_statusC"></span><span class="target" id="class_paired_reads_mapper_1a27414ef47592e1ec9e3abe98a1e094b8"></span>void <code class="sig-name descname">print_status</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK17PairedReadsMapper12print_statusEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Prints the count of pairs mapped. </p>
+<p>Prints the count of pairs mapped where no end mapped, a single end mapped and both ends mapped and of those how many mapped to a single node. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N17PairedReadsMapper22get_node_readpairs_idsE10sgNodeID_t">
+<span id="_CPPv3N17PairedReadsMapper22get_node_readpairs_idsE10sgNodeID_t"></span><span id="_CPPv2N17PairedReadsMapper22get_node_readpairs_idsE10sgNodeID_t"></span><span id="PairedReadsMapper::get_node_readpairs_ids__sgNodeID_t"></span><span class="target" id="class_paired_reads_mapper_1a214dab4148f0272236cebf8087fdbe4d"></span>std::vector&lt;uint64_t&gt; <code class="sig-name descname">get_node_readpairs_ids</code><span class="sig-paren">(</span>sgNodeID_t <em>nodeID</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N17PairedReadsMapper22get_node_readpairs_idsE10sgNodeID_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Returns a collection of read ids that have both ends mapped to the nodeID. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>vector of read ids where both ends are mapped to the nodeID </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">nodeID</span></code>: id of the node to get the read ids from </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Members</p>
+<dl class="cpp var">
+<dt id="_CPPv4N17PairedReadsMapper13reads_in_nodeE">
+<span id="_CPPv3N17PairedReadsMapper13reads_in_nodeE"></span><span id="_CPPv2N17PairedReadsMapper13reads_in_nodeE"></span><span id="PairedReadsMapper::reads_in_node__std::vector:std::vector:ReadMapping::"></span><span class="target" id="class_paired_reads_mapper_1a96e0a1b0bbd550f8bfb75b925d58c463"></span>std::vector&lt;std::vector&lt;ReadMapping&gt;&gt; <code class="sig-name descname">reads_in_node</code><a class="headerlink" href="#_CPPv4N17PairedReadsMapper13reads_in_nodeE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>reads_in_node[i] contains all the read ids from the data-store mapped to node i </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N17PairedReadsMapper12read_to_nodeE">
+<span id="_CPPv3N17PairedReadsMapper12read_to_nodeE"></span><span id="_CPPv2N17PairedReadsMapper12read_to_nodeE"></span><span id="PairedReadsMapper::read_to_node__std::vector:sgNodeID_t:"></span><span class="target" id="class_paired_reads_mapper_1a74964ace0a86b6239e5a2dd7f7d290fc"></span>std::vector&lt;sgNodeID_t&gt; <code class="sig-name descname">read_to_node</code><a class="headerlink" href="#_CPPv4N17PairedReadsMapper12read_to_nodeE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>read_to_node[i] contains the node where read i was mapped </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N17PairedReadsMapper22read_direction_in_nodeE">
+<span id="_CPPv3N17PairedReadsMapper22read_direction_in_nodeE"></span><span id="_CPPv2N17PairedReadsMapper22read_direction_in_nodeE"></span><span id="PairedReadsMapper::read_direction_in_node__std::vector:b:"></span><span class="target" id="class_paired_reads_mapper_1a5143aa54ef6958a76566e9f352d0b30c"></span>std::vector&lt;bool&gt; <code class="sig-name descname">read_direction_in_node</code><a class="headerlink" href="#_CPPv4N17PairedReadsMapper22read_direction_in_nodeE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>read_direction_in_node[i] has the direction with which read i was mapped in the corresponding mapping (in read_to_node[i]) </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N17PairedReadsMapper6rfdistE">
+<span id="_CPPv3N17PairedReadsMapper6rfdistE"></span><span id="_CPPv2N17PairedReadsMapper6rfdistE"></span><span id="PairedReadsMapper::rfdist__std::vector:uint64_t:"></span><span class="target" id="class_paired_reads_mapper_1ad8a065c49eab1d91f51d195c9287963d"></span>std::vector&lt;uint64_t&gt; <code class="sig-name descname">rfdist</code><a class="headerlink" href="#_CPPv4N17PairedReadsMapper6rfdistE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Reverse forward distance accumulator, do not use directly, if you need the fragment size use <a class="reference internal" href="#class_paired_reads_mapper_1aed97d37136f0dd5efb781befae1c42c7"><span class="std std-ref">size_distribution()</span></a> </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N17PairedReadsMapper6frdistE">
+<span id="_CPPv3N17PairedReadsMapper6frdistE"></span><span id="_CPPv2N17PairedReadsMapper6frdistE"></span><span id="PairedReadsMapper::frdist__std::vector:uint64_t:"></span><span class="target" id="class_paired_reads_mapper_1ac243f2fe62117c13090227fea3e39378"></span>std::vector&lt;uint64_t&gt; <code class="sig-name descname">frdist</code><a class="headerlink" href="#_CPPv4N17PairedReadsMapper6frdistE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Revese forward distance accumulator. </p>
+<p>Forward reverse distance accumulator, do not use directly, if you need the fragment size use <a class="reference internal" href="#class_paired_reads_mapper_1aed97d37136f0dd5efb781befae1c42c7"><span class="std std-ref">size_distribution()</span></a> </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N17PairedReadsMapper10read_pathsE">
+<span id="_CPPv3N17PairedReadsMapper10read_pathsE"></span><span id="_CPPv2N17PairedReadsMapper10read_pathsE"></span><span id="PairedReadsMapper::read_paths__std::vector:ReadPath:"></span><span class="target" id="class_paired_reads_mapper_1a180ef955eac695efa606073e14aa2c5f"></span>std::vector&lt;ReadPath&gt; <code class="sig-name descname">read_paths</code><a class="headerlink" href="#_CPPv4N17PairedReadsMapper10read_pathsE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Forward reverse distance accumulator. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="LinkedReadsMapper.html" class="btn btn-neutral float-right" title="LinkedReadsMapper" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="LinkView.html" class="btn btn-neutral float-left" title="LinkView" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2019, Bernardo J. Clavijo, Gonzalo Garcia, Luis J. Yanes, Benjamin Ward
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

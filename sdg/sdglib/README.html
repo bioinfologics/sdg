@@ -1,0 +1,269 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>SDGlib &mdash; SDG  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Workspace" href="workspace/README.html" />
+    <link rel="prev" title="Sequence Distance Graph" href="../README.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> SDG
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../README.html">Sequence Distance Graph</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">SDGlib</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#design-choices">Design choices</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#nodes-and-links">Nodes and links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#graph-operations">Graph operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#methods-highlight">Methods highlight</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workspace/README.html">Workspace</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../_sdglib_toc.html">SDG Classes</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SDG</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>SDGlib</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/sdg/sdglib/README.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="sdglib">
+<h1>SDGlib<a class="headerlink" href="#sdglib" title="Permalink to this headline">¶</a></h1>
+<p>A sequence distance graph library.</p>
+<div class="section" id="design-choices">
+<h2>Design choices<a class="headerlink" href="#design-choices" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="nodes-and-links">
+<h3>Nodes and links<a class="headerlink" href="#nodes-and-links" title="Permalink to this headline">¶</a></h3>
+<p>We have opted for a representation on which nodes are sequences and go from
+sink (-) to source (+) in a canonical representation.</p>
+<ul class="simple">
+<li><p>Nodes are directional, have a left/start/sink side marked ‘-‘ and an end/source side marked ‘+’.</p></li>
+<li><p>Nodes are canonical or palindromic sequences, else they are reverted.</p></li>
+<li><p>Links are basically a pair of nodes with signs. +node denotes a connection using a node’s source (end) and -node denotes a connection using a node’s sink (start)</p></li>
+<li><p>Both nodes and links can be active or historical, and can be purged. See Operations.</p></li>
+</ul>
+</div>
+<div class="section" id="graph-operations">
+<h3>Graph operations<a class="headerlink" href="#graph-operations" title="Permalink to this headline">¶</a></h3>
+<p>All of this operations will be saved in a journal/log to provide a full
+backtrack of the assembly.</p>
+<ul class="simple">
+<li><p>Add node</p></li>
+<li><p>Remove node</p></li>
+<li><p>Add link</p></li>
+<li><p>Remove link</p></li>
+<li><p>Edit node: changes the consensus for a node’s sequence</p></li>
+<li><p>Unfold node: creates extra copies of a node, distributes its links</p></li>
+<li><p>Fold nodes: collapses multiple copies of a node, combining their links.</p></li>
+<li><p>Split node: breaks a node, creating many smaller parts.</p></li>
+<li><p>Combine nodes: merges multiple nodes, creating a single, larger, node</p></li>
+</ul>
+</div>
+<div class="section" id="methods-highlight">
+<h3>Methods highlight<a class="headerlink" href="#methods-highlight" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>read_gfa / write_gfa</p></li>
+<li><p>construct_from_unitigs</p></li>
+<li><p>add_node / add_link</p></li>
+<li><p>remove_node / remove_link</p></li>
+<li><p>purge_node / purge_link / purge_all_nodes / purge_all_links</p></li>
+<li><p>sequence_from_path</p></li>
+<li><p>single_direction_components: finds single direction components, if a node is specified the</p></li>
+<li><p>replace_path: can be used to expand haplotypes, checks in-out</p></li>
+<li><p>solve_region: receives a list of paths through a region, replaces the region.</p></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="workspace/README.html" class="btn btn-neutral float-right" title="Workspace" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../README.html" class="btn btn-neutral float-left" title="Sequence Distance Graph" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2019, Bernardo J. Clavijo, Gonzalo Garcia, Luis J. Yanes, Benjamin Ward
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

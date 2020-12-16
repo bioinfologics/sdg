@@ -1,0 +1,307 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>LinkageMaker &mdash; SDG  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="prev" title="LongReadsMapper" href="LongReadsMapper.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> SDG
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../README.html">Sequence Distance Graph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">SDGlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workspace/README.html">Workspace</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../_sdglib_toc.html">SDG Classes</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="WorkSpace.html">WorkSpace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="DistanceGraph.html">DistanceGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SequenceDistanceGraph.html">SequenceDistanceGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="NodeView.html">NodeView</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkView.html">LinkView</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PairedReadsMapper.html">PairedReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkedReadsMapper.html">LinkedReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LongReadsMapper.html">LongReadsMapper</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">LinkageMaker</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SDG</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../_sdglib_toc.html">SDG Classes</a> &raquo;</li>
+        
+      <li>LinkageMaker</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/sdg/sdglib/classes/LinkageMaker.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="linkagemaker">
+<h1>LinkageMaker<a class="headerlink" href="#linkagemaker" title="Permalink to this headline">¶</a></h1>
+<dl class="cpp class">
+<dt id="_CPPv412LinkageMaker">
+<span id="_CPPv312LinkageMaker"></span><span id="_CPPv212LinkageMaker"></span><span id="LinkageMaker"></span><span class="target" id="class_linkage_maker"></span><em class="property">class </em><code class="sig-name descname">LinkageMaker</code><a class="headerlink" href="#_CPPv412LinkageMaker" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Creates a new <a class="reference internal" href="DistanceGraph.html#class_distance_graph"><span class="std std-ref">DistanceGraph</span></a> with linkage information from the workspace over the nodes of an input <a class="reference internal" href="DistanceGraph.html#class_distance_graph"><span class="std std-ref">DistanceGraph</span></a>. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Functions</p>
+<dl class="cpp function">
+<dt id="_CPPv4N12LinkageMaker21make_topology_linkageEi">
+<span id="_CPPv3N12LinkageMaker21make_topology_linkageEi"></span><span id="_CPPv2N12LinkageMaker21make_topology_linkageEi"></span><span id="LinkageMaker::make_topology_linkage__i"></span><span class="target" id="class_linkage_maker_1aa74ac434216f8efeaca24423091eed6b"></span><a class="reference internal" href="DistanceGraph.html#_CPPv413DistanceGraph" title="DistanceGraph">DistanceGraph</a> <code class="sig-name descname">make_topology_linkage</code><span class="sig-paren">(</span>int <em>radius</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N12LinkageMaker21make_topology_linkageEi" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Creates a distance graph following the topology of the starting graph</p>
+<p>A-&gt;b-&gt;c-&gt;D-&gt;e-&gt;f-&gt;g-&gt;H</p>
+<p>Uppercase letters are selecetd nodes</p>
+<p>if called wwith radius=10 A-D y D-H are connected</p>
+<p>if called with radius=3 A is connected to D, but D is not connected to H</p>
+<p>if called with radius=2, nothing gets connected</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p></p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">radius</span></code>: reach of the connections </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N12LinkageMaker19make_paired_linkageEi">
+<span id="_CPPv3N12LinkageMaker19make_paired_linkageEi"></span><span id="_CPPv2N12LinkageMaker19make_paired_linkageEi"></span><span id="LinkageMaker::make_paired_linkage__i"></span><span class="target" id="class_linkage_maker_1a7c81b7e311e155bd41cfc6e02412bd91"></span><a class="reference internal" href="DistanceGraph.html#_CPPv413DistanceGraph" title="DistanceGraph">DistanceGraph</a> <code class="sig-name descname">make_paired_linkage</code><span class="sig-paren">(</span>int <em>min_reads</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N12LinkageMaker19make_paired_linkageEi" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Create a distance graph using the available paired read mappers <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p></p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">min_reads</span></code>: minimum amount of reads to create a link </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N12LinkageMaker25make_long10x_multilinkageERK15LongReadsMapperRK17LinkedReadsMapper8uint32_tfb7int32_t">
+<span id="_CPPv3N12LinkageMaker25make_long10x_multilinkageERK15LongReadsMapperRK17LinkedReadsMapper8uint32_tfb7int32_t"></span><span id="_CPPv2N12LinkageMaker25make_long10x_multilinkageERK15LongReadsMapperRK17LinkedReadsMapper8uint32_tfb7int32_t"></span><span id="LinkageMaker::make_long10x_multilinkage__LongReadsMapperCR.LinkedReadsMapperCR.uint32_t.float.b.int32_t"></span><span class="target" id="class_linkage_maker_1a307fd011d1ef48e685b855dd560c2317"></span><a class="reference internal" href="DistanceGraph.html#_CPPv413DistanceGraph" title="DistanceGraph">DistanceGraph</a> <code class="sig-name descname">make_long10x_multilinkage</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="LongReadsMapper.html#_CPPv415LongReadsMapper" title="LongReadsMapper">LongReadsMapper</a> &amp;<em>lorm</em>, <em class="property">const</em> <a class="reference internal" href="LinkedReadsMapper.html#_CPPv417LinkedReadsMapper" title="LinkedReadsMapper">LinkedReadsMapper</a> &amp;<em>lrm</em>, uint32_t <em>min_size</em>, float <em>min_tnscore</em>, bool <em>real_read_size</em> = true, int32_t <em>unmapped_end</em> = 1000<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N12LinkageMaker25make_long10x_multilinkageERK15LongReadsMapperRK17LinkedReadsMapper8uint32_tfb7int32_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Creates a multilinkage digraph using the Nano10X pipeline <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>Multi linkage <a class="reference internal" href="DistanceGraph.html#class_distance_graph"><span class="std std-ref">DistanceGraph</span></a> </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">lorm</span></code>: long read mapper </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lrm</span></code>: link read mapper (needs to have the neighbours calculated, see linkedReadsMapper.compute_all_tag_neighbours) </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min_size</span></code>: min node size to be considered </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min_tnscore</span></code>: min neighbour tag score to be considered </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">real_read_size</span></code>: </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">unmapped_end</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Static Functions</p>
+<dl class="cpp function">
+<dt id="_CPPv4N12LinkageMaker33filter_mappings_with_linked_readsERK15LongReadsMapperRK17LinkedReadsMapper8uint32_tf">
+<span id="_CPPv3N12LinkageMaker33filter_mappings_with_linked_readsERK15LongReadsMapperRK17LinkedReadsMapper8uint32_tf"></span><span id="_CPPv2N12LinkageMaker33filter_mappings_with_linked_readsERK15LongReadsMapperRK17LinkedReadsMapper8uint32_tf"></span><span id="LinkageMaker::filter_mappings_with_linked_reads__LongReadsMapperCR.LinkedReadsMapperCR.uint32_t.float"></span><span class="target" id="class_linkage_maker_1a12c910a5b6d105665a96260a336cbf3b"></span>std::vector&lt;std::vector&lt;LongReadMapping&gt;&gt; <code class="sig-name descname">filter_mappings_with_linked_reads</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="LongReadsMapper.html#_CPPv415LongReadsMapper" title="LongReadsMapper">LongReadsMapper</a> &amp;<em>lorm</em>, <em class="property">const</em> <a class="reference internal" href="LinkedReadsMapper.html#_CPPv417LinkedReadsMapper" title="LinkedReadsMapper">LinkedReadsMapper</a> &amp;<em>lrm</em>, uint32_t <em>min_size</em>, float <em>min_tnscore</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N12LinkageMaker33filter_mappings_with_linked_readsERK15LongReadsMapperRK17LinkedReadsMapper8uint32_tf" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This goes read by read, and filters the mappings by finding a set of linked nodes that maximises 1-cov of the read</p>
+<p>Unfiltered mappings read from mappings and results stored in filtered_read_mappings, which is cleared.</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">lrm</span></code>: a LinkedReadMapper with mapped reads, over the same graph this mapper has mapped Long Reads. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min_size</span></code>: minimum size of the read to filter mappings. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min_tnscore</span></code>: minimum neighbour score on linked reads </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="LongReadsMapper.html" class="btn btn-neutral float-left" title="LongReadsMapper" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2019, Bernardo J. Clavijo, Gonzalo Garcia, Luis J. Yanes, Benjamin Ward
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

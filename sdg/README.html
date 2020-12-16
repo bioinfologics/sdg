@@ -1,0 +1,289 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Sequence Distance Graph &mdash; SDG  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="SDGlib" href="sdglib/README.html" />
+    <link rel="prev" title="Welcome to SDG’s documentation!" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> SDG
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Sequence Distance Graph</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#command-line-tools">Command line tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sdg-datastore">sdg-datastore</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sdg-kmercounter">sdg-kmercounter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sdg-workspace">sdg-workspace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sdg-dbg">sdg-dbg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sdg-mapper">sdg-mapper</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sdglib/README.html">SDGlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sdglib/workspace/README.html">Workspace</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_sdglib_toc.html">SDG Classes</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SDG</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Sequence Distance Graph</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/sdg/README.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <a class="reference external image-reference" href="https://github.com/bioinfologics/sdg/blob/master/LICENSE"><img alt="https://img.shields.io/badge/license-MIT-green.svg" src="https://img.shields.io/badge/license-MIT-green.svg" /></a>
+<a class="reference external image-reference" href="https://travis-ci.org/bioinfologics/sdg"><img alt="https://travis-ci.org/bioinfologics/sdg.svg?branch=master" src="https://travis-ci.org/bioinfologics/sdg.svg?branch=master" /></a>
+<div class="section" id="sequence-distance-graph">
+<h1>Sequence Distance Graph<a class="headerlink" href="#sequence-distance-graph" title="Permalink to this headline">¶</a></h1>
+<p>The Sequence Distance Graph (<strong>SDG</strong>) is a framework to work with genome graphs and sequencing data. It provides a workspace built around a Sequence Distance Graph, datastores for paired, linked and long reads, read mappers, and k-mer counters. It can be used to perform different types of sequence analyses.</p>
+<p>SDG can be used as a Python module through its SWIG API. R and Julia support are experimental.</p>
+<p>Documentation for the framework can be found at <a class="reference external" href="https://bioinfologics.github.io/sdg">https://bioinfologics.github.io/sdg</a></p>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>SDG can be run on Linux and MacOS, and requires enough RAM to hold the WorkSpace completely in memory, which will depend on the dataset. Space to hold the uncompressed sequences on the datastores on disk will also be required.</p>
+<p>SDG can be installed via pre-compiled binaries from <a class="reference external" href="https://github.com/bioinfologics/sdg/releases">https://github.com/bioinfologics/sdg/releases</a>. The binaries have been built using Python3 and GCC version 6 from the Ubuntu package manager for the Linux version. The MacOS version dependencies were obtained using Homebrew (Python3, GCC-6 and SWIG).</p>
+<p>The installation process requires the following dependencies:</p>
+<ul class="simple">
+<li><p>GCC 6+</p></li>
+<li><p>CMake 3.14.3+</p></li>
+<li><p>SWIG 4.0.0 (For Python interface)</p></li>
+<li><p>Python 3.7+ (For Python interface)</p></li>
+<li><p>Git LFS (For tests)</p></li>
+</ul>
+<p>The installation process consists of generating the configuration files using CMake and using make. By default make install will install to system wide directories, to specify a different directory use <a class="reference external" href="https://cmake.org/cmake/help/v3.13/variable/CMAKE_INSTALL_PREFIX.html#cmake-install-prefix">CMAKE_INSTALL_PREFIX</a>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git pull https://github.com/bioinfologics/sdg
+<span class="nb">cd</span> sdg
+mkdir build
+<span class="nb">cd</span> build
+cmake ../
+make
+make <span class="nb">test</span>
+make install
+</pre></div>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Working with SDG typically involves two different stages: creating a <em>WorkSpace</em> with the data and mappings, and analysing this <em>WorkSpace</em>. SDG includes command line tools to create <em>DataStores</em>, <em>KmerCounts</em>, and <em>WorkSpaces</em>, and map reads within a <em>WorkSpace</em>.</p>
+</div>
+<div class="section" id="command-line-tools">
+<h2>Command line tools<a class="headerlink" href="#command-line-tools" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="sdg-datastore">
+<h3>sdg-datastore<a class="headerlink" href="#sdg-datastore" title="Permalink to this headline">¶</a></h3>
+<p>Creates a <em>Datastore</em> from raw reads and can process paired, 10x or long reads. An output prefix is specified as a parameter and a &lt;predix&gt;.prseq, &lt;prefix&gt;.lrseq or &lt;prefix&gt;.loseq file is generated.</p>
+</div>
+<div class="section" id="sdg-kmercounter">
+<h3>sdg-kmercounter<a class="headerlink" href="#sdg-kmercounter" title="Permalink to this headline">¶</a></h3>
+<p>Creates a <em>KmerCounter</em> indexing a graph from a <em>WorkSpace</em> or GFA, or works with an already generated one. A count can be added directly from raw reads or from a datastore. The <em>KmerCounter</em> is persisted on file with extension ‘sdgkc’.</p>
+</div>
+<div class="section" id="sdg-workspace">
+<h3>sdg-workspace<a class="headerlink" href="#sdg-workspace" title="Permalink to this headline">¶</a></h3>
+<p>Creates a <em>WorkSpace</em> from a base graph or works with an already generated one. <em>Datastores</em> and <em>KmerCounters</em> can be added. The <em>WorkSpace</em> is persisted on file with extension ‘sdgws’.</p>
+</div>
+<div class="section" id="sdg-dbg">
+<h3>sdg-dbg<a class="headerlink" href="#sdg-dbg" title="Permalink to this headline">¶</a></h3>
+<p>Creates a <em>WorkSpace</em> from a <em>PairedReadDatastore</em> by building a _deBruijn <a href="#id1"><span class="problematic" id="id2">graph_</span></a> and using this as the base graph. Counts for the _k-<a href="#id3"><span class="problematic" id="id4">mers_</span></a> from the graph and raw reads are added too.</p>
+</div>
+<div class="section" id="sdg-mapper">
+<h3>sdg-mapper<a class="headerlink" href="#sdg-mapper" title="Permalink to this headline">¶</a></h3>
+<p>Maps reads within a <em>WorkSpace</em>. An updated <em>WorkSpace</em> is produced and dumped to the specified prefix.</p>
+</div>
+</div>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>For examples on how to use SDG please visit <a class="reference external" href="https://github.com/bioinfologics/sdg_examples/">https://github.com/bioinfologics/sdg_examples/</a></p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="sdglib/README.html" class="btn btn-neutral float-right" title="SDGlib" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../index.html" class="btn btn-neutral float-left" title="Welcome to SDG’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2019, Bernardo J. Clavijo, Gonzalo Garcia, Luis J. Yanes, Benjamin Ward
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

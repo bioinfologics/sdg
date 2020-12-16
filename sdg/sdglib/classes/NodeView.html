@@ -1,0 +1,460 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>NodeView &mdash; SDG  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="LinkView" href="LinkView.html" />
+    <link rel="prev" title="SequenceDistanceGraph" href="SequenceDistanceGraph.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> SDG
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../README.html">Sequence Distance Graph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../README.html">SDGlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../workspace/README.html">Workspace</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../_sdglib_toc.html">SDG Classes</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="WorkSpace.html">WorkSpace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="DistanceGraph.html">DistanceGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SequenceDistanceGraph.html">SequenceDistanceGraph</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">NodeView</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkView.html">LinkView</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PairedReadsMapper.html">PairedReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkedReadsMapper.html">LinkedReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LongReadsMapper.html">LongReadsMapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LinkageMaker.html">LinkageMaker</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SDG</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../_sdglib_toc.html">SDG Classes</a> &raquo;</li>
+        
+      <li>NodeView</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/sdg/sdglib/classes/NodeView.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="nodeview">
+<h1>NodeView<a class="headerlink" href="#nodeview" title="Permalink to this headline">¶</a></h1>
+<dl class="cpp class">
+<dt id="_CPPv48NodeView">
+<span id="_CPPv38NodeView"></span><span id="_CPPv28NodeView"></span><span id="NodeView"></span><span class="target" id="class_node_view"></span><em class="property">class </em><code class="sig-name descname">NodeView</code><a class="headerlink" href="#_CPPv48NodeView" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>The <a class="reference internal" href="#class_node_view"><span class="std std-ref">NodeView</span></a> provides a read-only comforatable interface for graph traversal. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Functions</p>
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView8sequenceEv">
+<span id="_CPPv3NK8NodeView8sequenceEv"></span><span id="_CPPv2NK8NodeView8sequenceEv"></span><span id="NodeView::sequenceC"></span><span class="target" id="class_node_view_1a2f25949640b252bfb189d28efd66e2c5"></span>std::string <code class="sig-name descname">sequence</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView8sequenceEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>Sequence of the underlying <a class="reference internal" href="SequenceDistanceGraph.html#class_sequence_distance_graph"><span class="std std-ref">SequenceDistanceGraph</span></a> node </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView4sizeEv">
+<span id="_CPPv3NK8NodeView4sizeEv"></span><span id="_CPPv2NK8NodeView4sizeEv"></span><span id="NodeView::sizeC"></span><span class="target" id="class_node_view_1a8217f32d0b6bbb6349fd83e8eede1b34"></span>uint64_t <code class="sig-name descname">size</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView4sizeEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>Length of the node sequence in the graph </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView2rcEv">
+<span id="_CPPv3NK8NodeView2rcEv"></span><span id="_CPPv2NK8NodeView2rcEv"></span><span id="NodeView::rcC"></span><span class="target" id="class_node_view_1a588ce11273351b36fcfb4eec00d8537c"></span><a class="reference internal" href="#_CPPv48NodeView" title="NodeView">NodeView</a> <code class="sig-name descname">rc</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView2rcEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>The reverse complement <a class="reference internal" href="#class_node_view"><span class="std std-ref">NodeView</span></a> </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView4nextEv">
+<span id="_CPPv3NK8NodeView4nextEv"></span><span id="_CPPv2NK8NodeView4nextEv"></span><span id="NodeView::nextC"></span><span class="target" id="class_node_view_1af2ffcec999622abf5bb3797287c41c07"></span>std::vector&lt;<a class="reference internal" href="LinkView.html#_CPPv48LinkView" title="LinkView">LinkView</a>&gt; <code class="sig-name descname">next</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView4nextEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>A vector of <a class="reference internal" href="LinkView.html#class_link_view"><span class="std std-ref">LinkView</span></a> for the next elements defined by the <a class="reference internal" href="DistanceGraph.html#class_distance_graph"><span class="std std-ref">DistanceGraph</span></a> </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView4prevEv">
+<span id="_CPPv3NK8NodeView4prevEv"></span><span id="_CPPv2NK8NodeView4prevEv"></span><span id="NodeView::prevC"></span><span class="target" id="class_node_view_1aa2feab794887c915e123fd1782e6719d"></span>std::vector&lt;<a class="reference internal" href="LinkView.html#_CPPv48LinkView" title="LinkView">LinkView</a>&gt; <code class="sig-name descname">prev</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView4prevEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>A vector of <a class="reference internal" href="LinkView.html#class_link_view"><span class="std std-ref">LinkView</span></a> for the previous elements defined by the <a class="reference internal" href="DistanceGraph.html#class_distance_graph"><span class="std std-ref">DistanceGraph</span></a> </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView9parallelsEv">
+<span id="_CPPv3NK8NodeView9parallelsEv"></span><span id="_CPPv2NK8NodeView9parallelsEv"></span><span id="NodeView::parallelsC"></span><span class="target" id="class_node_view_1a1c5dd1b8eb604e5a1da15e24ca6c6688"></span>std::vector&lt;<a class="reference internal" href="#_CPPv48NodeView" title="NodeView">NodeView</a>&gt; <code class="sig-name descname">parallels</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView9parallelsEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>A vector of <a class="reference internal" href="#class_node_view"><span class="std std-ref">NodeView</span></a> for all nodes that have the same connections fw and bw than this node </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView7node_idEv">
+<span id="_CPPv3NK8NodeView7node_idEv"></span><span id="_CPPv2NK8NodeView7node_idEv"></span><span id="NodeView::node_idC"></span><span class="target" id="class_node_view_1aefd76aac02c679f5961a8c2c78c0b480"></span>sgNodeID_t <code class="sig-name descname">node_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView7node_idEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>The id of the underlying <a class="reference internal" href="SequenceDistanceGraph.html#class_sequence_distance_graph"><span class="std std-ref">SequenceDistanceGraph</span></a> node </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView13kmer_coverageENSt6stringENSt6stringE">
+<span id="_CPPv3NK8NodeView13kmer_coverageENSt6stringENSt6stringE"></span><span id="_CPPv2NK8NodeView13kmer_coverageENSt6stringENSt6stringE"></span><span id="NodeView::kmer_coverage__ss.ssC"></span><span class="target" id="class_node_view_1ad8cb72194040fa3082d4790636477e1c"></span>std::vector&lt;uint16_t&gt; <code class="sig-name descname">kmer_coverage</code><span class="sig-paren">(</span>std::string <em>kcovds_name</em>, std::string <em>kcovds_count_name</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView13kmer_coverageENSt6stringENSt6stringE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Coverage of each kmer in the node. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>A vector with the kmer coverage count for each kmer in the node </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">kcovds_name</span></code>: Name of the KmersCounter </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kcovds_count_name</span></code>: Name of the count object in the KmersCounter </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView13kmer_coverageEii">
+<span id="_CPPv3NK8NodeView13kmer_coverageEii"></span><span id="_CPPv2NK8NodeView13kmer_coverageEii"></span><span id="NodeView::kmer_coverage__i.iC"></span><span class="target" id="class_node_view_1a8ef25c67c3f07696275f418fe1fcf1bb"></span>std::vector&lt;uint16_t&gt; <code class="sig-name descname">kmer_coverage</code><span class="sig-paren">(</span>int <em>kcovds_idx</em>, int <em>kcovds_count_idx</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView13kmer_coverageEii" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Coverage of each kmer in the node. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>A vector with the kmer coverage count for each kmer in this node </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">kcovds_idx</span></code>: Index of the KmersCounter </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kcovds_count_idx</span></code>: Index of the count object in the KmersCounter </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView16get_paired_readsENSt6stringE">
+<span id="_CPPv3NK8NodeView16get_paired_readsENSt6stringE"></span><span id="_CPPv2NK8NodeView16get_paired_readsENSt6stringE"></span><span id="NodeView::get_paired_reads__ssC"></span><span class="target" id="class_node_view_1a7c5380f5c7950c2f8b608b88cb546a3f"></span>std::vector&lt;seqID_t&gt; <code class="sig-name descname">get_paired_reads</code><span class="sig-paren">(</span>std::string <em>datastore_name</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView16get_paired_readsENSt6stringE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Collect all paired reads from a PairedReadsDatastore referred to by name. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>Vector of all reads in the paired datastore that have mappings to this node </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">datastore_name</span></code>: Name of the datastore to collect the reads from </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView19get_paired_mappingsENSt6stringE">
+<span id="_CPPv3NK8NodeView19get_paired_mappingsENSt6stringE"></span><span id="_CPPv2NK8NodeView19get_paired_mappingsENSt6stringE"></span><span id="NodeView::get_paired_mappings__ssC"></span><span class="target" id="class_node_view_1a08f1680d0c1ad2268e6f462e9a5d3c40"></span>std::vector&lt;ReadMapping&gt; <code class="sig-name descname">get_paired_mappings</code><span class="sig-paren">(</span>std::string <em>datastore_name</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView19get_paired_mappingsENSt6stringE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Collect all mappings of this node in a PairedReadsDatastore referred to by name. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>Vector of all mappings to this node in the <a class="reference internal" href="PairedReadsMapper.html#class_paired_reads_mapper"><span class="std std-ref">PairedReadsMapper</span></a> </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">datastore_name</span></code>: Name of the datastore to collect the reads from </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView14get_long_readsENSt6stringE">
+<span id="_CPPv3NK8NodeView14get_long_readsENSt6stringE"></span><span id="_CPPv2NK8NodeView14get_long_readsENSt6stringE"></span><span id="NodeView::get_long_reads__ssC"></span><span class="target" id="class_node_view_1a7c5897e867c3c4985a0f1ae2f1acc440"></span>std::vector&lt;seqID_t&gt; <code class="sig-name descname">get_long_reads</code><span class="sig-paren">(</span>std::string <em>datastore_name</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView14get_long_readsENSt6stringE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Collect all Long reads from a LongReadsDatastore referred to by name. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>Vector of all reads in the paired datastore that have mappings to this node </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">datastore_name</span></code>: Name of the datastore to collect the reads from </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView17get_long_mappingsENSt6stringE">
+<span id="_CPPv3NK8NodeView17get_long_mappingsENSt6stringE"></span><span id="_CPPv2NK8NodeView17get_long_mappingsENSt6stringE"></span><span id="NodeView::get_long_mappings__ssC"></span><span class="target" id="class_node_view_1ab6b9b26c61564f3a65564c46b1ccf61d"></span>std::vector&lt;LongReadMapping&gt; <code class="sig-name descname">get_long_mappings</code><span class="sig-paren">(</span>std::string <em>datastore_name</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView17get_long_mappingsENSt6stringE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Collect all mappings of this node in a LongReadsDatastore referred to by name. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>Vector of all mappings to this node in the <a class="reference internal" href="LongReadsMapper.html#class_long_reads_mapper"><span class="std std-ref">LongReadsMapper</span></a> </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">datastore_name</span></code>: Name of the datastore to collect the reads from </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView16get_linked_readsENSt6stringE">
+<span id="_CPPv3NK8NodeView16get_linked_readsENSt6stringE"></span><span id="_CPPv2NK8NodeView16get_linked_readsENSt6stringE"></span><span id="NodeView::get_linked_reads__ssC"></span><span class="target" id="class_node_view_1ad3467da1010196be016e05d5cb0b847a"></span>std::vector&lt;seqID_t&gt; <code class="sig-name descname">get_linked_reads</code><span class="sig-paren">(</span>std::string <em>datastore_name</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView16get_linked_readsENSt6stringE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Collect all Linked reads from a LinkedReadsDatastore referred to by name. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>Vector of all reads in the paired datastore that have mappings to this node </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">datastore_name</span></code>: Name of the datastore to collect the reads from </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView19get_linked_mappingsENSt6stringE">
+<span id="_CPPv3NK8NodeView19get_linked_mappingsENSt6stringE"></span><span id="_CPPv2NK8NodeView19get_linked_mappingsENSt6stringE"></span><span id="NodeView::get_linked_mappings__ssC"></span><span class="target" id="class_node_view_1a32a125926db720c706b7360723bb0e60"></span>std::vector&lt;ReadMapping&gt; <code class="sig-name descname">get_linked_mappings</code><span class="sig-paren">(</span>std::string <em>datastore_name</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView19get_linked_mappingsENSt6stringE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Collect all mappings of this node in a LinkedReadsDatastore referred to by name. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>Vector of all mappings to this node in the <a class="reference internal" href="LinkedReadsMapper.html#class_linked_reads_mapper"><span class="std std-ref">LinkedReadsMapper</span></a> </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">datastore_name</span></code>: Name of the datastore to collect the reads from </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView15get_linked_tagsENSt6stringEi">
+<span id="_CPPv3NK8NodeView15get_linked_tagsENSt6stringEi"></span><span id="_CPPv2NK8NodeView15get_linked_tagsENSt6stringEi"></span><span id="NodeView::get_linked_tags__ss.iC"></span><span class="target" id="class_node_view_1a1e15643a9667b4f2b06b77a6dd78f9e3"></span>std::vector&lt;LinkedTag&gt; <code class="sig-name descname">get_linked_tags</code><span class="sig-paren">(</span>std::string <em>datastore_name</em>, int <em>min_read_count</em> = 3<span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView15get_linked_tagsENSt6stringEi" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Collect all tags of this node in a LinkedReadsDatastore referred to by name. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>Vector of all tags that have reads on this node in the <a class="reference internal" href="LinkedReadsMapper.html#class_linked_reads_mapper"><span class="std std-ref">LinkedReadsMapper</span></a> </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">datastore_name</span></code>: Name of the datastore to collect the reads from </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Min</span></code>: number of reads mapped to the node to include a tag in the result </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK8NodeView25fw_neighbours_by_distanceEi">
+<span id="_CPPv3NK8NodeView25fw_neighbours_by_distanceEi"></span><span id="_CPPv2NK8NodeView25fw_neighbours_by_distanceEi"></span><span id="NodeView::fw_neighbours_by_distance__iC"></span><span class="target" id="class_node_view_1a37ba411a71f2f10cf0c37b672ca1a41b"></span>std::vector&lt;std::pair&lt;int, sgNodeID_t&gt;&gt; <code class="sig-name descname">fw_neighbours_by_distance</code><span class="sig-paren">(</span>int <em>min_links</em><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK8NodeView25fw_neighbours_by_distanceEi" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Vector of FW distances and neighbours from the nodeview, sorted in ascending distance (median if multi-link) order. <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p></p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">min_links</span></code>: </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="LinkView.html" class="btn btn-neutral float-right" title="LinkView" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="SequenceDistanceGraph.html" class="btn btn-neutral float-left" title="SequenceDistanceGraph" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2019, Bernardo J. Clavijo, Gonzalo Garcia, Luis J. Yanes, Benjamin Ward
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
