@@ -74,11 +74,32 @@ public:
 
 class LongReadsRecruiter {
 public:
+    /** @brief LongReadsRecruiter initialization
+     *
+     * Sert internal variables and clean any previous recruitment
+     * @param sdg Base graph
+     * @param datastore long reads datastore handle to map
+     * @param k mapping k
+     * @param f
+     */
     LongReadsRecruiter(SequenceDistanceGraph &sdg, const LongReadsDatastore &datastore,uint8_t k=25, uint16_t f=50);
+
+    /** @brief dumps reads perfect matches mappings to a file for persistence
+     *  To be restored using load
+     *
+     * @param filename output filename
+     */
     void dump(std::string filename);
+
+    /** @brief dumps read threads to a file for persistence
+     *  To be restored using  load_threads
+     *
+     * @param filename output filename
+     */
     void dump_threads(std::string filename);
     void load(std::string filename);
     void load_threads(std::string filename);
+
     void perfect_mappings(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
     std::vector<PerfectMatch> reverse_perfect_matches(const std::vector<PerfectMatch> &matches, uint64_t rsize=0);
     void map(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);

@@ -127,7 +127,7 @@ public:
     bool pop_nodes(std::vector<sgNodeID_t> node_ids, int64_t thread_id);
 
     /** @brief Pop the node from all the threads in the graph (inplace)
-     * 
+     *
      * The pop_node function was executed for all
      * threads where the node is present).
      * @param node_id Node id to be popped
