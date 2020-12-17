@@ -3,6 +3,7 @@
 //
 
 #include "ThreadedGraphSorter.h"
+#include <sdglib/graph/ReadThreadsGraph.hpp>
 #include <atomic>
 enum Happiness {unknown=-1,unhappy=0,happy=1};
 
@@ -368,6 +369,88 @@ bool pop_node(DistanceGraph& dg, sgNodeID_t node_id, uint64_t read){
     dg.remove_link(-node_id,ln[0].node().node_id(),ln[0].distance(),ln[0].support());
     dg.remove_link(-lp[0].node().node_id(),node_id,lp[0].distance(),lp[0].support());
     return true;
+}
+
+HappyPosition NodeAdjacencies::happy_to_add(float used_perc) {
+    bool h_fw_prevs (prevs.size()*used_perc<=fw_prevs);
+    bool h_bw_prevs (prevs.size()*used_perc<=bw_prevs);
+    bool h_fw_nexts (nexts.size()*used_perc<=fw_nexts);
+    bool h_bw_nexts (nexts.size()*used_perc<=bw_nexts);
+    if (h_fw_nexts and h_bw_prevs) return Nowhere;
+    if (h_bw_nexts and h_fw_prevs) return Nowhere;
+    if (h_fw_nexts){
+        if (fw_prevs) return MiddleFW;
+        else return FrontFW;
+    }
+    if (h_bw_nexts){
+        if (bw_prevs) return MiddleBW;
+        else return FrontBW;
+    }
+    if (h_fw_prevs){
+        if (fw_nexts) return MiddleFW;
+        else return BackFW;
+    }
+    if (h_bw_prevs){
+        if (bw_nexts) return MiddleBW;
+        else return BackBW;
+    }
+    return Nowhere;
+}
+
+void NodeAdjacencies::mark_used(const sgNodeID_t &nid) {
+    if (prevs.count(nid)) ++fw_prevs;
+    if (prevs.count(-nid)) ++bw_prevs;
+    if (nexts.count(nid)) ++fw_nexts;
+    if (nexts.count(-nid)) ++bw_nexts;
+}
+
+void HappyInsertionSorter::compute_adjacencies(int min_links,int radius) {
+    //count all connections only once, along threads.
+    std::unordered_map<std::pair<sgNodeID_t, sgNodeID_t>,uint64_t> conns;
+    for (auto &nv:rtg.get_all_nodeviews(false,false))
+        adjacencies[nv.node_id()]=NodeAdjacencies();
+    for (auto &tinf:rtg.thread_info){
+        auto thread=rtg.get_thread(tinf.first);
+        for (auto i1=0;i1<thread.size();++i1){
+            auto e1=-thread[i1].node;
+            for (auto i2=i1+1;i2<thread.size() and i2<i1+radius;++i2) {
+                auto e2=thread[i2].node;
+                if (e1<e2) ++conns[{e1,e2}];
+                else ++conns[{e2,e1}];
+            }
+        }
+
+    }
+    //add every connection that passes the min_links to both nodes's appropriate sets
+    for (auto &it:conns){
+        if (it.second>=min_links) {
+            if (it.first.first<0) adjacencies[-it.first.first].nexts.insert(it.first.second);
+            else adjacencies[it.first.first].prevs.insert(-it.first.second);
+            if (it.first.second<0) adjacencies[-it.first.second].nexts.insert(it.first.first);
+            else adjacencies[it.first.second].prevs.insert(-it.first.first);
+        }
+    }
+}
+
+NodeAdjacencies & HappyInsertionSorter::get_node_adjacencies(sgNodeID_t nid) {
+    if (adjacencies.count(llabs(nid))==0) throw std::runtime_error("node is disconnected");
+    return adjacencies[llabs(nid)];
+}
+
+void HappyInsertionSorter::add_node(sgNodeID_t nid) {
+    if (node_positions.count(nid) or node_positions.count(-nid)) throw std::runtime_error("node is already in the order!");
+    node_positions[nid]=0;//TODO: positions are not being used right now
+    candidates.erase(nid);
+    if (nid>0){
+        for (auto &p:adjacencies[nid].prevs) if (node_positions.count(p)==0 and node_positions.count(-p)==0) candidates.insert(p);
+        for (auto &n:adjacencies[nid].nexts) if (node_positions.count(n)==0 and node_positions.count(-n)==0) candidates.insert(n);
+    }
+    else {
+        for (auto &p:adjacencies[-nid].prevs) if (node_positions.count(p)==0 and node_positions.count(-p)==0) candidates.insert(-p);
+        for (auto &n:adjacencies[-nid].nexts) if (node_positions.count(n)==0 and node_positions.count(-n)==0) candidates.insert(-n);
+    }
+    for (auto &p:adjacencies[nid].prevs) adjacencies[llabs(p)].mark_used(nid);
+    for (auto &n:adjacencies[nid].nexts) adjacencies[llabs(n)].mark_used(nid);
 }
 
 TheGreedySorter::TheGreedySorter(const DistanceGraph& _trg_nt, sgNodeID_t founding_node):trg_nt(_trg_nt), dg(_trg_nt.sdg){

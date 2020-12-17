@@ -41,6 +41,37 @@ void make_all_threads_happy(LongReadsRecruiter & lrr, DistanceGraph &trg, int ma
 //    const DistanceGraph & dg;
 //};
 
+enum HappyPosition{Nowhere,FrontFW,FrontBW,MiddleFW,MiddleBW,BackFW,BackBW};
+/**
+ * this keeps a record of a Node's pre/post conditions and computes if the node is happy to be added to the order
+ */
+class NodeAdjacencies {
+public:
+    NodeAdjacencies (){};
+    void mark_used(const sgNodeID_t & nid);
+    HappyPosition happy_to_add(float used_perc); //TODO::expand to return a HappyPosition
+    std::unordered_set<sgNodeID_t> prevs,nexts;
+    uint64_t fw_prevs=0,bw_prevs=0,fw_nexts=0,bw_nexts=0;
+};
+/**
+ * insertion sorter: needs to be founded by a relatively good set of ordered nodes (i.e. the local order of a node)
+ * keeps a record of previous/next nodes to every node: if most previous/next nodes to a node are in the order, add the node to it
+ */
+class HappyInsertionSorter {
+public:
+    HappyInsertionSorter(ReadThreadsGraph& _rtg):rtg(_rtg){};
+    void compute_adjacencies(int min_links=2, int radius=20);
+    void add_node(sgNodeID_t nid); //figures out orientation, then adds with sign, then runs mark_used on all this node's NodeAdjacencies (only those will be affected), removes this node from candidates and adds its adjacencies
+    NodeAdjacencies & get_node_adjacencies(sgNodeID_t nid);
+    std::vector<sgNodeID_t> nodes_to_add(float used_perc=.9); //finds nodes to add, sorts them by inter-dependency (i.e. nodes coming first are not made happier by subsequent nodes).
+    void reset_positions();
+
+    ReadThreadsGraph& rtg;
+    std::unordered_set<sgNodeID_t> candidates;
+    std::unordered_map<sgNodeID_t,int64_t> node_positions;
+    std::unordered_map<sgNodeID_t,NodeAdjacencies> adjacencies;
+};
+
 class TheGreedySorter {
 public:
     TheGreedySorter(const DistanceGraph& _trg_nt, sgNodeID_t founding_node=0);

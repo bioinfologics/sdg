@@ -143,6 +143,7 @@ public:
     std::vector<NodePosition> get_thread(int64_t thread_id);
 
     bool flip_thread(int64_t thread_id);
+    std::unordered_map<uint64_t,std::set<sgNodeID_t>> thread_nodesets();
     //bool split_thread_at(int64_t thread_id, int lidx); FUTURE
 
     /** @brief Get all the reaching nodes from a graph with the thread support count
@@ -189,6 +190,7 @@ public:
      * @return vector of pairs (thread, nodes) to eliminate from the graph
      */
     std::vector<std::pair<uint64_t,sgNodeID_t>> clean_all_nodes_popping_list(int min_supported=4, int min_support=1);
+    std::vector<std::pair<uint64_t,sgNodeID_t>> clean_all_nodes_by_thread_clustering_popping_list(int min_shared=4, float max_second_perc=.1);
 
     /** @brief Applies popping lists created using  clean_repeat_nodes_popping_list or clean_all_nodes_popping_list
      *
