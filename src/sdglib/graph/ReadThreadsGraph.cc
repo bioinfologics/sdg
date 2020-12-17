@@ -302,7 +302,7 @@ std::vector<std::pair<uint64_t,sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_po
 
 std::unordered_map<uint64_t,std::set<sgNodeID_t>> ReadThreadsGraph::thread_nodesets(){
     std::unordered_map<uint64_t,std::set<sgNodeID_t>> tns;
-    for (auto &nv:sdg.get_all_nodeviews(false,false)) {
+    for (auto &nv:get_all_nodeviews(false,false)) {
         auto nid = nv.node_id();
         for (auto &tid:node_threads(nid)) {
             tns[tid].insert(nid);
