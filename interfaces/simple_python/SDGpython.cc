@@ -80,6 +80,16 @@ PYBIND11_MODULE(SDGpython, m) {
             .value("NonCanonical",KmerCountMode::NonCanonical)
             .export_values();
 
+    py::enum_<HappyPosition>(m,"HappyPosition")
+            .value("Nowhere",HappyPosition::Nowhere)
+            .value("FrontFW",HappyPosition::FrontFW)
+            .value("FrontBW",HappyPosition::FrontBW)
+            .value("MiddleFW",HappyPosition::MiddleFW)
+            .value("MiddleBW",HappyPosition::MiddleBW)
+            .value("BackFW",HappyPosition::BackFW)
+            .value("BackBW",HappyPosition::BackBW)
+            ;
+
     py::class_<Support>(m,"Support","Support for an operation or piece of data")
             .def(py::init<SupportType,uint16_t,int64_t>(),"","support"_a=SupportType::Undefined,"index"_a=0,"id"_a=0,py::return_value_policy::take_ownership)
             .def_readonly("type",&Support::type)
@@ -210,6 +220,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("clean_repeat_nodes_popping_list",&ReadThreadsGraph::clean_repeat_nodes_popping_list,"max_threads"_a=200)
             .def("clean_all_nodes_popping_list",&ReadThreadsGraph::clean_all_nodes_popping_list,"min_supported"_a=4,"min_support"_a=1)
             .def("clean_all_nodes_by_thread_clustering_popping_list",&ReadThreadsGraph::clean_all_nodes_by_thread_clustering_popping_list,"min_shared"_a=4,"max_second_perc"_a=.1)
+            .def("thread_nodesets",&ReadThreadsGraph::thread_nodesets)
             .def("apply_popping_list",&ReadThreadsGraph::apply_popping_list,"popping_list"_a)
             ;
 
@@ -540,6 +551,26 @@ PYBIND11_MODULE(SDGpython, m) {
     py::class_<CountFilter>(m,"CountFilter","CountFilter")
             .def(py::init<std::string, std::string , int , std::vector<std::string>, std::vector<int>>(),"kcname"_a, "filter_count_name"_a, "filter_count_max"_a, "value_count_names"_a, "value_count_mins"_a)
             .def("get_pattern",&CountFilter::get_pattern,"nv"_a);
+
+    py::class_<NodeAdjacencies>(m,"NodeAdjacencies","NodeAdjacencies")
+            .def(py::init<>())
+            .def("mark_used",&NodeAdjacencies::mark_used,"nid"_a)
+            .def("happy_to_add",&NodeAdjacencies::happy_to_add,"used_perc"_a)
+            .def_readwrite("prevs",&NodeAdjacencies::prevs)
+            .def_readwrite("nexts",&NodeAdjacencies::nexts)
+            .def_readwrite("fw_prevs",&NodeAdjacencies::fw_prevs)
+            .def_readwrite("bw_prevs",&NodeAdjacencies::bw_prevs)
+            .def_readwrite("fw_nexts",&NodeAdjacencies::fw_nexts)
+            .def_readwrite("bw_nexts",&NodeAdjacencies::bw_nexts);
+
+    py::class_<HappyInsertionSorter>(m,"HappyInsertionSorter","HappyInsertionSorter")
+            .def(py::init<ReadThreadsGraph&>(),"rtg"_a)
+            .def("compute_adjacencies",&HappyInsertionSorter::compute_adjacencies,"min_links"_a=2,"radius"_a=10)
+            .def("add_node",&HappyInsertionSorter::add_node,"nid"_a)
+            .def_readwrite("node_positions",&HappyInsertionSorter::node_positions)
+            .def_readwrite("adjacencies",&HappyInsertionSorter::adjacencies)
+            .def_readwrite("candidates",&HappyInsertionSorter::candidates)
+            .def("get_node_adjacencies",&HappyInsertionSorter::get_node_adjacencies,"nid"_a,py::return_value_policy::reference);
 
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
