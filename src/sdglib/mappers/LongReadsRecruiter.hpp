@@ -65,6 +65,10 @@ public:
     WorkSpace & ws;
 };
 
+/**
+ * Class to store a node position in a read.
+ * Used to describe mapping results
+ */
 class NodePosition{
 public:
     NodePosition(sgNodeID_t _node=0,int32_t _start=0,int32_t _end=0): node(_node),start(_start),end(_end){};
@@ -77,6 +81,9 @@ public:
     int32_t end; //we need both start and end due to read indels
 };
 
+/**
+ * Class to thread long reads/sequences to graphs
+ */
 class LongReadsRecruiter {
 public:
     /** @brief LongReadsRecruiter initialization
@@ -138,7 +145,7 @@ public:
      *
      * the node_reads[node_id] position stores all reads where node_id was mapped to.
      * to get the mapped reads to the node.
-     * Contraty to recruit_threads() this function uses read_perfect_matches instead of the read_threads
+     * Contrary to recruit_threads() this function uses read_perfect_matches instead of the read_threads
      *
      * read_perfect_matches can be filled using map()
      *
@@ -154,7 +161,7 @@ public:
      *
      * For each node all threads that go over are recruited.
      * The node_threads[node_id] position stores all threads where node_id is included.
-     * Contraty to recruit_reads() this function uses read_threads instead of the read_perfect_matches
+     * Contrary to recruit_reads() this function uses read_threads instead of the read_perfect_matches
      *
      * read_threads can be filled using thread_reads(), simple_thread_reads(), thread_and_pop()
      */
