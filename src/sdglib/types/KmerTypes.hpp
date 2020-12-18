@@ -177,6 +177,10 @@ struct KmerCount {
 
 };
 
+/**
+ * Struct to describe a kmer of the graph, usually employed to describe matches during mapping operations
+ * See: LongReadRecruiter::map()
+ */
 struct kmerPos {
     kmerPos() = default;
     kmerPos(uint64_t kmer, uint32_t contigID, int32_t offset) : kmer(kmer),
