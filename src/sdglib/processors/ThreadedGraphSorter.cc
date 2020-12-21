@@ -8,14 +8,7 @@
 enum Happiness {unknown=-1,unhappy=0,happy=1};
 
 std::array<uint64_t,3> assess_node_happiness(sgNodeID_t nid, const std::unordered_map<sgNodeID_t , uint32_t> & order, const DistanceGraph& trg_nt){
-    /*
-     * Checks node happinnes in a given order by comparing the position in the proposed order with the position in the linkage graph created with the reads (trg_nt).
-     *
-     * Return an array of 3 scores [happy count, unhappy count, disconnected count]
-     *  - Happy count is the number of reads where the order in the proposed order matches the order in the reads (threaded graph) both fw and bw.
-     *  - The unhappy count is the number of reads were the order proposed don't match the order in the threading reads either fw or bw.
-     *  - The disconnected count is the number of reads where the proposed order don't match fw and bw.
-     * */
+
     // Check that nid or -nid is not in order
     if (order.find(nid)==order.end())
         nid*=-1;

@@ -8,7 +8,33 @@
 
 #include <sdglib/views/NodeView.hpp>
 #include <sdglib/mappers/LongReadsRecruiter.hpp>
+
+/** @brief Checks node happiness in an order
+ * Compares the position in the proposed order with the links in the thread graph (trg_nt).
+ *
+ * The position of the node in the ordered is compared to the position of the node in each read thread, if the position
+ * agrees the the node happines increases, if not decreases.
+ *
+ * The reads are represented as paths in the threads graph.
+ *
+ * Return an array of 3 scores [happy count, unhappy count, disconnected count]
+ *  - Happy count is the number of reads where the order in the proposed order matches the order in the reads (threaded graph) both fw and bw.
+ *  - The unhappy count is the number of reads were the order proposed don't match the order in the threading reads either fw or bw.
+ *  - The disconnected count is the number of reads where the proposed order don't match fw and bw.
+ *
+ * @param nid node id to asses the happiness
+ * @param order proposed order
+ * @param trg_nt thread graph contains the threads generated using the reads
+ * @return 3 long array with read count for happy, unhappy and disconnected reads [happy count, unhappy count, disconnected count]
+*/
 std::array<uint64_t,3> assess_node_happiness(sgNodeID_t nid, const std::unordered_map<sgNodeID_t , uint32_t> &order, const DistanceGraph& trg_nt);
+
+/**
+ *
+ * @param dg
+ * @param cc
+ * @return
+ * */
 std::unordered_map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc);
 bool pop_node(DistanceGraph& dg, sgNodeID_t node_id, uint64_t read);
 void pop_node_from_all(DistanceGraph& dg, sgNodeID_t nid);
