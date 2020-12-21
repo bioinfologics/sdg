@@ -68,6 +68,7 @@ void make_all_threads_happy(LongReadsRecruiter & lrr, DistanceGraph &trg, int ma
 //};
 
 enum HappyPosition{Nowhere,FrontFW,FrontBW,MiddleFW,MiddleBW,BackFW,BackBW};
+class HappyInsertionSorter;//FW declaration
 /**
  * this keeps a record of a Node's pre/post conditions and computes if the node is happy to be added to the order
  */
@@ -75,7 +76,9 @@ class NodeAdjacencies {
 public:
     NodeAdjacencies (){};
     void mark_used(const sgNodeID_t & nid);
+    void mark_unused(const sgNodeID_t & nid);
     HappyPosition happy_to_add(float used_perc); //TODO::expand to return a HappyPosition
+    std::pair<int64_t,int64_t> find_happy_place(const HappyInsertionSorter& sorter); //finds the last of the prevs and first of the nexts, signed for orientation
     std::unordered_set<sgNodeID_t> prevs,nexts;
     uint64_t fw_prevs=0,bw_prevs=0,fw_nexts=0,bw_nexts=0;
 };
@@ -90,7 +93,11 @@ public:
     void add_node(sgNodeID_t nid); //figures out orientation, then adds with sign, then runs mark_used on all this node's NodeAdjacencies (only those will be affected), removes this node from candidates and adds its adjacencies
     NodeAdjacencies & get_node_adjacencies(sgNodeID_t nid);
     std::vector<sgNodeID_t> nodes_to_add(float used_perc=.9); //finds nodes to add, sorts them by inter-dependency (i.e. nodes coming first are not made happier by subsequent nodes).
+    bool insert_node(sgNodeID_t nid,float used_perc=0.9, bool solve_floating_by_rtg=false);//uses the node's happy place to put it in the order, shifts other nodes around if needed. Returns false if the node is unhappy.
+    //TODO: validate_order -> checks all nodes are still happy in their place.
     void reset_positions();
+    int64_t get_node_position(sgNodeID_t nid) const; //negative means reverse, but order is abs!!!!
+    void remove_node_from_everywhere(sgNodeID_t nid);
 
     ReadThreadsGraph& rtg;
     std::unordered_set<sgNodeID_t> candidates;

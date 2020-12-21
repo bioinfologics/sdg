@@ -397,6 +397,45 @@ void NodeAdjacencies::mark_used(const sgNodeID_t &nid) {
     if (nexts.count(-nid)) ++bw_nexts;
 }
 
+void NodeAdjacencies::mark_unused(const sgNodeID_t &nid) {
+    if (prevs.count(nid)) --fw_prevs;
+    if (prevs.count(-nid)) --bw_prevs;
+    if (nexts.count(nid)) --fw_nexts;
+    if (nexts.count(-nid)) --bw_nexts;
+}
+
+std::pair<int64_t, int64_t> NodeAdjacencies::find_happy_place(const HappyInsertionSorter &sorter) {
+    int64_t max_prev=INT64_MIN,min_next=INT64_MAX;
+    //First check if the node is fw or backward
+    if ((fw_prevs or fw_nexts) and (bw_nexts or bw_prevs)) return {max_prev,min_next}; //mixed orientations, unhappy
+    //fordard
+    if ((fw_prevs or fw_nexts)) {
+        for (auto &nid:prevs) {
+            auto p = sorter.get_node_position(nid);
+            if (p == 0) continue;
+            max_prev = std::max(max_prev, p);
+        }
+        for (auto &nid:nexts) {
+            auto p = sorter.get_node_position(nid);
+            if (p == 0) continue;
+            min_next = std::min(min_next, p);
+        }
+    }
+    else {
+        for (auto &nid:nexts) {
+            auto p = sorter.get_node_position(nid);
+            if (p == 0) continue;
+            if (llabs(p)>llabs(max_prev)) max_prev = p;
+        }
+        for (auto &nid:prevs) {
+            auto p = sorter.get_node_position(nid);
+            if (p == 0) continue;
+            if (llabs(p)<llabs(min_next)) min_next = p;
+        }
+    }
+    return {max_prev,min_next};
+}
+
 void HappyInsertionSorter::compute_adjacencies(int min_links,int radius) {
     //count all connections only once, along threads.
     std::unordered_map<std::pair<sgNodeID_t, sgNodeID_t>,uint64_t> conns;
@@ -431,9 +470,10 @@ NodeAdjacencies & HappyInsertionSorter::get_node_adjacencies(sgNodeID_t nid) {
 }
 
 void HappyInsertionSorter::add_node(sgNodeID_t nid) {
-    if (node_positions.count(nid) or node_positions.count(-nid)) throw std::runtime_error("node is already in the order!");
-    node_positions[nid]=0;//TODO: positions are not being used right now
+    if (node_positions.count(nid) or node_positions.count(-nid)) throw std::runtime_error("node "+std::to_string(nid)+" is already in the order!");
+    node_positions[llabs(nid)]=0;//TODO: positions are not being used right now
     candidates.erase(nid);
+    candidates.erase(-nid);
     if (nid>0){
         for (auto &p:adjacencies[nid].prevs) if (node_positions.count(p)==0 and node_positions.count(-p)==0) candidates.insert(p);
         for (auto &n:adjacencies[nid].nexts) if (node_positions.count(n)==0 and node_positions.count(-n)==0) candidates.insert(n);
@@ -442,8 +482,81 @@ void HappyInsertionSorter::add_node(sgNodeID_t nid) {
         for (auto &p:adjacencies[-nid].prevs) if (node_positions.count(p)==0 and node_positions.count(-p)==0) candidates.insert(-p);
         for (auto &n:adjacencies[-nid].nexts) if (node_positions.count(n)==0 and node_positions.count(-n)==0) candidates.insert(-n);
     }
-    for (auto &p:adjacencies[nid].prevs) adjacencies[llabs(p)].mark_used(nid);
-    for (auto &n:adjacencies[nid].nexts) adjacencies[llabs(n)].mark_used(nid);
+    for (auto &p:adjacencies[llabs(nid)].prevs) adjacencies[llabs(p)].mark_used(nid);
+    for (auto &n:adjacencies[llabs(nid)].nexts) adjacencies[llabs(n)].mark_used(nid);
+}
+
+void HappyInsertionSorter::remove_node_from_everywhere(sgNodeID_t nid) {
+    candidates.erase(nid);
+    candidates.erase(-nid);
+    if (node_positions.count(nid)) {
+        node_positions.erase(nid);
+        for (auto &p:adjacencies[nid].prevs) adjacencies[llabs(p)].mark_unused(nid);
+    }
+    if (node_positions.count(-nid)) {
+        node_positions.erase(-nid);
+        for (auto &p:adjacencies[nid].prevs) adjacencies[llabs(p)].mark_unused(-nid);
+    }
+}
+
+int64_t HappyInsertionSorter::get_node_position(sgNodeID_t nid) const {
+    auto it=node_positions.find(nid);
+    if (it!=node_positions.end()) return it->second;
+    it=node_positions.find(-nid);
+    if (it!=node_positions.end()) return -it->second;
+    return 0;
+}
+
+bool HappyInsertionSorter::insert_node(sgNodeID_t nid, float used_perc, bool solve_floating_by_rtg) {
+    if (node_positions.empty()) {
+        if (adjacencies.count(llabs(nid))==0) return false;
+        add_node(nid);
+        if (nid>0) node_positions[nid]=1;
+        else node_positions[-nid]=-1;
+        return true;
+    }
+    nid=llabs(nid);
+    if (node_positions.count(nid) or node_positions.count(-nid)) return false;
+    if (adjacencies[nid].happy_to_add(used_perc)==HappyPosition::Nowhere) return false;
+    auto place=adjacencies[nid].find_happy_place(*this);
+    int64_t np=0;
+    if (place.first==INT64_MIN and place.second==INT64_MAX) {
+        return false;
+    }
+    else if (place.first==INT64_MIN and abs(place.second)==1) {
+        np=place.second;
+    }
+    else if (llabs(place.first)==node_positions.size() and place.second==INT64_MAX) {
+        if (place.first<0) np=place.first-1;
+        else np=place.first+1;
+    }
+    else if (std::signbit(place.first)!=std::signbit(place.second) or llabs(place.first)>llabs(place.second)) {
+        return false;
+    }
+    else if (llabs(place.first)==llabs(place.second)-1) {//perfect place found!
+        np=place.second;
+    }
+    //TODO: solve floating
+    if (np==0) return false;
+    for (auto &it:node_positions) {
+        if (it.second>=llabs(np)) ++it.second;
+        if (-it.second>=llabs(np)) --it.second;
+    }
+    if (np>0) add_node(nid);
+    else add_node(-nid);
+    node_positions[nid]=np;
+    return true;
+}
+
+void HappyInsertionSorter::reset_positions() {
+    candidates.clear();
+    node_positions.clear();
+    for (auto &a:adjacencies){
+        a.second.fw_prevs=0;
+        a.second.fw_nexts=0;
+        a.second.bw_prevs=0;
+        a.second.bw_nexts=0;
+    }
 }
 
 TheGreedySorter::TheGreedySorter(const DistanceGraph& _trg_nt, sgNodeID_t founding_node):trg_nt(_trg_nt), dg(_trg_nt.sdg){
