@@ -37,7 +37,15 @@ std::array<uint64_t,3> assess_node_happiness(sgNodeID_t nid, const std::unordere
  * */
 std::unordered_map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc);
 bool pop_node(DistanceGraph& dg, sgNodeID_t node_id, uint64_t read);
-void pop_node_from_all(DistanceGraph& dg, sgNodeID_t nid);
+
+/** @brief pop a node from all threads in the dg graph
+ *  dg is a threaded graph, the read thread is identified using the support id
+ *
+ * @param dg graph to pop the node from
+ * @param node_id node to pop
+ * @return number of nodes popped
+ */
+int pop_node_from_all(DistanceGraph &dg, sgNodeID_t node_id);
 
 
 //This takes a thread and pops all unhappy/disconnected nodes from it, returns an empty thread if theres too many of them

@@ -92,16 +92,20 @@ std::array<uint64_t,3> assess_node_happiness(sgNodeID_t nid, const std::unordere
     return {happy, unhappy, disconnected};
 }
 
-void pop_node_from_all(DistanceGraph& dg, sgNodeID_t nid){
-    auto nv = dg.get_nodeview(nid);
+int pop_node_from_all(DistanceGraph &dg, sgNodeID_t node_id){
+    auto nv = dg.get_nodeview(node_id);
     std::vector<uint64_t > rids;
     for (const auto& rid: nv.next())
         rids.push_back(rid.support().id);
     for (const auto& rid: nv.prev())
         rids.push_back(rid.support().id);
 
-    for (const auto &rid: rids)
-        pop_node(dg, nid, rid);
+    int popped_count=0;
+    for (const auto &rid: rids){
+        if (pop_node(dg, node_id, rid))
+            popped_count++;
+    }
+    return popped_count;
 }
 
 std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thread,const DistanceGraph & trg, int max_unhappy, float disconnection_rate){
@@ -206,8 +210,6 @@ void make_all_threads_happy(LongReadsRecruiter & lrr, DistanceGraph &trg, int ma
 }
 
 std::unordered_map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::unordered_set<sgNodeID_t> cc){
-    //uses relative position propagation to create a total order for a connected component
-    //    returns a dict of nodes to starting positions
     // Next nodes to process
     std::vector<sgNodeID_t > next_nodes;
     // Map with the nodes positions
@@ -237,7 +239,7 @@ std::unordered_map<sgNodeID_t , int64_t > sort_cc(const DistanceGraph& dg, std::
         for (const auto& nid: next_nodes){
             for (const auto& l: dg.get_nodeview(nid).next()){
                 // TODO: does this work like this --> if nid node ends after the linked node the next node is moved fw and the linked node is added to the list to place
-                if (node_pos[nid]+dg.get_nodeview(nid).size()+l.distance()>node_pos[l.node().node_id()]){
+                if (node_pos[nid]+dg.get_nodeview(nid).size()+l.distance()>node_pos[l.node().node_id()]){ // If the node position lands fw of the next node the next node position is pushed FW
                     node_pos[l.node().node_id()] = node_pos[nid]+dg.get_nodeview(nid).size()+l.distance();
                     new_next_nodes.push_back(l.node().node_id());
                 }
