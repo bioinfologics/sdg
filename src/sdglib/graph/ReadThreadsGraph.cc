@@ -331,6 +331,8 @@ std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_b
     std::vector<std::pair<uint64_t,sgNodeID_t>> popping_list;
     auto all_nvs=get_all_nodeviews(false,false);
     std::atomic<uint64_t> nc(0);
+    std::atomic<uint64_t> second_too_close(0);
+    std::atomic<uint64_t> second_second_far_enough(0);
     auto tns=thread_nodesets();
 #pragma omp parallel
     {
@@ -346,6 +348,7 @@ std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_b
             for (auto &tid1:ntids)
                 for (auto &tid2:ntids)
                     if (nodeset_intersection_size(tns[tid1],tns[tid2])>=min_shared) tconns[tid1].emplace_back(tid2);
+
             //now cluster threads in the more rudimentary way possible
             std::vector<std::set<uint64_t>> tclusters;
             std::unordered_set<uint64_t> used_tids;
@@ -376,12 +379,14 @@ std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_b
             //now take those decisions
             if (tclusters[0].size()*max_second_perc<tclusters[1].size()){
                 //second cluster is too big, pop from all!
+                second_too_close++;
                 for (auto &tid:ntids){
                     private_popping_list.push_back({tid,nid});
                 }
             }
             else {
                 //pop from everywhere but the first cluster
+                second_second_far_enough++;
                 for (auto &tid:ntids){
                     if (tclusters[0].count(tid)) continue;
                     private_popping_list.push_back({tid,nid});
@@ -395,6 +400,7 @@ std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_b
 
     };
     std::sort(popping_list.begin(),popping_list.end());
+    std::cout << "Second far enough: " << second_second_far_enough << ", second too close: " << second_too_close <<std::endl;
     return popping_list;
 }
 
