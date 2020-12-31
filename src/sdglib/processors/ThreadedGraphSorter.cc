@@ -110,7 +110,7 @@ int pop_node_from_all(DistanceGraph &dg, sgNodeID_t node_id){
 
 std::vector<NodePosition> make_thread_happy(const std::vector<NodePosition> &thread,const DistanceGraph & trg, int max_unhappy, float disconnection_rate){
 
-    std::unordered_map<int64_t,std::vector<std::pair<int64_t,uint16_t>>> nodepos_in_reads;//for every read present in any node, get a list of all nodes in it
+    std::unordered_map<int64_t, std::vector<std::pair<int64_t,uint16_t>>> nodepos_in_reads;//for every read present in any node, get a list of all nodes in it
     for (auto i=0;i<thread.size();++i){
         auto nid=thread[i].node;
         for (auto &l:trg.get_nodeview(nid).prev()){
@@ -367,6 +367,12 @@ bool pop_node(DistanceGraph& dg, sgNodeID_t node_id, uint64_t read){
 }
 
 HappyPosition NodeAdjacencies::happy_to_add(float used_perc) {
+    // Checks for a min number of the adjacency matrix to be present in the already used context of the fw and bw prevs
+    // and nexts. If too many of the prevs or nexts were not seen in the alredy ordered nodes contexts then the node is
+    // not happy.
+    // A node with a high thingy counter is a node that has been seen in the adjacencies of the orders many many times!
+    // Each time i'm adding a new node to the order (other node) and the present node is in the adjacency of that other
+    // node these counters are incremented using the mark used function of the instance of this other node.
     bool h_fw_prevs (prevs.size()*used_perc<=fw_prevs);
     bool h_bw_prevs (prevs.size()*used_perc<=bw_prevs);
     bool h_fw_nexts (nexts.size()*used_perc<=fw_nexts);
@@ -410,7 +416,7 @@ std::pair<int64_t, int64_t> NodeAdjacencies::find_happy_place(const HappyInserti
     int64_t max_prev=INT64_MIN,min_next=INT64_MAX;
     //First check if the node is fw or backward
     if ((fw_prevs or fw_nexts) and (bw_nexts or bw_prevs)) return {max_prev,min_next}; //mixed orientations, unhappy
-    //fordard
+    //forward
     if ((fw_prevs or fw_nexts)) {
         for (auto &nid:prevs) {
             auto p = sorter.get_node_position(nid);
@@ -484,6 +490,7 @@ void HappyInsertionSorter::add_node(sgNodeID_t nid) {
         for (auto &p:adjacencies[-nid].prevs) if (node_positions.count(p)==0 and node_positions.count(-p)==0) candidates.insert(-p);
         for (auto &n:adjacencies[-nid].nexts) if (node_positions.count(n)==0 and node_positions.count(-n)==0) candidates.insert(-n);
     }
+    // This will mark all adjs of the nodes adj to the node added and increase the counters (upvoting the thread??)
     for (auto &p:adjacencies[llabs(nid)].prevs) adjacencies[llabs(p)].mark_used(nid);
     for (auto &n:adjacencies[llabs(nid)].nexts) adjacencies[llabs(n)].mark_used(nid);
 }
@@ -510,6 +517,7 @@ int64_t HappyInsertionSorter::get_node_position(sgNodeID_t nid) const {
 }
 
 bool HappyInsertionSorter::insert_node(sgNodeID_t nid, float used_perc, bool solve_floating_by_rtg) {
+    // First insertion only
     if (node_positions.empty()) {
         if (adjacencies.count(llabs(nid))==0) return false;
         add_node(nid);
