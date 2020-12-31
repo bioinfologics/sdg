@@ -92,7 +92,7 @@ public:
      * @param sdg Base graph
      * @param datastore long reads datastore handle to map
      * @param k mapping k
-     * @param f
+     * @param f max frequency for the MkmerIndex index
      */
     LongReadsRecruiter(SequenceDistanceGraph &sdg, const LongReadsDatastore &datastore,uint8_t k=25, uint16_t f=50);
 

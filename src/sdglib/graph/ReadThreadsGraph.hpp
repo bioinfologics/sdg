@@ -143,12 +143,18 @@ public:
     std::vector<NodePosition> get_thread(int64_t thread_id);
 
     bool flip_thread(int64_t thread_id);
+
+    /** @brief Creates a map with threads as keys and sets of nodes as values
+     *
+     * @return thread nodeset map
+     */
     std::unordered_map<uint64_t,std::set<sgNodeID_t>> thread_nodesets();
     //bool split_thread_at(int64_t thread_id, int lidx); FUTURE
 
-    /** @brief Get all the reaching nodes from a graph with the thread support count
+    /** @brief Get all the reaching nodes from a graph with the threads
      *
-     * Get a map containing all neighbouring nodes to the central node with the corresponding link count
+     * Get all threads where the node is present, get all nodes in those threads and fill the map
+     *
      * @param nid node of interest id
      * @return map where the keys are the neigbouring nodes and the values are the link count for each node in the
      * thread graph
@@ -173,7 +179,7 @@ public:
     int clean_node(sgNodeID_t node_id, int min_supported=4, int min_support=1);
 
     /** @brief Creates a list of repetitive nodes to be removed from the threads graph
-     *  A node is here considered repetitive if is connected more than max_threads times in the threads graph.
+     *  A node is here considered repetitive if it's connected more than max_threads times in the threads graph.
      *
      * @param max_threads number of threads to consider a node repetitive
      * @return vector of pairs (thread, nodes) to eliminate from the graph
