@@ -334,11 +334,11 @@ std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_b
     std::atomic<uint64_t> second_too_close(0);
     std::atomic<uint64_t> second_second_far_enough(0);
     auto tns=thread_nodesets();
-#pragma omp parallel
+//#pragma omp parallel
     {
         std::vector<std::pair<uint64_t,sgNodeID_t>> private_popping_list;
         std::unordered_map<uint64_t,std::vector<uint64_t>> tconns;
-#pragma omp for
+//#pragma omp for
         for (auto i=0;i<all_nvs.size();++i){
             auto nid=all_nvs[i].node_id();
             auto ntids=node_threads(nid);
@@ -377,6 +377,7 @@ std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_b
             //reverse ordering by size
             std::sort(tclusters.begin(),tclusters.end(),[](const std::set<uint64_t> &a, const std::set<uint64_t> &b){return a.size() < b.size();});
             //now take those decisions
+            std::cout << "Cluster size comparison: " << tclusters[0].size() << " * " << max_second_perc << " < " << tclusters[1].size() << std::endl;
             if (tclusters[0].size()*max_second_perc<tclusters[1].size()){
                 //second cluster is too big, pop from all!
                 second_too_close++;
@@ -395,7 +396,7 @@ std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_b
 
             if (++nc%10000==0) sdglib::OutputLog()<<nc<<" nodes analysed"<<std::endl;
         }
-#pragma omp critical
+//#pragma omp critical
         popping_list.insert(popping_list.end(),private_popping_list.cbegin(),private_popping_list.cend());
 
     };
