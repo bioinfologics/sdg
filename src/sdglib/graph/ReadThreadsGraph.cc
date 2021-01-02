@@ -372,7 +372,7 @@ std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_b
             //now analyse this clustering
             if (tclusters.size()==1) continue; //all is as should be
             //reverse ordering by size
-            std::sort(tclusters.begin(),tclusters.end(),[](const std::set<uint64_t> &a, const std::set<uint64_t> &b){return a.size() < b.size();});
+            std::sort(tclusters.begin(),tclusters.end(),[](const std::set<uint64_t> &a, const std::set<uint64_t> &b){return a.size() > b.size();});
             //now take those decisions
             if (tclusters[0].size()*max_second_perc<tclusters[1].size()){
                 //second cluster is too big, pop from all!
