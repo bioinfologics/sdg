@@ -800,6 +800,14 @@ ReadThreadsGraph LongReadsRecruiter::rtg_from_threads(bool remove_duplicated, in
 // bj
 //*****************************************************************************
 
+/** @brief Class used to aggregate consecutive PerfectMatches from read_perfect_matches into contiguous PerfectMatches.
+ * and functions to work with them.
+ *
+ * From one particular PerfectMatch, as long as successive PMs are ordered in the read and in the node and
+ * in the same node, the matches are aggregated into one bigger consecutive PerfectMatch.
+ *
+ * Does not require complete coverage (can have gaps between matches).
+ */
 class AggregatedHits{
 public:
     AggregatedHits(const std::vector<PerfectMatch> &_read_pms,uint start):read_pms(_read_pms){
@@ -836,6 +844,15 @@ public:
     const std::vector<PerfectMatch> &read_pms;
 };
 
+/** @brief aggregate PerfectMatches of read_perfect_matches into AggregatedHits of that read
+ *
+ * If RPMs are consecutive and ordered in the same node they are aggregated into bigger AggregatedHits.
+ *
+ * PMs allow matching gaps in the middle
+ *
+ * @param prm PerfectMatches for a read
+ * @return PerfectMatches for that read
+ */
 std::vector<AggregatedHits> aggregate_hits(const std::vector<PerfectMatch>&prm) {
     std::vector<AggregatedHits> ahs;
     for(auto next_hit=0;next_hit<prm.size();){

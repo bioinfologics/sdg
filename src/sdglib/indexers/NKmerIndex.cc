@@ -5,6 +5,12 @@
 #include "NKmerIndex.hpp"
 #include <sdglib/graph/SequenceDistanceGraph.hpp>
 
+/**
+ * Filter out from the kmers vector the kmers with more than max frequency
+ * @param kmers kmer vector to be filtered
+ * @param max_kmer_repeat max allowed frequency
+ * @return new total kmers
+ */
 uint64_t filter_kmers(std::vector<kmerPos> &kmers, int max_kmer_repeat) {
     uint64_t total_kmers(0);
     auto witr = kmers.begin();
@@ -27,6 +33,12 @@ uint64_t filter_kmers(std::vector<kmerPos> &kmers, int max_kmer_repeat) {
     return total_kmers;
 }
 
+/**
+ * Filter out from the kmers vector the kmers with more than max frequency
+ * @param kmers kmer vector to be filtered
+ * @param max_kmer_repeat max allowed frequency
+ * @return new total kmers
+ */
 uint64_t filter_kmers(std::vector<kmerPos128> &kmers, int max_kmer_repeat) {
     uint64_t total_kmers(0);
     auto witr = kmers.begin();
@@ -94,6 +106,7 @@ NKmerIndex::NKmerIndex(const SequenceDistanceGraph &_sg, uint8_t k, int filter_l
 
 
     sdglib::sort(assembly_kmers.begin(),assembly_kmers.end(), kmerPos::byKmerContigOffset());
+    // Filter kmers filters out in place the kmers that are over the frequency limit
     auto total_kmers(filter_kmers(assembly_kmers, filter_limit));
 #pragma omp parallel for
     for (uint64_t kidx = 0; kidx < assembly_kmers.size(); ++kidx) {
