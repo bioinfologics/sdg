@@ -575,7 +575,15 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("node_positions",&HappyInsertionSorter::node_positions)
             .def_readwrite("adjacencies",&HappyInsertionSorter::adjacencies)
             .def_readwrite("candidates",&HappyInsertionSorter::candidates)
-            .def("get_node_adjacencies",&HappyInsertionSorter::get_node_adjacencies,"nid"_a,py::return_value_policy::reference);
+            .def("get_node_adjacencies",&HappyInsertionSorter::get_node_adjacencies,"nid"_a,py::return_value_policy::reference)
+            .def("local_order_from_node",&HappyInsertionSorter::local_order_from_node,"nid"_a, "perc"_a);
+
+    py::class_<LocalOrderMaker>(m,"LocalOrderMaker","LocalOrderMaker")
+            .def(py::init<ReadThreadsGraph&>(),"rtg"_a);
+
+    py::class_<LocalOrder>(m,"LocalOrder","LocalOrder")
+            .def(py::init<>())
+            .def_readwrite("node_positions",&LocalOrder::node_positions);
 
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);

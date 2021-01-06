@@ -1022,3 +1022,104 @@ std::pair<sgNodeID_t,sgNodeID_t> TheGreedySorter::get_thread_ends(int64_t rid){
     auto &v=read_ends[llabs(rid)];
     return {v[0],v[1]};
 }
+
+LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc) {
+    //==== PART 1 -> start from a node
+    reset_positions();
+    insert_node(nid,0.001); //inserts the node no matter what
+    auto to_add=candidates;
+    for (auto n:to_add)
+        insert_node(n,0.001);
+
+    //TODO: should there be some kind of check on initial consistency here?
+    //From now on, add candidates appropriately, and remove them as candidates if they can't be added (copy this from clever candidates)
+    //we can choose the candidates on front and back thorugh the rtg real quick (basically find the closest to the last added?)
+    //std::unordered_map<>
+
+    //PART II -> sift happy candidates that have non-floating positions, create a list of candidates to add to each position
+    while (not candidates.empty()) {
+        to_add = candidates;
+        std::unordered_map<int64_t, std::vector<sgNodeID_t>> candidates_by_pos;
+        for (auto n:to_add) {
+            auto na = get_node_adjacencies(n);
+            if (na.happy_to_add(perc) == Nowhere) {
+                candidates.erase(n);
+                continue;
+            }
+            auto plims = na.find_happy_place(*this);
+            int64_t p = INT64_MAX;
+            if (plims.first==INT64_MIN and llabs(plims.second) == 1)
+                p = plims.second;
+            else if (plims.second==INT64_MAX and llabs(plims.first) == node_positions.size()) {
+                if (plims.first < 0) p = plims.first - 1;
+                else p = plims.first + 1;
+            } else if ((plims.first < 0 and plims.second == plims.first - 1) or
+                       (plims.first > 0 and plims.second == plims.first + 1))
+                p = plims.second;
+            //TODO: solve floats else if ( (plims.first<0 and plims.second<plims.first-1) or (plims.first>0 and plims.second>plims.first+1) )
+
+
+            if (p == INT64_MAX) {
+                candidates.erase(n);
+            } else {
+                candidates_by_pos[llabs(p)].push_back(p > 0 ? n : -n);
+            }
+        }
+
+
+        //PART III -> for each "between" position add one candidate at random. For both "ends", find the closest candidate
+        to_add.clear();
+        for (auto pos:candidates_by_pos) {
+            if (pos.first == 1 or pos.first == node_positions.size()) {//front or back
+                //std::cout<<std::endl<<"evaluating nodes on one end!"<<std::endl;
+                uint64_t min_between = 1000000, best_hanging = 0;
+                sgNodeID_t best_nid = 0;
+                std::unordered_set<sgNodeID_t> all_in_end(pos.second.begin(), pos.second.end());
+                for (auto nid:pos.second) {
+                    uint64_t b = 0, h = 0;
+                    if (pos.first == 1) {
+                        //std::cout<<"Evaluating node "<<nid<<" to add in position 1"<<std::endl;
+                        if (nid > 0) {
+                            for (auto p:adjacencies[nid].prevs) if (all_in_end.count(p)) ++h;
+                            for (auto n:adjacencies[nid].nexts) if (all_in_end.count(n)) ++b;
+                        } else {
+                            for (auto p:adjacencies[-nid].prevs) if (all_in_end.count(-p)) ++b;
+                            for (auto n:adjacencies[-nid].nexts) if (all_in_end.count(-n)) ++h;
+                        }
+                    }
+                    else{
+                        //std::cout<<"Evaluating node "<<nid<<" to add in position "<<pos.first<<std::endl;
+                        if (nid > 0) {
+                            for (auto p:adjacencies[nid].prevs) if (all_in_end.count(p)) ++b;
+                            for (auto n:adjacencies[nid].nexts) if (all_in_end.count(n)) ++h;
+                        } else {
+                            for (auto p:adjacencies[-nid].prevs) if (all_in_end.count(-p)) ++h;
+                            for (auto n:adjacencies[-nid].nexts) if (all_in_end.count(-n)) ++b;
+                        }
+                    }
+                    //std::cout<<"Node has b="<<b<<" and h="<<h<<std::endl;
+                    if (b < min_between or (b == min_between and h > best_hanging)) {
+                        best_nid = nid;
+                        min_between = b;
+                        best_hanging = h;
+                        //std::cout<<"Node is best yet!"<<std::endl;
+                    }
+                }
+                if (best_nid == 0) {
+                    sdglib::OutputLog("ERROR: can't satisfy conditions to add a node at the end of the order");
+                } else to_add.insert(best_nid);
+            } else {//middle - just pick one
+                to_add.insert(pos.second.front());
+            }
+        }
+        for (auto nid:to_add){
+            if (!insert_node(nid,perc)) candidates.erase(nid);
+        }
+    }
+
+    LocalOrder lo;
+    lo.node_positions=node_positions;
+    return lo;
+}
+
+//TODO:implement the choosing a node its neighbours not in enough orders yet, up to a certain coverage, single threaded at first

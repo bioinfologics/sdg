@@ -9,6 +9,14 @@
 #include <sdglib/views/NodeView.hpp>
 #include <sdglib/mappers/LongReadsRecruiter.hpp>
 
+class LocalOrder{
+public:
+    LocalOrder(){};
+    //explicit LocalOrder(std::vector<sgNodeID_t>);//construct a local order from a list of nodes
+    //LocalOrder merge(const LocalOrder & other);
+    std::unordered_map<sgNodeID_t , int64_t > node_positions;
+};
+
 /** @brief Checks node happiness in an order
  * Compares the position in the proposed order with the links in the thread graph (trg_nt).
  *
@@ -172,6 +180,8 @@ public:
     int64_t get_node_position(sgNodeID_t nid) const; //negative means reverse, but order is abs!!!!
     void remove_node_from_everywhere(sgNodeID_t nid);
 
+    LocalOrder local_order_from_node(sgNodeID_t nid,float perc=.9);
+
     ReadThreadsGraph& rtg;
     std::unordered_set<sgNodeID_t> candidates;
     std::unordered_map<sgNodeID_t,int64_t> node_positions;
@@ -213,6 +223,20 @@ private:
     bool order_is_valid=false;
     std::unordered_map<sgNodeID_t , int64_t > order;
     std::unordered_map<uint64_t,uint64_t> read_nodes_in_order;
+};
+
+
+/**
+ * This class creates local orders for some of the nodes. Not every node will have its order generated
+ */
+class LocalOrderMaker{
+public:
+    LocalOrderMaker(ReadThreadsGraph &_rtg):rtg(_rtg){};
+    LocalOrder local_order_from_node(sgNodeID_t nid, HappyInsertionSorter & his);
+    //void add_order(const LocalOrder&);
+    std::vector<LocalOrder> local_orders;
+    std::map<sgNodeID_t,std::vector<uint64_t>> node_local_orders;
+    ReadThreadsGraph & rtg;
 };
 
 #endif //SDG_THREADEDGRAPHSORTER_H
