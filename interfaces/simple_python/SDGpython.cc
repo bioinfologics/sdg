@@ -583,6 +583,7 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<LocalOrder>(m,"LocalOrder","LocalOrder")
             .def(py::init<>())
+            .def("as_signed_nodes",&LocalOrder::as_signed_nodes)
             .def_readwrite("node_positions",&LocalOrder::node_positions);
 
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);

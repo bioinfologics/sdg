@@ -12,6 +12,7 @@
 class LocalOrder{
 public:
     LocalOrder(){};
+    std::vector<sgNodeID_t> as_signed_nodes();
     //explicit LocalOrder(std::vector<sgNodeID_t>);//construct a local order from a list of nodes
     //LocalOrder merge(const LocalOrder & other);
     std::unordered_map<sgNodeID_t , int64_t > node_positions;

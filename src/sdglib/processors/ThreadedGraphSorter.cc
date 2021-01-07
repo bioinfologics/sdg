@@ -1122,4 +1122,12 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
     return lo;
 }
 
+std::vector<sgNodeID_t> LocalOrder::as_signed_nodes() {
+    std::vector<sgNodeID_t> nodes(node_positions.size());
+    for (auto &np:node_positions){
+        if (llabs(np.second)>nodes.size()) return {};
+        nodes[llabs(np.second)]=(np.second>0 ? np.first:-np.first);
+    }
+    return nodes;
+}
 //TODO:implement the choosing a node its neighbours not in enough orders yet, up to a certain coverage, single threaded at first
