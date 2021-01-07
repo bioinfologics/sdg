@@ -583,6 +583,7 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<LocalOrder>(m,"LocalOrder","LocalOrder")
             .def(py::init<>())
+            .def(py::init<const std::vector<sgNodeID_t> &>(),"nodes"_a)
             .def("as_signed_nodes",&LocalOrder::as_signed_nodes)
             .def_readwrite("node_positions",&LocalOrder::node_positions);
 

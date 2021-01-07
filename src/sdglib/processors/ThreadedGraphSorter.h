@@ -12,7 +12,11 @@
 class LocalOrder{
 public:
     LocalOrder(){};
+    explicit LocalOrder(const std::vector<sgNodeID_t> & nodes);
     std::vector<sgNodeID_t> as_signed_nodes();
+    void validate_with_rtg(const ReadThreadsGraph & rtg);
+    void cleanup_with_rtg(const ReadThreadsGraph & rtg);
+
     //explicit LocalOrder(std::vector<sgNodeID_t>);//construct a local order from a list of nodes
     //LocalOrder merge(const LocalOrder & other);
     std::unordered_map<sgNodeID_t , int64_t > node_positions;
