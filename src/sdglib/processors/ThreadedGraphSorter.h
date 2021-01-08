@@ -14,11 +14,12 @@ public:
     LocalOrder(){};
     explicit LocalOrder(const std::vector<sgNodeID_t> & nodes);
     std::vector<sgNodeID_t> as_signed_nodes();
+    LocalOrder reverse();
     void validate_with_rtg(const ReadThreadsGraph & rtg);
     void cleanup_with_rtg(const ReadThreadsGraph & rtg);
 
     //explicit LocalOrder(std::vector<sgNodeID_t>);//construct a local order from a list of nodes
-    //LocalOrder merge(const LocalOrder & other);
+    LocalOrder merge(const LocalOrder & other,int max_overhang=4,float min_shared_perc=.5,int min_shared=20,float max_disordered_perc=.02);
     std::unordered_map<sgNodeID_t , int64_t > node_positions;
 };
 
@@ -185,7 +186,7 @@ public:
     int64_t get_node_position(sgNodeID_t nid) const; //negative means reverse, but order is abs!!!!
     void remove_node_from_everywhere(sgNodeID_t nid);
 
-    LocalOrder local_order_from_node(sgNodeID_t nid,float perc=.9);
+    LocalOrder local_order_from_node(sgNodeID_t nid,float perc=.9,bool cleanup_initial_order=true);
 
     ReadThreadsGraph& rtg;
     std::unordered_set<sgNodeID_t> candidates;
@@ -237,7 +238,6 @@ private:
 class LocalOrderMaker{
 public:
     LocalOrderMaker(ReadThreadsGraph &_rtg):rtg(_rtg){};
-    LocalOrder local_order_from_node(sgNodeID_t nid, HappyInsertionSorter & his);
     //void add_order(const LocalOrder&);
     std::vector<LocalOrder> local_orders;
     std::map<sgNodeID_t,std::vector<uint64_t>> node_local_orders;

@@ -529,6 +529,7 @@ bool HappyInsertionSorter::insert_node(sgNodeID_t nid, float used_perc, bool sol
     if (node_positions.count(nid) or node_positions.count(-nid)) return false;
     if (adjacencies[nid].happy_to_add(used_perc)==HappyPosition::Nowhere) return false;
     auto place=adjacencies[nid].find_happy_place(*this);
+    //std::cout<<" happy place -> "<<place.first<<":"<<place.second<<std::endl;
     int64_t np=0;
     if (place.first==INT64_MIN and place.second==INT64_MAX) {
         return false;
@@ -1023,15 +1024,46 @@ std::pair<sgNodeID_t,sgNodeID_t> TheGreedySorter::get_thread_ends(int64_t rid){
     return {v[0],v[1]};
 }
 
-LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc) {
+LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc, bool cleanup_initial_order) {
     //==== PART 1 -> start from a node
+    std::cout<<"Local order from node "<<nid<<std::endl;
     reset_positions();
     insert_node(nid,0.001); //inserts the node no matter what
     auto to_add=candidates;
-    for (auto n:to_add)
-        insert_node(n,0.001);
+    auto last_size=to_add.size()+1;
+    while(to_add.size()<last_size) {
+        std::unordered_set<sgNodeID_t> new_to_add;
+        last_size=to_add.size();
+        for (auto n:to_add) {
+            if (not insert_node(n, 0.001)) new_to_add.insert(n);
+        }
+        to_add=new_to_add;
+    }
+    std::cout<<"After forcing insertion of all neighbours, node count "<<node_positions.size()<<std::endl;
 
     //TODO: should there be some kind of check on initial consistency here?
+    //YES, we give option to go back to inserted nodes and add them to a new list of order only if they would have been happy in the order
+    if (cleanup_initial_order) {
+        std::unordered_set<sgNodeID_t> clean_to_add;
+        for (auto n:candidates) {
+            if (adjacencies[llabs(n)].happy_to_add(perc) != Nowhere) clean_to_add.insert(n);
+        }
+        std::cout<<"There are "<<clean_to_add.size()<<" nodes that should be happy to add"<<std::endl;
+        reset_positions();
+        insert_node(nid,0.001); //inserts the node no matter what
+        last_size = clean_to_add.size() + 1;
+        while (clean_to_add.size() < last_size) {
+            std::unordered_set<sgNodeID_t> new_to_add;
+            last_size = clean_to_add.size();
+            insert_node(nid, 0.001); //inserts the node no matter what
+            for (auto n:clean_to_add) {
+                if (not insert_node(n, 0.001)) new_to_add.insert(n);
+            }
+            clean_to_add=new_to_add;
+        }
+
+        std::cout << "cleanup, node count " << node_positions.size() << std::endl;
+    }
     //From now on, add candidates appropriately, and remove them as candidates if they can't be added (copy this from clever candidates)
     //we can choose the candidates on front and back thorugh the rtg real quick (basically find the closest to the last added?)
     //std::unordered_map<>
@@ -1134,5 +1166,81 @@ std::vector<sgNodeID_t> LocalOrder::as_signed_nodes() {
 
 LocalOrder::LocalOrder(const std::vector<sgNodeID_t> &nodes) {
     for (int64_t i=0;i<nodes.size();++i)
-        node_positions[llabs(nodes[i])]= nodes[i] > 0 ? i : -i;
+        node_positions[llabs(nodes[i])]= nodes[i] > 0 ? i+1 : -i-1;
+}
+
+LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_shared_perc,int min_shared,float max_disordered_perc) {
+    //first figure out direction of merge
+    int64_t first_seen_at=-1, first_seen_other, last_seen_at, last_seen_other;
+    bool last_disordered=false;//keep track of last disordered, we won't merge if first or last are disordered
+    uint64_t ordered=0,disordered=0;
+    auto nids=as_signed_nodes();
+    for (int64_t i=0;i<nids.size();++i){
+        auto p=other.node_positions.find(llabs(nids[i]));
+        if (p==other.node_positions.end()) continue;
+        auto op=p->second;
+        if (first_seen_at==-1){
+            first_seen_at=i;
+            first_seen_other=op;
+            last_seen_at=i;
+            last_seen_other=op;
+            ++ordered;
+        }
+        else {
+            last_disordered=false;
+            if (nids[i] > 0 == op>0) {//same sign, both orders are going in the same direction
+                if (llabs(op) > llabs(last_seen_other)) {
+                    ++ordered;
+                    last_seen_at=i;
+                    last_seen_other=op;
+                }
+                else {
+                    ++disordered;
+                    last_disordered=true;
+                }
+            }
+            else {
+                if (llabs(op) < llabs(last_seen_other)) {
+                    ++ordered;
+                    last_seen_at=i;
+                    last_seen_other=op;
+                }
+                else {
+                    ++disordered;
+                    last_disordered=true;
+                }
+            }
+        }
+    }
+
+    if (first_seen_at==-1) return LocalOrder();
+
+    auto largest_overhang=std::max(
+            std::max(first_seen_at,(int64_t)nids.size()-1-last_seen_at),
+            std::max(llabs(first_seen_other)-1,(int64_t)other.node_positions.size()-llabs(last_seen_other)));
+    float shared_perc=(float)ordered/std::max(last_seen_at+1-first_seen_at,llabs(last_seen_other)+1-llabs(first_seen_other));
+    float disordered_perc=(float)disordered/std::min(last_seen_at+1-first_seen_at,llabs(last_seen_other)+1-llabs(first_seen_other));
+
+    sdglib::OutputLog()<<"First seen at: "<<first_seen_at<<std::endl;
+    sdglib::OutputLog()<<"First seen other: "<<first_seen_other<<std::endl;
+    sdglib::OutputLog()<<"Last seen at: "<<last_seen_at<<std::endl;
+    sdglib::OutputLog()<<"Last seen other: "<<last_seen_other<<std::endl;
+    sdglib::OutputLog()<<"Ordered: "<<ordered<<" disordered: "<<disordered<<std::endl;
+    sdglib::OutputLog()<<"Largest overhang: "<<largest_overhang<<std::endl;
+    sdglib::OutputLog()<<"Shared perc: "<<shared_perc<<std::endl;
+    sdglib::OutputLog()<<"Disordered perc: "<<disordered_perc<<std::endl;
+
+    if (ordered<min_shared or shared_perc<min_shared_perc or disordered_perc>max_disordered_perc or last_disordered) return LocalOrder();
+    std::cout<<"TODO: actually merge!"<<std::endl;
+
+
+    return LocalOrder();
+}
+
+LocalOrder LocalOrder::reverse() {
+    auto nodes=as_signed_nodes();
+    std::vector<sgNodeID_t> nodes_rev;
+    nodes_rev.reserve(nodes.size());
+    for (auto it=nodes.crbegin();it!=nodes.crend();++it) nodes_rev.emplace_back(-*it);
+    return LocalOrder(nodes_rev);
 }

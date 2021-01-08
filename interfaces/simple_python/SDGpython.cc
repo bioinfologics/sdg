@@ -576,7 +576,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("adjacencies",&HappyInsertionSorter::adjacencies)
             .def_readwrite("candidates",&HappyInsertionSorter::candidates)
             .def("get_node_adjacencies",&HappyInsertionSorter::get_node_adjacencies,"nid"_a,py::return_value_policy::reference)
-            .def("local_order_from_node",&HappyInsertionSorter::local_order_from_node,"nid"_a, "perc"_a);
+            .def("local_order_from_node",&HappyInsertionSorter::local_order_from_node,"nid"_a, "perc"_a, "cleanup_initial_order"_a=true);
 
     py::class_<LocalOrderMaker>(m,"LocalOrderMaker","LocalOrderMaker")
             .def(py::init<ReadThreadsGraph&>(),"rtg"_a);
@@ -585,6 +585,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def(py::init<>())
             .def(py::init<const std::vector<sgNodeID_t> &>(),"nodes"_a)
             .def("as_signed_nodes",&LocalOrder::as_signed_nodes)
+            .def("reverse",&LocalOrder::reverse)
+            .def("merge",&LocalOrder::merge, "other"_a, "max_overhang"_a=4, "min_shared_perc"_a=.5, "min_shared"_a=20, "max_disordered_perc"_a=.02)
             .def_readwrite("node_positions",&LocalOrder::node_positions);
 
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
