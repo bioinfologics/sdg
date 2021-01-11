@@ -576,7 +576,9 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("adjacencies",&HappyInsertionSorter::adjacencies)
             .def_readwrite("candidates",&HappyInsertionSorter::candidates)
             .def("get_node_adjacencies",&HappyInsertionSorter::get_node_adjacencies,"nid"_a,py::return_value_policy::reference)
-            .def("local_order_from_node",&HappyInsertionSorter::local_order_from_node,"nid"_a, "perc"_a, "cleanup_initial_order"_a=true);
+            .def("local_order_from_node",&HappyInsertionSorter::local_order_from_node,"nid"_a, "perc"_a, "cleanup_initial_order"_a=true)
+            .def("dump_adjacencies",&HappyInsertionSorter::dump_adjacencies, "filename"_a)
+            .def("load_adjacencies",&HappyInsertionSorter::load_adjacencies, "filename"_a);
 
     py::class_<LocalOrderMaker>(m,"LocalOrderMaker","LocalOrderMaker")
             .def(py::init<ReadThreadsGraph&>(),"rtg"_a);

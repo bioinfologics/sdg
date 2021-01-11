@@ -1030,9 +1030,11 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
     reset_positions();
     insert_node(nid,0.001); //inserts the node no matter what
     auto to_add=candidates;
+    //std::sort(to_add.begin(),to_add.end());//TODO: remove this!!!!
+    auto original_to_add=to_add=candidates;
     auto last_size=to_add.size()+1;
     while(to_add.size()<last_size) {
-        std::unordered_set<sgNodeID_t> new_to_add;
+        std::set<sgNodeID_t> new_to_add;
         last_size=to_add.size();
         for (auto n:to_add) {
             if (not insert_node(n, 0.001)) new_to_add.insert(n);
@@ -1045,7 +1047,7 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
     //YES, we give option to go back to inserted nodes and add them to a new list of order only if they would have been happy in the order
     if (cleanup_initial_order) {
         std::unordered_set<sgNodeID_t> clean_to_add;
-        for (auto n:candidates) {
+        for (auto n:original_to_add) {
             if (adjacencies[llabs(n)].happy_to_add(perc) != Nowhere) clean_to_add.insert(n);
         }
         std::cout<<"There are "<<clean_to_add.size()<<" nodes that should be happy to add"<<std::endl;
@@ -1067,6 +1069,9 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
     //From now on, add candidates appropriately, and remove them as candidates if they can't be added (copy this from clever candidates)
     //we can choose the candidates on front and back thorugh the rtg real quick (basically find the closest to the last added?)
     //std::unordered_map<>
+    std::cout<<"Going into expansion: { ";
+    for (auto np:node_positions) std::cout<<np.first<<": "<<np.second<<", ";
+    std::cout<<"}"<<std::endl;
 
     //PART II -> sift happy candidates that have non-floating positions, create a list of candidates to add to each position
     while (not candidates.empty()) {
@@ -1218,6 +1223,7 @@ LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_
     auto largest_overhang=std::max(
             std::max(first_seen_at,(int64_t)nids.size()-1-last_seen_at),
             std::max(llabs(first_seen_other)-1,(int64_t)other.node_positions.size()-llabs(last_seen_other)));
+    //XXX BEWARE DISTANCES IN NEGATIVE COORDINATES IN OTHER.
     float shared_perc=(float)ordered/std::max(last_seen_at+1-first_seen_at,llabs(last_seen_other)+1-llabs(first_seen_other));
     float disordered_perc=(float)disordered/std::min(last_seen_at+1-first_seen_at,llabs(last_seen_other)+1-llabs(first_seen_other));
 
@@ -1243,4 +1249,43 @@ LocalOrder LocalOrder::reverse() {
     nodes_rev.reserve(nodes.size());
     for (auto it=nodes.crbegin();it!=nodes.crend();++it) nodes_rev.emplace_back(-*it);
     return LocalOrder(nodes_rev);
+}
+
+
+
+void HappyInsertionSorter::dump_adjacencies(std::string filename) {
+    std::ofstream ofs(filename);
+    uint64_t adjsize=adjacencies.size();
+    ofs.write((char *) &adjsize,sizeof(adjsize));
+    std::vector<sgNodeID_t> nodes;
+    for (auto &a:adjacencies){
+        ofs.write((char *) &a.first,sizeof(a.first));
+        nodes.clear();
+        std::copy(a.second.prevs.begin(), a.second.prevs.end(), std::back_inserter(nodes));
+        sdglib::write_flat_vector(ofs,nodes);
+        nodes.clear();
+        std::copy(a.second.nexts.begin(), a.second.nexts.end(), std::back_inserter(nodes));
+        sdglib::write_flat_vector(ofs,nodes);
+    }
+
+
+}
+
+void HappyInsertionSorter::load_adjacencies(std::string filename) {
+    std::ifstream ifs(filename);
+    uint64_t adjsize;
+    ifs.read((char *) &adjsize,sizeof(adjsize));
+    adjacencies.reserve(adjsize);
+    std::vector<sgNodeID_t> nodes;
+    sgNodeID_t nid;
+    for (auto i=0;i<adjsize;++i){
+        ifs.read((char *) &nid,sizeof(nid));
+        adjacencies[nid]=NodeAdjacencies();
+        nodes.clear();
+        sdglib::read_flat_vector(ifs,nodes);
+        for (auto &n:nodes) adjacencies[nid].prevs.insert(n);
+        nodes.clear();
+        sdglib::read_flat_vector(ifs,nodes);
+        for (auto &n:nodes) adjacencies[nid].nexts.insert(n);
+    }
 }

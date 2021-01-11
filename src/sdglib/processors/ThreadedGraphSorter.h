@@ -186,10 +186,14 @@ public:
     int64_t get_node_position(sgNodeID_t nid) const; //negative means reverse, but order is abs!!!!
     void remove_node_from_everywhere(sgNodeID_t nid);
 
+    void dump_adjacencies(std::string filename);
+    void load_adjacencies(std::string filename);
+
+
     LocalOrder local_order_from_node(sgNodeID_t nid,float perc=.9,bool cleanup_initial_order=true);
 
     ReadThreadsGraph& rtg;
-    std::unordered_set<sgNodeID_t> candidates;
+    std::set<sgNodeID_t> candidates;
     std::unordered_map<sgNodeID_t,int64_t> node_positions;
     std::unordered_map<sgNodeID_t,NodeAdjacencies> adjacencies;
 };
