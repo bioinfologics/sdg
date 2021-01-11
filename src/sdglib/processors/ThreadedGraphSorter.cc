@@ -1024,7 +1024,16 @@ std::pair<sgNodeID_t,sgNodeID_t> TheGreedySorter::get_thread_ends(int64_t rid){
     return {v[0],v[1]};
 }
 
+
 LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc, bool cleanup_initial_order) {
+    /**
+     * This function is more of a stab than anything else. There's LOADS of known limitations, among them:
+     *
+     * - the order when adding candidates affects the final order
+     * - negative and positive orders for the same node may not be equivalent
+     * - repeated nodes may create an order of two or more loci (this can be alleviated on merging)
+     */
+
     //==== PART 1 -> start from a node
     std::cout<<"Local order from node "<<nid<<std::endl;
     reset_positions();
@@ -1180,21 +1189,23 @@ LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_
     bool last_disordered=false;//keep track of last disordered, we won't merge if first or last are disordered
     uint64_t ordered=0,disordered=0;
     auto nids=as_signed_nodes();
+    bool same_direction;
     for (int64_t i=0;i<nids.size();++i){
         auto p=other.node_positions.find(llabs(nids[i]));
         if (p==other.node_positions.end()) continue;
-        auto op=p->second;
+        auto op=nids[i]>0 ? p->second: -p->second;
         if (first_seen_at==-1){
             first_seen_at=i;
             first_seen_other=op;
             last_seen_at=i;
             last_seen_other=op;
             ++ordered;
+            same_direction=( op>0 );
         }
         else {
             last_disordered=false;
-            if (nids[i] > 0 == op>0) {//same sign, both orders are going in the same direction
-                if (llabs(op) > llabs(last_seen_other)) {
+            if (same_direction) {//same sign, both orders are going in the same direction
+                if ( op>0 and llabs(op) > llabs(last_seen_other)) {
                     ++ordered;
                     last_seen_at=i;
                     last_seen_other=op;
@@ -1205,7 +1216,7 @@ LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_
                 }
             }
             else {
-                if (llabs(op) < llabs(last_seen_other)) {
+                if ( op<0 and llabs(op) < llabs(last_seen_other)) {
                     ++ordered;
                     last_seen_at=i;
                     last_seen_other=op;
@@ -1219,25 +1230,44 @@ LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_
     }
 
     if (first_seen_at==-1) return LocalOrder();
+    ++first_seen_at;
+    ++last_seen_at;
 
-    auto largest_overhang=std::max(
-            std::max(first_seen_at,(int64_t)nids.size()-1-last_seen_at),
-            std::max(llabs(first_seen_other)-1,(int64_t)other.node_positions.size()-llabs(last_seen_other)));
-    //XXX BEWARE DISTANCES IN NEGATIVE COORDINATES IN OTHER.
+    int64_t this_left=first_seen_at-1,other_left=(same_direction ? first_seen_other-1:other.node_positions.size()+first_seen_other);
+    int64_t this_right=node_positions.size()-last_seen_at,other_right=(same_direction ? other.node_positions.size()-last_seen_other : -last_seen_other-1 );
+
+    auto largest_left=std::max(this_left,other_left);
+    auto largest_right=std::max(this_right,other_right);
     float shared_perc=(float)ordered/std::max(last_seen_at+1-first_seen_at,llabs(last_seen_other)+1-llabs(first_seen_other));
-    float disordered_perc=(float)disordered/std::min(last_seen_at+1-first_seen_at,llabs(last_seen_other)+1-llabs(first_seen_other));
+    float disordered_perc=(float)disordered/llabs(std::min(last_seen_at+1-first_seen_at,llabs(last_seen_other)+1-llabs(first_seen_other)));
 
     sdglib::OutputLog()<<"First seen at: "<<first_seen_at<<std::endl;
     sdglib::OutputLog()<<"First seen other: "<<first_seen_other<<std::endl;
     sdglib::OutputLog()<<"Last seen at: "<<last_seen_at<<std::endl;
     sdglib::OutputLog()<<"Last seen other: "<<last_seen_other<<std::endl;
     sdglib::OutputLog()<<"Ordered: "<<ordered<<" disordered: "<<disordered<<std::endl;
-    sdglib::OutputLog()<<"Largest overhang: "<<largest_overhang<<std::endl;
+    sdglib::OutputLog()<<"This left:"<<this_left<<", other left:"<<other_left<<std::endl;
+    sdglib::OutputLog()<<"This right:"<<this_right<<", other right:"<<other_right<<std::endl;
     sdglib::OutputLog()<<"Shared perc: "<<shared_perc<<std::endl;
     sdglib::OutputLog()<<"Disordered perc: "<<disordered_perc<<std::endl;
 
     if (ordered<min_shared or shared_perc<min_shared_perc or disordered_perc>max_disordered_perc or last_disordered) return LocalOrder();
+
+    /**
+     * At this point: this_left/other left is tip sizes BEFORE this order, right is AFTER.
+     * All coordinates are in 1 : size, with negatives representing revrse complement vs. the corresponding node IN THIS ORDER.
+     * First/last seen are INCLUDED boundaries of the overlapping segment.
+     */
+
+
     std::cout<<"TODO: actually merge!"<<std::endl;
+
+
+    //Pick largest left
+
+    //merge middle section
+
+    //Pick largest right
 
 
     return LocalOrder();
