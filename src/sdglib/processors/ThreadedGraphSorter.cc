@@ -1190,6 +1190,7 @@ LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_
     uint64_t ordered=0,disordered=0;
     auto nids=as_signed_nodes();
     bool same_direction;
+    std::set<sgNodeID_t> disordered_nodes;
     for (int64_t i=0;i<nids.size();++i){
         auto p=other.node_positions.find(llabs(nids[i]));
         if (p==other.node_positions.end()) continue;
@@ -1223,6 +1224,7 @@ LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_
                 }
                 else {
                     ++disordered;
+                    disordered_nodes.insert(llabs(nids[i]));
                     last_disordered=true;
                 }
             }
@@ -1241,17 +1243,17 @@ LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_
     float shared_perc=(float)ordered/std::max(last_seen_at+1-first_seen_at,llabs(last_seen_other)+1-llabs(first_seen_other));
     float disordered_perc=(float)disordered/llabs(std::min(last_seen_at+1-first_seen_at,llabs(last_seen_other)+1-llabs(first_seen_other)));
 
-    sdglib::OutputLog()<<"First seen at: "<<first_seen_at<<std::endl;
-    sdglib::OutputLog()<<"First seen other: "<<first_seen_other<<std::endl;
-    sdglib::OutputLog()<<"Last seen at: "<<last_seen_at<<std::endl;
-    sdglib::OutputLog()<<"Last seen other: "<<last_seen_other<<std::endl;
-    sdglib::OutputLog()<<"Ordered: "<<ordered<<" disordered: "<<disordered<<std::endl;
-    sdglib::OutputLog()<<"This left:"<<this_left<<", other left:"<<other_left<<std::endl;
-    sdglib::OutputLog()<<"This right:"<<this_right<<", other right:"<<other_right<<std::endl;
-    sdglib::OutputLog()<<"Shared perc: "<<shared_perc<<std::endl;
-    sdglib::OutputLog()<<"Disordered perc: "<<disordered_perc<<std::endl;
+//    sdglib::OutputLog()<<"First seen at: "<<first_seen_at<<std::endl;
+//    sdglib::OutputLog()<<"First seen other: "<<first_seen_other<<std::endl;
+//    sdglib::OutputLog()<<"Last seen at: "<<last_seen_at<<std::endl;
+//    sdglib::OutputLog()<<"Last seen other: "<<last_seen_other<<std::endl;
+//    sdglib::OutputLog()<<"Ordered: "<<ordered<<" disordered: "<<disordered<<std::endl;
+//    sdglib::OutputLog()<<"This left:"<<this_left<<", other left:"<<other_left<<std::endl;
+//    sdglib::OutputLog()<<"This right:"<<this_right<<", other right:"<<other_right<<std::endl;
+//    sdglib::OutputLog()<<"Shared perc: "<<shared_perc<<std::endl;
+//    sdglib::OutputLog()<<"Disordered perc: "<<disordered_perc<<std::endl;
 
-    if (ordered<min_shared or shared_perc<min_shared_perc or disordered_perc>max_disordered_perc or last_disordered) return LocalOrder();
+    if (ordered<min_shared or shared_perc<min_shared_perc or disordered_perc>max_disordered_perc or last_disordered or std::min(this_right,other_right)>max_overhang or std::min(this_left,other_left)>max_overhang) return LocalOrder();
 
     /**
      * At this point: this_left/other left is tip sizes BEFORE this order, right is AFTER.
@@ -1260,17 +1262,74 @@ LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_
      */
 
 
-    std::cout<<"TODO: actually merge!"<<std::endl;
+    //reverse other order if needed (easier to just write one fw-merging algorithm)
+    auto other_fw=other;
+    if (not same_direction) {
+        other_fw=other.reverse();
+        first_seen_other=other.node_positions.size()+1+first_seen_other;
+        last_seen_other=other.node_positions.size()+1+last_seen_other;
+    }
 
+    auto this_nodes=as_signed_nodes();
+    auto other_fw_nodes=other_fw.as_signed_nodes();
+    std::vector<sgNodeID_t> merged_nodes;
 
     //Pick largest left
+    if (this_left>=other_left){
+        std::copy(this_nodes.begin(),this_nodes.begin()+first_seen_at-1,std::back_inserter(merged_nodes));
+    }
+    else {
+        std::copy(other_fw_nodes.begin(),other_fw_nodes.begin()+first_seen_other-1,std::back_inserter(merged_nodes));
+    }
 
     //merge middle section
+    for (auto this_index=first_seen_at-1,other_index=first_seen_other-1; this_index<last_seen_at and other_index<last_seen_other;){
+        if (this_nodes[this_index]==other_fw_nodes[other_index]){ //same node on both, add and increment
+            merged_nodes.emplace_back(this_nodes[this_index]);
+            ++this_index;
+            ++other_index;
+        }
+        else {
+            uint64_t this_count=0,other_count=0;
+            uint64_t i1;
+            for(i1=this_index; i1<last_seen_at and ( disordered_nodes.count(llabs(this_nodes[i1])) or other_fw.node_positions.find(llabs(this_nodes[i1]))==other_fw.node_positions.end()); ++i1) {
+                if (disordered_nodes.count(llabs(this_nodes[i1]))==0) ++this_count;
+            }
+            uint64_t i2;
+            for( i2=other_index; i2<last_seen_other and (disordered_nodes.count(llabs(other_fw_nodes[i2])) or node_positions.find(llabs(other_fw_nodes[i2]))==node_positions.end()); ++i2) {
+                if (disordered_nodes.count(llabs(other_fw_nodes[i2]))==0) ++other_count;
+            }
+            if (this_count==0 and other_count==0) { //this is just a single disordered node in both (probably same node reversed?), skip in both
+                ++this_index;
+                ++other_index;
+            }
+            else if (this_count>=other_count) {
+                for (auto i=this_index;i<i1;++i) {
+                    if (disordered_nodes.count(llabs(this_nodes[i]))==0) merged_nodes.emplace_back(this_nodes[i]);
+                }
+                this_index=i1;
+            }
+            else {
+                for (auto i=other_index;i<i2;++i) {
+                    if (disordered_nodes.count(llabs(other_fw_nodes[i]))==0) merged_nodes.emplace_back(other_fw_nodes[i]);
+                }
+                other_index=i2;
+            }
+
+
+
+        }
+    }
 
     //Pick largest right
+    if (this_right>=other_right){
+        std::copy(this_nodes.begin()+last_seen_at,this_nodes.end(),std::back_inserter(merged_nodes));
+    }
+    else {
+        std::copy(other_fw_nodes.begin()+last_seen_other,other_fw_nodes.end(),std::back_inserter(merged_nodes));
+    }
 
-
-    return LocalOrder();
+    return LocalOrder(merged_nodes);
 }
 
 LocalOrder LocalOrder::reverse() const {
