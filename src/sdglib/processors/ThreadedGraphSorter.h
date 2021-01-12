@@ -13,13 +13,13 @@ class LocalOrder{
 public:
     LocalOrder(){};
     explicit LocalOrder(const std::vector<sgNodeID_t> & nodes);
-    std::vector<sgNodeID_t> as_signed_nodes();
-    LocalOrder reverse();
+    std::vector<sgNodeID_t> as_signed_nodes() const;
+    LocalOrder reverse() const;
     void validate_with_rtg(const ReadThreadsGraph & rtg);
     void cleanup_with_rtg(const ReadThreadsGraph & rtg);
 
     //explicit LocalOrder(std::vector<sgNodeID_t>);//construct a local order from a list of nodes
-    LocalOrder merge(const LocalOrder & other,int max_overhang=4,float min_shared_perc=.5,int min_shared=20,float max_disordered_perc=.02);
+    LocalOrder merge(const LocalOrder & other,int max_overhang=4,float min_shared_perc=.5,int min_shared=20,float max_disordered_perc=.02) const;
     std::unordered_map<sgNodeID_t , int64_t > node_positions;
 };
 

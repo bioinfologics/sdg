@@ -1168,7 +1168,7 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
     return lo;
 }
 
-std::vector<sgNodeID_t> LocalOrder::as_signed_nodes() {
+std::vector<sgNodeID_t> LocalOrder::as_signed_nodes() const {
     std::vector<sgNodeID_t> nodes(node_positions.size());
     for (auto &np:node_positions){
         if (llabs(np.second)>nodes.size()) return {};
@@ -1183,7 +1183,7 @@ LocalOrder::LocalOrder(const std::vector<sgNodeID_t> &nodes) {
         node_positions[llabs(nodes[i])]= nodes[i] > 0 ? i+1 : -i-1;
 }
 
-LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_shared_perc,int min_shared,float max_disordered_perc) {
+LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_shared_perc,int min_shared,float max_disordered_perc) const{
     //first figure out direction of merge
     int64_t first_seen_at=-1, first_seen_other, last_seen_at, last_seen_other;
     bool last_disordered=false;//keep track of last disordered, we won't merge if first or last are disordered
@@ -1273,7 +1273,7 @@ LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_
     return LocalOrder();
 }
 
-LocalOrder LocalOrder::reverse() {
+LocalOrder LocalOrder::reverse() const {
     auto nodes=as_signed_nodes();
     std::vector<sgNodeID_t> nodes_rev;
     nodes_rev.reserve(nodes.size());
