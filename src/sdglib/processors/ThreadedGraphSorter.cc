@@ -1035,7 +1035,7 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
      */
 
     //==== PART 1 -> start from a node
-    std::cout<<"Local order from node "<<nid<<std::endl;
+    //std::cout<<"Local order from node "<<nid<<std::endl;
     reset_positions();
     insert_node(nid,0.001); //inserts the node no matter what
     auto to_add=candidates;
@@ -1050,7 +1050,7 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
         }
         to_add=new_to_add;
     }
-    std::cout<<"After forcing insertion of all neighbours, node count "<<node_positions.size()<<std::endl;
+    //std::cout<<"After forcing insertion of all neighbours, node count "<<node_positions.size()<<std::endl;
 
     //TODO: should there be some kind of check on initial consistency here?
     //YES, we give option to go back to inserted nodes and add them to a new list of order only if they would have been happy in the order
@@ -1059,7 +1059,7 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
         for (auto n:original_to_add) {
             if (adjacencies[llabs(n)].happy_to_add(perc) != Nowhere) clean_to_add.insert(n);
         }
-        std::cout<<"There are "<<clean_to_add.size()<<" nodes that should be happy to add"<<std::endl;
+        //std::cout<<"There are "<<clean_to_add.size()<<" nodes that should be happy to add"<<std::endl;
         reset_positions();
         insert_node(nid,0.001); //inserts the node no matter what
         last_size = clean_to_add.size() + 1;
@@ -1073,17 +1073,18 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
             clean_to_add=new_to_add;
         }
 
-        std::cout << "cleanup, node count " << node_positions.size() << std::endl;
+        //std::cout << "cleanup, node count " << node_positions.size() << std::endl;
     }
     //From now on, add candidates appropriately, and remove them as candidates if they can't be added (copy this from clever candidates)
     //we can choose the candidates on front and back thorugh the rtg real quick (basically find the closest to the last added?)
     //std::unordered_map<>
-    std::cout<<"Going into expansion: { ";
-    for (auto np:node_positions) std::cout<<np.first<<": "<<np.second<<", ";
-    std::cout<<"}"<<std::endl;
+//    std::cout<<"Going into expansion: { ";
+//    for (auto np:node_positions) std::cout<<np.first<<": "<<np.second<<", ";
+//    std::cout<<"}"<<std::endl;
 
     //PART II -> sift happy candidates that have non-floating positions, create a list of candidates to add to each position
     while (not candidates.empty()) {
+//        std::cout<<std::endl<<std::endl<<"Expansion round starting with "<<node_positions.size()<<" nodes already in the order"<<std::endl;
         to_add = candidates;
         std::unordered_map<int64_t, std::vector<sgNodeID_t>> candidates_by_pos;
         for (auto n:to_add) {
@@ -1103,6 +1104,17 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
                        (plims.first > 0 and plims.second == plims.first + 1))
                 p = plims.second;
             //TODO: solve floats else if ( (plims.first<0 and plims.second<plims.first-1) or (plims.first>0 and plims.second>plims.first+1) )
+//            else if ( (plims.first<0 and plims.second<plims.first-1) or (plims.first>0 and plims.second>plims.first+1) ){
+//                std::cout<<"candidate "<<n<<" is floating between "<<plims.first<<" and "<<plims.second<<std::endl;
+//                    for (auto ln:rtg.get_nodeview(n).next()){
+//                        auto np=node_positions.find(ln.node().node_id());
+//                        if (np!=node_positions.end()) std::cout<<" links next to "<<np->second<<std::endl;
+//                    }
+//                for (auto lp:rtg.get_nodeview(n).prev()){
+//                    auto np=node_positions.find(lp.node().node_id());
+//                    if (np!=node_positions.end()) std::cout<<" links prev to "<<np->second<<std::endl;
+//                }
+//            }
 
 
             if (p == INT64_MAX) {
@@ -1116,52 +1128,60 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
         //PART III -> for each "between" position add one candidate at random. For both "ends", find the closest candidate
         to_add.clear();
         for (auto pos:candidates_by_pos) {
-            if (pos.first == 1 or pos.first == node_positions.size()) {//front or back
-                //std::cout<<std::endl<<"evaluating nodes on one end!"<<std::endl;
-                uint64_t min_between = 1000000, best_hanging = 0;
-                sgNodeID_t best_nid = 0;
-                std::unordered_set<sgNodeID_t> all_in_end(pos.second.begin(), pos.second.end());
-                for (auto nid:pos.second) {
-                    uint64_t b = 0, h = 0;
-                    if (pos.first == 1) {
-                        //std::cout<<"Evaluating node "<<nid<<" to add in position 1"<<std::endl;
-                        if (nid > 0) {
-                            for (auto p:adjacencies[nid].prevs) if (all_in_end.count(p)) ++h;
-                            for (auto n:adjacencies[nid].nexts) if (all_in_end.count(n)) ++b;
-                        } else {
-                            for (auto p:adjacencies[-nid].prevs) if (all_in_end.count(-p)) ++b;
-                            for (auto n:adjacencies[-nid].nexts) if (all_in_end.count(-n)) ++h;
-                        }
-                    }
-                    else{
-                        //std::cout<<"Evaluating node "<<nid<<" to add in position "<<pos.first<<std::endl;
-                        if (nid > 0) {
-                            for (auto p:adjacencies[nid].prevs) if (all_in_end.count(p)) ++b;
-                            for (auto n:adjacencies[nid].nexts) if (all_in_end.count(n)) ++h;
-                        } else {
-                            for (auto p:adjacencies[-nid].prevs) if (all_in_end.count(-p)) ++h;
-                            for (auto n:adjacencies[-nid].nexts) if (all_in_end.count(-n)) ++b;
-                        }
-                    }
-                    //std::cout<<"Node has b="<<b<<" and h="<<h<<std::endl;
-                    if (b < min_between or (b == min_between and h > best_hanging)) {
-                        best_nid = nid;
-                        min_between = b;
-                        best_hanging = h;
-                        //std::cout<<"Node is best yet!"<<std::endl;
-                    }
-                }
-                if (best_nid == 0) {
-                    sdglib::OutputLog("ERROR: can't satisfy conditions to add a node at the end of the order");
-                } else to_add.insert(best_nid);
-            } else {//middle - just pick one
-                to_add.insert(pos.second.front());
+            if (pos.first != 1 and pos.first != node_positions.size()+1) {
+            to_add.insert(pos.second.front());
+//            std::cout<<"inserting node "<<pos.second.front()<<" as first node from middle position"<<pos.first<<std::endl;
             }
         }
-        for (auto nid:to_add){
-            if (!insert_node(nid,perc)) candidates.erase(nid);
+        if (to_add.empty()) {
+            for (auto pos:candidates_by_pos) {
+                if (pos.first == 1 or pos.first == node_positions.size() + 1) {//front or back
+//                    std::cout << std::endl << "evaluating nodes on one end!" << std::endl;
+                    uint64_t min_between = 1000000, best_hanging = 0;
+                    sgNodeID_t best_nid = 0;
+                    std::unordered_set<sgNodeID_t> all_in_end(pos.second.begin(), pos.second.end());
+                    for (auto nid:pos.second) {
+                        uint64_t b = 0, h = 0;
+                        if (pos.first == 1) {
+//                            std::cout << "Evaluating node " << nid << " to add in front" << std::endl;
+                            if (nid > 0) {
+                                for (auto p:adjacencies[nid].prevs) if (all_in_end.count(p)) ++h;
+                                for (auto n:adjacencies[nid].nexts) if (all_in_end.count(n)) ++b;
+                            } else {
+                                for (auto p:adjacencies[-nid].prevs) if (all_in_end.count(-p)) ++b;
+                                for (auto n:adjacencies[-nid].nexts) if (all_in_end.count(-n)) ++h;
+                            }
+                        } else {
+//                            std::cout << "Evaluating node " << nid << " to add in END position " << pos.first << std::endl;
+                            if (nid > 0) {
+                                for (auto p:adjacencies[nid].prevs) if (all_in_end.count(p)) ++b;
+                                for (auto n:adjacencies[nid].nexts) if (all_in_end.count(n)) ++h;
+                            } else {
+                                for (auto p:adjacencies[-nid].prevs) if (all_in_end.count(-p)) ++h;
+                                for (auto n:adjacencies[-nid].nexts) if (all_in_end.count(-n)) ++b;
+                            }
+                        }
+//                        std::cout << "Node has b=" << b << " and h=" << h << std::endl;
+                        if (b < min_between or (b == min_between and h > best_hanging)) {
+                            best_nid = nid;
+                            min_between = b;
+                            best_hanging = h;
+//                            std::cout << "Node is best yet!" << std::endl;
+                        }
+                    }
+                    if (best_nid == 0) {
+                        sdglib::OutputLog("ERROR: can't satisfy conditions to add a node at the end of the order");
+                    } else to_add.insert(best_nid);
+                }
+            }
         }
+        for (auto nid:to_add) {
+            if (!insert_node(nid, perc)) candidates.erase(nid);
+        }
+
     }
+
+    //TODO: if there's too many nodes floating in a particular end, remove the last node from that end and try again?
 
     LocalOrder lo;
     lo.node_positions=node_positions;
