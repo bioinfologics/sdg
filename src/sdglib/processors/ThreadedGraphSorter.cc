@@ -499,13 +499,24 @@ void HappyInsertionSorter::remove_node_from_everywhere(sgNodeID_t nid) {
     candidates.erase(nid);
     candidates.erase(-nid);
     if (node_positions.count(nid)) {
+        auto p=llabs(node_positions[nid]);
         node_positions.erase(nid);
         for (auto &p:adjacencies[nid].prevs) adjacencies[llabs(p)].mark_unused(nid);
+        for (auto &np:node_positions) {
+            if (p<np.second) --np.second;
+            if (-p>np.second) ++np.second;
+        }
     }
     if (node_positions.count(-nid)) {
+        auto p=llabs(node_positions[nid]);
         node_positions.erase(-nid);
         for (auto &p:adjacencies[nid].prevs) adjacencies[llabs(p)].mark_unused(-nid);
+        for (auto &np:node_positions) {
+            if (p<np.second) --np.second;
+            if (-p>np.second) ++np.second;
+        }
     }
+
 }
 
 int64_t HappyInsertionSorter::get_node_position(sgNodeID_t nid) const {
