@@ -569,7 +569,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("compute_adjacencies",&HappyInsertionSorter::compute_adjacencies,"min_links"_a=2,"radius"_a=10)
             .def("reset_positions",&HappyInsertionSorter::reset_positions)
             .def("add_node",&HappyInsertionSorter::add_node,"nid"_a)
-            .def("insert_node",&HappyInsertionSorter::insert_node,"nid"_a,"used_perc"_a=0.9,"solve_floating_by_rtg"_a=false)
+            .def("insert_node",&HappyInsertionSorter::insert_node,"nid"_a,"used_perc"_a=0.7,"at_position"_a=0)
             .def("get_node_position",&HappyInsertionSorter::get_node_position,"nid"_a)
             .def("remove_node_from_everywhere",&HappyInsertionSorter::remove_node_from_everywhere,"nid"_a)
             .def_readwrite("node_positions",&HappyInsertionSorter::node_positions)

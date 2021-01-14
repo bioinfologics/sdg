@@ -180,7 +180,7 @@ public:
      * @param solve_floating_by_rtg
      * @return
      */
-    bool insert_node(sgNodeID_t nid,float used_perc=0.9, bool solve_floating_by_rtg=false);
+    bool insert_node(sgNodeID_t nid,float used_perc=0.9, int64_t at_position=0);
     //TODO: validate_order -> checks all nodes are still happy in their place.
     void reset_positions();
     int64_t get_node_position(sgNodeID_t nid) const; //negative means reverse, but order is abs!!!!

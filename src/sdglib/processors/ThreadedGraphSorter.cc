@@ -527,7 +527,7 @@ int64_t HappyInsertionSorter::get_node_position(sgNodeID_t nid) const {
     return 0;
 }
 
-bool HappyInsertionSorter::insert_node(sgNodeID_t nid, float used_perc, bool solve_floating_by_rtg) {
+bool HappyInsertionSorter::insert_node(sgNodeID_t nid, float used_perc, int64_t at_position) {
     // First insertion only
     if (node_positions.empty()) {
         if (adjacencies.count(llabs(nid))==0) return false;
@@ -539,26 +539,28 @@ bool HappyInsertionSorter::insert_node(sgNodeID_t nid, float used_perc, bool sol
     nid=llabs(nid);
     if (node_positions.count(nid) or node_positions.count(-nid)) return false;
     if (adjacencies[nid].happy_to_add(used_perc)==HappyPosition::Nowhere) return false;
-    auto place=adjacencies[nid].find_happy_place(*this);
-    //std::cout<<" happy place -> "<<place.first<<":"<<place.second<<std::endl;
+
     int64_t np=0;
-    if (place.first==INT64_MIN and place.second==INT64_MAX) {
-        return false;
+    if (at_position) np=at_position;
+    else {
+        auto place = adjacencies[nid].find_happy_place(*this);
+        //std::cout<<" happy place -> "<<place.first<<":"<<place.second<<std::endl;
+
+        if (place.first == INT64_MIN and place.second == INT64_MAX) {
+            return false;
+        } else if (place.first == INT64_MIN and abs(place.second) == 1) {
+            np = place.second;
+        } else if (llabs(place.first) == node_positions.size() and place.second == INT64_MAX) {
+            if (place.first < 0) np = place.first - 1;
+            else np = place.first + 1;
+        } else if (std::signbit(place.first) != std::signbit(place.second) or
+                   llabs(place.first) > llabs(place.second)) {
+            return false;
+        } else if (llabs(place.first) == llabs(place.second) - 1) {//perfect place found!
+            np = place.second;
+        }
+        //TODO: solve floating
     }
-    else if (place.first==INT64_MIN and abs(place.second)==1) {
-        np=place.second;
-    }
-    else if (llabs(place.first)==node_positions.size() and place.second==INT64_MAX) {
-        if (place.first<0) np=place.first-1;
-        else np=place.first+1;
-    }
-    else if (std::signbit(place.first)!=std::signbit(place.second) or llabs(place.first)>llabs(place.second)) {
-        return false;
-    }
-    else if (llabs(place.first)==llabs(place.second)-1) {//perfect place found!
-        np=place.second;
-    }
-    //TODO: solve floating
     if (np==0) return false;
     for (auto &it:node_positions) {
         if (it.second>=llabs(np)) ++it.second;
