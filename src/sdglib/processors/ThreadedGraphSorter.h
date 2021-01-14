@@ -183,6 +183,11 @@ public:
     bool insert_node(sgNodeID_t nid,float used_perc=0.9, int64_t at_position=0);
     //TODO: validate_order -> checks all nodes are still happy in their place.
     void reset_positions();
+    void start_order_from_node(sgNodeID_t nid,float used_perc=0.9,bool cleanup_initial_order=true);
+    bool start_order_from_list(std::vector<sgNodeID_t> nodes);
+    void grow_order(float used_perc=0.9,uint64_t steps=UINT64_MAX);
+    LocalOrder get_order() const;
+
     int64_t get_node_position(sgNodeID_t nid) const; //negative means reverse, but order is abs!!!!
     void remove_node_from_everywhere(sgNodeID_t nid);
 

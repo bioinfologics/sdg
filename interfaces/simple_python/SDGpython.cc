@@ -577,6 +577,9 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("candidates",&HappyInsertionSorter::candidates)
             .def("get_node_adjacencies",&HappyInsertionSorter::get_node_adjacencies,"nid"_a,py::return_value_policy::reference)
             .def("local_order_from_node",&HappyInsertionSorter::local_order_from_node,"nid"_a, "perc"_a, "cleanup_initial_order"_a=true)
+            .def("start_order_from_node",&HappyInsertionSorter::start_order_from_node,"nid"_a, "perc"_a, "cleanup_initial_order"_a=true)
+            .def("grow_order",&HappyInsertionSorter::grow_order,"perc"_a=.9,"steps"_a=UINT64_MAX)
+            .def("get_order",&HappyInsertionSorter::get_order)
             .def("dump_adjacencies",&HappyInsertionSorter::dump_adjacencies, "filename"_a)
             .def("load_adjacencies",&HappyInsertionSorter::load_adjacencies, "filename"_a);
 

@@ -1038,17 +1038,7 @@ std::pair<sgNodeID_t,sgNodeID_t> TheGreedySorter::get_thread_ends(int64_t rid){
 }
 
 
-LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc, bool cleanup_initial_order) {
-    /**
-     * This function is more of a stab than anything else. There's LOADS of known limitations, among them:
-     *
-     * - the order when adding candidates affects the final order
-     * - negative and positive orders for the same node may not be equivalent
-     * - repeated nodes may create an order of two or more loci (this can be alleviated on merging)
-     */
-
-    //==== PART 1 -> start from a node
-    //std::cout<<"Local order from node "<<nid<<std::endl;
+void HappyInsertionSorter::start_order_from_node(sgNodeID_t nid, float perc, bool cleanup_initial_order) {
     reset_positions();
     insert_node(nid,0.001); //inserts the node no matter what
     auto to_add=candidates;
@@ -1088,15 +1078,28 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
 
         //std::cout << "cleanup, node count " << node_positions.size() << std::endl;
     }
-    //From now on, add candidates appropriately, and remove them as candidates if they can't be added (copy this from clever candidates)
-    //we can choose the candidates on front and back thorugh the rtg real quick (basically find the closest to the last added?)
-    //std::unordered_map<>
-//    std::cout<<"Going into expansion: { ";
-//    for (auto np:node_positions) std::cout<<np.first<<": "<<np.second<<", ";
-//    std::cout<<"}"<<std::endl;
+}
 
-    //PART II -> sift happy candidates that have non-floating positions, create a list of candidates to add to each position
-    while (not candidates.empty()) {
+bool HappyInsertionSorter::start_order_from_list(std::vector<sgNodeID_t> nodes) {
+    reset_positions();
+    std::set<sgNodeID_t> to_add(nodes.begin(),nodes.end());
+    auto last_size=to_add.size()+1;
+    while(to_add.size()<last_size) {
+        std::set<sgNodeID_t> new_to_add;
+        last_size=to_add.size();
+        for (auto n:to_add) {
+            if (not insert_node(n, 0.001)) new_to_add.insert(n);
+        }
+        to_add=new_to_add;
+    }
+    LocalOrder lo;
+    lo.node_positions=node_positions;
+    return lo.as_signed_nodes()==nodes;
+}
+
+void HappyInsertionSorter::grow_order(float perc, uint64_t steps) {
+    std::set<sgNodeID_t> to_add;
+    while (steps-- and not candidates.empty()) {
 //        std::cout<<std::endl<<std::endl<<"Expansion round starting with "<<node_positions.size()<<" nodes already in the order"<<std::endl;
         to_add = candidates;
         std::unordered_map<int64_t, std::vector<sgNodeID_t>> candidates_by_pos;
@@ -1142,7 +1145,7 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
         to_add.clear();
         for (auto pos:candidates_by_pos) {
             if (pos.first != 1 and pos.first != node_positions.size()+1) {
-            to_add.insert(pos.second.front());
+                to_add.insert(pos.second.front());
 //            std::cout<<"inserting node "<<pos.second.front()<<" as first node from middle position"<<pos.first<<std::endl;
             }
         }
@@ -1193,12 +1196,27 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
         }
 
     }
+}
 
-    //TODO: if there's too many nodes floating in a particular end, remove the last node from that end and try again?
-
+LocalOrder HappyInsertionSorter::get_order() const {
     LocalOrder lo;
     lo.node_positions=node_positions;
     return lo;
+}
+
+LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc, bool cleanup_initial_order) {
+    /**
+     * This function is more of a stab than anything else. There's LOADS of known limitations, among them:
+     *
+     * - the order when adding candidates affects the final order
+     * - negative and positive orders for the same node may not be equivalent
+     * - repeated nodes may create an order of two or more loci (this can be alleviated on merging)
+     */
+
+    start_order_from_node(nid,perc,cleanup_initial_order);
+    grow_order(perc);
+    return get_order();
+
 }
 
 std::vector<sgNodeID_t> LocalOrder::as_signed_nodes() const {
