@@ -1233,6 +1233,12 @@ std::vector<sgNodeID_t> LocalOrder::as_signed_nodes() const {
     }
     return nodes;
 }
+
+int64_t LocalOrder::get_node_position(sgNodeID_t nid) const {
+    auto it=node_positions.find(llabs(nid));
+    if (it==node_positions.end()) return 0;
+    return nid>0 ? it->second:-it->second;
+}
 //TODO:implement the choosing a node its neighbours not in enough orders yet, up to a certain coverage, single threaded at first
 
 LocalOrder::LocalOrder(const std::vector<sgNodeID_t> &nodes) {
