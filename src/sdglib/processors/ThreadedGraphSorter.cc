@@ -536,12 +536,18 @@ bool HappyInsertionSorter::insert_node(sgNodeID_t nid, float used_perc, int64_t 
         else node_positions[-nid]=-1;
         return true;
     }
+
+    if (nid<0) at_position=-at_position;
     nid=llabs(nid);
-    if (node_positions.count(nid) or node_positions.count(-nid)) return false;
+
+    if (node_positions.count(nid)) return false;
     if (adjacencies[nid].happy_to_add(used_perc)==HappyPosition::Nowhere) return false;
 
     int64_t np=0;
-    if (at_position) np=at_position;
+    if (at_position) {
+        if (nid>0) np=at_position;
+        if (nid<0) np=-at_position;
+    }
     else {
         auto place = adjacencies[nid].find_happy_place(*this);
         //std::cout<<" happy place -> "<<place.first<<":"<<place.second<<std::endl;
