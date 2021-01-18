@@ -247,10 +247,14 @@ private:
  */
 class LocalOrderMaker{
 public:
-    LocalOrderMaker(ReadThreadsGraph &_rtg):rtg(_rtg){};
-    //void add_order(const LocalOrder&);
-    std::vector<LocalOrder> local_orders;
+    LocalOrderMaker(ReadThreadsGraph &_rtg);
+
+    void add_order(sgNodeID_t nid, const LocalOrder & o);
+    int orders_in_region(const NodeAdjacencies &na);//median of # or orders in prevs/nexts
+    void make_orders(int coverage, int min_links, int radius, float perc=.7, int min_adj = 10, int min_order_size=100);//multi-thread, 1 sorter per thread, creates orders until all nodes have coverage median in prevs/nexts
+    std::map<sgNodeID_t,LocalOrder> local_orders;
     std::map<sgNodeID_t,std::vector<uint64_t>> node_local_orders;
+    std::vector<uint64_t> node_local_orders_count;
     ReadThreadsGraph & rtg;
 };
 

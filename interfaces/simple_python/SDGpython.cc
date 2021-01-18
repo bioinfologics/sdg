@@ -584,6 +584,11 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("load_adjacencies",&HappyInsertionSorter::load_adjacencies, "filename"_a);
 
     py::class_<LocalOrderMaker>(m,"LocalOrderMaker","LocalOrderMaker")
+            .def("add_order",&LocalOrderMaker::add_order,"nid"_a,"order"_a)
+            .def("orders_in_region",&LocalOrderMaker::orders_in_region,"node_adjacencies"_a)
+            .def("make_orders",&LocalOrderMaker::make_orders,"coverage"_a=5,"min_links"_a=2,"radius"_a=10,"perc"_a=.7, "min_adj"_a=5, "min_order_size"_a=100)
+            .def_readonly("local_orders",&LocalOrderMaker::local_orders)
+            .def_readonly("node_local_orders_count",&LocalOrderMaker::node_local_orders_count)
             .def(py::init<ReadThreadsGraph&>(),"rtg"_a);
 
     py::class_<LocalOrder>(m,"LocalOrder","LocalOrder")

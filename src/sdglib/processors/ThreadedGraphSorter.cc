@@ -1441,3 +1441,54 @@ void HappyInsertionSorter::load_adjacencies(std::string filename) {
         for (auto &n:nodes) adjacencies[nid].nexts.insert(n);
     }
 }
+
+LocalOrderMaker::LocalOrderMaker(ReadThreadsGraph &_rtg):rtg(_rtg){
+    node_local_orders_count.resize(_rtg.sdg.nodes.size());
+}
+
+void LocalOrderMaker::add_order(sgNodeID_t nid, const LocalOrder & o) {
+#pragma omp critical
+    {
+        local_orders[nid]=o;
+        if (local_orders.size()%100==0) sdglib::OutputLog()<<"order #"<<local_orders.size()<<" added"<<std::endl;
+        auto oi = local_orders.size() - 1;
+
+        for (auto &n:o.node_positions) {
+            ++node_local_orders_count[n.first];
+        }
+    }
+
+}
+
+int LocalOrderMaker::orders_in_region(const NodeAdjacencies &na) {
+    std::vector<uint64_t> order_counts;
+    order_counts.reserve(na.prevs.size()+na.nexts.size());
+    for (auto &n:na.nexts) order_counts.emplace_back(node_local_orders_count[llabs(n)]);
+    for (auto &n:na.prevs) order_counts.emplace_back(node_local_orders_count[llabs(n)]);
+    if (order_counts.empty()) return -1;
+    std::sort(order_counts.begin(),order_counts.end());
+    return order_counts[order_counts.size()/2];
+}
+
+void LocalOrderMaker::make_orders(int coverage, int min_links, int radius, float perc, int min_adj, int min_order_size) {
+    HappyInsertionSorter his(rtg);
+    std::cout<<"starting compute adjacencies"<<std::endl;
+    his.compute_adjacencies(min_links,radius);
+    std::cout<<"creating nodes to process"<<std::endl;
+    std::vector<sgNodeID_t> shuffled_nids;
+    for (auto adj:his.adjacencies)
+        if (adj.second.prevs.size()>min_adj or adj.second.nexts.size()>min_adj) shuffled_nids.emplace_back(adj.first);
+    std::cout<<shuffled_nids.size()<<" nodes to process"<<std::endl;
+#pragma omp parallel firstprivate(his,shuffled_nids)
+    {
+        std::random_shuffle(shuffled_nids.begin(),shuffled_nids.end());
+
+        for (auto &nid:shuffled_nids) {
+            if (local_orders.count(nid)) continue;
+            if (orders_in_region(his.get_node_adjacencies(nid))>=coverage) continue;
+            auto lo=his.local_order_from_node(nid,perc);
+            if (lo.node_positions.size()>=min_order_size)
+                add_order(nid,lo);
+        }
+    }
+}
