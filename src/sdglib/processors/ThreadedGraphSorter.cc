@@ -1450,7 +1450,7 @@ void LocalOrderMaker::add_order(sgNodeID_t nid, const LocalOrder & o) {
 #pragma omp critical
     {
         local_orders[nid]=o;
-        if (local_orders.size()%100==0) sdglib::OutputLog()<<"order #"<<local_orders.size()<<" added"<<std::endl;
+        if (local_orders.size()%1000==0) sdglib::OutputLog()<<local_orders.size()<<" orders added"<<std::endl;
         auto oi = local_orders.size() - 1;
 
         for (auto &n:o.node_positions) {
@@ -1472,23 +1472,29 @@ int LocalOrderMaker::orders_in_region(const NodeAdjacencies &na) {
 
 void LocalOrderMaker::make_orders(int coverage, int min_links, int radius, float perc, int min_adj, int min_order_size) {
     HappyInsertionSorter his(rtg);
-    std::cout<<"starting compute adjacencies"<<std::endl;
+    sdglib::OutputLog()<<"Computing adjacencies"<<std::endl;
     his.compute_adjacencies(min_links,radius);
-    std::cout<<"creating nodes to process"<<std::endl;
+    sdglib::OutputLog()<<"Finding nodes to process"<<std::endl;
     std::vector<sgNodeID_t> shuffled_nids;
     for (auto adj:his.adjacencies)
         if (adj.second.prevs.size()>min_adj or adj.second.nexts.size()>min_adj) shuffled_nids.emplace_back(adj.first);
-    std::cout<<shuffled_nids.size()<<" nodes to process"<<std::endl;
-#pragma omp parallel firstprivate(his,shuffled_nids)
-    {
-        std::random_shuffle(shuffled_nids.begin(),shuffled_nids.end());
-
-        for (auto &nid:shuffled_nids) {
-            if (local_orders.count(nid)) continue;
-            if (orders_in_region(his.get_node_adjacencies(nid))>=coverage) continue;
-            auto lo=his.local_order_from_node(nid,perc);
-            if (lo.node_positions.size()>=min_order_size)
-                add_order(nid,lo);
+    sdglib::OutputLog()<<shuffled_nids.size()<<" nodes to process"<<std::endl;
+    std::random_shuffle(shuffled_nids.begin(),shuffled_nids.end());
+    sdglib::OutputLog()<<"Nodes shuffled, multi-thread order generation starting"<<std::endl;
+#pragma omp parallel for firstprivate(his)
+    for (auto i=0;i<shuffled_nids.size();++i) {
+        auto nid=shuffled_nids[i];
+        if (local_orders.count(nid)) continue;
+        auto c=orders_in_region(his.get_node_adjacencies(nid));
+        if (c==-1 or c>=coverage) {
+            //sdglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" skipped node #" <<nid<<" (c="<<c<<")"<<std::endl;
+            continue;
+        }
+        auto lo=his.local_order_from_node(nid,perc);
+        //sdglib::OutputLog() << "Thread #"<<omp_get_thread_num() <<" generated an order for node #" <<nid<<" (c="<<c<<") with size "<<lo.node_positions.size()<< std::endl;
+        if (lo.node_positions.size()>=min_order_size) {
+            add_order(nid, lo);
         }
     }
+    sdglib::OutputLog()<<"make orders done!"<<std::endl;
 }
