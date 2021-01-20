@@ -205,6 +205,10 @@ public:
      */
     void apply_popping_list(const std::vector<std::pair<uint64_t,sgNodeID_t>> &popping_list);
 
+    bool thread_fw_in_node(int64_t tid,sgNodeID_t nid);
+
+    std::vector<sgNodeID_t> order_nodes(const std::vector<sgNodeID_t> nodes);
+
     /**
      * This map stores the information for all the threads of the graph
      * key: thread id
