@@ -464,3 +464,118 @@ bool ReadThreadsGraph::pop_node_from_all(sgNodeID_t node_id) {
     for(auto tid:thread_ids) pop_node(node_id,tid);
     return true;
 }
+
+bool ReadThreadsGraph::thread_fw_in_node(int64_t tid, sgNodeID_t nid) {
+    if (llabs(nid)>links.size()) throw std::runtime_error("thread "+std::to_string(tid)+" not in node "+std::to_string(nid));
+    int prev_idx=-1;
+    int next_idx=-1;
+    auto atid=llabs(tid);
+    for (auto &l:links[llabs(nid)]) {
+        if (l.support.id==atid) {
+            if (l.source==nid) prev_idx=l.support.index;
+            else next_idx=l.support.index;
+        }
+    }
+    if (prev_idx==-1 and next_idx==-1) throw std::runtime_error("thread "+std::to_string(tid)+" not in node "+std::to_string(nid));
+    if (prev_idx==-1 and next_idx==0) return tid>0;
+    if (prev_idx==-1 and next_idx!=0) return tid<0;
+    if (prev_idx==0 and next_idx==-1) return tid<0;
+    if (prev_idx!=0 and next_idx==-1) return tid>0;
+    if (prev_idx<next_idx) return tid>0;
+    return tid<0;
+
+}
+
+std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID_t> nodes) {
+    //rustic attempt at ordering the nodes for now, but using every read between them.
+    std::set<sgNodeID_t> nodeset(nodes.begin(),nodes.end());
+    //1- for every thread id find the lowest and the highest link number asociated with any node.
+    std::map<uint64_t ,std::pair<int64_t,int64_t>> thread_limits;
+    for (auto nid:nodes){
+        auto nv=get_nodeview(nid);
+        for (auto &lv: {nv.next(),nv.prev()}) {
+            for (auto &l: lv) {
+                if (thread_limits.count(l.support().id) == 0)
+                    thread_limits[l.support().id] = {l.support().index, l.support().index};
+                else if (thread_limits[l.support().id].first > l.support().index)
+                    thread_limits[l.support().id].first = l.support().index;
+                else if (thread_limits[l.support().id].second < l.support().index)
+                    thread_limits[l.support().id].second = l.support().index;
+            }
+        }
+
+    }
+    for (auto it = thread_limits.cbegin(); it != thread_limits.cend(); ){
+        if (it->second.second<=it->second.first+1) it=thread_limits.erase(it++);
+        else ++it;
+    }
+    //TODO: count all fw/bw in node for each thread and discard those where nodes appear in more than one direciton.
+    for (auto &tl:thread_limits){
+        std::cout<<"Thread "<<tl.first<<" -> "<<tl.second.first<<" : "<<tl.second.second<<std::endl;
+    }
+    //Find the first nv with a next in each thread -> prev  is limit/outside/inexistant
+    std::map<uint64_t,std::vector<std::pair<uint64_t,sgNodeID_t>>> thread_node_positions;
+    for (auto nid:nodes) {
+        auto nv=get_nodeview(nid);
+        for (auto ln:nv.next()){
+            auto tl=thread_limits.find(ln.support().id);
+            if (tl==thread_limits.end()) continue;
+            auto tp=thread_node_positions.find(ln.support().id);
+            if (thread_fw_in_node(ln.support().id,nid)) {
+                if ( (tp==thread_node_positions.end() and ln.support().index==tl->second.first+1) or ln.support().index==tl->second.first)
+                    thread_node_positions[ln.support().id]={{0,nid}};
+            }
+            else {
+                if ( (tp==thread_node_positions.end() and ln.support().index==tl->second.second-1) or ln.support().index==tl->second.second)
+                    thread_node_positions[ln.support().id]={{0,nid}};
+            }
+        }
+
+    }
+    for (auto &tnp:thread_node_positions){
+        std::cout<<"Thread #"<<tnp.first<<" starts on node "<<tnp.second.back().second<<std::endl;
+    }
+    for (auto &tnp:thread_node_positions){
+        auto &tl=thread_limits[tnp.first];
+        int last_end_p=sdg.get_node_size(tnp.second[0].second);
+        auto ln=next_in_thread(tnp.second.back().second,tnp.first);
+        std::cout<<"Thread #"<<tnp.first<<": "<<tnp.second.back().second<<"@"<<tnp.second.back().first<<" ";
+        while (ln.support().index>=tl.first and ln.support().index<=tl.second){
+            //std::cout<<"following link to "<<ln.node().node_id()<<std::endl;
+            if (nodeset.count(ln.node().node_id())) {
+                tnp.second.emplace_back(last_end_p+ln.distance(),ln.node().node_id());
+                std::cout<<tnp.second.back().second<<"@"<<tnp.second.back().first<<" ";
+            }
+
+            last_end_p+=ln.distance()+ln.node().size();
+
+            try {
+                ln=next_in_thread(ln.node().node_id(),tnp.first);
+            }
+            catch (const std::exception&) {
+                break;
+            }
+        }
+        std::cout<<std::endl;
+    }
+
+    //2- transform this in a single order per thread
+//    for (auto nid:nodes){
+//        std::set<sgNodeID_t> node_starting_threads;
+//        for (auto &l:get_nodeview(nid).prev()) {
+//            auto tl=thread_limits.find(l.support().id);
+//            if (tl==thread_limits.end()) continue;
+//            if (tl->second.first==l.support().index or tl->second->)
+//        }
+//        for (auto &l:get_nodeview(nid).next()) {
+//            if (thread_limits.count(l.support().id) and l.support.index()==0 or l.support().id)
+//        }
+//    }
+    //3- give relative coordinates to each node? (by fixing the starting coordinate of each thread to its first "placed node"
+
+    //4- solve flotation?
+    return {};
+
+
+
+}
