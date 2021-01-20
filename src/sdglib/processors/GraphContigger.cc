@@ -905,7 +905,12 @@ void GraphContigger::solve_all_tangles(WorkSpace &ws, PairedReadsDatastore &peds
 
 std::vector<std::string> GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, std::string kmer_count, int min_cov, int max_cov, uint32_t max_run_size){
     std::vector<std::string> seqs;
+    // File to write translation table to
+    std::ofstream ofile;
+    ofile.open("./translation_table.txt");
+
     for (const auto& nv: ws.sdg.get_all_nodeviews()){
+        sgNodeID_t nid=1;
         auto c = nv.kmer_coverage(kmer_counter, kmer_count);
         int i=0;
         while(i<c.size()){
@@ -920,9 +925,14 @@ std::vector<std::string> GraphContigger::contig_reduction_to_unique_kmers(std::s
                 run_size++;
                 i++;
             }
+            // write node conversion to log and push to seqs
+            ofile << nv.node_id() << "," << nid << std::endl;
             seqs.push_back(nv.sequence().substr(si, i-si+30));
+            nid++;
         }
+
     }
+    ofile.close();
     return seqs;
 }
 
