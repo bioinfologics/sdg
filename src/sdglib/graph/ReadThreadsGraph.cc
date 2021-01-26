@@ -534,22 +534,16 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
         }
 
     }
-//    for (auto &tnp:thread_node_positions){
-//        std::cout<<"Thread #"<<tnp.first<<" starts on node "<<tnp.second.back().second<<std::endl;
-//    }
 
     for (auto &tnp:thread_node_positions){
         ++node_first_later[tnp.second[0].second].first;
         auto &tl=thread_limits[tnp.first];
         int last_end_p=sdg.get_node_size(tnp.second[0].second);
         auto ln=next_in_thread(tnp.second.back().second,tnp.first);
-        //std::cout<<"Thread #"<<tnp.first<<": "<<tnp.second.back().second<<"@"<<tnp.second.back().first<<" ";
         while (ln.support().index>=tl.first and ln.support().index<=tl.second){
-            //std::cout<<"following link to "<<ln.node().node_id()<<std::endl;
             if (nodeset.count(ln.node().node_id())) {
                 tnp.second.emplace_back(last_end_p+ln.distance(),ln.node().node_id());
                 ++node_first_later[ln.node().node_id()].second;
-                //std::cout<<tnp.second.back().second<<"@"<<tnp.second.back().first<<" ";
             }
 
             last_end_p+=ln.distance()+ln.node().size();
@@ -561,10 +555,6 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
                 break;
             }
         }
-        //std::cout<<std::endl;
-    }
-    for (auto &nfl:node_first_later) {
-        std::cout<<"Node "<<nfl.first<<": first "<<nfl.second.first<<", later"<<nfl.second.second<<std::endl;
     }
 
     //Merge, using:
@@ -579,19 +569,13 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
     for (auto &tnp:thread_node_positions) thread_nextpos[tnp.first]=0;
     while (true){
         sgNodeID_t nid;
-        //std::cout<<std::endl<<"New round of candidate search!"<<std::endl;
-//        for (auto &nfl:node_first_later) {
-//            if (nfl.second.second==0) std::cout<<"Node "<<nfl.first<<": first "<<nfl.second.first<<", later"<<nfl.second.second<<std::endl;
-//        }
+
         candidates.clear();
         for (auto &nfl:node_first_later) if (nfl.second.first and not nfl.second.second) candidates.insert(nfl.first);
         if (candidates.size()==0){
             break;
         }
-        else if (candidates.size()>1){
-            //std::cout<<"more than one candidate, trying to untie between:";
-            for (auto c:candidates) std::cout<<" "<<c;
-            std::cout<<std::endl;
+        else if (candidates.size()>1){ //Multiple candidates untie by distance.
 
             //find a prevs that are connected to all candidates, or nexts same. pick first by distance. all picks must agree
             std::map<std::pair<sgNodeID_t ,sgNodeID_t>,std::vector<int64_t> > dists; //<node,prev>->count;
@@ -611,7 +595,6 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
             for (auto oc:dcounts){
                 auto local_winner=0;
                 if (oc.second!=candidates.size()) continue; //not in all candidates
-                //std::cout<<"Common connection to "<<oc.first<<std::endl;
                 int64_t largest_dist=INT64_MIN;
                 for (auto c:candidates){
                     //poor man's median
@@ -623,7 +606,6 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
                         local_winner=c;
                     }
                 }
-                //std::cout<<"won by "<<local_winner<<" with a distance of "<<largest_dist<<std::endl;
                 if (winner==0) winner=local_winner;
                 if (winner!=local_winner) {
                     //std::cout<<"aborting order, untie has different winners!"<<std::endl;
@@ -633,7 +615,6 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
 
             }
             if (winner==0) break;
-            //std::cout<<"order untied by distance, "<<winner<<" wins!"<<std::endl;
             nid=winner;
         }
         else nid=*candidates.begin();//only one candidate, it wins
