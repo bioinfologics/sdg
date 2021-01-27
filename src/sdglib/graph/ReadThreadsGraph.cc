@@ -493,6 +493,8 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
     std::map<uint64_t ,std::pair<int64_t,int64_t>> thread_limits;
     for (auto nid:nodes){
         auto nv=get_nodeview(nid);
+        // Of all nodes, links fw and bw, reads ids are the map kays, map values are the first and last index
+        // at the end map contains the first and lat index in the read map to a node (not specified wich node)
         for (auto &lv: {nv.next(),nv.prev()}) {
             for (auto &l: lv) {
                 if (thread_limits.count(l.support().id) == 0)
@@ -503,8 +505,10 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
                     thread_limits[l.support().id].second = l.support().index;
             }
         }
-
     }
+    // TODO: revisar bien la condicion para entende que es lo que esta haciendo 100%,
+    //  imprimir el resultado de la comparacion y la comparacion --> if (it->second.second<=it->second.first+1)
+    // Delete limit pairs that are consecutive or the same number
     for (auto it = thread_limits.cbegin(); it != thread_limits.cend(); ){
         if (it->second.second<=it->second.first+1) it=thread_limits.erase(it++);
         else ++it;
