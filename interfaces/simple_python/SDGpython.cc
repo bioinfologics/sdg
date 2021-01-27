@@ -581,6 +581,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("local_order_from_node",&HappyInsertionSorter::local_order_from_node,"nid"_a, "perc"_a, "cleanup_initial_order"_a=true)
             .def("start_order_from_node",&HappyInsertionSorter::start_order_from_node,"nid"_a, "perc"_a, "cleanup_initial_order"_a=true)
             .def("grow_order",&HappyInsertionSorter::grow_order,"perc"_a=.9,"steps"_a=UINT64_MAX)
+            .def("grow_order2",&HappyInsertionSorter::grow_order2,"perc"_a=.9,"steps"_a=UINT64_MAX)
             .def("get_order",&HappyInsertionSorter::get_order)
             .def("dump_adjacencies",&HappyInsertionSorter::dump_adjacencies, "filename"_a)
             .def("load_adjacencies",&HappyInsertionSorter::load_adjacencies, "filename"_a);

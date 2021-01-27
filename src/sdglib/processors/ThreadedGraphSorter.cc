@@ -1204,6 +1204,112 @@ void HappyInsertionSorter::grow_order(float perc, uint64_t steps) {
     }
 }
 
+//alternative version of grow order, uses rtg order to grow at the ends
+void HappyInsertionSorter::grow_order2(float perc, uint64_t steps) {
+    std::set<sgNodeID_t> to_add;
+    while (steps-- and not candidates.empty()) {
+//        std::cout<<std::endl<<std::endl<<"Expansion round starting with "<<node_positions.size()<<" nodes already in the order"<<std::endl;
+        to_add = candidates;
+        std::unordered_map<int64_t, std::vector<sgNodeID_t>> candidates_by_pos;
+        std::vector<sgNodeID_t> candidates_before,candidates_after;
+
+        //step 1 fill candidates_by_pos is position clear and not before/after. use before for floating up to 5th, after for flating from -5th
+        const auto ENDS_SIZE=5;
+        for (auto n:to_add) {
+            auto na = get_node_adjacencies(n);
+            if (na.happy_to_add(perc) == Nowhere) {
+                candidates.erase(n);
+                continue;
+            }
+            auto plims = na.find_happy_place(*this);
+            if (plims.first==INT64_MIN and llabs(plims.second) <= ENDS_SIZE)
+                candidates_before.push_back(plims.second > 0 ? n : -n);
+            else if (plims.second==INT64_MAX and llabs(plims.first) > node_positions.size() -ENDS_SIZE) {
+                candidates_after.push_back(plims.second > 0 ? n : -n);
+            } else if ((plims.first < 0 and plims.second == plims.first - 1) or
+                       (plims.first > 0 and plims.second == plims.first + 1))
+                candidates_by_pos[llabs(plims.second)].push_back(plims.second > 0 ? n : -n);
+
+            //TODO: solve floats else if ( (plims.first<0 and plims.second<plims.first-1) or (plims.first>0 and plims.second>plims.first+1) )
+            else candidates.erase(n);
+
+        }
+
+
+        //PART III -> for each "between" position add one candidate at random. For both "ends", find the closest candidate
+        to_add.clear();
+        for (auto pos:candidates_by_pos) to_add.insert(pos.second.front());
+        if (not to_add.empty()) {
+            for (auto nid:to_add) {
+                if (!insert_node(nid, perc)) candidates.erase(nid);
+            }
+        }
+        else {
+            //first take the last 2*ENDS_SIZE nodes, plus all after candidates, add as it fits as long as node wasn't there already.
+            auto old_order=get_order().as_signed_nodes();
+            if (old_order.size()<4*ENDS_SIZE) break; //basically ends and local orders would overlap, you don't really want to mess with this!
+            for (auto i=old_order.size()-2*ENDS_SIZE-1;i<old_order.size();++i) candidates_after.emplace_back(old_order[i]);
+            for (auto i=0;i<2*ENDS_SIZE;++i) candidates_before.emplace_back(old_order[i]);
+            auto before_order=rtg.order_nodes(candidates_before);
+            if (not before_order.empty()) {
+                std::cout<<"There's a before order to merge:";
+                for (auto nid:before_order) std::cout<<" "<<nid;
+                std::cout<<std::endl;
+                //First all nodes already in the order appear in growing order. Last node must be in the order
+                int64_t last_seen=0;
+                for (auto &nid:before_order) {
+                    if (node_positions.count(llabs(nid))){
+                        if (llabs(node_positions[llabs(nid)])==last_seen+1)
+                            last_seen=llabs(node_positions[llabs(nid)]);
+                        else {
+                            last_seen=-1;
+                            break;
+                        }
+                    }
+                }
+                if (last_seen==2*ENDS_SIZE and old_order[2*ENDS_SIZE-1]==before_order.back()){
+                    std::cout<<"Order can be merged"<<std::endl;
+                }
+
+                //set next position to insert as 1, for each node check if it is already there (should be in next position), if not, insert and increment next position.
+                //TODO: USE A LIMIT ON HOW MANY NODES TO PUT BEFORE FIRST IN ORDER (iterate with index rather than auto nid)
+                //int64_t last_seen=0;
+                //for (auto i = 0; i <)
+            }
+            old_order=get_order().as_signed_nodes();//update so checks can use proper size, etc.
+            auto after_order=rtg.order_nodes(candidates_after);
+            if (not after_order.empty()) {
+                std::cout<<"There's an after order to merge:";
+                for (auto nid:after_order) std::cout<<" "<<nid;
+                std::cout<<std::endl;
+                //First all nodes already in the order appear in growing order. First node must be in the order
+                int64_t last_seen=old_order.size()-2*ENDS_SIZE-1;
+                for (auto &nid:after_order) {
+                    if (node_positions.count(llabs(nid))){
+                        if (llabs(node_positions[llabs(nid)])==last_seen+1) {
+                            last_seen = llabs(node_positions[llabs(nid)]);
+                        }
+                        else {
+                            last_seen=-1;
+                            break;
+                        }
+                    }
+                }
+
+                if (last_seen==old_order.size() and old_order[old_order.size()-2*ENDS_SIZE-1]==after_order.front()){
+                    std::cout<<"Order can be merged"<<std::endl;
+                }
+                //set next position to insert as 1, for each node check if it is already there (should be in next position), if not, insert and increment next position.
+                //TODO: USE A LIMIT ON HOW MANY NODES TO PUT AFTER LAST IN ORDER (iterate with index rather than auto nid)
+                //int64_t last_seen=0;
+                //for (auto i = 0; i <)
+            }
+            std::cout<<"breaking because before/after merging is not functional yet"<<std::endl;
+            break;
+        }
+    }
+}
+
 LocalOrder HappyInsertionSorter::get_order() const {
     LocalOrder lo;
     lo.node_positions=node_positions;
