@@ -207,7 +207,9 @@ public:
 
     bool thread_fw_in_node(int64_t tid,sgNodeID_t nid);
 
-    std::vector<sgNodeID_t> order_nodes(const std::vector<sgNodeID_t> nodes);
+    bool clean_thread_nodepositions(std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions,
+                                                      std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> &node_first_later,std::set<sgNodeID_t> nodes_to_review);
+    std::vector<sgNodeID_t> order_nodes(const std::vector<sgNodeID_t> nodes, bool return_first_conflict=false);
 
     /**
      * This map stores the information for all the threads of the graph

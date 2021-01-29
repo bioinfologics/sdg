@@ -1206,6 +1206,7 @@ void HappyInsertionSorter::grow_order(float perc, uint64_t steps) {
 
 //alternative version of grow order, uses rtg order to grow at the ends
 void HappyInsertionSorter::grow_order2(float perc, uint64_t steps) {
+    std::ofstream logfile("grow_order2.log",std::ios_base::out|std::ios_base::app);
     std::set<sgNodeID_t> to_add;
     while (steps-- and not candidates.empty()) {
 //        std::cout<<std::endl<<std::endl<<"Expansion round starting with "<<node_positions.size()<<" nodes already in the order"<<std::endl;
@@ -1215,7 +1216,13 @@ void HappyInsertionSorter::grow_order2(float perc, uint64_t steps) {
 
         //step 1 fill candidates_by_pos is position clear and not before/after. use before for floating up to 5th, after for flating from -5th
         const auto ENDS_SIZE=5;
+        const auto EXTEND_SIZE=10;
         for (auto n:to_add) {
+            //FILTER things that actually have connections, this may risk loosing the very last node on an order, but though luck, it also get rid of the tips!
+            if (rtg.get_nodeview(n).next().size()<4 or rtg.get_nodeview(n).prev().size()<4){
+                candidates.erase(n);
+                continue;
+            }
             auto na = get_node_adjacencies(n);
             if (na.happy_to_add(perc) == Nowhere) {
                 candidates.erase(n);
@@ -1251,14 +1258,17 @@ void HappyInsertionSorter::grow_order2(float perc, uint64_t steps) {
             for (auto i=old_order.size()-2*ENDS_SIZE-1;i<old_order.size();++i) candidates_after.emplace_back(old_order[i]);
             for (auto i=0;i<2*ENDS_SIZE;++i) candidates_before.emplace_back(old_order[i]);
             auto before_order=rtg.order_nodes(candidates_before);
-            if (not before_order.empty()) {
+            if (before_order.size()==candidates_before.size()) {
                 std::cout<<"There's a before order to merge:";
                 for (auto nid:before_order) std::cout<<" "<<nid;
                 std::cout<<std::endl;
                 //First all nodes already in the order appear in growing order. Last node must be in the order
                 int64_t last_seen=0;
-                for (auto &nid:before_order) {
+                int64_t first_seen_pos=-1;
+                for (auto i=0;i<before_order.size();++i) {
+                    auto &nid=before_order[i];
                     if (node_positions.count(llabs(nid))){
+                        if (first_seen_pos==-1) first_seen_pos=i;
                         if (llabs(node_positions[llabs(nid)])==last_seen+1)
                             last_seen=llabs(node_positions[llabs(nid)]);
                         else {
@@ -1269,25 +1279,50 @@ void HappyInsertionSorter::grow_order2(float perc, uint64_t steps) {
                 }
                 if (last_seen==2*ENDS_SIZE and old_order[2*ENDS_SIZE-1]==before_order.back()){
                     std::cout<<"Order can be merged"<<std::endl;
+
+                    //set next position to insert as 1, for each node check if it is already there (should be in next position), if not, insert and increment next position.
+                    int next_to_merge=(first_seen_pos<EXTEND_SIZE ? 0 : first_seen_pos-EXTEND_SIZE);
+                    int insertion_pos=1;
+                    for (;next_to_merge<before_order.size();++next_to_merge){
+                        auto nid=before_order[next_to_merge];
+                        if (node_positions.count(llabs(nid))==0)
+                            if (not insert_node(nid,.01,insertion_pos)) {
+                                std::cout<<"ERROR, inserting node "<<nid<<" at position "<<insertion_pos<<" failed?"<<std::endl;
+                                break;
+                            }
+                        ++insertion_pos;
+                    }
+                    //int64_t last_seen=0;
+                    //for (auto i = 0; i <)
+                }
+                else {
+                    logfile<<"Before order can't be merged!!! Candidates: [";
+                    for (auto c:candidates_before) logfile<<c<<", ";
+                    logfile<<"]"<<std::endl;
                 }
 
-                //set next position to insert as 1, for each node check if it is already there (should be in next position), if not, insert and increment next position.
-                //TODO: USE A LIMIT ON HOW MANY NODES TO PUT BEFORE FIRST IN ORDER (iterate with index rather than auto nid)
-                //int64_t last_seen=0;
-                //for (auto i = 0; i <)
+
+            }
+            else {
+                logfile<<"Before order not complete!!! Candidates: [";
+                for (auto c:candidates_before) logfile<<c<<", ";
+                logfile<<"]"<<std::endl;
             }
             old_order=get_order().as_signed_nodes();//update so checks can use proper size, etc.
             auto after_order=rtg.order_nodes(candidates_after);
-            if (not after_order.empty()) {
+            if (after_order.size()==candidates_after.size()) {
                 std::cout<<"There's an after order to merge:";
                 for (auto nid:after_order) std::cout<<" "<<nid;
                 std::cout<<std::endl;
                 //First all nodes already in the order appear in growing order. First node must be in the order
                 int64_t last_seen=old_order.size()-2*ENDS_SIZE-1;
-                for (auto &nid:after_order) {
+                int last_index=0;
+                for (auto i=0;i<after_order.size();++i) {
+                    auto &nid=after_order[i];
                     if (node_positions.count(llabs(nid))){
                         if (llabs(node_positions[llabs(nid)])==last_seen+1) {
                             last_seen = llabs(node_positions[llabs(nid)]);
+                            last_index=i;
                         }
                         else {
                             last_seen=-1;
@@ -1298,13 +1333,36 @@ void HappyInsertionSorter::grow_order2(float perc, uint64_t steps) {
 
                 if (last_seen==old_order.size() and old_order[old_order.size()-2*ENDS_SIZE-1]==after_order.front()){
                     std::cout<<"Order can be merged"<<std::endl;
+
+                    //set next position to insert as first_seen_pos, for each node check if it is already there (should be in next position), if not, insert and increment next position.
+                    int last_to_merge=std::min((int) after_order.size(), last_index+EXTEND_SIZE);
+                    int insertion_pos=llabs(node_positions[llabs(after_order[0])]);
+                    for (int next_to_merge=0;next_to_merge<last_to_merge;++next_to_merge){
+                        auto nid=after_order[next_to_merge];
+                        if (node_positions.count(llabs(nid))==0)
+                            if (not insert_node(nid,.01,insertion_pos)) {
+                                std::cout<<"ERROR, inserting node "<<nid<<" at position "<<insertion_pos<<" failed?"<<std::endl;
+                                break;
+                            }
+                        ++insertion_pos;
+                    }
+                    //int64_t last_seen=0;
+                    //for (auto i = 0; i <)
                 }
-                //set next position to insert as 1, for each node check if it is already there (should be in next position), if not, insert and increment next position.
-                //TODO: USE A LIMIT ON HOW MANY NODES TO PUT AFTER LAST IN ORDER (iterate with index rather than auto nid)
-                //int64_t last_seen=0;
-                //for (auto i = 0; i <)
+                else {
+                    logfile<<"After order can't be merged!!! Candidates: [";
+                    for (auto c:candidates_after) logfile<<c<<", ";
+                    logfile<<"]"<<std::endl;
+                }
+
+
             }
-            std::cout<<"breaking because before/after merging is not functional yet"<<std::endl;
+            else {
+                logfile<<"After order not complete!!! Candidates: [";
+                for (auto c:candidates_after) logfile<<c<<", ";
+                logfile<<"]"<<std::endl;
+            }
+            std::cout<<"breaking because before/after merging is not functional yet"<<std::endl<<std::endl;
             break;
         }
     }
