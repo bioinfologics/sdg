@@ -640,7 +640,7 @@ std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> &node_first_later,std::set<sgN
     return cleaned;
 }
 
-std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID_t> nodes, bool return_first_conflict) {
+std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID_t> nodes, bool write_detailed_log) {
     //rustic attempt at ordering the nodes for now, but using every read between them.
 
     std::set<sgNodeID_t> nodeset(nodes.begin(),nodes.end());
@@ -651,7 +651,13 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
 
     std::map<uint64_t,int64_t> thread_nextpos;
     for (auto &tnp:thread_node_positions) thread_nextpos[tnp.first]=0;
-
+    std::ofstream log;
+    if (write_detailed_log) {
+        log.open("order_nodes_log.txt",std::ios_base::out|std::ios_base::app);
+        log<<std::endl<<"---"<<std::endl<<"Order nodes: [";
+        for (auto &n:nodes) log<<n<<", ";
+        log<<"]"<<std::endl;
+    }
 
 
     std::vector<sgNodeID_t> sorted_nodes;
@@ -661,6 +667,14 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
     while (true){
         sgNodeID_t nid=0; // basically, once this is found, we're done for the iteration
 
+        //check if all threads are finished already
+        bool finished=true;
+        for (auto &tnp:thread_nextpos) if (tnp.second!=-1) finished=false;
+        if (finished){
+            if (write_detailed_log==true) log<<"All threads finished, order done."<<std::endl;
+            break;
+        }
+
         //first look at nodes that only appear at the front of their threads.
         candidates.clear();
         for (auto &nfl:node_first_later) if (nfl.second.first and not nfl.second.second) candidates.insert(nfl.first);
@@ -668,13 +682,77 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
         // TRIVIAL CASE: just one node is at the front only.
         if (candidates.size()==1){
             nid=*candidates.begin();
-            sorted_nodes.emplace_back(nid);
-            node_first_later.erase(nid);//node is used!
-            continue;
+            log<<"T "<<nid<<std::endl;
         }
 
-        if (candidates.size()==0){
-            std::cout<<std::endl<<"can't find candidates to move forward with order"<<std::endl;
+        // DISTANCE ANALYSIS REQUIRED: more than one candidate at the front only
+        else if (candidates.size()>1){ //Multiple candidates untie by distance.
+            if (write_detailed_log) {
+                log << "M [";
+                for (auto &n:candidates) log << n << ", ";
+                log<<"] ";
+            }
+            //find a prevs that are connected to all candidates, or nexts same. pick first by distance. all picks must agree
+            std::map<std::pair<sgNodeID_t ,sgNodeID_t>,std::vector<int64_t> > dists; //<node,prev>->count;
+            for (auto &tn:thread_nextpos){
+                auto tnnid=thread_node_positions[tn.first][tn.second].second;
+                if (tn.second!=-1 and candidates.count(tnnid)){
+                    auto tnpos=thread_node_positions[tn.first][tn.second].first;
+                    for (auto &onp:thread_node_positions[tn.first])
+                        if (onp.second!=tnnid) dists[{tnnid,onp.second}].emplace_back(onp.first-tnpos);
+                }
+            }
+            std::map<sgNodeID_t, uint64_t> dcounts;
+            for (auto &d:dists) ++dcounts[d.first.second];
+
+            //this is the all picks must agree part
+            std::map<sgNodeID_t ,int> winner_scores;
+            sgNodeID_t winner=0;
+            for (auto oc:dcounts){
+                auto local_winner=0;
+                if (oc.second!=candidates.size()) continue; //not in all candidates
+                int64_t largest_dist=INT64_MIN;
+                int64_t min_support=INT64_MAX;
+                for (auto c:candidates){
+                    //poor man's median
+                    auto &dv=dists[{c,oc.first}];
+                    std::sort(dv.begin(),dv.end());
+                    auto d=dv[dv.size()/2];
+                    min_support=std::min(min_support,(int64_t) dv.size());
+                    if (d>largest_dist){
+                        largest_dist=d;
+                        local_winner=c;
+                    }
+                }
+                /*if (winner==0) winner=local_winner;
+                if (winner!=local_winner) {
+                    std::cout<<"aborting order, untie has different winners!"<<std::endl;
+                    winner=0;
+                    break;
+                }*/
+                winner_scores[local_winner]+=min_support;
+
+            }
+            for (auto &ws:winner_scores) if (winner==0 or ws.second>winner_scores[winner]) winner=ws.first;
+            for (auto &ws:winner_scores) {
+                if (ws.second == winner_scores[winner] and ws.first != winner) {
+                    if (write_detailed_log) log<<"aborting order, untie has two different winners!"<<std::endl;
+                    winner = 0;
+                    break;
+                }
+            }
+            if (winner==0) {
+                if (write_detailed_log) log<<"aborting order, can't find a winner!"<<std::endl;
+                break;
+            }
+            log<<winner<<std::endl;
+            nid=winner;
+        }
+
+        // THREAD DISORDER: no candidate appears front-only, threads must be filtered to be order-coherent.
+        else if (candidates.size()==0){
+            if (write_detailed_log) log<<"C"<<std::endl;
+
 
             //TODO: just call clean_threadnodepositions from here.
             std::cout<<"Nodes to order: ";
@@ -747,66 +825,6 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
             if (recovered) continue;
             //TODO: return the highest % of first vs. later? could be a loopy node that once removed unlocks the order
             break;
-        }
-        else if (candidates.size()>1){ //Multiple candidates untie by distance.
-
-            //find a prevs that are connected to all candidates, or nexts same. pick first by distance. all picks must agree
-            std::map<std::pair<sgNodeID_t ,sgNodeID_t>,std::vector<int64_t> > dists; //<node,prev>->count;
-            for (auto &tn:thread_nextpos){
-                auto tnnid=thread_node_positions[tn.first][tn.second].second;
-                if (tn.second!=-1 and candidates.count(tnnid)){
-                    auto tnpos=thread_node_positions[tn.first][tn.second].first;
-                    for (auto &onp:thread_node_positions[tn.first])
-                        if (onp.second!=tnnid) dists[{tnnid,onp.second}].emplace_back(onp.first-tnpos);
-                }
-            }
-            std::map<sgNodeID_t, uint64_t> dcounts;
-            for (auto &d:dists) ++dcounts[d.first.second];
-
-            //this is the all picks must agree part
-            std::map<sgNodeID_t ,int> winner_scores;
-            sgNodeID_t winner=0;
-            for (auto oc:dcounts){
-                auto local_winner=0;
-                if (oc.second!=candidates.size()) continue; //not in all candidates
-                int64_t largest_dist=INT64_MIN;
-                int64_t min_support=INT64_MAX;
-                for (auto c:candidates){
-                    //poor man's median
-                    auto &dv=dists[{c,oc.first}];
-                    std::sort(dv.begin(),dv.end());
-                    auto d=dv[dv.size()/2];
-                    min_support=std::min(min_support,(int64_t) dv.size());
-                    if (d>largest_dist){
-                        largest_dist=d;
-                        local_winner=c;
-                    }
-                }
-                /*if (winner==0) winner=local_winner;
-                if (winner!=local_winner) {
-                    std::cout<<"aborting order, untie has different winners!"<<std::endl;
-                    winner=0;
-                    break;
-                }*/
-                winner_scores[local_winner]+=min_support;
-
-            }
-            for (auto &ws:winner_scores) if (winner==0 or ws.second>winner_scores[winner]) winner=ws.first;
-            for (auto &ws:winner_scores) {
-                if (ws.second == winner_scores[winner] and ws.first != winner) {
-                    std::cout<<"aborting order, untie has two different winners!"<<std::endl;
-                    winner = 0;
-                    break;
-                }
-            }
-            if (winner==0) {
-                if (return_first_conflict){
-                    std::vector<sgNodeID_t> r={0};
-                    r.insert(r.end(),candidates.begin(),candidates.end());
-                }
-                else break;
-            }
-            nid=winner;
         }
 
         for (auto &tn:thread_nextpos){

@@ -1205,15 +1205,19 @@ void HappyInsertionSorter::grow_order(float perc, uint64_t steps) {
 }
 
 //alternative version of grow order, uses rtg order to grow at the ends
-void HappyInsertionSorter::grow_order2(float perc, uint64_t steps) {
-    std::ofstream logfile("grow_order2.log",std::ios_base::out|std::ios_base::app);
+void HappyInsertionSorter::grow_order2(float perc, uint64_t steps,bool write_detailed_log) {
+    std::ofstream log;
+    if (write_detailed_log) log.open("grow_order2.log",std::ios_base::out|std::ios_base::app);
     std::set<sgNodeID_t> to_add;
-    while (steps-- and not candidates.empty()) {
-//        std::cout<<std::endl<<std::endl<<"Expansion round starting with "<<node_positions.size()<<" nodes already in the order"<<std::endl;
+    bool before_done=false,after_done=false;
+    auto last_size=0;
+    while (steps-- and not candidates.empty() and node_positions.size()>last_size) {
+        last_size=node_positions.size();
+        log<<std::endl<<std::endl<<"Expansion round starting with "<<node_positions.size()<<" nodes already in the order"<<std::endl;
         to_add = candidates;
         std::unordered_map<int64_t, std::vector<sgNodeID_t>> candidates_by_pos;
-        std::vector<sgNodeID_t> candidates_before,candidates_after;
 
+        std::vector<sgNodeID_t> candidates_before,candidates_after;
         //step 1 fill candidates_by_pos is position clear and not before/after. use before for floating up to 5th, after for flating from -5th
         const auto ENDS_SIZE=5;
         const auto EXTEND_SIZE=10;
@@ -1251,119 +1255,132 @@ void HappyInsertionSorter::grow_order2(float perc, uint64_t steps) {
                 if (!insert_node(nid, perc)) candidates.erase(nid);
             }
         }
+        else if (before_done and after_done) break;
         else {
             //first take the last 2*ENDS_SIZE nodes, plus all after candidates, add as it fits as long as node wasn't there already.
             auto old_order=get_order().as_signed_nodes();
             if (old_order.size()<4*ENDS_SIZE) break; //basically ends and local orders would overlap, you don't really want to mess with this!
             for (auto i=old_order.size()-2*ENDS_SIZE-1;i<old_order.size();++i) candidates_after.emplace_back(old_order[i]);
             for (auto i=0;i<2*ENDS_SIZE;++i) candidates_before.emplace_back(old_order[i]);
-            auto before_order=rtg.order_nodes(candidates_before);
-            if (before_order.size()==candidates_before.size()) {
-                std::cout<<"There's a before order to merge:";
-                for (auto nid:before_order) std::cout<<" "<<nid;
-                std::cout<<std::endl;
-                //First all nodes already in the order appear in growing order. Last node must be in the order
-                int64_t last_seen=0;
-                int64_t first_seen_pos=-1;
-                for (auto i=0;i<before_order.size();++i) {
-                    auto &nid=before_order[i];
-                    if (node_positions.count(llabs(nid))){
-                        if (first_seen_pos==-1) first_seen_pos=i;
-                        if (llabs(node_positions[llabs(nid)])==last_seen+1)
-                            last_seen=llabs(node_positions[llabs(nid)]);
-                        else {
-                            last_seen=-1;
-                            break;
-                        }
-                    }
-                }
-                if (last_seen==2*ENDS_SIZE and old_order[2*ENDS_SIZE-1]==before_order.back()){
-                    std::cout<<"Order can be merged"<<std::endl;
 
-                    //set next position to insert as 1, for each node check if it is already there (should be in next position), if not, insert and increment next position.
-                    int next_to_merge=(first_seen_pos<EXTEND_SIZE ? 0 : first_seen_pos-EXTEND_SIZE);
-                    int insertion_pos=1;
-                    for (;next_to_merge<before_order.size();++next_to_merge){
-                        auto nid=before_order[next_to_merge];
-                        if (node_positions.count(llabs(nid))==0)
-                            if (not insert_node(nid,.01,insertion_pos)) {
-                                std::cout<<"ERROR, inserting node "<<nid<<" at position "<<insertion_pos<<" failed?"<<std::endl;
+            if (not before_done) {
+                auto before_order = rtg.order_nodes(candidates_before);
+                if (before_order.size() == candidates_before.size()) {
+                    if (write_detailed_log) {
+                        log << "There's a before order to merge:";
+                        for (auto nid:before_order) log << " " << nid;
+                        log << std::endl;
+                    }
+                    //First all nodes already in the order appear in growing order. Last node must be in the order
+                    int64_t last_seen = 0;
+                    int64_t first_seen_pos = -1;
+                    for (auto i = 0; i < before_order.size(); ++i) {
+                        auto &nid = before_order[i];
+                        if (node_positions.count(llabs(nid))) {
+                            if (first_seen_pos == -1) first_seen_pos = i;
+                            if (llabs(node_positions[llabs(nid)]) == last_seen + 1)
+                                last_seen = llabs(node_positions[llabs(nid)]);
+                            else {
+                                last_seen = -1;
                                 break;
                             }
-                        ++insertion_pos;
-                    }
-                    //int64_t last_seen=0;
-                    //for (auto i = 0; i <)
-                }
-                else {
-                    logfile<<"Before order can't be merged!!! Candidates: [";
-                    for (auto c:candidates_before) logfile<<c<<", ";
-                    logfile<<"]"<<std::endl;
-                }
-
-
-            }
-            else {
-                logfile<<"Before order not complete!!! Candidates: [";
-                for (auto c:candidates_before) logfile<<c<<", ";
-                logfile<<"]"<<std::endl;
-            }
-            old_order=get_order().as_signed_nodes();//update so checks can use proper size, etc.
-            auto after_order=rtg.order_nodes(candidates_after);
-            if (after_order.size()==candidates_after.size()) {
-                std::cout<<"There's an after order to merge:";
-                for (auto nid:after_order) std::cout<<" "<<nid;
-                std::cout<<std::endl;
-                //First all nodes already in the order appear in growing order. First node must be in the order
-                int64_t last_seen=old_order.size()-2*ENDS_SIZE-1;
-                int last_index=0;
-                for (auto i=0;i<after_order.size();++i) {
-                    auto &nid=after_order[i];
-                    if (node_positions.count(llabs(nid))){
-                        if (llabs(node_positions[llabs(nid)])==last_seen+1) {
-                            last_seen = llabs(node_positions[llabs(nid)]);
-                            last_index=i;
-                        }
-                        else {
-                            last_seen=-1;
-                            break;
                         }
                     }
+                    if (last_seen == 2 * ENDS_SIZE and old_order[2 * ENDS_SIZE - 1] == before_order.back()) {
+                        if (write_detailed_log) log << "Order can be merged" << std::endl;
+
+                        //set next position to insert as 1, for each node check if it is already there (should be in next position), if not, insert and increment next position.
+                        int next_to_merge = (first_seen_pos < EXTEND_SIZE ? 0 : first_seen_pos - EXTEND_SIZE);
+                        int insertion_pos = 1;
+                        for (; next_to_merge < before_order.size(); ++next_to_merge) {
+                            auto nid = before_order[next_to_merge];
+                            if (node_positions.count(llabs(nid)) == 0)
+                                if (not insert_node(nid, .01, insertion_pos)) {
+                                    if (write_detailed_log)
+                                        log << "ERROR, inserting node " << nid << " at position " << insertion_pos
+                                            << " failed?" << std::endl;
+                                    break;
+                                }
+                            ++insertion_pos;
+                        }
+                        //int64_t last_seen=0;
+                        //for (auto i = 0; i <)
+                    } else if (write_detailed_log) {
+                        log << "Before order can't be merged!!! Ordering with log. Candidates: [ ";
+                        for (auto c:candidates_before) log << c << ", ";
+                        log << "]" << std::endl;
+                        rtg.order_nodes(candidates_before, true);
+                        before_done=true;
+                    }
+                } else {
+                    log << "Before order incomplete!!! Ordering with log. Candidates: [ ";
+                    for (auto c:candidates_before) log << c << ", ";
+                    log << "]" << std::endl;
+                    rtg.order_nodes(candidates_before, true);
+                    before_done=true;
                 }
-
-                if (last_seen==old_order.size() and old_order[old_order.size()-2*ENDS_SIZE-1]==after_order.front()){
-                    std::cout<<"Order can be merged"<<std::endl;
-
-                    //set next position to insert as first_seen_pos, for each node check if it is already there (should be in next position), if not, insert and increment next position.
-                    int last_to_merge=std::min((int) after_order.size(), last_index+EXTEND_SIZE);
-                    int insertion_pos=llabs(node_positions[llabs(after_order[0])]);
-                    for (int next_to_merge=0;next_to_merge<last_to_merge;++next_to_merge){
-                        auto nid=after_order[next_to_merge];
-                        if (node_positions.count(llabs(nid))==0)
-                            if (not insert_node(nid,.01,insertion_pos)) {
-                                std::cout<<"ERROR, inserting node "<<nid<<" at position "<<insertion_pos<<" failed?"<<std::endl;
+            }
+            if (not after_done){
+                old_order = get_order().as_signed_nodes();//update so checks can use proper size, etc.
+                auto after_order = rtg.order_nodes(candidates_after);
+                if (after_order.size() == candidates_after.size()) {
+                    if (write_detailed_log) {
+                        log << "There's an after order to merge:";
+                        for (auto nid:after_order) log << " " << nid;
+                        log << std::endl;
+                    }
+                    //First all nodes already in the order appear in growing order. First node must be in the order
+                    int64_t last_seen = old_order.size() - 2 * ENDS_SIZE - 1;
+                    int last_index = 0;
+                    for (auto i = 0; i < after_order.size(); ++i) {
+                        auto &nid = after_order[i];
+                        if (node_positions.count(llabs(nid))) {
+                            if (llabs(node_positions[llabs(nid)]) == last_seen + 1) {
+                                last_seen = llabs(node_positions[llabs(nid)]);
+                                last_index = i;
+                            } else {
+                                last_seen = -1;
                                 break;
                             }
-                        ++insertion_pos;
+                        }
                     }
-                    //int64_t last_seen=0;
-                    //for (auto i = 0; i <)
-                }
-                else {
-                    logfile<<"After order can't be merged!!! Candidates: [";
-                    for (auto c:candidates_after) logfile<<c<<", ";
-                    logfile<<"]"<<std::endl;
-                }
+
+                    if (last_seen == old_order.size() and
+                        old_order[old_order.size() - 2 * ENDS_SIZE - 1] == after_order.front()) {
+                        if (write_detailed_log) log << "Order can be merged" << std::endl;
+
+                        //set next position to insert as first_seen_pos, for each node check if it is already there (should be in next position), if not, insert and increment next position.
+                        int last_to_merge = std::min((int) after_order.size(), last_index + EXTEND_SIZE);
+                        int insertion_pos = llabs(node_positions[llabs(after_order[0])]);
+                        for (int next_to_merge = 0; next_to_merge < last_to_merge; ++next_to_merge) {
+                            auto nid = after_order[next_to_merge];
+                            if (node_positions.count(llabs(nid)) == 0)
+                                if (not insert_node(nid, .01, insertion_pos)) {
+                                    std::cout << "ERROR, inserting node " << nid << " at position " << insertion_pos
+                                              << " failed?" << std::endl;
+                                    break;
+                                }
+                            ++insertion_pos;
+                        }
+                        //int64_t last_seen=0;
+                        //for (auto i = 0; i <)
+                    } else {
+                        log << "After order can't be merged!!! Ordering with log. Candidates: [ ";
+                        for (auto c:candidates_after) log << c << ", ";
+                        log << "]" << std::endl;
+                        rtg.order_nodes(candidates_after, true);
+                        after_done = true;
+                    }
 
 
+                } else {
+                    log << "After order incomplete!!! Ordering with log. Candidates: [ ";
+                    for (auto c:candidates_after) log << c << ", ";
+                    log << "]" << std::endl;
+                    rtg.order_nodes(candidates_after, true);
+                    after_done = true;
+                }
             }
-            else {
-                logfile<<"After order not complete!!! Candidates: [";
-                for (auto c:candidates_after) logfile<<c<<", ";
-                logfile<<"]"<<std::endl;
-            }
-            std::cout<<"breaking because before/after merging is not functional yet"<<std::endl<<std::endl;
-            break;
         }
     }
 }
