@@ -222,8 +222,11 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("clean_all_nodes_by_thread_clustering_popping_list",&ReadThreadsGraph::clean_all_nodes_by_thread_clustering_popping_list,"min_shared"_a=4,"max_second_perc"_a=.1)
             .def("thread_nodesets",&ReadThreadsGraph::thread_nodesets)
             .def("apply_popping_list",&ReadThreadsGraph::apply_popping_list,"popping_list"_a)
-            .def("order_nodes",&ReadThreadsGraph::order_nodes,"nodes"_a,"return_first_conflict"_a=false)
+            .def("order_nodes",&ReadThreadsGraph::order_nodes,"nodes"_a,"write_detailed_log"_a=false)
             .def("thread_fw_in_node",&ReadThreadsGraph::thread_fw_in_node,"thread_id"_a,"node_id"_a)
+            .def("make_thread_nodepositions",&ReadThreadsGraph::make_thread_nodepositions,"nodes"_a)
+            .def("make_node_first_later",&ReadThreadsGraph::make_node_first_later,"thread_nodepositions"_a,"thread_nextpos"_a={})
+
             ;
 
 
@@ -581,7 +584,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("local_order_from_node",&HappyInsertionSorter::local_order_from_node,"nid"_a, "perc"_a, "cleanup_initial_order"_a=true)
             .def("start_order_from_node",&HappyInsertionSorter::start_order_from_node,"nid"_a, "perc"_a, "cleanup_initial_order"_a=true)
             .def("grow_order",&HappyInsertionSorter::grow_order,"perc"_a=.9,"steps"_a=UINT64_MAX)
-            .def("grow_order2",&HappyInsertionSorter::grow_order2,"perc"_a=.9,"steps"_a=UINT64_MAX)
+            .def("grow_order2",&HappyInsertionSorter::grow_order2,"perc"_a=.9,"steps"_a=UINT64_MAX,"write_detailed_log"_a=false)
             .def("get_order",&HappyInsertionSorter::get_order)
             .def("dump_adjacencies",&HappyInsertionSorter::dump_adjacencies, "filename"_a)
             .def("load_adjacencies",&HappyInsertionSorter::load_adjacencies, "filename"_a);
