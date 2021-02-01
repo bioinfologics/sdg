@@ -487,7 +487,86 @@ bool ReadThreadsGraph::thread_fw_in_node(int64_t tid, sgNodeID_t nid) {
 }
 
 //TODO:: split into make_thread_nodepositions / pick_next (which automatically calls clean if needed) / -> make it a small class??
+std::map<uint64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> ReadThreadsGraph::make_thread_nodepositions(const std::set<sgNodeID_t> & nodes) {
+    std::map<uint64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> thread_node_positions;
+    //1- for every thread id find the lowest and the highest link number asociated with any node.
+    std::map<uint64_t ,std::pair<int64_t,int64_t>> thread_limits;
+    for (auto nid:nodes){
+        auto nv=get_nodeview(nid);
+        for (auto &lv: {nv.next(),nv.prev()}) {
+            for (auto &l: lv) {
+                if (thread_limits.count(l.support().id) == 0)
+                    thread_limits[l.support().id] = {l.support().index, l.support().index};
+                else if (thread_limits[l.support().id].first > l.support().index)
+                    thread_limits[l.support().id].first = l.support().index;
+                else if (thread_limits[l.support().id].second < l.support().index)
+                    thread_limits[l.support().id].second = l.support().index;
+            }
+        }
 
+    }
+    for (auto it = thread_limits.cbegin(); it != thread_limits.cend(); ){
+        if (it->second.second<=it->second.first+1) it=thread_limits.erase(it++);
+        else ++it;
+    }
+    //TODO: count all fw/bw in node for each thread and discard those where nodes appear in more than one direciton.
+//    for (auto &tl:thread_limits){
+//        std::cout<<"Thread "<<tl.first<<" -> "<<tl.second.first<<" : "<<tl.second.second<<std::endl;
+//    }
+    //Find the first nv with a next in each thread -> prev  is limit/outside/inexistant
+    for (auto nid:nodes) {
+        auto nv=get_nodeview(nid);
+        for (auto ln:nv.next()){
+            auto tl=thread_limits.find(ln.support().id);
+            if (tl==thread_limits.end()) continue;
+            auto tp=thread_node_positions.find(ln.support().id);
+            if (thread_fw_in_node(ln.support().id,nid)) {
+                if ( (tp==thread_node_positions.end() and ln.support().index==tl->second.first+1) or ln.support().index==tl->second.first)
+                    thread_node_positions[ln.support().id]={{0,nid}};
+            }
+            else {
+                if ( (tp==thread_node_positions.end() and ln.support().index==tl->second.second-1) or ln.support().index==tl->second.second)
+                    thread_node_positions[ln.support().id]={{0,nid}};
+            }
+        }
+
+    }
+
+    for (auto &tnp:thread_node_positions){
+        auto &tl=thread_limits[tnp.first];
+        int last_end_p=sdg.get_node_size(tnp.second[0].second);
+        auto ln=next_in_thread(tnp.second.back().second,tnp.first);
+        while (ln.support().index>=tl.first and ln.support().index<=tl.second){
+            if (nodes.count(ln.node().node_id())) {
+                tnp.second.emplace_back(last_end_p+ln.distance(),ln.node().node_id());
+            }
+
+            last_end_p+=ln.distance()+ln.node().size();
+
+            try {
+                ln=next_in_thread(ln.node().node_id(),tnp.first);
+            }
+            catch (const std::exception&) {
+                break;
+            }
+        }
+    }
+    return thread_node_positions;
+
+}
+
+std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> ReadThreadsGraph::make_node_first_later(const std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions, const std::map<uint64_t,int64_t> &thread_nextpos){
+    std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> node_first_later;
+    for (const auto &tnp:thread_node_positions){
+        int start=0;
+        if (thread_nextpos.count(tnp.first)) start=thread_nextpos.at(tnp.first);
+        if (start==-1 or start>=tnp.second.size()) continue;
+
+        ++node_first_later[tnp.second[start].second].first;
+        for (auto i=start+1;i<tnp.second.size();++i) ++node_first_later[tnp.second[i].second].second;
+    }
+    return node_first_later;
+}
 
 bool ReadThreadsGraph::clean_thread_nodepositions(std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions,
 std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> &node_first_later,std::set<sgNodeID_t> nodes_to_review){
@@ -559,90 +638,37 @@ std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> &node_first_later,std::set<sgN
 
 std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID_t> nodes, bool return_first_conflict) {
     //rustic attempt at ordering the nodes for now, but using every read between them.
+
     std::set<sgNodeID_t> nodeset(nodes.begin(),nodes.end());
-    //1- for every thread id find the lowest and the highest link number asociated with any node.
-    std::map<uint64_t ,std::pair<int64_t,int64_t>> thread_limits;
-    for (auto nid:nodes){
-        auto nv=get_nodeview(nid);
-        for (auto &lv: {nv.next(),nv.prev()}) {
-            for (auto &l: lv) {
-                if (thread_limits.count(l.support().id) == 0)
-                    thread_limits[l.support().id] = {l.support().index, l.support().index};
-                else if (thread_limits[l.support().id].first > l.support().index)
-                    thread_limits[l.support().id].first = l.support().index;
-                else if (thread_limits[l.support().id].second < l.support().index)
-                    thread_limits[l.support().id].second = l.support().index;
-            }
-        }
 
-    }
-    for (auto it = thread_limits.cbegin(); it != thread_limits.cend(); ){
-        if (it->second.second<=it->second.first+1) it=thread_limits.erase(it++);
-        else ++it;
-    }
-    //TODO: count all fw/bw in node for each thread and discard those where nodes appear in more than one direciton.
-//    for (auto &tl:thread_limits){
-//        std::cout<<"Thread "<<tl.first<<" -> "<<tl.second.first<<" : "<<tl.second.second<<std::endl;
-//    }
-    //Find the first nv with a next in each thread -> prev  is limit/outside/inexistant
-    std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> thread_node_positions;
-    std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> node_first_later;
-    for (auto nid:nodes) {
-        auto nv=get_nodeview(nid);
-        node_first_later[nid]={0,0};
-        for (auto ln:nv.next()){
-            auto tl=thread_limits.find(ln.support().id);
-            if (tl==thread_limits.end()) continue;
-            auto tp=thread_node_positions.find(ln.support().id);
-            if (thread_fw_in_node(ln.support().id,nid)) {
-                if ( (tp==thread_node_positions.end() and ln.support().index==tl->second.first+1) or ln.support().index==tl->second.first)
-                    thread_node_positions[ln.support().id]={{0,nid}};
-            }
-            else {
-                if ( (tp==thread_node_positions.end() and ln.support().index==tl->second.second-1) or ln.support().index==tl->second.second)
-                    thread_node_positions[ln.support().id]={{0,nid}};
-            }
-        }
+    auto thread_node_positions=make_thread_nodepositions(nodeset);
 
-    }
+    auto node_first_later=make_node_first_later(thread_node_positions);
 
-    for (auto &tnp:thread_node_positions){
-        ++node_first_later[tnp.second[0].second].first;
-        auto &tl=thread_limits[tnp.first];
-        int last_end_p=sdg.get_node_size(tnp.second[0].second);
-        auto ln=next_in_thread(tnp.second.back().second,tnp.first);
-        while (ln.support().index>=tl.first and ln.support().index<=tl.second){
-            if (nodeset.count(ln.node().node_id())) {
-                tnp.second.emplace_back(last_end_p+ln.distance(),ln.node().node_id());
-                ++node_first_later[ln.node().node_id()].second;
-            }
-
-            last_end_p+=ln.distance()+ln.node().size();
-
-            try {
-                ln=next_in_thread(ln.node().node_id(),tnp.first);
-            }
-            catch (const std::exception&) {
-                break;
-            }
-        }
-    }
-
-    //Merge, using:
-
-    // - use first/later (and keep it updated)
-    // - a counter/pointer to the next node to use on each thread
-    // - find all nodes that have only first, no later (if there's none, abort order?)
-    // - if more than one first, check the one with the smaller position (solve bubbles by distance to shared prev/nexts).
-    std::vector<sgNodeID_t> sorted_nodes;
-    std::set<sgNodeID_t> candidates;
     std::map<uint64_t,int64_t> thread_nextpos;
     for (auto &tnp:thread_node_positions) thread_nextpos[tnp.first]=0;
-    while (true){
-        sgNodeID_t nid;
 
+
+
+    std::vector<sgNodeID_t> sorted_nodes;
+    std::set<sgNodeID_t> candidates;
+
+    //Just iterate finding the next node to put in:
+    while (true){
+        sgNodeID_t nid=0; // basically, once this is found, we're done for the iteration
+
+        //first look at nodes that only appear at the front of their threads.
         candidates.clear();
         for (auto &nfl:node_first_later) if (nfl.second.first and not nfl.second.second) candidates.insert(nfl.first);
+
+        // TRIVIAL CASE: just one node is at the front only.
+        if (candidates.size()==1){
+            nid=*candidates.begin();
+            sorted_nodes.emplace_back(nid);
+            node_first_later.erase(nid);//node is used!
+            continue;
+        }
+
         if (candidates.size()==0){
             std::cout<<std::endl<<"can't find candidates to move forward with order"<<std::endl;
 
@@ -778,7 +804,6 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
             }
             nid=winner;
         }
-        else nid=*candidates.begin();//only one candidate, it wins
 
         for (auto &tn:thread_nextpos){
             if (tn.second==-1) continue;
