@@ -222,7 +222,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("clean_all_nodes_by_thread_clustering_popping_list",&ReadThreadsGraph::clean_all_nodes_by_thread_clustering_popping_list,"min_shared"_a=4,"max_second_perc"_a=.1)
             .def("thread_nodesets",&ReadThreadsGraph::thread_nodesets)
             .def("apply_popping_list",&ReadThreadsGraph::apply_popping_list,"popping_list"_a)
-            .def("order_nodes",&ReadThreadsGraph::order_nodes,"nodes"_a)
+            .def("order_nodes",&ReadThreadsGraph::order_nodes,"nodes"_a,"return_first_conflict"_a=false)
             .def("thread_fw_in_node",&ReadThreadsGraph::thread_fw_in_node,"thread_id"_a,"node_id"_a)
             ;
 

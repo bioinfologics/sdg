@@ -486,9 +486,9 @@ bool ReadThreadsGraph::thread_fw_in_node(int64_t tid, sgNodeID_t nid) {
 
 }
 
-std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID_t> nodes) {
-    //rustic attempt at ordering the nodes for now, but using every read between them.
-    std::set<sgNodeID_t> nodeset(nodes.begin(),nodes.end());
+//TODO:: split into make_thread_nodepositions / pick_next (which automatically calls clean if needed) / -> make it a small class??
+std::map<uint64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> ReadThreadsGraph::make_thread_nodepositions(const std::set<sgNodeID_t> & nodes) {
+    std::map<uint64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> thread_node_positions;
     //1- for every thread id find the lowest and the highest link number asociated with any node.
     std::map<uint64_t ,std::pair<int64_t,int64_t>> thread_limits;
     for (auto nid:nodes){
@@ -518,11 +518,8 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
 //        std::cout<<"Thread "<<tl.first<<" -> "<<tl.second.first<<" : "<<tl.second.second<<std::endl;
 //    }
     //Find the first nv with a next in each thread -> prev  is limit/outside/inexistant
-    std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> thread_node_positions;
-    std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> node_first_later;
     for (auto nid:nodes) {
         auto nv=get_nodeview(nid);
-        node_first_later[nid]={0,0};
         for (auto ln:nv.next()){
             auto tl=thread_limits.find(ln.support().id);
             if (tl==thread_limits.end()) continue;
@@ -540,14 +537,12 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
     }
 
     for (auto &tnp:thread_node_positions){
-        ++node_first_later[tnp.second[0].second].first;
         auto &tl=thread_limits[tnp.first];
         int last_end_p=sdg.get_node_size(tnp.second[0].second);
         auto ln=next_in_thread(tnp.second.back().second,tnp.first);
         while (ln.support().index>=tl.first and ln.support().index<=tl.second){
-            if (nodeset.count(ln.node().node_id())) {
+            if (nodes.count(ln.node().node_id())) {
                 tnp.second.emplace_back(last_end_p+ln.distance(),ln.node().node_id());
-                ++node_first_later[ln.node().node_id()].second;
             }
 
             last_end_p+=ln.distance()+ln.node().size();
@@ -560,23 +555,197 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
             }
         }
     }
+    return thread_node_positions;
 
-    //Merge, using:
+}
 
-    // - use first/later (and keep it updated)
-    // - a counter/pointer to the next node to use on each thread
-    // - find all nodes that have only first, no later (if there's none, abort order?)
-    // - if more than one first, check the one with the smaller position (solve bubbles by distance to shared prev/nexts).
-    std::vector<sgNodeID_t> sorted_nodes;
-    std::set<sgNodeID_t> candidates;
+std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> ReadThreadsGraph::make_node_first_later(const std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions, const std::map<uint64_t,int64_t> &thread_nextpos){
+    std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> node_first_later;
+    for (const auto &tnp:thread_node_positions){
+        int start=0;
+        if (thread_nextpos.count(tnp.first)) start=thread_nextpos.at(tnp.first);
+        if (start==-1 or start>=tnp.second.size()) continue;
+
+        ++node_first_later[tnp.second[start].second].first;
+        for (auto i=start+1;i<tnp.second.size();++i) ++node_first_later[tnp.second[i].second].second;
+    }
+    return node_first_later;
+}
+
+bool ReadThreadsGraph::clean_thread_nodepositions(std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions,
+std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> &node_first_later,std::set<sgNodeID_t> nodes_to_review){
+    bool cleaned = false;
+    while (true) {
+        std::cout << "cleaning positions in " << thread_node_positions.size() << " threads for "
+                  << nodes_to_review.size() << " nodes" << std::endl;
+        std::map<sgNodeID_t, std::pair<std::map<sgNodeID_t, int>, std::map<sgNodeID_t, int>>> node_prev_next;
+
+        //initialise total counts aggregating over each thread
+        for (auto &tnp:thread_node_positions) {
+            std::cout << "Thread " << tnp.first << ": ";
+            for (auto &pn:tnp.second) {
+                std::cout << pn.second << ", ";
+                if (nodes_to_review.count(pn.second)) {
+                    bool before = true;
+                    for (auto &n:tnp.second) {
+                        if (before) {
+                            if (n != pn) ++node_prev_next[pn.second].first[n.second];
+                            else before = false;
+                        } else ++node_prev_next[pn.second].second[n.second];
+                    }
+                }
+            }
+            std::cout << std::endl;
+        }
+
+    for (auto &npn:node_prev_next){
+        for (auto &np:npn.second.first) if (npn.second.second.count(np.first)) std::cout<<"Potential conflict for node "<<npn.first<<" "<<np.second<<" : " << npn.second.second[np.first]<<std::endl;
+    }
+
+        //initialise total counts aggregating over each thread
+        int64_t thread = 0;
+        sgNodeID_t node = 0;
+        int max_conflicts = 0;
+        for (auto &tnp:thread_node_positions) {
+
+            for (auto &pn:tnp.second) {
+                int conflicts = 0;
+                if (nodes_to_review.count(pn.second)) {
+                    bool before = true;
+                    for (auto &n:tnp.second) {
+                        if (before) {
+                            if (n == pn) before = false;
+                            else if (node_prev_next[pn.second].second[n.second]) conflicts+=node_prev_next[pn.second].second[n.second];
+                        } else if (node_prev_next[pn.second].first[n.second]) conflicts+=node_prev_next[pn.second].first[n.second];
+                    }
+                }
+                if (conflicts > max_conflicts) {
+                    std::cout << "Node " << pn.second << " has " << conflicts << " conflicts vs. >1 thread on thread "
+                              << tnp.first << std::endl;
+                    thread = tnp.first;
+                    node = pn.second;
+                    max_conflicts = conflicts;
+                }
+            }
+        }
+        if (max_conflicts > 0) {
+            //remove node from thread
+            std::cout<<"removing node "<<node<<" from thread "<<thread<<" with "<<max_conflicts<<" conflicts"<<std::endl;
+            thread_node_positions[thread].erase(std::remove_if(thread_node_positions[thread].begin(),thread_node_positions[thread].end(),[&node](auto &e){return e.second==node;}));
+            cleaned=true;
+        }
+        else break;
+    }
+
+    return cleaned;
+}
+
+std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID_t> nodes, bool return_first_conflict) {
+    //rustic attempt at ordering the nodes for now, but using every read between them.
+
+    std::set<sgNodeID_t> nodeset(nodes.begin(),nodes.end());
+
+    auto thread_node_positions=make_thread_nodepositions(nodeset);
+
+    auto node_first_later=make_node_first_later(thread_node_positions);
+
     std::map<uint64_t,int64_t> thread_nextpos;
     for (auto &tnp:thread_node_positions) thread_nextpos[tnp.first]=0;
-    while (true){
-        sgNodeID_t nid;
 
+
+
+    std::vector<sgNodeID_t> sorted_nodes;
+    std::set<sgNodeID_t> candidates;
+
+    //Just iterate finding the next node to put in:
+    while (true){
+        sgNodeID_t nid=0; // basically, once this is found, we're done for the iteration
+
+        //first look at nodes that only appear at the front of their threads.
         candidates.clear();
         for (auto &nfl:node_first_later) if (nfl.second.first and not nfl.second.second) candidates.insert(nfl.first);
+
+        // TRIVIAL CASE: just one node is at the front only.
+        if (candidates.size()==1){
+            nid=*candidates.begin();
+            sorted_nodes.emplace_back(nid);
+            node_first_later.erase(nid);//node is used!
+            continue;
+        }
+
         if (candidates.size()==0){
+            std::cout<<std::endl<<"can't find candidates to move forward with order"<<std::endl;
+
+            //TODO: just call clean_threadnodepositions from here.
+            std::cout<<"Nodes to order: ";
+            for (auto &n:nodes) std::cout<<n<<", ";
+            std::cout<<std::endl;
+            std::cout<<"Order so far: ";
+            for (auto &n:sorted_nodes) std::cout<<n<<", ";
+            std::cout<<std::endl<<std::endl;
+            for (auto &nfl:node_first_later) std::cout<<"Node "<<nfl.first<<": f="<<nfl.second.first<<" l="<<nfl.second.second<<std::endl;
+            std::cout<<std::endl;
+            for (auto &tnp:thread_node_positions) {
+                std::cout<<"Thread "<<tnp.first<<": ";
+                for (auto i=thread_nextpos[tnp.first];i<tnp.second.size();++i)std::cout<<tnp.second[i].second<<", ";
+                std::cout<<std::endl;
+            }
+
+
+            for (auto &nfl:node_first_later) /*if (nfl.second.first==1 or nfl.second.second==1)*/ candidates.insert(nfl.first);
+            std::cout<<"--- calling clean_thread_nodepositions ---"<<std::endl;
+            if (clean_thread_nodepositions(thread_node_positions,node_first_later,candidates)) {
+                for (auto nid:nodes) {
+                    auto nv = get_nodeview(nid);
+                    node_first_later[nid] = {0, 0};
+                }
+                for (auto &tnp:thread_node_positions) {
+                    if (thread_nextpos[tnp.first]== tnp.second.size()) thread_nextpos[tnp.first]=-1;
+                    if (thread_nextpos[tnp.first]!=-1) {
+                        ++node_first_later[tnp.second[thread_nextpos[tnp.first]].second].first;
+                        //std::cout<<"incremented first for node "<<tnp.second[thread_nextpos[tnp.first]].second<<" from thread "<<tnp.first<<std::endl;
+                        for (auto i=thread_nextpos[tnp.first]+1;i<tnp.second.size();++i) ++node_first_later[tnp.second[i].second].second;
+                    }
+                }
+                std::cout<<"--- clean_thread_nodepositions finished ---"<<std::endl;
+                continue;
+
+            }
+            std::cout<<"--- clean_thread_nodepositions finished ---"<<std::endl;
+            candidates.clear();
+            for (auto &nfl:node_first_later) if (nfl.second.first and nfl.second.second==1) candidates.insert(nfl.first);
+
+            sgNodeID_t best_candidate=0;
+            for (auto c:candidates) if (best_candidate==0 or node_first_later[best_candidate].first<node_first_later[c].first) best_candidate=c;
+            if (best_candidate==0) break;
+            bool recovered=false;
+            //ATTEMPT 1: does the candidate with most firsts only has one second? then just move up on that thread and make it a candidate
+            for (auto &tnp:thread_node_positions) {
+                if (thread_nextpos[tnp.first]!=-1 and thread_nextpos[tnp.first]<tnp.second.size()-1 and tnp.second[thread_nextpos[tnp.first]+1].second==best_candidate){
+                    std::cout<<"a single thread seems to have a single node misplaced, correcting"<<std::endl;
+                    --node_first_later[tnp.second[thread_nextpos[tnp.first]].second].first;//remove the previous node count as first
+                    ++thread_nextpos[tnp.first];
+                    ++node_first_later[best_candidate].first;//remove the previous node count as first
+                    --node_first_later[best_candidate].second;//remove the previous node count as first
+                    recovered=true;
+                    break;
+                }
+            }
+            if (recovered) continue;
+            //ATTEMPT 2: just find the offending thread and blow it
+            uint64_t thread_to_delete=0;
+            for (auto &tnp:thread_node_positions) {
+                if (thread_nextpos[tnp.first]!=-1 and thread_nextpos[tnp.first]<tnp.second.size()-1 and std::find_if(tnp.second.begin()+thread_nextpos[tnp.first],tnp.second.end(),[&best_candidate](auto &x){return x.second==best_candidate;})!=tnp.second.end()) {
+                    --node_first_later[tnp.second[thread_nextpos[tnp.first]].second].first;//remove the first count for the first in the thread
+                    for (auto i=thread_nextpos[tnp.first]+1;i<tnp.second.size();++i)
+                        --node_first_later[tnp.second[i].second].second;//remove the later count for everyone after, this should include the candidate
+                    thread_nextpos[tnp.first]=-1;//make the thread finished
+
+                    break;
+                }
+            }
+            if (recovered) continue;
+            //TODO: return the highest % of first vs. later? could be a loopy node that once removed unlocks the order
             break;
         }
         else if (candidates.size()>1){ //Multiple candidates untie by distance.
@@ -595,33 +764,50 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
             for (auto &d:dists) ++dcounts[d.first.second];
 
             //this is the all picks must agree part
+            std::map<sgNodeID_t ,int> winner_scores;
             sgNodeID_t winner=0;
             for (auto oc:dcounts){
                 auto local_winner=0;
                 if (oc.second!=candidates.size()) continue; //not in all candidates
                 int64_t largest_dist=INT64_MIN;
+                int64_t min_support=INT64_MAX;
                 for (auto c:candidates){
                     //poor man's median
                     auto &dv=dists[{c,oc.first}];
                     std::sort(dv.begin(),dv.end());
                     auto d=dv[dv.size()/2];
+                    min_support=std::min(min_support,(int64_t) dv.size());
                     if (d>largest_dist){
                         largest_dist=d;
                         local_winner=c;
                     }
                 }
-                if (winner==0) winner=local_winner;
+                /*if (winner==0) winner=local_winner;
                 if (winner!=local_winner) {
-                    //std::cout<<"aborting order, untie has different winners!"<<std::endl;
+                    std::cout<<"aborting order, untie has different winners!"<<std::endl;
                     winner=0;
                     break;
-                }
+                }*/
+                winner_scores[local_winner]+=min_support;
 
             }
-            if (winner==0) break;
+            for (auto &ws:winner_scores) if (winner==0 or ws.second>winner_scores[winner]) winner=ws.first;
+            for (auto &ws:winner_scores) {
+                if (ws.second == winner_scores[winner] and ws.first != winner) {
+                    std::cout<<"aborting order, untie has two different winners!"<<std::endl;
+                    winner = 0;
+                    break;
+                }
+            }
+            if (winner==0) {
+                if (return_first_conflict){
+                    std::vector<sgNodeID_t> r={0};
+                    r.insert(r.end(),candidates.begin(),candidates.end());
+                }
+                else break;
+            }
             nid=winner;
         }
-        else nid=*candidates.begin();//only one candidate, it wins
 
         for (auto &tn:thread_nextpos){
             if (tn.second==-1) continue;
