@@ -1313,10 +1313,12 @@ void HappyInsertionSorter::grow_order2(float perc, uint64_t steps,bool write_det
                         before_done=true;
                     }
                 } else {
-                    log << "Before order incomplete!!! Ordering with log. Candidates: [ ";
-                    for (auto c:candidates_before) log << c << ", ";
-                    log << "]" << std::endl;
-                    rtg.order_nodes(candidates_before, true);
+                    if (write_detailed_log) {
+                        log << "Before order incomplete!!! Ordering with log. Candidates: [ ";
+                        for (auto c:candidates_before) log << c << ", ";
+                        log << "]" << std::endl;
+                        rtg.order_nodes(candidates_before, true);
+                    }
                     before_done=true;
                 }
             }
@@ -1374,10 +1376,12 @@ void HappyInsertionSorter::grow_order2(float perc, uint64_t steps,bool write_det
 
 
                 } else {
-                    log << "After order incomplete!!! Ordering with log. Candidates: [ ";
-                    for (auto c:candidates_after) log << c << ", ";
-                    log << "]" << std::endl;
-                    rtg.order_nodes(candidates_after, true);
+                    if (write_detailed_log) {
+                        log << "After order incomplete!!! Ordering with log. Candidates: [ ";
+                        for (auto c:candidates_after) log << c << ", ";
+                        log << "]" << std::endl;
+                        rtg.order_nodes(candidates_after, true);
+                    }
                     after_done = true;
                 }
             }
