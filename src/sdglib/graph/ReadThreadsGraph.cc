@@ -648,7 +648,7 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
     auto thread_node_positions=make_thread_nodepositions(nodeset);
 
     auto node_first_later=make_node_first_later(thread_node_positions);
-
+    clean_thread_nodepositions(thread_node_positions,node_first_later,nodeset);
     std::map<uint64_t,int64_t> thread_nextpos;
     for (auto &tnp:thread_node_positions) thread_nextpos[tnp.first]=0;
     std::ofstream log;

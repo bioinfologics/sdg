@@ -54,6 +54,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::bind_vector<std::vector<bool>>(m, "VectorBool");
     py::bind_vector<std::vector<NodeView>>(m, "VectorNodeView");
     py::bind_vector<std::vector<TangleView>>(m, "VectorTangleView");
+    py::bind_map<std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>>>(m,"MapThreadPosNode");
 
 
     py::enum_<NodeStatus>(m,"NodeStatus")
