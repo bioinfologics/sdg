@@ -82,9 +82,12 @@ void PerfectMatchExtender::extend_fw(){
     }
 
     for(uint64_t next=0;next<matchparts.size();++next){
+        if (matchparts[next].node==-145497)
+            std::cout<<"evaluation matchpart "<<next<<" to node "<<matchparts[next].node<<" with current readpos="<<matchparts[next].read_position<<" and nodepos="<<matchparts[next].node_position<<" invalid="<<matchparts[next].invalid<<std::endl;
         //extend, if end of node add all nexts as unextended parts.
         if (matchparts[next].invalid) continue;
 //            std::cout<<"extending matchpart "<<next<<" to node "<<matchparts[next].node<<" with current readpos="<<matchparts[next].read_position<<" and nodepos="<<matchparts[next].node_position<<std::endl;
+
         matchparts[next].extend(readseq,dg.sdg.nodes[llabs(matchparts[next].node)].sequence);
 //        if (matchparts[next].size()>1000){
 //
