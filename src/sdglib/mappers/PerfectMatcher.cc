@@ -49,6 +49,7 @@ void PerfectMatchExtender::add_starting_match(sgNodeID_t node_id, uint64_t read_
     auto &mp=matchparts.back();
     mp.previous_part=-1;
     mp.node=node_id;
+    mp.invalid=false;
     mp.extended=false;
     mp.read_position=read_offset+k-1;
     mp.offset=read_offset;
