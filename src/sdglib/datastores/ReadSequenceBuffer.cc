@@ -43,10 +43,19 @@ const char* ReadSequenceBuffer::get_read_sequence(uint64_t readID) {
     } else if (nullptr!=long_datastore){
         read_offset_in_file=long_datastore->read_to_fileRecord[readID].offset;
         if (chunk_size < long_datastore->read_to_fileRecord[readID].record_size) {
-            throw std::runtime_error(
-                    "Reading from " + long_datastore->filename +
-                    " failed!\nThe size of the buffer chunk is smaller than read " +
-                    std::to_string(readID) + " increase the chunk_size so this read fits");
+            if (bufsize < long_datastore->read_to_fileRecord[readID].record_size ) {
+                bufsize=long_datastore->read_to_fileRecord[readID].record_size;
+                buffer=(char *)realloc(buffer,bufsize);
+                if (buffer==NULL)
+                    throw std::runtime_error(
+                            "Reading from " + long_datastore->filename +
+                            " failed!\nThe size of the buffer chunk is smaller than read " +
+                            std::to_string(readID) + " and can't be increased");
+                buffer_offset = read_offset_in_file;
+                lseek(fd, read_offset_in_file, SEEK_SET);
+                read(fd, buffer, bufsize);
+            }
+            chunk_size=long_datastore->read_to_fileRecord[readID].record_size;
         }
     } else {
         throw std::runtime_error(

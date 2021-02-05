@@ -1488,8 +1488,8 @@ LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_
 
     auto largest_left=std::max(this_left,other_left);
     auto largest_right=std::max(this_right,other_right);
-    float shared_perc=(float)ordered/std::max(last_seen_at+1-first_seen_at, (int64_t)llabs(last_seen_other)+1-(int64_t)llabs(first_seen_other));
-    float disordered_perc=(float)disordered/llabs(std::min(last_seen_at+1-first_seen_at,(int64_t)llabs(last_seen_other)+1-(int64_t)llabs(first_seen_other)));
+    float shared_perc=(float)ordered/std::max(last_seen_at+1-first_seen_at,(int64_t) (llabs(last_seen_other)+1-llabs(first_seen_other)));
+    float disordered_perc=(float)disordered/llabs(std::min(last_seen_at+1-first_seen_at,(int64_t) (llabs(last_seen_other)+1-llabs(first_seen_other))));
 
 //    sdglib::OutputLog()<<"First seen at: "<<first_seen_at<<std::endl;
 //    sdglib::OutputLog()<<"First seen other: "<<first_seen_other<<std::endl;

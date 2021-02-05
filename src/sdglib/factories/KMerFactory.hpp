@@ -299,6 +299,33 @@ public:
         }
     }
 
+    //first element in the pairs is 1-based signed position of the beginning of the k-mer
+    inline void produce_all_kmers(const char * seq, std::vector<std::pair<int64_t, uint64_t>> &mers){
+        // TODO: Adjust for when K is larger than what fits in uint64_t!
+        last_unknown=0;
+        fkmer=0;
+        rkmer=0;
+        auto s=seq;
+        int64_t p=-K+1;
+        while (*s!='\0' and *s!='\n') {
+            //fkmer: grows from the right (LSB)
+            //rkmer: grows from the left (MSB)
+            ++p;
+            fillKBuf(*s, fkmer, rkmer, last_unknown);
+            if (last_unknown >= K) {
+                if (fkmer <= rkmer) {
+                    // Is fwd
+                    mers.emplace_back(p,fkmer);
+                } else {
+                    // Is bwd
+                    mers.emplace_back(-p,rkmer);
+                }
+            }
+            ++s;
+
+        }
+    }
+
     inline void produce_all_kmers(const char * seq, std::vector<uint64_t> &mers){
         // TODO: Adjust for when K is larger than what fits in uint64_t!
         last_unknown=0;

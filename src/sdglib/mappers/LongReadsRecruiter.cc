@@ -561,7 +561,7 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
 #pragma omp parallel shared(nki)
     {
         StreamKmerFactory skf(k);
-        std::vector<std::pair<bool,uint64_t >> read_kmers; //TODO: type should be defined in the kmerisers
+        std::vector<std::pair<int64_t,uint64_t >> read_kmers; //TODO: type should be defined in the kmerisers
         std::vector<std::vector<std::pair<int32_t,int32_t >>> kmer_matches; //TODO: type should be defined in the index class
         PerfectMatchExtender pme(sdg,k);
         ReadSequenceBuffer sequence_reader(datastore);
@@ -575,13 +575,15 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
             read_kmers.clear();
             skf.produce_all_kmers(seq.c_str(),read_kmers);
             pme.set_read(seq);
-            for (auto rki=0;rki<read_kmers.size();++rki){
-                auto kmatch=nki.find(read_kmers[rki].second);
-                if (kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second){
+            int64_t last_end=0;
+            for (const auto &rpk:read_kmers){
+                if (llabs(rpk.first)-1+k<last_end) continue;
+                auto kmatch=nki.find(rpk.second);
+                if (kmatch!=nki.end() and kmatch->kmer==rpk.second){
                     pme.reset();
 //                    std::cout<<std::endl<<"PME reset done"<<std::endl;
 //                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
-                    for (;kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second;++kmatch) {
+                    for (;kmatch!=nki.end() and kmatch->kmer==rpk.second;++kmatch) {
 //                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
                         auto contig=kmatch->contigID;
                         int64_t pos=kmatch->offset-1;
@@ -589,15 +591,15 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
                             contig=-contig;
                             pos=-pos-2;
                         }
-                        if (!read_kmers[rki].first) contig=-contig;
-                        pme.add_starting_match(contig, rki, pos);
+                        if (rpk.first<0) contig=-contig;
+                        pme.add_starting_match(contig, llabs(rpk.first)-1, pos);
                     }
                     pme.extend_fw();
                     pme.set_best_path();
                     const auto & pmebp=pme.best_path;
-                    if (pme.last_readpos-rki>=seed_size-1) {
+                    if (pme.last_readpos-llabs(rpk.first)>=seed_size) {
                         if (!pmebp.empty()) {
-                            rki = pme.last_readpos + 1 - k; //avoid extra index lookups for kmers already used once
+                            last_end=pme.last_readpos; //avoid extra index lookups for kmers already used once
                             pme.make_path_as_perfect_matches();
 //                            if (private_read_perfect_matches.size()<1000){
                             private_read_perfect_matches.insert(private_read_perfect_matches.end(),pme.best_path_matches.begin(),pme.best_path_matches.end());
