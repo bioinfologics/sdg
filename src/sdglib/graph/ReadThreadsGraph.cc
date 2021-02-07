@@ -29,10 +29,10 @@ bool ReadThreadsGraph::add_thread(int64_t thread_id, const std::vector<NodePosit
             else seen.insert(llabs(p.node));
         }
     }
-    uint16_t lidx=0;
-    int16_t last_valid_i=-1;
+    uint32_t lidx=0;
+    int32_t last_valid_i=-1;
     sgNodeID_t end1;
-    for (auto i = 0; i < node_positions.size(); ++i) {
+    for (int32_t i = 0; i < node_positions.size(); ++i) {
         if (remove_duplicated and  duplicated.count(llabs(node_positions[i].node))) continue;
         if (last_valid_i!=-1) {
             add_link(-node_positions[last_valid_i].node, node_positions[i].node,
