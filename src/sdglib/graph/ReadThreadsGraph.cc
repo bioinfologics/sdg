@@ -115,10 +115,15 @@ LinkView ReadThreadsGraph::prev_in_thread(sgNodeID_t nid, int64_t thread_id, int
     return LinkView(NodeView(this,pnid),d,s);
 }
 
-std::unordered_set<uint64_t> ReadThreadsGraph::node_threads(sgNodeID_t nid) {
-    std::unordered_set<uint64_t> thread_ids;
-    for (auto l: get_nodeview(nid).next()) thread_ids.insert(l.support().id);
-    for (auto l: get_nodeview(nid).prev()) thread_ids.insert(l.support().id);
+std::unordered_set<int64_t> ReadThreadsGraph::node_threads(sgNodeID_t nid, bool oriented) {
+    std::unordered_set<int64_t> thread_ids;
+    for (const auto &lc:{get_nodeview(nid).next(),get_nodeview(nid).prev()}) {
+        for (const auto &l:lc) {
+            const auto &t = l.support().id;
+            if (oriented) thread_ids.insert(thread_fw_in_node(t,nid) ? t:-t);
+            else thread_ids.insert(t);
+        }
+    }
     return thread_ids;
 }
 
@@ -220,10 +225,24 @@ bool ReadThreadsGraph::flip_thread(int64_t thread_id) {
     return true;
 }
 
-std::unordered_map<sgNodeID_t, uint64_t> ReadThreadsGraph::node_thread_neighbours(sgNodeID_t nid) {
+std::unordered_map<sgNodeID_t, uint64_t> ReadThreadsGraph::node_thread_neighbours(sgNodeID_t nid, bool oriented) {
     std::unordered_map<sgNodeID_t, uint64_t> counts;
     for (auto tid:node_threads(nid)){
-        for (auto &np:get_thread(tid)) counts[llabs(np.node)]+=1;
+        if (not oriented) {
+            for (auto &np:get_thread(tid)) ++counts[llabs(np.node)];
+        }
+        else {
+            auto t=get_thread(tid);
+            bool fw=true;
+            for (auto &np:t) {
+                if (np.node==-nid){
+                    fw=false;
+                    break;
+                }
+                else if (np.node==nid) break;
+            }
+            for (auto &np:t) ++counts[(fw ? np.node:-np.node)];
+        }
     }
     return counts;
 }

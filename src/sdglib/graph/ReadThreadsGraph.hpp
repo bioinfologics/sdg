@@ -106,7 +106,7 @@ public:
      * @param nid node id to get the threads from
      * @return set of thread ids
      */
-    std::unordered_set<uint64_t> node_threads(sgNodeID_t nid);
+    std::unordered_set<int64_t> node_threads(sgNodeID_t nid,bool oriented=false);
     // std::vector<std::pair<int64_t,sgNodeID_t>> sort_graph();
 
     /** @brief Removes the node nid from the thread thread_id in the graph (inplace)
@@ -159,7 +159,7 @@ public:
      * @return map where the keys are the neigbouring nodes and the values are the link count for each node in the
      * thread graph
      */
-    std::unordered_map<sgNodeID_t,uint64_t> node_thread_neighbours(sgNodeID_t nid);
+    std::unordered_map<sgNodeID_t,uint64_t> node_thread_neighbours(sgNodeID_t nid, bool oriented=false);
 
     /** @brief Cleans the node of unsupported connections
      *
