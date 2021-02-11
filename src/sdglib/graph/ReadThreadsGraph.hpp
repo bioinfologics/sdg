@@ -207,8 +207,44 @@ public:
 
     bool thread_fw_in_node(int64_t tid,sgNodeID_t nid);
 
+    /** @brief
+     * for all threads in the current lrr (used to initialize) that includeat least a node of the nodes set, extract the
+     * segment of the read containing all present nodes and assign distances to the nodes starting from the first node
+     * all the way to the last.
+     *
+     * returns a map with path ids as keys and a vector of pairs as a value, each element of the vector is a pair with
+     * the first element being the distance from the start of the extracted segment and the second the node id in that
+     * position.
+     *
+     * example:
+     *  11282: [(0, 607520), (170, 607522), (507, 607526)]
+     *
+     *  - 11282: thread id
+     *  - (0, 607520) first node in the thread with 0 distance
+     *  - (170, 607522) second node in the thread at 170 bp distance
+     *  - and so on
+     *
+     * @param nodes set of nodes to be considered
+     * @return map with all threads with nodes as keys and a vector of distances and nodes in that thread
+     */
     std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> make_thread_nodepositions(const std::set<sgNodeID_t> &nodes);
 
+    /**
+     * From the thread node positions for each node counts how many times that node is present at the start of the thread
+     * segment and how many times the node is fw from the starting position. returns a map with the node id as the key
+     * and a pair as the value, the first number of the pair is the number of threads the node appeared in the first
+     * considered position and the second node is the number of threads the node appeared in a fw position.
+     *
+     * The function also takes a thread_nextpos argument, this is a map of thread ids and starting position for each
+     * thread so that stating positions are skipped.
+     *
+     * This function is most commonly used to decide the next node in an order in the sorting process.
+     *
+     * @param thread_node_positions threads with extracted position vectors, usually the utput of make_thread_nodepositions()
+     * @param thread_nextpos map of threads and positions to skip for each thread when counting
+     * @return map of nodes with a pair of numbers where the first is the number of times the node appears at the
+     * begining of a thread and the second the number of times the node appears in a fw position
+     */
     std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> make_node_first_later(const std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions, const std::map<uint64_t,int64_t> &thread_nextpos={});
     bool clean_thread_nodepositions(std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions,
                                                       std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> &node_first_later,std::set<sgNodeID_t> nodes_to_review);
