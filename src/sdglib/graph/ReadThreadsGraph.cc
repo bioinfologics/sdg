@@ -506,8 +506,6 @@ std::map<uint64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> ReadThreadsGraph
             }
         }
     }
-    // TODO: revisar bien la condicion para entende que es lo que esta haciendo 100%,
-    //  imprimir el resultado de la comparacion y la comparacion --> if (it->second.second<=it->second.first+1)
     // Delete limit pairs that are consecutive or the same number
     for (auto it = thread_limits.cbegin(); it != thread_limits.cend(); ){
         if (it->second.second<=it->second.first+1) it=thread_limits.erase(it++);
@@ -637,6 +635,11 @@ std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> &node_first_later,std::set<sgN
         else break;
     }
 
+    std::vector<int64_t> to_delete;
+    for (auto &tnp:thread_node_positions) {
+        if (tnp.second.size()<2) to_delete.push_back(tnp.first);
+    }
+    for (auto &tid:to_delete) thread_node_positions.erase(tid);
     return cleaned;
 }
 
@@ -649,6 +652,8 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
 
     auto node_first_later=make_node_first_later(thread_node_positions);
     clean_thread_nodepositions(thread_node_positions,node_first_later,nodeset);
+    node_first_later=make_node_first_later(thread_node_positions);
+
     std::map<uint64_t,int64_t> thread_nextpos;
     for (auto &tnp:thread_node_positions) thread_nextpos[tnp.first]=0;
     std::ofstream log;
@@ -745,6 +750,7 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
                 if (write_detailed_log) log<<"aborting order, can't find a winner!"<<std::endl;
                 break;
             }
+            // Always log winner?
             log<<winner<<std::endl;
             nid=winner;
         }
@@ -770,26 +776,26 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
             }
 
 
-            for (auto &nfl:node_first_later) /*if (nfl.second.first==1 or nfl.second.second==1)*/ candidates.insert(nfl.first);
-            std::cout<<"--- calling clean_thread_nodepositions ---"<<std::endl;
-            if (clean_thread_nodepositions(thread_node_positions,node_first_later,candidates)) {
-                for (auto nid:nodes) {
-                    auto nv = get_nodeview(nid);
-                    node_first_later[nid] = {0, 0};
-                }
-                for (auto &tnp:thread_node_positions) {
-                    if (thread_nextpos[tnp.first]== tnp.second.size()) thread_nextpos[tnp.first]=-1;
-                    if (thread_nextpos[tnp.first]!=-1) {
-                        ++node_first_later[tnp.second[thread_nextpos[tnp.first]].second].first;
-                        //std::cout<<"incremented first for node "<<tnp.second[thread_nextpos[tnp.first]].second<<" from thread "<<tnp.first<<std::endl;
-                        for (auto i=thread_nextpos[tnp.first]+1;i<tnp.second.size();++i) ++node_first_later[tnp.second[i].second].second;
-                    }
-                }
-                std::cout<<"--- clean_thread_nodepositions finished ---"<<std::endl;
-                continue;
-
-            }
-            std::cout<<"--- clean_thread_nodepositions finished ---"<<std::endl;
+//            for (auto &nfl:node_first_later) /*if (nfl.second.first==1 or nfl.second.second==1)*/ candidates.insert(nfl.first);
+//            std::cout<<"--- calling clean_thread_nodepositions ---"<<std::endl;
+//            if (clean_thread_nodepositions(thread_node_positions,node_first_later,candidates)) {
+//                for (auto nid:nodes) {
+//                    auto nv = get_nodeview(nid);
+//                    node_first_later[nid] = {0, 0};
+//                }
+//                for (auto &tnp:thread_node_positions) {
+//                    if (thread_nextpos[tnp.first]== tnp.second.size()) thread_nextpos[tnp.first]=-1;
+//                    if (thread_nextpos[tnp.first]!=-1) {
+//                        ++node_first_later[tnp.second[thread_nextpos[tnp.first]].second].first;
+//                        //std::cout<<"incremented first for node "<<tnp.second[thread_nextpos[tnp.first]].second<<" from thread "<<tnp.first<<std::endl;
+//                        for (auto i=thread_nextpos[tnp.first]+1;i<tnp.second.size();++i) ++node_first_later[tnp.second[i].second].second;
+//                    }
+//                }
+//                std::cout<<"--- clean_thread_nodepositions finished ---"<<std::endl;
+//                continue;
+//
+//            }
+//            std::cout<<"--- clean_thread_nodepositions finished ---"<<std::endl;
             candidates.clear();
             for (auto &nfl:node_first_later) if (nfl.second.first and nfl.second.second==1) candidates.insert(nfl.first);
 
