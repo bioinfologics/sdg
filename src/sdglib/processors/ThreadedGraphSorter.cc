@@ -1235,14 +1235,11 @@ void HappyInsertionSorter::grow_order2(float perc, uint64_t steps,bool write_det
             }
             auto plims = na.find_happy_place(*this);
             if (plims.first==INT64_MIN and llabs(plims.second) <= ENDS_SIZE)
-//                candidates_before.push_back(plims.second > 0 ? llabs(n) : -llabs(n));
                 candidates_before.push_back(n);
             else if (plims.second==INT64_MAX and llabs(plims.first) > node_positions.size() -ENDS_SIZE) {
-//                candidates_after.push_back(plims.second > 0 ? llabs(n) : -llabs(n));
                 candidates_after.push_back(n);
             } else if ((plims.first < 0 and plims.second == plims.first - 1) or
                        (plims.first > 0 and plims.second == plims.first + 1))
-//                candidates_by_pos[llabs(plims.second)].push_back(plims.second > 0 ? llabs(n) : -llabs(n));
                 candidates_by_pos[llabs(plims.second)].push_back(n);
 
             //TODO: solve floats else if ( (plims.first<0 and plims.second<plims.first-1) or (plims.first>0 and plims.second>plims.first+1) )

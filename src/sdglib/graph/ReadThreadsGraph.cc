@@ -115,10 +115,15 @@ LinkView ReadThreadsGraph::prev_in_thread(sgNodeID_t nid, int64_t thread_id, int
     return LinkView(NodeView(this,pnid),d,s);
 }
 
-std::unordered_set<uint64_t> ReadThreadsGraph::node_threads(sgNodeID_t nid) {
-    std::unordered_set<uint64_t> thread_ids;
-    for (auto l: get_nodeview(nid).next()) thread_ids.insert(l.support().id);
-    for (auto l: get_nodeview(nid).prev()) thread_ids.insert(l.support().id);
+std::unordered_set<int64_t> ReadThreadsGraph::node_threads(sgNodeID_t nid, bool oriented) {
+    std::unordered_set<int64_t> thread_ids;
+    for (const auto &lc:{get_nodeview(nid).next(),get_nodeview(nid).prev()}) {
+        for (const auto &l:lc) {
+            const auto &t = l.support().id;
+            if (oriented) thread_ids.insert(thread_fw_in_node(t,nid) ? t:-t);
+            else thread_ids.insert(t);
+        }
+    }
     return thread_ids;
 }
 
@@ -220,10 +225,24 @@ bool ReadThreadsGraph::flip_thread(int64_t thread_id) {
     return true;
 }
 
-std::unordered_map<sgNodeID_t, uint64_t> ReadThreadsGraph::node_thread_neighbours(sgNodeID_t nid) {
+std::unordered_map<sgNodeID_t, uint64_t> ReadThreadsGraph::node_thread_neighbours(sgNodeID_t nid, bool oriented) {
     std::unordered_map<sgNodeID_t, uint64_t> counts;
     for (auto tid:node_threads(nid)){
-        for (auto &np:get_thread(tid)) counts[llabs(np.node)]+=1;
+        if (not oriented) {
+            for (auto &np:get_thread(tid)) ++counts[llabs(np.node)];
+        }
+        else {
+            auto t=get_thread(tid);
+            bool fw=true;
+            for (auto &np:t) {
+                if (np.node==-nid){
+                    fw=false;
+                    break;
+                }
+                else if (np.node==nid) break;
+            }
+            for (auto &np:t) ++counts[(fw ? np.node:-np.node)];
+        }
     }
     return counts;
 }
@@ -570,8 +589,7 @@ std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> ReadThreadsGraph::make_node_fi
     return node_first_later;
 }
 
-bool ReadThreadsGraph::clean_thread_nodepositions(std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions,
-std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> &node_first_later,std::set<sgNodeID_t> nodes_to_review){
+bool ReadThreadsGraph::clean_thread_nodepositions(std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions,std::set<sgNodeID_t> nodes_to_review){
     bool cleaned = false;
     while (true) {
         std::cout << "cleaning positions in " << thread_node_positions.size() << " threads for "
@@ -634,7 +652,6 @@ std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> &node_first_later,std::set<sgN
         }
         else break;
     }
-
     std::vector<int64_t> to_delete;
     for (auto &tnp:thread_node_positions) {
         if (tnp.second.size()<2) to_delete.push_back(tnp.first);
@@ -651,9 +668,8 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
     auto thread_node_positions=make_thread_nodepositions(nodeset);
 
     auto node_first_later=make_node_first_later(thread_node_positions);
-    clean_thread_nodepositions(thread_node_positions,node_first_later,nodeset);
+    clean_thread_nodepositions(thread_node_positions,nodeset);
     node_first_later=make_node_first_later(thread_node_positions);
-
     std::map<uint64_t,int64_t> thread_nextpos;
     for (auto &tnp:thread_node_positions) thread_nextpos[tnp.first]=0;
     std::ofstream log;
@@ -750,7 +766,6 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
                 if (write_detailed_log) log<<"aborting order, can't find a winner!"<<std::endl;
                 break;
             }
-            // Always log winner?
             log<<winner<<std::endl;
             nid=winner;
         }

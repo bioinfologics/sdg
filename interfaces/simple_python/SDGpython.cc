@@ -215,8 +215,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("pop_nodes",&ReadThreadsGraph::pop_nodes,"node_ids"_a,"thread_id"_a)
             .def("pop_node_from_all",&ReadThreadsGraph::pop_node_from_all,"node_id"_a)
             .def("flip_thread",&ReadThreadsGraph::flip_thread,"thread_id"_a)
-            .def("node_threads",&ReadThreadsGraph::node_threads,"node_id"_a)
-            .def("node_thread_neighbours",&ReadThreadsGraph::node_thread_neighbours,"node_id"_a)
+            .def("node_threads",&ReadThreadsGraph::node_threads,"node_id"_a,"oriented"_a=false)
+            .def("node_thread_neighbours",&ReadThreadsGraph::node_thread_neighbours,"node_id"_a,"oriented"_a=false)
             .def("clean_node",&ReadThreadsGraph::clean_node,"node_id"_a,"min_supported"_a=4,"min_support"_a=1)
             .def("clean_repeat_nodes_popping_list",&ReadThreadsGraph::clean_repeat_nodes_popping_list,"max_threads"_a=200)
             .def("clean_all_nodes_popping_list",&ReadThreadsGraph::clean_all_nodes_popping_list,"min_supported"_a=4,"min_support"_a=1)
@@ -603,6 +603,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def(py::init<const std::vector<sgNodeID_t> &>(),"nodes"_a)
             .def("get_node_position",&LocalOrder::get_node_position,"node_id"_a)
             .def("as_signed_nodes",&LocalOrder::as_signed_nodes)
+            .def("size",&LocalOrder::size)
             .def("reverse",&LocalOrder::reverse)
             .def("merge",&LocalOrder::merge, "other"_a, "max_overhang"_a=4, "min_shared_perc"_a=.5, "min_shared"_a=20, "max_disordered_perc"_a=.02)
             .def_readwrite("node_positions",&LocalOrder::node_positions);

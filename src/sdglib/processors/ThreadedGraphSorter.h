@@ -18,6 +18,7 @@ public:
     LocalOrder reverse() const;
     void validate_with_rtg(const ReadThreadsGraph & rtg);
     void cleanup_with_rtg(const ReadThreadsGraph & rtg);
+    auto size() const {return node_positions.size();};
 
     //explicit LocalOrder(std::vector<sgNodeID_t>);//construct a local order from a list of nodes
     LocalOrder merge(const LocalOrder & other,int max_overhang=4,float min_shared_perc=.5,int min_shared=20,float max_disordered_perc=.02) const;
