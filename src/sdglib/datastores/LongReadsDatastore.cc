@@ -262,11 +262,15 @@ void LongReadsDatastore::write(std::ofstream &output_file) {
 }
 
 std::string LongReadsDatastore::get_read_sequence(size_t readID) const {
-    char buffer[read_to_fileRecord[readID].record_size+1];
+    auto read_size = read_to_fileRecord[readID].record_size+1;
+    char * buffer = (char*)malloc(read_size);
     size_t read_offset_in_file=read_to_fileRecord[readID].offset;
     ::lseek(fd,read_offset_in_file,SEEK_SET);
-    ::read(fd, buffer,sizeof(buffer));
-    return std::string(buffer);
+    ::read(fd, buffer,read_size);
+    std::string to_return(buffer);
+    free(buffer);
+//    return std::string(buffer);
+    return to_return;
 }
 
 void LongReadsDatastore::write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids) {
