@@ -603,6 +603,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def(py::init<const std::vector<sgNodeID_t> &>(),"nodes"_a)
             .def("get_node_position",&LocalOrder::get_node_position,"node_id"_a)
             .def("as_signed_nodes",&LocalOrder::as_signed_nodes)
+            .def("size",&LocalOrder::size)
             .def("reverse",&LocalOrder::reverse)
             .def("merge",&LocalOrder::merge, "other"_a, "max_overhang"_a=4, "min_shared_perc"_a=.5, "min_shared"_a=20, "max_disordered_perc"_a=.02)
             .def_readwrite("node_positions",&LocalOrder::node_positions);
