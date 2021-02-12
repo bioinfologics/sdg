@@ -566,7 +566,7 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
         PerfectMatchExtender pme(sdg,k);
         ReadSequenceBuffer sequence_reader(datastore);
         uint64_t private_mapped_reads=0;
-#pragma omp for schedule(dynamic,10000)
+#pragma omp for schedule(dynamic,1)
         for (auto rid=first_read;rid<=last_read;++rid){
 
             std::vector<PerfectMatch> private_read_perfect_matches;

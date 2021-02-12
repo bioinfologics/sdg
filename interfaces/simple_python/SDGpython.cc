@@ -22,6 +22,7 @@
 #include <sdglib/batch_counter/BatchKmersCounter.hpp>
 #include <sdglib/processors/LineFiller.h>
 #include <sdglib/processors/ThreadedGraphSorter.h>
+#include <sdglib/processors/HappySorter.hpp>
 #include <sdglib/graph/ReadThreadsGraph.hpp>
 
 namespace py = pybind11;
@@ -230,6 +231,19 @@ PYBIND11_MODULE(SDGpython, m) {
 
             ;
 
+
+    py::class_<HappySorter>(m, "HappySorter", "HappySorter")
+            .def(py::init<const ReadThreadsGraph &, float, float, int, int, int>(),"","rtg"_a,"min_thread_happiness"_a=.7, "min_node_happiness"_a=.7,
+            "min_thread_nodes"_a=3, "min_node_threads"_a=2, "order_end_size"_a=20,py::return_value_policy::take_ownership)
+            .def("thread_happiness", &HappySorter::thread_happiness,"tid"_a,"min_nodes"_a=3)
+            .def("node_happiness", &HappySorter::node_happiness,"tid"_a,"prev"_a=true,"next"_a=false,"min_threads"_a=3)
+            .def("recruit_all_happy_threads", &HappySorter::recruit_all_happy_threads,"min_happiness"_a=-1,"min_nodes"_a=-1)
+            .def("find_fw_candidates",&HappySorter::find_fw_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"end_size"_a=-1)
+            .def_readwrite("threads",&HappySorter::threads)
+            .def_readwrite("order",&HappySorter::order)
+            .def_readwrite("bw_open_threads",&HappySorter::bw_open_threads)
+            .def_readwrite("fw_open_threads",&HappySorter::fw_open_threads)
+            ;
 
     py::class_<SequenceDistanceGraphPath>(m, "SequenceDistanceGraphPath", "SequenceDistanceGraphPath")
             .def(py::init<const SequenceDistanceGraph &,const std::vector<sgNodeID_t> >(),"","sdg"_a,"nodes"_a,py::return_value_policy::take_ownership)
