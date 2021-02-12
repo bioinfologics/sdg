@@ -115,7 +115,7 @@ LinkView ReadThreadsGraph::prev_in_thread(sgNodeID_t nid, int64_t thread_id, int
     return LinkView(NodeView(this,pnid),d,s);
 }
 
-std::unordered_set<int64_t> ReadThreadsGraph::node_threads(sgNodeID_t nid, bool oriented) {
+std::unordered_set<int64_t> ReadThreadsGraph::node_threads(sgNodeID_t nid, bool oriented) const {
     std::unordered_set<int64_t> thread_ids;
     for (const auto &lc:{get_nodeview(nid).next(),get_nodeview(nid).prev()}) {
         for (const auto &l:lc) {
@@ -186,7 +186,7 @@ ReadThreadsGraph ReadThreadsGraph::local_graph(sgNodeID_t nid, int64_t distance,
 
 }
 
-std::vector<NodePosition> ReadThreadsGraph::get_thread(int64_t thread_id) {
+std::vector<NodePosition> ReadThreadsGraph::get_thread(int64_t thread_id) const{
     std::vector<NodePosition> thread;
     if (thread_info.count(llabs(thread_id))==0) return {};
     auto ti=thread_info[llabs(thread_id)];
@@ -484,7 +484,7 @@ bool ReadThreadsGraph::pop_node_from_all(sgNodeID_t node_id) {
     return true;
 }
 
-bool ReadThreadsGraph::thread_fw_in_node(int64_t tid, sgNodeID_t nid) {
+bool ReadThreadsGraph::thread_fw_in_node(int64_t tid, sgNodeID_t nid) const {
     if (llabs(nid)>links.size()) throw std::runtime_error("thread "+std::to_string(tid)+" not in node "+std::to_string(nid));
     int prev_idx=-1;
     int next_idx=-1;

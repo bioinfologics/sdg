@@ -106,7 +106,7 @@ public:
      * @param nid node id to get the threads from
      * @return set of thread ids
      */
-    std::unordered_set<int64_t> node_threads(sgNodeID_t nid,bool oriented=false);
+    std::unordered_set<int64_t> node_threads(sgNodeID_t nid,bool oriented=false) const;
     // std::vector<std::pair<int64_t,sgNodeID_t>> sort_graph();
 
     /** @brief Removes the node nid from the thread thread_id in the graph (inplace)
@@ -140,7 +140,7 @@ public:
      * @param thread_id thread id
      * @return vector of NodePositions for that specific thread
      */
-    std::vector<NodePosition> get_thread(int64_t thread_id);
+    std::vector<NodePosition> get_thread(int64_t thread_id) const;
 
     bool flip_thread(int64_t thread_id);
 
@@ -205,7 +205,7 @@ public:
      */
     void apply_popping_list(const std::vector<std::pair<uint64_t,sgNodeID_t>> &popping_list);
 
-    bool thread_fw_in_node(int64_t tid,sgNodeID_t nid);
+    bool thread_fw_in_node(int64_t tid,sgNodeID_t nid) const;
 
     std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> make_thread_nodepositions(const std::set<sgNodeID_t> &nodes);
 
