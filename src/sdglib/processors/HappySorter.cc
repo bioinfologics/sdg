@@ -21,10 +21,10 @@ float HappySorter::thread_happiness(int64_t tid,int min_nodes) const {
         }
     }
     if (last_ti==-1 or shared_nodes<min_nodes) {
-        std::cout<<"Thread happiness for thread "<<tid<<" = 0, only "<<shared_nodes<<"/"<<min_nodes<<" requered shared nodes"<<std::endl;
+        //std::cout<<"Thread happiness for thread "<<tid<<" = 0, only "<<shared_nodes<<"/"<<min_nodes<<" requered shared nodes"<<std::endl;
         return 0;
     }
-    std::cout<<"Thread happiness for thread"<<tid<<" = "<<((float) shared_nodes)/(last_ti+1-first_ti)<<std::endl<<" based on "<<shared_nodes<<" shared nodes"<<std::endl;
+    //std::cout<<"Thread happiness for thread"<<tid<<" = "<<((float) shared_nodes)/(last_ti+1-first_ti)<<std::endl<<" based on "<<shared_nodes<<" shared nodes"<<std::endl;
     return ((float) shared_nodes)/(last_ti+1-first_ti);
 }
 
@@ -86,17 +86,17 @@ std::unordered_set<sgNodeID_t> HappySorter::find_fw_candidates(float min_happine
 
     for (auto tid:fw_open_threads){
         auto tnps=rtg.get_thread(tid);
-        int64_t last_in_node=-1;
+        int64_t last_inside_node=-1;
         for (auto i=0;i<tnps.size();++i) {
             if (order.get_node_position(tnps[i].node)>order.size()-end_size) {
-                last_in_node=i;
+                last_inside_node=i;
                 break;
             }
         }
-        for (auto i=last_in_node;i<tnps.size();++i) ++node_links[tnps[i].node];
+        for (auto i=last_inside_node;i<tnps.size();++i) ++node_links[tnps[i].node];
     }
 
-    for (auto &nl:node_links) if (nl.second>=min_threads /*and order.get_node_position(nl.first)==0*/ and node_happiness(nl.first,true,false,min_threads)>=min_happiness) candidates.insert(nl.first);
+    for (auto &nl:node_links) if (nl.second>=min_threads and node_happiness(nl.first,true,false,min_threads)>=min_happiness) candidates.insert(nl.first);
 
     //remove candidates that appear in both directions (should be rare?)
     std::vector<sgNodeID_t> to_delete;
