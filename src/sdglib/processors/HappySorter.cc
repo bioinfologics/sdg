@@ -131,7 +131,6 @@ std::unordered_set<sgNodeID_t> HappySorter::find_internal_candidates(float min_h
     std::unordered_map<sgNodeID_t,int64_t> node_count;
     std::unordered_set<sgNodeID_t> candidates;
     for (auto &tl:thread_limits){
-        std::cout<<"thread "<<tl.first<<" -> "<<tl.second.first<<":"<<tl.second.second<<std::endl;
         auto tnps=rtg.get_thread(tl.first);
         for (auto i=tl.second.first-1;i<tl.second.second;++i){
             if (order.node_positions.count(llabs(tnps[i].node))==0) //skip nodes already in order
@@ -140,7 +139,6 @@ std::unordered_set<sgNodeID_t> HappySorter::find_internal_candidates(float min_h
     }
 
     for (auto &nc:node_count){
-        std::cout<<"node "<<nc.first<<" -> "<<nc.second<<" threads, happiness="<<node_happiness(nc.first,true,true,min_threads)<<std::endl;
         if (nc.second>=min_threads and node_happiness(nc.first,true,true,min_threads)>min_happiness) candidates.insert(nc.first);
     }
 
