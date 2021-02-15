@@ -16,22 +16,28 @@ public:
 
     //TODO: recruit all happy intermediate nodes
     //TODO: start from node
-    //TODO: find fw candidates
     //TODO: grow fw
     //TODO: reverse
+    //TODO: fill-in
+    //TODO: close threads
 
     float thread_happiness(int64_t tid,int min_nodes=-1) const;
     float node_happiness(sgNodeID_t,bool prev=true,bool next=false, int min_threads=-1) const;
     void recruit_all_happy_threads(float min_happiness=-1, int min_nodes=-1);
     std::unordered_set<sgNodeID_t> find_fw_candidates(float min_happiness=-1, int min_threads=-1, int end_size=-1) const;
+    //This looks for candidates that are both fw for some nodes and bw for others
+    std::unordered_set<sgNodeID_t> find_internal_candidates(float min_happiness=-1, int min_threads=-1) const;
 
-    const ReadThreadsGraph & rtg;
-    LocalOrder order;
     float min_thread_happiness;
     int min_thread_nodes;
     float min_node_happiness;
     int min_node_threads;
     int order_end_size;
+
+    const ReadThreadsGraph & rtg;
+
+    LocalOrder order;
+
     std::unordered_set<int64_t> threads;
     std::unordered_set<int64_t> fw_open_threads;
     std::unordered_set<int64_t> bw_open_threads;

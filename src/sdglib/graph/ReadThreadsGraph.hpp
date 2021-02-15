@@ -107,6 +107,7 @@ public:
      * @return set of thread ids
      */
     std::unordered_set<int64_t> node_threads(sgNodeID_t nid,bool oriented=false) const;
+    std::unordered_set<std::pair<int64_t,int32_t>> node_threadpositions(sgNodeID_t nid) const;
     // std::vector<std::pair<int64_t,sgNodeID_t>> sort_graph();
 
     /** @brief Removes the node nid from the thread thread_id in the graph (inplace)

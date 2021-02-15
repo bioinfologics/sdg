@@ -127,6 +127,29 @@ std::unordered_set<int64_t> ReadThreadsGraph::node_threads(sgNodeID_t nid, bool 
     return thread_ids;
 }
 
+std::unordered_set<std::pair<int64_t, int32_t>> ReadThreadsGraph::node_threadpositions(sgNodeID_t nid) const {
+    std::unordered_map<int64_t,std::pair<int32_t,int32_t>> thread_links; //Populate a map with all threads and their positions left and right of this node
+    thread_links.reserve(links[llabs(nid)].size());
+    for (const auto &l:links[llabs(nid)]) {
+        if (l.source==nid) thread_links[l.support.id].first=l.support.index+1;//XXX: This is to avoid problems because links are counted from 0
+        else thread_links[l.support.id].second=l.support.index+1;
+    }
+    std::unordered_set<std::pair<int64_t, int32_t>> thread_positions;
+    for (const auto &tl:thread_links){
+        if (tl.second.first==0) {
+            if (tl.second.second==1) thread_positions.emplace(tl.first,1);
+            else thread_positions.emplace(-tl.first,1);
+        }
+        else if (tl.second.second==0) {
+            if (tl.second.first==1) thread_positions.emplace(-tl.first,thread_info.at(tl.first).link_count+1);
+            else thread_positions.emplace(tl.first,thread_info.at(tl.first).link_count+1);
+        }
+        else if (tl.second.first<tl.second.second) thread_positions.emplace(tl.first,tl.second.second);
+        else thread_positions.emplace(-tl.first,thread_info.at(tl.first).link_count+1-tl.second.second);
+    }
+    return thread_positions;
+}
+
 std::vector<sgNodeID_t> ReadThreadsGraph::all_nids_fw_in_thread(sgNodeID_t nid, int64_t thread_id) {
     //TODO: this won't work if the thread has duplicated nodes.
     std::vector<sgNodeID_t> nodes;
