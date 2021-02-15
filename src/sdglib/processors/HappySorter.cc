@@ -107,3 +107,42 @@ std::unordered_set<sgNodeID_t> HappySorter::find_fw_candidates(float min_happine
     }
     return candidates;
 }
+
+std::unordered_set<sgNodeID_t> HappySorter::find_internal_candidates(float min_happiness, int min_threads) const {
+    if (min_threads==-1) min_threads=min_node_threads;
+    if (min_happiness==-1) min_happiness=min_node_happiness;
+
+//    //Step #1, find first and last nodes on each thread that are in the order
+    std::map<int64_t, std::pair<int32_t,int32_t>> thread_limits;
+    for (auto &nid:order.as_signed_nodes()) {
+        for (auto ntp:rtg.node_threadpositions(nid)) {
+            if (threads.count(ntp.first)==0) continue;
+            auto &tl=thread_limits[ntp.first];
+            if (tl.first==0) {
+                tl = {ntp.second, ntp.second};
+            }
+            else {
+                if (tl.first>ntp.second) tl.first=ntp.second;
+                if (tl.second<ntp.second) tl.second=ntp.second;
+            }
+        }
+    }
+//    //Step #2, count nodes between first and last
+    std::unordered_map<sgNodeID_t,int64_t> node_count;
+    std::unordered_set<sgNodeID_t> candidates;
+    for (auto &tl:thread_limits){
+        std::cout<<"thread "<<tl.first<<" -> "<<tl.second.first<<":"<<tl.second.second<<std::endl;
+        auto tnps=rtg.get_thread(tl.first);
+        for (auto i=tl.second.first-1;i<tl.second.second;++i){
+            if (order.node_positions.count(llabs(tnps[i].node))==0) //skip nodes already in order
+                ++node_count[tnps[i].node];
+        }
+    }
+
+    for (auto &nc:node_count){
+        std::cout<<"node "<<nc.first<<" -> "<<nc.second<<" threads, happiness="<<node_happiness(nc.first,true,true,min_threads)<<std::endl;
+        if (nc.second>=min_threads and node_happiness(nc.first,true,true,min_threads)>min_happiness) candidates.insert(nc.first);
+    }
+
+    return candidates;
+}
