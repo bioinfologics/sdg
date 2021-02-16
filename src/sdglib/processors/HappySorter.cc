@@ -107,14 +107,18 @@ std::unordered_set<sgNodeID_t> HappySorter::find_fw_candidates(float min_happine
     }
     return candidates;
 }
-
-std::unordered_set<sgNodeID_t> HappySorter::find_internal_candidates(float min_happiness, int min_threads) const {
+std::unordered_set<sgNodeID_t> HappySorter::find_internal_candidates(float min_happiness, int min_threads,
+                                                                     int32_t first, int32_t last) const {
     if (min_threads==-1) min_threads=min_node_threads;
     if (min_happiness==-1) min_happiness=min_node_happiness;
+    if (last>order.size()+1) last=order.size();
+    if (first<1) first=1;
 
 //    //Step #1, find first and last nodes on each thread that are in the order
     std::map<int64_t, std::pair<int32_t,int32_t>> thread_limits;
-    for (auto &nid:order.as_signed_nodes()) {
+    auto snodes=order.as_signed_nodes();
+    for (auto i=first;i<=last;++i) {
+        auto &nid=snodes[i-1];
         for (auto ntp:rtg.node_threadpositions(nid)) {
             if (threads.count(ntp.first)==0) continue;
             auto &tl=thread_limits[ntp.first];
