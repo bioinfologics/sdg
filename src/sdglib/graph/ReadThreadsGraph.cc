@@ -613,15 +613,15 @@ std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> ReadThreadsGraph::make_node_fi
 bool ReadThreadsGraph::clean_thread_nodepositions(std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions,std::set<sgNodeID_t> nodes_to_review){
     bool cleaned = false;
     while (true) {
-        std::cout << "cleaning positions in " << thread_node_positions.size() << " threads for "
-                  << nodes_to_review.size() << " nodes" << std::endl;
+//        std::cout << "cleaning positions in " << thread_node_positions.size() << " threads for "
+//                  << nodes_to_review.size() << " nodes" << std::endl;
         std::map<sgNodeID_t, std::pair<std::map<sgNodeID_t, int>, std::map<sgNodeID_t, int>>> node_prev_next;
 
         //initialise total counts aggregating over each thread
         for (auto &tnp:thread_node_positions) {
-            std::cout << "Thread " << tnp.first << ": ";
+//            std::cout << "Thread " << tnp.first << ": ";
             for (auto &pn:tnp.second) {
-                std::cout << pn.second << ", ";
+//                std::cout << pn.second << ", ";
                 if (nodes_to_review.count(pn.second)) {
                     bool before = true;
                     for (auto &n:tnp.second) {
@@ -632,12 +632,12 @@ bool ReadThreadsGraph::clean_thread_nodepositions(std::map<uint64_t,std::vector<
                     }
                 }
             }
-            std::cout << std::endl;
+//            std::cout << std::endl;
         }
 
-    for (auto &npn:node_prev_next){
-        for (auto &np:npn.second.first) if (npn.second.second.count(np.first)) std::cout<<"Potential conflict for node "<<npn.first<<" "<<np.second<<" : " << npn.second.second[np.first]<<std::endl;
-    }
+//    for (auto &npn:node_prev_next){
+//        for (auto &np:npn.second.first) if (npn.second.second.count(np.first)) std::cout<<"Potential conflict for node "<<npn.first<<" "<<np.second<<" : " << npn.second.second[np.first]<<std::endl;
+//    }
 
         //initialise total counts aggregating over each thread
         int64_t thread = 0;
@@ -657,8 +657,8 @@ bool ReadThreadsGraph::clean_thread_nodepositions(std::map<uint64_t,std::vector<
                     }
                 }
                 if (conflicts > max_conflicts) {
-                    std::cout << "Node " << pn.second << " has " << conflicts << " conflicts vs. >1 thread on thread "
-                              << tnp.first << std::endl;
+//                    std::cout << "Node " << pn.second << " has " << conflicts << " conflicts vs. >1 thread on thread "
+//                              << tnp.first << std::endl;
                     thread = tnp.first;
                     node = pn.second;
                     max_conflicts = conflicts;
@@ -667,7 +667,7 @@ bool ReadThreadsGraph::clean_thread_nodepositions(std::map<uint64_t,std::vector<
         }
         if (max_conflicts > 0) {
             //remove node from thread
-            std::cout<<"removing node "<<node<<" from thread "<<thread<<" with "<<max_conflicts<<" conflicts"<<std::endl;
+//            std::cout<<"removing node "<<node<<" from thread "<<thread<<" with "<<max_conflicts<<" conflicts"<<std::endl;
             thread_node_positions[thread].erase(std::remove_if(thread_node_positions[thread].begin(),thread_node_positions[thread].end(),[&node](auto &e){return e.second==node;}));
             cleaned=true;
         }
@@ -797,19 +797,19 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
 
 
             //TODO: just call clean_threadnodepositions from here.
-            std::cout<<"Nodes to order: ";
-            for (auto &n:nodes) std::cout<<n<<", ";
-            std::cout<<std::endl;
-            std::cout<<"Order so far: ";
-            for (auto &n:sorted_nodes) std::cout<<n<<", ";
-            std::cout<<std::endl<<std::endl;
-            for (auto &nfl:node_first_later) std::cout<<"Node "<<nfl.first<<": f="<<nfl.second.first<<" l="<<nfl.second.second<<std::endl;
-            std::cout<<std::endl;
-            for (auto &tnp:thread_node_positions) {
-                std::cout<<"Thread "<<tnp.first<<": ";
-                for (auto i=thread_nextpos[tnp.first];i<tnp.second.size();++i)std::cout<<tnp.second[i].second<<", ";
-                std::cout<<std::endl;
-            }
+//            std::cout<<"Nodes to order: ";
+//            for (auto &n:nodes) std::cout<<n<<", ";
+//            std::cout<<std::endl;
+//            std::cout<<"Order so far: ";
+//            for (auto &n:sorted_nodes) std::cout<<n<<", ";
+//            std::cout<<std::endl<<std::endl;
+//            for (auto &nfl:node_first_later) std::cout<<"Node "<<nfl.first<<": f="<<nfl.second.first<<" l="<<nfl.second.second<<std::endl;
+//            std::cout<<std::endl;
+//            for (auto &tnp:thread_node_positions) {
+//                std::cout<<"Thread "<<tnp.first<<": ";
+//                for (auto i=thread_nextpos[tnp.first];i<tnp.second.size();++i)std::cout<<tnp.second[i].second<<", ";
+//                std::cout<<std::endl;
+//            }
 
 
 //            for (auto &nfl:node_first_later) /*if (nfl.second.first==1 or nfl.second.second==1)*/ candidates.insert(nfl.first);
@@ -842,7 +842,7 @@ std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID
             //ATTEMPT 1: does the candidate with most firsts only has one second? then just move up on that thread and make it a candidate
             for (auto &tnp:thread_node_positions) {
                 if (thread_nextpos[tnp.first]!=-1 and thread_nextpos[tnp.first]<tnp.second.size()-1 and tnp.second[thread_nextpos[tnp.first]+1].second==best_candidate){
-                    std::cout<<"a single thread seems to have a single node misplaced, correcting"<<std::endl;
+//                    std::cout<<"a single thread seems to have a single node misplaced, correcting"<<std::endl;
                     --node_first_later[tnp.second[thread_nextpos[tnp.first]].second].first;//remove the previous node count as first
                     ++thread_nextpos[tnp.first];
                     ++node_first_later[best_candidate].first;//remove the previous node count as first
