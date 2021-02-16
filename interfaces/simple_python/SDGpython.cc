@@ -242,6 +242,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("find_fw_candidates",&HappySorter::find_fw_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"end_size"_a=-1)
             .def("find_internal_candidates",&HappySorter::find_internal_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"first"_a=1,"last"_a=INT32_MAX)
             .def("close_internal_threads",&HappySorter::close_internal_threads,"order_end"_a=20,"thread_end"_a=0)
+            .def("start_from_node",&HappySorter::start_from_node,"nid"_a,"min_links"_a=4)
             .def_readwrite("threads",&HappySorter::threads)
             .def_readwrite("order",&HappySorter::order)
             .def_readwrite("bw_open_threads",&HappySorter::bw_open_threads)

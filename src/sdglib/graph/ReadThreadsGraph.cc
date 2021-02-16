@@ -681,7 +681,7 @@ bool ReadThreadsGraph::clean_thread_nodepositions(std::map<uint64_t,std::vector<
     return cleaned;
 }
 
-std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID_t> nodes, bool write_detailed_log) {
+std::vector<sgNodeID_t> ReadThreadsGraph::order_nodes(const std::vector<sgNodeID_t> nodes, bool write_detailed_log) const {
     //rustic attempt at ordering the nodes for now, but using every read between them.
 
     std::set<sgNodeID_t> nodeset(nodes.begin(),nodes.end());

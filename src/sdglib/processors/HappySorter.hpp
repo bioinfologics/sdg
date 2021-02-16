@@ -14,7 +14,7 @@ public:
             rtg(_rtg), min_thread_happiness(_min_thread_happiness), min_node_happiness(_min_node_happiness),
             min_thread_nodes(_min_thread_nodes), min_node_threads(_min_node_threads), order_end_size(_order_end_size){};
 
-    //TODO: close threads
+
     //TODO: start from node
     //TODO: grow fw
     //TODO: reverse
@@ -27,7 +27,7 @@ public:
     std::unordered_set<sgNodeID_t> find_fw_candidates(float min_happiness=-1, int min_threads=-1, int end_size=-1) const;
     //This looks for candidates that are both fw for some nodes and bw for others
     std::unordered_set<sgNodeID_t> find_internal_candidates(float min_happiness=-1, int min_threads=-1, int32_t first=1, int32_t last=INT32_MAX) const;
-
+    void start_from_node(sgNodeID_t nid, int min_links=4);
 
     float min_thread_happiness;
     int min_thread_nodes;

@@ -177,3 +177,29 @@ void HappySorter::close_internal_threads(int order_end, int thread_end) {
     }
     for (auto tid:to_close) bw_open_threads.erase(tid);
 }
+
+void HappySorter::start_from_node(sgNodeID_t nid, int min_links) {
+    std::unordered_map<sgNodeID_t,int> node_links;
+    for (auto tid:rtg.node_threads(nid,true))
+        for (auto &ntp:rtg.get_thread(tid))
+            ++node_links[ntp.node];
+    std::vector<sgNodeID_t> nodes;
+    LocalOrder last_order;
+    for (auto &nl:node_links) if (nl.second>=min_links) nodes.push_back(nl.first);
+    auto hs=HappySorter(rtg);
+    hs.order=LocalOrder(rtg.order_nodes(nodes));
+    hs.recruit_all_happy_threads(.1);
+    while (last_order.size()<hs.order.size()){
+        last_order=hs.order;
+        nodes=hs.order.as_signed_nodes();
+        for (auto c:hs.find_internal_candidates()) nodes.push_back(c);
+        hs.order=LocalOrder(rtg.order_nodes(nodes));
+        hs.recruit_all_happy_threads();
+    }
+    threads.clear();
+    fw_open_threads.clear();
+    bw_open_threads.clear();
+    order=LocalOrder(rtg.order_nodes(nodes));
+    recruit_all_happy_threads();
+    return;
+}
