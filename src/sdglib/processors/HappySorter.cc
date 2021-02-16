@@ -148,3 +148,32 @@ std::unordered_set<sgNodeID_t> HappySorter::find_internal_candidates(float min_h
 
     return candidates;
 }
+
+void HappySorter::close_internal_threads(int order_end, int thread_end) {
+    std::set<uint64_t> to_close;
+    for (auto tid:fw_open_threads){
+        auto tnp=rtg.get_thread(tid);
+        for (int i=tnp.size()-1;i>=0;--i){
+            auto nid=tnp[i].node;
+            auto p=order.get_node_position(nid);
+            if (p>0) {
+                if (tnp.size()-1-i<=thread_end or order.size()-p>order_end) to_close.insert(tid);
+                break;
+            }
+        }
+    }
+    for (auto tid:to_close) fw_open_threads.erase(tid);
+    to_close.clear();
+    for (auto tid:bw_open_threads){
+        auto tnp=rtg.get_thread(tid);
+        for (int i=0;i<tnp.size();++i){
+            auto nid=tnp[i].node;
+            auto p=order.get_node_position(nid);
+            if (p>0) {
+                if (i<=thread_end or p-1>order_end) to_close.insert(tid);
+                break;
+            }
+        }
+    }
+    for (auto tid:to_close) bw_open_threads.erase(tid);
+}
