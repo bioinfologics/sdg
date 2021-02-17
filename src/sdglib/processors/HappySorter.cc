@@ -98,9 +98,15 @@ std::unordered_set<sgNodeID_t> HappySorter::find_fw_candidates(float min_happine
 
     for (auto &nl:node_links) if (nl.second>=min_threads and node_happiness(nl.first,true,false,min_threads)>=min_happiness) candidates.insert(nl.first);
 
-    //remove candidates that appear in both directions (should be rare?)
+    //remove candidates that appear in both directions (should be rare?), also remove candidates located before end_size
     std::vector<sgNodeID_t> to_delete;
-    for (auto c:candidates) if (c>0 and candidates.count(-c)) to_delete.push_back(c);
+    for (auto c:candidates) {
+        if ( (c>0 and candidates.count(-c))) to_delete.push_back(c);
+        else {
+            auto p=order.get_node_position(c);
+            if (p>0 and p<order.size()-end_size)  to_delete.push_back(c);
+        }
+    }
     for (auto cd:to_delete) {
         candidates.erase(cd);
         candidates.erase(-cd);
