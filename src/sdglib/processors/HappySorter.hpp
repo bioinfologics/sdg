@@ -28,6 +28,7 @@ public:
     //This looks for candidates that are both fw for some nodes and bw for others
     std::unordered_set<sgNodeID_t> find_internal_candidates(float min_happiness=-1, int min_threads=-1, int32_t first=1, int32_t last=INT32_MAX) const;
     void start_from_node(sgNodeID_t nid, int min_links=4);
+    bool grow_fw(int min_threads, bool verbose=true);
 
     float min_thread_happiness;
     int min_thread_nodes;
