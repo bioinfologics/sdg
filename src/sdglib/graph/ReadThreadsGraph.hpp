@@ -249,7 +249,7 @@ public:
     std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> make_node_first_later(const std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions, const std::map<uint64_t,int64_t> &thread_nextpos={});
     bool clean_thread_nodepositions(std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions,
                                                       std::set<sgNodeID_t> nodes_to_review);
-    std::vector<sgNodeID_t> order_nodes(const std::vector<sgNodeID_t> nodes, bool write_detailed_log=false);
+    std::vector<sgNodeID_t> order_nodes(const std::vector<sgNodeID_t> nodes, bool write_detailed_log=false) const;
 
     /**
      * This map stores the information for all the threads of the graph
