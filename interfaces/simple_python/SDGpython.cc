@@ -229,6 +229,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("thread_fw_in_node",&ReadThreadsGraph::thread_fw_in_node,"thread_id"_a,"node_id"_a)
             .def("make_thread_nodepositions",&ReadThreadsGraph::make_thread_nodepositions,"nodes"_a)
             .def("make_node_first_later",&ReadThreadsGraph::make_node_first_later,"thread_nodepositions"_a,"thread_nextpos"_a={})
+            .def("place_nodes",&ReadThreadsGraph::place_nodes,"placed_nodes"_a,"nodes"_a,"verbose"_a=false)
 
             ;
 
