@@ -1430,8 +1430,15 @@ int64_t LocalOrder::get_node_position(sgNodeID_t nid) const {
 //TODO:implement the choosing a node its neighbours not in enough orders yet, up to a certain coverage, single threaded at first
 
 LocalOrder::LocalOrder(const std::vector<sgNodeID_t> &nodes) {
-    for (int64_t i=0;i<nodes.size();++i)
-        node_positions[llabs(nodes[i])]= nodes[i] > 0 ? i+1 : -i-1;
+    for (int64_t i=0;i<nodes.size();++i) {
+        auto &p = node_positions[llabs(nodes[i])];
+        if (p!=0) {
+            std::cout<<"ERROR, avoiding creation of LocalOrder with repeated node "<<llabs(nodes[i])<<" at "<<p<<" and "<< (nodes[i] > 0 ? i + 1 : -i - 1)<<std::endl;
+            node_positions.clear();
+            return;
+        }
+        p = nodes[i] > 0 ? i + 1 : -i - 1;
+    }
 }
 
 LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_shared_perc,int min_shared,float max_disordered_perc) const{
