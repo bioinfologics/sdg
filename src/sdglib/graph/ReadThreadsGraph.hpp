@@ -216,7 +216,7 @@ public:
     std::vector<sgNodeID_t> order_nodes(const std::vector<sgNodeID_t> nodes, bool write_detailed_log=false) const;
 
     //places nodes in a linear space already containing placed_nodes, returns the positions for all nodes, including those already placed.
-    std::vector<std::pair<sgNodeID_t,int64_t>> place_nodes(const std::vector<std::pair<sgNodeID_t,int64_t>> placed_nodes, const std::vector<sgNodeID_t> nodes, bool verbose=false) const;
+    std::vector<std::pair<sgNodeID_t,int64_t>> place_nodes(const std::vector<std::pair<sgNodeID_t,int64_t>> &placed_nodes, const std::vector<sgNodeID_t> &nodes, bool verbose=false) const;
 
     /**
      * This map stores the information for all the threads of the graph

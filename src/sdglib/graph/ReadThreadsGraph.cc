@@ -935,11 +935,12 @@ std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> tnp_to_distance
 
 //TODo: this creates tnps for all the places nodes too, which is not needed.
 std::vector<std::pair<sgNodeID_t, int64_t>> ReadThreadsGraph::place_nodes(
-        const std::vector<std::pair<sgNodeID_t, int64_t>> placed_nodes, const std::vector<sgNodeID_t> nodes,
+        const std::vector<std::pair<sgNodeID_t, int64_t>> &placed_nodes, const std::vector<sgNodeID_t> &nodes,
         bool verbose) const {
 
     if (verbose) std::cout<<"Place nodes starting"<<std::endl;
-    //TODO: STEP 1: populate node distances for each node
+
+    //STEP 1: populate node distances for each node
     std::set<sgNodeID_t> nodeset(nodes.begin(),nodes.end());
     auto full_nodeset=nodeset;
     for (auto &pn:placed_nodes) full_nodeset.insert(pn.first);
@@ -950,39 +951,73 @@ std::vector<std::pair<sgNodeID_t, int64_t>> ReadThreadsGraph::place_nodes(
     if (verbose) std::cout<<"Created distances for "<<node_distances.size()<<" nodes"<<std::endl;
 
 
-    //TODO: STEP 2: place each node in the median of its placed distances.
-    std::map<sgNodeID_t, int64_t> node_positions;
-    for (const auto &np:placed_nodes) node_positions[np.first]=np.second;
+    //STEP 2: place each node in the median of its placed distances.
+    std::vector<std::map<sgNodeID_t, int64_t>> v_node_positions; //All possible starting conditions
 
-    std::set<sgNodeID_t> to_place(nodes.begin(),nodes.end());
-    std::map<sgNodeID_t, std::pair<bool,bool>> np_complete;
-    if (verbose) std::cout<<"Entering placing loop"<<std::endl;
-    while (not to_place.empty()){
-        update_npcomplete(np_complete,node_positions,node_distances,to_place);
-        std::set<sgNodeID_t> placed;
-        //first place with both prev and nexts full; if none, with prevs full; if none, with nexts full
-        for (std::pair<bool,bool> cond:{std::make_pair(true,true),{true,false},{false,true}}) {
-
-            for (auto nid:to_place) {
-                if (np_complete[nid] == cond) {
-                    auto p = place_node(node_positions, node_distances, nid);
-                    if (p != INT64_MIN) {
-                        node_positions[nid] = p;
-                        placed.insert(nid);
-                    }
+    if (not placed_nodes.empty()) { //just one starting position given as parameter
+        v_node_positions.emplace_back();
+        for (const auto &np:placed_nodes) v_node_positions.back()[np.first] = np.second;
+    }
+    else { //for every node that has no prevs, use it as starting position in 0
+        for (auto &nds:node_distances) {
+            bool noprevs=true;
+            for (auto nd:nds.second) {
+                if (nd.second>0) {
+                    noprevs=false;
+                    break;
                 }
             }
-            if (not placed.empty()) break;
+            if (noprevs) {
+                v_node_positions.emplace_back();
+                v_node_positions.back()[nds.first]=0;
+                if (verbose) std::cout<<"creating a starting position with "<<nds.first<<" at 0"<<std::endl;
+            }
         }
-
-
-        //if none placed, abort (for now), we can change np_complete to count unsatisfied and place the smallest
-        if (placed.empty()) break;
-        for (auto nid:placed) to_place.erase(nid);
     }
+    int64_t max_placed_nodes=0,best_solution=-1;
+
+    for (int64_t npix=0;npix<v_node_positions.size();++npix){
+        auto &node_positions=v_node_positions[npix];
+        std::set<sgNodeID_t> to_place(nodes.begin(),nodes.end());
+        std::map<sgNodeID_t, std::pair<bool,bool>> np_complete;
+        if (verbose) std::cout<<"Entering placing loop"<<std::endl;
+        while (not to_place.empty()){
+            update_npcomplete(np_complete,node_positions,node_distances,to_place);
+            std::set<sgNodeID_t> placed;
+            //first place with both prev and nexts full; if none, with prevs full; if none, with nexts full
+            for (std::pair<bool,bool> cond:{std::make_pair(true,true),{true,false},{false,true}}) {
+
+                for (auto nid:to_place) {
+                    if (np_complete[nid] == cond) {
+                        auto p = place_node(node_positions, node_distances, nid);
+                        if (p != INT64_MIN) {
+                            node_positions[nid] = p;
+                            placed.insert(nid);
+                        }
+                    }
+                }
+                if (not placed.empty()) break;
+            }
+
+
+            //if none placed, abort (for now), we can change np_complete to count unsatisfied and place the smallest
+            if (placed.empty()) break;
+            for (auto nid:placed) to_place.erase(nid);
+        }
+        if (node_positions.size()>max_placed_nodes) {
+            max_placed_nodes=node_positions.size();
+            best_solution=npix;
+        }
+    }
+    if (best_solution==-1) return {};
+    auto &node_positions=v_node_positions[best_solution];
     std::vector<std::pair<sgNodeID_t,int64_t>> full_placements;
-    full_placements.reserve(full_placements.size());
+    full_placements.reserve(node_positions.size());
     for (auto &np:node_positions) full_placements.emplace_back(np.first,np.second);
     std::sort(full_placements.begin(),full_placements.end(),[](auto &a,auto &b){return a.second<b.second;});
+    if (placed_nodes.empty() and full_placements[0].second!=0){
+        auto offset=full_placements[0].second;
+        for (auto &np:full_placements) np.second-=offset;
+    }
     return full_placements;
 }
