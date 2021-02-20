@@ -4,6 +4,27 @@
 
 #include "HappySorter.hpp"
 
+std::vector<sgNodeID_t> rtg_place_order(const ReadThreadsGraph & rtg,std::vector<sgNodeID_t> &nodes){
+    auto placed=rtg.place_nodes({},nodes,true);
+    std::vector<sgNodeID_t> order;
+    order.reserve(placed.size());
+    for (const auto &np:placed) order.emplace_back(np.first);
+    return order;
+}
+
+void HappySorter::reverse() {
+    order=order.reverse();
+    std::unordered_set<sgNodeID_t> new_threads,new_fthreads,new_bthreads;
+    for (auto tid:threads) new_threads.insert(-tid);
+    std::swap(threads,new_threads);
+
+    for (auto tid:fw_open_threads) new_bthreads.insert(-tid);
+    for (auto tid:bw_open_threads) new_fthreads.insert(-tid);
+    std::swap(fw_open_threads,new_fthreads);
+    std::swap(bw_open_threads,new_bthreads);
+
+}
+
 float HappySorter::thread_happiness(int64_t tid,int min_nodes) const {
     if (min_nodes==-1) min_nodes=min_thread_nodes;
     int64_t first_ti=-1,last_ti=-1,first_oi=-1,last_oi=-1,shared_nodes=0;
@@ -193,19 +214,22 @@ void HappySorter::start_from_node(sgNodeID_t nid, int min_links) {
     LocalOrder last_order;
     for (auto &nl:node_links) if (nl.second>=min_links) nodes.push_back(nl.first);
     auto hs=HappySorter(rtg);
-    hs.order=LocalOrder(rtg.order_nodes(nodes));
+    //hs.order=LocalOrder(rtg.order_nodes(nodes));
+    hs.order=LocalOrder(rtg_place_order(rtg,nodes));
     hs.recruit_all_happy_threads(.1);
     while (last_order.size()<hs.order.size()){
         last_order=hs.order;
         nodes=hs.order.as_signed_nodes();
         for (auto c:hs.find_internal_candidates()) nodes.push_back(c);
-        hs.order=LocalOrder(rtg.order_nodes(nodes));
+        //hs.order=LocalOrder(rtg.order_nodes(nodes));
+        hs.order=LocalOrder(rtg_place_order(rtg,nodes));
         hs.recruit_all_happy_threads();
     }
     threads.clear();
     fw_open_threads.clear();
     bw_open_threads.clear();
-    order=LocalOrder(rtg.order_nodes(nodes));
+    //order=LocalOrder(rtg.order_nodes(nodes));
+    order=LocalOrder(rtg_place_order(rtg,nodes));
     recruit_all_happy_threads();
     return;
 }
@@ -217,7 +241,8 @@ bool HappySorter::grow_fw(int min_threads, bool verbose) {
     std::vector<sgNodeID_t> candidates;
     for (auto &c:find_fw_candidates(min_node_happiness,min_threads)) candidates.emplace_back(c);
     if (verbose) std::cout<<"found "<<candidates.size()<<" candidates forward, including "<<order_end_size<<" in the order end"<<std::endl;
-    auto sorted_candidates=rtg.order_nodes(candidates);
+    //auto sorted_candidates=rtg.order_nodes(candidates);
+    auto sorted_candidates=rtg_place_order(rtg,candidates);
     if (verbose) std::cout<<"sorted candidates size: "<<sorted_candidates.size()<<std::endl;
     if (sorted_candidates.size()<20) {
         if (verbose) std::cout<<"aborting grow, not enough sorted candidates"<<std::endl;
@@ -247,7 +272,8 @@ bool HappySorter::grow_fw(int min_threads, bool verbose) {
     if (verbose) std::cout<<"There are "<<internal_candidates.size()<<" internal candidates in the newly ordered region"<<std::endl;
     for (auto ic:internal_candidates) candidates.emplace_back(ic);
 
-    sorted_candidates=rtg.order_nodes(candidates);
+    //sorted_candidates=rtg.order_nodes(candidates);
+    sorted_candidates=rtg_place_order(rtg,candidates);
     if (verbose) std::cout<<"sorted and internal candidates size: "<<sorted_candidates.size()<<std::endl;
     if (sorted_candidates.size()<20) {
         if (verbose) std::cout<<"aborting internal recruiting, order failed!"<<std::endl;

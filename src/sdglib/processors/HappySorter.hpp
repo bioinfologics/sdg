@@ -15,11 +15,14 @@ public:
             min_thread_nodes(_min_thread_nodes), min_node_threads(_min_node_threads), order_end_size(_order_end_size){};
 
 
-    //TODO: start from node
-    //TODO: grow fw
-    //TODO: reverse
-    //TODO: fill-in
+    //TODO: data map node_id -> coordinate (this could be included later in the LocalOrder)
+    //TODO: place_nodes -> takes a vector of nodes, creates coordinates for them using rtg::place_nodes, and updates the order. Probably needs some optimisation of rtg::place_nodes.
+    //TODO: grow_fw using place_nodes
+    //TODO: fill_in using place_nodes
+    //TODO: grow_bw using place_nodes
+    //TODO: extend -> calls grow_fw/fill_in/grow_bw to create a full order.
 
+    void reverse();
     float thread_happiness(int64_t tid,int min_nodes=-1) const;
     float node_happiness(sgNodeID_t,bool prev=true,bool next=false, int min_threads=-1) const; //TODO: have an open-thread happiness
     void recruit_all_happy_threads(float min_happiness=-1, int min_nodes=-1);

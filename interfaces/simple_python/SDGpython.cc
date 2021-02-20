@@ -245,6 +245,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("close_internal_threads",&HappySorter::close_internal_threads,"order_end"_a=20,"thread_end"_a=0)
             .def("start_from_node",&HappySorter::start_from_node,"nid"_a,"min_links"_a=4)
             .def("grow_fw",&HappySorter::grow_fw,"min_links"_a,"verbose"_a=true)
+            .def("reverse",&HappySorter::reverse)
             .def_readwrite("threads",&HappySorter::threads)
             .def_readwrite("order",&HappySorter::order)
             .def_readwrite("bw_open_threads",&HappySorter::bw_open_threads)
