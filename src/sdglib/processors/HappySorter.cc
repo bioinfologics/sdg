@@ -257,9 +257,15 @@ bool HappySorter::grow_fw(int min_threads, bool verbose) {
     //STEP 5 - a very crude merge again
 
     //TODO: this is stupidly innefficient!
+    if (verbose) std::cout<<"Current order has "<<order.size()<<" nodes"<<std::endl;
     new_nodes.resize(old_nodes_size);
     new_nodes.insert(new_nodes.end(),sorted_candidates.begin(),sorted_candidates.end());
-    order=LocalOrder(new_nodes);
+    auto new_order=LocalOrder(new_nodes);
+    if(new_order.node_positions.size() > 0){
+        order=new_order;
+    } else {
+        return false;
+    }
     if (verbose) std::cout<<"New order has "<<order.size()<<" nodes"<<std::endl;
 
     // STEP 6 - recruit more threads again
