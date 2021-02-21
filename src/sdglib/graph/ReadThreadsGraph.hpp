@@ -208,6 +208,7 @@ public:
 
     bool thread_fw_in_node(int64_t tid,sgNodeID_t nid) const;
 
+    std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> make_thread_nodepositions(const std::set<sgNodeID_t> &nodes) const;
     /** @brief
      * for all threads in the current lrr (used to initialize) that includeat least a node of the nodes set, extract the
      * segment of the read containing all present nodes and assign distances to the nodes starting from the first node
@@ -228,7 +229,7 @@ public:
      * @param nodes set of nodes to be considered
      * @return map with all threads with nodes as keys and a vector of distances and nodes in that thread
      */
-    std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> make_thread_nodepositions(const std::set<sgNodeID_t> &nodes);
+//    std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> make_thread_nodepositions(const std::set<sgNodeID_t> &nodes);
 
     /**
      * From the thread node positions for each node counts how many times that node is present at the start of the thread
@@ -250,6 +251,9 @@ public:
     bool clean_thread_nodepositions(std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions,
                                                       std::set<sgNodeID_t> nodes_to_review);
     std::vector<sgNodeID_t> order_nodes(const std::vector<sgNodeID_t> nodes, bool write_detailed_log=false) const;
+
+    //places nodes in a linear space already containing placed_nodes, returns the positions for all nodes, including those already placed.
+    std::vector<std::pair<sgNodeID_t,int64_t>> place_nodes(const std::vector<std::pair<sgNodeID_t,int64_t>> &placed_nodes, const std::vector<sgNodeID_t> &nodes, bool verbose=false) const;
 
     /**
      * This map stores the information for all the threads of the graph
