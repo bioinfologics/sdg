@@ -71,21 +71,21 @@ bool ReadThreadsGraph::remove_thread(int64_t thread_id) {
     return true;
 }
 
-NodeView ReadThreadsGraph::thread_start_nodeview(int64_t thread_id) {
+NodeView ReadThreadsGraph::thread_start_nodeview(int64_t thread_id) const {
     return get_nodeview((thread_id>0 ? thread_info[thread_id].start : thread_info[-thread_id].end));
 }
 
-NodeView ReadThreadsGraph::thread_end_nodeview(int64_t thread_id) {
+NodeView ReadThreadsGraph::thread_end_nodeview(int64_t thread_id) const {
     return thread_start_nodeview(-thread_id);
 }
 
-LinkView ReadThreadsGraph::next_in_thread(sgNodeID_t nid, int64_t thread_id, int64_t link_index) {
+LinkView ReadThreadsGraph::next_in_thread(sgNodeID_t nid, int64_t thread_id, int64_t link_index) const {
     bool found=false;
     sgNodeID_t nnid;
     Support s;
     int32_t d;
     for (auto l:links[llabs(nid)]) {
-        if (l.source==-nid and l.support.id == thread_id and (link_index==-1 or l.support.index==link_index)) {
+        if (l.source==-nid and l.support.id == llabs(thread_id) and (link_index==-1 or l.support.index==link_index)) {
             if (found) throw std::runtime_error("There is more than one link out in thread");
             found=true;
             nnid=l.dest;
@@ -97,13 +97,13 @@ LinkView ReadThreadsGraph::next_in_thread(sgNodeID_t nid, int64_t thread_id, int
     return LinkView(NodeView(this,nnid),d,s);
 }
 
-LinkView ReadThreadsGraph::prev_in_thread(sgNodeID_t nid, int64_t thread_id, int64_t link_index) {
+LinkView ReadThreadsGraph::prev_in_thread(sgNodeID_t nid, int64_t thread_id, int64_t link_index) const{
     bool found=false;
     sgNodeID_t pnid;
     Support s;
     int32_t d;
     for (auto l:links[llabs(nid)]) {
-        if (l.source==nid and l.support.id == thread_id and (link_index==-1 or l.support.index==link_index)) {
+        if (l.source==nid and l.support.id == llabs(thread_id) and (link_index==-1 or l.support.index==link_index)) {
             if (found) throw std::runtime_error("There is more than one link out in thread");
             found=true;
             pnid=-l.dest;
