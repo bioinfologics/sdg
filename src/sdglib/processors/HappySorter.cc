@@ -5,11 +5,12 @@
 #include "HappySorter.hpp"
 
 float HappySorter::thread_happiness(int64_t tid,int min_nodes) const {
+    //TODO: que pasa si el nodo que viene de thread es negativo? eso da una posicion negativa y devuelve un p negativo que no es considerado
     if (min_nodes==-1) min_nodes=min_thread_nodes;
     int64_t first_ti=-1,last_ti=-1,first_oi=-1,last_oi=-1,shared_nodes=0;
-    auto tnp=rtg.get_thread(tid);
+    auto tnp=rtg.get_thread(tid); // get the thread in the rtg
     for (auto i=0;i<tnp.size();++i) {
-        auto p=order.get_node_position(tnp[i].node);
+        auto p=order.get_node_position(tnp[i].node); //get the position of the node in the order
         if (p>0){
             if (first_ti==-1){
                 first_ti=i;
@@ -20,11 +21,13 @@ float HappySorter::thread_happiness(int64_t tid,int min_nodes) const {
             ++shared_nodes;
         }
     }
+    //
     if (last_ti==-1 or shared_nodes<min_nodes) {
         //std::cout<<"Thread happiness for thread "<<tid<<" = 0, only "<<shared_nodes<<"/"<<min_nodes<<" requered shared nodes"<<std::endl;
         return 0;
     }
     //std::cout<<"Thread happiness for thread"<<tid<<" = "<<((float) shared_nodes)/(last_ti+1-first_ti)<<std::endl<<" based on "<<shared_nodes<<" shared nodes"<<std::endl;
+    // This is the proportion of shared nodes in the overlapping part of the thread/order
     return ((float) shared_nodes)/(last_ti+1-first_ti);
 }
 
@@ -33,7 +36,10 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
     uint64_t happy=0,total=0;
     if (nid==0 or rtg.sdg.links.size()-1<llabs(nid)) return 0;
     if (not prev and not next) return 0;
+    // bw going
     else if (prev and not next) {
+        // this is counting all the threads passing over the node (total) and how many of those threads are part of the
+        // current order (happy) i.e.: if the thread that supports a lin is in the recruited thread set.
         for (auto const &l:rtg.links[llabs(nid)]) {
             if (l.source==-nid) {
                 ++total;
@@ -41,6 +47,7 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
             }
         }
     }
+    // fw going
     else if (not prev and next) {
         for (auto const &l:rtg.links[llabs(nid)]) {
             if (l.source==nid) {
@@ -49,6 +56,7 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
             }
         }
     }
+    // internal
     else {
         for (auto const &tid:rtg.node_threads(nid,true)){
             ++total;
@@ -56,8 +64,9 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
         }
 
     }
+    std::cout<<"Happy: "
     if (total<min_threads) return 0;
-    return ((float) happy)/total;
+    return ((float) happy)/(float)total;
 }
 
 void HappySorter::recruit_all_happy_threads(float min_happiness, int min_nodes) {
@@ -83,7 +92,8 @@ std::unordered_set<sgNodeID_t> HappySorter::find_fw_candidates(float min_happine
     std::unordered_map<sgNodeID_t,int> node_links;
     std::unordered_set<sgNodeID_t> candidates;
 
-
+    // For all open threads, find the last node before the end portion of the order and then count all the nodes in the
+    // open threads from that node in the thread onwards
     for (auto tid:fw_open_threads){
         auto tnps=rtg.get_thread(tid);
         int64_t last_inside_node=-1;
@@ -95,8 +105,14 @@ std::unordered_set<sgNodeID_t> HappySorter::find_fw_candidates(float min_happine
         }
         for (auto i=last_inside_node;i<tnps.size();++i) ++node_links[tnps[i].node];
     }
-
-    for (auto &nl:node_links) if (nl.second>=min_threads and node_happiness(nl.first,true,false,min_threads)>=min_happiness) candidates.insert(nl.first);
+    // Candidates have to have minimal linking and be happy fw (share min number of threads with the order)
+    std::cout << std::fixed;
+    for (auto &nl:node_links){
+        std::cout << "ffc: "<< nl.first <<" , "<< nl.second << "," << node_happiness(nl.first,true,false,min_threads) << std::endl;
+        if (nl.second>=min_threads and node_happiness(nl.first,true,false,min_threads)>=min_happiness){
+            candidates.insert(nl.first);
+        }
+    }
 
     //remove candidates that appear in both directions (should be rare?), also remove candidates located before end_size
     std::set<sgNodeID_t> to_delete;
@@ -185,16 +201,22 @@ void HappySorter::close_internal_threads(int order_end, int thread_end) {
 }
 
 void HappySorter::start_from_node(sgNodeID_t nid, int min_links) {
+    // Get a link count against all nodes threaded in the same threads as the starting node
     std::unordered_map<sgNodeID_t,int> node_links;
     for (auto tid:rtg.node_threads(nid,true))
         for (auto &ntp:rtg.get_thread(tid))
             ++node_links[ntp.node];
+
+    // Keep the nodes with at least min links connection to the starting node.
+    // Create a local order with the nodes and an internal happy sorter
     std::vector<sgNodeID_t> nodes;
     LocalOrder last_order;
     for (auto &nl:node_links) if (nl.second>=min_links) nodes.push_back(nl.first);
     auto hs=HappySorter(rtg);
     hs.order=LocalOrder(rtg.order_nodes(nodes));
     hs.recruit_all_happy_threads(.1);
+
+    // Loop to fill the internal order until nothing more can be added
     while (last_order.size()<hs.order.size()){
         last_order=hs.order;
         nodes=hs.order.as_signed_nodes();
@@ -202,6 +224,7 @@ void HappySorter::start_from_node(sgNodeID_t nid, int min_links) {
         hs.order=LocalOrder(rtg.order_nodes(nodes));
         hs.recruit_all_happy_threads();
     }
+    // Setup the internal structure and set the order to the dense order prouced
     threads.clear();
     fw_open_threads.clear();
     bw_open_threads.clear();
