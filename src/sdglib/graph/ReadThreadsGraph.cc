@@ -71,21 +71,21 @@ bool ReadThreadsGraph::remove_thread(int64_t thread_id) {
     return true;
 }
 
-NodeView ReadThreadsGraph::thread_start_nodeview(int64_t thread_id) {
+NodeView ReadThreadsGraph::thread_start_nodeview(int64_t thread_id) const {
     return get_nodeview((thread_id>0 ? thread_info[thread_id].start : thread_info[-thread_id].end));
 }
 
-NodeView ReadThreadsGraph::thread_end_nodeview(int64_t thread_id) {
+NodeView ReadThreadsGraph::thread_end_nodeview(int64_t thread_id) const {
     return thread_start_nodeview(-thread_id);
 }
 
-LinkView ReadThreadsGraph::next_in_thread(sgNodeID_t nid, int64_t thread_id, int64_t link_index) {
+LinkView ReadThreadsGraph::next_in_thread(sgNodeID_t nid, int64_t thread_id, int64_t link_index) const {
     bool found=false;
     sgNodeID_t nnid;
     Support s;
     int32_t d;
     for (auto l:links[llabs(nid)]) {
-        if (l.source==-nid and l.support.id == thread_id and (link_index==-1 or l.support.index==link_index)) {
+        if (l.source==-nid and l.support.id == llabs(thread_id) and (link_index==-1 or l.support.index==link_index)) {
             if (found) throw std::runtime_error("There is more than one link out in thread");
             found=true;
             nnid=l.dest;
@@ -97,13 +97,13 @@ LinkView ReadThreadsGraph::next_in_thread(sgNodeID_t nid, int64_t thread_id, int
     return LinkView(NodeView(this,nnid),d,s);
 }
 
-LinkView ReadThreadsGraph::prev_in_thread(sgNodeID_t nid, int64_t thread_id, int64_t link_index) {
+LinkView ReadThreadsGraph::prev_in_thread(sgNodeID_t nid, int64_t thread_id, int64_t link_index) const{
     bool found=false;
     sgNodeID_t pnid;
     Support s;
     int32_t d;
     for (auto l:links[llabs(nid)]) {
-        if (l.source==nid and l.support.id == thread_id and (link_index==-1 or l.support.index==link_index)) {
+        if (l.source==nid and l.support.id == llabs(thread_id) and (link_index==-1 or l.support.index==link_index)) {
             if (found) throw std::runtime_error("There is more than one link out in thread");
             found=true;
             pnid=-l.dest;
@@ -917,6 +917,26 @@ void update_npcomplete(std::map<sgNodeID_t, std::pair<bool,bool>> &np_complete,c
     }
 }
 
+sgNodeID_t most_connected_node(const std::map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, const std::set<sgNodeID_t> &to_place){
+    int most_connected=0;
+    sgNodeID_t best_nid=0;
+    for (auto nid:to_place){
+        if (node_positions.count(nid)) continue;
+        int prevs=0,nexts=0;
+        for (auto nd:node_distances.at(nid)) {
+            if (node_positions.count(nd.first)){
+                if (nd.second>0) ++nexts;
+                else ++prevs;
+            }
+        }
+        if (nexts+prevs>most_connected){
+            best_nid=nid;
+            most_connected=nexts+prevs;
+        }
+    }
+    return best_nid;
+}
+
 std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> tnp_to_distances (const std::map<uint64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> &thread_nodepositions,const std::set<sgNodeID_t> &nodeset){
     std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> distances;
 
@@ -1003,7 +1023,20 @@ std::vector<std::pair<sgNodeID_t, int64_t>> ReadThreadsGraph::place_nodes(
 
 
             //if none placed, abort (for now), we can change np_complete to count unsatisfied and place the smallest
-            if (placed.empty()) break;
+            if (placed.empty()) {
+                //find node with most connections, place that one
+                //std::cout<<"Aborting after placing "<<node_positions.size()<<" nodes, with "<<to_place.size()<<" nodes still to place, but no candidates"<<std::endl;
+                auto nid=most_connected_node(node_positions,node_distances,to_place);
+                auto p = place_node(node_positions, node_distances, nid);
+                if (p != INT64_MIN) {
+                    node_positions[nid] = p;
+                    placed.insert(nid);
+                }
+                else {
+                    if (verbose) std::cout<<"Aborting after placing "<<node_positions.size()<<" nodes, with "<<to_place.size()<<" nodes still to place, but no candidates"<<std::endl;
+                    break;
+                }
+            }
             for (auto nid:placed) to_place.erase(nid);
         }
         if (node_positions.size()>max_placed_nodes) {

@@ -54,14 +54,14 @@ public:
      * @param thread_id id of the thread
      * @return nodeview of the start of the selected thread
      */
-    NodeView thread_start_nodeview(int64_t thread_id);
+    NodeView thread_start_nodeview(int64_t thread_id) const;
 
     /** @brief Get the NodeView at the end of the thread
      *
      * @param thread_id id of the thread
      * @return NodeView of the and of the thread
      */
-    NodeView thread_end_nodeview(int64_t thread_id);
+    NodeView thread_end_nodeview(int64_t thread_id) const;
 
     /** @brief Get the next link from a node in a thread
      *
@@ -72,7 +72,7 @@ public:
      * @param link_index order of the link to get (default -1 gets any order)
      * @return LinkView describing the next link
      */
-    LinkView next_in_thread(sgNodeID_t nid, int64_t thread_id,int64_t link_index=-1);
+    LinkView next_in_thread(sgNodeID_t nid, int64_t thread_id,int64_t link_index=-1) const;
 
     /** @brief Same as next_in_thread but with prev
      *
@@ -81,7 +81,7 @@ public:
      * @param link_index order of the link to get (default -1 gets any order)
      * @return LinkView describing the prev link
      */
-    LinkView prev_in_thread(sgNodeID_t nid, int64_t thread_id,int64_t link_index=1);
+    LinkView prev_in_thread(sgNodeID_t nid, int64_t thread_id,int64_t link_index=1) const;
 
     /** @brief From a thread id get all node ids starting from a node.
      *
