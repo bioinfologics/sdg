@@ -173,8 +173,13 @@ std::unordered_set<sgNodeID_t> HappySorter::find_internal_candidates(float min_h
                 ++node_count[tnps[i].node];
         }
     }
+    //add candidates meeting criteria, if reverse present already delete reverse and don't insert.
     for (auto &nc:node_count){
-        if (nc.second>=min_threads and node_happiness(nc.first,true,true,min_threads)>min_happiness) candidates.insert(nc.first);
+        if (nc.second>=min_threads and node_happiness(nc.first,true,true,min_threads)>min_happiness) {
+            if (candidates.count(-nc.first)) candidates.erase(-nc.first);
+            else candidates.insert(nc.first);
+        }
+
     }
     return candidates;
 }
