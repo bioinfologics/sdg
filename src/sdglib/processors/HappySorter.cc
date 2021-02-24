@@ -59,7 +59,7 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
     if (not prev and not next) return 0;
     else if (prev and not next) {
         for (auto const &l:rtg.links[llabs(nid)]) {
-            if (l.source==-nid) {
+            if (l.source==nid) {
                 ++total;
                 if (threads.count(rtg.thread_fw_in_node(l.support.id,nid) ? l.support.id : -l.support.id)) ++happy;
             }
@@ -67,7 +67,7 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
     }
     else if (not prev and next) {
         for (auto const &l:rtg.links[llabs(nid)]) {
-            if (l.source==nid) {
+            if (l.source==-nid) {
                 ++total;
                 if (threads.count(rtg.thread_fw_in_node(l.support.id,nid) ? l.support.id : -l.support.id)) ++happy;
             }
