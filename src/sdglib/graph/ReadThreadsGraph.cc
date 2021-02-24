@@ -509,6 +509,10 @@ bool ReadThreadsGraph::pop_node_from_all(sgNodeID_t node_id) {
 
 bool ReadThreadsGraph::thread_fw_in_node(int64_t tid, sgNodeID_t nid) const {
     if (llabs(nid)>links.size()) throw std::runtime_error("thread "+std::to_string(tid)+" not in node "+std::to_string(nid));
+    if (thread_info.at(llabs(tid)).link_count==1) {//for single link threads, we need to evaluate the orientation from the ends
+        if (tid>0) return nid==thread_info.at(llabs(tid)).start or nid==-thread_info.at(llabs(tid)).end;
+        return nid==-thread_info.at(llabs(tid)).start or nid==thread_info.at(llabs(tid)).end;
+    }
     int prev_idx=-1;
     int next_idx=-1;
     auto atid=llabs(tid);
