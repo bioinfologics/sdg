@@ -5,7 +5,7 @@
 #include "HappySorter.hpp"
 
 std::vector<sgNodeID_t> rtg_place_order(const ReadThreadsGraph & rtg,std::vector<sgNodeID_t> &nodes){
-    auto placed=rtg.place_nodes({},nodes,true);
+    auto placed=rtg.place_nodes({},nodes);
     std::vector<sgNodeID_t> order;
     order.reserve(placed.size());
     for (const auto &np:placed) order.emplace_back(np.first);
@@ -65,7 +65,7 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
         // this is counting all the threads passing over the node (total) and how many of those threads are part of the
         // current order (happy) i.e.: if the thread that supports a lin is in the recruited thread set.
         for (auto const &l:rtg.links[llabs(nid)]) {
-            if (l.source==-nid) {
+            if (l.source==nid) {
                 ++total;
                 if (threads.count(rtg.thread_fw_in_node(l.support.id,nid) ? l.support.id : -l.support.id)) ++happy;
             }
@@ -74,7 +74,7 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
     // fw going
     else if (not prev and next) {
         for (auto const &l:rtg.links[llabs(nid)]) {
-            if (l.source==nid) {
+            if (l.source==-nid) {
                 ++total;
                 if (threads.count(rtg.thread_fw_in_node(l.support.id,nid) ? l.support.id : -l.support.id)) ++happy;
             }
@@ -144,6 +144,46 @@ std::unordered_set<sgNodeID_t> HappySorter::find_fw_candidates(float min_happine
         else {
             auto p=order.get_node_position(c);
             if (p<0 or (p>0 and p<=order.size()-end_size)) to_delete.insert(c);
+        }
+    }
+    for (auto cd:to_delete) {
+        candidates.erase(cd);
+        candidates.erase(-cd);
+    }
+    return candidates;
+}
+
+
+std::unordered_set<sgNodeID_t> HappySorter::find_bw_candidates(float min_happiness, int min_threads, int end_size) const {
+    if (min_threads==-1) min_threads=min_node_threads;
+    if (min_happiness==-1) min_happiness=min_node_happiness;
+    if (end_size==-1) end_size=order_end_size;
+    std::unordered_map<sgNodeID_t,int> node_links;
+    std::unordered_set<sgNodeID_t> candidates;
+
+
+    for (auto tid:bw_open_threads){
+        auto tnps=rtg.get_thread(tid);
+        int64_t last_inside_node=-1;
+        for (int i=tnps.size()-1;i>=0;--i) {
+            auto o=order.get_node_position(tnps[i].node);
+            if (o>0 and o<end_size) {
+                last_inside_node=i;
+                break;
+            }
+        }
+        for (int i=last_inside_node;i>=0;--i) ++node_links[tnps[i].node];
+    }
+
+    for (auto &nl:node_links) if (nl.second>=min_threads and node_happiness(nl.first,true,false,min_threads)>=min_happiness) candidates.insert(nl.first);
+
+    //remove candidates that appear in both directions (should be rare?), also remove candidates located before end_size
+    std::set<sgNodeID_t> to_delete;
+    for (auto c:candidates) {
+        if ( candidates.count(-c)) to_delete.insert(llabs(c));
+        else {
+            auto p=order.get_node_position(c);
+            if (p<0 or (p>0 and p>=end_size)) to_delete.insert(c);
         }
     }
     for (auto cd:to_delete) {
@@ -264,14 +304,8 @@ void HappySorter::start_from_node(sgNodeID_t nid, int min_links) {
     //auto placed=rtg.place_nodes({},nodes);
     order.node_positions[nid]=1;
     node_coordinates[nid]=0;
-    auto placed=place_nodes(nodes,false);
-    std::vector<sgNodeID_t> order_nodes;
-    order_nodes.reserve(placed.size());
-    for (const auto &np:placed) {
-        order_nodes.emplace_back(np.first);
-        node_coordinates[np.first]=np.second;
-    }
-    order=LocalOrder(order_nodes);
+    std::unordered_set<sgNodeID_t> nodeset(nodes.begin(),nodes.end());
+    add_placed_nodes(place_nodes(nodeset,false));
     recruit_all_happy_threads();
     close_internal_threads();
     return;
@@ -345,7 +379,7 @@ bool HappySorter::grow_fw(int min_threads, bool verbose) {
     return true;
 }
 
-std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> HappySorter::make_thread_nodepositions(const std::set<sgNodeID_t> & nodes) const{
+std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> HappySorter::make_thread_nodepositions(const std::unordered_set<sgNodeID_t> & nodes) const{
     std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> thread_node_positions;
 
     //make the list of threads
@@ -407,7 +441,7 @@ int64_t hs_place_node(const std::unordered_map<sgNodeID_t, int64_t> &node_positi
     return positions[positions.size()/2]; //Poor man's median hits back
 };
 
-void hs_update_npcomplete(std::map<sgNodeID_t, std::pair<bool,bool>> &np_complete,const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, const std::set<sgNodeID_t> &to_place){
+void hs_update_npcomplete(std::map<sgNodeID_t, std::pair<bool,bool>> &np_complete,const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, const std::unordered_set<sgNodeID_t> &to_place){
     for (auto nid:to_place){
         if (node_distances.count(nid)==0) {
             np_complete[nid]={false,false};
@@ -424,7 +458,7 @@ void hs_update_npcomplete(std::map<sgNodeID_t, std::pair<bool,bool>> &np_complet
     }
 }
 
-sgNodeID_t hs_most_connected_node(const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, const std::set<sgNodeID_t> &to_place){
+sgNodeID_t hs_most_connected_node(const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, const std::unordered_set<sgNodeID_t> &to_place){
     int most_connected=0;
     sgNodeID_t best_nid=0;
     for (auto nid:to_place){
@@ -444,7 +478,7 @@ sgNodeID_t hs_most_connected_node(const std::unordered_map<sgNodeID_t, int64_t> 
     return best_nid;
 }
 
-std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> hs_tnp_to_distances (const std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> &thread_nodepositions,const std::set<sgNodeID_t> &nodeset){
+std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> hs_tnp_to_distances (const std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> &thread_nodepositions,const std::unordered_set<sgNodeID_t> &nodeset){
     std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> distances;
 
     for (const auto &tnp:thread_nodepositions) {
@@ -463,12 +497,11 @@ std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> hs_tnp_to_dista
 }
 
 //TODO: should we weight distances?
-std::vector<std::pair<sgNodeID_t, int64_t>> HappySorter::place_nodes( const std::vector<sgNodeID_t> &nodes, bool verbose) const {
+std::vector<std::pair<sgNodeID_t, int64_t>> HappySorter::place_nodes( const std::unordered_set<sgNodeID_t> &nodeset, bool verbose) const {
 
     if (verbose) std::cout<<"Place nodes starting"<<std::endl;
 
     //STEP 1: populate node distances for each node
-    std::set<sgNodeID_t> nodeset(nodes.begin(),nodes.end());
     auto full_nodeset=nodeset;
     for (auto &pn:node_coordinates) full_nodeset.insert(pn.first);
     if (verbose) std::cout<<"Nodeset has "<<nodeset.size()<<" nodes, full nodeset has "<<full_nodeset.size()<<std::endl;
@@ -491,7 +524,7 @@ std::vector<std::pair<sgNodeID_t, int64_t>> HappySorter::place_nodes( const std:
 
 
 
-    std::set<sgNodeID_t> to_place(nodes.begin(),nodes.end());
+    auto to_place=nodeset;
     std::map<sgNodeID_t, std::pair<bool,bool>> np_complete;
     if (verbose) std::cout<<"Entering placing loop"<<std::endl;
     while (not to_place.empty()){
@@ -532,7 +565,7 @@ std::vector<std::pair<sgNodeID_t, int64_t>> HappySorter::place_nodes( const std:
     }
 
     std::vector<std::pair<sgNodeID_t,int64_t>> placements;
-    placements.reserve(nodes.size());
+    placements.reserve(nodeset.size());
     for (auto &np:node_positions) if (nodeset.count(np.first)) placements.emplace_back(np.first,np.second);
     std::sort(placements.begin(),placements.end(),[](auto &a,auto &b){return a.second<b.second;});
 
@@ -541,19 +574,47 @@ std::vector<std::pair<sgNodeID_t, int64_t>> HappySorter::place_nodes( const std:
 
 bool HappySorter::add_placed_nodes(const std::vector<std::pair<sgNodeID_t, int64_t>> &placed_nodes,
                                    bool update_current) {
-    std::cout<<"Updating node_coordinates"<<std::endl;
     auto old_node_count=order.node_positions.size();
     for (auto pn:placed_nodes) {
         if (update_current or node_coordinates.count(pn.first)==0) node_coordinates[pn.first]=pn.second;
     }
-    std::cout<<"Creating all_nodes"<<std::endl;
     //std::vector<std::pair<sgNodeID_t, int64_t>> all_nodes(node_coordinates.begin(),node_coordinates.end());
     std::vector<std::pair<sgNodeID_t, int64_t>> all_nodes;
     for (auto &nc:node_coordinates) all_nodes.emplace_back(nc.first,nc.second);
-    std::cout<<"Sorting all_nodes"<<std::endl;
     std::sort(all_nodes.begin(),all_nodes.end(),[](auto &a,auto &b){return a.second<b.second;});
-    std::cout<<"Updating order.node_positions"<<std::endl;
     order.node_positions.clear();
     for (auto i=0;i<all_nodes.size();++i) order.node_positions[llabs(all_nodes[i].first)]=all_nodes[i].first>0? i+1:-i-1;
     return order.node_positions.size()>old_node_count;
+}
+
+bool HappySorter::grow(int min_threads, float min_happiness, bool fw, bool bw, bool internal) {
+    if (min_threads==-1) min_threads=min_node_threads;
+    if (min_happiness==-1) min_happiness=min_node_happiness;
+    auto old_size=node_coordinates.size();
+    std::unordered_set<sgNodeID_t> candidates;
+    if (internal) {
+        add_placed_nodes(place_nodes(find_internal_candidates(min_happiness, min_threads), false));
+        recruit_all_happy_threads();
+        close_internal_threads();
+    }
+    if (fw) {
+        add_placed_nodes(place_nodes(find_fw_candidates(min_happiness, min_threads), false));
+        recruit_all_happy_threads();
+        close_internal_threads();
+    }
+    if (bw) {
+        add_placed_nodes(place_nodes(find_bw_candidates(min_happiness, min_threads), false));
+        recruit_all_happy_threads();
+        close_internal_threads();
+    }
+    return node_coordinates.size()>old_size;
+}
+
+bool HappySorter::grow_loop(int min_threads, float min_happiness, int64_t steps) {
+    bool grown=false;
+    while (steps--) {
+        if (grow(min_threads, min_happiness)) grown=true;
+        else break;
+    }
+    return grown;
 }
