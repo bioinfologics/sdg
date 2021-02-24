@@ -88,7 +88,6 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
         }
 
     }
-    std::cout<<"Happy: "
     if (total<min_threads) return 0;
     return ((float) happy)/(float)total;
 }
@@ -132,7 +131,7 @@ std::unordered_set<sgNodeID_t> HappySorter::find_fw_candidates(float min_happine
     // Candidates have to have minimal linking and be happy fw (share min number of threads with the order)
     std::cout << std::fixed;
     for (auto &nl:node_links){
-        std::cout << "ffc: "<< nl.first <<" , "<< nl.second << "," << node_happiness(nl.first,true,false,min_threads) << std::endl;
+//        std::cout << "ffc: "<< nl.first <<" , "<< nl.second << "," << node_happiness(nl.first,true,false,min_threads) << std::endl;
         if (nl.second>=min_threads and node_happiness(nl.first,true,false,min_threads)>=min_happiness){
             candidates.insert(nl.first);
         }

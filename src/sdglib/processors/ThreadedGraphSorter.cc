@@ -1416,7 +1416,10 @@ LocalOrder HappyInsertionSorter::local_order_from_node(sgNodeID_t nid,float perc
 std::vector<sgNodeID_t> LocalOrder::as_signed_nodes() const {
     std::vector<sgNodeID_t> nodes(node_positions.size());
     for (auto &np:node_positions){
-        if (llabs(np.second)>nodes.size()) return {};
+        if (llabs(np.second)>nodes.size()) {
+            std::cout << "Salio por aca" << llabs(np.second) << "," << nodes.size() << std::endl;
+            return {};
+        }
         nodes[llabs(np.second)-1]=(np.second>0 ? np.first:-np.first);
     }
     return nodes;
