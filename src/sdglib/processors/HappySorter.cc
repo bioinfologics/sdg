@@ -261,7 +261,7 @@ void HappySorter::start_from_node(sgNodeID_t nid, int min_links) {
     std::vector<sgNodeID_t> nodes;
     LocalOrder last_order;
     for (auto &nl:node_links) if (nl.second>=min_links) nodes.push_back(nl.first);
-    auto hs=HappySorter(rtg);
+    auto hs=HappySorter(rtg,min_thread_happiness,min_node_happiness,min_thread_nodes,min_node_threads);
     //hs.order=LocalOrder(rtg.order_nodes(nodes));
     hs.order=LocalOrder(rtg_place_order(rtg,nodes));
     hs.recruit_all_happy_threads(.1);
@@ -600,4 +600,20 @@ bool HappySorter::grow_loop(int min_threads, float min_happiness, int64_t steps,
         }
     }
     return grown;
+}
+
+void HappySorterRunner::run(int64_t min_starting_nodes, float max_starting_used, int64_t min_final_nodes) {
+    for (auto snv:rtg.get_all_nodeviews(false,false)){
+        if (node_sorted[snv.node_id()]) continue;
+        auto hs=HappySorter(rtg,min_thread_happiness,min_node_happiness,min_thread_nodes,min_node_threads,order_end_size);
+        hs.start_from_node(snv.node_id());
+        if (hs.order.size()<min_starting_nodes) continue;
+        int64_t used=0;
+        for (auto &nid:hs.order.as_signed_nodes()) if (node_sorted[llabs(nid)]) ++used;
+        if (hs.order.size()*max_starting_used<used) continue;
+        hs.grow_loop();
+        if (hs.order.size()<min_final_nodes) continue;
+        //sorters[snv.node_id()]=hs;
+
+    }
 }
