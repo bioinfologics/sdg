@@ -220,6 +220,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("node_threadpositions",&ReadThreadsGraph::node_threadpositions,"node_id"_a)
             .def("node_thread_neighbours",&ReadThreadsGraph::node_thread_neighbours,"node_id"_a,"oriented"_a=false)
             .def("clean_node",&ReadThreadsGraph::clean_node,"node_id"_a,"min_supported"_a=4,"min_support"_a=1)
+            .def("clean_lowmapping_nodes_popping_list",&ReadThreadsGraph::clean_lowmapping_nodes_popping_list,"min_threads"_a=4)
             .def("clean_repeat_nodes_popping_list",&ReadThreadsGraph::clean_repeat_nodes_popping_list,"max_threads"_a=200)
             .def("clean_all_nodes_popping_list",&ReadThreadsGraph::clean_all_nodes_popping_list,"min_supported"_a=4,"min_support"_a=1)
             .def("clean_all_nodes_by_thread_clustering_popping_list",&ReadThreadsGraph::clean_all_nodes_by_thread_clustering_popping_list,"min_shared"_a=4,"max_second_perc"_a=.1)

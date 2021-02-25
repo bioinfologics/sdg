@@ -187,6 +187,8 @@ public:
      */
     std::vector<std::pair<uint64_t,sgNodeID_t>> clean_repeat_nodes_popping_list(int max_threads=200);
 
+    std::vector<std::pair<uint64_t,sgNodeID_t>> clean_lowmapping_nodes_popping_list(int min_threads=4);
+
     /** @brief Creates a list of unsupported nodes to be removed from the threads graph
      * For the definition of unsupported node look uses the same definition as the clean_node function in this class
      *
