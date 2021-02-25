@@ -160,7 +160,7 @@ std::unordered_set<sgNodeID_t> HappySorter::find_bw_candidates(float min_happine
         for (int i=last_inside_node;i>=0;--i) ++node_links[tnps[i].node];
     }
 
-    for (auto &nl:node_links) if (nl.second>=min_threads and node_happiness(nl.first,true,false,min_threads)>=min_happiness) candidates.insert(nl.first);
+    for (auto &nl:node_links) if (nl.second>=min_threads and node_happiness(nl.first,false,true,min_threads)>=min_happiness) candidates.insert(nl.first);
 
     //remove candidates that appear in both directions (should be rare?), also remove candidates located before end_size
     std::set<sgNodeID_t> to_delete;
