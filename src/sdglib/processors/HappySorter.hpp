@@ -51,6 +51,13 @@ public:
 };
 
 class HappySorterRunner {
+    HappySorterRunner(const ReadThreadsGraph & _rtg, float _min_thread_happiness=.7, float _min_node_happiness=.7,
+    int _min_thread_nodes=3, int _min_node_threads=2, int _order_end_size=20):
+    rtg(_rtg), min_thread_happiness(_min_thread_happiness), min_node_happiness(_min_node_happiness),
+    min_thread_nodes(_min_thread_nodes), min_node_threads(_min_node_threads), order_end_size(_order_end_size){
+        node_sorted.resize(rtg.sdg.nodes.size());
+    };
+    void run(int64_t min_starting_nodes=100, float max_starting_used=.1, int64_t min_final_nodes=1000);
 
     float min_thread_happiness;
     int min_thread_nodes;
