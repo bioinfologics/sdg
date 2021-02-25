@@ -582,11 +582,22 @@ bool HappySorter::grow(int min_threads, float min_happiness, bool fw, bool bw, b
     return node_coordinates.size()>old_size;
 }
 
-bool HappySorter::grow_loop(int min_threads, float min_happiness, int64_t steps) {
+//TODO: add verbose printing of first/last coordinate and option to grow only fw or bw.
+//TODO2: add option to restrict internal candidates to the last added nodes+ some length at the end, and only run it full every few cycles (or never)
+bool HappySorter::grow_loop(int min_threads, float min_happiness, int64_t steps, bool verbose) {
     bool grown=false;
-    while (steps--) {
+    int64_t step=0;
+    while (++step<steps) {
         if (grow(min_threads, min_happiness)) grown=true;
         else break;
+        if (verbose and step%10==0) {
+            std::pair<sgNodeID_t,int64_t> cmax={0,0},cmin={0,0};
+            for (const auto &nc:node_coordinates) {
+                if (nc.second<cmin.second) cmin=nc;
+                if (nc.second>cmax.second) cmax=nc;
+            }
+            std::cout<<"After "<<step<<" grow rounds: "<<node_coordinates.size()<<" anchors span "<<cmax.second-cmin.second<<" bp, "<<cmin.first<<" @ "<<cmin.second<<" : "<<cmax.first<<" @ "<<cmax.second<<std::endl;
+        }
     }
     return grown;
 }
