@@ -34,7 +34,7 @@ public:
     bool  add_placed_nodes( const std::vector<std::pair<sgNodeID_t, int64_t>> &placed_nodes, bool update_current=true);
     bool grow_fw(int min_threads, bool verbose=true);
     bool grow(int min_threads=-1, float min_happiness=-1, bool fw=true, bool bw=true, bool internal=true);
-    bool grow_loop(int min_threads=-1, float min_happiness=-1, int64_t steps=INT64_MAX);
+    bool grow_loop(int min_threads=-1, float min_happiness=-1, int64_t steps=INT64_MAX, bool verbose=false);
 
     float min_thread_happiness;
     int min_thread_nodes;
@@ -56,4 +56,13 @@ public:
 
 class HappySorterRunner {
 
+    float min_thread_happiness;
+    int min_thread_nodes;
+    float min_node_happiness;
+    int min_node_threads;
+    int order_end_size;
+
+    const ReadThreadsGraph & rtg;
+    std::vector<bool> node_sorted;
+    std::unordered_map<sgNodeID_t,HappySorter> sorters;
 };
