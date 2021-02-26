@@ -637,6 +637,14 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("merge",&LocalOrder::merge, "other"_a, "max_overhang"_a=4, "min_shared_perc"_a=.5, "min_shared"_a=20, "max_disordered_perc"_a=.02)
             .def_readwrite("node_positions",&LocalOrder::node_positions);
 
+    py::class_<HappySorterRunner>(m, "HappySorterRunner", "HappySorterRunner")
+            .def(py::init<const ReadThreadsGraph &, float, float, int, int, int>(),"","rtg"_a,"min_thread_happiness"_a=.7, "min_node_happiness"_a=.7,
+                 "min_thread_nodes"_a=3, "min_node_threads"_a=2, "order_end_size"_a=20,py::return_value_policy::take_ownership)
+            .def("run",&HappySorterRunner::run,"min_starting_nodes"_a=100, "max_starting_used"_a=.1, "min_final_nodes"_a=100, "max_steps"_a=INT64_MAX)
+            .def_readwrite("node_sorted",&HappySorterRunner::node_sorted)
+            .def_readwrite("node_orders",&HappySorterRunner::node_orders)
+            .def_readwrite("orders",&HappySorterRunner::orders);
+
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
     m.def("count_kmers_as_graph_nodes",&BatchKmersCounter::countKmersToGraphNodes,py::return_value_policy::take_ownership,"sdg"_a,"peds"_a,"k"_a,"min_coverage"_a, "max_coverage"_a, "num_batches"_a);

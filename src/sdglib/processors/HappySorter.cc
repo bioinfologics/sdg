@@ -602,7 +602,7 @@ bool HappySorter::grow_loop(int min_threads, float min_happiness, int64_t steps,
     return grown;
 }
 
-void HappySorterRunner::run(int64_t min_starting_nodes, float max_starting_used, int64_t min_final_nodes) {
+void HappySorterRunner::run(int64_t min_starting_nodes, float max_starting_used, int64_t min_final_nodes, int64_t max_steps) {
     for (auto snv:rtg.get_all_nodeviews(false,false)){
         if (node_sorted[snv.node_id()]) continue;
         auto hs=HappySorter(rtg,min_thread_happiness,min_node_happiness,min_thread_nodes,min_node_threads,order_end_size);
@@ -611,9 +611,17 @@ void HappySorterRunner::run(int64_t min_starting_nodes, float max_starting_used,
         int64_t used=0;
         for (auto &nid:hs.order.as_signed_nodes()) if (node_sorted[llabs(nid)]) ++used;
         if (hs.order.size()*max_starting_used<used) continue;
-        hs.grow_loop();
+        hs.grow_loop(-1,-1,max_steps,true);
         if (hs.order.size()<min_final_nodes) continue;
         //sorters[snv.node_id()]=hs;
-
+        orders[snv.node_id()]=hs.order;
+        for (auto &nid:hs.order.as_signed_nodes()){
+            if (nid>0) node_orders[nid].emplace_back(snv.node_id());
+            else node_orders[-nid].emplace_back(-snv.node_id());
+            node_sorted[llabs(nid)]=true;
+        }
+        if (orders.size()%10==0) {
+            std::cout<<orders.size()<<" orders created, "<<std::count(node_sorted.begin(),node_sorted.end(),true)<<" nodes sorted"<<std::endl;
+        }
     }
 }
