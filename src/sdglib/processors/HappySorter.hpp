@@ -58,7 +58,7 @@ public:
     min_thread_nodes(_min_thread_nodes), min_node_threads(_min_node_threads), order_end_size(_order_end_size){
         node_sorted.resize(rtg.sdg.nodes.size());
     };
-    void run(int64_t min_starting_nodes=100, float max_starting_used=.1, int64_t min_final_nodes=100, int64_t max_steps=INT64_MAX);
+    void run(int64_t min_starting_nodes=100, float max_starting_used=.1, int64_t min_final_nodes=100, int64_t max_steps=INT64_MAX, int64_t max_orders=INT64_MAX);
 
     float min_thread_happiness;
     int min_thread_nodes;

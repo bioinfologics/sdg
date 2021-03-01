@@ -602,26 +602,51 @@ bool HappySorter::grow_loop(int min_threads, float min_happiness, int64_t steps,
     return grown;
 }
 
-void HappySorterRunner::run(int64_t min_starting_nodes, float max_starting_used, int64_t min_final_nodes, int64_t max_steps) {
+void HappySorterRunner::run(int64_t min_starting_nodes, float max_starting_used, int64_t min_final_nodes, int64_t max_steps, int64_t max_orders) {
+    sdglib::OutputLog()<<"Starting HappySorterRunner run..."<<std::endl;
+#pragma omp parallel for schedule(dynamic,100)
     for (auto snv:rtg.get_all_nodeviews(false,false)){
-        if (node_sorted[snv.node_id()]) continue;
-        auto hs=HappySorter(rtg,min_thread_happiness,min_node_happiness,min_thread_nodes,min_node_threads,order_end_size);
-        hs.start_from_node(snv.node_id());
-        if (hs.order.size()<min_starting_nodes) continue;
-        int64_t used=0;
-        for (auto &nid:hs.order.as_signed_nodes()) if (node_sorted[llabs(nid)]) ++used;
-        if (hs.order.size()*max_starting_used<used) continue;
-        hs.grow_loop(-1,-1,max_steps,true);
-        if (hs.order.size()<min_final_nodes) continue;
-        //sorters[snv.node_id()]=hs;
-        orders[snv.node_id()]=hs.order;
-        for (auto &nid:hs.order.as_signed_nodes()){
-            if (nid>0) node_orders[nid].emplace_back(snv.node_id());
-            else node_orders[-nid].emplace_back(-snv.node_id());
-            node_sorted[llabs(nid)]=true;
+        if (orders.size()>=max_orders) continue;
+        try {
+#pragma omp critical(node_sorted)
+            auto ns = node_sorted[snv.node_id()];
+            if (node_sorted[snv.node_id()]) continue;
+            auto hs = HappySorter(rtg, min_thread_happiness, min_node_happiness, min_thread_nodes, min_node_threads,
+                                  order_end_size);
+            hs.start_from_node(snv.node_id());
+            if (hs.order.size() < min_starting_nodes) continue;
+            int64_t used = 0;
+#pragma omp critical(node_sorted)
+            for (auto &nid:hs.order.as_signed_nodes()) if (node_sorted[llabs(nid)]) ++used;
+            if (hs.order.size() * max_starting_used < used) continue;
+            std::cout << "Thread #" << omp_get_thread_num() << " growing order from node " << snv.node_id() << " ..."
+                      << std::endl;
+            hs.grow_loop(-1, -1, max_steps);
+            if (hs.order.size() < min_final_nodes) continue;
+            //sorters[snv.node_id()]=hs;
+#pragma omp critical(node_sorted)
+            {
+                if (orders.size()<max_orders and not node_sorted[snv.node_id()]) { //check again to mantain initial condition
+                    std::cout << "Thread #" << omp_get_thread_num() << " adding order from node " << snv.node_id()
+                              << " with " << hs.order.size() << " nodes" << std::endl;
+                    orders[snv.node_id()] = hs.order;
+                    for (auto &nid:hs.order.as_signed_nodes()) {
+                        node_sorted[llabs(nid)] = true;
+                        if (nid > 0) node_orders[nid].emplace_back(snv.node_id());
+                        else node_orders[-nid].emplace_back(-snv.node_id());
+                    }
+                    if (orders.size() % 10 == 0) {
+                        sdglib::OutputLog() << orders.size() << " orders created, "
+                                            << std::count(node_sorted.begin(), node_sorted.end(), true)
+                                            << " nodes sorted" << std::endl;
+                    }
+                }
+            }
         }
-        if (orders.size()%10==0) {
-            std::cout<<orders.size()<<" orders created, "<<std::count(node_sorted.begin(),node_sorted.end(),true)<<" nodes sorted"<<std::endl;
+        catch (std::exception &e) {
+            std::cout<<"Exception caught when trying to process node "<<snv.node_id()<<": "<< typeid(e).name() <<": "<<e.what()<<", skipping"<<std::endl;
         }
+
     }
+    sdglib::OutputLog()<<"HappySorterRunner run finished!!!"<<std::endl;
 }
