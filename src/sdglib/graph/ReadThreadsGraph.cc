@@ -141,11 +141,11 @@ std::unordered_set<std::pair<int64_t, int32_t>> ReadThreadsGraph::node_threadpos
             else thread_positions.emplace(-tl.first,1);
         }
         else if (tl.second.second==0) {
-            if (tl.second.first==1) thread_positions.emplace(-tl.first,thread_info.at(tl.first).link_count+1);
-            else thread_positions.emplace(tl.first,thread_info.at(tl.first).link_count+1);
+            if (tl.second.first==1) thread_positions.emplace(-tl.first,thread_info.at(llabs(tl.first)).link_count+1);
+            else thread_positions.emplace(tl.first,thread_info.at(llabs(tl.first)).link_count+1);
         }
         else if (tl.second.first<tl.second.second) thread_positions.emplace(tl.first,tl.second.second);
-        else thread_positions.emplace(-tl.first,thread_info.at(tl.first).link_count+1-tl.second.second);
+        else thread_positions.emplace(-tl.first,thread_info.at(llabs(tl.first)).link_count+1-tl.second.second);
     }
     return thread_positions;
 }
@@ -948,7 +948,7 @@ sgNodeID_t most_connected_node(const std::map<sgNodeID_t, int64_t> &node_positio
     int most_connected=0;
     sgNodeID_t best_nid=0;
     for (auto nid:to_place){
-        if (node_positions.count(nid)) continue;
+        if (node_positions.count(nid) or node_distances.count(nid)==0) continue;
         int prevs=0,nexts=0;
         for (auto nd:node_distances.at(nid)) {
             if (node_positions.count(nd.first)){
