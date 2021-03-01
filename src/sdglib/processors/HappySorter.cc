@@ -2,6 +2,8 @@
 // Created by Bernardo Clavijo (EI) on 12/02/2021.
 //
 
+#include <chrono>
+#include <random>
 #include "HappySorter.hpp"
 
 std::vector<sgNodeID_t> rtg_place_order(const ReadThreadsGraph & rtg,std::vector<sgNodeID_t> &nodes){
@@ -604,8 +606,14 @@ bool HappySorter::grow_loop(int min_threads, float min_happiness, int64_t steps,
 
 void HappySorterRunner::run(int64_t min_starting_nodes, float max_starting_used, int64_t min_final_nodes, int64_t max_steps, int64_t max_orders) {
     sdglib::OutputLog()<<"Starting HappySorterRunner run..."<<std::endl;
+    auto nvs=rtg.get_all_nodeviews(false,false);
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+
+    shuffle (nvs.begin(), nvs.end(), std::default_random_engine(seed));
+
 #pragma omp parallel for schedule(dynamic,100)
-    for (auto snv:rtg.get_all_nodeviews(false,false)){
+    for (auto snvi=nvs.cbegin();snvi<nvs.cend();++snvi){
+        auto &snv=*snvi;
         if (orders.size()>=max_orders) continue;
         try {
 #pragma omp critical(node_sorted)
