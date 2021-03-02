@@ -658,3 +658,66 @@ void HappySorterRunner::run(int64_t min_starting_nodes, float max_starting_used,
     }
     sdglib::OutputLog()<<"HappySorterRunner run finished!!!"<<std::endl;
 }
+
+void HappySorterRunner::dump(std::string filename) {
+    std::ofstream of(filename);
+    of.write((char *)&min_thread_happiness,sizeof(min_thread_happiness));
+    of.write((char *)&min_thread_nodes,sizeof(min_thread_nodes));
+    of.write((char *)&min_node_happiness,sizeof(min_node_happiness));
+    of.write((char *)&min_node_threads,sizeof(min_node_threads));
+    of.write((char *)&order_end_size,sizeof(order_end_size));
+    uint64_t sval=orders.size();
+    of.write((char *) &sval,sizeof(sval));
+    for (auto &o:orders){
+        of.write((char *) &o.first,sizeof(o.first));
+        auto nodes=o.second.as_signed_nodes();
+        sdglib::write_flat_vector(of,nodes);
+    }
+    sval=node_orders.size();
+    of.write((char *) &sval,sizeof(sval));
+    for (auto &o:node_orders){
+        of.write((char *) &o.first,sizeof(o.first));
+        sdglib::write_flat_vector(of,o.second);
+    }
+    //bool vector can't be written with the usual functions due to packing, expand it to uint8_t
+    std::vector<uint8_t> nsv;
+    nsv.reserve(node_sorted.size());
+    for (const auto &ns:node_sorted) nsv.push_back(ns);
+    sdglib::write_flat_vector(of,nsv);
+
+}
+
+void HappySorterRunner::load(std::string filename) {
+    std::ifstream ifs(filename);
+    ifs.read((char *)&min_thread_happiness,sizeof(min_thread_happiness));
+    ifs.read((char *)&min_thread_nodes,sizeof(min_thread_nodes));
+    ifs.read((char *)&min_node_happiness,sizeof(min_node_happiness));
+    ifs.read((char *)&min_node_threads,sizeof(min_node_threads));
+    ifs.read((char *)&order_end_size,sizeof(order_end_size));
+    uint64_t sval;
+    ifs.read((char *) &sval,sizeof(sval));
+    sgNodeID_t nid;
+    std::vector<sgNodeID_t> nodes;
+    orders.clear();
+    while (sval--){
+        ifs.read((char *) &nid,sizeof(nid));
+        sdglib::read_flat_vector(ifs,nodes);
+        orders.emplace(nid,nodes);
+    }
+
+    ifs.read((char *) &sval,sizeof(sval));
+    node_orders.clear();
+    while (sval--){
+        ifs.read((char *) &nid,sizeof(nid));
+        sdglib::read_flat_vector(ifs,nodes);
+        node_orders.emplace(nid,nodes);
+    }
+
+    //bool vector can't be written with the usual functions due to packing, read expanded uint8_t, then insert
+    std::vector<uint8_t> nsv;
+    sdglib::read_flat_vector(ifs,nsv);
+    node_sorted.reserve(nsv.size());
+    for (const auto &ns:nsv) node_sorted.push_back(ns);
+
+
+}

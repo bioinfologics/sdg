@@ -60,6 +60,9 @@ public:
     };
     void run(int64_t min_starting_nodes=100, float max_starting_used=.1, int64_t min_final_nodes=100, int64_t max_steps=INT64_MAX, int64_t max_orders=INT64_MAX);
 
+    void load(std::string filename);
+    void dump(std::string filename);
+
     float min_thread_happiness;
     int min_thread_nodes;
     float min_node_happiness;
