@@ -23,7 +23,7 @@ public:
     std::unordered_set<sgNodeID_t> find_bw_candidates(float min_happiness=-1, int min_threads=-1, int end_size=-1) const;
     //This looks for candidates that are both fw for some nodes and bw for others
     std::unordered_set<sgNodeID_t> find_internal_candidates(float min_happiness=-1, int min_threads=-1, int32_t first=1, int32_t last=INT32_MAX) const;
-    void start_from_node(sgNodeID_t nid, int min_links=4);
+    void start_from_node(sgNodeID_t nid, int min_links=4, float first_threads_happiness=.1);
     //this works similarly to the rtg one, but includes all nodes form the order in the threads too
     std::map<int64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> make_thread_nodepositions(const std::unordered_set<sgNodeID_t> &nodes) const;
     std::vector<std::pair<sgNodeID_t, int64_t>> place_nodes( const std::unordered_set<sgNodeID_t> &nodes, bool verbose) const;
@@ -31,6 +31,11 @@ public:
     bool grow_fw(int min_threads, bool verbose=true);
     bool grow(int min_threads=-1, float min_happiness=-1, bool fw=true, bool bw=true, bool internal=true);
     bool grow_loop(int min_threads=-1, float min_happiness=-1, int64_t steps=INT64_MAX, bool verbose=false);
+
+    int64_t hs_place_node(const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, sgNodeID_t nid);
+    void hs_update_npcomplete(std::map<sgNodeID_t, std::pair<bool,bool>> &np_complete,const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, const std::unordered_set<sgNodeID_t> &to_place);
+    sgNodeID_t hs_most_connected_node(const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, const std::unordered_set<sgNodeID_t> &to_place);
+    std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> hs_tnp_to_distances (const std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> &thread_nodepositions,const std::unordered_set<sgNodeID_t> &nodeset);
 
     float min_thread_happiness;
     int min_thread_nodes;
