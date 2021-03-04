@@ -544,14 +544,15 @@ bool HappySorter::grow_fw(int min_threads, bool verbose) {
     return true;
 }
 
-std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> HappySorter::make_thread_nodepositions(const std::unordered_set<sgNodeID_t> & nodes) const{
+std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> HappySorter::make_thread_nodepositions(const std::unordered_set<sgNodeID_t> & nodes, std::set<int64_t> tids) const{
     std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> thread_node_positions;
 
     //make the list of threads
-    std::set<int64_t> tids;
-    for (auto nid:nodes){
-        auto ntids=rtg.node_threads(nid,true);
-        for (auto tid:ntids) tids.insert(tid);
+    if (tids.empty()) {
+        for (auto nid:nodes) {
+            auto ntids = rtg.node_threads(nid, true);
+            for (auto tid:ntids) tids.insert(tid);
+        }
     }
 
     //TODO: count all fw/bw in node for each thread and discard those where nodes appear in more than one direciton.
@@ -911,6 +912,24 @@ void HappySorterRunner::load(std::string filename) {
     sdglib::read_flat_vector(ifs,nsv);
     node_sorted.reserve(nsv.size());
     for (const auto &ns:nsv) node_sorted.push_back(ns);
+
+
+}
+
+bool HappySorter::update_positions(uint64_t first, uint64_t last) {
+    if(last==-1 or last>order.size()-1) last=order.size()-1;
+    if (first>order.size() or first>last) return false;
+
+    auto onodes=order.as_signed_nodes();
+
+    std::unordered_set<sgNodeID_t> nodes(onodes.cbegin()+first,onodes.cbegin()+last);
+    std::unordered_set<sgNodeID_t> all_nodes(onodes.cbegin(),onodes.cend());
+
+    std::set<int64_t> tids;
+    for (auto nid:nodes) {
+        auto ntids = rtg.node_threads(nid, true);
+        for (auto tid:ntids) tids.insert(tid);
+    }
 
 
 }

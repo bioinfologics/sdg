@@ -235,7 +235,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("find_internal_candidates",&HappySorter::find_internal_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"first"_a=1,"last"_a=INT32_MAX)
             .def("close_internal_threads",&HappySorter::close_internal_threads,"order_end"_a=20,"thread_end"_a=0)
             .def("start_from_node",&HappySorter::start_from_node,"nid"_a,"min_links"_a=4,"first_threads_happiness"_a=.1)
-            .def("make_thread_nodepositions",&HappySorter::make_thread_nodepositions,"nodes"_a)
+            .def("make_thread_nodepositions",&HappySorter::make_thread_nodepositions,"nodes"_a,"tids"_a=std::set<int64_t>())
             .def("place_nodes",&HappySorter::place_nodes,"nodes"_a,"verbose"_a=false)
             .def("add_placed_nodes",&HappySorter::add_placed_nodes,"placed_nodes"_a,"update_current"_a=false)
             .def("grow_fw",&HappySorter::grow_fw,"min_links"_a,"verbose"_a=true)

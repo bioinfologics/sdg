@@ -40,7 +40,7 @@ public:
     std::unordered_set<sgNodeID_t> find_internal_candidates(float min_happiness=-1, int min_threads=-1, int32_t first=1, int32_t last=INT32_MAX) const;
     void start_from_node(sgNodeID_t nid, int min_links=4, float first_threads_happiness=.1);
     //this works similarly to the rtg one, but includes all nodes form the order in the threads too
-    std::map<int64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> make_thread_nodepositions(const std::unordered_set<sgNodeID_t> &nodes) const;
+    std::map<int64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> make_thread_nodepositions(const std::unordered_set<sgNodeID_t> &nodes,std::set<int64_t> tids={}) const;
     std::vector<std::pair<sgNodeID_t, int64_t>> place_nodes( const std::unordered_set<sgNodeID_t> &nodes, bool verbose) const;
     bool  add_placed_nodes( const std::vector<std::pair<sgNodeID_t, int64_t>> &placed_nodes, bool update_current=true);
     bool grow_fw(int min_threads, bool verbose=true);
@@ -51,6 +51,8 @@ public:
     void hs_update_npcomplete(std::map<sgNodeID_t, std::pair<bool,bool>> &np_complete,const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, const std::unordered_set<sgNodeID_t> &to_place);
     sgNodeID_t hs_most_connected_node(const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, const std::unordered_set<sgNodeID_t> &to_place);
     std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> hs_tnp_to_distances (const std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> &thread_nodepositions,const std::unordered_set<sgNodeID_t> &nodeset);
+
+    bool update_positions(uint64_t first=0, uint64_t last=-1);
 
     float min_thread_happiness;
     int min_thread_nodes;
