@@ -6,6 +6,193 @@
 #include <random>
 #include "HappySorter.hpp"
 
+
+
+std::vector<sgNodeID_t> LocalOrder::as_signed_nodes() const {
+    std::vector<sgNodeID_t> nodes(node_positions.size());
+    for (auto &np:node_positions){
+        if (llabs(np.second)>nodes.size()) return {};
+        nodes[llabs(np.second)-1]=(np.second>0 ? np.first:-np.first);
+    }
+    return nodes;
+}
+
+int64_t LocalOrder::get_node_position(sgNodeID_t nid) const {
+    auto it=node_positions.find(llabs(nid));
+    if (it==node_positions.end()) return 0;
+    return nid>0 ? it->second:-it->second;
+}
+//TODO:implement the choosing a node its neighbours not in enough orders yet, up to a certain coverage, single threaded at first
+
+LocalOrder::LocalOrder(const std::vector<sgNodeID_t> &nodes) {
+    for (int64_t i=0;i<nodes.size();++i) {
+        auto &p = node_positions[llabs(nodes[i])];
+        if (p!=0) {
+            std::cout<<"ERROR, avoiding creation of LocalOrder with repeated node "<<llabs(nodes[i])<<" at "<<p<<" and "<< (nodes[i] > 0 ? i + 1 : -i - 1)<<std::endl;
+            node_positions.clear();
+            return;
+        }
+        p = nodes[i] > 0 ? i + 1 : -i - 1;
+    }
+}
+
+LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_shared_perc,int min_shared,float max_disordered_perc) const{
+    //first figure out direction of merge
+    int64_t first_seen_at=-1, first_seen_other, last_seen_at, last_seen_other;
+    bool last_disordered=false;//keep track of last disordered, we won't merge if first or last are disordered
+    uint64_t ordered=0,disordered=0;
+    auto nids=as_signed_nodes();
+    bool same_direction;
+    std::set<sgNodeID_t> disordered_nodes;
+    for (int64_t i=0;i<nids.size();++i){
+        auto p=other.node_positions.find(llabs(nids[i]));
+        if (p==other.node_positions.end()) continue;
+        auto op=nids[i]>0 ? p->second: -p->second;
+        if (first_seen_at==-1){
+            first_seen_at=i;
+            first_seen_other=op;
+            last_seen_at=i;
+            last_seen_other=op;
+            ++ordered;
+            same_direction=( op>0 );
+        }
+        else {
+            last_disordered=false;
+            if (same_direction) {//same sign, both orders are going in the same direction
+                if ( op>0 and llabs(op) > llabs(last_seen_other)) {
+                    ++ordered;
+                    last_seen_at=i;
+                    last_seen_other=op;
+                }
+                else {
+                    ++disordered;
+                    last_disordered=true;
+                }
+            }
+            else {
+                if ( op<0 and llabs(op) < llabs(last_seen_other)) {
+                    ++ordered;
+                    last_seen_at=i;
+                    last_seen_other=op;
+                }
+                else {
+                    ++disordered;
+                    disordered_nodes.insert(llabs(nids[i]));
+                    last_disordered=true;
+                }
+            }
+        }
+    }
+
+    if (first_seen_at==-1) return LocalOrder();
+    ++first_seen_at;
+    ++last_seen_at;
+
+    int64_t this_left=first_seen_at-1,other_left=(same_direction ? first_seen_other-1:other.node_positions.size()+first_seen_other);
+    int64_t this_right=node_positions.size()-last_seen_at,other_right=(same_direction ? other.node_positions.size()-last_seen_other : -last_seen_other-1 );
+
+    auto largest_left=std::max(this_left,other_left);
+    auto largest_right=std::max(this_right,other_right);
+    float shared_perc=(float)ordered/std::max(last_seen_at+1-first_seen_at,(int64_t) (llabs(last_seen_other)+1-llabs(first_seen_other)));
+    float disordered_perc=(float)disordered/llabs(std::min(last_seen_at+1-first_seen_at,(int64_t) (llabs(last_seen_other)+1-llabs(first_seen_other))));
+
+//    sdglib::OutputLog()<<"First seen at: "<<first_seen_at<<std::endl;
+//    sdglib::OutputLog()<<"First seen other: "<<first_seen_other<<std::endl;
+//    sdglib::OutputLog()<<"Last seen at: "<<last_seen_at<<std::endl;
+//    sdglib::OutputLog()<<"Last seen other: "<<last_seen_other<<std::endl;
+//    sdglib::OutputLog()<<"Ordered: "<<ordered<<" disordered: "<<disordered<<std::endl;
+//    sdglib::OutputLog()<<"This left:"<<this_left<<", other left:"<<other_left<<std::endl;
+//    sdglib::OutputLog()<<"This right:"<<this_right<<", other right:"<<other_right<<std::endl;
+//    sdglib::OutputLog()<<"Shared perc: "<<shared_perc<<std::endl;
+//    sdglib::OutputLog()<<"Disordered perc: "<<disordered_perc<<std::endl;
+
+    if (ordered<min_shared or shared_perc<min_shared_perc or disordered_perc>max_disordered_perc or last_disordered or std::min(this_right,other_right)>max_overhang or std::min(this_left,other_left)>max_overhang) return LocalOrder();
+
+    /**
+     * At this point: this_left/other left is tip sizes BEFORE this order, right is AFTER.
+     * All coordinates are in 1 : size, with negatives representing revrse complement vs. the corresponding node IN THIS ORDER.
+     * First/last seen are INCLUDED boundaries of the overlapping segment.
+     */
+
+
+    //reverse other order if needed (easier to just write one fw-merging algorithm)
+    auto other_fw=other;
+    if (not same_direction) {
+        other_fw=other.reverse();
+        first_seen_other=other.node_positions.size()+1+first_seen_other;
+        last_seen_other=other.node_positions.size()+1+last_seen_other;
+    }
+
+    auto this_nodes=as_signed_nodes();
+    auto other_fw_nodes=other_fw.as_signed_nodes();
+    std::vector<sgNodeID_t> merged_nodes;
+
+    //Pick largest left
+    if (this_left>=other_left){
+        std::copy(this_nodes.begin(),this_nodes.begin()+first_seen_at-1,std::back_inserter(merged_nodes));
+    }
+    else {
+        std::copy(other_fw_nodes.begin(),other_fw_nodes.begin()+first_seen_other-1,std::back_inserter(merged_nodes));
+    }
+
+    //merge middle section
+    for (auto this_index=first_seen_at-1,other_index=first_seen_other-1; this_index<last_seen_at and other_index<last_seen_other;){
+        if (this_nodes[this_index]==other_fw_nodes[other_index]){ //same node on both, add and increment
+            merged_nodes.emplace_back(this_nodes[this_index]);
+            ++this_index;
+            ++other_index;
+        }
+        else {
+            uint64_t this_count=0,other_count=0;
+            uint64_t i1;
+            for(i1=this_index; i1<last_seen_at and ( disordered_nodes.count(llabs(this_nodes[i1])) or other_fw.node_positions.find(llabs(this_nodes[i1]))==other_fw.node_positions.end()); ++i1) {
+                if (disordered_nodes.count(llabs(this_nodes[i1]))==0) ++this_count;
+            }
+            uint64_t i2;
+            for( i2=other_index; i2<last_seen_other and (disordered_nodes.count(llabs(other_fw_nodes[i2])) or node_positions.find(llabs(other_fw_nodes[i2]))==node_positions.end()); ++i2) {
+                if (disordered_nodes.count(llabs(other_fw_nodes[i2]))==0) ++other_count;
+            }
+            if (this_count==0 and other_count==0) { //this is just a single disordered node in both (probably same node reversed?), skip in both
+                ++this_index;
+                ++other_index;
+            }
+            else if (this_count>=other_count) {
+                for (auto i=this_index;i<i1;++i) {
+                    if (disordered_nodes.count(llabs(this_nodes[i]))==0) merged_nodes.emplace_back(this_nodes[i]);
+                }
+                this_index=i1;
+            }
+            else {
+                for (auto i=other_index;i<i2;++i) {
+                    if (disordered_nodes.count(llabs(other_fw_nodes[i]))==0) merged_nodes.emplace_back(other_fw_nodes[i]);
+                }
+                other_index=i2;
+            }
+
+
+
+        }
+    }
+
+    //Pick largest right
+    if (this_right>=other_right){
+        std::copy(this_nodes.begin()+last_seen_at,this_nodes.end(),std::back_inserter(merged_nodes));
+    }
+    else {
+        std::copy(other_fw_nodes.begin()+last_seen_other,other_fw_nodes.end(),std::back_inserter(merged_nodes));
+    }
+
+    return LocalOrder(merged_nodes);
+}
+
+LocalOrder LocalOrder::reverse() const {
+    auto nodes=as_signed_nodes();
+    std::vector<sgNodeID_t> nodes_rev;
+    nodes_rev.reserve(nodes.size());
+    for (auto it=nodes.crbegin();it!=nodes.crend();++it) nodes_rev.emplace_back(-*it);
+    return LocalOrder(nodes_rev);
+}
+
 std::vector<sgNodeID_t> rtg_place_order(const ReadThreadsGraph & rtg,std::vector<sgNodeID_t> &nodes){
     auto placed=rtg.place_nodes({},nodes);
     std::vector<sgNodeID_t> order;
