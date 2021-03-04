@@ -6,6 +6,193 @@
 #include <random>
 #include "HappySorter.hpp"
 
+
+
+std::vector<sgNodeID_t> LocalOrder::as_signed_nodes() const {
+    std::vector<sgNodeID_t> nodes(node_positions.size());
+    for (auto &np:node_positions){
+        if (llabs(np.second)>nodes.size()) return {};
+        nodes[llabs(np.second)-1]=(np.second>0 ? np.first:-np.first);
+    }
+    return nodes;
+}
+
+int64_t LocalOrder::get_node_position(sgNodeID_t nid) const {
+    auto it=node_positions.find(llabs(nid));
+    if (it==node_positions.end()) return 0;
+    return nid>0 ? it->second:-it->second;
+}
+//TODO:implement the choosing a node its neighbours not in enough orders yet, up to a certain coverage, single threaded at first
+
+LocalOrder::LocalOrder(const std::vector<sgNodeID_t> &nodes) {
+    for (int64_t i=0;i<nodes.size();++i) {
+        auto &p = node_positions[llabs(nodes[i])];
+        if (p!=0) {
+            std::cout<<"ERROR, avoiding creation of LocalOrder with repeated node "<<llabs(nodes[i])<<" at "<<p<<" and "<< (nodes[i] > 0 ? i + 1 : -i - 1)<<std::endl;
+            node_positions.clear();
+            return;
+        }
+        p = nodes[i] > 0 ? i + 1 : -i - 1;
+    }
+}
+
+LocalOrder LocalOrder::merge(const LocalOrder &other,int max_overhang,float min_shared_perc,int min_shared,float max_disordered_perc) const{
+    //first figure out direction of merge
+    int64_t first_seen_at=-1, first_seen_other, last_seen_at, last_seen_other;
+    bool last_disordered=false;//keep track of last disordered, we won't merge if first or last are disordered
+    uint64_t ordered=0,disordered=0;
+    auto nids=as_signed_nodes();
+    bool same_direction;
+    std::set<sgNodeID_t> disordered_nodes;
+    for (int64_t i=0;i<nids.size();++i){
+        auto p=other.node_positions.find(llabs(nids[i]));
+        if (p==other.node_positions.end()) continue;
+        auto op=nids[i]>0 ? p->second: -p->second;
+        if (first_seen_at==-1){
+            first_seen_at=i;
+            first_seen_other=op;
+            last_seen_at=i;
+            last_seen_other=op;
+            ++ordered;
+            same_direction=( op>0 );
+        }
+        else {
+            last_disordered=false;
+            if (same_direction) {//same sign, both orders are going in the same direction
+                if ( op>0 and llabs(op) > llabs(last_seen_other)) {
+                    ++ordered;
+                    last_seen_at=i;
+                    last_seen_other=op;
+                }
+                else {
+                    ++disordered;
+                    last_disordered=true;
+                }
+            }
+            else {
+                if ( op<0 and llabs(op) < llabs(last_seen_other)) {
+                    ++ordered;
+                    last_seen_at=i;
+                    last_seen_other=op;
+                }
+                else {
+                    ++disordered;
+                    disordered_nodes.insert(llabs(nids[i]));
+                    last_disordered=true;
+                }
+            }
+        }
+    }
+
+    if (first_seen_at==-1) return LocalOrder();
+    ++first_seen_at;
+    ++last_seen_at;
+
+    int64_t this_left=first_seen_at-1,other_left=(same_direction ? first_seen_other-1:other.node_positions.size()+first_seen_other);
+    int64_t this_right=node_positions.size()-last_seen_at,other_right=(same_direction ? other.node_positions.size()-last_seen_other : -last_seen_other-1 );
+
+    auto largest_left=std::max(this_left,other_left);
+    auto largest_right=std::max(this_right,other_right);
+    float shared_perc=(float)ordered/std::max(last_seen_at+1-first_seen_at,(int64_t) (llabs(last_seen_other)+1-llabs(first_seen_other)));
+    float disordered_perc=(float)disordered/llabs(std::min(last_seen_at+1-first_seen_at,(int64_t) (llabs(last_seen_other)+1-llabs(first_seen_other))));
+
+//    sdglib::OutputLog()<<"First seen at: "<<first_seen_at<<std::endl;
+//    sdglib::OutputLog()<<"First seen other: "<<first_seen_other<<std::endl;
+//    sdglib::OutputLog()<<"Last seen at: "<<last_seen_at<<std::endl;
+//    sdglib::OutputLog()<<"Last seen other: "<<last_seen_other<<std::endl;
+//    sdglib::OutputLog()<<"Ordered: "<<ordered<<" disordered: "<<disordered<<std::endl;
+//    sdglib::OutputLog()<<"This left:"<<this_left<<", other left:"<<other_left<<std::endl;
+//    sdglib::OutputLog()<<"This right:"<<this_right<<", other right:"<<other_right<<std::endl;
+//    sdglib::OutputLog()<<"Shared perc: "<<shared_perc<<std::endl;
+//    sdglib::OutputLog()<<"Disordered perc: "<<disordered_perc<<std::endl;
+
+    if (ordered<min_shared or shared_perc<min_shared_perc or disordered_perc>max_disordered_perc or last_disordered or std::min(this_right,other_right)>max_overhang or std::min(this_left,other_left)>max_overhang) return LocalOrder();
+
+    /**
+     * At this point: this_left/other left is tip sizes BEFORE this order, right is AFTER.
+     * All coordinates are in 1 : size, with negatives representing revrse complement vs. the corresponding node IN THIS ORDER.
+     * First/last seen are INCLUDED boundaries of the overlapping segment.
+     */
+
+
+    //reverse other order if needed (easier to just write one fw-merging algorithm)
+    auto other_fw=other;
+    if (not same_direction) {
+        other_fw=other.reverse();
+        first_seen_other=other.node_positions.size()+1+first_seen_other;
+        last_seen_other=other.node_positions.size()+1+last_seen_other;
+    }
+
+    auto this_nodes=as_signed_nodes();
+    auto other_fw_nodes=other_fw.as_signed_nodes();
+    std::vector<sgNodeID_t> merged_nodes;
+
+    //Pick largest left
+    if (this_left>=other_left){
+        std::copy(this_nodes.begin(),this_nodes.begin()+first_seen_at-1,std::back_inserter(merged_nodes));
+    }
+    else {
+        std::copy(other_fw_nodes.begin(),other_fw_nodes.begin()+first_seen_other-1,std::back_inserter(merged_nodes));
+    }
+
+    //merge middle section
+    for (auto this_index=first_seen_at-1,other_index=first_seen_other-1; this_index<last_seen_at and other_index<last_seen_other;){
+        if (this_nodes[this_index]==other_fw_nodes[other_index]){ //same node on both, add and increment
+            merged_nodes.emplace_back(this_nodes[this_index]);
+            ++this_index;
+            ++other_index;
+        }
+        else {
+            uint64_t this_count=0,other_count=0;
+            uint64_t i1;
+            for(i1=this_index; i1<last_seen_at and ( disordered_nodes.count(llabs(this_nodes[i1])) or other_fw.node_positions.find(llabs(this_nodes[i1]))==other_fw.node_positions.end()); ++i1) {
+                if (disordered_nodes.count(llabs(this_nodes[i1]))==0) ++this_count;
+            }
+            uint64_t i2;
+            for( i2=other_index; i2<last_seen_other and (disordered_nodes.count(llabs(other_fw_nodes[i2])) or node_positions.find(llabs(other_fw_nodes[i2]))==node_positions.end()); ++i2) {
+                if (disordered_nodes.count(llabs(other_fw_nodes[i2]))==0) ++other_count;
+            }
+            if (this_count==0 and other_count==0) { //this is just a single disordered node in both (probably same node reversed?), skip in both
+                ++this_index;
+                ++other_index;
+            }
+            else if (this_count>=other_count) {
+                for (auto i=this_index;i<i1;++i) {
+                    if (disordered_nodes.count(llabs(this_nodes[i]))==0) merged_nodes.emplace_back(this_nodes[i]);
+                }
+                this_index=i1;
+            }
+            else {
+                for (auto i=other_index;i<i2;++i) {
+                    if (disordered_nodes.count(llabs(other_fw_nodes[i]))==0) merged_nodes.emplace_back(other_fw_nodes[i]);
+                }
+                other_index=i2;
+            }
+
+
+
+        }
+    }
+
+    //Pick largest right
+    if (this_right>=other_right){
+        std::copy(this_nodes.begin()+last_seen_at,this_nodes.end(),std::back_inserter(merged_nodes));
+    }
+    else {
+        std::copy(other_fw_nodes.begin()+last_seen_other,other_fw_nodes.end(),std::back_inserter(merged_nodes));
+    }
+
+    return LocalOrder(merged_nodes);
+}
+
+LocalOrder LocalOrder::reverse() const {
+    auto nodes=as_signed_nodes();
+    std::vector<sgNodeID_t> nodes_rev;
+    nodes_rev.reserve(nodes.size());
+    for (auto it=nodes.crbegin();it!=nodes.crend();++it) nodes_rev.emplace_back(-*it);
+    return LocalOrder(nodes_rev);
+}
+
 std::vector<sgNodeID_t> rtg_place_order(const ReadThreadsGraph & rtg,std::vector<sgNodeID_t> &nodes){
     auto placed=rtg.place_nodes({},nodes);
     std::vector<sgNodeID_t> order;
@@ -31,12 +218,11 @@ void HappySorter::reverse() {
 }
 
 float HappySorter::thread_happiness(int64_t tid,int min_nodes) const {
-    //TODO: que pasa si el nodo que viene de thread es negativo? eso da una posicion negativa y devuelve un p negativo que no es considerado
     if (min_nodes==-1) min_nodes=min_thread_nodes;
     int64_t first_ti=-1,last_ti=-1,first_oi=-1,last_oi=-1,shared_nodes=0;
-    auto tnp=rtg.get_thread(tid); // get the thread in the rtg
+    auto tnp=rtg.get_thread(tid);
     for (auto i=0;i<tnp.size();++i) {
-        auto p=order.get_node_position(tnp[i].node); //get the position of the node in the order
+        auto p=order.get_node_position(tnp[i].node);
         if (p>0){
             if (first_ti==-1){
                 first_ti=i;
@@ -47,13 +233,11 @@ float HappySorter::thread_happiness(int64_t tid,int min_nodes) const {
             ++shared_nodes;
         }
     }
-    //
     if (last_ti==-1 or shared_nodes<min_nodes) {
         //std::cout<<"Thread happiness for thread "<<tid<<" = 0, only "<<shared_nodes<<"/"<<min_nodes<<" requered shared nodes"<<std::endl;
         return 0;
     }
     //std::cout<<"Thread happiness for thread"<<tid<<" = "<<((float) shared_nodes)/(last_ti+1-first_ti)<<std::endl<<" based on "<<shared_nodes<<" shared nodes"<<std::endl;
-    // This is the proportion of shared nodes in the overlapping part of the thread/order
     return ((float) shared_nodes)/(last_ti+1-first_ti);
 }
 
@@ -62,10 +246,7 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
     uint64_t happy=0,total=0;
     if (nid==0 or rtg.sdg.links.size()-1<llabs(nid)) return 0;
     if (not prev and not next) return 0;
-    // bw going
     else if (prev and not next) {
-        // this is counting all the threads passing over the node (total) and how many of those threads are part of the
-        // current order (happy) i.e.: if the thread that supports a lin is in the recruited thread set.
         for (auto const &l:rtg.links[llabs(nid)]) {
             if (l.source==nid) {
                 ++total;
@@ -73,7 +254,6 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
             }
         }
     }
-    // fw going
     else if (not prev and next) {
         for (auto const &l:rtg.links[llabs(nid)]) {
             if (l.source==-nid) {
@@ -82,7 +262,6 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
             }
         }
     }
-    // internal
     else {
         for (auto const &tid:rtg.node_threads(nid,true)){
             ++total;
@@ -91,7 +270,7 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
 
     }
     if (total<min_threads) return 0;
-    return ((float) happy)/(float)total;
+    return ((float) happy)/total;
 }
 
 void HappySorter::recruit_all_happy_threads(float min_happiness, int min_nodes) {
@@ -117,8 +296,7 @@ std::unordered_set<sgNodeID_t> HappySorter::find_fw_candidates(float min_happine
     std::unordered_map<sgNodeID_t,int> node_links;
     std::unordered_set<sgNodeID_t> candidates;
 
-    // For all open threads, find the last node before the end portion of the order and then count all the nodes in the
-    // open threads from that node in the thread onwards
+
     for (auto tid:fw_open_threads){
         auto tnps=rtg.get_thread(tid);
         int64_t last_inside_node=-1;
@@ -130,14 +308,8 @@ std::unordered_set<sgNodeID_t> HappySorter::find_fw_candidates(float min_happine
         }
         for (auto i=last_inside_node;i<tnps.size();++i) ++node_links[tnps[i].node];
     }
-    // Candidates have to have minimal linking and be happy fw (share min number of threads with the order)
-    std::cout << std::fixed;
-    for (auto &nl:node_links){
-//        std::cout << "ffc: "<< nl.first <<" , "<< nl.second << "," << node_happiness(nl.first,true,false,min_threads) << std::endl;
-        if (nl.second>=min_threads and node_happiness(nl.first,true,false,min_threads)>=min_happiness){
-            candidates.insert(nl.first);
-        }
-    }
+
+    for (auto &nl:node_links) if (nl.second>=min_threads and node_happiness(nl.first,true,false,min_threads)>=min_happiness) candidates.insert(nl.first);
 
     //remove candidates that appear in both directions (should be rare?), also remove candidates located before end_size
     std::set<sgNodeID_t> to_delete;
@@ -270,44 +442,41 @@ void HappySorter::close_internal_threads(int order_end, int thread_end) {
     for (auto tid:to_close) bw_open_threads.erase(tid);
 }
 
-void HappySorter::start_from_node(sgNodeID_t nid, int min_links) {
-    // Get a link count against all nodes threaded in the same threads as the starting node
-    std::unordered_map<sgNodeID_t,int> node_links;
-    for (auto tid:rtg.node_threads(nid,true))
-        for (auto &ntp:rtg.get_thread(tid))
-            ++node_links[ntp.node];
-
-    // Keep the nodes with at least min links connection to the starting node.
-    // Create a local order with the nodes and an internal happy sorter
-    std::vector<sgNodeID_t> nodes;
-    LocalOrder last_order;
-    for (auto &nl:node_links) if (nl.second>=min_links) nodes.push_back(nl.first);
-    auto hs=HappySorter(rtg,min_thread_happiness,min_node_happiness,min_thread_nodes,min_node_threads);
-    //hs.order=LocalOrder(rtg.order_nodes(nodes));
-    hs.order=LocalOrder(rtg_place_order(rtg,nodes));
-    hs.recruit_all_happy_threads(.1);
-
-    // Loop to fill the internal order until nothing more can be added
-    while (last_order.size()<hs.order.size()){
-        last_order=hs.order;
-        nodes=hs.order.as_signed_nodes();
-        for (auto c:hs.find_internal_candidates()) nodes.push_back(c);
-        //hs.order=LocalOrder(rtg.order_nodes(nodes));
-        hs.order=LocalOrder(rtg_place_order(rtg,nodes));
-        hs.recruit_all_happy_threads();
-    }
-    // Setup the internal structure and set the order to the dense order prouced
+void HappySorter::start_from_node(sgNodeID_t nid, int min_links, float first_threads_happiness) {
+    //std::cout<<"Start from node B version, starting"<<std::endl;
     threads.clear();
     fw_open_threads.clear();
     bw_open_threads.clear();
-    //order=LocalOrder(rtg.order_nodes(nodes));
-    //order=LocalOrder(rtg_place_order(rtg,nodes));
+    order.node_positions.clear();
+    node_coordinates.clear();
 
-    //auto placed=rtg.place_nodes({},nodes);
-    order.node_positions[nid]=1;
-    node_coordinates[nid]=0;
-    std::unordered_set<sgNodeID_t> nodeset(nodes.begin(),nodes.end());
-    add_placed_nodes(place_nodes(nodeset,false));
+    std::unordered_map<sgNodeID_t,std::vector<int64_t>> node_links;
+    for (auto tid:rtg.node_threads(nid,true)) {
+        auto t=rtg.get_thread(tid);
+        int64_t nidpos=-1;
+        for (auto &ntp:t) if (ntp.node==nid) {
+            nidpos=ntp.start;
+            break;
+        }
+        for (auto &ntp:t) node_links[ntp.node].emplace_back(ntp.start-nidpos);
+    }
+    //auto hs=HappySorter(rtg,min_thread_happiness,min_node_happiness,min_thread_nodes,min_node_threads);
+    add_placed_nodes({{nid,0}});
+    //std::cout<<" ... placed "<<nid<<" @ 0"<<std::endl;
+    for (auto &nl:node_links) {
+        auto &distances=nl.second;
+        if (distances.size()>=min_links) {
+            std::sort(distances.begin(),distances.end());
+            add_placed_nodes({{nl.first,distances[distances.size()/2]}});
+            //std::cout<<" ... placed "<<nl.first<<" @ "<<distances[distances.size()/2]<<" using "<<distances.size()<<"links"<<std::endl;
+        }
+    }
+
+    recruit_all_happy_threads(first_threads_happiness);
+    while(add_placed_nodes(place_nodes(find_internal_candidates(),false)));
+    threads.clear();
+    fw_open_threads.clear();
+    bw_open_threads.clear();
     recruit_all_happy_threads();
     close_internal_threads();
     return;
@@ -362,15 +531,9 @@ bool HappySorter::grow_fw(int min_threads, bool verbose) {
     //STEP 5 - a very crude merge again
 
     //TODO: this is stupidly innefficient!
-    if (verbose) std::cout<<"Current order has "<<order.size()<<" nodes"<<std::endl;
     new_nodes.resize(old_nodes_size);
     new_nodes.insert(new_nodes.end(),sorted_candidates.begin(),sorted_candidates.end());
-    auto new_order=LocalOrder(new_nodes);
-    if(new_order.node_positions.size() > 0){
-        order=new_order;
-    } else {
-        return false;
-    }
+    order=LocalOrder(new_nodes);
     if (verbose) std::cout<<"New order has "<<order.size()<<" nodes"<<std::endl;
 
     // STEP 6 - recruit more threads again
@@ -381,14 +544,15 @@ bool HappySorter::grow_fw(int min_threads, bool verbose) {
     return true;
 }
 
-std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> HappySorter::make_thread_nodepositions(const std::unordered_set<sgNodeID_t> & nodes) const{
+std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> HappySorter::make_thread_nodepositions(const std::unordered_set<sgNodeID_t> & nodes, std::set<int64_t> tids) const{
     std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> thread_node_positions;
 
     //make the list of threads
-    std::set<int64_t> tids;
-    for (auto nid:nodes){
-        auto ntids=rtg.node_threads(nid,true);
-        for (auto tid:ntids) tids.insert(tid);
+    if (tids.empty()) {
+        for (auto nid:nodes) {
+            auto ntids = rtg.node_threads(nid, true);
+            for (auto tid:ntids) tids.insert(tid);
+        }
     }
 
     //TODO: count all fw/bw in node for each thread and discard those where nodes appear in more than one direciton.
@@ -431,7 +595,7 @@ std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> HappySorter::make
 }
 
 
-int64_t hs_place_node(const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, sgNodeID_t nid){
+int64_t HappySorter::hs_place_node(const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, sgNodeID_t nid){
     if (node_distances.count(nid)==0) return INT64_MIN; //unplaced
     std::vector<int64_t> positions;
     for (const auto & nd:node_distances.at(nid)) {
@@ -443,7 +607,7 @@ int64_t hs_place_node(const std::unordered_map<sgNodeID_t, int64_t> &node_positi
     return positions[positions.size()/2]; //Poor man's median hits back
 };
 
-void hs_update_npcomplete(std::map<sgNodeID_t, std::pair<bool,bool>> &np_complete,const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, const std::unordered_set<sgNodeID_t> &to_place){
+void HappySorter::hs_update_npcomplete(std::map<sgNodeID_t, std::pair<bool,bool>> &np_complete,const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, const std::unordered_set<sgNodeID_t> &to_place){
     for (auto nid:to_place){
         if (node_distances.count(nid)==0) {
             np_complete[nid]={false,false};
@@ -460,7 +624,7 @@ void hs_update_npcomplete(std::map<sgNodeID_t, std::pair<bool,bool>> &np_complet
     }
 }
 
-sgNodeID_t hs_most_connected_node(const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, const std::unordered_set<sgNodeID_t> &to_place){
+sgNodeID_t HappySorter::hs_most_connected_node(const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, const std::unordered_set<sgNodeID_t> &to_place){
     int most_connected=0;
     sgNodeID_t best_nid=0;
     for (auto nid:to_place){
@@ -480,7 +644,7 @@ sgNodeID_t hs_most_connected_node(const std::unordered_map<sgNodeID_t, int64_t> 
     return best_nid;
 }
 
-std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> hs_tnp_to_distances (const std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> &thread_nodepositions,const std::unordered_set<sgNodeID_t> &nodeset){
+std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> HappySorter::hs_tnp_to_distances (const std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> &thread_nodepositions,const std::unordered_set<sgNodeID_t> &nodeset){
     std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> distances;
 
     for (const auto &tnp:thread_nodepositions) {
@@ -539,6 +703,7 @@ std::vector<std::pair<sgNodeID_t, int64_t>> HappySorter::place_nodes( const std:
                 if (np_complete[nid] == cond) {
                     auto p = hs_place_node(node_positions, node_distances, nid);
                     if (p != INT64_MIN) {
+                        if (verbose) std::cout<<"placed "<<nid<<" @ "<<p<<std::endl;
                         node_positions[nid] = p;
                         placed.insert(nid);
                     }
@@ -555,6 +720,7 @@ std::vector<std::pair<sgNodeID_t, int64_t>> HappySorter::place_nodes( const std:
             auto nid=hs_most_connected_node(node_positions,node_distances,to_place);
             auto p = hs_place_node(node_positions, node_distances, nid);
             if (p != INT64_MIN) {
+                if (verbose) std::cout<<"placed "<<nid<<" @ "<<p<<" with partial distances"<<std::endl;
                 node_positions[nid] = p;
                 placed.insert(nid);
             }
@@ -655,16 +821,16 @@ void HappySorterRunner::run(int64_t min_starting_nodes, float max_starting_used,
 #pragma omp critical(node_sorted)
             for (auto &nid:hs.order.as_signed_nodes()) if (node_sorted[llabs(nid)]) ++used;
             if (hs.order.size() * max_starting_used < used) continue;
-            std::cout << "Thread #" << omp_get_thread_num() << " growing order from node " << snv.node_id() << " ..."
-                      << std::endl;
+//            std::cout << "Thread #" << omp_get_thread_num() << " growing order from node " << snv.node_id() << " ..."
+//                      << std::endl;
             hs.grow_loop(-1, -1, max_steps);
             if (hs.order.size() < min_final_nodes) continue;
             //sorters[snv.node_id()]=hs;
 #pragma omp critical(node_sorted)
             {
                 if (orders.size()<max_orders and not node_sorted[snv.node_id()]) { //check again to mantain initial condition
-                    std::cout << "Thread #" << omp_get_thread_num() << " adding order from node " << snv.node_id()
-                              << " with " << hs.order.size() << " nodes" << std::endl;
+//                    std::cout << "Thread #" << omp_get_thread_num() << " adding order from node " << snv.node_id()
+//                              << " with " << hs.order.size() << " nodes" << std::endl;
                     orders[snv.node_id()] = hs.order;
                     for (auto &nid:hs.order.as_signed_nodes()) {
                         node_sorted[llabs(nid)] = true;
@@ -746,6 +912,24 @@ void HappySorterRunner::load(std::string filename) {
     sdglib::read_flat_vector(ifs,nsv);
     node_sorted.reserve(nsv.size());
     for (const auto &ns:nsv) node_sorted.push_back(ns);
+
+
+}
+
+bool HappySorter::update_positions(uint64_t first, uint64_t last) {
+    if(last==-1 or last>order.size()-1) last=order.size()-1;
+    if (first>order.size() or first>last) return false;
+
+    auto onodes=order.as_signed_nodes();
+
+    std::unordered_set<sgNodeID_t> nodes(onodes.cbegin()+first,onodes.cbegin()+last);
+    std::unordered_set<sgNodeID_t> all_nodes(onodes.cbegin(),onodes.cend());
+
+    std::set<int64_t> tids;
+    for (auto nid:nodes) {
+        auto ntids = rtg.node_threads(nid, true);
+        for (auto tid:ntids) tids.insert(tid);
+    }
 
 
 }

@@ -21,7 +21,6 @@
 #include <sdglib/processors/CountFilter.hpp>
 #include <sdglib/batch_counter/BatchKmersCounter.hpp>
 #include <sdglib/processors/LineFiller.h>
-#include <sdglib/processors/ThreadedGraphSorter.h>
 #include <sdglib/processors/HappySorter.hpp>
 #include <sdglib/graph/ReadThreadsGraph.hpp>
 
@@ -81,16 +80,6 @@ PYBIND11_MODULE(SDGpython, m) {
             .value("Canonical",KmerCountMode::Canonical)
             .value("NonCanonical",KmerCountMode::NonCanonical)
             .export_values();
-
-    py::enum_<HappyPosition>(m,"HappyPosition")
-            .value("Nowhere",HappyPosition::Nowhere)
-            .value("FrontFW",HappyPosition::FrontFW)
-            .value("FrontBW",HappyPosition::FrontBW)
-            .value("MiddleFW",HappyPosition::MiddleFW)
-            .value("MiddleBW",HappyPosition::MiddleBW)
-            .value("BackFW",HappyPosition::BackFW)
-            .value("BackBW",HappyPosition::BackBW)
-            ;
 
     py::class_<Support>(m,"Support","Support for an operation or piece of data")
             .def(py::init<SupportType,uint16_t,int64_t>(),"","support"_a=SupportType::Undefined,"index"_a=0,"id"_a=0,py::return_value_policy::take_ownership)
@@ -245,14 +234,15 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("find_bw_candidates",&HappySorter::find_bw_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"end_size"_a=-1)
             .def("find_internal_candidates",&HappySorter::find_internal_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"first"_a=1,"last"_a=INT32_MAX)
             .def("close_internal_threads",&HappySorter::close_internal_threads,"order_end"_a=20,"thread_end"_a=0)
-            .def("start_from_node",&HappySorter::start_from_node,"nid"_a,"min_links"_a=4)
-            .def("make_thread_nodepositions",&HappySorter::make_thread_nodepositions,"nodes"_a)
+            .def("start_from_node",&HappySorter::start_from_node,"nid"_a,"min_links"_a=4,"first_threads_happiness"_a=.1)
+            .def("make_thread_nodepositions",&HappySorter::make_thread_nodepositions,"nodes"_a,"tids"_a=std::set<int64_t>())
             .def("place_nodes",&HappySorter::place_nodes,"nodes"_a,"verbose"_a=false)
             .def("add_placed_nodes",&HappySorter::add_placed_nodes,"placed_nodes"_a,"update_current"_a=false)
             .def("grow_fw",&HappySorter::grow_fw,"min_links"_a,"verbose"_a=true)
             .def("grow",&HappySorter::grow, "min_threads"_a=-1, "min_happiness"_a=-1, "fw"_a=-1, "bw"_a=-1, "internal"_a=-1)
             .def("grow_loop",&HappySorter::grow_loop, "min_threads"_a=-1, "min_happiness"_a=-1, "steps"_a=INT64_MAX, "verbose"_a=false)
             .def("reverse",&HappySorter::reverse)
+            .def("hs_tnp_to_distances",&HappySorter::hs_tnp_to_distances, "thread_nodepositions"_a, "nodeset"_a)
             .def_readwrite("threads",&HappySorter::threads)
             .def_readwrite("order",&HappySorter::order)
             .def_readwrite("node_coordinates",&HappySorter::node_coordinates)
@@ -422,8 +412,6 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("path_fw",&LongReadsRecruiter::path_fw,"read_id"_a,"node"_a)
             .def("all_paths_fw",&LongReadsRecruiter::all_paths_fw,"node"_a)
             .def("reverse_perfect_matches",&LongReadsRecruiter::reverse_perfect_matches,"matches"_a,"read_size"_a=0)
-            .def("haplotype_puller_filter",&LongReadsRecruiter::haplotype_puller_filter,"dg"_a, "lrr"_a, "rid"_a=0)
-            .def("filter_all_hap_reads",&LongReadsRecruiter::filter_all_hap_reads,"dg"_a, "lrr"_a)
             ;
 
     py::class_<NodePosition>(m,"NodePosition", "A node position in a LRR")
@@ -545,87 +533,10 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("fill_all_paths", &LineFiller::fill_all_paths, "lines"_a)
             .def_readonly("final_lines", &LineFiller::final_lines);
 
-    py::class_<HaplotypePuller>(m, "HaplotypePuller", "HaplotypePuller")
-            .def(py::init<DistanceGraph &, LongReadsRecruiter&>(), "dg"_a, "lrr"_a)
-            .def("start_from_read_nodes", &HaplotypePuller::start_from_read_nodes, "rid"_a)
-            .def("start_node_neighbourhood", &HaplotypePuller::start_node_neighbourhood, "nid"_a, "min_reads"_a=10)
-            .def("nodes_fw_inout", &HaplotypePuller::nodes_fw_inout, "nid"_a, "min_c"_a=2)
-            .def("nodes_fw_perc", &HaplotypePuller::nodes_fw_perc, "nid"_a, "min_c"_a=2)
-            .def("nodes_all_perc", &HaplotypePuller::nodes_all_perc, "nid"_a, "min_c"_a=2)
-            .def("nodes_in_threads_fw", &HaplotypePuller::nodes_in_threads_fw, "nv"_a)
-            .def_readwrite("node_ids",&HaplotypePuller::node_ids)
-            .def_readwrite("read_ids",&HaplotypePuller::read_ids)
-            ;
-
-    py::class_<TheGreedySorter>(m, "TheGreedySorter", "TheGreedySorter")
-            .def(py::init<const DistanceGraph &, sgNodeID_t>(), "trg_nt"_a,"founding_node"_a=0)
-            .def("start_from_read", &TheGreedySorter::start_from_read, "rid"_a, "min_confirmation"_a=2)
-            .def("evaluate_read", &TheGreedySorter::evaluate_read, "rid"_a, "print_pos"_a=false)
-            .def("thread_nodes", &TheGreedySorter::thread_nodes, "rid"_a)
-            .def("thread_node_positions", &TheGreedySorter::thread_node_positions, "rid"_a)
-            .def("evaluate_read_nodeorder", &TheGreedySorter::evaluate_read_nodeorder, "rid"_a, "print_pos"_a=false)
-            .def("shared_reads", &TheGreedySorter::shared_reads, "nv1"_a, "nv2"_a)
-            .def("rids_from_node", &TheGreedySorter::rids_from_node, "nv"_a)
-            .def("add_read", &TheGreedySorter::add_read, "rid"_a, "min_confirmation"_a)
-            .def("sort_graph", &TheGreedySorter::sort_graph)
-            .def("remove_node", &TheGreedySorter::remove_node, "nid"_a)
-            .def("pop_node", &TheGreedySorter::pop_node, "nid"_a,"read_id"_a)
-            .def("write_connected_nodes_graph", &TheGreedySorter::write_connected_nodes_graph, "filename"_a)
-            .def("update_read_nodes_in_order", &TheGreedySorter::update_read_nodes_in_order)
-            .def("node_belonging_scores", &TheGreedySorter::node_belonging_scores, "nid"_a)
-            .def("get_thread_ends", &TheGreedySorter::get_thread_ends, "rid"_a)
-            .def_readwrite("all_nodes", &TheGreedySorter::all_nodes)
-            .def_readwrite("all_reads", &TheGreedySorter::all_reads)
-            .def_readwrite("used_nodes", &TheGreedySorter::used_nodes)
-            .def_readwrite("used_reads", &TheGreedySorter::used_reads)
-            .def_readwrite("read_ends", &TheGreedySorter::read_ends)
-            .def_readonly("dg", &TheGreedySorter::dg)
-            .def_property_readonly("trg_nt", [](const TheGreedySorter &tgs){return tgs.trg_nt;},py::return_value_policy::reference)
-            ;
 
     py::class_<CountFilter>(m,"CountFilter","CountFilter")
             .def(py::init<std::string, std::string , int , std::vector<std::string>, std::vector<int>>(),"kcname"_a, "filter_count_name"_a, "filter_count_max"_a, "value_count_names"_a, "value_count_mins"_a)
             .def("get_pattern",&CountFilter::get_pattern,"nv"_a);
-
-    py::class_<NodeAdjacencies>(m,"NodeAdjacencies","NodeAdjacencies")
-            .def(py::init<>())
-            .def("mark_used",&NodeAdjacencies::mark_used,"nid"_a)
-            .def("happy_to_add",&NodeAdjacencies::happy_to_add,"used_perc"_a)
-            .def("find_happy_place",&NodeAdjacencies::find_happy_place,"sorter"_a)
-            .def_readwrite("prevs",&NodeAdjacencies::prevs)
-            .def_readwrite("nexts",&NodeAdjacencies::nexts)
-            .def_readwrite("fw_prevs",&NodeAdjacencies::fw_prevs)
-            .def_readwrite("bw_prevs",&NodeAdjacencies::bw_prevs)
-            .def_readwrite("fw_nexts",&NodeAdjacencies::fw_nexts)
-            .def_readwrite("bw_nexts",&NodeAdjacencies::bw_nexts);
-
-    py::class_<HappyInsertionSorter>(m,"HappyInsertionSorter","HappyInsertionSorter")
-            .def(py::init<ReadThreadsGraph&>(),"rtg"_a)
-            .def("compute_adjacencies",&HappyInsertionSorter::compute_adjacencies,"min_links"_a=2,"radius"_a=10)
-            .def("reset_positions",&HappyInsertionSorter::reset_positions)
-            .def("add_node",&HappyInsertionSorter::add_node,"nid"_a)
-            .def("insert_node",&HappyInsertionSorter::insert_node,"nid"_a,"used_perc"_a=0.7,"at_position"_a=0)
-            .def("get_node_position",&HappyInsertionSorter::get_node_position,"nid"_a)
-            .def("remove_node_from_everywhere",&HappyInsertionSorter::remove_node_from_everywhere,"nid"_a)
-            .def_readwrite("node_positions",&HappyInsertionSorter::node_positions)
-            .def_readwrite("adjacencies",&HappyInsertionSorter::adjacencies)
-            .def_readwrite("candidates",&HappyInsertionSorter::candidates)
-            .def("get_node_adjacencies",&HappyInsertionSorter::get_node_adjacencies,"nid"_a,py::return_value_policy::reference)
-            .def("local_order_from_node",&HappyInsertionSorter::local_order_from_node,"nid"_a, "perc"_a, "cleanup_initial_order"_a=true)
-            .def("start_order_from_node",&HappyInsertionSorter::start_order_from_node,"nid"_a, "perc"_a, "cleanup_initial_order"_a=true)
-            .def("grow_order",&HappyInsertionSorter::grow_order,"perc"_a=.9,"steps"_a=UINT64_MAX)
-            .def("grow_order2",&HappyInsertionSorter::grow_order2,"perc"_a=.9,"steps"_a=UINT64_MAX,"write_detailed_log"_a=false)
-            .def("get_order",&HappyInsertionSorter::get_order)
-            .def("dump_adjacencies",&HappyInsertionSorter::dump_adjacencies, "filename"_a)
-            .def("load_adjacencies",&HappyInsertionSorter::load_adjacencies, "filename"_a);
-
-    py::class_<LocalOrderMaker>(m,"LocalOrderMaker","LocalOrderMaker")
-            .def("add_order",&LocalOrderMaker::add_order,"nid"_a,"order"_a)
-            .def("orders_in_region",&LocalOrderMaker::orders_in_region,"node_adjacencies"_a)
-            .def("make_orders",&LocalOrderMaker::make_orders,"coverage"_a=5,"min_links"_a=2,"radius"_a=10,"perc"_a=.7, "min_adj"_a=5, "min_order_size"_a=100)
-            .def_readonly("local_orders",&LocalOrderMaker::local_orders)
-            .def_readonly("node_local_orders_count",&LocalOrderMaker::node_local_orders_count)
-            .def(py::init<ReadThreadsGraph&>(),"rtg"_a);
 
     py::class_<LocalOrder>(m,"LocalOrder","LocalOrder")
             .def(py::init<>())
@@ -650,10 +561,4 @@ PYBIND11_MODULE(SDGpython, m) {
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);
     m.def("count_kmers_as_graph_nodes",&BatchKmersCounter::countKmersToGraphNodes,py::return_value_policy::take_ownership,"sdg"_a,"peds"_a,"k"_a,"min_coverage"_a, "max_coverage"_a, "num_batches"_a);
-    m.def("sort_cc", &sort_cc, "dg"_a, "cc"_a);
-    m.def("pop_node", &pop_node, "dg"_a, "node_id"_a, "read_id"_a);
-    m.def("assess_node_happiness", &assess_node_happiness, "nid"_a, "order"_a, "trg_ng"_a);
-    m.def("pop_node_from_all", &pop_node_from_all, "dg"_a, "nid"_a);
-    m.def("make_thread_happy", &make_thread_happy, "thread"_a, "trg"_a, "max_unhappy"_a=1, "disconnection_rate"_a=.3);
-    m.def("make_all_threads_happy", &make_all_threads_happy, "lrr"_a, "trg"_a, "max_unhappy"_a=1, "disconnection_rate"_a=.3);
 }
