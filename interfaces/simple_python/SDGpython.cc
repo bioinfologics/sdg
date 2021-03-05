@@ -243,6 +243,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("grow_loop",&HappySorter::grow_loop, "min_threads"_a=-1, "min_happiness"_a=-1, "steps"_a=INT64_MAX, "verbose"_a=false)
             .def("reverse",&HappySorter::reverse)
             .def("hs_tnp_to_distances",&HappySorter::hs_tnp_to_distances, "thread_nodepositions"_a, "nodeset"_a)
+            .def("update_positions",&HappySorter::update_positions,"first"_a=0,"last"_a=-1)
             .def_readwrite("threads",&HappySorter::threads)
             .def_readwrite("order",&HappySorter::order)
             .def_readwrite("node_coordinates",&HappySorter::node_coordinates)
