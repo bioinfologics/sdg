@@ -288,6 +288,39 @@ void HappySorter::recruit_all_happy_threads(float min_happiness, int min_nodes) 
     }
 }
 
+void HappySorter::recruit_all_happy_threads_q(int min_nodes, int max_span) {
+    //if (min_nodes==-1) min_nodes=min_thread_nodes;
+    //if (min_happiness==-1) min_happiness=min_thread_happiness;
+    std::unordered_map<int64_t,int> thread_included_nodes;
+    for (const auto &np: order.node_positions) {
+        const auto &nid = np.second > 0 ? np.first : -np.first;
+        for (auto &tid:rtg.node_threads(nid, true)) ++thread_included_nodes[tid];
+    }
+
+    for (auto &tin:thread_included_nodes) {
+        if (tin.second>=min_nodes and (thread_included_nodes.count(-tin.first)==0 or thread_included_nodes[-tin.first]<min_nodes) and threads.count(tin.first)==0 and threads.count(-tin.first)==0 and thread_happiness_q(tin.first,min_nodes,max_span)) {
+            threads.insert(tin.first);
+            fw_open_threads.insert(tin.first);
+            bw_open_threads.insert(tin.first);
+        }
+    }
+}
+
+bool HappySorter::thread_happiness_q(int64_t tid, int min_nodes, int max_span) const {
+    std::deque<int64_t> hits_pos; //this is overkill, but probably not the performance limiting structure here
+    int64_t p=0;
+    for (auto np:rtg.get_thread(tid)) {
+        ++p;
+        if (order.get_node_position(np.node)>0) {
+            if (hits_pos.size()==min_nodes) {
+                if (p - hits_pos.front() < max_span) return true;
+                hits_pos.pop_front();
+            }
+            hits_pos.emplace_back(p);
+        }
+    }
+    return false;
+}
 
 std::unordered_set<sgNodeID_t> HappySorter::find_fw_candidates(float min_happiness, int min_threads, int end_size) const {
     if (min_threads==-1) min_threads=min_node_threads;
@@ -764,19 +797,16 @@ bool HappySorter::grow(int min_threads, float min_happiness, bool fw, bool bw, b
     std::unordered_set<sgNodeID_t> candidates;
     if (internal) {
         add_placed_nodes(place_nodes(find_internal_candidates(min_happiness, min_threads), false));
-        recruit_all_happy_threads();
-        close_internal_threads();
     }
     if (fw) {
         add_placed_nodes(place_nodes(find_fw_candidates(min_happiness, min_threads), false));
-        recruit_all_happy_threads();
-        close_internal_threads();
     }
     if (bw) {
         add_placed_nodes(place_nodes(find_bw_candidates(min_happiness, min_threads), false));
-        recruit_all_happy_threads();
-        close_internal_threads();
     }
+    update_positions();
+    recruit_all_happy_threads();
+    close_internal_threads();
     return node_coordinates.size()>old_size;
 }
 
