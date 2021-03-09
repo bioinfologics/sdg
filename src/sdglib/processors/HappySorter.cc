@@ -830,7 +830,7 @@ bool HappySorter::grow_loop(int min_threads, float min_happiness, int64_t steps,
     return grown;
 }
 
-void HappySorterRunner::run(int64_t min_starting_nodes, float max_starting_used, int64_t min_final_nodes, int64_t max_steps, int64_t max_orders) {
+void HappySorterRunner::run(int min_links, float first_threads_happiness, int64_t min_starting_nodes, float max_starting_used, int64_t min_final_nodes, int64_t max_steps, int64_t max_orders) {
     sdglib::OutputLog()<<"Starting HappySorterRunner run..."<<std::endl;
     auto nvs=rtg.get_all_nodeviews(false,false);
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -847,7 +847,7 @@ void HappySorterRunner::run(int64_t min_starting_nodes, float max_starting_used,
             if (node_sorted[snv.node_id()]) continue;
             auto hs = HappySorter(rtg, min_thread_happiness, min_node_happiness, min_thread_nodes, min_node_threads,
                                   order_end_size);
-            hs.start_from_node(snv.node_id());
+            hs.start_from_node(snv.node_id(),min_links,first_threads_happiness);
             if (hs.order.size() < min_starting_nodes) continue;
             int64_t used = 0;
 #pragma omp critical(node_sorted)
