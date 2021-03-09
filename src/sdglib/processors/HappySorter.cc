@@ -764,19 +764,16 @@ bool HappySorter::grow(int min_threads, float min_happiness, bool fw, bool bw, b
     std::unordered_set<sgNodeID_t> candidates;
     if (internal) {
         add_placed_nodes(place_nodes(find_internal_candidates(min_happiness, min_threads), false));
-        recruit_all_happy_threads();
-        close_internal_threads();
     }
     if (fw) {
         add_placed_nodes(place_nodes(find_fw_candidates(min_happiness, min_threads), false));
-        recruit_all_happy_threads();
-        close_internal_threads();
     }
     if (bw) {
         add_placed_nodes(place_nodes(find_bw_candidates(min_happiness, min_threads), false));
-        recruit_all_happy_threads();
-        close_internal_threads();
     }
+    update_positions();
+    recruit_all_happy_threads();
+    close_internal_threads();
     return node_coordinates.size()>old_size;
 }
 
