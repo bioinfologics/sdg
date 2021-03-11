@@ -11,6 +11,7 @@ public:
     LocalOrder(){};
     explicit LocalOrder(const std::vector<sgNodeID_t> & nodes);
     std::vector<sgNodeID_t> as_signed_nodes() const;
+    std::vector<NodePosition> as_thread(const DistanceGraph &dg) const;
     int64_t get_node_position(sgNodeID_t nid) const;
     LocalOrder reverse() const;
     void validate_with_rtg(const ReadThreadsGraph & rtg);

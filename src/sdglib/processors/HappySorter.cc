@@ -17,6 +17,22 @@ std::vector<sgNodeID_t> LocalOrder::as_signed_nodes() const {
     return nodes;
 }
 
+std::vector<NodePosition> LocalOrder::as_thread(const DistanceGraph &dg) const {
+    std::vector<NodePosition> thread;
+    if (node_coordinates.empty()) return {};
+    thread.reserve(node_coordinates.size());
+    //first place only starts and sort
+    for (auto &nc:node_coordinates)  thread.emplace_back(nc.first,nc.second,0);
+    std::sort(thread.begin(),thread.end(),[](auto a, auto b){return a.start<b.start;});
+    //now update to be 0-based and fill ends
+    auto offset=thread.front().start;
+    for (auto &np:thread) {
+        np.start-=offset;
+        np.end=np.start+dg.sdg.get_node_size(np.node);
+    }
+    return thread;
+}
+
 int64_t LocalOrder::get_node_position(sgNodeID_t nid) const {
     auto it=node_positions.find(llabs(nid));
     if (it==node_positions.end()) return 0;
