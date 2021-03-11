@@ -248,7 +248,6 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("update_positions",&HappySorter::update_positions,"first"_a=0,"last"_a=-1)
             .def_readwrite("threads",&HappySorter::threads)
             .def_readwrite("order",&HappySorter::order)
-            .def_readwrite("node_coordinates",&HappySorter::node_coordinates)
             .def_readwrite("bw_open_threads",&HappySorter::bw_open_threads)
             .def_readwrite("fw_open_threads",&HappySorter::fw_open_threads)
             ;
@@ -549,7 +548,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("size",&LocalOrder::size)
             .def("reverse",&LocalOrder::reverse)
             .def("merge",&LocalOrder::merge, "other"_a, "max_overhang"_a=4, "min_shared_perc"_a=.5, "min_shared"_a=20, "max_disordered_perc"_a=.02)
-            .def_readwrite("node_positions",&LocalOrder::node_positions);
+            .def_readwrite("node_positions",&LocalOrder::node_positions)
+            .def_readwrite("node_coordinates",&LocalOrder::node_coordinates);
 
     py::class_<HappySorterRunner>(m, "HappySorterRunner", "HappySorterRunner")
             .def(py::init<const ReadThreadsGraph &, float, float, int, int, int>(),"","rtg"_a,"min_thread_happiness"_a=.7, "min_node_happiness"_a=.7,

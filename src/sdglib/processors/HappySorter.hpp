@@ -20,6 +20,7 @@ public:
     //explicit LocalOrder(std::vector<sgNodeID_t>);//construct a local order from a list of nodes
     LocalOrder merge(const LocalOrder & other,int max_overhang=4,float min_shared_perc=.5,int min_shared=20,float max_disordered_perc=.02) const;
     std::unordered_map<sgNodeID_t , int64_t > node_positions;
+    std::unordered_map<sgNodeID_t,int64_t> node_coordinates;
 };
 
 class HappySorter {
@@ -67,7 +68,7 @@ public:
 
     LocalOrder order;
 
-    std::unordered_map<sgNodeID_t,int64_t> node_coordinates;
+
 
     std::unordered_set<int64_t> threads;
     std::unordered_set<int64_t> fw_open_threads;
