@@ -84,6 +84,7 @@ public:
         node_sorted.resize(rtg.sdg.nodes.size());
     };
     void run(int min_links=4, float first_threads_happiness=.1, int64_t min_starting_nodes=100, float max_starting_used=.1, int64_t min_final_nodes=100, int64_t max_steps=INT64_MAX, int64_t max_orders=INT64_MAX);
+    void run_from_nodes(std::vector<sgNodeID_t> nids={},int min_links=4, float first_threads_happiness=.1, int64_t max_steps=INT64_MAX);
 
     void load(std::string filename);
     void dump(std::string filename);

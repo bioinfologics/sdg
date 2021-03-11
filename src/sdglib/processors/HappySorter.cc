@@ -687,8 +687,8 @@ std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> HappySorter::hs
         int64_t last_pos=0;
         for (auto p:tnp.second){
             if (last_node!=0) {
-                if (nodeset.count(p.second)) distances[p.second].emplace_back(last_node,std::max(1LL,p.first-last_pos));//ensure no two nodes are placed "at the same bp"
-                if (nodeset.count(last_node)) distances[last_node].emplace_back(p.second,std::min(-1LL,last_pos-p.first));//ensure no two nodes are placed "at the same bp"
+                if (nodeset.count(p.second)) distances[p.second].emplace_back(last_node,std::max<int64_t>(1,p.first-last_pos));//ensure no two nodes are placed "at the same bp"
+                if (nodeset.count(last_node)) distances[last_node].emplace_back(p.second,std::min<int64_t>(-1,last_pos-p.first));//ensure no two nodes are placed "at the same bp"
             }
             last_node=p.second;
             last_pos=p.first;
@@ -879,6 +879,44 @@ void HappySorterRunner::run(int min_links, float first_threads_happiness, int64_
         }
         catch (std::exception &e) {
             std::cout<<"Exception caught when trying to process node "<<snv.node_id()<<": "<< typeid(e).name() <<": "<<e.what()<<", skipping"<<std::endl;
+        }
+
+    }
+    sdglib::OutputLog()<<"HappySorterRunner run finished!!!"<<std::endl;
+}
+
+void HappySorterRunner::run_from_nodes(std::vector<sgNodeID_t> nids, int min_links, float first_threads_happiness, int64_t max_steps) {
+    sdglib::OutputLog()<<"Starting HappySorterRunner run..."<<std::endl;
+
+    if (nids.empty()) for (auto &o:orders) nids.emplace_back(o.first);
+
+#pragma omp parallel for schedule(dynamic,100)
+    for (auto nid_it=nids.cbegin();nid_it<nids.cend();++nid_it){
+        try {
+            auto hs = HappySorter(rtg, min_thread_happiness, min_node_happiness, min_thread_nodes, min_node_threads,
+                                  order_end_size);
+            hs.start_from_node(*nid_it,min_links,first_threads_happiness);
+            hs.grow_loop(-1, -1, max_steps);
+
+#pragma omp critical(node_sorted)
+            {
+
+                orders[*nid_it] = hs.order;
+                for (auto &nid:hs.order.as_signed_nodes()) {
+                    node_sorted[llabs(nid)] = true;
+                    if (nid > 0) node_orders[nid].emplace_back(*nid_it);
+                    else node_orders[-nid].emplace_back(-*nid_it);
+                }
+                if (orders.size() % 10 == 0) {
+                    sdglib::OutputLog() << orders.size() << " orders created, "
+                                        << std::count(node_sorted.begin(), node_sorted.end(), true)
+                                        << " nodes sorted" << std::endl;
+                }
+
+            }
+        }
+        catch (std::exception &e) {
+            std::cout<<"Exception caught when trying to process node "<<*nid_it<<": "<< typeid(e).name() <<": "<<e.what()<<", skipping"<<std::endl;
         }
 
     }
