@@ -40,10 +40,7 @@ INCLUDE(FindPythonModule)
 ENABLE_TESTING()
 OPTION(BUILD_TESTING "Build tests." OFF)
 OPTION(BUILD_DOC "Build documentation" OFF)
-OPTION(BUILD_PYTHON_INTERFACE "Build SWIG Python interface" OFF)
-OPTION(BUILD_SIMPLE_PYTHON_INTERFACE "Build pybind11 simple Python  interface" ON)
-OPTION(BUILD_R_INTERFACE "Build R interface" OFF)
-OPTION(BUILD_JULIA_INTERFACE "Build Julia interface" OFF)
+OPTION(BUILD_SDGPYTHON "Build pybind11 SDGpython" ON)
 OPTION(BUILD_COV "Build coverage" OFF)
 SET(MAX_WORKSPACE_VECTOR_SIZE 100 CACHE STRING "Maximum number of items in a workspace vector")
 
@@ -135,7 +132,7 @@ add_definitions("-DMAX_WORKSPACE_VECTOR_SIZE=${MAX_WORKSPACE_VECTOR_SIZE}")
 
 
 ## Compiler flags
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -w -Wno-deprecated -std=c++11")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -Wno-deprecated")
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -fno-omit-frame-pointer -ftemplate-backtrace-limit=0 -Wall")
 
@@ -147,9 +144,12 @@ find_package (Threads)
 
 include(FindOpenMP)
 if(OPENMP_FOUND)
+    #message("OpenMP_C_FLAGS: ${OpenMP_C_FLAGS}")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    #message("OpenMP_CXX_FLAGS: ${OpenMP_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+    #message("OpenMP_EXE_LINKER_FLAGS: ${OpenMP_EXE_LINKER_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
 find_package(ZLIB REQUIRED)
@@ -203,7 +203,7 @@ SET(source_files ${source_files}
     src/sdglib/datastores/LinkedReadsDatastore.cc
     src/sdglib/datastores/LongReadsDatastore.cc
     src/sdglib/datastores/KmerCounter.cc
-        src/sdglib/datastores/ReadSequenceBuffer.cc
+    src/sdglib/datastores/ReadSequenceBuffer.cc
     src/sdglib/mappers/LongReadsMapper.cc
     src/sdglib/mappers/LinkedReadsMapper.cc
     src/sdglib/mappers/PairedReadsMapper.cc
@@ -211,7 +211,7 @@ SET(source_files ${source_files}
     src/sdglib/workspace/WorkSpace.cc
     src/sdglib/processors/GraphEditor.cc
     src/sdglib/processors/GraphMaker.cc
-        src/sdglib/indexers/UniqueKmerIndex.cc
+    src/sdglib/indexers/UniqueKmerIndex.cc
     src/sdglib/indexers/SatKmerIndex.cc
     src/sdglib/indexers/NKmerIndex.cc
     src/sdglib/views/NodeView.cc
@@ -219,21 +219,38 @@ SET(source_files ${source_files}
     src/sdglib/batch_counter/BatchKmersCounter.cc
     deps/xxhash/xxhash.c
     src/sdglib/mappers/SequenceMapper.cc
-    src/sdglib/processors/LinkageMaker.cc src/sdglib/mappers/GraphSelfAligner.cc src/sdglib/mappers/GraphSelfAligner.hpp src/sdglib/processors/GraphContigger.cc src/sdglib/processors/GraphContigger.hpp src/sdglib/mappers/LongReadsRecruiter.cc src/sdglib/mappers/LongReadsRecruiter.hpp src/sdglib/processors/PathFinder.cc src/sdglib/processors/PathFinder.hpp src/sdglib/processors/ThreadAndPopper.cc src/sdglib/processors/ThreadAndPopper.hpp src/sdglib/mappers/PerfectMatcher.cc src/sdglib/mappers/PerfectMatcher.hpp src/sdglib/processors/Strider.cc src/sdglib/processors/Strider.hpp src/sdglib/processors/GraphPatcher.cc src/sdglib/processors/GraphPatcher.hpp src/sdglib/views/TangleView.cc src/sdglib/views/TangleView.hpp
-    src/sdglib/processors/LineFiller.h src/sdglib/processors/LineFiller.cc
-    src/sdglib/processors/LinkageMaker.cc src/sdglib/mappers/GraphSelfAligner.cc src/sdglib/mappers/GraphSelfAligner.hpp src/sdglib/processors/GraphContigger.cc src/sdglib/processors/GraphContigger.hpp src/sdglib/mappers/LongReadsRecruiter.cc src/sdglib/mappers/LongReadsRecruiter.hpp src/sdglib/processors/PathFinder.cc src/sdglib/processors/PathFinder.hpp src/sdglib/processors/ThreadAndPopper.cc src/sdglib/processors/ThreadAndPopper.hpp src/sdglib/mappers/PerfectMatcher.cc src/sdglib/mappers/PerfectMatcher.hpp src/sdglib/processors/Strider.cc src/sdglib/processors/Strider.hpp src/sdglib/processors/GraphPatcher.cc src/sdglib/processors/GraphPatcher.hpp src/sdglib/views/TangleView.cc src/sdglib/views/TangleView.hpp src/sdglib/processors/CountFilter.cc src/sdglib/processors/CountFilter.hpp src/sdglib/graph/ReadThreadsGraph.cc src/sdglib/graph/ReadThreadsGraph.hpp src/sdglib/processors/HappySorter.cc src/sdglib/processors/HappySorter.hpp)
+    src/sdglib/processors/LinkageMaker.cc
+    src/sdglib/mappers/GraphSelfAligner.cc
+    src/sdglib/mappers/GraphSelfAligner.hpp
+    src/sdglib/processors/GraphContigger.cc
+    src/sdglib/processors/GraphContigger.hpp
+    src/sdglib/mappers/LongReadsRecruiter.cc
+    src/sdglib/mappers/LongReadsRecruiter.hpp
+    src/sdglib/processors/PathFinder.cc
+    src/sdglib/processors/PathFinder.hpp
+    src/sdglib/mappers/PerfectMatcher.cc
+    src/sdglib/mappers/PerfectMatcher.hpp
+    src/sdglib/processors/Strider.cc
+    src/sdglib/processors/Strider.hpp
+    src/sdglib/processors/GraphPatcher.cc
+    src/sdglib/processors/GraphPatcher.hpp
+    src/sdglib/views/TangleView.cc
+    src/sdglib/views/TangleView.hpp
+    src/sdglib/processors/LineFiller.h
+    src/sdglib/processors/LineFiller.cc
+    src/sdglib/processors/CountFilter.cc
+    src/sdglib/processors/CountFilter.hpp
+    src/sdglib/graph/ReadThreadsGraph.cc
+    src/sdglib/graph/ReadThreadsGraph.hpp
+    src/sdglib/processors/HappySorter.cc
+    src/sdglib/processors/HappySorter.hpp)
 
 ## Libraries
 add_library(sdg SHARED
             ${source_files}
             )
 
-add_library(sdg_static STATIC
-            ${source_files}
-            )
-
 target_link_libraries(sdg ${DEPENDENCY_LIBS})
-target_link_libraries(sdg_static ${DEPENDENCY_LIBS})
 
 if (BUILD_COV)
     set_target_properties(sdg PROPERTIES
@@ -260,11 +277,11 @@ add_executable(sdg-mapper
 add_executable(sdg-dbg
         src/sdg-dbg.cc)
 
-target_link_libraries(sdg-workspace sdg_static)
-target_link_libraries(sdg-datastore sdg_static)
-target_link_libraries(sdg-kmercounter sdg_static)
-target_link_libraries(sdg-mapper sdg_static)
-target_link_libraries(sdg-dbg sdg_static)
+target_link_libraries(sdg-workspace sdg)
+target_link_libraries(sdg-datastore sdg)
+target_link_libraries(sdg-kmercounter sdg)
+target_link_libraries(sdg-mapper sdg)
+target_link_libraries(sdg-dbg sdg)
 
 
 IF(BUILD_TESTING)
@@ -344,8 +361,8 @@ IF(BUILD_DOC)
     endif (DOXYGEN_FOUND)
 ENDIF()
 
-IF(BUILD_SIMPLE_PYTHON_INTERFACE)
-    MESSAGE("Building simple python interface")
+IF(BUILD_SDGPYTHON)
+    MESSAGE("Building simple SDGpython")
     FIND_PACKAGE(PythonInterp 3 REQUIRED)
     FIND_PACKAGE(PythonLibs 3 REQUIRED)
     ADD_LIBRARY( SDGpython SHARED interfaces/simple_python/SDGpython.cc )
@@ -382,8 +399,6 @@ install(TARGETS
         sdg-kmercounter
         sdg-mapper
         sdg
-        sdg_static
-#        runBasicTests
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib)
