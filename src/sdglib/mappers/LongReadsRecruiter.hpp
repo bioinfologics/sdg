@@ -123,7 +123,7 @@ public:
      * @param last_read positino in the datastore the last read to map (chunk final position)
      */
     void perfect_mappings(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
-    std::vector<PerfectMatch> reverse_perfect_matches(const std::vector<PerfectMatch> &matches, uint64_t rsize=0);
+    std::vector<PerfectMatch> reverse_perfect_matches(const std::vector<PerfectMatch> &matches, uint64_t rsize=0) const;
 
     /**
      * Maps the read by producing PerfectMatches and storing the results in read_perfect_matches.

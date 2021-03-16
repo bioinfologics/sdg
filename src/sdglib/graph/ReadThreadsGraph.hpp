@@ -198,8 +198,8 @@ public:
      * @param min_support min number of threads that need to support a link to be considered valid
      * @return vector of pairs (thread, nodes) to eliminate from the graph
      */
-    std::vector<std::pair<uint64_t,sgNodeID_t>> clean_all_nodes_popping_list(int min_supported=4, int min_support=1);
-    std::vector<std::pair<uint64_t,sgNodeID_t>> clean_all_nodes_by_thread_clustering_popping_list(int min_shared=4, float max_second_perc=.1);
+    std::vector<std::pair<int64_t,sgNodeID_t>> clean_all_nodes_popping_list(int min_supported=4, int min_support=1);
+    std::vector<std::pair<int64_t,sgNodeID_t>> clean_all_nodes_by_thread_clustering_popping_list(int min_shared=4, float max_second_perc=.1);
 
     /** @brief Applies popping lists created using  clean_repeat_nodes_popping_list or clean_all_nodes_popping_list
      *
@@ -212,9 +212,8 @@ public:
 
     std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> make_thread_nodepositions(const std::set<sgNodeID_t> &nodes) const;
 
-    std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> make_node_first_later(const std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions, const std::map<uint64_t,int64_t> &thread_nextpos={});
-    bool clean_thread_nodepositions(std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions,
-                                                      std::set<sgNodeID_t> nodes_to_review);
+    std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> make_node_first_later(const std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions, const std::map<uint64_t,int64_t> &thread_nextpos={}) const;
+    bool clean_thread_nodepositions(std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions, std::set<sgNodeID_t> nodes_to_review) const;
     std::vector<sgNodeID_t> order_nodes(const std::vector<sgNodeID_t> nodes, bool write_detailed_log=false) const;
 
     //places nodes in a linear space already containing placed_nodes, returns the positions for all nodes, including those already placed.

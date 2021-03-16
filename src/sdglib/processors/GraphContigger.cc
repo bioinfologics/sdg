@@ -104,7 +104,7 @@ void GraphContigger::solve_canonical_repeats_with_single_paths(const PairedReads
 
 }
 
-void GraphContigger::solve_canonical_repeats_with_paired_paths(const PairedReadsDatastore & prds,int min_support, int max_noise, float snr, bool join_unitigs, bool dry_run=false, bool verbose=false) {
+void GraphContigger::solve_canonical_repeats_with_paired_paths(const PairedReadsDatastore & prds,int min_support, int max_noise, float snr, bool join_unitigs, bool dry_run, bool verbose) {
     GraphEditor ge(ws);
     uint64_t repeats=0;
     uint64_t solved_repeats=0;
@@ -595,7 +595,7 @@ std::vector<sgNodeID_t> GraphContigger::end_to_end_solution(std::vector<sgNodeID
     return std::vector<sgNodeID_t>();
 }
 
-bool GraphContigger::solve_canonical_repeat(GraphEditor& ge, NodeView &nv, PairedReadsDatastore& peds, int min_support=5, int max_noise=10, int snr=10, bool verbose=false){
+bool GraphContigger::solve_canonical_repeat(GraphEditor& ge, NodeView &nv, PairedReadsDatastore& peds, int min_support, int max_noise, int snr, bool verbose){
     if (verbose) std::cout<< "Solving " << nv.node_id() << ", "<< nv.size() << "bp" << std::endl;
     std::vector<sgNodeID_t > out_nids;
     for (const auto &on: nv.next()) out_nids.push_back(on.node().node_id());

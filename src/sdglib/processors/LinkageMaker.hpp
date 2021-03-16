@@ -149,7 +149,7 @@ public:
 
     DistanceGraph make_long10x_multilinkage(const std::string &lorm_name, const std::string &lrm_name, uint32_t min_size,  float min_tnscore, bool real_read_size=true, int32_t unmapped_end=1000);
 
-    DistanceGraph make_paired10x_multilinkage(const PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore=0.2, bool fr=false, uint64_t read_offset=0, int64_t min_dist_size=-1);
+    DistanceGraph make_paired10x_multilinkage(PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore=0.2, bool fr=false, uint64_t read_offset=0, int64_t min_dist_size=-1);
 
 
     const DistanceGraph &dg;

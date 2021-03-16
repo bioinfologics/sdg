@@ -72,7 +72,7 @@ bool ReadThreadsGraph::remove_thread(int64_t thread_id) {
 }
 
 NodeView ReadThreadsGraph::thread_start_nodeview(int64_t thread_id) const {
-    return get_nodeview((thread_id>0 ? thread_info[thread_id].start : thread_info[-thread_id].end));
+    return get_nodeview((thread_id>0 ? thread_info.at(thread_id).start : thread_info.at(-thread_id).end));
 }
 
 NodeView ReadThreadsGraph::thread_end_nodeview(int64_t thread_id) const {
@@ -212,7 +212,7 @@ ReadThreadsGraph ReadThreadsGraph::local_graph(sgNodeID_t nid, int64_t distance,
 std::vector<NodePosition> ReadThreadsGraph::get_thread(int64_t thread_id) const{
     std::vector<NodePosition> thread;
     if (thread_info.count(llabs(thread_id))==0) return {};
-    auto ti=thread_info[llabs(thread_id)];
+    auto ti=thread_info.at(llabs(thread_id));
     auto s=ti.start;
     int64_t lc=0;
     int link_increment=1;
@@ -337,14 +337,14 @@ std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_lowmapping_
     return popping_list;
 }
 
-std::vector<std::pair<uint64_t,sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_popping_list( int min_supported,
+std::vector<std::pair<int64_t,sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_popping_list( int min_supported,
                                                                                        int min_support) {
-    std::vector<std::pair<uint64_t,sgNodeID_t>> popping_list;
+    std::vector<std::pair<int64_t,sgNodeID_t>> popping_list;
     auto all_nvs=get_all_nodeviews(false,false);
     std::atomic<uint64_t> nc(0);
 #pragma omp parallel
     {
-        std::vector<std::pair<uint64_t,sgNodeID_t>> private_popping_list;
+        std::vector<std::pair<int64_t,sgNodeID_t>> private_popping_list;
 #pragma omp for
         for (auto i=0;i<all_nvs.size();++i){
             auto nid=all_nvs[i].node_id();
@@ -393,9 +393,9 @@ size_t nodeset_intersection_size(const std::set<sgNodeID_t>& v1, const std::set<
     return s;
 }
 
-std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_by_thread_clustering_popping_list(
+std::vector<std::pair<int64_t, sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_by_thread_clustering_popping_list(
         int min_shared, float max_second_perc) {
-    std::vector<std::pair<uint64_t,sgNodeID_t>> popping_list;
+    std::vector<std::pair<int64_t,sgNodeID_t>> popping_list;
     auto all_nvs=get_all_nodeviews(false,false);
     std::atomic<uint64_t> nc(0);
     std::atomic<uint64_t> second_too_close(0);
@@ -403,7 +403,7 @@ std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_b
     auto tns=thread_nodesets();
 #pragma omp parallel
     {
-        std::vector<std::pair<uint64_t,sgNodeID_t>> private_popping_list;
+        std::vector<std::pair<int64_t,sgNodeID_t>> private_popping_list;
         std::unordered_map<uint64_t,std::vector<uint64_t>> tconns;
 #pragma omp for
         for (auto i=0;i<all_nvs.size();++i){
@@ -417,7 +417,7 @@ std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_b
                     if (nodeset_intersection_size(tns[tid1],tns[tid2])>=min_shared) tconns[tid1].emplace_back(tid2);
 
             //now cluster threads in the more rudimentary way possible
-            std::vector<std::set<uint64_t>> tclusters;
+            std::vector<std::set<int64_t>> tclusters;
             std::unordered_set<uint64_t> used_tids;
             std::vector<uint64_t>to_explore_tids;
             for (auto &tid1:ntids){
@@ -442,7 +442,7 @@ std::vector<std::pair<uint64_t, sgNodeID_t>> ReadThreadsGraph::clean_all_nodes_b
             //now analyse this clustering
             if (tclusters.size()==1) continue; //all is as should be
             //reverse ordering by size
-            std::sort(tclusters.begin(),tclusters.end(),[](const std::set<uint64_t> &a, const std::set<uint64_t> &b){return a.size() > b.size();});
+            std::sort(tclusters.begin(),tclusters.end(),[](const std::set<int64_t> &a, const std::set<int64_t> &b){return a.size() > b.size();});
             //now take those decisions
             //std::cout << "Cluster size comparison: " << tclusters[0].size() << " * " << max_second_perc << " < " << tclusters[1].size() << std::endl;
             if (tclusters[0].size()*max_second_perc<tclusters[1].size()){
@@ -626,7 +626,7 @@ std::map<uint64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> ReadThreadsGraph
 
 }
 
-std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> ReadThreadsGraph::make_node_first_later(const std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions, const std::map<uint64_t,int64_t> &thread_nextpos){
+std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> ReadThreadsGraph::make_node_first_later(const std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions, const std::map<uint64_t,int64_t> &thread_nextpos) const{
     std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> node_first_later;
     for (const auto &tnp:thread_node_positions){
         int start=0;
@@ -639,7 +639,7 @@ std::map<sgNodeID_t,std::pair<uint64_t,uint64_t>> ReadThreadsGraph::make_node_fi
     return node_first_later;
 }
 
-bool ReadThreadsGraph::clean_thread_nodepositions(std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions,std::set<sgNodeID_t> nodes_to_review){
+bool ReadThreadsGraph::clean_thread_nodepositions(std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> &thread_node_positions,std::set<sgNodeID_t> nodes_to_review) const {
     bool cleaned = false;
     while (true) {
 //        std::cout << "cleaning positions in " << thread_node_positions.size() << " threads for "

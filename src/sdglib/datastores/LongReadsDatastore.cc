@@ -40,7 +40,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_re
     ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
     ofs.flush();                                    // Make sure everything has been written
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<size()<<" reads"<<std::endl;
-    fd = open(filename.data(), O_RDONLY);
+    fd = fopen(filename.data(), O_RDONLY);
     if (!fd) {
         std::cerr << "Failed to open " << filename << ": " << strerror(errno);
         throw std::runtime_error("Could not open " + filename);
@@ -89,7 +89,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string default_name, 
         input_file.read(&seq[0], readSize);
         read_to_fileRecord[i].record_size=readSize;
     }
-    fd = open(filename.data(), O_RDONLY);
+    fd = fopen(filename.data(), O_RDONLY);
     if (!fd) {
         std::cerr << "Failed to open " << filename << ": " << strerror(errno);
         throw std::runtime_error("Could not open " + filename);
@@ -99,7 +99,7 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string default_name, 
 
 void LongReadsDatastore::load_index(std::string &file) {
     filename = file;
-    fd = open(filename.data(), O_RDONLY);
+    fd = fopen(filename.data(), O_RDONLY);
     std::ifstream input_file(file, std::ios_base::binary);
     if (!input_file) {
         std::cerr << "Failed to open " << file <<": " << strerror(errno);
@@ -245,7 +245,7 @@ void LongReadsDatastore::read(std::ifstream &ifs) {
     sdglib::read_string(ifs, name);
 
     load_index(filename);
-    fd = open(filename.data(), O_RDONLY);
+    fd = fopen(filename.data(), O_RDONLY);
     if (!fd) {
         std::cerr << "Failed to open " << filename << ": " << strerror(errno);
         throw std::runtime_error("Could not open " + filename);
@@ -264,8 +264,8 @@ void LongReadsDatastore::write(std::ofstream &output_file) {
 std::string LongReadsDatastore::get_read_sequence(size_t readID) const {
     char buffer[read_to_fileRecord[readID].record_size+1];
     size_t read_offset_in_file=read_to_fileRecord[readID].offset;
-    ::lseek(fd,read_offset_in_file,SEEK_SET);
-    ::read(fd, buffer,sizeof(buffer));
+    ::fseek(fd,read_offset_in_file,SEEK_SET);
+    ::fread(buffer,sizeof(buffer),1,fd);
     return std::string(buffer);
 }
 
