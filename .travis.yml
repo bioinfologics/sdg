@@ -39,8 +39,6 @@ jobs:
             - doxygen-gui
             - graphviz
             - lcov
-            - r-base
-            - r-base-dev
             - python3
             - python3-pip
       env:
