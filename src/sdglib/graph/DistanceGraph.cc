@@ -11,6 +11,7 @@
 #include <sdglib/views/TangleView.hpp>
 #include <sstream>
 #include <sdglib/workspace/WorkSpace.hpp>
+#include <numeric>
 
 void DistanceGraph::add_link(sgNodeID_t source, sgNodeID_t dest, int32_t d, Support support) {
     if (llabs(source)>=links.size()) links.resize(llabs(source)+1);

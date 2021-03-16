@@ -463,7 +463,7 @@ DistanceGraph LinkageMaker::make_longreads_multilinkage(const LongReadsMapper &l
 
 
 
-DistanceGraph LinkageMaker::make_paired10x_multilinkage(const PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore, bool fr,
+DistanceGraph LinkageMaker::make_paired10x_multilinkage(PairedReadsMapper &prm, const LinkedReadsMapper &lirm, float min_tnscore, bool fr,
                                                         uint64_t read_offset, int64_t min_dist_size) {
     check_selected_nodes();
     uint16_t prmidx=0;
@@ -539,7 +539,7 @@ DistanceGraph LinkageMaker::make_paired10x_multilinkage(const PairedReadsMapper 
         }
         else d2=dg.sdg.nodes[n2].sequence.size()-read_first_pos[rid2];
 
-        ldg.add_link(n1,n2,isize-d1-d2,{SupportType::PairedRead,prmidx,rid1});
+        ldg.add_link(n1,n2,isize-d1-d2,{SupportType::PairedRead,prmidx,(int64_t) rid1});
         ++used;
     }
     sdglib::OutputLog()<<"From lmp10x: "<<unmapped<<" unmapped,  "<<same<<" same,  "<<non_neighbours<<" non-neighbours,  "<<used<<" used"<<std::endl;

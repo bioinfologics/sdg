@@ -536,7 +536,7 @@ void LongReadsRecruiter::perfect_mappings(uint16_t seed_size, uint64_t first_rea
     }
 }
 
-std::vector<PerfectMatch> LongReadsRecruiter::reverse_perfect_matches(const std::vector<PerfectMatch> &matches,uint64_t rsize) {
+std::vector<PerfectMatch> LongReadsRecruiter::reverse_perfect_matches(const std::vector<PerfectMatch> &matches,uint64_t rsize) const {
     if (matches.empty()) return {};
     for (const auto &m:matches) if (rsize<m.read_position+m.size) rsize=m.read_position+m.size;
 
@@ -769,7 +769,7 @@ DistanceGraph LongReadsRecruiter::dg_from_threads(bool multi_link, bool remove_d
                 if (remove_duplicated and duplicated.count(llabs(pos[i].node))) continue;
                 for (auto j = i + 1; j < pos.size(); ++j) {
                     if (remove_duplicated && duplicated.count(llabs(pos[j].node))) continue;
-                    dg.add_link(-pos[i].node, pos[j].node, pos[j].start - pos[i].end, {SupportType::LongRead, 0, static_cast<uint64_t>(rid)});
+                    dg.add_link(-pos[i].node, pos[j].node, pos[j].start - pos[i].end, {SupportType::LongRead, 0, static_cast<int64_t>(rid)});
                 }
             }
         }
@@ -777,7 +777,7 @@ DistanceGraph LongReadsRecruiter::dg_from_threads(bool multi_link, bool remove_d
             uint16_t lidx=0;
             for (auto i = 0; i < pos.size() - 1; ++i) {
                 if (remove_duplicated and ( duplicated.count(llabs(pos[i].node))  or duplicated.count(llabs(pos[i+1].node)) ) ) continue;
-                dg.add_link(-pos[i].node, pos[i + 1].node, pos[i + 1].start - pos[i].end, {SupportType::LongRead, lidx++, static_cast<uint64_t>(rid)});
+                dg.add_link(-pos[i].node, pos[i + 1].node, pos[i + 1].start - pos[i].end, {SupportType::LongRead, lidx++, static_cast<int64_t>(rid)});
             }
         }
     }
