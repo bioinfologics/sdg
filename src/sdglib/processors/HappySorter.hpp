@@ -11,6 +11,7 @@ public:
     LocalOrder(){};
     explicit LocalOrder(const std::vector<sgNodeID_t> & nodes);
     std::vector<sgNodeID_t> as_signed_nodes() const;
+    std::vector<NodePosition> as_thread(const DistanceGraph &dg) const;
     int64_t get_node_position(sgNodeID_t nid) const;
     LocalOrder reverse() const;
     void validate_with_rtg(const ReadThreadsGraph & rtg);
@@ -20,6 +21,7 @@ public:
     //explicit LocalOrder(std::vector<sgNodeID_t>);//construct a local order from a list of nodes
     LocalOrder merge(const LocalOrder & other,int max_overhang=4,float min_shared_perc=.5,int min_shared=20,float max_disordered_perc=.02) const;
     std::unordered_map<sgNodeID_t , int64_t > node_positions;
+    std::unordered_map<sgNodeID_t,int64_t> node_coordinates;
 };
 
 class HappySorter {
@@ -71,7 +73,7 @@ public:
 
     LocalOrder order;
 
-    std::unordered_map<sgNodeID_t,int64_t> node_coordinates;
+
 
     std::unordered_set<int64_t> threads;
     std::unordered_set<int64_t> fw_open_threads;
@@ -88,6 +90,7 @@ public:
         node_sorted.resize(rtg.sdg.nodes.size());
     };
     void run(int min_links=4, float first_threads_happiness=.1, int64_t min_starting_nodes=100, float max_starting_used=.1, int64_t min_final_nodes=100, int64_t max_steps=INT64_MAX, int64_t max_orders=INT64_MAX);
+    void run_from_nodes(std::vector<sgNodeID_t> nids={},int min_links=4, float first_threads_happiness=.1, int64_t max_steps=INT64_MAX);
 
     void load(std::string filename);
     void dump(std::string filename);

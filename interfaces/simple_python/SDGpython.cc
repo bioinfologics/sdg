@@ -248,7 +248,6 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("update_positions",&HappySorter::update_positions,"first"_a=0,"last"_a=-1)
             .def_readwrite("threads",&HappySorter::threads)
             .def_readwrite("order",&HappySorter::order)
-            .def_readwrite("node_coordinates",&HappySorter::node_coordinates)
             .def_readwrite("bw_open_threads",&HappySorter::bw_open_threads)
             .def_readwrite("fw_open_threads",&HappySorter::fw_open_threads)
             ;
@@ -546,15 +545,18 @@ PYBIND11_MODULE(SDGpython, m) {
             .def(py::init<const std::vector<sgNodeID_t> &>(),"nodes"_a)
             .def("get_node_position",&LocalOrder::get_node_position,"node_id"_a)
             .def("as_signed_nodes",&LocalOrder::as_signed_nodes)
+            .def("as_thread",&LocalOrder::as_thread,"dg"_a)
             .def("size",&LocalOrder::size)
             .def("reverse",&LocalOrder::reverse)
             .def("merge",&LocalOrder::merge, "other"_a, "max_overhang"_a=4, "min_shared_perc"_a=.5, "min_shared"_a=20, "max_disordered_perc"_a=.02)
-            .def_readwrite("node_positions",&LocalOrder::node_positions);
+            .def_readwrite("node_positions",&LocalOrder::node_positions)
+            .def_readwrite("node_coordinates",&LocalOrder::node_coordinates);
 
     py::class_<HappySorterRunner>(m, "HappySorterRunner", "HappySorterRunner")
             .def(py::init<const ReadThreadsGraph &, float, float, int, int, int>(),"","rtg"_a,"min_thread_happiness"_a=.7, "min_node_happiness"_a=.7,
                  "min_thread_nodes"_a=3, "min_node_threads"_a=2, "order_end_size"_a=20,py::return_value_policy::take_ownership)
             .def("run",&HappySorterRunner::run,"min_links"_a=4, "first_threads_happiness"_a=.1,"min_starting_nodes"_a=100, "max_starting_used"_a=.1, "min_final_nodes"_a=100, "max_steps"_a=INT64_MAX, "max_orders"_a=INT64_MAX)
+            .def("run_from_nodes",&HappySorterRunner::run_from_nodes,"nids"_a={},"min_links"_a=4, "first_threads_happiness"_a=.1, "max_steps"_a=INT64_MAX)
             .def("dump",&HappySorterRunner::dump,"filename"_a)
             .def("load",&HappySorterRunner::load,"filename"_a)
             .def_readwrite("node_sorted",&HappySorterRunner::node_sorted)

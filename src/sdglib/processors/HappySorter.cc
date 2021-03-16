@@ -17,6 +17,22 @@ std::vector<sgNodeID_t> LocalOrder::as_signed_nodes() const {
     return nodes;
 }
 
+std::vector<NodePosition> LocalOrder::as_thread(const DistanceGraph &dg) const {
+    std::vector<NodePosition> thread;
+    if (node_coordinates.empty()) return {};
+    thread.reserve(node_coordinates.size());
+    //first place only starts and sort
+    for (auto &nc:node_coordinates)  thread.emplace_back(nc.first,nc.second,0);
+    std::sort(thread.begin(),thread.end(),[](auto a, auto b){return a.start<b.start;});
+    //now update to be 0-based and fill ends
+    auto offset=thread.front().start;
+    for (auto &np:thread) {
+        np.start-=offset;
+        np.end=np.start+dg.sdg.get_node_size(np.node);
+    }
+    return thread;
+}
+
 int64_t LocalOrder::get_node_position(sgNodeID_t nid) const {
     auto it=node_positions.find(llabs(nid));
     if (it==node_positions.end()) return 0;
@@ -481,7 +497,7 @@ void HappySorter::start_from_node(sgNodeID_t nid, int min_links, float first_thr
     fw_open_threads.clear();
     bw_open_threads.clear();
     order.node_positions.clear();
-    node_coordinates.clear();
+    order.node_coordinates.clear();
 
     std::unordered_map<sgNodeID_t,std::vector<int64_t>> node_links;
     for (auto tid:rtg.node_threads(nid,true)) {
@@ -594,7 +610,7 @@ std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> HappySorter::make
     for (auto &tid:tids){
         auto &tnp=thread_node_positions[tid];
         auto s_nv=rtg.thread_start_nodeview(tid);
-        while (node_coordinates.count(s_nv.node_id())==0 and nodes.count(s_nv.node_id())==0) {
+        while (order.node_coordinates.count(s_nv.node_id())==0 and nodes.count(s_nv.node_id())==0) {
             s_nv = rtg.next_in_thread(s_nv.node_id(),llabs(tid)).node();
         }
         int last_end_p=rtg.sdg.get_node_size(s_nv.node_id());
@@ -607,7 +623,7 @@ std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> HappySorter::make
         }
         tnp.emplace_back(0,s_nv.node_id());
         while (true){
-            if (node_coordinates.count(ln.node().node_id()) or nodes.count(ln.node().node_id())) {
+            if (order.node_coordinates.count(ln.node().node_id()) or nodes.count(ln.node().node_id())) {
                 tnp.emplace_back(last_end_p+ln.distance(),ln.node().node_id());
             }
 
@@ -687,8 +703,8 @@ std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> HappySorter::hs
         int64_t last_pos=0;
         for (auto p:tnp.second){
             if (last_node!=0) {
-                if (nodeset.count(p.second)) distances[p.second].emplace_back(last_node,std::max(1LL,p.first-last_pos));//ensure no two nodes are placed "at the same bp"
-                if (nodeset.count(last_node)) distances[last_node].emplace_back(p.second,std::min(-1LL,last_pos-p.first));//ensure no two nodes are placed "at the same bp"
+                if (nodeset.count(p.second)) distances[p.second].emplace_back(last_node,std::max<int64_t>(1,p.first-last_pos));//ensure no two nodes are placed "at the same bp"
+                if (nodeset.count(last_node)) distances[last_node].emplace_back(p.second,std::min<int64_t>(-1,last_pos-p.first));//ensure no two nodes are placed "at the same bp"
             }
             last_node=p.second;
             last_pos=p.first;
@@ -704,7 +720,7 @@ std::vector<std::pair<sgNodeID_t, int64_t>> HappySorter::place_nodes( const std:
 
     //STEP 1: populate node distances for each node
     auto full_nodeset=nodeset;
-    for (auto &pn:node_coordinates) full_nodeset.insert(pn.first);
+    for (auto &pn:order.node_coordinates) full_nodeset.insert(pn.first);
     if (verbose) std::cout<<"Nodeset has "<<nodeset.size()<<" nodes, full nodeset has "<<full_nodeset.size()<<std::endl;
     auto tnp=make_thread_nodepositions(nodeset);
     if (verbose) std::cout<<"Created thread nodepositions from "<<tnp.size()<<" threads"<<std::endl;
@@ -720,7 +736,7 @@ std::vector<std::pair<sgNodeID_t, int64_t>> HappySorter::place_nodes( const std:
     }
 
     //STEP 2: place each node in the median of its placed distances.
-    std::unordered_map<sgNodeID_t, int64_t> node_positions=node_coordinates;
+    std::unordered_map<sgNodeID_t, int64_t> node_positions=order.node_coordinates;
 
 
 
@@ -779,11 +795,11 @@ bool HappySorter::add_placed_nodes(const std::vector<std::pair<sgNodeID_t, int64
                                    bool update_current) {
     auto old_node_count=order.node_positions.size();
     for (auto pn:placed_nodes) {
-        if (update_current or node_coordinates.count(pn.first)==0) node_coordinates[pn.first]=pn.second;
+        if (update_current or order.node_coordinates.count(pn.first)==0) order.node_coordinates[pn.first]=pn.second;
     }
-    //std::vector<std::pair<sgNodeID_t, int64_t>> all_nodes(node_coordinates.begin(),node_coordinates.end());
+    //std::vector<std::pair<sgNodeID_t, int64_t>> all_nodes(order.node_coordinates.begin(),order.node_coordinates.end());
     std::vector<std::pair<sgNodeID_t, int64_t>> all_nodes;
-    for (auto &nc:node_coordinates) all_nodes.emplace_back(nc.first,nc.second);
+    for (auto &nc:order.node_coordinates) all_nodes.emplace_back(nc.first,nc.second);
     std::sort(all_nodes.begin(),all_nodes.end(),[](auto &a,auto &b){return a.second<b.second;});
     order.node_positions.clear();
     for (auto i=0;i<all_nodes.size();++i) order.node_positions[llabs(all_nodes[i].first)]=all_nodes[i].first>0? i+1:-i-1;
@@ -793,7 +809,7 @@ bool HappySorter::add_placed_nodes(const std::vector<std::pair<sgNodeID_t, int64
 bool HappySorter::grow(int min_threads, float min_happiness, bool fw, bool bw, bool internal) {
     if (min_threads==-1) min_threads=min_node_threads;
     if (min_happiness==-1) min_happiness=min_node_happiness;
-    auto old_size=node_coordinates.size();
+    auto old_size=order.node_coordinates.size();
     std::unordered_set<sgNodeID_t> candidates;
     if (internal) {
         add_placed_nodes(place_nodes(find_internal_candidates(min_happiness, min_threads), false));
@@ -807,7 +823,7 @@ bool HappySorter::grow(int min_threads, float min_happiness, bool fw, bool bw, b
     update_positions();
     recruit_all_happy_threads();
     close_internal_threads();
-    return node_coordinates.size()>old_size;
+    return order.node_coordinates.size()>old_size;
 }
 
 //TODO: add verbose printing of first/last coordinate and option to grow only fw or bw.
@@ -820,11 +836,11 @@ bool HappySorter::grow_loop(int min_threads, float min_happiness, int64_t steps,
         else break;
         if (verbose and step%10==0) {
             std::pair<sgNodeID_t,int64_t> cmax={0,0},cmin={0,0};
-            for (const auto &nc:node_coordinates) {
+            for (const auto &nc:order.node_coordinates) {
                 if (nc.second<cmin.second) cmin=nc;
                 if (nc.second>cmax.second) cmax=nc;
             }
-            std::cout<<"After "<<step<<" grow rounds: "<<node_coordinates.size()<<" anchors span "<<cmax.second-cmin.second<<" bp, "<<cmin.first<<" @ "<<cmin.second<<" : "<<cmax.first<<" @ "<<cmax.second<<std::endl;
+            std::cout<<"After "<<step<<" grow rounds: "<<order.node_coordinates.size()<<" anchors span "<<cmax.second-cmin.second<<" bp, "<<cmin.first<<" @ "<<cmin.second<<" : "<<cmax.first<<" @ "<<cmax.second<<std::endl;
         }
     }
     return grown;
@@ -879,6 +895,44 @@ void HappySorterRunner::run(int min_links, float first_threads_happiness, int64_
         }
         catch (std::exception &e) {
             std::cout<<"Exception caught when trying to process node "<<snv.node_id()<<": "<< typeid(e).name() <<": "<<e.what()<<", skipping"<<std::endl;
+        }
+
+    }
+    sdglib::OutputLog()<<"HappySorterRunner run finished!!!"<<std::endl;
+}
+
+void HappySorterRunner::run_from_nodes(std::vector<sgNodeID_t> nids, int min_links, float first_threads_happiness, int64_t max_steps) {
+    sdglib::OutputLog()<<"Starting HappySorterRunner run..."<<std::endl;
+
+    if (nids.empty()) for (auto &o:orders) nids.emplace_back(o.first);
+
+#pragma omp parallel for schedule(dynamic,100)
+    for (auto nid_it=nids.cbegin();nid_it<nids.cend();++nid_it){
+        try {
+            auto hs = HappySorter(rtg, min_thread_happiness, min_node_happiness, min_thread_nodes, min_node_threads,
+                                  order_end_size);
+            hs.start_from_node(*nid_it,min_links,first_threads_happiness);
+            hs.grow_loop(-1, -1, max_steps);
+
+#pragma omp critical(node_sorted)
+            {
+
+                orders[*nid_it] = hs.order;
+                for (auto &nid:hs.order.as_signed_nodes()) {
+                    node_sorted[llabs(nid)] = true;
+                    if (nid > 0) node_orders[nid].emplace_back(*nid_it);
+                    else node_orders[-nid].emplace_back(-*nid_it);
+                }
+                if (orders.size() % 10 == 0) {
+                    sdglib::OutputLog() << orders.size() << " orders created, "
+                                        << std::count(node_sorted.begin(), node_sorted.end(), true)
+                                        << " nodes sorted" << std::endl;
+                }
+
+            }
+        }
+        catch (std::exception &e) {
+            std::cout<<"Exception caught when trying to process node "<<*nid_it<<": "<< typeid(e).name() <<": "<<e.what()<<", skipping"<<std::endl;
         }
 
     }
@@ -970,7 +1024,7 @@ bool HappySorter::update_positions(int64_t first, int64_t last) {
 
     //sort the nodes to update by their distance to the origin
     std::vector<sgNodeID_t> nodes_to_update(onodes.cbegin()+first,onodes.cbegin()+last+1);
-    std::sort(nodes_to_update.begin(),nodes_to_update.end(),[this](auto a, auto b){return llabs(node_coordinates[a])<llabs(node_coordinates[b]);});
+    std::sort(nodes_to_update.begin(),nodes_to_update.end(),[this](auto a, auto b){return llabs(order.node_coordinates[a])<llabs(order.node_coordinates[b]);});
 //    std::cout<<std::endl<<nodes_to_update.size()<<" nodes to update from "<<all_nodes.size()<<" nodes in the order"<<std::endl;
 
     bool changed=true;
@@ -983,10 +1037,10 @@ bool HappySorter::update_positions(int64_t first, int64_t last) {
         //update node positions for any nodes with >3 links, if less, skip them to be fully placed later
         std::vector<int64_t> nps;
         for (auto &nid:nodes_to_update){
-            //if (node_coordinates[nid]==0) continue;
+            //if (order.node_coordinates[nid]==0) continue;
             nps.clear();
             for (auto &d:nd[nid]) {
-                if ((d.second>0)==(node_coordinates[nid]>0)) nps.emplace_back(node_coordinates[d.first]+d.second);
+                if ((d.second>0)==(order.node_coordinates[nid]>0)) nps.emplace_back(order.node_coordinates[d.first]+d.second);
             }
             if (nps.empty()) {
                 to_place.emplace_back(nid);
@@ -995,38 +1049,38 @@ bool HappySorter::update_positions(int64_t first, int64_t last) {
 //            if (nps.empty()) continue;
             std::sort(nps.begin(),nps.end());
             auto new_p=nps[nps.size()/2];
-            if (new_p*node_coordinates[nid]>0 and new_p != node_coordinates[nid]) {
+            if (new_p*order.node_coordinates[nid]>0 and new_p != order.node_coordinates[nid]) {
                 changed= true;
-//                std::cout<<"moving "<<nid<<" from "<<node_coordinates[nid]<<" to "<<new_p<<std::endl;
-                node_coordinates[nid]=new_p;
+//                std::cout<<"moving "<<nid<<" from "<<order.node_coordinates[nid]<<" to "<<new_p<<std::endl;
+                order.node_coordinates[nid]=new_p;
             }
         }
         //place nodes with <=3 links
         for (auto nid:to_place) {
-            auto new_p=hs_place_node(node_coordinates,nd,nid);
-            if (new_p != node_coordinates[nid]) {
+            auto new_p=hs_place_node(order.node_coordinates,nd,nid);
+            if (new_p != order.node_coordinates[nid]) {
                 changed= true;
-                node_coordinates[nid]=new_p;
+                order.node_coordinates[nid]=new_p;
             }
         }
         if (changed) ever_changed=true;
-//        if (onodes.size()!=node_coordinates.size()) std::cout<<"coordinates ("<<node_coordinates.size()<<") and signed nodes ("<<onodes.size()<<") have different sizes! "<<std::endl;
+//        if (onodes.size()!=order.node_coordinates.size()) std::cout<<"coordinates ("<<order.node_coordinates.size()<<") and signed nodes ("<<onodes.size()<<") have different sizes! "<<std::endl;
     }
 
     //re-place all nodes
     for (auto steps=10; steps and changed;--steps) {
         changed = false;
         for (auto nid:nodes_to_update) {
-            auto new_p = hs_place_node(node_coordinates, nd, nid);
-            if (new_p != node_coordinates[nid]) {
+            auto new_p = hs_place_node(order.node_coordinates, nd, nid);
+            if (new_p != order.node_coordinates[nid]) {
                 changed = true;
-                node_coordinates[nid] = new_p;
+                order.node_coordinates[nid] = new_p;
             }
         }
         if (changed) ever_changed = true;
     }
 //    std::cout<<std::endl<<"HS::update_positions updating order"<<std::endl;
-    std::vector<std::pair<sgNodeID_t,int64_t>> ordered_nodecoords(node_coordinates.begin(),node_coordinates.end());
+    std::vector<std::pair<sgNodeID_t,int64_t>> ordered_nodecoords(order.node_coordinates.begin(),order.node_coordinates.end());
     std::sort(ordered_nodecoords.begin(),ordered_nodecoords.end(),[](auto a, auto b){return a.second<b.second;});
 //    std::cout<<ordered_nodecoords.size()<<" nodes by coordinate, and "<<order.node_positions.size()<<" node positions"<<std::endl;
 //    if (onodes.size()!=ordered_nodecoords.size()) std::cout<<"nodes by coordinate ("<<ordered_nodecoords.size()<<") and signed nodes ("<<onodes.size()<<") have different sizes! "<<std::endl;
