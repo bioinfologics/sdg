@@ -32,6 +32,8 @@ jobs:
           sources:
             - ubuntu-toolchain-r-test
           packages:
+            - gcc-6
+            - gcc-6-base
             - g++-6
             - doxygen
             - doxygen-doc
