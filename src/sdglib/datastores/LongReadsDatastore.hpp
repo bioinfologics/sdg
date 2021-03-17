@@ -42,13 +42,13 @@ class LongReadsDatastore {
     void load_index(std::string &file);
 
     WorkSpace &ws;
-    FILE * fd=NULL;
+    int fd=NULL;
 public:
     std::vector< ReadPosSize > read_to_fileRecord{ReadPosSize(0,0)};
 
     ~LongReadsDatastore(){
         if (fd) {
-            fclose(fd);
+            close(fd);
         }
     }
     explicit LongReadsDatastore(WorkSpace &ws);
