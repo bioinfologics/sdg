@@ -134,7 +134,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("parallels",&NodeView::parallels,"A list with NodeViews of parallel nodes",py::return_value_policy::move)
             .def("kmer_coverage",py::overload_cast<std::string, std::string>(&NodeView::kmer_coverage, py::const_))
             .def("kci",&NodeView::kci)
-            .def("linked_tags",&NodeView::get_linked_tags,"dsname"_a,"min_reads"_a=3)
+            .def("get_mappings_tags", &NodeView::get_mappings_tags,"dsname"_a,"min_reads"_a=3)
+            .def("get_paths_tags", &NodeView::get_paths_tags,"dsname"_a,"min_reads"_a=3)
             .def("get_kmers",&NodeView::get_kmers, "K"_a=31)
             .def("__eq__", &NodeView::operator==, py::is_operator())
             .def("__repr__",
