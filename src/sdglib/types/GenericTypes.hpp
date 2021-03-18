@@ -11,7 +11,6 @@
 #include <limits>
 #include <cstdint>
 #include <xxhash/xxhash.h>
-#include "hashing_helper.hpp"
 
 using sgNodeID_t = int64_t; //first node is 1; negatives are RC
 using seqID_t = int64_t; //first sequence is 0;
@@ -80,14 +79,6 @@ public:
     sgNodeID_t dest = 0;
     int32_t dist = 0;
     Support support;
-};
-
-struct link_hash{
-    size_t operator()(const Link& l) const {
-        std::tuple<sgNodeID_t , sgNodeID_t , int32_t > tp (l.source,l.dest,l.dist);
-        sdglib::hash<std::tuple<sgNodeID_t , sgNodeID_t , int32_t>> h;
-        return h (tp);
-    }
 };
 
 
