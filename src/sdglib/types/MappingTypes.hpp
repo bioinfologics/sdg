@@ -9,7 +9,6 @@
 #include <ostream>
 #include <tuple>
 #include "GenericTypes.hpp"
-#include "hashing_helper.hpp"
 #include <vector>
 
 class ReadMapping {
@@ -38,13 +37,6 @@ public:
     bool rev=false;
 
 
-};
-struct ReadMapping_hash {
-    size_t operator()(const ReadMapping& lr) const {
-        std::tuple<sgNodeID_t , uint64_t , int32_t > tp (lr.node,lr.read_id,lr.first_pos);
-        sdglib::hash<std::tuple<sgNodeID_t , uint64_t , int32_t>> h;
-        return h (tp);
-    }
 };
 
 /**
@@ -88,13 +80,6 @@ struct LongReadMapping {
 
 };
 
-struct LongReadMapping_hash {
-    size_t operator()(const LongReadMapping& lr) const {
-        std::tuple<sgNodeID_t , uint64_t , int32_t > tp (lr.node,lr.read_id,lr.nStart);
-        sdglib::hash<std::tuple<sgNodeID_t , uint64_t , int32_t>> h;
-        return h (tp);
-    }
-};
 
 
 struct SequenceMatch {
@@ -132,13 +117,6 @@ struct SequenceMatch {
 
 };
 
-struct SequenceMatch_hash {
-    size_t operator()(const SequenceMatch& lr) const {
-        std::tuple<sgNodeID_t , uint64_t , int32_t > tp (lr.seq_id1,lr.seq_id2,lr.start1);
-        sdglib::hash<std::tuple<sgNodeID_t , uint64_t , int32_t>> h;
-        return h (tp);
-    }
-};
 
 struct ReadPath{
     uint32_t offset;
