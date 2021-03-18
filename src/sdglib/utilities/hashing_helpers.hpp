@@ -10,25 +10,24 @@
 //
 //  this is from boost
 //
-template<typename T>
-inline void hash_combine(std::size_t& seed, const T& val)
-{
-    std::hash<T> hasher;
-    seed ^= hasher(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-}
+namespace std {
+    template<typename T>
+    inline void hash_combine(size_t &seed, const T &val) {
+        hash<T> hasher;
+        seed ^= hasher(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
 
 //  taken from https://stackoverflow.com/a/7222201/916549
 //
-template<typename S, typename T>
-struct std::hash<std::pair<S, T>>
-{
-inline size_t operator()(const std::pair<S, T>& val) const
-{
-    size_t seed = 0;
-    hash_combine(seed, val.first);
-    hash_combine(seed, val.second);
-    return seed;
+    template<typename S, typename T>
+    struct hash<pair<S, T>> {
+        inline size_t operator()(const pair<S, T> &val) const {
+            size_t seed = 0;
+            hash_combine(seed, val.first);
+            hash_combine(seed, val.second);
+            return seed;
+        }
+    };
 }
-};
 
 #endif //BSG_HASHING_HELPERS_HPP
