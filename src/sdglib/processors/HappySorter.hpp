@@ -38,7 +38,7 @@ public:
      * Happines is calculated as the propotion of shared threads between the node and the order
      * */
     float node_happiness(sgNodeID_t,bool prev=true,bool next=false, int min_threads=-1) const; //TODO: have an open-thread happiness
-    void recruit_all_happy_threads(float min_happiness=-1, int min_nodes=-1);
+    void recruit_all_happy_threads(float min_happiness=-1, int min_nodes=-1, int64_t end_sizes=-1);
     void close_internal_threads(int order_end=20,int thread_end=0);
     std::unordered_set<sgNodeID_t> find_fw_candidates(float min_happiness=-1, int min_threads=-1, int end_size=-1) const;
     std::unordered_set<sgNodeID_t> find_bw_candidates(float min_happiness=-1, int min_threads=-1, int end_size=-1) const;
@@ -52,6 +52,7 @@ public:
     bool grow_fw(int min_threads, bool verbose=true);
     bool grow(int min_threads=-1, float min_happiness=-1, bool fw=true, bool bw=true, bool internal=true);
     bool grow_loop(int min_threads=-1, float min_happiness=-1, int64_t steps=INT64_MAX, bool verbose=false);
+    bool fast_grow_loop(int min_threads=-1, float min_happiness=-1, int64_t steps=INT64_MAX, bool verbose=false);
 
     void recruit_all_happy_threads_q(int min_nodes, int max_span);
     bool thread_happiness_q(int64_t tid,int min_nodes, int max_span) const;
