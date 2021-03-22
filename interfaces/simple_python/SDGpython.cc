@@ -217,6 +217,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("apply_popping_list",&ReadThreadsGraph::apply_popping_list,"popping_list"_a)
             .def("order_nodes",&ReadThreadsGraph::order_nodes,"nodes"_a,"write_detailed_log"_a=false)
             .def("thread_fw_in_node",&ReadThreadsGraph::thread_fw_in_node,"thread_id"_a,"node_id"_a)
+            .def("nodes_before_in_thread",&ReadThreadsGraph::nodes_before_in_thread,"thread_id"_a,"node_id"_a)
+            .def("nodes_after_in_thread",&ReadThreadsGraph::nodes_after_in_thread,"thread_id"_a,"node_id"_a)
             .def("make_thread_nodepositions",&ReadThreadsGraph::make_thread_nodepositions,"nodes"_a)
             .def("make_node_first_later",&ReadThreadsGraph::make_node_first_later,"thread_nodepositions"_a,"thread_nextpos"_a=std::map<uint64_t,int64_t>{})
             .def("place_nodes",&ReadThreadsGraph::place_nodes,"placed_nodes"_a,"nodes"_a,"verbose"_a=false)

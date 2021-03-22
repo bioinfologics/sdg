@@ -557,6 +557,44 @@ bool ReadThreadsGraph::thread_fw_in_node(int64_t tid, sgNodeID_t nid) const {
 
 }
 
+int64_t ReadThreadsGraph::nodes_before_in_thread(int64_t tid, sgNodeID_t nid) const {
+    if (llabs(nid)>links.size()) throw std::runtime_error("thread "+std::to_string(tid)+" not in node "+std::to_string(nid));
+    int prev_idx=-1;
+    int next_idx=-1;
+    auto atid=llabs(tid);
+    for (auto &l:links[llabs(nid)]) {
+        if (l.support.id==atid) {
+            if (l.source==nid) prev_idx=l.support.index;
+            else next_idx=l.support.index;
+        }
+    }
+    auto thread_links=thread_info.at(llabs(tid)).link_count;
+    if (prev_idx==-1 and next_idx!=-1) return 0;
+    if (next_idx==-1 and prev_idx!=-1) return thread_links;
+    if (prev_idx<next_idx and tid>0) return prev_idx+1;
+    if (prev_idx>next_idx and tid<0) return thread_links-prev_idx;
+    throw std::runtime_error("node is not in thread!");
+}
+
+int64_t ReadThreadsGraph::nodes_after_in_thread(int64_t tid, sgNodeID_t nid) const {
+    if (llabs(nid)>links.size()) throw std::runtime_error("thread "+std::to_string(tid)+" not in node "+std::to_string(nid));
+    int prev_idx=-1;
+    int next_idx=-1;
+    auto atid=llabs(tid);
+    for (auto &l:links[llabs(nid)]) {
+        if (l.support.id==atid) {
+            if (l.source==nid) prev_idx=l.support.index;
+            else next_idx=l.support.index;
+        }
+    }
+    auto thread_links=thread_info.at(llabs(tid)).link_count;
+    if (prev_idx!=-1 and next_idx==-1) return 0;
+    if (next_idx!=-1 and prev_idx==-1) return thread_links;
+    if (prev_idx<next_idx and tid>0) return thread_links-next_idx;
+    if (prev_idx>next_idx and tid<0) return prev_idx;
+    throw std::runtime_error("node is not in thread!");
+}
+
 //TODO:: split into make_thread_nodepositions / pick_next (which automatically calls clean if needed) / -> make it a small class??
 std::map<uint64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> ReadThreadsGraph::make_thread_nodepositions(const std::set<sgNodeID_t> & nodes) const{
     std::map<uint64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> thread_node_positions;

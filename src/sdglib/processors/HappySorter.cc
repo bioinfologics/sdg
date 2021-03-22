@@ -264,19 +264,27 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
     if (nid==0 or rtg.sdg.links.size()-1<llabs(nid)) return 0;
     if (not prev and not next) return 0;
     else if (prev and not next) {
-        for (auto const &l:rtg.links[llabs(nid)]) {
-            if (l.source==nid) {
+        for (auto &tid:rtg.node_threads(nid,true)){
+            if (rtg.nodes_before_in_thread(tid,nid)>=10){
                 ++total;
-                if (threads.count(rtg.thread_fw_in_node(l.support.id,nid) ? l.support.id : -l.support.id)) ++happy;
+                if (threads.count(tid)) ++happy;
             }
+        }
+        if (total<min_threads){
+            total=0;happy=0;
+            for (auto &tid:rtg.node_threads(nid,true)) if (threads.count(tid)) ++happy;
         }
     }
     else if (not prev and next) {
-        for (auto const &l:rtg.links[llabs(nid)]) {
-            if (l.source==-nid) {
+        for (auto &tid:rtg.node_threads(nid,true)){
+            if (rtg.nodes_after_in_thread(tid,nid)>=10){
                 ++total;
-                if (threads.count(rtg.thread_fw_in_node(l.support.id,nid) ? l.support.id : -l.support.id)) ++happy;
+                if (threads.count(tid)) ++happy;
             }
+        }
+        if (total<min_threads){
+            total=0;happy=0;
+            for (auto &tid:rtg.node_threads(nid,true)) if (threads.count(tid)) ++happy;
         }
     }
     else {
