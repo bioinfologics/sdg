@@ -560,6 +560,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def(py::init<const ReadThreadsGraph &, float, float, int, int, int>(),"","rtg"_a,"min_thread_happiness"_a=.7, "min_node_happiness"_a=.7,
                  "min_thread_nodes"_a=3, "min_node_threads"_a=2, "order_end_size"_a=20,py::return_value_policy::take_ownership)
             .def("run",&HappySorterRunner::run,"min_links"_a=4, "first_threads_happiness"_a=.1,"min_starting_nodes"_a=100, "max_starting_used"_a=.1, "min_final_nodes"_a=100, "max_steps"_a=INT64_MAX, "max_orders"_a=INT64_MAX)
+            .def("run_fast",&HappySorterRunner::run_fast,"min_links"_a=4, "first_threads_happiness"_a=.1,"min_starting_nodes"_a=150, "max_starting_used"_a=.1, "min_final_nodes"_a=10000, "max_steps"_a=INT64_MAX, "max_orders"_a=INT64_MAX)
             .def("run_from_nodes",&HappySorterRunner::run_from_nodes,"nids"_a=std::vector<sgNodeID_t>{},"min_links"_a=4, "first_threads_happiness"_a=.1, "max_steps"_a=INT64_MAX)
             .def("dump",&HappySorterRunner::dump,"filename"_a)
             .def("load",&HappySorterRunner::load,"filename"_a)

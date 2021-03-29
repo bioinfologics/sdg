@@ -916,7 +916,7 @@ bool HappySorter::fast_grow_loop(int min_threads, float min_happiness, int64_t s
         grown=order.node_coordinates.size()>old_size;
         /********/
         if (not grown) break;
-        if (verbose and step%10==0) {
+        if (verbose and step%50==0) {
             std::pair<sgNodeID_t,int64_t> cmax={0,0},cmin={0,0};
             for (const auto &nc:order.node_coordinates) {
                 if (nc.second<cmin.second) cmin=nc;
@@ -983,6 +983,62 @@ void HappySorterRunner::run(int min_links, float first_threads_happiness, int64_
     sdglib::OutputLog()<<"HappySorterRunner run finished!!!"<<std::endl;
 }
 
+void HappySorterRunner::run_fast(int min_links, float first_threads_happiness, int64_t min_starting_nodes, float max_starting_used, int64_t min_final_nodes, int64_t max_steps, int64_t max_orders) {
+    sdglib::OutputLog()<<"Starting HappySorterRunner run..."<<std::endl;
+    //sdglib::OutputLog()<<"Getting all nodeviews..."<<std::endl;
+    auto nvs=rtg.get_all_nodeviews(false,false);
+    //sdglib::OutputLog()<<nvs.size()<<" nodeviews"<<std::endl;
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    //sdglib::OutputLog()<<"Shuffling nodeviews..."<<std::endl;
+    shuffle (nvs.begin(), nvs.end(), std::default_random_engine(seed));
+    sdglib::OutputLog()<<"Entering loop..."<<std::endl;
+#pragma omp parallel for schedule(dynamic,100)
+    for (auto snvi=nvs.cbegin();snvi<nvs.cend();++snvi){
+        auto &snv=*snvi;
+        if (orders.size()>=max_orders) continue;
+        try {
+#pragma omp critical(node_sorted)
+            auto ns = node_sorted[snv.node_id()];
+            if (node_sorted[snv.node_id()]) continue;
+            auto hs = HappySorter(rtg, min_thread_happiness, min_node_happiness, min_thread_nodes, min_node_threads,
+                                  order_end_size);
+            hs.start_from_node(snv.node_id(),min_links,first_threads_happiness);
+            if (hs.order.size() < min_starting_nodes) continue;
+            int64_t used = 0;
+#pragma omp critical(node_sorted)
+            for (auto &nid:hs.order.as_signed_nodes()) if (node_sorted[llabs(nid)]) ++used;
+            if (hs.order.size() * max_starting_used < used) continue;
+//            std::cout << "Thread #" << omp_get_thread_num() << " growing order from node " << snv.node_id() << " ..."
+//                      << std::endl;
+            hs.fast_grow_loop(-1, -1, max_steps,true);
+            if (hs.order.size() < min_final_nodes) continue;
+            //sorters[snv.node_id()]=hs;
+#pragma omp critical(node_sorted)
+            {
+                if (orders.size()<max_orders) { //check again to mantain initial condition
+                    std::cout << "Thread #" << omp_get_thread_num() << " adding order from node " << snv.node_id()
+                              << " with " << hs.order.size() << " nodes" << std::endl;
+                    orders[snv.node_id()] = hs.order;
+                    for (auto &nid:hs.order.as_signed_nodes()) {
+                        node_sorted[llabs(nid)] = true;
+                        if (nid > 0) node_orders[nid].emplace_back(snv.node_id());
+                        else node_orders[-nid].emplace_back(-snv.node_id());
+                    }
+                    if (orders.size() % 10 == 0) {
+                        sdglib::OutputLog() << orders.size() << " orders created, "
+                                            << std::count(node_sorted.begin(), node_sorted.end(), true)
+                                            << " nodes sorted" << std::endl;
+                    }
+                }
+            }
+        }
+        catch (std::exception &e) {
+            std::cout<<"Exception caught when trying to process node "<<snv.node_id()<<": "<< typeid(e).name() <<": "<<e.what()<<", skipping"<<std::endl;
+        }
+
+    }
+    sdglib::OutputLog()<<"HappySorterRunner run finished!!!"<<std::endl;
+}
 void HappySorterRunner::run_from_nodes(std::vector<sgNodeID_t> nids, int min_links, float first_threads_happiness, int64_t max_steps) {
     sdglib::OutputLog()<<"Starting HappySorterRunner run..."<<std::endl;
 
