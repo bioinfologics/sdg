@@ -41,11 +41,11 @@ public:
     //This looks for candidates that are both fw for some nodes and bw for others
     std::unordered_set<sgNodeID_t> find_internal_candidates(float min_happiness=-1, int min_threads=-1, int32_t first=1, int32_t last=INT32_MAX) const;
     void start_from_node(sgNodeID_t nid, int min_links=4, float first_threads_happiness=.1);
+    void start_from_node_2(sgNodeID_t nid, int min_links=4, float first_threads_happiness=.1);
     //this works similarly to the rtg one, but includes all nodes form the order in the threads too
     std::map<int64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> make_thread_nodepositions(const std::unordered_set<sgNodeID_t> &nodes,std::set<int64_t> tids={}) const;
     std::vector<std::pair<sgNodeID_t, int64_t>> place_nodes( const std::unordered_set<sgNodeID_t> &nodes, bool verbose) const;
     bool  add_placed_nodes( const std::vector<std::pair<sgNodeID_t, int64_t>> &placed_nodes, bool update_current=true);
-    bool grow_fw(int min_threads, bool verbose=true);
     bool grow(int min_threads=-1, float min_happiness=-1, bool fw=true, bool bw=true, bool internal=true);
     bool grow_loop(int min_threads=-1, float min_happiness=-1, int64_t steps=INT64_MAX, bool verbose=false);
     bool fast_grow_loop(int min_threads=-1, float min_happiness=-1, int64_t steps=INT64_MAX, bool verbose=false);

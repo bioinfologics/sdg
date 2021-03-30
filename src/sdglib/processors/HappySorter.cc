@@ -210,14 +210,6 @@ LocalOrder LocalOrder::reverse() const {
     return LocalOrder(nodes_rev);
 }
 
-std::vector<sgNodeID_t> rtg_place_order(const ReadThreadsGraph & rtg,std::vector<sgNodeID_t> &nodes){
-    auto placed=rtg.place_nodes({},nodes);
-    std::vector<sgNodeID_t> order;
-    order.reserve(placed.size());
-    for (const auto &np:placed) order.emplace_back(np.first);
-    return order;
-}
-
 void HappySorter::reverse() {
     order=order.reverse();
     std::unordered_set<sgNodeID_t> new_threads,new_fthreads,new_bthreads;
@@ -559,66 +551,48 @@ void HappySorter::start_from_node(sgNodeID_t nid, int min_links, float first_thr
     return;
 }
 
-bool HappySorter::grow_fw(int min_threads, bool verbose) {
-    if (verbose) std::cout<<std::endl<<"New fw grow round starting, starting with an order of "<<order.size()<<" nodes"<<std::endl;
+void HappySorter::start_from_node_2(sgNodeID_t nid, int min_links, float first_threads_happiness) {
+    //std::cout<<"Start from node B version, starting"<<std::endl;
+    threads.clear();
+    fw_open_threads.clear();
+    bw_open_threads.clear();
+    order.node_positions.clear();
+    order.node_coordinates.clear();
 
-    //STEP 1 - find and order fw candidates
-    std::vector<sgNodeID_t> candidates;
-    for (auto &c:find_fw_candidates(min_node_happiness,min_threads)) candidates.emplace_back(c);
-    if (verbose) std::cout<<"found "<<candidates.size()<<" candidates forward, including "<<order_end_size<<" in the order end"<<std::endl;
-    //auto sorted_candidates=rtg.order_nodes(candidates);
-    auto sorted_candidates=rtg_place_order(rtg,candidates);
-    if (verbose) std::cout<<"sorted candidates size: "<<sorted_candidates.size()<<std::endl;
-    if (sorted_candidates.size()<20) {
-        if (verbose) std::cout<<"aborting grow, not enough sorted candidates"<<std::endl;
-        return false;
+    std::unordered_map<sgNodeID_t,std::vector<int64_t>> node_links;
+    for (auto tid:rtg.node_threads(nid,true)) {
+        auto t=rtg.get_thread(tid);
+        int64_t nidpos=-1;
+        for (auto &ntp:t) if (ntp.node==nid) {
+                nidpos=ntp.start;
+                break;
+            }
+        for (auto &ntp:t) node_links[ntp.node].emplace_back(ntp.start-nidpos);
+    }
+    //auto hs=HappySorter(rtg,min_thread_happiness,min_node_happiness,min_thread_nodes,min_node_threads);
+    add_placed_nodes({{nid,0}});
+    std::cout<<" ... placed "<<nid<<" @ 0"<<std::endl;
+    for (auto &nl:node_links) {
+        auto &distances=nl.second;
+        if (distances.size()>=min_links) {
+            if (node_links.count(-nl.first) and node_links.at(-nl.first).size()>=min_links) continue;//avoid nodes that appear in both directions!
+            std::sort(distances.begin(),distances.end());
+            add_placed_nodes({{nl.first,distances[distances.size()/2]}});
+            std::cout<<" ... placed "<<nl.first<<" @ "<<distances[distances.size()/2]<<" using "<<distances.size()<<"links: ";//<<std::endl;
+            for (auto &d:distances) std::cout<<d<<" ";
+            std::cout<<std::endl;
+        }
     }
 
-    //STEP 2 - a very crude merge
-
-    //TODO: this is stupidly innefficient!
-    auto new_nodes=order.as_signed_nodes();
-    new_nodes.resize(new_nodes.size()-order_end_size);
-    auto old_nodes_size=new_nodes.size();
-    new_nodes.insert(new_nodes.end(),sorted_candidates.begin(),sorted_candidates.end());
-    order=LocalOrder(new_nodes);
-    if (order.size()!=new_nodes.size()){
-        std::cout<<"LocalOrder from old order and candidates has less nodes that its input!"<<std::endl;
-    }
-    if (verbose) std::cout<<"New order has "<<order.size()<<" nodes"<<std::endl;
-
-    // STEP 3 - recruit more threads
-    auto otc=threads.size();
-    recruit_all_happy_threads();
-    if (verbose) std::cout<<threads.size()-otc<<" new happy threads recruited"<<std::endl;
-
-    // STEP 4 -
-    auto internal_candidates=find_internal_candidates(.1,min_node_threads,old_nodes_size);
-    if (verbose) std::cout<<"There are "<<internal_candidates.size()<<" internal candidates in the newly ordered region"<<std::endl;
-    for (auto ic:internal_candidates) candidates.emplace_back(ic);
-
-    //sorted_candidates=rtg.order_nodes(candidates);
-    sorted_candidates=rtg_place_order(rtg,candidates);
-    if (verbose) std::cout<<"sorted and internal candidates size: "<<sorted_candidates.size()<<std::endl;
-    if (sorted_candidates.size()<20) {
-        if (verbose) std::cout<<"aborting internal recruiting, order failed!"<<std::endl;
-        return true;
-    }
-
-    //STEP 5 - a very crude merge again
-
-    //TODO: this is stupidly innefficient!
-    new_nodes.resize(old_nodes_size);
-    new_nodes.insert(new_nodes.end(),sorted_candidates.begin(),sorted_candidates.end());
-    order=LocalOrder(new_nodes);
-    if (verbose) std::cout<<"New order has "<<order.size()<<" nodes"<<std::endl;
-
-    // STEP 6 - recruit more threads again
-    otc=threads.size();
-    recruit_all_happy_threads();
-    if (verbose) std::cout<<threads.size()-otc<<" new happy threads recruited"<<std::endl;
-
-    return true;
+//    recruit_all_happy_threads(first_threads_happiness);
+//    while(add_placed_nodes(place_nodes(find_internal_candidates(),false)));
+//    update_positions();
+//    threads.clear();
+//    fw_open_threads.clear();
+//    bw_open_threads.clear();
+//    recruit_all_happy_threads();
+//    close_internal_threads();
+    return;
 }
 
 std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> HappySorter::make_thread_nodepositions(const std::unordered_set<sgNodeID_t> & nodes, std::set<int64_t> tids) const{
@@ -763,9 +737,6 @@ std::vector<std::pair<sgNodeID_t, int64_t>> HappySorter::place_nodes( const std:
 
     //STEP 2: place each node in the median of its placed distances.
     std::unordered_map<sgNodeID_t, int64_t> node_positions=order.node_coordinates;
-
-
-
 
     auto to_place=nodeset;
     std::map<sgNodeID_t, std::pair<bool,bool>> np_complete;
