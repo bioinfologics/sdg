@@ -559,6 +559,7 @@ void HappySorter::start_from_node_2(sgNodeID_t nid, int min_links, float first_t
     order.node_positions.clear();
     order.node_coordinates.clear();
 
+    //first collect all links to any nodes
     std::unordered_map<sgNodeID_t,std::vector<int64_t>> node_links;
     for (auto tid:rtg.node_threads(nid,true)) {
         auto t=rtg.get_thread(tid);
@@ -569,20 +570,26 @@ void HappySorter::start_from_node_2(sgNodeID_t nid, int min_links, float first_t
             }
         for (auto &ntp:t) node_links[ntp.node].emplace_back(ntp.start-nidpos);
     }
-    //auto hs=HappySorter(rtg,min_thread_happiness,min_node_happiness,min_thread_nodes,min_node_threads);
-    add_placed_nodes({{nid,0}});
-    std::cout<<" ... placed "<<nid<<" @ 0"<<std::endl;
+
+    //now keep only nodes linked by min_links, and find the leftmost "median position" node to use as start
+    std::unordered_set<sgNodeID_t> well_linked_nodes;
+    int64_t leftmost_pos=0;
+    sgNodeID_t leftmost_node=nid;
     for (auto &nl:node_links) {
         auto &distances=nl.second;
         if (distances.size()>=min_links) {
+            well_linked_nodes.insert(nl.first);
             if (node_links.count(-nl.first) and node_links.at(-nl.first).size()>=min_links) continue;//avoid nodes that appear in both directions!
             std::sort(distances.begin(),distances.end());
-            add_placed_nodes({{nl.first,distances[distances.size()/2]}});
-            std::cout<<" ... placed "<<nl.first<<" @ "<<distances[distances.size()/2]<<" using "<<distances.size()<<"links: ";//<<std::endl;
-            for (auto &d:distances) std::cout<<d<<" ";
-            std::cout<<std::endl;
+            auto p=distances[distances.size()/2];
+            if (p<leftmost_pos) {
+                leftmost_pos=p;
+                leftmost_node=nl.first;
+            }
         }
     }
+
+    add_placed_nodes(place_nodes_ltr(well_linked_nodes,leftmost_node,true));
 
 //    recruit_all_happy_threads(first_threads_happiness);
 //    while(add_placed_nodes(place_nodes(find_internal_candidates(),false)));
@@ -785,6 +792,116 @@ std::vector<std::pair<sgNodeID_t, int64_t>> HappySorter::place_nodes( const std:
     for (auto &np:node_positions) if (nodeset.count(np.first)) placements.emplace_back(np.first,np.second);
     std::sort(placements.begin(),placements.end(),[](auto &a,auto &b){return a.second<b.second;});
 
+    return placements;
+}
+
+/**
+ * def node_pos(nid,nnp,dists):
+    lp=[]
+    lpp=[]
+    rp=[]
+    rp_valid=True
+    for a,d in dists[nid]:
+        if d>0:
+            if a not in nnp:
+                #print("nid %d not placed: distance to absent %d is %d" % (nid,a,d))
+                return None
+            lp.append(nnp[a]+d)
+            lpp.append(nnp[a])
+        elif a in nnp:
+            rp.append(nnp[a]+d)
+        else:
+            rp_valid=False
+    if lp:
+        print("placed by lp: ",lp)
+        #discard any positions before a node with >1 links to it
+        mp=max([x for x,c in Counter(lpp).items() if c>=1])
+        lp=[x for x in lp if x>mp]
+        return lp[len(lp)//2]
+    if not rp_valid:
+        return None
+    print("placed by rp")
+    return rp[len(rp)//2]
+ */
+
+int64_t node_pos_ltr(sgNodeID_t nid, const std::unordered_map<sgNodeID_t, int64_t> &nnp, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & dists){
+    std::vector<int64_t> lp,rp;
+    std::map<int64_t,int64_t> lpp;
+    bool rp_valid = true;
+    for (auto &ad:dists.at(nid)){
+        auto &a=ad.first;auto &d=ad.second;
+        if (d>0){
+            if (nnp.count(a)==0) return INT64_MIN;
+            lp.emplace_back(nnp.at(a)+d);
+            ++lpp[nnp.at(a)]; //increase the previous position count
+        }
+        else if (nnp.count(a)) {
+            rp.emplace_back(nnp.at(a)+d);
+        }
+        else {
+            rp_valid = false;
+        }
+    }
+    //placing by previous nodes
+    if (not lp.empty()) {
+        //discard any proposed positions before the last previous node with >1 links
+        int64_t last_pp=INT64_MIN;
+        for (auto &pp:lpp) if (pp.second>1 and pp.first>last_pp) last_pp=pp.first;
+        std::vector<int64_t> flp;
+        for (auto &p:lp) if (p>last_pp) flp.emplace_back(p);
+        //poor man's median
+        std::sort(flp.begin(),flp.end());
+        return flp[flp.size()/2];
+    }
+    if (not rp_valid) return INT64_MIN;
+    std::sort(rp.begin(),rp.end());
+    return rp[rp.size()/2];
+}
+std::vector<std::pair<sgNodeID_t, int64_t>> HappySorter::place_nodes_ltr(const std::unordered_set<sgNodeID_t> &nodes, sgNodeID_t first_node, bool verbose) const {
+
+    if (verbose) std::cout<<"Place nodes LTR starting"<<std::endl;
+
+    //STEP 1: populate node distances for each node
+    auto node_distances=hs_tnp_to_distances(make_thread_nodepositions(nodes),nodes);
+    if (verbose) std::cout<<"Created distances for "<<node_distances.size()<<" nodes"<<std::endl;
+
+    //STEP 2: place each node in the median of its placed distances.
+    std::unordered_map<sgNodeID_t, int64_t> node_positions;
+    node_positions[first_node]=0;
+    if (verbose) std::cout<<"Placed "<<first_node<<"@ 0"<<std::endl;
+
+    auto to_place=nodes;
+    to_place.erase(first_node);
+
+
+    if (verbose) std::cout<<"Entering placing loop"<<std::endl;
+    sgNodeID_t node_to_place;
+    int64_t position;
+    while (not to_place.empty()){
+        position=INT64_MAX;
+        for (auto &nid:to_place){
+            auto p=node_pos_ltr(nid,node_positions,node_distances);
+            if (p!=INT64_MIN and p<position) {
+                node_to_place=nid;
+                position=p;
+            }
+        }
+        if (position==INT64_MAX) {
+            if (verbose) std::cout<<"Can't place any more nodes, aborting"<<std::endl;
+            //return {};
+            break;
+        };//we failed to place any more nodes -> we failed!
+        if (verbose) std::cout<<"Placed "<<node_to_place<<"@ "<<position<<std::endl;
+        node_positions[node_to_place]=position;
+        to_place.erase(node_to_place);
+        if (verbose) std::cout<<to_place.size()<<" nodes left to place "<<position<<std::endl;
+    }
+
+    //Transform into sorted vector of placed nodes.
+    std::vector<std::pair<sgNodeID_t,int64_t>> placements;
+    placements.reserve(node_positions.size());
+    for (auto &np:node_positions) placements.emplace_back(np.first,np.second);
+    std::sort(placements.begin(),placements.end(),[](auto &a,auto &b){return a.second<b.second;});
     return placements;
 }
 

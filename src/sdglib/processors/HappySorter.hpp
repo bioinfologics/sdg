@@ -45,6 +45,7 @@ public:
     //this works similarly to the rtg one, but includes all nodes form the order in the threads too
     std::map<int64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> make_thread_nodepositions(const std::unordered_set<sgNodeID_t> &nodes,std::set<int64_t> tids={}) const;
     std::vector<std::pair<sgNodeID_t, int64_t>> place_nodes( const std::unordered_set<sgNodeID_t> &nodes, bool verbose) const;
+    std::vector<std::pair<sgNodeID_t, int64_t>> place_nodes_ltr( const std::unordered_set<sgNodeID_t> &nodes, sgNodeID_t first_node, bool verbose) const;
     bool  add_placed_nodes( const std::vector<std::pair<sgNodeID_t, int64_t>> &placed_nodes, bool update_current=true);
     bool grow(int min_threads=-1, float min_happiness=-1, bool fw=true, bool bw=true, bool internal=true);
     bool grow_loop(int min_threads=-1, float min_happiness=-1, int64_t steps=INT64_MAX, bool verbose=false);
