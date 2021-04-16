@@ -216,14 +216,10 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("clean_all_nodes_by_thread_clustering_popping_list",&ReadThreadsGraph::clean_all_nodes_by_thread_clustering_popping_list,"min_shared"_a=4,"max_second_perc"_a=.1)
             .def("thread_nodesets",&ReadThreadsGraph::thread_nodesets)
             .def("apply_popping_list",&ReadThreadsGraph::apply_popping_list,"popping_list"_a)
-            .def("order_nodes",&ReadThreadsGraph::order_nodes,"nodes"_a,"write_detailed_log"_a=false)
             .def("thread_fw_in_node",&ReadThreadsGraph::thread_fw_in_node,"thread_id"_a,"node_id"_a)
             .def("nodes_before_in_thread",&ReadThreadsGraph::nodes_before_in_thread,"thread_id"_a,"node_id"_a)
             .def("nodes_after_in_thread",&ReadThreadsGraph::nodes_after_in_thread,"thread_id"_a,"node_id"_a)
             .def("make_thread_nodepositions",&ReadThreadsGraph::make_thread_nodepositions,"nodes"_a)
-            .def("make_node_first_later",&ReadThreadsGraph::make_node_first_later,"thread_nodepositions"_a,"thread_nextpos"_a=std::map<uint64_t,int64_t>{})
-            .def("place_nodes",&ReadThreadsGraph::place_nodes,"placed_nodes"_a,"nodes"_a,"verbose"_a=false)
-
             ;
 
 
@@ -238,10 +234,10 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("find_internal_candidates",&HappySorter::find_internal_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"first"_a=1,"last"_a=INT32_MAX)
             .def("close_internal_threads",&HappySorter::close_internal_threads,"order_end"_a=20,"thread_end"_a=0)
             .def("start_from_node",&HappySorter::start_from_node,"nid"_a,"min_links"_a=4,"first_threads_happiness"_a=.1)
+            .def("start_from_node_2",&HappySorter::start_from_node_2,"nid"_a,"min_links"_a=4,"first_threads_happiness"_a=.1)
             .def("make_thread_nodepositions",&HappySorter::make_thread_nodepositions,"nodes"_a,"tids"_a=std::set<int64_t>())
             .def("place_nodes",&HappySorter::place_nodes,"nodes"_a,"verbose"_a=false)
             .def("add_placed_nodes",&HappySorter::add_placed_nodes,"placed_nodes"_a,"update_current"_a=false)
-            .def("grow_fw",&HappySorter::grow_fw,"min_links"_a,"verbose"_a=true)
             .def("grow",&HappySorter::grow, "min_threads"_a=-1, "min_happiness"_a=-1, "fw"_a=-1, "bw"_a=-1, "internal"_a=-1)
             .def("thread_happiness_q",&HappySorter::thread_happiness_q,"tid"_a,"min_nodes"_a,"max_span"_a)
             .def("recruit_all_happy_threads_q", &HappySorter::recruit_all_happy_threads_q,"min_nodes"_a=7,"max_span"_a=10)
@@ -561,6 +557,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def(py::init<const ReadThreadsGraph &, float, float, int, int, int>(),"","rtg"_a,"min_thread_happiness"_a=.7, "min_node_happiness"_a=.7,
                  "min_thread_nodes"_a=3, "min_node_threads"_a=2, "order_end_size"_a=20,py::return_value_policy::take_ownership)
             .def("run",&HappySorterRunner::run,"min_links"_a=4, "first_threads_happiness"_a=.1,"min_starting_nodes"_a=100, "max_starting_used"_a=.1, "min_final_nodes"_a=100, "max_steps"_a=INT64_MAX, "max_orders"_a=INT64_MAX)
+            .def("run_fast",&HappySorterRunner::run_fast,"min_links"_a=4, "first_threads_happiness"_a=.1,"min_starting_nodes"_a=150, "max_starting_used"_a=.1, "min_final_nodes"_a=10000, "max_steps"_a=INT64_MAX, "max_orders"_a=INT64_MAX)
             .def("run_from_nodes",&HappySorterRunner::run_from_nodes,"nids"_a=std::vector<sgNodeID_t>{},"min_links"_a=4, "first_threads_happiness"_a=.1, "max_steps"_a=INT64_MAX)
             .def("dump",&HappySorterRunner::dump,"filename"_a)
             .def("load",&HappySorterRunner::load,"filename"_a)
