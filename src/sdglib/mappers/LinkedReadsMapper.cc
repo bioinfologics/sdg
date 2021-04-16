@@ -303,7 +303,7 @@ void LinkedReadsMapper::path_reads(uint8_t k,int _filter) {
                         pme.set_best_path();
                         const auto &pmebp = pme.best_path;
                         if (pme.last_readpos == datastore.readsize - 1 or
-                            pme.last_readpos - rki >= 63) {//TODO: hardcoded 63bp hit or end
+                            pme.last_readpos - rki >= 31) {//TODO: hardcoded 63bp hit or end
                             if (rp.empty() and not pmebp.empty()) offset = pme.best_path_offset;
                             for (const auto &nid:pmebp)
                                 if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
@@ -364,7 +364,7 @@ void LinkedReadsMapper::path_reads(uint8_t k,int _filter) {
                         pme.extend_fw();
                         pme.set_best_path();
                         const auto & pmebp=pme.best_path;
-                        if (pme.last_readpos==datastore.readsize-1 or pme.last_readpos-rki>=63) {//TODO: hardcoded 63bp hit or end
+                        if (pme.last_readpos==datastore.readsize-1 or pme.last_readpos-rki>=31) {//TODO: hardcoded 63bp hit or end
                             if (rp.empty() and not pmebp.empty()) offset=pme.best_path_offset;
                             for (const auto &nid:pmebp)
                                 if (rp.empty() or nid != rp.back()) rp.emplace_back(nid);
