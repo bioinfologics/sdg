@@ -472,7 +472,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("solve_all_canonical",&GraphContigger::solve_all_canonical, "ge"_a, "peds"_a, "size"_a=1000, "apply"_a=false)
             .def("clip_all_tips",&GraphContigger::clip_all_tips, "ge"_a, "peds"_a, "size"_a=1000, "apply"_a=false)
             .def("pop_all_error_bubbles",&GraphContigger::pop_all_error_bubbles, "ge"_a, "peds"_a, "size"_a=1000, "apply"_a=false)
-            .def("contig_reduction_to_unique_kmers",&GraphContigger::contig_reduction_to_unique_kmers, "kmer_counter"_a, "kmer_count"_a, "min_cov"_a, "max_cov"_a, "max_run_size"_a=100)
+            .def("contig_reduction_to_unique_kmers",&GraphContigger::contig_reduction_to_unique_kmers, "kmer_counter"_a, "kmer_count"_a, "min_cov"_a, "max_cov"_a, "max_run_size"_a=100, "max_interconnection"_a=15)
             .def("group_nodes",&GraphContigger::group_nodes, "peds"_a)
             ;
 
