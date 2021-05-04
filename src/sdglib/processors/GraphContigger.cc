@@ -904,7 +904,7 @@ void GraphContigger::solve_all_tangles(WorkSpace &ws, PairedReadsDatastore &peds
 }
 
 
-void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, std::string kmer_count, int min_cov, int max_cov, uint32_t max_run_size, int max_interconnection){
+void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, std::string kmer_count, int min_cov, int max_cov, uint32_t max_run_size, int max_interconnection, bool keep_internode_links){
 //    std::vector<std::string> seqs;
     // File to write translation table to
     std::ofstream ofile;
@@ -940,17 +940,21 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
 
         if (!replacement_nodes.empty()){
             // new nodes were created, replace the old node by the new ones
-            // bw nodes connecto to first one
-            for (const auto & pvn: nv.prev()){
-                ws.sdg.add_link(-pvn.node().node_id(), replacement_nodes[0], -31);
-            }
+
             // connect intermediate nodes between them
             for (auto np=1; np<replacement_nodes.size(); np++){
                 ws.sdg.add_link(-replacement_nodes[np-1], replacement_nodes[np], -31);
             }
-            // connect the last node to the fw nodes
-            for (const auto & nvn: nv.next()){
-                ws.sdg.add_link(-replacement_nodes[replacement_nodes.size()-1], nvn.node().node_id(), -31);
+            if (keep_internode_links) {
+                // if specified, connect the ends
+                // bw nodes connecto to first one
+                for (const auto &pvn: nv.prev()) {
+                    ws.sdg.add_link(-pvn.node().node_id(), replacement_nodes[0], -31);
+                }
+                // connect the last node to the fw nodes
+                for (const auto &nvn: nv.next()) {
+                    ws.sdg.add_link(-replacement_nodes[replacement_nodes.size() - 1], nvn.node().node_id(), -31);
+                }
             }
             // disconnect old node from all the graph and mark as deleted
             ws.sdg.disconnect_node(nv.node_id());
