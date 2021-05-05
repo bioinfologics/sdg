@@ -982,10 +982,11 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
                         ws.sdg.add_link(-prev.node().node_id(), next.node().node_id(), nv.size()-124);
                     }
                 }
-            } else {
-                std::cout << "Too many connections " << nv.node_id() << " Fw: "<< nv.next().size() << " Prev: "<< nv.prev().size() <<std::endl;
             }
-            std::cout << "Deleting node: " << nv.node_id() <<std::endl;
+//            else {
+//                std::cout << "Too many connections " << nv.node_id() << " Fw: "<< nv.next().size() << " Prev: "<< nv.prev().size() <<std::endl;
+//            }
+//            std::cout << "Deleting node: " << nv.node_id() <<std::endl;
             // remove nodes
             ws.sdg.disconnect_node(nv.node_id());
             ws.sdg.remove_node(nv.node_id());
