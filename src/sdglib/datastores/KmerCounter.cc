@@ -302,14 +302,15 @@ std::vector<uint16_t> KmerCounter::project_count(const uint16_t count_idx, const
         skf.create_kmers(s,skmers);
     }
     std::vector<uint16_t> kcov;
+    kcov.reserve(skmers.size());
     for (auto &kmer: skmers){
         auto nk = std::lower_bound(kindex.begin(), kindex.end(), kmer);
 
         if (nk!=kindex.end() and *nk == kmer) {
-            kcov.push_back(counts[count_idx][nk-kindex.begin()]);
+            kcov.emplace_back(counts[count_idx][nk-kindex.begin()]);
 
         } else {
-            kcov.push_back(0);
+            kcov.emplace_back(0);
         }
     }
     return kcov;
