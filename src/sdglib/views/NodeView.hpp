@@ -124,7 +124,15 @@ public:
      * @param Min number of reads mapped to the node to include a tag in the result
      * @return Vector of all tags that have reads on this node in the LinkedReadsMapper
      */
-    std::vector<LinkedTag> get_linked_tags(std::string datastore_name, int min_read_count=3) const;
+    std::vector<LinkedTag> get_mappings_tags(std::string datastore_name, int min_read_count = 3) const;
+
+    /**
+     * @brief Collect all tags of this node in a LinkedReadsDatastore referred to by name
+     * @param datastore_name Name of the datastore to collect the reads from
+     * @param Min number of reads mapped to the node to include a tag in the result
+     * @return Vector of all tags that have reads on this node in the LinkedReadsMapper
+     */
+    std::vector<LinkedTag> get_paths_tags(std::string datastore_name, int min_read_count = 3) const;
 
     /**
      * Vector of FW distances and neighbours from the nodeview, sorted in ascending distance (median if multi-link) order.

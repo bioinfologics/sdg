@@ -29,10 +29,10 @@ bool ReadThreadsGraph::add_thread(int64_t thread_id, const std::vector<NodePosit
             else seen.insert(llabs(p.node));
         }
     }
-    uint16_t lidx=0;
-    int16_t last_valid_i=-1;
+    uint32_t lidx=0;
+    int32_t last_valid_i=-1;
     sgNodeID_t end1;
-    for (auto i = 0; i < node_positions.size(); ++i) {
+    for (int32_t i = 0; i < node_positions.size(); ++i) {
         if (remove_duplicated and  duplicated.count(llabs(node_positions[i].node))) continue;
         if (last_valid_i!=-1) {
             add_link(-node_positions[last_valid_i].node, node_positions[i].node,
@@ -602,6 +602,8 @@ std::map<uint64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> ReadThreadsGraph
     std::map<uint64_t ,std::pair<int64_t,int64_t>> thread_limits;
     for (auto nid:nodes){
         auto nv=get_nodeview(nid);
+        // Of all nodes, links fw and bw, reads ids are the map kays, map values are the first and last index
+        // at the end map contains the first and lat index in the read map to a node (not specified wich node)
         for (auto &lv: {nv.next(),nv.prev()}) {
             for (auto &l: lv) {
                 if (thread_limits.count(l.support().id) == 0)
@@ -612,8 +614,8 @@ std::map<uint64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> ReadThreadsGraph
                     thread_limits[l.support().id].second = l.support().index;
             }
         }
-
     }
+    // Delete limit pairs that are consecutive or the same number
     for (auto it = thread_limits.cbegin(); it != thread_limits.cend(); ){
         if (it->second.second<=it->second.first+1) it=thread_limits.erase(it++);
         else ++it;

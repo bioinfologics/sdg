@@ -1,5 +1,5 @@
 language: c++
-dist: trusty
+
 sudo: false
 
 jobs:
@@ -32,8 +32,6 @@ jobs:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - gcc-6
-            - gcc-6-base
             - g++-6
             - doxygen
             - doxygen-doc
@@ -41,6 +39,8 @@ jobs:
             - doxygen-gui
             - graphviz
             - lcov
+            - r-base
+            - r-base-dev
             - python3
             - python3-pip
       env:

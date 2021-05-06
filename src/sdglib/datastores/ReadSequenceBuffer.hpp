@@ -13,7 +13,7 @@ class LongReadsDatastore;
 
 /**
  * This class accesses the sequence of the reads of a datastore through an internal buffer.
- * It can be contructed with any kind of read datastore and will return a pointer a its internal buffer containing the
+ * It can be constructed with any kind of read datastore and will return a pointer a its internal buffer containing the
  * read's sequence.
  */
 

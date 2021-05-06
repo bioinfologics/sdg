@@ -33,6 +33,10 @@ public:
 
     void reverse();
     float thread_happiness(int64_t tid,int min_nodes=-1) const;
+
+    /**@brief
+     * Happines is calculated as the propotion of shared threads between the node and the order
+     * */
     float node_happiness(sgNodeID_t,bool prev=true,bool next=false, int min_threads=-1) const; //TODO: have an open-thread happiness
     void recruit_all_happy_threads(float min_happiness=-1, int min_nodes=-1, int64_t end_sizes=-1);
     void close_internal_threads(int order_end=20,int thread_end=0);

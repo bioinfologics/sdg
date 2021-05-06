@@ -141,11 +141,28 @@ std::vector<ReadMapping> NodeView::get_linked_mappings(std::string datastore_nam
     return mappings;
 }
 
-std::vector<LinkedTag> NodeView::get_linked_tags(std::string datastore_name, int min_read_count) const {
+std::vector<LinkedTag> NodeView::get_mappings_tags(std::string datastore_name, int min_read_count) const {
 
     std::map<LinkedTag, uint32_t> tag_counts;
     for (auto mapping: dg->sdg.ws.get_linked_reads_datastore(datastore_name).mapper.reads_in_node[llabs(id)]){
         auto t = dg->sdg.ws.get_linked_reads_datastore(datastore_name).get_read_tag(mapping.read_id);
+        tag_counts[t]++;
+    }
+
+    std::vector<LinkedTag> tags;
+    for (auto &t: tag_counts) {
+        if (t.second > min_read_count) {
+            tags.push_back(t.first);
+        }
+    }
+    return tags;
+}
+
+std::vector<LinkedTag> NodeView::get_paths_tags(std::string datastore_name, int min_read_count) const {
+
+    std::map<LinkedTag, uint32_t> tag_counts;
+    for (auto rid: dg->sdg.ws.get_linked_reads_datastore(datastore_name).mapper.paths_in_node[llabs(id)]){
+        auto t = dg->sdg.ws.get_linked_reads_datastore(datastore_name).get_read_tag(llabs(rid));
         tag_counts[t]++;
     }
 
