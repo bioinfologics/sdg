@@ -911,55 +911,60 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
     ofile.open("./translation_table.txt");
 
     std::vector<sgNodeID_t > added_nodes;
+#pragma omp parallel for schedule(dynamic,1)
     for (const auto& nv: ws.sdg.get_all_nodeviews()){
         auto c = nv.kmer_coverage(kmer_counter, kmer_count);
-
-        // while to identify all subsequences of a node and putting them in a temp vector
-        std::vector<sgNodeID_t > replacement_nodes;
-
-        int i=0;
-        while(i<c.size()){
-            while(i<c.size() and (c[i]<min_cov or c[i]>max_cov)){
-                i++;
-            }
-            if (i==c.size()) break;
-            auto si=i;
-            uint32_t run_size=0;
-            while(i<c.size() and c[i]>=min_cov and c[i]<=max_cov and run_size<=max_run_size){
-                run_size++;
-                i++;
-            }
+#pragma omp critical
+        {
+            // while to identify all subsequences of a node and putting them in a temp vector
+            std::vector<sgNodeID_t> replacement_nodes;
+            replacement_nodes.reserve(c.size() / max_run_size);
+            added_nodes.reserve(added_nodes.size() + c.size() / max_run_size);
+            auto seq = nv.sequence();
+            int i = 0;
+            while (i < c.size()) {
+                while (i < c.size() and (c[i] < min_cov or c[i] > max_cov)) {
+                    i++;
+                }
+                if (i == c.size()) break;
+                auto si = i;
+                uint32_t run_size = 0;
+                while (i < c.size() and c[i] >= min_cov and c[i] <= max_cov and run_size <= max_run_size) {
+                    run_size++;
+                    i++;
+                }
 
 //            seqs.push_back(nv.sequence().substr(si, i-si+30));
-            //add a node at the end of the graph and add the id to the list for future reference
-            sgNodeID_t new_node = ws.sdg.add_node(Node(nv.sequence().substr(si, i-si+30)));
-            replacement_nodes.push_back(new_node);
-            added_nodes.push_back(new_node);
-            ofile<< nv.node_id() << "," << new_node << std::endl;
-        }
-
-        if (!replacement_nodes.empty()){
-            // new nodes were created, replace the old node by the new ones
-
-            // connect intermediate nodes between them
-            for (auto np=1; np<replacement_nodes.size(); np++){
-                ws.sdg.add_link(-replacement_nodes[np-1], replacement_nodes[np], -31);
+                //add a node at the end of the graph and add the id to the list for future reference
+                sgNodeID_t new_node = ws.sdg.add_node(Node(seq.substr(si, i - si + 30)));
+                replacement_nodes.push_back(new_node);
+                added_nodes.push_back(new_node);
+                ofile << nv.node_id() << "," << new_node << std::endl;
             }
-            if (keep_internode_links) {
-                // if specified, connect the ends
-                // bw nodes connecto to first one
-                for (const auto &pvn: nv.prev()) {
-                    ws.sdg.add_link(-pvn.node().node_id(), replacement_nodes[0], -31);
-                }
-                // connect the last node to the fw nodes
-                for (const auto &nvn: nv.next()) {
-                    ws.sdg.add_link(-replacement_nodes[replacement_nodes.size() - 1], nvn.node().node_id(), -31);
-                }
-            }
-            // disconnect old node from all the graph and mark as deleted
-            ws.sdg.disconnect_node(nv.node_id());
-            ws.sdg.remove_node(nv.node_id());
 
+            if (!replacement_nodes.empty()) {
+                // new nodes were created, replace the old node by the new ones
+
+                // connect intermediate nodes between them
+                for (auto np = 1; np < replacement_nodes.size(); np++) {
+                    ws.sdg.add_link(-replacement_nodes[np - 1], replacement_nodes[np], -31);
+                }
+                if (keep_internode_links) {
+                    // if specified, connect the ends
+                    // bw nodes connecto to first one
+                    for (const auto &pvn: nv.prev()) {
+                        ws.sdg.add_link(-pvn.node().node_id(), replacement_nodes[0], -31);
+                    }
+                    // connect the last node to the fw nodes
+                    for (const auto &nvn: nv.next()) {
+                        ws.sdg.add_link(-replacement_nodes[replacement_nodes.size() - 1], nvn.node().node_id(), -31);
+                    }
+                }
+                // disconnect old node from all the graph and mark as deleted
+                ws.sdg.disconnect_node(nv.node_id());
+                ws.sdg.remove_node(nv.node_id());
+
+            }
         }
     }
 
