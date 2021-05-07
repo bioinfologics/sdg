@@ -917,12 +917,15 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
 #pragma omp critical
         {
             // while to identify all subsequences of a node and putting them in a temp vector
-            std::vector<sgNodeID_t> replacement_nodes;
+            std::vector<std::pair<sgNodeID_t, int>> replacement_nodes; // store nude and distance to prev anchor
             replacement_nodes.reserve(c.size() / max_run_size);
             added_nodes.reserve(added_nodes.size() + c.size() / max_run_size);
             auto seq = nv.sequence();
             int i = 0;
+            int last_node_position=0;
+//            std::cout << "Node length: " << seq.length() << std::endl;
             while (i < c.size()) {
+                last_node_position=i;
                 while (i < c.size() and (c[i] < min_cov or c[i] > max_cov)) {
                     i++;
                 }
@@ -933,13 +936,13 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
                     run_size++;
                     i++;
                 }
-
 //            seqs.push_back(nv.sequence().substr(si, i-si+30));
                 //add a node at the end of the graph and add the id to the list for future reference
-                sgNodeID_t new_node = ws.sdg.add_node(Node(seq.substr(si, i - si + 30)));
-                replacement_nodes.push_back(new_node);
+                sgNodeID_t new_node = ws.sdg.add_node(Node(seq.substr(si, i - si)));
+//                std::cout << "distance calculation: " << i - si << " -- " << si << "-" << last_node_position << std::endl;
+                replacement_nodes.push_back({new_node, si-last_node_position});
                 added_nodes.push_back(new_node);
-                ofile << nv.node_id() << "," << new_node << std::endl;
+                ofile << nv.node_id() << "," << new_node << "," << si-last_node_position << std::endl;
             }
 
             if (!replacement_nodes.empty()) {
@@ -947,17 +950,17 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
 
                 // connect intermediate nodes between them
                 for (auto np = 1; np < replacement_nodes.size(); np++) {
-                    ws.sdg.add_link(-replacement_nodes[np - 1], replacement_nodes[np], -31);
+                    ws.sdg.add_link(-replacement_nodes[np - 1].first, replacement_nodes[np].first, replacement_nodes[np].second);
                 }
                 if (keep_internode_links) {
                     // if specified, connect the ends
                     // bw nodes connecto to first one
                     for (const auto &pvn: nv.prev()) {
-                        ws.sdg.add_link(-pvn.node().node_id(), replacement_nodes[0], -31);
+                        ws.sdg.add_link(-pvn.node().node_id(), replacement_nodes.front().first, pvn.distance()+replacement_nodes.front().second);
                     }
                     // connect the last node to the fw nodes
                     for (const auto &nvn: nv.next()) {
-                        ws.sdg.add_link(-replacement_nodes[replacement_nodes.size() - 1], nvn.node().node_id(), -31);
+                        ws.sdg.add_link(-replacement_nodes.back().first, nvn.node().node_id(), nvn.distance()+ws.sdg.get_nodeview(replacement_nodes.back().first).size()-last_node_position);
                     }
                 }
                 // disconnect old node from all the graph and mark as deleted
