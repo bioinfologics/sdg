@@ -29,7 +29,7 @@ bool ReadThreadsGraph::add_thread(int64_t thread_id, const std::vector<NodePosit
             else seen.insert(llabs(p.node));
         }
     }
-    uint32_t lidx=0;
+    uint16_t lidx=0;
     int32_t last_valid_i=-1;
     sgNodeID_t end1;
     for (int32_t i = 0; i < node_positions.size(); ++i) {
