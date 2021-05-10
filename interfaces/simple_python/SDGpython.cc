@@ -549,6 +549,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("as_thread",&LocalOrder::as_thread,"dg"_a)
             .def("size",&LocalOrder::size)
             .def("reverse",&LocalOrder::reverse)
+            .def("thread_order_crosses",&LocalOrder::thread_order_crosses,"thread")
             .def("merge",&LocalOrder::merge, "other"_a, "max_overhang"_a=4, "min_shared_perc"_a=.5, "min_shared"_a=20, "max_disordered_perc"_a=.02)
             .def_readwrite("node_positions",&LocalOrder::node_positions)
             .def_readwrite("node_coordinates",&LocalOrder::node_coordinates);
@@ -558,6 +559,7 @@ PYBIND11_MODULE(SDGpython, m) {
                  "min_thread_nodes"_a=3, "min_node_threads"_a=2, "order_end_size"_a=20,py::return_value_policy::take_ownership)
             .def("run",&HappySorterRunner::run,"min_links"_a=4, "first_threads_happiness"_a=.1,"min_starting_nodes"_a=100, "max_starting_used"_a=.1, "min_final_nodes"_a=100, "max_steps"_a=INT64_MAX, "max_orders"_a=INT64_MAX)
             .def("run_fast",&HappySorterRunner::run_fast,"min_links"_a=4, "first_threads_happiness"_a=.1,"min_starting_nodes"_a=150, "max_starting_used"_a=.1, "min_final_nodes"_a=10000, "max_steps"_a=INT64_MAX, "max_orders"_a=INT64_MAX)
+            .def("run_fast_from_nodelist",&HappySorterRunner::run_fast_from_nodelist,"nodes"_a=std::vector<sgNodeID_t>{},"min_links"_a=4, "first_threads_happiness"_a=.1,"min_starting_nodes"_a=150, "max_starting_used"_a=.1, "min_final_nodes"_a=2000, "max_steps"_a=INT64_MAX, "max_orders"_a=INT64_MAX)
             .def("run_from_nodes",&HappySorterRunner::run_from_nodes,"nids"_a=std::vector<sgNodeID_t>{},"min_links"_a=4, "first_threads_happiness"_a=.1, "max_steps"_a=INT64_MAX)
             .def("dump",&HappySorterRunner::dump,"filename"_a)
             .def("load",&HappySorterRunner::load,"filename"_a)
