@@ -905,7 +905,7 @@ void GraphContigger::solve_all_tangles(WorkSpace &ws, PairedReadsDatastore &peds
 
 
 void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, std::string kmer_count, int min_cov, int max_cov, uint32_t max_run_size, int max_interconnection, bool keep_internode_links){
-//    std::vector<std::string> seqs;
+
     // File to write translation table to
     std::ofstream ofile;
     ofile.open("./translation_table.txt");
@@ -916,14 +916,13 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
         auto c = nv.kmer_coverage(kmer_counter, kmer_count);
 #pragma omp critical
         {
-            // while to identify all subsequences of a node and putting them in a temp vector
-            std::vector<std::pair<sgNodeID_t, int>> replacement_nodes; // store nude and distance to prev anchor
+            // while to identify all sub-sequences of a node and putting them in a temp vector
+            std::vector<std::pair<sgNodeID_t, int>> replacement_nodes; // store node and distance to prev anchor
             replacement_nodes.reserve(c.size() / max_run_size);
             added_nodes.reserve(added_nodes.size() + c.size() / max_run_size);
             auto seq = nv.sequence();
             int i = 0;
             int last_node_position=0;
-//            std::cout << "Node length: " << seq.length() << std::endl;
             while (i < c.size()) {
                 last_node_position=i;
                 while (i < c.size() and (c[i] < min_cov or c[i] > max_cov)) {
@@ -932,14 +931,12 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
                 if (i == c.size()) break;
                 auto si = i;
                 uint32_t run_size = 0;
-                while (i < c.size() and c[i] >= min_cov and c[i] <= max_cov and run_size <= max_run_size) {
+                while (i < c.size() and c[i] >= min_cov and c[i] <= max_cov and run_size < max_run_size) {
                     run_size++;
                     i++;
                 }
-//            seqs.push_back(nv.sequence().substr(si, i-si+30));
                 //add a node at the end of the graph and add the id to the list for future reference
-                sgNodeID_t new_node = ws.sdg.add_node(Node(seq.substr(si, i - si)));
-//                std::cout << "distance calculation: " << i - si << " -- " << si << "-" << last_node_position << std::endl;
+                sgNodeID_t new_node = ws.sdg.add_node(Node(seq.substr(si, i - si + 29)));
                 replacement_nodes.push_back({new_node, si-last_node_position});
                 added_nodes.push_back(new_node);
                 ofile << nv.node_id() << "," << new_node << "," << si-last_node_position << std::endl;
@@ -981,8 +978,6 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
         if (nv.node_id()>last_node) continue;
         // check if it was one of the selected nodes
         if (std::lower_bound(added_nodes.begin(), added_nodes.end(), nv.node_id()) != added_nodes.end()){
-//            std::cout << cont << "/" << num_nodes << "--" << added_nodes.front() << "," << added_nodes.back() <<std::endl;
-
             // Connect ends, if there are too many connections leave disconnected
             if (nv.prev().size()<max_interconnection and nv.next().size()<max_interconnection){
                 for (const auto& prev: nv.prev()){
@@ -991,17 +986,12 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
                     }
                 }
             }
-//            else {
-//                std::cout << "Too many connections " << nv.node_id() << " Fw: "<< nv.next().size() << " Prev: "<< nv.prev().size() <<std::endl;
-//            }
-//            std::cout << "Deleting node: " << nv.node_id() <<std::endl;
             // remove nodes
             ws.sdg.disconnect_node(nv.node_id());
             ws.sdg.remove_node(nv.node_id());
         }
         cont++;
     }
-//    return seqs;
 }
 
 std::map<uint64_t, std::vector<sgNodeID_t >> GraphContigger::group_nodes(PairedReadsDatastore peds){
