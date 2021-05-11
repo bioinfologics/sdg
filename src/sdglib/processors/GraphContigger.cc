@@ -914,6 +914,7 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
 #pragma omp parallel for schedule(dynamic,1)
     for (const auto& nv: ws.sdg.get_all_nodeviews()){
         auto c = nv.kmer_coverage(kmer_counter, kmer_count);
+//        auto cg = nv.kmer_coverage(kmer_counter, "sdg");
 #pragma omp critical
         {
             // while to identify all sub-sequences of a node and putting them in a temp vector
@@ -925,21 +926,24 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
             int last_node_position=0;
             while (i < c.size()) {
                 last_node_position=i;
+//                while (i < c.size() and cg[i]!=1 and (c[i] < min_cov or c[i] > max_cov)) {
                 while (i < c.size() and (c[i] < min_cov or c[i] > max_cov)) {
                     i++;
                 }
                 if (i == c.size()) break;
                 auto si = i;
                 uint32_t run_size = 0;
+//                while (i < c.size() and cg[i] == 1 and c[i] >= min_cov and c[i] <= max_cov and run_size < max_run_size) {
                 while (i < c.size() and c[i] >= min_cov and c[i] <= max_cov and run_size < max_run_size) {
                     run_size++;
                     i++;
                 }
                 //add a node at the end of the graph and add the id to the list for future reference
                 sgNodeID_t new_node = ws.sdg.add_node(Node(seq.substr(si, i - si + 29)));
-                replacement_nodes.push_back({new_node, si-last_node_position});
+                int distance = si-last_node_position-29;
+                replacement_nodes.push_back({new_node, distance});
                 added_nodes.push_back(new_node);
-                ofile << nv.node_id() << "," << new_node << "," << si-last_node_position << std::endl;
+                ofile << nv.node_id() << "," << new_node << "," << distance << std::endl;
             }
 
             if (!replacement_nodes.empty()) {
@@ -975,14 +979,15 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
     auto last_node=added_nodes[0];
     auto num_nodes=ws.sdg.nodes.size();
     for (const auto& nv: ws.sdg.get_all_nodeviews()){
-        if (nv.node_id()>last_node) continue;
+//        if (nv.node_id()>last_node) continue;
         // check if it was one of the selected nodes
-        if (std::lower_bound(added_nodes.begin(), added_nodes.end(), nv.node_id()) != added_nodes.end()){
+        if (std::lower_bound(added_nodes.begin(), added_nodes.end(), nv.node_id()) == added_nodes.end()){
             // Connect ends, if there are too many connections leave disconnected
             if (nv.prev().size()<max_interconnection and nv.next().size()<max_interconnection){
                 for (const auto& prev: nv.prev()){
                     for (const auto& next: nv.next()){
-                        ws.sdg.add_link(-prev.node().node_id(), next.node().node_id(), nv.size()-124);
+//                        std::cout << "Doing the deletion... " << nv.node_id() << std::endl;
+                        ws.sdg.add_link(-prev.node().node_id(), next.node().node_id(), prev.distance()+next.distance()+nv.size());
                     }
                 }
             }
