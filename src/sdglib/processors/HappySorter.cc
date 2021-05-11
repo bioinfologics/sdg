@@ -210,6 +210,21 @@ LocalOrder LocalOrder::reverse() const {
     return LocalOrder(nodes_rev);
 }
 
+int64_t LocalOrder::thread_order_crosses(const std::vector<NodePosition> &thread) const {
+    sgNodeID_t last_node=0;
+    int64_t last_pos=0;
+    int64_t crosses=0;
+    for (auto &np:thread){
+        auto nop=get_node_position(np.node);
+        if (nop==0) continue;
+        if ( last_node!=0 and ((last_pos>0 != nop>0) or (last_pos>nop))) ++crosses;
+        last_node=np.node;
+        last_pos=nop;
+    }
+    return crosses;
+
+}
+
 void HappySorter::reverse() {
     order=order.reverse();
     std::unordered_set<sgNodeID_t> new_threads,new_fthreads,new_bthreads;
@@ -1016,6 +1031,62 @@ bool HappySorter::fast_grow_loop(int min_threads, float min_happiness, int64_t s
     return grown;
 }
 
+bool HappySorter::fast_grow_loop_10x(const LinkedReadsMapper & lrm, int min_threads, float min_happiness, int64_t steps, bool verbose) {
+    if (min_threads==-1) min_threads=min_node_threads;
+    if (min_happiness==-1) min_happiness=min_node_happiness;
+    bool grown=false;
+    int64_t step=0;
+    while (++step<steps) {
+        /********/
+
+        auto old_size=order.node_coordinates.size();
+        std::unordered_set<sgNodeID_t> candidates;
+        //sdglib::OutputLog()<<"adding FW candidates"<<std::endl;
+        add_placed_nodes(place_nodes(find_fw_candidates(min_happiness, min_threads), false));
+        //sdglib::OutputLog()<<"adding BW candidates"<<std::endl;
+        add_placed_nodes(place_nodes(find_bw_candidates(min_happiness, min_threads), false));
+        auto ends_to_fill = 2*(order.node_coordinates.size()-old_size);
+        if (ends_to_fill<1000) ends_to_fill=1000;
+
+        if (ends_to_fill==0 or order.node_coordinates.size()<2*ends_to_fill or step%50==0) {
+            //sdglib::OutputLog()<<"adding ALL internal candidates"<<std::endl;
+            add_placed_nodes(place_nodes(find_internal_candidates(min_happiness, min_threads), false));
+            //sdglib::OutputLog()<<"updating ALL positions"<<std::endl;
+            update_positions();
+            recruit_all_happy_threads();
+        } else {
+            //sdglib::OutputLog()<<"adding START internal candidates"<<std::endl;
+            add_placed_nodes(place_nodes(find_internal_candidates(min_happiness, min_threads,1,ends_to_fill), false));
+            //sdglib::OutputLog()<<"updating START positions"<<std::endl;
+            update_positions(0,ends_to_fill);
+            //sdglib::OutputLog()<<"adding END internal candidates"<<std::endl;
+            add_placed_nodes(place_nodes(find_internal_candidates(min_happiness, min_threads,order.node_coordinates.size()-ends_to_fill,order.node_coordinates.size()), false));
+            //sdglib::OutputLog()<<"updating END positions"<<std::endl;
+            update_positions(order.node_coordinates.size()-ends_to_fill,order.node_coordinates.size());
+            recruit_all_happy_threads(min_thread_happiness,min_thread_nodes,ends_to_fill);
+//            update_positions();
+//            recruit_all_happy_threads();
+        }
+        //sdglib::OutputLog()<<"recruiting threads"<<std::endl;
+
+        //sdglib::OutputLog()<<"closing threads"<<std::endl;
+        close_internal_threads();
+
+        grown=order.node_coordinates.size()>old_size;
+        /********/
+        if (not grown) break;
+        if (verbose and step%50==0) {
+            std::pair<sgNodeID_t,int64_t> cmax={0,0},cmin={0,0};
+            for (const auto &nc:order.node_coordinates) {
+                if (nc.second<cmin.second) cmin=nc;
+                if (nc.second>cmax.second) cmax=nc;
+            }
+            sdglib::OutputLog()<<"After "<<step<<" grow rounds: "<<order.node_coordinates.size()<<" anchors span "<<cmax.second-cmin.second<<" bp, "<<cmin.first<<" @ "<<cmin.second<<" : "<<cmax.first<<" @ "<<cmax.second<<std::endl;
+        }
+    }
+    return grown;
+}
+
 void HappySorterRunner::run(int min_links, float first_threads_happiness, int64_t min_starting_nodes, float max_starting_used, int64_t min_final_nodes, int64_t max_steps, int64_t max_orders) {
     sdglib::OutputLog()<<"Starting HappySorterRunner run..."<<std::endl;
     auto nvs=rtg.get_all_nodeviews(false,false);
@@ -1122,6 +1193,70 @@ void HappySorterRunner::run_fast(int min_links, float first_threads_happiness, i
         }
         catch (std::exception &e) {
             std::cout<<"Exception caught when trying to process node "<<snv.node_id()<<": "<< typeid(e).name() <<": "<<e.what()<<", skipping"<<std::endl;
+        }
+
+    }
+    sdglib::OutputLog()<<"HappySorterRunner run finished!!!"<<std::endl;
+}
+
+void HappySorterRunner::run_fast_from_nodelist(std::vector<sgNodeID_t> nodes, int min_links,
+                                               float first_threads_happiness, int64_t min_starting_nodes,
+                                               float max_starting_used, int64_t min_final_nodes, int64_t max_steps,
+                                               int64_t max_orders) {
+    sdglib::OutputLog()<<"Starting HappySorterRunner run..."<<std::endl;
+    //sdglib::OutputLog()<<"Getting all nodeviews..."<<std::endl;
+    auto nvs=nodes;
+    //sdglib::OutputLog()<<nvs.size()<<" nodeviews"<<std::endl;
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    //sdglib::OutputLog()<<"Shuffling nodeviews..."<<std::endl;
+    shuffle (nvs.begin(), nvs.end(), std::default_random_engine(seed));
+    sdglib::OutputLog()<<"Entering loop..."<<std::endl;
+    std::set<sgNodeID_t> nodeset(nodes.begin(),nodes.end());
+#pragma omp parallel for schedule(dynamic,100)
+    for (auto snvi=nvs.cbegin();snvi<nvs.cend();++snvi){
+        auto &snv=*snvi;
+        if (orders.size()>=max_orders) continue;
+        try {
+#pragma omp critical(node_sorted)
+            auto ns = node_sorted[snv];
+            if (node_sorted[snv]) continue;
+            auto hs = HappySorter(rtg, min_thread_happiness, min_node_happiness, min_thread_nodes, min_node_threads,
+                                  order_end_size);
+            hs.start_from_node(snv,min_links,first_threads_happiness);
+            if (hs.order.size() < min_starting_nodes) continue;
+            int64_t used = 0;
+#pragma omp critical(node_sorted)
+            for (auto &nid:hs.order.as_signed_nodes()) if (node_sorted[llabs(nid)]) ++used;
+            if (hs.order.size() * max_starting_used < used) continue;
+            int64_t nodes_in_list=0;
+            for (auto &nid:hs.order.as_signed_nodes()) if (nodeset.count(nid) or nodeset.count(-nid)) ++nodes_in_list;
+            if (nodes_in_list<5) continue;
+//            std::cout << "Thread #" << omp_get_thread_num() << " growing order from node " << snv.node_id() << " ..."
+//                      << std::endl;
+            hs.fast_grow_loop(-1, -1, max_steps,true);
+            if (hs.order.size() < min_final_nodes) continue;
+            //sorters[snv.node_id()]=hs;
+#pragma omp critical(node_sorted)
+            {
+                if (orders.size()<max_orders) { //check again to mantain initial condition
+                    std::cout << "Thread #" << omp_get_thread_num() << " adding order from node " << snv
+                              << " with " << hs.order.size() << " nodes" << std::endl;
+                    orders[snv] = hs.order;
+                    for (auto &nid:hs.order.as_signed_nodes()) {
+                        node_sorted[llabs(nid)] = true;
+                        if (nid > 0) node_orders[nid].emplace_back(snv);
+                        else node_orders[-nid].emplace_back(-snv);
+                    }
+                    if (orders.size() % 10 == 0) {
+                        sdglib::OutputLog() << orders.size() << " orders created, "
+                                            << std::count(node_sorted.begin(), node_sorted.end(), true)
+                                            << " nodes sorted" << std::endl;
+                    }
+                }
+            }
+        }
+        catch (std::exception &e) {
+            std::cout<<"Exception caught when trying to process node "<<snv<<": "<< typeid(e).name() <<": "<<e.what()<<", skipping"<<std::endl;
         }
 
     }
