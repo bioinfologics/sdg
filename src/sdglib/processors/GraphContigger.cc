@@ -914,7 +914,7 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
 #pragma omp parallel for schedule(dynamic,1)
     for (const auto& nv: ws.sdg.get_all_nodeviews()){
         auto c = nv.kmer_coverage(kmer_counter, kmer_count);
-//        auto cg = nv.kmer_coverage(kmer_counter, "sdg");
+        auto cg = nv.kmer_coverage(kmer_counter, "sdg");
 #pragma omp critical
         {
             // while to identify all sub-sequences of a node and putting them in a temp vector
@@ -926,15 +926,13 @@ void GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, 
             int last_node_position=0;
             while (i < c.size()) {
                 last_node_position=i;
-//                while (i < c.size() and cg[i]!=1 and (c[i] < min_cov or c[i] > max_cov)) {
-                while (i < c.size() and (c[i] < min_cov or c[i] > max_cov)) {
+                while (i < c.size() and (cg[i]!=1 or c[i] < min_cov or c[i] > max_cov)) {
                     i++;
                 }
                 if (i == c.size()) break;
                 auto si = i;
                 uint32_t run_size = 0;
-//                while (i < c.size() and cg[i] == 1 and c[i] >= min_cov and c[i] <= max_cov and run_size < max_run_size) {
-                while (i < c.size() and c[i] >= min_cov and c[i] <= max_cov and run_size < max_run_size) {
+                while (i < c.size() and cg[i] == 1 and c[i] >= min_cov and c[i] <= max_cov and run_size < max_run_size) {
                     run_size++;
                     i++;
                 }
