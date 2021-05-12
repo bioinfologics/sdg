@@ -240,7 +240,11 @@ public:
      */
     std::vector<NodeView> get_all_nodeviews(bool both_directions=false, bool include_disconnected=true) const;
 
+    std::vector<TangleView> get_all_anchors_tangleviews(const std::vector<sgNodeID_t> given_frontiers, bool include_disconnected=true) const;
+
     std::vector<TangleView> get_all_tangleviews(int fsize=500, float fmin_kci=-1, float fmax_kci=-1, bool include_disconnected=true) const;
+
+
 
     /**
      * @brief Prints the graph stats by kci according to the first kci collection in the ws

@@ -618,6 +618,91 @@ std::vector<NodeView> DistanceGraph::get_all_nodeviews(bool both_directions, boo
     return nvs;
 }
 
+std::vector<TangleView> DistanceGraph::get_all_anchors_tangleviews(const std::vector<sgNodeID_t> given_frontiers, bool include_disconnected) const {
+//    std::cout<<"Tangles of size < "<<fsize<<" with "<<fmin_kci<<" < KCI < "<<fmax_kci<<" disconnected: "<<include_disconnected<<std::endl;
+    // Make sure all elements in given frontiers are positive
+    for (const auto &gf: given_frontiers){
+        if (gf<=0)
+            std::domain_error("All frontiers must be in the fw position (+)");
+    }
+
+    std::vector<TangleView> tangles;
+    std::vector<bool> used(sdg.nodes.size());
+
+
+    for (auto nid=0;nid<sdg.nodes.size();++nid) {
+        if (used[nid]) continue;
+        auto &n=sdg.nodes[nid];
+//        if (n.status==NodeStatus::Deleted or n.sequence.size()>=fsize) continue;
+        if (n.status==NodeStatus::Deleted) continue;
+
+//        auto nv=get_nodeview(nid);
+//        if (fmin_kci>=0 and nv.kci()<fmin_kci) continue;
+//        if (fmax_kci>=0 and nv.kci()>fmax_kci) continue;
+        if (std::find(given_frontiers.begin(), given_frontiers.end(), nid)!=given_frontiers.end()) continue;
+//        std::cout<<"New tangle from node "<<nid<<std::endl;
+        TangleView t(this,{},{nid});
+        used[nid]=true;
+        std::set<sgNodeID_t> to_explore={nid};
+        std::set<sgNodeID_t> explored;
+        std::set<sgNodeID_t> frontier_ids;
+        while(to_explore.size() > 0 ){
+//            std::cout<<"  Exploring "<<to_explore.size()<<" nodes"<<std::endl;
+            std::set<sgNodeID_t> new_to_explore;
+            for (auto &inid:to_explore) {
+//                std::cout<<"    Links from "<<inid<<std::endl;
+                bool f=false;
+                {
+                    auto nv = get_nodeview(inid);//non-const for kci usage
+//                    //check if the node is a frontier (big enough, and kci between limits)
+//                    if (nv.size() >= fsize and (fmin_kci < 0 or fmin_kci < nv.kci()) and (fmax_kci < 0 or fmax_kci > nv.kci()))
+                    if (std::find(given_frontiers.begin(), given_frontiers.end(), nid) != given_frontiers.end())
+                        f = true;
+                }
+
+                for (auto &l:links[llabs(inid)]){
+                    if (f and l.source!=inid) continue; //frontiers only explore on same end
+                    if (explored.count(l.dest)>0) continue;
+                    auto nv = get_nodeview(l.dest);//non-const for kci usage
+                    //check if the node is a frontier (big enough, and kci between limits)
+//                    if (nv.size() >= fsize and (fmin_kci < 0 or fmin_kci < nv.kci()) and (fmax_kci < 0 or fmax_kci > nv.kci())) {
+                    if (std::find(given_frontiers.begin(), given_frontiers.end(), nid) != given_frontiers.end()) {
+                        frontier_ids.emplace(l.dest);
+                    }
+                    else {
+                        if (used[llabs(l.dest)]) continue;
+                        t.internals.emplace_back(this,llabs(l.dest));
+                        used[llabs(l.dest)]=true;
+                    }
+                    if (explored.count(l.dest)==0) new_to_explore.emplace(l.dest);
+                }
+
+                explored.emplace(inid);
+            }
+            std::swap(new_to_explore,to_explore);
+        }
+
+        //Any frontier that is connected in both sides is actually internal
+        std::set<sgNodeID_t> reclassified_frontiers;
+        std::vector<sgNodeID_t> frontiers(frontier_ids.begin(),frontier_ids.end());
+        for (auto i=0;i+1<frontiers.size();++i) {
+            for (auto j=i+1;j<frontiers.size();++j) {
+                if (frontiers[i]==-frontiers[j]) reclassified_frontiers.insert(llabs(frontiers[i]));
+            }
+        }
+        std::set<sgNodeID_t> used_frontiers;
+        for (auto &fnid:frontiers) {
+            if (reclassified_frontiers.count(llabs(fnid))==0) t.frontiers.emplace_back(this,fnid);
+            else if (fnid>0 and used_frontiers.count(fnid)==0) {
+                t.internals.emplace_back(this,fnid);
+                used_frontiers.emplace(fnid);
+            }
+        }
+        if (include_disconnected or t.frontiers.size()>0) tangles.emplace_back(t);
+    }
+    return tangles;
+}
+
 std::vector<TangleView> DistanceGraph::get_all_tangleviews(int fsize, float fmin_kci, float fmax_kci, bool include_disconnected) const {
 //    std::cout<<"Tangles of size < "<<fsize<<" with "<<fmin_kci<<" < KCI < "<<fmax_kci<<" disconnected: "<<include_disconnected<<std::endl;
     std::vector<TangleView> tangles;

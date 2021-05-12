@@ -167,6 +167,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("get_nodeview",&DistanceGraph::get_nodeview)
             .def("get_all_nodeviews",&DistanceGraph::get_all_nodeviews,"both_directions"_a=false,"include_disconnected"_a=true,"Returns a vector with NodeViews for all active nodes",py::return_value_policy::move)
             .def("get_all_tangleviews",&DistanceGraph::get_all_tangleviews,"f_size"_a=500,"f_min_kci"_a=-1,"f_max_kci"_a=-1,"include_disconnected"_a=true,"Returns a vector with TangleViews for all tangles",py::return_value_policy::move)
+            .def("get_all_anchors_tangleviews",&DistanceGraph::get_all_anchors_tangleviews, "given_frontiers"_a, "include_disconnected"_a=true,"Returns a vector with TangleViews for all tangles",py::return_value_policy::move)
             .def_readwrite("name",&DistanceGraph::name)
             .def("write_to_gfa1",&DistanceGraph::write_to_gfa1,"filename"_a,"selected_nodes"_a=std::vector<sgNodeID_t>(),"depths"_a=std::vector<sgNodeID_t>())
             .def("write_to_gfa2",&DistanceGraph::write_to_gfa2)
