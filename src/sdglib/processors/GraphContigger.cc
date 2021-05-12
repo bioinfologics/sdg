@@ -904,8 +904,10 @@ void GraphContigger::solve_all_tangles(WorkSpace &ws, PairedReadsDatastore &peds
 }
 
 
-std::vector<sgNodeID_t > GraphContigger::contig_reduction_to_unique_kmers(std::string kmer_counter, std::string kmer_count, int min_cov, int max_cov, uint32_t max_run_size, int max_interconnection, bool keep_internode_links){
+std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger::contig_reduction_to_unique_kmers(WorkSpace &rws, std::string kmer_counter, std::string kmer_count, int min_cov, int max_cov, uint32_t max_run_size){
 
+    SequenceDistanceGraph & anchor_graph =rws.sdg;
+    std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> anchor_nodes; //old_node -> [ [new_node, offset]... [new_node, offset] ]
     // File to write translation table to
     std::ofstream ofile;
     ofile.open("./translation_table.txt");
@@ -918,9 +920,7 @@ std::vector<sgNodeID_t > GraphContigger::contig_reduction_to_unique_kmers(std::s
 #pragma omp critical
         {
             // while to identify all sub-sequences of a node and putting them in a temp vector
-            std::vector<std::pair<sgNodeID_t, int>> replacement_nodes; // store node and distance to prev anchor
-            replacement_nodes.reserve(c.size() / max_run_size);
-            added_nodes.reserve(added_nodes.size() + c.size() / max_run_size);
+
             auto seq = nv.sequence();
             int i = 0;
             int last_node_position=0;
@@ -937,64 +937,24 @@ std::vector<sgNodeID_t > GraphContigger::contig_reduction_to_unique_kmers(std::s
                     i++;
                 }
                 //add a node at the end of the graph and add the id to the list for future reference
-                sgNodeID_t new_node = ws.sdg.add_node(Node(seq.substr(si, i - si + 29)));
-                int distance = si-last_node_position-30;
-                replacement_nodes.push_back({new_node, distance});
+                sgNodeID_t new_node = anchor_graph.add_node(Node(seq.substr(si, i - si + 29)));
+                //int64_t distance = si-last_node_position-30;
+                anchor_nodes[nv.node_id()].push_back({new_node, si});
                 added_nodes.push_back(new_node);
-                ofile << nv.node_id() << "," << new_node << "," << distance << std::endl;
+                ofile << nv.node_id() << "," << new_node << "," << si << std::endl;
             }
 
-            if (!replacement_nodes.empty()) {
+            if (!anchor_nodes[nv.node_id()].empty()) {
                 // new nodes were created, replace the old node by the new ones
-
+                auto &replacement_nodes=anchor_nodes[nv.node_id()];
                 // connect intermediate nodes between them
                 for (auto np = 1; np < replacement_nodes.size(); np++) {
-                    ws.sdg.add_link(-replacement_nodes[np - 1].first, replacement_nodes[np].first, replacement_nodes[np].second);
+                    anchor_graph.add_link(-replacement_nodes[np - 1].first, replacement_nodes[np].first, replacement_nodes[np].second - replacement_nodes[np - 1].second+anchor_graph.get_node_size(replacement_nodes[np - 1].first));
                 }
-                if (keep_internode_links) {
-                    // if specified, connect the ends
-                    // bw nodes connecto to first one
-                    for (const auto &pvn: nv.prev()) {
-                        ws.sdg.add_link(-pvn.node().node_id(), replacement_nodes.front().first, pvn.distance()+replacement_nodes.front().second);
-                    }
-                    // connect the last node to the fw nodes
-                    for (const auto &nvn: nv.next()) {
-                        ws.sdg.add_link(-replacement_nodes.back().first, nvn.node().node_id(), nvn.distance()+ws.sdg.get_nodeview(replacement_nodes.back().first).size()-last_node_position);
-                    }
-                }
-                // disconnect old node from all the graph and mark as deleted
-                ws.sdg.disconnect_node(nv.node_id());
-                ws.sdg.remove_node(nv.node_id());
             }
         }
     }
-
-//    std::cout << "Removing non selected anchors from the graph: "<< added_nodes.size() << std::endl;
-//    // remove all non selected nodes by cross linking all ends and then removing the node
-//    std::sort(added_nodes.begin(), added_nodes.end());
-//    uint64_t cont=0;
-//    auto last_node=added_nodes[0];
-//    auto num_nodes=ws.sdg.nodes.size();
-//    for (const auto& nv: ws.sdg.get_all_nodeviews()){
-////        if (nv.node_id()>last_node) continue;
-//        // check if it was one of the selected nodes
-//        if (std::lower_bound(added_nodes.begin(), added_nodes.end(), nv.node_id()) == added_nodes.end()){
-//            // Connect ends, if there are too many connections leave disconnected
-//            if (nv.prev().size()<max_interconnection and nv.next().size()<max_interconnection){
-//                for (const auto& prev: nv.prev()){
-//                    for (const auto& next: nv.next()){
-////                        std::cout << "Doing the deletion... " << nv.node_id() << std::endl;
-//                        ws.sdg.add_link(-prev.node().node_id(), next.node().node_id(), prev.distance()+next.distance()+nv.size());
-//                    }
-//                }
-//            }
-//            // remove nodes
-//            ws.sdg.disconnect_node(nv.node_id());
-//            ws.sdg.remove_node(nv.node_id());
-//        }
-//        cont++;
-//    }
-    return added_nodes;
+    return anchor_nodes;
 }
 
 std::map<uint64_t, std::vector<sgNodeID_t >> GraphContigger::group_nodes(PairedReadsDatastore peds){

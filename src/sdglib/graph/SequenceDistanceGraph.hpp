@@ -31,7 +31,7 @@ public:
     explicit SequenceDistanceGraph(WorkSpace & _ws):nodes(0),DistanceGraph(*this,"SDG"),ws(_ws) { //sdg gets initialised through LDG
         add_node(Node("",NodeStatus::Deleted)); //an empty deleted node on 0, just to skip the space
     };
-    SequenceDistanceGraph(const SequenceDistanceGraph &sg) = delete; // Avoid implicit generation of the copy constructor.
+    //SequenceDistanceGraph(const SequenceDistanceGraph &sg) = delete; // Avoid implicit generation of the copy constructor.
 
     bool operator==(const SequenceDistanceGraph &o) const {
         return (nodes == o.nodes and links==o.links);
