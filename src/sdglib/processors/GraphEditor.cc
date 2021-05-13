@@ -120,7 +120,7 @@ void GraphEditor::apply_all() {
     auto next_link_deletion=link_deletion_queue.begin();
     auto next_expansion=node_expansion_queue.begin();
     auto next_detachment=path_detachment_queue.begin();
-    for (uint64_t i=i;i<next_op;++i) {
+    for (uint64_t i=0;i<next_op;++i) {
         if (next_node_deletion!=node_deletion_queue.end() and next_node_deletion->index==i) {
             auto &op=*next_node_deletion;
             ws.sdg.remove_node(llabs(op.input_nodes[0]));
