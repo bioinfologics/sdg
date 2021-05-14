@@ -25,6 +25,7 @@ void GraphContigger::pop_bubbles(const PairedReadsDatastore &prds, int bubble_si
         if (support < min_support or (noise > 0 and (float) support / noise < snr)) continue;
         to_delete.insert(nv.node_id());
     }
+    sdglib::OutputLog()<<"Deleting "<< to_delete.size()<< " nodes" <<std::endl;
     for (auto n:to_delete) ws.sdg.remove_node(n);
     ws.sdg.join_all_unitigs();
 }
@@ -906,13 +907,12 @@ void GraphContigger::solve_all_tangles(WorkSpace &ws, PairedReadsDatastore &peds
 
 std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger::contig_reduction_to_unique_kmers(WorkSpace &rws, std::string kmer_counter, std::string kmer_count, int min_cov, int max_cov, uint32_t max_run_size){
 
-    SequenceDistanceGraph & anchor_graph =rws.sdg;
+    SequenceDistanceGraph & anchor_graph=rws.sdg;
     std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> anchor_nodes; //old_node -> [ [new_node, offset]... [new_node, offset] ]
     // File to write translation table to
     std::ofstream ofile;
     ofile.open("./translation_table.txt");
 
-    std::vector<sgNodeID_t > added_nodes;
 #pragma omp parallel for schedule(dynamic,1)
     for (const auto& nv: ws.sdg.get_all_nodeviews()){
         auto c = nv.kmer_coverage(kmer_counter, kmer_count);
@@ -923,9 +923,7 @@ std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger:
 
             auto seq = nv.sequence();
             int i = 0;
-            int last_node_position=0;
             while (i < c.size()) {
-                last_node_position=i;
                 while (i < c.size() and (cg[i]!=1 or c[i] < min_cov or c[i] > max_cov)) {
                     i++;
                 }
@@ -939,8 +937,8 @@ std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger:
                 //add a node at the end of the graph and add the id to the list for future reference
                 sgNodeID_t new_node = anchor_graph.add_node(Node(seq.substr(si, i - si + 29)));
                 //int64_t distance = si-last_node_position-30;
+
                 anchor_nodes[nv.node_id()].push_back({new_node, si});
-                added_nodes.push_back(new_node);
                 ofile << nv.node_id() << "," << new_node << "," << si << std::endl;
             }
 
