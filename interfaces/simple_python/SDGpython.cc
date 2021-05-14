@@ -257,6 +257,10 @@ PYBIND11_MODULE(SDGpython, m) {
             .def(py::init<const SequenceDistanceGraph &,const std::vector<sgNodeID_t> >(),"","sdg"_a,"nodes"_a,py::return_value_policy::take_ownership)
             .def("sequence", &SequenceDistanceGraphPath::sequence)
             .def_readwrite("nodes", &SequenceDistanceGraphPath::nodes)
+            .def("__repr__",
+                 [](const SequenceDistanceGraphPath &sdgp) {
+                     return "<SDGPath: length: " + std::to_string(sdgp.nodes.size()) + " nodes>";
+                 })
             ;
 
     py::class_<PairedReadsDatastore>(m, "PairedReadsDatastore", "A Paired Reads Datastore")
@@ -437,6 +441,9 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("queue_path_detachment",&GraphEditor::queue_path_detachment)
             .def("apply_all",&GraphEditor::apply_all)
             .def("remove_small_components",&GraphEditor::remove_small_components)
+            .def("__repr__", [](const GraphEditor &ge) {
+                return "<Graph editor: Node deletions queued=: " + std::to_string(ge.node_deletion_queue.size()) + " next_ops: "+std::to_string(ge.next_op);
+            })
             ;
 
     py::class_<LinkageUntangler>(m,"LinkageUntangler", "A linkage untangler")
