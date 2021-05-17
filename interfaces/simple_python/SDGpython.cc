@@ -285,6 +285,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("dump_readpaths",&PairedReadsMapper::dump_readpaths)
             .def("load_readpaths",&PairedReadsMapper::load_readpaths)
             .def("get_node_inmediate_neighbours",&PairedReadsMapper::get_node_inmediate_neighbours, "node"_a)
+            .def("get_paths_in_node",&PairedReadsMapper::get_paths_in_node, "nid"_a)
             ;
 
     py::class_<LinkedReadsMapper>(m, "LinkedReadsMapper", "A Paired Reads Mapper")
@@ -316,6 +317,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("print_status",&LongReadsMapper::print_status)
             .def("set_params",&LongReadsMapper::set_params, "_k"_a=15, "_max_index_freq"_a=200, "_min_size"_a=1000, "_min_chain"_a=50, "_max_jump"_a=500, "_max_delta_change"_a= 60)
             .def("map_reads",&LongReadsMapper::map_reads, "readIDs"_a=std::unordered_set<uint32_t>())
+            .def("get_reads_in_node",&LongReadsMapper::get_reads_in_node, "nid"_a)
             .def_readonly("reads_in_node",&LongReadsMapper::reads_in_node)
             .def_readonly("mappings",&LongReadsMapper::mappings)
             .def_readonly("read_paths",&LongReadsMapper::read_paths)
