@@ -40,7 +40,7 @@ public:
 
     // Unique kmers pipeline
     std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> contig_reduction_to_unique_kmers(WorkSpace & ws, std::string kmer_counter, std::string kmer_count, int min_cov, int max_cov, uint32_t max_run_size=100);
-
+    void reconnect_anchors(WorkSpace & ws,std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> & anchor_map, int64_t max_frontiers=INT64_MAX);
     std::map<uint64_t, std::vector<sgNodeID_t >> group_nodes(PairedReadsDatastore peds);
 
 private:

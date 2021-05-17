@@ -947,13 +947,38 @@ std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger:
                 auto &replacement_nodes=anchor_nodes[nv.node_id()];
                 // connect intermediate nodes between them
                 for (auto np = 1; np < replacement_nodes.size(); np++) {
-                    anchor_graph.add_link(-replacement_nodes[np - 1].first, replacement_nodes[np].first, replacement_nodes[np].second - replacement_nodes[np - 1].second+anchor_graph.get_node_size(replacement_nodes[np - 1].first));
+                    anchor_graph.add_link(-replacement_nodes[np - 1].first, replacement_nodes[np].first, replacement_nodes[np].second - replacement_nodes[np - 1].second - anchor_graph.get_node_size(replacement_nodes[np - 1].first) - 1);
                 }
             }
         }
     }
     return anchor_nodes;
 }
+
+std::vector<Link> jump_tangle(TangleView &tv,int max_steps=50){
+    //A tangle can be jumped if:
+    //- Every path entering form a frontier exits through another frontier or reaches an end or a visited node in max_steps.
+    //- There are no loops
+    for (auto start:tv.frontiers){
+
+    }
+
+}
+
+void GraphContigger::reconnect_anchors(WorkSpace &rws, std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t, int64_t>>> &anchor_map, int64_t max_frontiers) {
+    std::vector<sgNodeID_t> nodes_with_anchors;
+    for (const auto & x:anchor_map) if (!x.second.empty()) nodes_with_anchors.emplace_back(x.first);
+    auto tangles=ws.sdg.get_all_anchors_tangleviews(nodes_with_anchors,false);
+
+    for (auto &t:tangles){
+        //Mark all frontiers as used.
+        //If there are few frontiers, connect them all-in to all-out, and mark them as used.
+
+
+
+    }
+}
+
 
 std::map<uint64_t, std::vector<sgNodeID_t >> GraphContigger::group_nodes(PairedReadsDatastore peds){
     std::cout << "Starting group nodes" << std::endl;
