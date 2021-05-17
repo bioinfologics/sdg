@@ -257,6 +257,8 @@ public:
 
     void read_read_paths(std::string filename);
 
+    std::vector<uint64_t> get_reads_in_node(sgNodeID_t nid);
+
     /**
      * Updates reads_in_nodes
      */

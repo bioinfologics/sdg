@@ -837,3 +837,7 @@ sgNodeID_t PairedReadsMapper::get_node_inmediate_neighbours(sgNodeID_t node){
     }
     return next_node;
 }
+
+std::vector<int64_t> PairedReadsMapper::get_paths_in_node(sgNodeID_t nid){
+    return paths_in_node[std::abs(nid)];
+}

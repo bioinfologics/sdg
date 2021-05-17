@@ -1065,3 +1065,7 @@ std::ostream &operator<<(std::ostream &os, const LongReadsMapper &lorm) {
     os << "Long Reads Mapper: "<<lorm.mappings.size()<<" raw mappings";
     return os;
 }
+
+std::vector<uint64_t> LongReadsMapper::get_reads_in_node(sgNodeID_t nid){
+    return reads_in_node[std::abs(nid)];
+}

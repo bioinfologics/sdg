@@ -129,6 +129,8 @@ public:
      */
     sgNodeID_t get_node_inmediate_neighbours(sgNodeID_t node);
 
+    std::vector<int64_t> get_paths_in_node(sgNodeID_t nid);
+
     WorkSpace &ws;
     const PairedReadsDatastore & datastore;
     /**
