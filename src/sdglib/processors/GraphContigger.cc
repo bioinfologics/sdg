@@ -906,7 +906,6 @@ void GraphContigger::solve_all_tangles(WorkSpace &ws, PairedReadsDatastore &peds
 
 
 std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger::contig_reduction_to_unique_kmers(WorkSpace &rws, std::string kmer_counter, std::string kmer_count, int min_cov, int max_cov, uint32_t max_run_size){
-
     SequenceDistanceGraph & anchor_graph=rws.sdg;
     std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> anchor_nodes; //old_node -> [ [new_node, offset]... [new_node, offset] ]
     // File to write translation table to
