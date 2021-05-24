@@ -444,7 +444,11 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("apply_all",&GraphEditor::apply_all)
             .def("remove_small_components",&GraphEditor::remove_small_components)
             .def("__repr__", [](const GraphEditor &ge) {
-                return "<Graph editor: Node deletions queued=: " + std::to_string(ge.node_deletion_queue.size()) + " next_ops: "+std::to_string(ge.next_op);
+                return "<Graph editor: Node deletions queued: " + std::to_string(ge.node_deletion_queue.size()) +
+                        ", link deletion queued: " + std::to_string(ge.link_deletion_queue.size()) +
+                        ", path detachment queued: " + std::to_string(ge.path_detachment_queue.size()) +
+                        ", node expansion queued: " + std::to_string(ge.node_expansion_queue.size()) +
+                        ", next_ops: " + std::to_string(ge.next_op);
             })
             ;
 
