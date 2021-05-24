@@ -121,6 +121,10 @@ void GraphEditor::apply_all() {
     auto next_expansion=node_expansion_queue.begin();
     auto next_detachment=path_detachment_queue.begin();
     for (uint64_t i=0;i<next_op;++i) {
+//    sdglib::OutputLog()<<"Applying all graph edits: "<<node_deletion_queue.size()<<" node deletions, "
+//            <<link_deletion_queue.size()<<" link deletions, "
+//            <<node_expansion_queue.size()<<" node expansions, "
+//            <<path_detachment_queue.size()<<" path detachments"<<std::endl;
         if (next_node_deletion!=node_deletion_queue.end() and next_node_deletion->index==i) {
             auto &op=*next_node_deletion;
             ws.sdg.remove_node(llabs(op.input_nodes[0]));
@@ -176,8 +180,11 @@ void GraphEditor::apply_all() {
         }
 
     }
+    node_deletion_queue.clear();
+    link_deletion_queue.clear();
     node_expansion_queue.clear();
     path_detachment_queue.clear();
+    next_op=0;
 }
 
 
