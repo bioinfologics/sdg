@@ -997,7 +997,7 @@ bool HappySorter::fast_grow_loop(int min_threads, float min_happiness, int64_t s
             add_placed_nodes(place_nodes(find_internal_candidates(min_happiness, min_threads), false));
             //sdglib::OutputLog()<<"updating ALL positions"<<std::endl;
             update_positions();
-            recruit_all_happy_threads();
+            //recruit_all_happy_threads();
         } else {
             //sdglib::OutputLog()<<"adding START internal candidates"<<std::endl;
             add_placed_nodes(place_nodes(find_internal_candidates(min_happiness, min_threads,1,ends_to_fill), false));
@@ -1027,6 +1027,47 @@ bool HappySorter::fast_grow_loop(int min_threads, float min_happiness, int64_t s
             }
             sdglib::OutputLog()<<"After "<<step<<" grow rounds: "<<order.node_coordinates.size()<<" anchors span "<<cmax.second-cmin.second<<" bp, "<<cmin.first<<" @ "<<cmin.second<<" : "<<cmax.first<<" @ "<<cmax.second<<std::endl;
         }
+    }
+    return grown;
+}
+
+bool HappySorter::q_grow_loop(int min_threads, float min_happiness, int p, int q, int64_t steps, bool verbose) {
+    if (min_threads==-1) min_threads=min_node_threads;
+    if (min_happiness==-1) min_happiness=min_node_happiness;
+    bool grown=false;
+    int64_t step=0;
+    while (++step<=steps) {
+        /********/
+
+        auto old_size=order.node_coordinates.size();
+        std::unordered_set<sgNodeID_t> candidates;
+        //sdglib::OutputLog()<<"adding FW candidates"<<std::endl;
+        add_placed_nodes(place_nodes(find_fw_candidates(min_happiness, min_threads), false));
+        //sdglib::OutputLog()<<"adding BW candidates"<<std::endl;
+        add_placed_nodes(place_nodes(find_bw_candidates(min_happiness, min_threads), false));
+        auto ends_to_fill = 2*(order.node_coordinates.size()-old_size);
+        if (ends_to_fill<1000) ends_to_fill=1000;
+
+        add_placed_nodes(place_nodes(find_internal_candidates(min_happiness, min_threads), false));
+        update_positions();
+
+        //sdglib::OutputLog()<<"recruiting threads"<<std::endl;
+        recruit_all_happy_threads_q(p,q);
+        //sdglib::OutputLog()<<"closing threads"<<std::endl;
+        close_internal_threads();
+
+        grown=order.node_coordinates.size()>old_size;
+        /********/
+
+        if (verbose and (step%50==0 or step==steps or not grown)) {
+            std::pair<sgNodeID_t,int64_t> cmax={0,0},cmin={0,0};
+            for (const auto &nc:order.node_coordinates) {
+                if (nc.second<cmin.second) cmin=nc;
+                if (nc.second>cmax.second) cmax=nc;
+            }
+            sdglib::OutputLog()<<"After "<<step<<" grow rounds: "<<order.node_coordinates.size()<<" anchors span "<<cmax.second-cmin.second<<" bp, "<<cmin.first<<" @ "<<cmin.second<<" : "<<cmax.first<<" @ "<<cmax.second<<std::endl;
+        }
+        if (not grown) break;
     }
     return grown;
 }

@@ -57,6 +57,7 @@ public:
     bool grow(int min_threads=-1, float min_happiness=-1, bool fw=true, bool bw=true, bool internal=true);
     bool grow_loop(int min_threads=-1, float min_happiness=-1, int64_t steps=INT64_MAX, bool verbose=false);
     bool fast_grow_loop(int min_threads=-1, float min_happiness=-1, int64_t steps=INT64_MAX, bool verbose=false);
+    bool q_grow_loop(int min_threads=-1, float min_happiness=-1, int p=4, int q=5, int64_t steps=INT64_MAX, bool verbose=false);
     bool fast_grow_loop_10x(const LinkedReadsMapper &lrm, int min_threads=-1, float min_happiness=-1, int64_t steps=INT64_MAX, bool verbose=false);
 
     void recruit_all_happy_threads_q(int min_nodes, int max_span);
