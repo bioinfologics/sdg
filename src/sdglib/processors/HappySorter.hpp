@@ -68,6 +68,8 @@ public:
     sgNodeID_t hs_most_connected_node(const std::unordered_map<sgNodeID_t, int64_t> &node_positions, const std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> & node_distances, const std::unordered_set<sgNodeID_t> &to_place) const;
     std::map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,int64_t>>> hs_tnp_to_distances (const std::map<int64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> &thread_nodepositions,const std::unordered_set<sgNodeID_t> &nodeset) const;
 
+    void run_from_nodelist(std::vector<sgNodeID_t> nodes, int min_threads=-1, float min_happiness=-1, int p=4, int q=5, int64_t steps=INT64_MAX, bool verbose=false);
+
     bool update_positions(int64_t first=0, int64_t last=-1);
 
     float min_thread_happiness;
@@ -96,6 +98,7 @@ public:
     min_thread_nodes(_min_thread_nodes), min_node_threads(_min_node_threads), order_end_size(_order_end_size){
         node_sorted.resize(rtg.sdg.nodes.size());
     };
+    void run_from_dg_lines(DistanceGraph dg, int min_line_nodes=10, int p=4, int q=6);
     void run(int min_links=4, float first_threads_happiness=.1, int64_t min_starting_nodes=100, float max_starting_used=.1, int64_t min_final_nodes=100, int64_t max_steps=INT64_MAX, int64_t max_orders=INT64_MAX);
     void run_fast(int min_links=4, float first_threads_happiness=.1, int64_t min_starting_nodes=150, float max_starting_used=.1, int64_t min_final_nodes=10000, int64_t max_steps=INT64_MAX, int64_t max_orders=INT64_MAX);
     void run_fast_from_nodelist(std::vector<sgNodeID_t> nodes={}, int min_links=4, float first_threads_happiness=.1, int64_t min_starting_nodes=150, float max_starting_used=.1, int64_t min_final_nodes=2000, int64_t max_steps=INT64_MAX, int64_t max_orders=INT64_MAX);

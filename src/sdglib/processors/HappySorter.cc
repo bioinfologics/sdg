@@ -338,8 +338,6 @@ void HappySorter::recruit_all_happy_threads(float min_happiness, int min_nodes,i
 }
 
 void HappySorter::recruit_all_happy_threads_q(int min_nodes, int max_span) {
-    //if (min_nodes==-1) min_nodes=min_thread_nodes;
-    //if (min_happiness==-1) min_happiness=min_thread_happiness;
     std::unordered_map<int64_t,int> thread_included_nodes;
     for (const auto &np: order.node_positions) {
         const auto &nid = np.second > 0 ? np.first : -np.first;
@@ -1500,4 +1498,87 @@ bool HappySorter::update_positions(int64_t first, int64_t last) {
 //    std::cout<<"after updating order: "<<ordered_nodecoords.size()<<" nodes by coordinate, and "<<order.node_positions.size()<<" node positions"<<std::endl;
 //    std::cout<<std::endl<<"HS::update_positions finished"<<std::endl;
     return ever_changed;
+}
+
+void HappySorter::run_from_nodelist(std::vector<sgNodeID_t> nodes, int min_threads, float min_happiness, int p, int q,
+                                    int64_t steps, bool verbose) {
+    if (min_threads==-1) min_threads=min_node_threads;
+    if (min_happiness==-1) min_happiness=min_node_happiness;
+    std::vector<int> thread_counts;
+    std::vector<sgNodeID_t> usable_nodes;
+    for (auto &n:nodes) {
+        auto ntc=rtg.node_threads(n).size();
+        if (ntc>=min_threads) {
+            usable_nodes.push_back(n);
+            thread_counts.push_back(ntc);
+        }
+    }
+    std::sort(thread_counts.begin(),thread_counts.end());
+    auto median_tc=thread_counts[thread_counts.size()/2];
+    for (auto &n:usable_nodes){
+        if (rtg.node_threads(n).size()>=median_tc) {
+            //Force thread recruiting from the current nodes
+            if (verbose) sdglib::OutputLog()<<"Starting from node "<<n<<std::endl;
+            threads.clear();
+            fw_open_threads.clear();
+            bw_open_threads.clear();
+            order=LocalOrder(usable_nodes);
+            if (verbose) sdglib::OutputLog()<<"Local order filled temporally with all "<<order.size()<<" usable nodes"<<std::endl;
+            recruit_all_happy_threads_q(p,q);
+            //DEBUG: unrolled version of recruit
+//            {
+//                auto min_nodes=p,max_span=q;
+//                std::unordered_map<int64_t,int> thread_included_nodes;
+//                for (const auto &np: order.node_positions) {
+//                    const auto &nid = np.second > 0 ? np.first : -np.first;
+//                    for (auto &tid:rtg.node_threads(nid, true)) ++thread_included_nodes[tid];
+//                }
+//                if (verbose) sdglib::OutputLog()<<"analysing "<<thread_included_nodes.size()<<" threads"<<std::endl;
+//                for (auto &tin:thread_included_nodes) {
+//                    if (verbose) sdglib::OutputLog()<<"Thread "<<tin.first<<": "<<tin.second<<">="<<min_nodes<<" and ("<<thread_included_nodes.count(-tin.first)<<"==0 or "<<thread_included_nodes[-tin.first]<<"<"<<min_nodes<<") and "<<threads.count(tin.first)<<"==0 and "<<threads.count(-tin.first)<<"==0 and "<<thread_happiness_q(tin.first,min_nodes,max_span)<<std::endl;
+//                    if (tin.second>=min_nodes and (thread_included_nodes.count(-tin.first)==0 or thread_included_nodes[-tin.first]<min_nodes) and threads.count(tin.first)==0 and threads.count(-tin.first)==0 and thread_happiness_q(tin.first,min_nodes,max_span)) {
+//                        threads.insert(tin.first);
+//                        fw_open_threads.insert(tin.first);
+//                        bw_open_threads.insert(tin.first);
+//                    }
+//                }
+//            }
+            if (verbose) sdglib::OutputLog()<<"Threads recruited: "<<threads.size()<<std::endl;
+            order=LocalOrder();
+            if (verbose) sdglib::OutputLog()<<"Starting from node "<<n<<std::endl;
+            add_placed_nodes({{n,0}});
+
+            q_grow_loop(min_threads,min_happiness,p,q,steps,verbose);
+            if (order.size()>usable_nodes.size()) break; //keeps trying until it grows the order, or runs out of nodes
+        }
+    }
+}
+
+
+void HappySorterRunner::run_from_dg_lines(DistanceGraph dg, int min_line_nodes, int p, int q) {
+    sdglib::OutputLog()<<"Starting HappySorterRunner run from rtg lines..."<<std::endl;
+    //sdglib::OutputLog()<<"Getting all nodeviews..."<<std::endl;
+    auto lines=dg.get_all_lines(min_line_nodes);
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    shuffle (lines.begin(), lines.end(), std::default_random_engine(seed));
+    sdglib::OutputLog()<<lines.size()<<" lines shuffled..."<<std::endl;
+#pragma omp parallel for schedule(dynamic,1)
+    for (auto lineit=lines.cbegin();lineit<lines.cend();++lineit){
+        auto &line=*lineit;
+        try {
+            auto hs = HappySorter(rtg, min_thread_happiness, min_node_happiness, min_thread_nodes, min_node_threads, order_end_size);
+            hs.run_from_nodelist(line,min_node_threads,min_node_happiness,p,q);
+#pragma omp critical(orders)
+            {
+                orders[orders.size()]=hs.order;
+                if (orders.size()%10==0) sdglib::OutputLog()<<orders.size()<<" orders created"<<std::endl;
+            }
+
+        }
+        catch (std::exception &e) {
+            std::cout<<"Exception caught when trying to process line with node "<<line[0]<<": "<< typeid(e).name() <<": "<<e.what()<<", skipping"<<std::endl;
+        }
+
+    }
+    sdglib::OutputLog()<<"HappySorterRunner run finished!!!"<<std::endl;
 }
