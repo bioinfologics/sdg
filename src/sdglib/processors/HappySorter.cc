@@ -1513,6 +1513,8 @@ void HappySorter::run_from_nodelist(std::vector<sgNodeID_t> nodes, int min_threa
             thread_counts.push_back(ntc);
         }
     }
+    if (usable_nodes.size()<3) return;
+
     std::sort(thread_counts.begin(),thread_counts.end());
     auto median_tc=thread_counts[thread_counts.size()/2];
     for (auto &n:usable_nodes){
