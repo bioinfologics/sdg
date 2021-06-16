@@ -1562,15 +1562,19 @@ void HappySorterRunner::run_from_dg_lines(DistanceGraph dg, int min_line_nodes, 
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     shuffle (lines.begin(), lines.end(), std::default_random_engine(seed));
     sdglib::OutputLog()<<lines.size()<<" lines shuffled..."<<std::endl;
-#pragma omp parallel for schedule(dynamic,1)
+//#pragma omp parallel for schedule(dynamic,1)
     for (auto lineit=lines.cbegin();lineit<lines.cend();++lineit){
         auto &line=*lineit;
+//        for (const auto &ln: line){
+//            std::cout <<
+//        }
         try {
             auto hs = HappySorter(rtg, min_thread_happiness, min_node_happiness, min_thread_nodes, min_node_threads, order_end_size);
             hs.run_from_nodelist(line,min_node_threads,min_node_happiness,p,q);
-#pragma omp critical(orders)
+//#pragma omp critical(orders)
             {
                 orders[orders.size()]=hs.order;
+                std::cout << orders.size() << " order: " << hs.order.size() << " nodes" << std::endl;
                 if (orders.size()%10==0) sdglib::OutputLog()<<orders.size()<<" orders created"<<std::endl;
             }
 
