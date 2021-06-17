@@ -923,18 +923,18 @@ std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger:
             auto seq = nv.sequence();
             int i = 0;
             while (i < c.size()) {
+                //skip until coverage conditions met
                 while (i < c.size() and (cg[i]!=1 or c[i] < min_cov or c[i] > max_cov)) {
                     i++;
                 }
-                if (i == c.size()) break;
+                if (i == c.size()) break;//contig ended, coverage condition not met
                 auto si = i;
-                uint32_t run_size = 0;
-                while (i < c.size() and cg[i] == 1 and c[i] >= min_cov and c[i] <= max_cov and run_size < max_run_size) {
-                    run_size++;
+
+                while (i < c.size() and cg[i] == 1 and c[i] >= min_cov and c[i] <= max_cov and i-si < max_run_size) {
                     i++;
                 }
                 //add a node at the end of the graph and add the id to the list for future reference
-                sgNodeID_t new_node = anchor_graph.add_node(Node(seq.substr(si, i - si + 29)));
+                sgNodeID_t new_node = anchor_graph.add_node(Node(seq.substr(si, i - si + 30)));
                 //int64_t distance = si-last_node_position-30;
 
                 anchor_nodes[nv.node_id()].push_back({new_node, si});
