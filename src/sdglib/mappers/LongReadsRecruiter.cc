@@ -555,7 +555,7 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
     if (seed_size<k) seed_size=k;
     sdglib::OutputLog()<<"Creating index!"<<std::endl;
     NKmerIndex nki(sdg,k,f);
-    sdglib::OutputLog()<<"Index created!"<<std::endl;
+    sdglib::OutputLog()<<"Index created with "<<nki.end()-nki.begin()<<" items"<<std::endl;
     if (last_read==0) last_read=datastore.size();
     auto total_reads = datastore.size();
     auto maped_reads_count=0;
@@ -582,10 +582,7 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
                 auto kmatch=nki.find(rpk.second);
                 if (kmatch!=nki.end() and kmatch->kmer==rpk.second){
                     pme.reset();
-//                    std::cout<<std::endl<<"PME reset done"<<std::endl;
-//                    std::cout<<std::endl<<"read kmer is at "<<rki<<" in "<<(read_kmers[rki].first ? "FW":"REV")<<" orientation"<<std::endl;
                     for (;kmatch!=nki.end() and kmatch->kmer==rpk.second;++kmatch) {
-//                        std::cout<<" match to "<<kmatch->contigID<<":"<<kmatch->offset<<std::endl;
                         auto contig=kmatch->contigID;
                         int64_t pos=kmatch->offset-1;
                         if (pos<0) {
@@ -598,19 +595,13 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
                     pme.extend_fw();
                     pme.set_best_path();
                     const auto & pmebp=pme.best_path;
-                    if (pme.last_readpos-llabs(rpk.first)>=seed_size) {
+                    //last_readpos is 0-based and left to the end USED base, while rpk is 1-based to allow for sign as direction
+                    //hence, an alignment at the very beginning of the read would be rpk.first=1 and last_readpos=30
+                    if (pme.last_readpos-llabs(rpk.first)>=seed_size-2) {
                         if (!pmebp.empty()) {
                             last_end=pme.last_readpos; //avoid extra index lookups for kmers already used once
                             pme.make_path_as_perfect_matches();
-//                            if (private_read_perfect_matches.size()<1000){
                             private_read_perfect_matches.insert(private_read_perfect_matches.end(),pme.best_path_matches.begin(),pme.best_path_matches.end());
-//                            } else {
-//                                std::cout<<" Discarded a read because matches to too many contigs" <<std::endl;
-//                                private_read_perfect_matches.clear();
-//                                break;
-//                            }
-
-
                         }
                     }
 //                    //TODO: matches shold be extended left to avoid unneeded indeterminaiton when an error occurrs in an overlap region and the new hit matches a further part of the genome.
