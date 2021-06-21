@@ -272,26 +272,25 @@ float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_t
     if (not prev and not next) return 0;
     else if (prev and not next) {
         for (auto &tid:rtg.node_threads(nid,true)){
-            if (rtg.nodes_before_in_thread(tid,nid)>=10){
+            if (threads.count(tid)) {
+                ++happy;
                 ++total;
-                if (threads.count(tid)) ++happy;
             }
-        }
-        if (total<min_threads){
-            total=0;happy=0;
-            for (auto &tid:rtg.node_threads(nid,true)) if (threads.count(tid)) ++happy;
+            else if (rtg.nodes_before_in_thread(tid,nid)>=10){
+                ++total;
+
+            }
         }
     }
     else if (not prev and next) {
         for (auto &tid:rtg.node_threads(nid,true)){
-            if (rtg.nodes_after_in_thread(tid,nid)>=10){
+            if (threads.count(tid)) {
+                ++happy;
                 ++total;
-                if (threads.count(tid)) ++happy;
             }
-        }
-        if (total<min_threads){
-            total=0;happy=0;
-            for (auto &tid:rtg.node_threads(nid,true)) if (threads.count(tid)) ++happy;
+            else if (rtg.nodes_after_in_thread(tid,nid)>=10){
+                ++total;
+            }
         }
     }
     else {
@@ -376,20 +375,21 @@ std::unordered_set<sgNodeID_t> HappySorter::find_fw_candidates(float min_happine
     std::unordered_map<sgNodeID_t,int> node_links;
     std::unordered_set<sgNodeID_t> candidates;
 
-
+    bool debug=false;
+    int64_t end_idx=order.size()-end_size;
+    if (end_idx<0) end_idx=0;
+    if (debug) std::cout<<"looking for nodes with links on "<<fw_open_threads.size()<<" fw_open_threads"<<std::endl;
+    if (debug) std::cout<<"end_idx = "<<end_idx<<std::endl;
     for (auto tid:fw_open_threads){
         auto tnps=rtg.get_thread(tid);
-        int64_t last_inside_node=-1;
-        for (auto i=0;i<tnps.size();++i) {
-            if (order.get_node_position(tnps[i].node)>order.size()-end_size) {
-                last_inside_node=i;
-                break;
-            }
-        }
+        int64_t last_inside_node=0;
+        for (;last_inside_node<tnps.size() and order.get_node_position(tnps[last_inside_node].node)>end_idx;++last_inside_node);
         for (auto i=last_inside_node;i<tnps.size();++i) ++node_links[tnps[i].node];
     }
+    if (debug) std::cout<<" ... "<<node_links.size()<<" nodes had links"<<std::endl;
 
     for (auto &nl:node_links) if (nl.second>=min_threads and node_happiness(nl.first,true,false,min_threads)>=min_happiness) candidates.insert(nl.first);
+    if (debug) std::cout<<" ... "<<candidates.size()<<" nodes had >="<<min_threads<<" links and >="<<min_happiness<<" happiness"<<std::endl;
 
     //remove candidates that appear in both directions (should be rare?), also remove candidates located before end_size
     std::set<sgNodeID_t> to_delete;
@@ -400,10 +400,12 @@ std::unordered_set<sgNodeID_t> HappySorter::find_fw_candidates(float min_happine
             if (p<0 or (p>0 and p<=order.size()-end_size)) to_delete.insert(c);
         }
     }
+    if (debug) std::cout<<" ... "<<to_delete.size()<<" nodes are already present, or candidates in both directions"<<std::endl;
     for (auto cd:to_delete) {
         candidates.erase(cd);
         candidates.erase(-cd);
     }
+    if (debug) std::cout<<" ... "<<candidates.size()<<" fw candidates found"<<std::endl;
     return candidates;
 }
 
@@ -414,8 +416,8 @@ std::unordered_set<sgNodeID_t> HappySorter::find_bw_candidates(float min_happine
     if (end_size==-1) end_size=order_end_size;
     std::unordered_map<sgNodeID_t,int> node_links;
     std::unordered_set<sgNodeID_t> candidates;
-
-
+    bool debug=false;
+    if (debug) std::cout<<"looking for nodes with links on "<<bw_open_threads.size()<<" bw_open_threads"<<std::endl;
     for (auto tid:bw_open_threads){
         auto tnps=rtg.get_thread(tid);
         int64_t last_inside_node=-1;
@@ -428,9 +430,10 @@ std::unordered_set<sgNodeID_t> HappySorter::find_bw_candidates(float min_happine
         }
         for (int i=last_inside_node;i>=0;--i) ++node_links[tnps[i].node];
     }
+//    if (debug) std::cout<<" ... "<<node_links.size()<<" nodes had links"<<std::endl;
 
     for (auto &nl:node_links) if (nl.second>=min_threads and node_happiness(nl.first,false,true,min_threads)>=min_happiness) candidates.insert(nl.first);
-
+//    if (debug) std::cout<<" ... "<<candidates.size()<<" nodes had >="<<min_threads<<" links and >="<<min_happiness<<" happiness"<<std::endl;
     //remove candidates that appear in both directions (should be rare?), also remove candidates located before end_size
     std::set<sgNodeID_t> to_delete;
     for (auto c:candidates) {
@@ -440,10 +443,12 @@ std::unordered_set<sgNodeID_t> HappySorter::find_bw_candidates(float min_happine
             if (p<0 or (p>0 and p>=end_size)) to_delete.insert(c);
         }
     }
+//    if (debug) std::cout<<" ... "<<to_delete.size()<<" nodes are already present, or candidates in both directions"<<std::endl;
     for (auto cd:to_delete) {
         candidates.erase(cd);
         candidates.erase(-cd);
     }
+//    if (debug) std::cout<<" ... "<<candidates.size()<<" bw candidates found"<<std::endl;
     return candidates;
 }
 
@@ -495,31 +500,46 @@ std::unordered_set<sgNodeID_t> HappySorter::find_internal_candidates(float min_h
 
 void HappySorter::close_internal_threads(int order_end, int thread_end) {
     std::set<uint64_t> to_close;
-    for (auto tid:fw_open_threads){
-        auto tnp=rtg.get_thread(tid);
-        for (int i=tnp.size()-1;i>=0;--i){
-            auto nid=tnp[i].node;
-            auto p=order.get_node_position(nid);
-            if (p>0) {
-                if (tnp.size()-1-i<=thread_end or order.size()-p>order_end) to_close.insert(tid);
+
+    //NEW IMPLEMENTATION, to avoid a single hit in the middle of the order to close the threads
+//    std::cout<<"thread closing starting, open_fw: "<<fw_open_threads.size()<<", open_bw:"<<bw_open_threads.size()<<std::endl;
+    auto nl=order.as_signed_nodes();
+    if (nl.size()<order_end) return;
+    std::set<sgNodeID_t> bw_nodes,fw_nodes;
+    for(auto i=0;i<order_end;++i) bw_nodes.insert(nl[i]);
+//    std::cout<<bw_nodes.size()<<" bw_nodes"<<std::endl;
+    for (auto tid:bw_open_threads) {
+        bool closed=true;
+        bool first=true;
+        for (auto &p:rtg.get_thread(tid)) {
+            if (bw_nodes.count(p.node)) {
+                if (not first) closed=false;
                 break;
             }
+            first=false;
         }
+        if (closed) to_close.insert(tid);
     }
-    for (auto tid:to_close) fw_open_threads.erase(tid);
-    to_close.clear();
-    for (auto tid:bw_open_threads){
-        auto tnp=rtg.get_thread(tid);
-        for (int i=0;i<tnp.size();++i){
-            auto nid=tnp[i].node;
-            auto p=order.get_node_position(nid);
-            if (p>0) {
-                if (i<=thread_end or p-1>order_end) to_close.insert(tid);
-                break;
-            }
-        }
-    }
+//    std::cout<<to_close.size()<<" threads to close after evaluating bw"<<std::endl;
+    for(auto i=nl.size()-order_end;i<nl.size();++i) fw_nodes.insert(-nl[i]);
+//    std::cout<<fw_nodes.size()<<" fw_nodes"<<std::endl;
     for (auto tid:to_close) bw_open_threads.erase(tid);
+    to_close.clear();
+    for (auto tid:fw_open_threads) {
+        bool closed=true;
+        bool first=true;
+        for (auto &p:rtg.get_thread(-tid)) { //going in reverse to check last nodes first
+            if (fw_nodes.count(p.node)) {
+                if (not first) closed=false;
+                break;
+            }
+            first=false;
+        }
+        if (closed) to_close.insert(tid);
+    }
+//    std::cout<<to_close.size()<<" threads to close after evaluating fw"<<std::endl;
+    for (auto tid:to_close) fw_open_threads.erase(tid);
+//    std::cout<<"thread closing finished, open_fw: "<<fw_open_threads.size()<<", open_bw:"<<bw_open_threads.size()<<std::endl;
 }
 
 void HappySorter::start_from_node(sgNodeID_t nid, int min_links, float first_threads_happiness) {
@@ -1039,19 +1059,22 @@ bool HappySorter::q_grow_loop(int min_threads, float min_happiness, int p, int q
 
         auto old_size=order.node_coordinates.size();
         std::unordered_set<sgNodeID_t> candidates;
-        //sdglib::OutputLog()<<"adding FW candidates"<<std::endl;
+//        sdglib::OutputLog()<<"adding FW candidates"<<std::endl;
         add_placed_nodes(place_nodes(find_fw_candidates(min_happiness, min_threads), false));
-        //sdglib::OutputLog()<<"adding BW candidates"<<std::endl;
+//        sdglib::OutputLog()<<"adding BW candidates"<<std::endl;
         add_placed_nodes(place_nodes(find_bw_candidates(min_happiness, min_threads), false));
         auto ends_to_fill = 2*(order.node_coordinates.size()-old_size);
-        if (ends_to_fill<1000) ends_to_fill=1000;
+        if (ends_to_fill<200) ends_to_fill=200;
+//        sdglib::OutputLog()<<"adding internal candidates"<<std::endl;
+        add_placed_nodes(place_nodes(find_internal_candidates(min_happiness, min_threads,0,ends_to_fill), false));
+        add_placed_nodes(place_nodes(find_internal_candidates(min_happiness, min_threads,order.node_coordinates.size()-ends_to_fill,order.node_coordinates.size()), false));
+//        sdglib::OutputLog()<<"updating positions"<<std::endl;
+        update_positions(0,ends_to_fill);
+        update_positions(order.node_coordinates.size()-ends_to_fill,order.node_coordinates.size());
 
-        add_placed_nodes(place_nodes(find_internal_candidates(min_happiness, min_threads), false));
-        update_positions();
-
-        //sdglib::OutputLog()<<"recruiting threads"<<std::endl;
+//        sdglib::OutputLog()<<"recruiting threads"<<std::endl;
         recruit_all_happy_threads_q(p,q);
-        //sdglib::OutputLog()<<"closing threads"<<std::endl;
+//        sdglib::OutputLog()<<"closing threads"<<std::endl;
         close_internal_threads();
 
         grown=order.node_coordinates.size()>old_size;
@@ -1508,7 +1531,7 @@ void HappySorter::run_from_nodelist(std::vector<sgNodeID_t> nodes, int min_threa
     std::vector<sgNodeID_t> usable_nodes;
     for (auto &n:nodes) {
         auto ntc=rtg.node_threads(n).size();
-        if (ntc>=min_threads) {
+        if (ntc>=min_threads*4) {
             usable_nodes.push_back(n);
             thread_counts.push_back(ntc);
         }
@@ -1525,24 +1548,6 @@ void HappySorter::run_from_nodelist(std::vector<sgNodeID_t> nodes, int min_threa
             order=LocalOrder(usable_nodes);
             if (verbose) sdglib::OutputLog()<<"Local order filled temporally with all "<<order.size()<<" usable nodes"<<std::endl;
             recruit_all_happy_threads_q(p,q);
-            //DEBUG: unrolled version of recruit
-//            {
-//                auto min_nodes=p,max_span=q;
-//                std::unordered_map<int64_t,int> thread_included_nodes;
-//                for (const auto &np: order.node_positions) {
-//                    const auto &nid = np.second > 0 ? np.first : -np.first;
-//                    for (auto &tid:rtg.node_threads(nid, true)) ++thread_included_nodes[tid];
-//                }
-//                if (verbose) sdglib::OutputLog()<<"analysing "<<thread_included_nodes.size()<<" threads"<<std::endl;
-//                for (auto &tin:thread_included_nodes) {
-//                    if (verbose) sdglib::OutputLog()<<"Thread "<<tin.first<<": "<<tin.second<<">="<<min_nodes<<" and ("<<thread_included_nodes.count(-tin.first)<<"==0 or "<<thread_included_nodes[-tin.first]<<"<"<<min_nodes<<") and "<<threads.count(tin.first)<<"==0 and "<<threads.count(-tin.first)<<"==0 and "<<thread_happiness_q(tin.first,min_nodes,max_span)<<std::endl;
-//                    if (tin.second>=min_nodes and (thread_included_nodes.count(-tin.first)==0 or thread_included_nodes[-tin.first]<min_nodes) and threads.count(tin.first)==0 and threads.count(-tin.first)==0 and thread_happiness_q(tin.first,min_nodes,max_span)) {
-//                        threads.insert(tin.first);
-//                        fw_open_threads.insert(tin.first);
-//                        bw_open_threads.insert(tin.first);
-//                    }
-//                }
-//            }
             if (verbose) sdglib::OutputLog()<<"Threads recruited: "<<threads.size()<<std::endl;
             order=LocalOrder();
             if (verbose) sdglib::OutputLog()<<"Starting from node "<<n<<std::endl;
