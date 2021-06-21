@@ -109,6 +109,18 @@ namespace sdglib {
                 case 'T':
                     rseq[i] = 'A';
                     break;
+                case 'a':
+                    rseq[i] = 't';
+                    break;
+                case 'c':
+                    rseq[i] = 'g';
+                    break;
+                case 'g':
+                    rseq[i] = 'c';
+                    break;
+                case 't':
+                    rseq[i] = 'a';
+                    break;
             }
         }
         return rseq;
