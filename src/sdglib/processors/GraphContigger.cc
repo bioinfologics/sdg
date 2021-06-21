@@ -946,7 +946,7 @@ std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger:
                 auto &replacement_nodes=anchor_nodes[nv.node_id()];
                 // connect intermediate nodes between them
                 for (auto np = 1; np < replacement_nodes.size(); np++) {
-                    anchor_graph.add_link(-replacement_nodes[np - 1].first, replacement_nodes[np].first, replacement_nodes[np].second - replacement_nodes[np - 1].second - anchor_graph.get_node_size(replacement_nodes[np - 1].first) - 1);
+                    anchor_graph.add_link(-replacement_nodes[np - 1].first, replacement_nodes[np].first, replacement_nodes[np].second - replacement_nodes[np - 1].second - anchor_graph.get_node_size(replacement_nodes[np - 1].first) );
                 }
             }
         }
