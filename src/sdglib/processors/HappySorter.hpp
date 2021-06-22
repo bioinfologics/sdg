@@ -42,7 +42,7 @@ public:
      * */
     float node_happiness(sgNodeID_t,bool prev=true,bool next=false, int min_threads=-1) const; //TODO: have an open-thread happiness
     void recruit_all_happy_threads(float min_happiness=-1, int min_nodes=-1, int64_t end_sizes=-1); //TODO: validate node order and thread openness
-    void close_internal_threads(int order_end=20,int thread_end=0);
+    void close_internal_threads(int order_end=30,int thread_end=0);
     std::unordered_set<sgNodeID_t> find_fw_candidates(float min_happiness=-1, int min_threads=-1, int end_size=-1) const;
     std::unordered_set<sgNodeID_t> find_bw_candidates(float min_happiness=-1, int min_threads=-1, int end_size=-1) const;
     //This looks for candidates that are both fw for some nodes and bw for others

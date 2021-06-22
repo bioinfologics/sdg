@@ -233,7 +233,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("find_fw_candidates",&HappySorter::find_fw_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"end_size"_a=-1)
             .def("find_bw_candidates",&HappySorter::find_bw_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"end_size"_a=-1)
             .def("find_internal_candidates",&HappySorter::find_internal_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"first"_a=1,"last"_a=INT32_MAX)
-            .def("close_internal_threads",&HappySorter::close_internal_threads,"order_end"_a=20,"thread_end"_a=0)
+            .def("close_internal_threads",&HappySorter::close_internal_threads,"order_end"_a=30,"thread_end"_a=0)
             .def("start_from_node",&HappySorter::start_from_node,"nid"_a,"min_links"_a=4,"first_threads_happiness"_a=.1)
             .def("start_from_node_2",&HappySorter::start_from_node_2,"nid"_a,"min_links"_a=4,"first_threads_happiness"_a=.1)
             .def("make_thread_nodepositions",&HappySorter::make_thread_nodepositions,"nodes"_a,"tids"_a=std::set<int64_t>())

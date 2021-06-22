@@ -559,6 +559,7 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
     if (last_read==0) last_read=datastore.size();
     auto total_reads = datastore.size();
     auto maped_reads_count=0;
+    bool debug=false;
 #pragma omp parallel shared(nki)
     {
         StreamKmerFactory skf(k);
@@ -572,17 +573,24 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
 
             std::vector<PerfectMatch> private_read_perfect_matches;
             const auto seq=std::string(sequence_reader.get_read_sequence(rid));
-//            std::cout<<"Read "<< rid << " --> " << seq << std::endl;
+            if (debug) std::cout<<"Read "<< rid << " --> " << seq << std::endl;
             read_kmers.clear();
             skf.produce_all_kmers(seq.c_str(),read_kmers);
             pme.set_read(seq);
             int64_t last_end=0;
             for (const auto &rpk:read_kmers){
-                if (llabs(rpk.first)-1+k<last_end) continue;
+                //coordinates in the rpk start at 1/-1, and are basically the number of the k-mer in the sequence, so
+                if (llabs(rpk.first)+k<=last_end+2) {
+                    if (debug) std::cout<<"skipping k-mer at "<<rpk.first<<" because llabs("<<rpk.first<<")-1+"<<(int)k<<"<"<<last_end<<std::endl;
+                    continue; //skip until the k-mer doesn't belong to last hit
+                }
+                if (debug) std::cout<<"Next unmatched kmer at rp "<< rpk.first<<std::endl;
                 auto kmatch=nki.find(rpk.second);
                 if (kmatch!=nki.end() and kmatch->kmer==rpk.second){
+
                     pme.reset();
                     for (;kmatch!=nki.end() and kmatch->kmer==rpk.second;++kmatch) {
+                        if (debug) std::cout<<"Match found! to "<<kmatch->contigID<<"@"<<kmatch->offset<<std::endl;
                         auto contig=kmatch->contigID;
                         int64_t pos=kmatch->offset-1;
                         if (pos<0) {
@@ -595,13 +603,16 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
                     pme.extend_fw();
                     pme.set_best_path();
                     const auto & pmebp=pme.best_path;
+                    if (debug) std::cout<<"After extension last_readpos is "<<pme.last_readpos<<std::endl;
                     //last_readpos is 0-based and left to the end USED base, while rpk is 1-based to allow for sign as direction
                     //hence, an alignment at the very beginning of the read would be rpk.first=1 and last_readpos=30
                     if (pme.last_readpos-llabs(rpk.first)>=seed_size-2) {
                         if (!pmebp.empty()) {
                             last_end=pme.last_readpos; //avoid extra index lookups for kmers already used once
+                            if (debug) std::cout<<"Matches being used, so last_end moved to "<<last_end<<std::endl;
                             pme.make_path_as_perfect_matches();
                             private_read_perfect_matches.insert(private_read_perfect_matches.end(),pme.best_path_matches.begin(),pme.best_path_matches.end());
+                            if (debug) std::cout<<pme.best_path_matches.size()<<" matches from best path kept"<<std::endl;
                         }
                     }
 //                    //TODO: matches shold be extended left to avoid unneeded indeterminaiton when an error occurrs in an overlap region and the new hit matches a further part of the genome.
