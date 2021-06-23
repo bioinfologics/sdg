@@ -92,6 +92,8 @@ public:
     std::vector<uint64_t> get_tag_reads(LinkedTag tag) const;
     std::vector<std::pair<LinkedTag, uint32_t>> get_tag_readcount();
     void dump_tag_occupancy_histogram(std::string filename);
+    static uint32_t read_sanitizer(char* bp);
+
     std::string filename; //if store is in single file sdg format these two are the same as the index file.
 
     uint64_t readsize;
