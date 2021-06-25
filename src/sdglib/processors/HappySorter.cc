@@ -794,6 +794,67 @@ bool HappySorter::add_placed_nodes(const std::vector<std::pair<sgNodeID_t, int64
     return order.node_positions.size()>old_node_count;
 }
 
+
+bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _min_happiness) {
+    //#1 find threads that have hits to the end,
+    std::cout<<"finding threads with hits"<<std::endl;
+    auto onodes=order.as_signed_nodes();
+    auto end_nodes=sdglib::vec_slice(onodes,-_end_size);
+    std::cout<<"end slice has "<<end_nodes.size()<<" nodes"<<std::endl;
+    std::set<sgNodeID_t> end_nodes_set(end_nodes.begin(),end_nodes.end());
+    std::unordered_map<int64_t,uint64_t> tc;
+    for (auto &nid:end_nodes)
+        for (auto &tid:rtg.node_threads(nid,true))
+            tc[tid]+=1;
+
+    //#2 cut threads to only have relevant parts used
+    std::cout<<"cutting threads"<<std::endl;
+    std::vector<std::vector<NodePosition>> cut_threads;
+    cut_threads.reserve(tc.size());
+    for (auto &c:tc){
+        if (c.second<_thread_hits) continue;
+        auto t=rtg.get_thread(c.first);
+        for (auto it=t.begin();it<t.end();++it){
+            if (end_nodes_set.count(it->node)) {
+                cut_threads.emplace_back(it,t.end());
+                break;
+            }
+        }
+    }
+
+    std::cout<<"counting nodes' hits"<<std::endl;
+    std::map<sgNodeID_t,uint64_t> nc;
+    for (auto &t:cut_threads)
+        for (auto &np:t)
+            nc[np.node]+=1;
+    std::cout<<"creating pos dict for candidate nodes"<<std::endl;
+    //TODO: maybe add the threads used to grow as recruited or to be considered in the happiness part
+    std::map<sgNodeID_t, std::vector<int64_t>> npos;
+    for (auto &c:nc){
+        if (c.second>=_node_hits and end_nodes_set.count(c.first)==0 and node_happiness(c.first,true,false)>=_min_happiness)
+            npos[c.first]={};
+    }
+    //Now compute node positions based on the cut threads, only for nodes with enough hits
+    for (auto &t:cut_threads){
+        //TODO: could add a pass here to check that the offset doesnt go crazy, or nodes form the order doesn't appear again
+        int64_t offset=0;
+        for (auto &np:t){
+            if (end_nodes_set.count(np.node)) offset=order.node_coordinates[np.node]-np.start;
+            else if (npos.count(np.node)) npos[np.node].emplace_back(np.start+offset);
+        }
+    }
+
+    //Now simply use poor man's median to choose a position for each node
+    std::vector<std::pair<sgNodeID_t,int64_t>> positions;
+    for (auto &np:npos){
+        std::sort(np.second.begin(),np.second.end());
+        positions.emplace_back(np.first,np.second[np.second.size()/2]);
+    }
+
+    return add_placed_nodes(positions);
+}
+
+
 bool HappySorter::q_grow_loop(int min_threads, float min_happiness, int p, int q, int64_t steps, bool verbose) {
     if (min_threads==-1) min_threads=min_node_threads;
     if (min_happiness==-1) min_happiness=min_node_happiness;
@@ -1069,7 +1130,7 @@ void HappySorterRunner::run_from_dg_lines(DistanceGraph dg, int min_line_nodes, 
     for (auto lineit=lines.cbegin();lineit<lines.cend();++lineit){
         auto &line=*lineit;
         try {
-            auto hs = HappySorter(rtg, min_thread_happiness, min_node_happiness, min_thread_nodes, min_node_threads, order_end_size);
+            auto hs = HappySorter(rtg, min_node_happiness, min_node_threads, order_end_size);
             hs.run_from_nodelist(line,min_node_threads,min_node_happiness,p,q);
 #pragma omp critical(orders)
             {

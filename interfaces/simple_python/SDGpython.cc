@@ -225,8 +225,8 @@ PYBIND11_MODULE(SDGpython, m) {
 
 
     py::class_<HappySorter>(m, "HappySorter", "HappySorter")
-            .def(py::init<const ReadThreadsGraph &, float, float, int, int, int>(),"","rtg"_a,"min_thread_happiness"_a=.7, "min_node_happiness"_a=.7,
-            "min_thread_nodes"_a=3, "min_node_threads"_a=2, "order_end_size"_a=20,py::return_value_policy::take_ownership)
+            .def(py::init<const ReadThreadsGraph &, float, int, int>(),"","rtg"_a, "min_node_happiness"_a=.7,
+             "min_node_threads"_a=2, "order_end_size"_a=20,py::return_value_policy::take_ownership)
             .def("node_happiness", &HappySorter::node_happiness,"tid"_a,"prev"_a=true,"next"_a=false,"min_threads"_a=3)
             .def("find_fw_candidates",&HappySorter::find_fw_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"end_size"_a=-1)
             .def("find_bw_candidates",&HappySorter::find_bw_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"end_size"_a=-1)
@@ -238,6 +238,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("thread_happiness_q",&HappySorter::thread_happiness_q,"tid"_a,"min_nodes"_a,"max_span"_a)
             .def("recruit_all_happy_threads_q", &HappySorter::recruit_all_happy_threads_q,"min_nodes"_a=7,"max_span"_a=10)
             .def("q_grow_loop",&HappySorter::q_grow_loop, "min_threads"_a=-1, "min_happiness"_a=-1, "p"_a=4, "q"_a=5, "steps"_a=INT64_MAX, "verbose"_a=false)
+            .def("grow",&HappySorter::grow, "_thread_hits"_a=4, "_end_size"_a=30, "_node_hits"_a=3, "_min_happiness"_a=.7)
             .def("run_from_nodelist",&HappySorter::run_from_nodelist, "nodes"_a,"min_threads"_a=-1, "min_happiness"_a=-1, "p"_a=4, "q"_a=5, "steps"_a=INT64_MAX, "verbose"_a=false)
             .def("hs_tnp_to_distances",&HappySorter::hs_tnp_to_distances, "thread_nodepositions"_a, "nodeset"_a)
             .def("update_positions",&HappySorter::update_positions,"first"_a=0,"last"_a=-1)

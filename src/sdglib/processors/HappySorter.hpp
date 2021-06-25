@@ -29,16 +29,21 @@ public:
 
 class HappySorter {
 public:
-    HappySorter(const ReadThreadsGraph & _rtg, float _min_thread_happiness=.7, float _min_node_happiness=.7,
-                int _min_thread_nodes=3, int _min_node_threads=2, int _order_end_size=20):
-            rtg(_rtg), min_thread_happiness(_min_thread_happiness), min_node_happiness(_min_node_happiness),
-            min_thread_nodes(_min_thread_nodes), min_node_threads(_min_node_threads), order_end_size(_order_end_size){};
+    //***** Updated functions, part of Jun2021 algorithms
+    HappySorter(const ReadThreadsGraph & _rtg, float _min_node_happiness=.7, int _min_node_threads=3, int _order_end_size=30):
+            rtg(_rtg), min_node_happiness(_min_node_happiness), min_node_threads(_min_node_threads), order_end_size(_order_end_size){};
 
+    float node_happiness(sgNodeID_t,bool prev=true,bool next=false, int min_threads=-1) const;
 
+    bool  add_placed_nodes( const std::vector<std::pair<sgNodeID_t, int64_t>> &placed_nodes, bool update_current=true); //TODO: move to the order
+
+    bool grow(int _thread_hits=4, int _end_size=-1, int _node_hits=3, float _min_happiness=.7);
+
+    //***** Old functions, still to review and update
     /**@brief
      * Happines is calculated as the propotion of shared threads between the node and the order
      * */
-    float node_happiness(sgNodeID_t,bool prev=true,bool next=false, int min_threads=-1) const; //TODO: have an open-thread happiness
+
     void close_internal_threads(int order_end=30,int thread_end=0);
     std::unordered_set<sgNodeID_t> find_fw_candidates(float min_happiness=-1, int min_threads=-1, int end_size=-1) const;
     std::unordered_set<sgNodeID_t> find_bw_candidates(float min_happiness=-1, int min_threads=-1, int end_size=-1) const;
@@ -48,7 +53,7 @@ public:
     std::map<int64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> make_thread_nodepositions(const std::unordered_set<sgNodeID_t> &nodes,std::set<int64_t> tids={}) const;
     std::vector<std::pair<sgNodeID_t, int64_t>> place_nodes( const std::unordered_set<sgNodeID_t> &nodes, bool verbose) const;
     std::vector<std::pair<sgNodeID_t, int64_t>> place_nodes_ltr( const std::unordered_set<sgNodeID_t> &nodes, sgNodeID_t first_node, bool verbose) const;
-    bool  add_placed_nodes( const std::vector<std::pair<sgNodeID_t, int64_t>> &placed_nodes, bool update_current=true);
+
     bool q_grow_loop(int min_threads=-1, float min_happiness=-1, int p=4, int q=5, int64_t steps=INT64_MAX, bool verbose=false);
 
     void recruit_all_happy_threads_q(int min_nodes, int max_span);
@@ -63,8 +68,6 @@ public:
 
     bool update_positions(int64_t first=0, int64_t last=-1);
 
-    float min_thread_happiness;
-    int min_thread_nodes;
     float min_node_happiness;
     int min_node_threads;
     int order_end_size;
