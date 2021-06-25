@@ -833,7 +833,7 @@ bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _m
         //TODO: maybe add the threads used to grow as recruited or to be considered in the happiness part
         std::map<sgNodeID_t, std::vector<int64_t>> npos;
         for (auto &c:nc) {
-            if (c.second >= _node_hits and end_nodes_set.count(c.first) == 0 and
+            if (c.second >= _node_hits and end_nodes_set.count(c.first) == 0 and order.get_node_position(c.first)==0 and
                 node_happiness(c.first, true, false) >= _min_happiness)
                 npos[c.first] = {};
         }
@@ -892,7 +892,7 @@ bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _m
         //XXX: this may be a tad too clever, from here on useing the reverse thread, but negating node and position.
         std::map<sgNodeID_t, std::vector<int64_t>> npos;
         for (auto &c:nc) {
-            if (c.second >= _node_hits and end_nodes_set.count(c.first) == 0 and
+            if (c.second >= _node_hits and end_nodes_set.count(c.first) == 0 and order.get_node_position(c.first)==0 and
                 node_happiness(c.first, false, true) >= _min_happiness)
                 npos[c.first] = {};
         }
