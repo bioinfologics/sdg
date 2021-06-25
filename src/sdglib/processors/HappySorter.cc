@@ -796,62 +796,135 @@ bool HappySorter::add_placed_nodes(const std::vector<std::pair<sgNodeID_t, int64
 
 
 bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _min_happiness) {
-    //#1 find threads that have hits to the end,
-    std::cout<<"finding threads with hits"<<std::endl;
-    auto onodes=order.as_signed_nodes();
-    auto end_nodes=sdglib::vec_slice(onodes,-_end_size);
-    std::cout<<"end slice has "<<end_nodes.size()<<" nodes"<<std::endl;
-    std::set<sgNodeID_t> end_nodes_set(end_nodes.begin(),end_nodes.end());
-    std::unordered_map<int64_t,uint64_t> tc;
-    for (auto &nid:end_nodes)
-        for (auto &tid:rtg.node_threads(nid,true))
-            tc[tid]+=1;
+    bool grown=false;
+    auto onodes = order.as_signed_nodes();
+    {//Part 1: grow fw
+        //#1 find threads that have hits to the end,
+        //std::cout<<"finding threads with hits"<<std::endl;
+        auto end_nodes = sdglib::vec_slice(onodes, -_end_size);
+        //std::cout<<"end slice has "<<end_nodes.size()<<" nodes"<<std::endl;
+        std::set<sgNodeID_t> end_nodes_set(end_nodes.begin(), end_nodes.end());
+        std::unordered_map<int64_t, uint64_t> tc;
+        for (auto &nid:end_nodes)
+            for (auto &tid:rtg.node_threads(nid, true))
+                tc[tid] += 1;
 
-    //#2 cut threads to only have relevant parts used
-    std::cout<<"cutting threads"<<std::endl;
-    std::vector<std::vector<NodePosition>> cut_threads;
-    cut_threads.reserve(tc.size());
-    for (auto &c:tc){
-        if (c.second<_thread_hits) continue;
-        auto t=rtg.get_thread(c.first);
-        for (auto it=t.begin();it<t.end();++it){
-            if (end_nodes_set.count(it->node)) {
-                cut_threads.emplace_back(it,t.end());
-                break;
+        //#2 cut threads to only have relevant parts used
+        //std::cout<<"cutting threads"<<std::endl;
+        std::vector<std::vector<NodePosition>> cut_threads;
+        cut_threads.reserve(tc.size());
+        for (auto &c:tc) {
+            if (c.second < _thread_hits) continue;
+            auto t = rtg.get_thread(c.first);
+            for (auto it = t.begin(); it < t.end(); ++it) {
+                if (end_nodes_set.count(it->node)) {
+                    cut_threads.emplace_back(it, t.end());
+                    break;
+                }
             }
         }
-    }
 
-    std::cout<<"counting nodes' hits"<<std::endl;
-    std::map<sgNodeID_t,uint64_t> nc;
-    for (auto &t:cut_threads)
-        for (auto &np:t)
-            nc[np.node]+=1;
-    std::cout<<"creating pos dict for candidate nodes"<<std::endl;
-    //TODO: maybe add the threads used to grow as recruited or to be considered in the happiness part
-    std::map<sgNodeID_t, std::vector<int64_t>> npos;
-    for (auto &c:nc){
-        if (c.second>=_node_hits and end_nodes_set.count(c.first)==0 and node_happiness(c.first,true,false)>=_min_happiness)
-            npos[c.first]={};
-    }
-    //Now compute node positions based on the cut threads, only for nodes with enough hits
-    for (auto &t:cut_threads){
-        //TODO: could add a pass here to check that the offset doesnt go crazy, or nodes form the order doesn't appear again
-        int64_t offset=0;
-        for (auto &np:t){
-            if (end_nodes_set.count(np.node)) offset=order.node_coordinates[np.node]-np.start;
-            else if (npos.count(np.node)) npos[np.node].emplace_back(np.start+offset);
+        //std::cout<<"counting nodes' hits"<<std::endl;
+        std::map<sgNodeID_t, uint64_t> nc;
+        for (auto &t:cut_threads)
+            for (auto &np:t)
+                nc[np.node] += 1;
+        //std::cout<<"creating pos dict for candidate nodes"<<std::endl;
+        //TODO: maybe add the threads used to grow as recruited or to be considered in the happiness part
+        std::map<sgNodeID_t, std::vector<int64_t>> npos;
+        for (auto &c:nc) {
+            if (c.second >= _node_hits and end_nodes_set.count(c.first) == 0 and order.get_node_position(c.first)==0 and
+                node_happiness(c.first, true, false) >= _min_happiness)
+                npos[c.first] = {};
         }
-    }
+        //Now compute node positions based on the cut threads, only for nodes with enough hits
+        for (auto &t:cut_threads) {
+            //TODO: could add a pass here to check that the offset doesnt go crazy, or nodes form the order doesn't appear again
+            int64_t offset = 0;
+            for (auto &np:t) {
+                if (end_nodes_set.count(np.node)) offset = order.node_coordinates[np.node] - np.start;
+                else if (npos.count(np.node)) npos[np.node].emplace_back(np.start + offset);
+            }
+        }
 
-    //Now simply use poor man's median to choose a position for each node
-    std::vector<std::pair<sgNodeID_t,int64_t>> positions;
-    for (auto &np:npos){
-        std::sort(np.second.begin(),np.second.end());
-        positions.emplace_back(np.first,np.second[np.second.size()/2]);
-    }
+        //Now simply use poor man's median to choose a position for each node
+        std::vector<std::pair<sgNodeID_t, int64_t>> positions;
+        for (auto &np:npos) {
+            std::sort(np.second.begin(), np.second.end());
+            positions.emplace_back(np.first, np.second[np.second.size() / 2]);
+        }
 
-    return add_placed_nodes(positions);
+        if (add_placed_nodes(positions)) grown=true;
+    }
+    {//Part 2: grow bw
+        //#1 find threads that have hits to the end,
+        //std::cout<<"finding threads with hits"<<std::endl;
+        auto end_nodes = sdglib::vec_slice(onodes, 0, _end_size);
+        //std::cout<<"end slice has "<<end_nodes.size()<<" nodes"<<std::endl;
+        std::set<sgNodeID_t> end_nodes_set(end_nodes.begin(), end_nodes.end());
+        std::unordered_map<int64_t, uint64_t> tc;
+        for (auto &nid:end_nodes)
+            for (auto &tid:rtg.node_threads(nid, true))
+                tc[tid] += 1;
+
+        //#2 cut threads to only have relevant parts used
+        //std::cout<<"cutting threads"<<std::endl;
+        std::vector<std::vector<NodePosition>> cut_threads;
+        cut_threads.reserve(tc.size());
+        for (auto &c:tc) {
+            if (c.second < _thread_hits) continue;
+            auto t = rtg.get_thread(-c.first);
+            for ( auto it = t.begin(); it < t.end(); ++it) {
+                if (end_nodes_set.count(-it->node)) {
+                    cut_threads.emplace_back(it,t.end());
+                    break;
+                }
+            }
+        }
+
+        //std::cout<<"counting nodes' hits"<<std::endl;
+        std::map<sgNodeID_t, uint64_t> nc;
+        for (auto &t:cut_threads)
+            for (auto &np:t)
+                nc[-np.node] += 1;
+        //std::cout<<"creating pos dict for candidate nodes"<<std::endl;
+        //TODO: maybe add the threads used to grow as recruited or to be considered in the happiness part
+        //XXX: this may be a tad too clever, from here on useing the reverse thread, but negating node and position.
+        std::map<sgNodeID_t, std::vector<int64_t>> npos;
+        for (auto &c:nc) {
+            if (c.second >= _node_hits and end_nodes_set.count(c.first) == 0 and order.get_node_position(c.first)==0 and
+                node_happiness(c.first, false, true) >= _min_happiness)
+                npos[c.first] = {};
+        }
+        //Now compute node positions based on the cut threads, only for nodes with enough hits
+        for (auto &t:cut_threads) {
+            //TODO: could add a pass here to check that the offset doesnt go crazy, or nodes form the order doesn't appear again
+            int64_t offset = 0;
+            for (auto &np:t) {
+                if (end_nodes_set.count(-np.node)) {
+                    offset = - order.node_coordinates[-np.node] - np.start;
+                    //std::cout<<" O = - "<<order.node_coordinates[-np.node]<<" - "<<np.start<<" = "<<offset<<" ||";
+                }
+                else if (npos.count(-np.node)){
+                    npos[-np.node].emplace_back(-np.start - offset);
+                    //std::cout<<" P = - "<<np.start<<" - "<<offset<<" = "<<-np.start - offset<<" || ";
+                }
+            }
+            //std::cout<<std::endl;
+        }
+
+        //Now simply use poor man's median to choose a position for each node
+        std::vector<std::pair<sgNodeID_t, int64_t>> positions;
+        for (auto &np:npos) {
+            std::sort(np.second.begin(), np.second.end());
+            positions.emplace_back(np.first, np.second[np.second.size() / 2]);
+        }
+        //std::sort(positions.begin(),positions.end(),[](const auto &a,const auto &b){return a.second<b.second;});
+        //for (auto &np:positions) std::cout<<"("<<np.second<<", "<<np.first<<"), ";
+        //std::cout<<std::endl;
+        if (add_placed_nodes(positions)) grown=true;
+    }
+    return grown;
 }
 
 

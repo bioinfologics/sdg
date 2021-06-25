@@ -169,10 +169,10 @@ namespace sdglib {
             std::vector<T> vec_slice(const std::vector<T> &v, int64_t start=0, int64_t end=INT64_MAX){
                 if (start<0) start+=v.size()-1;
                 if (start<0) start=0;
-                if (end<0) end+=v.size();
+                if (end<0) end+=v.size()-1;
                 if (end<0) end=0;
                 if (end>v.size()) end=v.size();
                 if (start>=end) return {};
-                return std::vector<T>(v.begin()+start,v.begin()+end-1);
+                return std::vector<T>(v.begin()+start,v.begin()+end);
             }
 }
