@@ -35,9 +35,13 @@ public:
 
     float node_happiness(sgNodeID_t,bool prev=true,bool next=false, int min_threads=-1) const;
 
+    int64_t node_anchored_coords(sgNodeID_t nid, const std::unordered_map<sgNodeID_t,int64_t> & node_coordinates={}, int max_hops=3, int min_links=3);
+
     bool  add_placed_nodes( const std::vector<std::pair<sgNodeID_t, int64_t>> &placed_nodes, bool update_current=true); //TODO: move to the order
 
     bool grow(int _thread_hits=4, int _end_size=-1, int _node_hits=3, float _min_happiness=.7);
+
+    void start_from_nodelist(std::vector<sgNodeID_t> nodes, int min_links=1);
 
     //***** Old functions, still to review and update
     /**@brief

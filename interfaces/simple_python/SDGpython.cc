@@ -228,6 +228,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def(py::init<const ReadThreadsGraph &, float, int, int>(),"","rtg"_a, "min_node_happiness"_a=.7,
              "min_node_threads"_a=2, "order_end_size"_a=20,py::return_value_policy::take_ownership)
             .def("node_happiness", &HappySorter::node_happiness,"tid"_a,"prev"_a=true,"next"_a=false,"min_threads"_a=3)
+            .def("node_anchored_coords",&HappySorter::node_anchored_coords,"nid"_a, "node_coordinates"_a=std::unordered_map<sgNodeID_t,int64_t>(), "max_hops"_a=3, "min_links"_a=3)
+            .def("start_from_nodelist",&HappySorter::start_from_nodelist,"nodelist"_a,"min_links"_a=3)
             .def("find_fw_candidates",&HappySorter::find_fw_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"end_size"_a=-1)
             .def("find_bw_candidates",&HappySorter::find_bw_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"end_size"_a=-1)
             .def("find_internal_candidates",&HappySorter::find_internal_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"first"_a=1,"last"_a=INT32_MAX)

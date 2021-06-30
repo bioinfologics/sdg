@@ -779,6 +779,65 @@ std::vector<std::pair<sgNodeID_t, int64_t>> HappySorter::place_nodes_ltr(const s
     return placements;
 }
 
+int64_t HappySorter::node_anchored_coords(sgNodeID_t nid, const std::unordered_map<sgNodeID_t, int64_t> &node_coordinates, int max_hops, int min_links) {
+    std::vector<int64_t> positions;
+    auto tids=rtg.node_threads(nid,true);
+    positions.reserve(2*tids.size());
+    for (auto &tid:tids){
+        int64_t distance_in_thread=0;
+        sgNodeID_t last_node=-nid;
+        for (auto hop=0;hop<max_hops;++hop){
+            try {
+                auto l=rtg.next_in_thread(last_node,llabs(tid));
+                distance_in_thread+=l.distance()+l.node().size();
+                last_node=l.node().node_id();
+            }
+            catch (...) {
+                break;
+            }
+            if (not node_coordinates.empty()) {
+                if (node_coordinates.count(-last_node)) {
+                    positions.emplace_back(node_coordinates.at(-last_node) + distance_in_thread);
+                    break;
+                }
+            }
+            else {
+                if (order.node_coordinates.count(-last_node)) {
+                    positions.emplace_back(order.node_coordinates.at(-last_node) + distance_in_thread);
+                    break;
+                }
+            }
+        }
+        distance_in_thread=0;
+        last_node=nid;
+        for (auto hop=0;hop<max_hops;++hop){
+            try {
+                auto l=rtg.next_in_thread(last_node,llabs(tid));
+                distance_in_thread-=l.distance()+rtg.sdg.get_node_size(last_node);
+                last_node=l.node().node_id();
+            }
+            catch (...) {
+                break;
+            }
+            if (not node_coordinates.empty()) {
+                if (node_coordinates.count(last_node)) {
+                    positions.emplace_back(node_coordinates.at(last_node) + distance_in_thread);
+                    break;
+                }
+            }
+            else {
+                if (order.node_coordinates.count(last_node)) {
+                    positions.emplace_back(order.node_coordinates.at(last_node) + distance_in_thread);
+                    break;
+                }
+            }
+        }
+    }
+    if (positions.size()<min_links) throw std::runtime_error("Can't place node " + std::to_string(nid));
+    std::sort(positions.begin(),positions.end());
+    return positions[positions.size()/2];
+}
+
 bool HappySorter::add_placed_nodes(const std::vector<std::pair<sgNodeID_t, int64_t>> &placed_nodes,
                                    bool update_current) {
     auto old_node_count=order.node_positions.size();
@@ -794,6 +853,56 @@ bool HappySorter::add_placed_nodes(const std::vector<std::pair<sgNodeID_t, int64
     return order.node_positions.size()>old_node_count;
 }
 
+void HappySorter::start_from_nodelist(std::vector<sgNodeID_t> nodes, int min_links) {
+    threads.clear();
+    fw_open_threads.clear();
+    bw_open_threads.clear();
+    order=LocalOrder();
+    for (auto starting_node:nodes){
+        order=LocalOrder();
+        add_placed_nodes({{starting_node,0}});
+        int last_size=0;
+        while (order.size()<nodes.size() and order.size()>last_size) {
+            last_size = order.size();
+            for (auto nid:nodes) {
+                if (order.get_node_position(nid) == 0) {
+                    try {
+                        auto c=node_anchored_coords(nid, {}, min_links);
+                        add_placed_nodes({{nid,c}});
+                    }
+                    catch (...){
+                        continue;
+                    }
+                }
+            }
+        }
+        if (order.size()>.9*nodes.size()) break;
+        threads.clear();
+        fw_open_threads.clear();
+        bw_open_threads.clear();
+        order=LocalOrder();
+    }
+//def start_from_line(line, min_links=1):
+//    for starting_node in line:
+//        hs=SDG.HappySorter(rtg)
+//        hs.add_placed_nodes([(starting_node,0)])
+//        last_size=0
+//        while hs.order.size()<len(line) and hs.order.size()>last_size:
+//            last_size=hs.order.size()
+//            for nid in line:
+//                if hs.order.get_node_position(nid)==0:
+//                    try:
+//                        c=hs.node_anchored_coords(nid, min_links)
+//                    except:
+//                        continue
+//                    hs.add_placed_nodes([(nid,c)])
+//        if hs.order.size()>.9*len(line): return hs
+//    raise Exception("couldnt really start from there, mate")
+//
+//hs=start_from_line(line)
+//print(hs.order.as_signed_nodes())
+
+}
 
 bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _min_happiness) {
     bool grown=false;
