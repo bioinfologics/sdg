@@ -98,7 +98,7 @@ public:
     std::vector<PerfectMatchPart> matchparts;
     std::vector<PerfectMatch> best_path_matches;
     std::vector<sgNodeID_t> best_path;
-    std::vector<std::pair<uint32_t,uint32_t>> best_path_offsets; //TODO: uint32 to represent a sgNodeID_t?
+    std::vector<std::pair<uint32_t,uint32_t>> best_path_offsets;
     uint32_t best_path_offset;
     uint64_t last_readpos;
     uint64_t last_nodepos;
