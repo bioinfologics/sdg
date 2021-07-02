@@ -20,6 +20,9 @@ public:
     auto size() const {return node_positions.size();};
     LocalOrder merge(const LocalOrder & other,int max_overhang=4,float min_shared_perc=.5,int min_shared=20,float max_disordered_perc=.02) const;
 
+    void read(std::ifstream &ifs);
+    void write(std::ofstream &ofs);
+
     std::unordered_map<sgNodeID_t , int64_t > node_positions;
     std::unordered_map<sgNodeID_t,int64_t> node_coordinates;
 };
@@ -39,8 +42,8 @@ public:
 
     void start_from_nodelist(std::vector<sgNodeID_t> nodes, int min_links=1);
 
-    void load(std::string filename);
-    void dump(std::string filename);
+    void read(std::ifstream &ifs);
+    void write(std::ofstream &ofs);
 
     //***** Old functions, still to review and update
     /**@brief

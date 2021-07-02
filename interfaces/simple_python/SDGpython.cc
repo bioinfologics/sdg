@@ -251,7 +251,10 @@ PYBIND11_MODULE(SDGpython, m) {
 
     pybind11::class_<TotalSorter>(m, "TotalSorter", "TotalSorter")
             .def(py::init<const ReadThreadsGraph &, int, int>(),"","rtg"_a,"min_thread_length"_a=6, "min_node_threads"_a=3,py::return_value_policy::take_ownership)
+            .def(py::init<const ReadThreadsGraph &, std::string>(),"","rtg"_a,"filename"_a,py::return_value_policy::take_ownership)
             .def("run_sorters_from_lines",&TotalSorter::run_sorters_from_lines,"min_line_size"_a=25)
+            .def("dump",&TotalSorter::dump,"filename"_a)
+            .def("load",&TotalSorter::load,"filename"_a)
             .def_readwrite("nodes",&TotalSorter::nodes)
             .def_readwrite("threads",&TotalSorter::threads)
             .def_readonly("sorters",&TotalSorter::sorters)

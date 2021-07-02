@@ -18,7 +18,7 @@ TotalSorter::TotalSorter(const ReadThreadsGraph &rtg, int min_thread_length, int
     bool changed=true;
     while (changed) {
         changed=false;
-        std::set<sgNodeID_t> new_nodes;
+        std::unordered_set<sgNodeID_t> new_nodes;
         for (auto nid:nodes){
             int valid_threads=0;
             for (auto tid:rtg.node_threads(nid)) if (threads.count(tid)) ++valid_threads;
@@ -26,7 +26,7 @@ TotalSorter::TotalSorter(const ReadThreadsGraph &rtg, int min_thread_length, int
             else changed=true;
         }
         std::swap(nodes,new_nodes);
-        std::set<int64_t> new_threads;
+        std::unordered_set<int64_t> new_threads;
         for (auto tid:threads){
             int valid_nodes=0;
             for (auto tn:rtg.get_thread(tid)) if (nodes.count(llabs(tn.node))) ++valid_nodes;
@@ -38,6 +38,10 @@ TotalSorter::TotalSorter(const ReadThreadsGraph &rtg, int min_thread_length, int
             sdglib::OutputLog()<<"TotalSorter adjusted selection: "<<nodes.size()<<" nodes and "<<threads.size()<<" threads"<<std::endl;
     }
     sdglib::OutputLog()<<"TotalSorter final selection: "<<nodes.size()<<" nodes and "<<threads.size()<<" threads"<<std::endl;
+}
+
+TotalSorter::TotalSorter(const ReadThreadsGraph &rtg, std::string filename) : rtg(rtg){
+    load(filename);
 }
 
 void TotalSorter::run_sorters_from_lines(int min_line_size) {
@@ -94,5 +98,63 @@ void TotalSorter::run_sorters_from_lines(int min_line_size) {
 }
 
 void TotalSorter::compute_sorter_classes() {
+
+}
+
+void TotalSorter::dump(std::string filename) {
+    std::ofstream ofs(filename);
+    ofs.write(reinterpret_cast<const char *>(&next_sorter),sizeof(next_sorter));
+    sdglib::write_flat_unorderedset(ofs,nodes);
+    sdglib::write_flat_unorderedset(ofs,threads);
+    int64_t count=sorters.size();
+    ofs.write(reinterpret_cast<const char *>(&count),sizeof(count));
+    for (auto &s:sorters) {
+        ofs.write(reinterpret_cast<const char *>(&s.first),sizeof(s.first));
+        s.second.write(ofs);
+    }
+    sdglib::write_flat_unorderedmap(ofs,sorter_classes);
+    count=node_sorters.size();
+    ofs.write(reinterpret_cast<const char *>(&count),sizeof(count));
+    for (auto &s:node_sorters) {
+        ofs.write(reinterpret_cast<const char *>(&s.first),sizeof(s.first));
+        sdglib::write_flat_vector(ofs,s.second);
+    }
+    count=thread_sorters.size();
+    ofs.write(reinterpret_cast<const char *>(&count),sizeof(count));
+    for (auto &s:thread_sorters) {
+        ofs.write(reinterpret_cast<const char *>(&s.first),sizeof(s.first));
+        sdglib::write_flat_vector(ofs,s.second);
+    }
+}
+
+void TotalSorter::load(std::string filename) {
+    std::ifstream ifs(filename);
+    ifs.read(reinterpret_cast<char *>(&next_sorter),sizeof(next_sorter));
+    sdglib::read_flat_unorderedset(ifs,nodes);
+    sdglib::read_flat_unorderedset(ifs,threads);
+    int64_t count,ix;
+    ifs.read(reinterpret_cast<char *>(&count),sizeof(count));
+    sorters.clear();
+    sorters.reserve(count);
+    for (auto i=count;i>0;--i) {
+        ifs.read(reinterpret_cast<char *>(&ix),sizeof(ix));
+        sorters.emplace(std::piecewise_construct,std::forward_as_tuple(ix),std::forward_as_tuple(rtg));
+        sorters.at(ix).read(ifs);
+    }
+    sdglib::read_flat_unorderedmap(ifs,sorter_classes);
+    ifs.read(reinterpret_cast<char *>(&count),sizeof(count));
+    node_sorters.clear();
+    node_sorters.reserve(count);
+    for (auto i=count;i>0;--i) {
+        ifs.read(reinterpret_cast<char *>(&ix),sizeof(ix));
+        sdglib::read_flat_vector(ifs,node_sorters[ix]);
+    }
+    ifs.read(reinterpret_cast<char *>(&count),sizeof(count));
+    thread_sorters.clear();
+    thread_sorters.reserve(count);
+    for (auto i=count;i>0;--i) {
+        ifs.read(reinterpret_cast<char *>(&ix),sizeof(ix));
+        sdglib::read_flat_vector(ifs,thread_sorters[ix]);
+    }
 
 }

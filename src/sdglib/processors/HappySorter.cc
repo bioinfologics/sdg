@@ -290,6 +290,24 @@ bool LocalOrder::add_placed_nodes(const std::vector<std::pair<sgNodeID_t, int64_
     for (auto i=0;i<all_nodes.size();++i) node_positions[llabs(all_nodes[i].first)]=all_nodes[i].first>0? i+1:-i-1;
     return node_positions.size()>old_node_count;
 }
+
+void LocalOrder::write(std::ofstream &ofs) {
+    std::vector<std::pair<sgNodeID_t, int64_t>> ncv;
+    ncv.reserve(node_coordinates.size());
+    for (auto &nc:node_coordinates) {
+        ncv.emplace_back(nc);
+    }
+    sdglib::write_flat_vector(ofs,ncv);
+}
+
+void LocalOrder::read(std::ifstream &ifs) {
+    std::vector<std::pair<sgNodeID_t, int64_t>> ncv;
+    sdglib::read_flat_vector(ifs,ncv);
+    node_coordinates.clear();
+    node_positions.clear();
+    add_placed_nodes(ncv);
+}
+
 float HappySorter::node_happiness(sgNodeID_t nid, bool prev, bool next,int min_threads) const {
     if (min_threads==-1) min_threads=min_node_threads;
     uint64_t happy=0,total=0;
@@ -1009,18 +1027,24 @@ bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _m
     return grown;
 }
 
-void HappySorter::dump(std::string filename) {
-    std::ofstream of(filename);
-    of.write((char *)&min_node_happiness,sizeof(min_node_happiness));
-    of.write((char *)&min_node_threads,sizeof(min_node_threads));
-    of.write((char *)&order_end_size,sizeof(order_end_size));
-    //write order
-    //write threads
-
+void HappySorter::write(std::ofstream &ofs) {
+    order.write(ofs);
+    ofs.write((char *)&min_node_happiness,sizeof(min_node_happiness));
+    ofs.write((char *)&min_node_threads,sizeof(min_node_threads));
+    ofs.write((char *)&order_end_size,sizeof(order_end_size));
+    sdglib::write_flat_unorderedset(ofs,threads);
+    sdglib::write_flat_unorderedset(ofs,fw_open_threads);
+    sdglib::write_flat_unorderedset(ofs,bw_open_threads);
 }
 
-void HappySorter::load(std::string filename) {
-
+void HappySorter::read(std::ifstream &ifs) {
+    order.read(ifs);
+    ifs.read((char *)&min_node_happiness,sizeof(min_node_happiness));
+    ifs.read((char *)&min_node_threads,sizeof(min_node_threads));
+    ifs.read((char *)&order_end_size,sizeof(order_end_size));
+    sdglib::read_flat_unorderedset(ifs,threads);
+    sdglib::read_flat_unorderedset(ifs,fw_open_threads);
+    sdglib::read_flat_unorderedset(ifs,bw_open_threads);
 }
 
 bool HappySorter::q_grow_loop(int min_threads, float min_happiness, int p, int q, int64_t steps, bool verbose) {

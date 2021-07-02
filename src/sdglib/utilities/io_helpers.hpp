@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include <unordered_set>
 
 namespace sdglib {
 
@@ -80,6 +81,15 @@ namespace sdglib {
         }
     }
 
+    template<typename T1>
+    inline void write_flat_unorderedset(std::ofstream &ofs, const std::unordered_set<T1> &c) {
+        uint64_t count=c.size();
+        ofs.write(reinterpret_cast<const char *>(&count),sizeof(count));
+        for (auto e:c) {
+            ofs.write(reinterpret_cast<const char *>(&e),sizeof(T1));
+        }
+    }
+
     inline void read_string(std::ifstream &ifs, std::string &v) {
         uint64_t count;
         ifs.read(reinterpret_cast<char *>(&count),sizeof(count));
@@ -137,6 +147,19 @@ namespace sdglib {
             ifs.read(reinterpret_cast<char *>(&key),sizeof(key));
             ifs.read(reinterpret_cast<char *>(&value),sizeof(value));
             u[key]=value;
+        }
+    }
+
+    template<typename T1>
+    inline void read_flat_unorderedset(std::ifstream &ifs, std::unordered_set<T1> &u) {
+        uint64_t count;
+        ifs.read(reinterpret_cast<char *>(&count),sizeof(count));
+        u.clear();
+        u.reserve(count);
+        T1 value;
+        for (auto i=0;i<count;++i) {
+            ifs.read(reinterpret_cast<char *>(&value),sizeof(value));
+            u.insert(value);
         }
     }
 
