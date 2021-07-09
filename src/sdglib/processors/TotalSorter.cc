@@ -4,7 +4,7 @@
 
 #include "TotalSorter.hpp"
 
-TotalSorter::TotalSorter(const ReadThreadsGraph &rtg, int min_thread_length, int min_node_threads) : rtg(rtg){
+TotalSorter::TotalSorter(ReadThreadsGraph &rtg, int min_thread_length, int min_node_threads) : rtg(rtg){
     //TODO: maybe copy the rtg and pop nodes/remove threads
     //init nodes with all nodes having enough threads of any kind
     for (auto nv:rtg.get_all_nodeviews(false,false)){
@@ -40,20 +40,38 @@ TotalSorter::TotalSorter(const ReadThreadsGraph &rtg, int min_thread_length, int
     sdglib::OutputLog()<<"TotalSorter final selection: "<<nodes.size()<<" nodes and "<<threads.size()<<" threads"<<std::endl;
 }
 
-TotalSorter::TotalSorter(const ReadThreadsGraph &rtg, std::string filename) : rtg(rtg){
+TotalSorter::TotalSorter(ReadThreadsGraph &rtg, std::string filename) : rtg(rtg){
     load(filename);
 }
 
-void TotalSorter::run_sorters_from_lines(int min_line_size) {
+void TotalSorter::prune_rtg() {
+    sdglib::OutputLog()<<"Pruning unselected threads"<<std::endl;
+    {
+        std::vector<int64_t> to_delete;
+        for (auto &tinf:rtg.thread_info) if (tinf.second.start!=0 and threads.count(tinf.first) == 0) to_delete.emplace_back(tinf.first);
+        for (auto tid:to_delete) rtg.remove_thread(tid);
+    }
+    sdglib::OutputLog()<<"Pruning unselected nodes"<<std::endl;
+    {
+        std::vector<sgNodeID_t> to_delete;
+        for (auto &nv:rtg.get_all_nodeviews(false, false)) if (nodes.count(nv.node_id()) == 0) to_delete.emplace_back(nv.node_id());
+        for (auto &nid:to_delete) rtg.pop_node_from_all(nid);
+    }
+    sdglib::OutputLog()<<"Pruning done"<<std::endl;
+}
+
+void TotalSorter::run_sorters_from_lines(std::vector<std::vector<sgNodeID_t>> _lines, int min_line_size, int min_order_size,float line_occupancy) {
     //XXX: hardcoded parameters so far
-    float line_occupancy=.7;
-    int p=4,q=6;
+
+    int p=5,q=7;
     float node_happiness=.6;
     int node_threads=5;
     int end_size=30;
-    int min_links=3;
+    int min_links=5;
     //END OF HARDCODE
-    auto lines=rtg.sdg.get_all_lines(min_line_size);
+    std::vector<std::vector<sgNodeID_t>> lines;
+    if (not _lines.empty()) lines=_lines;
+    else lines=rtg.sdg.get_all_lines(min_line_size);
     int finished_orders=sorters.size();
 #pragma omp parallel for schedule(dynamic,1) shared(finished_orders)
     for (auto lineit=lines.cbegin();lineit<lines.cend();++lineit){
@@ -75,16 +93,24 @@ void TotalSorter::run_sorters_from_lines(int min_line_size) {
             }
 #pragma omp critical(orders)
             {
-                ++finished_orders;
-                for (auto nid:sorters.at(si).order.as_signed_nodes()) if (nodes.count(llabs(nid))) node_sorters[llabs(nid)].emplace_back(nid>0?si:-si);
-                for (auto tid:sorters.at(si).threads) if (threads.count(llabs(tid))) thread_sorters[llabs(tid)].emplace_back(tid>0?si:-si);
+                if (sorters.at(si).order.size()<min_order_size or sorters.at(si).is_mixed()) sorters.erase(si);
+                else {
+                    ++finished_orders;
+                    for (auto nid:sorters.at(si).order.as_signed_nodes())
+                        if (nodes.count(llabs(nid)))
+                            node_sorters[llabs(nid)].emplace_back(nid > 0 ? si : -si);
+                    for (auto tid:sorters.at(si).threads)
+                        if (threads.count(llabs(tid)))
+                            thread_sorters[llabs(tid)].emplace_back(tid > 0 ? si : -si);
 
-                int64_t nodes_in_sorter=0;
-                for (auto &ns:node_sorters) if (not ns.second.empty()) ++nodes_in_sorter;
-                int64_t threads_in_sorter=0;
-                for (auto &ns:thread_sorters) if (not ns.second.empty()) ++threads_in_sorter;
-                sdglib::OutputLog()<<finished_orders<<" sorters run, "<<nodes_in_sorter<<" / "<<nodes.size()<<" nodes and "<<threads_in_sorter<<" / "<<threads.size()<<" threads used"<<std::endl;
-
+                    int64_t nodes_in_sorter = 0;
+                    for (auto &ns:node_sorters) if (not ns.second.empty()) ++nodes_in_sorter;
+                    int64_t threads_in_sorter = 0;
+                    for (auto &ns:thread_sorters) if (not ns.second.empty()) ++threads_in_sorter;
+                    sdglib::OutputLog() << finished_orders << " sorters run, " << nodes_in_sorter << " / "
+                                        << nodes.size() << " nodes and " << threads_in_sorter << " / " << threads.size()
+                                        << " threads used" << std::endl;
+                }
             }
 
         }
@@ -95,6 +121,27 @@ void TotalSorter::run_sorters_from_lines(int min_line_size) {
     }
     sdglib::OutputLog()<<"TotalSorter run finished!!!"<<std::endl;
 
+}
+
+void TotalSorter::update_usage() {
+    node_sorters.clear();
+    thread_sorters.clear();
+    for (auto &si:sorters) {
+        for (auto nid:si.second.order.as_signed_nodes())
+            if (nodes.count(llabs(nid)))
+                node_sorters[llabs(nid)].emplace_back(nid > 0 ? si.first : -si.first);
+        for (auto tid:si.second.threads)
+            if (threads.count(llabs(tid)))
+                thread_sorters[llabs(tid)].emplace_back(tid > 0 ? si.first : -si.first);
+    }
+}
+
+void TotalSorter::remove_mixed(int win, float fail) {
+    std::vector<int64_t> to_delete;
+    for (auto &s:sorters){
+        if (s.second.is_mixed(win,fail)) to_delete.push_back(s.first);
+    }
+    for (auto &si:to_delete) sorters.erase(si);
 }
 
 void TotalSorter::compute_sorter_classes() {

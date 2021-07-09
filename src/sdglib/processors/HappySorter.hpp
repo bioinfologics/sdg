@@ -74,6 +74,8 @@ public:
 
     bool update_positions(int64_t first=0, int64_t last=-1);
 
+    bool is_mixed(int win=50,float fail=.2);
+
     float min_node_happiness;
     int min_node_threads;
     int order_end_size;

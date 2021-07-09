@@ -863,7 +863,9 @@ std::vector<std::pair<sgNodeID_t, int64_t>> HappySorter::place_nodes_ltr(const s
 }
 
 
-void HappySorter::start_from_nodelist(std::vector<sgNodeID_t> nodes, int min_links) {
+void HappySorter::start_from_nodelist(std::vector<sgNodeID_t> _nodes, int min_links) {
+    std::vector<sgNodeID_t> nodes;
+    for (auto &nid:_nodes) if (rtg.node_threads(nid).size()>=min_links) nodes.emplace_back(nid);
     threads.clear();
     fw_open_threads.clear();
     bw_open_threads.clear();
@@ -1272,6 +1274,29 @@ bool HappySorter::update_positions(int64_t first, int64_t last) {
 //    std::cout<<"after updating order: "<<ordered_nodecoords.size()<<" nodes by coordinate, and "<<order.node_positions.size()<<" node positions"<<std::endl;
 //    std::cout<<std::endl<<"HS::update_positions finished"<<std::endl;
     return ever_changed;
+}
+
+bool HappySorter::is_mixed(int win, float fail) {
+    auto onodes=order.as_signed_nodes();
+    if (onodes.size()<win) return false;
+    std::vector<int> dnin(onodes.size()-10,10);
+    for (auto i=0;i<onodes.size()-10;++i) {
+        auto nid=onodes[i];
+        for (auto j=i+1;j<i+9;++j) {
+            if (rtg.are_connected(-nid,onodes[j])) {
+                dnin[i]=j-i;
+                break;
+            }
+        }
+    }
+    for (auto i=0;i<dnin.size()-win;++i){
+        if (dnin[i]==1) continue; //any loosing window will still be loosing if starting on a fail
+        int failed=0;
+        for (auto j=i;j<i+win;++j) if (dnin[j]>1) ++failed;
+        if ( failed >= fail*win ) return true;
+
+    }
+    return false;
 }
 
 void HappySorter::run_from_nodelist(std::vector<sgNodeID_t> nodes, int min_threads, float min_happiness, int p, int q,

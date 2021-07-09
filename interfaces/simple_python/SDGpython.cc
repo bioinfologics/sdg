@@ -243,6 +243,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("run_from_nodelist",&HappySorter::run_from_nodelist, "nodes"_a,"min_threads"_a=-1, "min_happiness"_a=-1, "p"_a=4, "q"_a=5, "steps"_a=INT64_MAX, "verbose"_a=false)
             .def("hs_tnp_to_distances",&HappySorter::hs_tnp_to_distances, "thread_nodepositions"_a, "nodeset"_a)
             .def("update_positions",&HappySorter::update_positions,"first"_a=0,"last"_a=-1)
+            .def("is_mixed",&HappySorter::is_mixed,"win"_a=50,"fail"_a=.2)
             .def_readwrite("threads",&HappySorter::threads)
             .def_readwrite("order",&HappySorter::order)
             .def_readwrite("bw_open_threads",&HappySorter::bw_open_threads)
@@ -250,9 +251,12 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     pybind11::class_<TotalSorter>(m, "TotalSorter", "TotalSorter")
-            .def(py::init<const ReadThreadsGraph &, int, int>(),"","rtg"_a,"min_thread_length"_a=6, "min_node_threads"_a=3,py::return_value_policy::take_ownership)
-            .def(py::init<const ReadThreadsGraph &, std::string>(),"","rtg"_a,"filename"_a,py::return_value_policy::take_ownership)
-            .def("run_sorters_from_lines",&TotalSorter::run_sorters_from_lines,"min_line_size"_a=25)
+            .def(py::init<ReadThreadsGraph &, int, int>(),"","rtg"_a,"min_thread_length"_a=6, "min_node_threads"_a=3,py::return_value_policy::take_ownership)
+            .def(py::init<ReadThreadsGraph &, std::string>(),"","rtg"_a,"filename"_a,py::return_value_policy::take_ownership)
+            .def("run_sorters_from_lines",&TotalSorter::run_sorters_from_lines,"lines"_a=std::vector<std::vector<sgNodeID_t>>(),"min_line_size"_a=25,"min_order_size"_a=200,"line_occupancy"_a=.7)
+            .def("prune_rtg",&TotalSorter::prune_rtg)
+            .def("update_usage",&TotalSorter::update_usage)
+            .def("remove_mixed",&TotalSorter::remove_mixed,"win"_a=50,"fail"_a=.2)
             .def("dump",&TotalSorter::dump,"filename"_a)
             .def("load",&TotalSorter::load,"filename"_a)
             .def_readwrite("nodes",&TotalSorter::nodes)
