@@ -257,6 +257,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("prune_rtg",&TotalSorter::prune_rtg)
             .def("update_usage",&TotalSorter::update_usage)
             .def("remove_mixed",&TotalSorter::remove_mixed,"win"_a=50,"fail"_a=.2)
+            .def("compute_node_neighbours",&TotalSorter::compute_node_neighbours,"k"_a,"max_f"_a)
             .def("dump",&TotalSorter::dump,"filename"_a)
             .def("load",&TotalSorter::load,"filename"_a)
             .def_readwrite("nodes",&TotalSorter::nodes)
@@ -265,6 +266,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readonly("sorter_classes",&TotalSorter::sorter_classes)
             .def_readonly("node_sorters",&TotalSorter::node_sorters)
             .def_readonly("thread_sorters",&TotalSorter::thread_sorters)
+            .def_readonly("node_neighbours",&TotalSorter::node_neighbours)
                  ;
 
     py::class_<SequenceDistanceGraphPath>(m, "SequenceDistanceGraphPath", "SequenceDistanceGraphPath")

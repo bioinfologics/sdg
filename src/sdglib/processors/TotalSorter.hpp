@@ -19,6 +19,7 @@ public:
 
     void update_usage();
     void remove_mixed(int win=50,float fail=.2);
+    void compute_node_neighbours(int k,int max_f);
     //every node and thread can only belong to an equivalent class
     void compute_sorter_classes();
     //process equivalent classes into single orders
@@ -35,5 +36,5 @@ public:
     std::unordered_map<int64_t,int64_t> sorter_classes;
     std::unordered_map<sgNodeID_t,std::vector<int64_t>> node_sorters;
     std::unordered_map<int64_t ,std::vector<int64_t>> thread_sorters;
-
+    std::unordered_map<sgNodeID_t,std::vector<std::pair<sgNodeID_t,uint64_t>>> node_neighbours;
 };

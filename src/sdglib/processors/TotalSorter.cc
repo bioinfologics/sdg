@@ -144,6 +144,29 @@ void TotalSorter::remove_mixed(int win, float fail) {
     for (auto &si:to_delete) sorters.erase(si);
 }
 
+void TotalSorter::compute_node_neighbours(int k, int max_f) {
+    NKmerIndex nki(rtg.sdg,k,max_f);
+    std::unordered_map<std::pair<sgNodeID_t,sgNodeID_t>,uint64_t> shared_counts;
+    uint64_t last_kmer=-1;
+    std::set<sgNodeID_t> kmer_nodes;
+    for (auto &ke:nki){
+        if (ke.kmer==last_kmer) kmer_nodes.insert(labs(ke.contigID));
+        else {
+            if (kmer_nodes.size()>1){
+                for (auto n1:kmer_nodes)
+                    for (auto &n2:kmer_nodes)
+                        if (n1<n2) ++shared_counts[std::make_pair(n1,n2)];
+            }
+            last_kmer=ke.kmer;
+            kmer_nodes.clear();
+        }
+    }
+    for (auto &sc:shared_counts) {
+        node_neighbours[sc.first.first].emplace_back(sc.first.second,sc.second);
+        node_neighbours[sc.first.second].emplace_back(sc.first.first,sc.second);
+    }
+}
+
 void TotalSorter::compute_sorter_classes() {
 
 }
