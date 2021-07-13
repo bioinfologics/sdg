@@ -162,6 +162,10 @@ void TotalSorter::compute_node_neighbours(int k, int max_f) {
         }
     }
     for (auto &sc:shared_counts) {
+        if ( rtg.sdg.are_connected(sc.first.first,sc.first.second) or
+            rtg.sdg.are_connected(sc.first.first,-sc.first.second) or
+            rtg.sdg.are_connected(-sc.first.first,sc.first.second) or
+            rtg.sdg.are_connected(-sc.first.first,-sc.first.second) ) continue;
         node_neighbours[sc.first.first].emplace_back(sc.first.second,sc.second);
         node_neighbours[sc.first.second].emplace_back(sc.first.first,sc.second);
     }
