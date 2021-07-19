@@ -23,6 +23,7 @@
 #include <sdglib/processors/LineFiller.h>
 #include <sdglib/processors/HappySorter.hpp>
 #include <sdglib/graph/ReadThreadsGraph.hpp>
+#include <sdglib/processors/TotalSorter.hpp>
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -228,13 +229,13 @@ PYBIND11_MODULE(SDGpython, m) {
             .def(py::init<const ReadThreadsGraph &, float, int, int>(),"","rtg"_a, "min_node_happiness"_a=.7,
              "min_node_threads"_a=2, "order_end_size"_a=20,py::return_value_policy::take_ownership)
             .def("node_happiness", &HappySorter::node_happiness,"tid"_a,"prev"_a=true,"next"_a=false,"min_threads"_a=3)
+            .def("start_from_nodelist",&HappySorter::start_from_nodelist,"nodelist"_a,"min_links"_a=3)
             .def("find_fw_candidates",&HappySorter::find_fw_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"end_size"_a=-1)
             .def("find_bw_candidates",&HappySorter::find_bw_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"end_size"_a=-1)
             .def("find_internal_candidates",&HappySorter::find_internal_candidates,"min_happiness"_a=-1,"min_threads"_a=-1,"first"_a=1,"last"_a=INT32_MAX)
             .def("close_internal_threads",&HappySorter::close_internal_threads,"order_end"_a=30,"thread_end"_a=0)
             .def("make_thread_nodepositions",&HappySorter::make_thread_nodepositions,"nodes"_a,"tids"_a=std::set<int64_t>())
             .def("place_nodes",&HappySorter::place_nodes,"nodes"_a,"verbose"_a=false)
-            .def("add_placed_nodes",&HappySorter::add_placed_nodes,"placed_nodes"_a,"update_current"_a=false)
             .def("thread_happiness_q",&HappySorter::thread_happiness_q,"tid"_a,"min_nodes"_a,"max_span"_a)
             .def("recruit_all_happy_threads_q", &HappySorter::recruit_all_happy_threads_q,"min_nodes"_a=7,"max_span"_a=10)
             .def("q_grow_loop",&HappySorter::q_grow_loop, "min_threads"_a=-1, "min_happiness"_a=-1, "p"_a=4, "q"_a=5, "steps"_a=INT64_MAX, "verbose"_a=false)
@@ -242,11 +243,31 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("run_from_nodelist",&HappySorter::run_from_nodelist, "nodes"_a,"min_threads"_a=-1, "min_happiness"_a=-1, "p"_a=4, "q"_a=5, "steps"_a=INT64_MAX, "verbose"_a=false)
             .def("hs_tnp_to_distances",&HappySorter::hs_tnp_to_distances, "thread_nodepositions"_a, "nodeset"_a)
             .def("update_positions",&HappySorter::update_positions,"first"_a=0,"last"_a=-1)
+            .def("is_mixed",&HappySorter::is_mixed,"win"_a=50,"fail"_a=.2)
             .def_readwrite("threads",&HappySorter::threads)
             .def_readwrite("order",&HappySorter::order)
             .def_readwrite("bw_open_threads",&HappySorter::bw_open_threads)
             .def_readwrite("fw_open_threads",&HappySorter::fw_open_threads)
             ;
+
+    pybind11::class_<TotalSorter>(m, "TotalSorter", "TotalSorter")
+            .def(py::init<ReadThreadsGraph &, int, int>(),"","rtg"_a,"min_thread_length"_a=6, "min_node_threads"_a=3,py::return_value_policy::take_ownership)
+            .def(py::init<ReadThreadsGraph &, std::string>(),"","rtg"_a,"filename"_a,py::return_value_policy::take_ownership)
+            .def("run_sorters_from_lines",&TotalSorter::run_sorters_from_lines,"lines"_a=std::vector<std::vector<sgNodeID_t>>(),"min_line_size"_a=25,"min_order_size"_a=200,"line_occupancy"_a=.7)
+            .def("prune_rtg",&TotalSorter::prune_rtg)
+            .def("update_usage",&TotalSorter::update_usage)
+            .def("remove_mixed",&TotalSorter::remove_mixed,"win"_a=50,"fail"_a=.2)
+            .def("compute_node_neighbours",&TotalSorter::compute_node_neighbours,"k"_a,"max_f"_a)
+            .def("dump",&TotalSorter::dump,"filename"_a)
+            .def("load",&TotalSorter::load,"filename"_a)
+            .def_readwrite("nodes",&TotalSorter::nodes)
+            .def_readwrite("threads",&TotalSorter::threads)
+            .def_readonly("sorters",&TotalSorter::sorters)
+            .def_readonly("sorter_classes",&TotalSorter::sorter_classes)
+            .def_readonly("node_sorters",&TotalSorter::node_sorters)
+            .def_readonly("thread_sorters",&TotalSorter::thread_sorters)
+            .def_readonly("node_neighbours",&TotalSorter::node_neighbours)
+                 ;
 
     py::class_<SequenceDistanceGraphPath>(m, "SequenceDistanceGraphPath", "SequenceDistanceGraphPath")
             .def(py::init<const SequenceDistanceGraph &,const std::vector<sgNodeID_t> >(),"","sdg"_a,"nodes"_a,py::return_value_policy::take_ownership)
@@ -554,6 +575,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def(py::init<>())
             .def(py::init<const std::vector<sgNodeID_t> &>(),"nodes"_a)
             .def("get_node_position",&LocalOrder::get_node_position,"node_id"_a)
+            .def("place_node",&LocalOrder::place_node,"rtg"_a,"nid"_a, "node_coordinates"_a=std::unordered_map<sgNodeID_t,int64_t>(), "max_hops"_a=3, "min_links"_a=3)
+            .def("add_placed_nodes",&LocalOrder::add_placed_nodes,"placed_nodes"_a,"update_current"_a=false)
             .def("as_signed_nodes",&LocalOrder::as_signed_nodes)
             .def("as_thread",&LocalOrder::as_thread,"dg"_a)
             .def("size",&LocalOrder::size)

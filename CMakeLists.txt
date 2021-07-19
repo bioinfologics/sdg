@@ -243,7 +243,7 @@ SET(source_files ${source_files}
     src/sdglib/graph/ReadThreadsGraph.cc
     src/sdglib/graph/ReadThreadsGraph.hpp
     src/sdglib/processors/HappySorter.cc
-    src/sdglib/processors/HappySorter.hpp)
+    src/sdglib/processors/HappySorter.hpp src/sdglib/processors/TotalSorter.cc src/sdglib/processors/TotalSorter.hpp)
 
 ## Libraries
 add_library(sdg SHARED

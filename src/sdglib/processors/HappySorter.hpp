@@ -13,16 +13,16 @@ public:
     std::vector<sgNodeID_t> as_signed_nodes() const;
     std::vector<NodePosition> as_thread(const DistanceGraph &dg) const;
     int64_t get_node_position(sgNodeID_t nid) const;
+    int64_t place_node(const ReadThreadsGraph &rtg, sgNodeID_t nid, const std::unordered_map<sgNodeID_t,int64_t> & node_coordinates={}, int max_hops=3, int min_links=3);
+    bool  add_placed_nodes( const std::vector<std::pair<sgNodeID_t, int64_t>> &placed_nodes, bool update_current=true);
     LocalOrder reverse() const;
     int64_t thread_order_crosses(const std::vector<NodePosition> & thread) const;
-    //TODO: count all thread order crosses in total, to validate an order's coherence with the rtg (move threads here first?)
-    //TODO: count thread order crosses per node (count in current and prev? check how this affects multiple lengths) to find crossed single-nodes
-    void validate_with_rtg(const ReadThreadsGraph & rtg);
-    void cleanup_with_rtg(const ReadThreadsGraph & rtg);
     auto size() const {return node_positions.size();};
-
-    //explicit LocalOrder(std::vector<sgNodeID_t>);//construct a local order from a list of nodes
     LocalOrder merge(const LocalOrder & other,int max_overhang=4,float min_shared_perc=.5,int min_shared=20,float max_disordered_perc=.02) const;
+
+    void read(std::ifstream &ifs);
+    void write(std::ofstream &ofs);
+
     std::unordered_map<sgNodeID_t , int64_t > node_positions;
     std::unordered_map<sgNodeID_t,int64_t> node_coordinates;
 };
@@ -35,9 +35,15 @@ public:
 
     float node_happiness(sgNodeID_t,bool prev=true,bool next=false, int min_threads=-1) const;
 
-    bool  add_placed_nodes( const std::vector<std::pair<sgNodeID_t, int64_t>> &placed_nodes, bool update_current=true); //TODO: move to the order
+
+
 
     bool grow(int _thread_hits=4, int _end_size=-1, int _node_hits=3, float _min_happiness=.7);
+
+    void start_from_nodelist(std::vector<sgNodeID_t> nodes, int min_links=1);
+
+    void read(std::ifstream &ifs);
+    void write(std::ofstream &ofs);
 
     //***** Old functions, still to review and update
     /**@brief
@@ -67,6 +73,8 @@ public:
     void run_from_nodelist(std::vector<sgNodeID_t> nodes, int min_threads=-1, float min_happiness=-1, int p=4, int q=5, int64_t steps=INT64_MAX, bool verbose=false);
 
     bool update_positions(int64_t first=0, int64_t last=-1);
+
+    bool is_mixed(int win=50,float fail=.2);
 
     float min_node_happiness;
     int min_node_threads;
