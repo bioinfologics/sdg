@@ -81,7 +81,7 @@ public:
      * @return
      * Returns the ID of the added node
      */
-    sgNodeID_t add_node(std::string seq);
+    sgNodeID_t add_node(std::string seq, bool make_canonical=true);
 
 
     /**

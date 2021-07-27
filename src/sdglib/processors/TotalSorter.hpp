@@ -15,13 +15,16 @@ public:
 
     void prune_rtg();
     //use happysorters to create a set of orders, every node and thread belongs to a number of them, classify equivalent ones
-    void run_sorters_from_lines(std::vector<std::vector<sgNodeID_t>> _lines,int min_line_size, int min_order_size=200,float line_occupancy=.7);
+    void run_sorters_from_lines(std::vector<std::vector<sgNodeID_t>> _lines,int min_line_size, int min_order_size=200,float line_occupancy=.7,int p=5,int q=10,float node_happiness=.8, int node_threads=5, int end_size=30, int min_links=5);
 
     void update_usage();
     void remove_mixed(int win=50,float fail=.2);
     void compute_node_neighbours(int k,int max_f);
+    void merge();
     //every node and thread can only belong to an equivalent class
     void compute_sorter_classes();
+
+    int64_t sorter_shared_nodes(int64_t oi1,int64_t oi2);
     //process equivalent classes into single orders
     //done!
 

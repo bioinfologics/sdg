@@ -60,15 +60,8 @@ void TotalSorter::prune_rtg() {
     sdglib::OutputLog()<<"Pruning done"<<std::endl;
 }
 
-void TotalSorter::run_sorters_from_lines(std::vector<std::vector<sgNodeID_t>> _lines, int min_line_size, int min_order_size,float line_occupancy) {
-    //XXX: hardcoded parameters so far
+void TotalSorter::run_sorters_from_lines(std::vector<std::vector<sgNodeID_t>> _lines, int min_line_size, int min_order_size,float line_occupancy,int p, int q, float node_happiness, int node_threads, int end_size, int min_links) {
 
-    int p=5,q=7;
-    float node_happiness=.6;
-    int node_threads=5;
-    int end_size=30;
-    int min_links=5;
-    //END OF HARDCODE
     std::vector<std::vector<sgNodeID_t>> lines;
     if (not _lines.empty()) lines=_lines;
     else lines=rtg.sdg.get_all_lines(min_line_size);
@@ -88,8 +81,15 @@ void TotalSorter::run_sorters_from_lines(std::vector<std::vector<sgNodeID_t>> _l
             }
             sorters.at(si).start_from_nodelist(line,min_links);
             sorters.at(si).recruit_all_happy_threads_q(p,q);
+            LocalOrder old_order=sorters.at(si).order;
             while (sorters.at(si).grow(4,end_size,3,node_happiness)){
+                if (sorters.at(si).is_mixed()) {
+                    sorters.at(si).order=old_order;
+                    std::cout<<"Order was mixed, backtracking to last non-mixed order of size "<<old_order.size()<<std::endl;
+                    break;
+                }
                 sorters.at(si).recruit_all_happy_threads_q(p,q);
+                old_order=sorters.at(si).order;
             }
 #pragma omp critical(orders)
             {
@@ -173,6 +173,119 @@ void TotalSorter::compute_node_neighbours(int k, int max_f) {
 
 void TotalSorter::compute_sorter_classes() {
 
+}
+
+int64_t TotalSorter::sorter_shared_nodes(int64_t oi1, int64_t oi2) {
+    std::unordered_set<sgNodeID_t> n1;
+    int64_t c=0;
+    if (oi1>0) for (auto &nid:sorters.at(oi1).order.as_signed_nodes()) n1.insert(nid);
+    else for (auto &nid:sorters.at(-oi1).order.as_signed_nodes()) n1.insert(-nid);
+    if (oi2>0) {
+        for (auto &nid:sorters.at(oi2).order.as_signed_nodes()) if (n1.count(nid)) ++c;
+    }
+    else {
+        for (auto &nid:sorters.at(-oi2).order.as_signed_nodes()) if (n1.count(-nid)) ++c;
+    }
+    return c;
+}
+
+void TotalSorter::merge() {
+    std::set<std::pair<int64_t,int64_t>> failed_merges;
+    auto last_sorters_count=sorters.size()+1;
+    auto last_fails_count=0;
+    int64_t largest_shared=0;
+    int64_t ls1,ls2;
+    while (sorters.size()<last_sorters_count or failed_merges.size()>last_fails_count) {
+        last_sorters_count=sorters.size();
+        last_fails_count=failed_merges.size();
+        std::cout<<"There are now "<<last_sorters_count<<" sorters, and "<<last_fails_count<<" tabu merges"<<std::endl;
+        largest_shared=0;
+        //Finds the merge with the biggest shared nodes that has not been tried before, at least 100 shared nodes
+        for (auto ss1:sorters) {
+            auto s1=ss1.first;
+            if (ss1.second.order.size()<largest_shared) continue;
+            for (auto ss2:sorters) {
+                if (ss2.second.order.size()<largest_shared) continue;
+                auto s2=ss2.first;
+                if (s1>=s2) continue;
+                if (failed_merges.count({s1,s2})>0) continue;
+                for (std::pair<int64_t,int64_t> sp : {std::make_pair(s1,s2),std::make_pair(s1,-s2)}) {
+                    auto shared=sorter_shared_nodes(sp.first,sp.second);
+                    if (shared > largest_shared) {
+                        largest_shared=shared;
+                        ls1=sp.first;
+                        ls2=sp.second;
+                    }
+                }
+            }
+        }
+        if (largest_shared>100)
+        {
+            std::cout << "Merging orders " << ls1 << " and " << ls2 << ", which share " << largest_shared << " nodes" << std::endl;
+            auto ix=next_sorter++;
+            std::cout << "New order to have id "<<ix << std::endl;
+            sorters.emplace(std::piecewise_construct,std::forward_as_tuple(ix),std::forward_as_tuple(rtg));
+            //copying the first order, which is always positive
+            auto &s=sorters.at(ix);
+            s.order=sorters.at(ls1).order;
+            std::vector<sgNodeID_t> s2nodes=sorters.at(llabs(ls2)).order.as_signed_nodes();
+            if (ls2<0) {
+                std::vector<sgNodeID_t> rnodes;
+                for (auto it=s2nodes.rbegin();it!=s2nodes.rend();++it) rnodes.emplace_back(-*it);
+                std::swap(s2nodes,rnodes);
+            }
+            //now adding nodes from the other order one by one from the 10th shared up
+            uint64_t shared=0;
+            uint64_t unplaced=0;
+
+            for (auto nid:s2nodes){
+                if (s.order.get_node_position(nid)<0) {
+                    ++unplaced;
+                }
+                else if (s.order.get_node_position(nid)>0) ++shared;
+                else if (shared>=10) {
+                    try {
+                        s.order.add_placed_nodes({{nid, s.order.place_node(rtg, nid)}});
+                    }
+                    catch (std::exception &e) {
+                        ++unplaced;
+                    }
+                }
+            }
+            //now adding ramaining nodes from the other order one by one from the last shared up
+            for (int64_t i=s2nodes.size()-1;i<=0;--i){
+                auto nid=s2nodes[i];
+                if (s.order.get_node_position(nid)<0) {
+                    ++unplaced;
+                }
+                else if (s.order.get_node_position(nid)>0) ++shared;
+                else if (shared>=10) {
+                    try {
+                        s.order.add_placed_nodes({{nid, s.order.place_node(rtg, nid)}});
+                    }
+                    catch (std::exception &e) {
+                        ++unplaced;
+                    }
+                }
+            }
+            //now recruiting threads, and checking if it is mixed and how many of each other order's node it has: 99% and not mixed to consider it a successful mix
+            s.recruit_all_happy_threads_q(5,7);
+            //if merge unsuccessful, delete order and add pair to failed merges
+            if (sorters.at(ix).order.size()<.99*(sorters.at(ls1).order.size()+sorters.at(llabs(ls2)).order.size()-shared) or sorters.at(ix).is_mixed()) {
+                sorters.erase(ix);
+                failed_merges.insert({ls1,llabs(ls2)});
+                std::cout<<"merge failed"<<std::endl;
+            }
+            else {
+                sorters.erase(ls1);
+                sorters.erase(llabs(ls2));
+                std::cout<<"merge successful"<<std::endl;
+            }
+        }
+        else {
+            std::cout<<"No more candidates for merging detected"<<std::endl;
+        }
+    }
 }
 
 void TotalSorter::dump(std::string filename) {
