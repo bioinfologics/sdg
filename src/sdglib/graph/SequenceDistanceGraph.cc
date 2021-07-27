@@ -116,10 +116,10 @@ sgNodeID_t SequenceDistanceGraph::add_node(Node n) {
     return (sgNodeID_t) nodes.size()-1;
 }
 
-sgNodeID_t SequenceDistanceGraph::add_node(std::string seq) {
+sgNodeID_t SequenceDistanceGraph::add_node(std::string seq, bool make_canonical) {
     nodes.emplace_back(seq);
     links.emplace_back();
-    if (nodes.back().is_canonical()) return (sgNodeID_t) nodes.size()-1;
+    if (make_canonical==false or nodes.back().is_canonical()) return (sgNodeID_t) nodes.size()-1;
     nodes.back().make_rc();
     return (sgNodeID_t) -( nodes.size()-1);
 }
