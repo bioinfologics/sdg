@@ -191,8 +191,8 @@ int64_t TotalSorter::sorter_shared_nodes(int64_t oi1, int64_t oi2) {
 
 void TotalSorter::merge() {
     std::set<std::pair<int64_t,int64_t>> failed_merges;
-    auto last_sorters_count=sorters.size()+1;
-    auto last_fails_count=0;
+    size_t last_sorters_count=sorters.size()+1;
+    size_t last_fails_count=0;
     int64_t largest_shared=0;
     int64_t ls1,ls2;
     while (sorters.size()<last_sorters_count or failed_merges.size()>last_fails_count) {
@@ -201,12 +201,12 @@ void TotalSorter::merge() {
         std::cout<<"There are now "<<last_sorters_count<<" sorters, and "<<last_fails_count<<" tabu merges"<<std::endl;
         largest_shared=0;
         //Finds the merge with the biggest shared nodes that has not been tried before, at least 100 shared nodes
-        for (auto ss1:sorters) {
+        for (auto &ss1:sorters) {
             auto s1=ss1.first;
             if (ss1.second.order.size()<largest_shared) continue;
-            for (auto ss2:sorters) {
+            for (auto &ss2:sorters) {
                 if (ss2.second.order.size()<largest_shared) continue;
-                auto s2=ss2.first;
+                auto s2=ss2.first;std::cout<<"No more candidates for merging detected"<<std::endl;
                 if (s1>=s2) continue;
                 if (failed_merges.count({s1,s2})>0) continue;
                 for (std::pair<int64_t,int64_t> sp : {std::make_pair(s1,s2),std::make_pair(s1,-s2)}) {
@@ -236,7 +236,7 @@ void TotalSorter::merge() {
             }
             //now adding nodes from the other order one by one from the 10th shared up
             uint64_t shared=0;
-            uint64_t unplaced=0;
+            uint64_t placed=0,unplaced=0;
 
             for (auto nid:s2nodes){
                 if (s.order.get_node_position(nid)<0) {
@@ -246,14 +246,17 @@ void TotalSorter::merge() {
                 else if (shared>=10) {
                     try {
                         s.order.add_placed_nodes({{nid, s.order.place_node(rtg, nid)}});
+                        ++placed;
                     }
                     catch (std::exception &e) {
                         ++unplaced;
                     }
                 }
             }
+            //std::cout<<"After FW loop: "<<placed<<" placed, and "<<unplaced<<" unplaced nodes"<<std::endl;
+            shared=0;
             //now adding ramaining nodes from the other order one by one from the last shared up
-            for (int64_t i=s2nodes.size()-1;i<=0;--i){
+            for (int64_t i=s2nodes.size()-1;i>=0;--i){
                 auto nid=s2nodes[i];
                 if (s.order.get_node_position(nid)<0) {
                     ++unplaced;
@@ -262,19 +265,34 @@ void TotalSorter::merge() {
                 else if (shared>=10) {
                     try {
                         s.order.add_placed_nodes({{nid, s.order.place_node(rtg, nid)}});
+                        ++placed;
                     }
                     catch (std::exception &e) {
                         ++unplaced;
                     }
                 }
             }
+            //std::cout<<"After BW loop: "<<placed<<" placed, and "<<unplaced<<" unplaced nodes"<<std::endl;
             //now recruiting threads, and checking if it is mixed and how many of each other order's node it has: 99% and not mixed to consider it a successful mix
             s.recruit_all_happy_threads_q(5,7);
             //if merge unsuccessful, delete order and add pair to failed merges
-            if (sorters.at(ix).order.size()<.99*(sorters.at(ls1).order.size()+sorters.at(llabs(ls2)).order.size()-shared) or sorters.at(ix).is_mixed()) {
+            if (sorters.at(ix).order.size()<.99*(sorters.at(ls1).order.size()+sorters.at(llabs(ls2)).order.size()-largest_shared) or sorters.at(ix).is_mixed()) {
+                std::cout<<"merge failed with "<< sorters.at(ix).order.size()<<" / "<<(sorters.at(ls1).order.size()+sorters.at(llabs(ls2)).order.size()-largest_shared)<<" nodes, mixed: "<<sorters.at(ix).is_mixed()<<std::endl;
                 sorters.erase(ix);
-                failed_merges.insert({ls1,llabs(ls2)});
-                std::cout<<"merge failed"<<std::endl;
+                if (sorters.at(ls1).order.size()>sorters.at(llabs(ls2)).order.size()) {
+                    if(sorters.at(llabs(ls2)).order.size() * .99 <largest_shared ) {
+                        sorters.erase(llabs(ls2));
+                        std::cout << "deleting order " << llabs(ls2) << " as 99%+ contained" << std::endl;
+                    }
+                }
+                else if(sorters.at(ls1).order.size() * .99 <largest_shared ){
+                    sorters.erase(ls1);
+                    std::cout<<"deleting order "<<ls1<<" as 99%+ contained"<<std::endl;
+                }
+                else {
+                    failed_merges.insert({ls1, llabs(ls2)});
+                    std::cout<<"adding merge to tabu"<<std::endl;
+                }
             }
             else {
                 sorters.erase(ls1);
@@ -282,10 +300,8 @@ void TotalSorter::merge() {
                 std::cout<<"merge successful"<<std::endl;
             }
         }
-        else {
-            std::cout<<"No more candidates for merging detected"<<std::endl;
-        }
     }
+    std::cout<<"Merging finished"<<std::endl;
 }
 
 void TotalSorter::dump(std::string filename) {
