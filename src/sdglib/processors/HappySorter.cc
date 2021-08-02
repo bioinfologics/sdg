@@ -897,14 +897,12 @@ void HappySorter::start_from_nodelist(std::vector<sgNodeID_t> _nodes, int min_li
 
 }
 
-bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _min_happiness) {
+bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _min_happiness, bool verbose) {
     bool grown=false;
     auto onodes = order.as_signed_nodes();
     {//Part 1: grow fw
         //#1 find threads that have hits to the end,
-        //std::cout<<"finding threads with hits"<<std::endl;
         auto end_nodes = sdglib::vec_slice(onodes, -_end_size);
-        //std::cout<<"end slice has "<<end_nodes.size()<<" nodes"<<std::endl;
         std::set<sgNodeID_t> end_nodes_set(end_nodes.begin(), end_nodes.end());
         std::unordered_map<int64_t, uint64_t> tc;
         for (auto &nid:end_nodes)
@@ -925,6 +923,7 @@ bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _m
                 }
             }
         }
+        if (verbose) std::cout<<cut_threads.size()<<" cut threads to look for node candidates"<<std::endl;
 
         //std::cout<<"counting nodes' hits"<<std::endl;
         std::map<sgNodeID_t, uint64_t> nc;
@@ -933,12 +932,15 @@ bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _m
                 nc[np.node] += 1;
         //std::cout<<"creating pos dict for candidate nodes"<<std::endl;
         //TODO: maybe add the threads used to grow as recruited or to be considered in the happiness part
+        uint64_t linked_candidates=0;
         std::map<sgNodeID_t, std::vector<int64_t>> npos;
         for (auto &c:nc) {
-            if (c.second >= _node_hits and end_nodes_set.count(c.first) == 0 and order.get_node_position(c.first)==0 and
-                node_happiness(c.first, true, false) >= _min_happiness)
-                npos[c.first] = {};
+            if (c.second >= _node_hits and end_nodes_set.count(c.first) == 0 and order.get_node_position(c.first)==0) {
+                ++linked_candidates;
+                if (node_happiness(c.first, true, false) >= _min_happiness) npos[c.first] = {};
+            }
         }
+        if (verbose) std::cout<<npos.size()<<" / "<< linked_candidates << " candidates are happy"<<std::endl;
         //Now compute node positions based on the cut threads, only for nodes with enough hits
         for (auto &t:cut_threads) {
             //TODO: could add a pass here to check that the offset doesnt go crazy, or nodes form the order doesn't appear again
@@ -955,8 +957,9 @@ bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _m
             std::sort(np.second.begin(), np.second.end());
             positions.emplace_back(np.first, np.second[np.second.size() / 2]);
         }
-
+        auto old_size=order.size();
         if (order.add_placed_nodes(positions)) grown=true;
+        if (verbose) std::cout<<"after adding "<<positions.size()<<" nodes FW, order went from "<<old_size<<" to "<<order.size()<<" nodes"<<std::endl;
     }
     {//Part 2: grow bw
         //#1 find threads that have hits to the end,
@@ -984,6 +987,8 @@ bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _m
             }
         }
 
+        if (verbose) std::cout<<cut_threads.size()<<" cut threads to look for node candidates"<<std::endl;
+
         //std::cout<<"counting nodes' hits"<<std::endl;
         std::map<sgNodeID_t, uint64_t> nc;
         for (auto &t:cut_threads)
@@ -992,12 +997,17 @@ bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _m
         //std::cout<<"creating pos dict for candidate nodes"<<std::endl;
         //TODO: maybe add the threads used to grow as recruited or to be considered in the happiness part
         //XXX: this may be a tad too clever, from here on useing the reverse thread, but negating node and position.
+        uint64_t linked_candidates=0;
         std::map<sgNodeID_t, std::vector<int64_t>> npos;
         for (auto &c:nc) {
-            if (c.second >= _node_hits and end_nodes_set.count(c.first) == 0 and order.get_node_position(c.first)==0 and
-                node_happiness(c.first, false, true) >= _min_happiness)
-                npos[c.first] = {};
+            if (c.second >= _node_hits and end_nodes_set.count(c.first) == 0 and order.get_node_position(c.first)==0) {
+                ++linked_candidates;
+                if (node_happiness(c.first, false, true) >= _min_happiness) npos[c.first] = {};
+            }
         }
+
+        if (verbose) std::cout<<npos.size()<<" / "<< linked_candidates << " candidates are happy"<<std::endl;
+
         //Now compute node positions based on the cut threads, only for nodes with enough hits
         for (auto &t:cut_threads) {
             //TODO: could add a pass here to check that the offset doesnt go crazy, or nodes form the order doesn't appear again
@@ -1021,10 +1031,9 @@ bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _m
             std::sort(np.second.begin(), np.second.end());
             positions.emplace_back(np.first, np.second[np.second.size() / 2]);
         }
-        //std::sort(positions.begin(),positions.end(),[](const auto &a,const auto &b){return a.second<b.second;});
-        //for (auto &np:positions) std::cout<<"("<<np.second<<", "<<np.first<<"), ";
-        //std::cout<<std::endl;
+        auto old_size=order.size();
         if (order.add_placed_nodes(positions)) grown=true;
+        if (verbose) std::cout<<"after adding "<<positions.size()<<" nodes BW, order went from "<<old_size<<" to "<<order.size()<<" nodes"<<std::endl;
     }
     return grown;
 }

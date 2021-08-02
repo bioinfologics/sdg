@@ -38,7 +38,7 @@ public:
 
 
 
-    bool grow(int _thread_hits=4, int _end_size=-1, int _node_hits=3, float _min_happiness=.7);
+    bool grow(int _thread_hits=4, int _end_size=-1, int _node_hits=3, float _min_happiness=.7, bool verbose=false);
 
     void start_from_nodelist(std::vector<sgNodeID_t> nodes, int min_links=1);
 
