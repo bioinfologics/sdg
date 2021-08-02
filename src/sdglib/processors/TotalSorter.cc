@@ -193,25 +193,31 @@ void TotalSorter::merge() {
     std::set<std::pair<int64_t,int64_t>> failed_merges;
     size_t last_sorters_count=sorters.size()+1;
     size_t last_fails_count=0;
-    int64_t largest_shared=0;
+
     int64_t ls1,ls2;
     while (sorters.size()<last_sorters_count or failed_merges.size()>last_fails_count) {
         last_sorters_count=sorters.size();
         last_fails_count=failed_merges.size();
         std::cout<<"There are now "<<last_sorters_count<<" sorters, and "<<last_fails_count<<" tabu merges"<<std::endl;
-        largest_shared=0;
+        int64_t largest_shared=0;
+        float largest_shared_percentage=0;
         //Finds the merge with the biggest shared nodes that has not been tried before, at least 100 shared nodes
         for (auto &ss1:sorters) {
             auto s1=ss1.first;
-            if (ss1.second.order.size()<largest_shared) continue;
+            auto size1=ss1.second.order.size();
+            //if (ss1.second.order.size()<largest_shared) continue;
             for (auto &ss2:sorters) {
-                if (ss2.second.order.size()<largest_shared) continue;
-                auto s2=ss2.first;std::cout<<"No more candidates for merging detected"<<std::endl;
+                auto size2=ss2.second.order.size();
+                //if (ss2.second.order.size()<largest_shared) continue;
+                auto s2=ss2.first;
                 if (s1>=s2) continue;
                 if (failed_merges.count({s1,s2})>0) continue;
                 for (std::pair<int64_t,int64_t> sp : {std::make_pair(s1,s2),std::make_pair(s1,-s2)}) {
                     auto shared=sorter_shared_nodes(sp.first,sp.second);
-                    if (shared > largest_shared) {
+                    float shared_percentage=((float) shared) / std::min(size1,size2);
+                    //std::cout<<ss1.first<<" & "<<ss2.first<<": "<<shared<<" ("<<shared_percentage<<")"<<std::endl;
+                    if (shared>100 and shared_percentage>largest_shared_percentage) {
+                        largest_shared_percentage=shared_percentage;
                         largest_shared=shared;
                         ls1=sp.first;
                         ls2=sp.second;
@@ -221,7 +227,7 @@ void TotalSorter::merge() {
         }
         if (largest_shared>100)
         {
-            std::cout << "Merging orders " << ls1 << " and " << ls2 << ", which share " << largest_shared << " nodes" << std::endl;
+            std::cout << "Merging orders " << ls1 << " and " << ls2 << ", which share " << largest_shared << " nodes ("<<(int)(100*largest_shared_percentage)<<"%)" << std::endl;
             auto ix=next_sorter++;
             std::cout << "New order to have id "<<ix << std::endl;
             sorters.emplace(std::piecewise_construct,std::forward_as_tuple(ix),std::forward_as_tuple(rtg));
