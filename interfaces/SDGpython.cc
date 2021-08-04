@@ -24,6 +24,7 @@
 #include <sdglib/processors/HappySorter.hpp>
 #include <sdglib/graph/ReadThreadsGraph.hpp>
 #include <sdglib/processors/TotalSorter.hpp>
+#include <sdglib/processors/RTGCluster.hpp>
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -589,15 +590,9 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("node_positions",&LocalOrder::node_positions)
             .def_readwrite("node_coordinates",&LocalOrder::node_coordinates);
 
-    py::class_<HappySorterRunner>(m, "HappySorterRunner", "HappySorterRunner")
-            .def(py::init<const ReadThreadsGraph &, float, float, int, int, int>(),"","rtg"_a,"min_thread_happiness"_a=.7, "min_node_happiness"_a=.7,
-                 "min_thread_nodes"_a=3, "min_node_threads"_a=2, "order_end_size"_a=20,py::return_value_policy::take_ownership)
-            .def("run_from_dg_lines",&HappySorterRunner::run_from_dg_lines,"dg"_a,"min_line_nodes"_a=10, "p"_a=4, "q"_a=6)
-            .def("dump",&HappySorterRunner::dump,"filename"_a)
-            .def("load",&HappySorterRunner::load,"filename"_a)
-            .def_readwrite("node_sorted",&HappySorterRunner::node_sorted)
-            .def_readwrite("node_orders",&HappySorterRunner::node_orders)
-            .def_readwrite("orders",&HappySorterRunner::orders);
+    py::class_<RTGCluster>(m, "RTGCluster", "RTGCluster")
+            .def(py::init<const ReadThreadsGraph &, int, int, float>(),"","rtg"_a,"p"_a,"q"_a,"min_node_happiness"_a=.7, py::return_value_policy::take_ownership)
+            ;
 
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
     m.def("str_rc",&sdglib::str_rc,py::return_value_policy::take_ownership);

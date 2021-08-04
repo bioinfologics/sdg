@@ -1143,69 +1143,6 @@ bool HappySorter::q_grow_loop(int min_threads, float min_happiness, int p, int q
     return grown;
 }
 
-void HappySorterRunner::dump(std::string filename) {
-    std::ofstream of(filename);
-    of.write((char *)&min_thread_happiness,sizeof(min_thread_happiness));
-    of.write((char *)&min_thread_nodes,sizeof(min_thread_nodes));
-    of.write((char *)&min_node_happiness,sizeof(min_node_happiness));
-    of.write((char *)&min_node_threads,sizeof(min_node_threads));
-    of.write((char *)&order_end_size,sizeof(order_end_size));
-    uint64_t sval=orders.size();
-    of.write((char *) &sval,sizeof(sval));
-    for (auto &o:orders){
-        of.write((char *) &o.first,sizeof(o.first));
-        auto nodes=o.second.as_signed_nodes();
-        sdglib::write_flat_vector(of,nodes);
-    }
-    sval=node_orders.size();
-    of.write((char *) &sval,sizeof(sval));
-    for (auto &o:node_orders){
-        of.write((char *) &o.first,sizeof(o.first));
-        sdglib::write_flat_vector(of,o.second);
-    }
-    //bool vector can't be written with the usual functions due to packing, expand it to uint8_t
-    std::vector<uint8_t> nsv;
-    nsv.reserve(node_sorted.size());
-    for (const auto &ns:node_sorted) nsv.push_back(ns);
-    sdglib::write_flat_vector(of,nsv);
-
-}
-
-void HappySorterRunner::load(std::string filename) {
-    std::ifstream ifs(filename);
-    ifs.read((char *)&min_thread_happiness,sizeof(min_thread_happiness));
-    ifs.read((char *)&min_thread_nodes,sizeof(min_thread_nodes));
-    ifs.read((char *)&min_node_happiness,sizeof(min_node_happiness));
-    ifs.read((char *)&min_node_threads,sizeof(min_node_threads));
-    ifs.read((char *)&order_end_size,sizeof(order_end_size));
-    uint64_t sval;
-    ifs.read((char *) &sval,sizeof(sval));
-    sgNodeID_t nid;
-    std::vector<sgNodeID_t> nodes;
-    orders.clear();
-    while (sval--){
-        ifs.read((char *) &nid,sizeof(nid));
-        sdglib::read_flat_vector(ifs,nodes);
-        orders.emplace(nid,nodes);
-    }
-
-    ifs.read((char *) &sval,sizeof(sval));
-    node_orders.clear();
-    while (sval--){
-        ifs.read((char *) &nid,sizeof(nid));
-        sdglib::read_flat_vector(ifs,nodes);
-        node_orders.emplace(nid,nodes);
-    }
-
-    //bool vector can't be written with the usual functions due to packing, read expanded uint8_t, then insert
-    std::vector<uint8_t> nsv;
-    sdglib::read_flat_vector(ifs,nsv);
-    node_sorted.reserve(nsv.size());
-    for (const auto &ns:nsv) node_sorted.push_back(ns);
-
-
-}
-
 bool HappySorter::update_positions(int64_t first, int64_t last) {
 //    std::cout<<std::endl<<"HS::update_positions starting"<<std::endl;
     if(last==-1 or last>order.size()-1) last=order.size()-1;
@@ -1364,30 +1301,3 @@ void HappySorter::run_from_nodelist(std::vector<sgNodeID_t> nodes, int min_threa
 }
 
 
-void HappySorterRunner::run_from_dg_lines(DistanceGraph dg, int min_line_nodes, int p, int q) {
-    sdglib::OutputLog()<<"Starting HappySorterRunner run from rtg lines..."<<std::endl;
-    //sdglib::OutputLog()<<"Getting all nodeviews..."<<std::endl;
-    auto lines=dg.get_all_lines(min_line_nodes);
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-    shuffle (lines.begin(), lines.end(), std::default_random_engine(seed));
-    sdglib::OutputLog()<<lines.size()<<" lines shuffled..."<<std::endl;
-#pragma omp parallel for schedule(dynamic,1)
-    for (auto lineit=lines.cbegin();lineit<lines.cend();++lineit){
-        auto &line=*lineit;
-        try {
-            auto hs = HappySorter(rtg, min_node_happiness, min_node_threads, order_end_size);
-            hs.run_from_nodelist(line,min_node_threads,min_node_happiness,p,q);
-#pragma omp critical(orders)
-            {
-                orders[orders.size()]=hs.order;
-                if (orders.size()%10==0) sdglib::OutputLog()<<orders.size()<<" orders created"<<std::endl;
-            }
-
-        }
-        catch (std::exception &e) {
-            std::cout<<"Exception caught when trying to process line with node "<<line[0]<<": "<< typeid(e).name() <<": "<<e.what()<<", skipping"<<std::endl;
-        }
-
-    }
-    sdglib::OutputLog()<<"HappySorterRunner run finished!!!"<<std::endl;
-}
