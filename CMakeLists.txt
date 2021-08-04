@@ -262,27 +262,7 @@ add_executable(sdg-datastore
         src/sdg-datastore.cc
         )
 
-add_executable(sdg-kmercounter
-        src/sdg-kmercounter.cc
-        )
-
-add_executable(sdg-workspace
-        src/sdg-workspace.cc
-        )
-
-add_executable(sdg-mapper
-        src/sdg-mapper.cc
-        )
-
-add_executable(sdg-dbg
-        src/sdg-dbg.cc)
-
-target_link_libraries(sdg-workspace sdg)
 target_link_libraries(sdg-datastore sdg)
-target_link_libraries(sdg-kmercounter sdg)
-target_link_libraries(sdg-mapper sdg)
-target_link_libraries(sdg-dbg sdg)
-
 
 IF(BUILD_TESTING)
     enable_testing()
