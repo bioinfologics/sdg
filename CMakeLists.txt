@@ -36,7 +36,6 @@ endif()
 
 SET(CMAKE_RULE_MESSAGES OFF)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
-INCLUDE(FindPythonModule)
 ENABLE_TESTING()
 OPTION(BUILD_TESTING "Build tests." OFF)
 OPTION(BUILD_DOC "Build documentation" OFF)
@@ -243,7 +242,11 @@ SET(source_files ${source_files}
     src/sdglib/graph/ReadThreadsGraph.cc
     src/sdglib/graph/ReadThreadsGraph.hpp
     src/sdglib/processors/HappySorter.cc
-    src/sdglib/processors/HappySorter.hpp src/sdglib/processors/TotalSorter.cc src/sdglib/processors/TotalSorter.hpp)
+    src/sdglib/processors/HappySorter.hpp
+    src/sdglib/processors/TotalSorter.cc
+    src/sdglib/processors/TotalSorter.hpp
+    src/sdglib/processors/RTGCluster.cc
+    src/sdglib/processors/RTGCluster.hpp)
 
 ## Libraries
 add_library(sdg SHARED
@@ -252,152 +255,43 @@ add_library(sdg SHARED
 
 target_link_libraries(sdg ${DEPENDENCY_LIBS})
 
-if (BUILD_COV)
-    set_target_properties(sdg PROPERTIES
-            COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
-            LINK_FLAGS    "--coverage")
-endif()
-
 add_executable(sdg-datastore
         src/sdg-datastore.cc
         )
 
-add_executable(sdg-kmercounter
-        src/sdg-kmercounter.cc
-        )
-
-add_executable(sdg-workspace
-        src/sdg-workspace.cc
-        )
-
-add_executable(sdg-mapper
-        src/sdg-mapper.cc
-        )
-
-add_executable(sdg-dbg
-        src/sdg-dbg.cc)
-
-target_link_libraries(sdg-workspace sdg)
 target_link_libraries(sdg-datastore sdg)
-target_link_libraries(sdg-kmercounter sdg)
-target_link_libraries(sdg-mapper sdg)
-target_link_libraries(sdg-dbg sdg)
 
+MESSAGE("Building simple SDGpython")
+FIND_PACKAGE(PythonInterp 3 REQUIRED)
+FIND_PACKAGE(PythonLibs 3 REQUIRED)
+ADD_LIBRARY( SDGpython SHARED interfaces/SDGpython.cc)
+TARGET_INCLUDE_DIRECTORIES( SDGpython PUBLIC
+        ${PYTHON_INCLUDE_DIRS}
+        "interfaces/simple_python"
+)
+TARGET_LINK_LIBRARIES( SDGpython sdg )
+# The library must not have any prefix and should be located in
+# a subfolder that includes the package name. The setup will be
+# more complicated otherwise.
+SET_TARGET_PROPERTIES( SDGpython
+        PROPERTIES
+        PREFIX ""
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/SDGpython"
+        )
 
-IF(BUILD_TESTING)
-    enable_testing()
-    include_directories("tests/include")
-    add_library(CatchMain OBJECT tests/sdglib/catch-main.cc tests/include/catch.hpp)
-    add_executable(runBasicTests
-                   $<TARGET_OBJECTS:CatchMain>
-                   tests/sdglib/files_tests.cc
-                   tests/sdglib/kmerfactory_tests.cc
-                   tests/sdglib/index_tests.cc
-                   tests/sdglib/workspace_tests.cc tests/sdglib/batchCounter_tests.cc)
-    IF(BUILD_COV)
-        set_target_properties(runBasicTests PROPERTIES
-                COMPILE_FLAGS "-g -O0 -ftest-coverage -fprofile-arcs"
-                LINK_FLAGS    "--coverage -lgcov")
-    ENDIF()
-    target_link_libraries(runBasicTests sdg)
-    add_test(NAME basicTests COMMAND $<TARGET_FILE:runBasicTests>)
-ENDIF()
-
-# check if Doxygen is installed
-IF(BUILD_DOC)
-    find_package(Doxygen REQUIRED)
-    if (DOXYGEN_FOUND)
-        file(GLOB_RECURSE SDG_PUBLIC_HEADERS ${header_files})
-        # set input and output files
-        set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR})
-        set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/docs)
-        set(DOXYGEN_IN ${PROJECT_SOURCE_DIR}/doc/Doxyfile.in)
-        set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-        set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/xml/index.xml)
-
-        # request to configure the file
-        configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-        message("Doxygen build started")
-        # note the option ALL which allows to build the docs together with the application
-        add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
-                           DEPENDS ${header_files} README.rst src/sdglib/README.rst src/sdglib/workspace/README.rst
-                           COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
-                           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                           MAIN_DEPENDENCY Doxyfile
-                           COMMENT "Generating docs")
-        add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_OUT})
-
-        FIND_PACKAGE(PythonInterp 3)
-        FIND_PACKAGE(PythonLibs 3)
-
-        find_package(Sphinx)
-        if(SPHINX_FOUND AND NOT PYTHON_EXECUTABLE EQUAL "")
-            find_python_module(breathe)
-            if(PY_BREATHE)
-                set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx)
-                set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/doc/sphinx)
-                set(SPHINX_INDEX_FILE ${SPHINX_BUILD}/index.html)
-
-                add_custom_command(OUTPUT ${SPHINX_INDEX_FILE}
-                                   COMMAND
-                                   ${SPHINX_EXECUTABLE} -b html
-                                   # Tell Breathe where to find the Doxygen output
-                                   -Dbreathe_projects.SDG=${DOXYGEN_OUTPUT_DIR}/xml
-                                   ${SPHINX_SOURCE} ${SPHINX_BUILD}
-                                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                                   DEPENDS
-                                   # Other docs files you want to track should go here (or in some variable)
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/index.rst
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/sdg/*
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/doc/sphinx/sdg/sdglib/*
-                                   ${DOXYGEN_INDEX_FILE}
-                                   MAIN_DEPENDENCY ${SPHINX_SOURCE}/conf.py
-                                   COMMENT "Generating documentation with Sphinx, WD: ${CMAKE_CURRENT_BINARY_DIR}")
-                add_custom_target(Sphinx ALL DEPENDS ${SPHINX_INDEX_FILE})
-            endif(PY_BREATHE)
-        endif(SPHINX_FOUND AND NOT PYTHON_EXECUTABLE EQUAL "")
-    else (DOXYGEN_FOUND)
-        message("Doxygen need to be installed to generate the doxygen documentation")
-    endif (DOXYGEN_FOUND)
-ENDIF()
-
-IF(BUILD_SDGPYTHON)
-    MESSAGE("Building simple SDGpython")
-    FIND_PACKAGE(PythonInterp 3 REQUIRED)
-    FIND_PACKAGE(PythonLibs 3 REQUIRED)
-    ADD_LIBRARY( SDGpython SHARED interfaces/simple_python/SDGpython.cc )
-    TARGET_INCLUDE_DIRECTORIES( SDGpython PUBLIC
-            ${PYTHON_INCLUDE_DIRS}
-            "interfaces/simple_python"
-    )
-    TARGET_LINK_LIBRARIES( SDGpython sdg )
-    # The library must not have any prefix and should be located in
-    # a subfolder that includes the package name. The setup will be
-    # more complicated otherwise.
+# This is required for linking the library under Mac OS X. Moreover,
+# the suffix ensures that the module can be found by the interpreter
+# later on.
+IF( APPLE )
     SET_TARGET_PROPERTIES( SDGpython
             PROPERTIES
-            PREFIX ""
-            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/SDGpython"
+            LINK_FLAGS "-undefined dynamic_lookup"
+            SUFFIX     ".so"
             )
-
-    # This is required for linking the library under Mac OS X. Moreover,
-    # the suffix ensures that the module can be found by the interpreter
-    # later on.
-    IF( APPLE )
-        SET_TARGET_PROPERTIES( SDGpython
-                PROPERTIES
-                LINK_FLAGS "-undefined dynamic_lookup"
-                SUFFIX     ".so"
-                )
-    ENDIF()
 ENDIF()
 
 install(TARGETS
-        sdg-dbg
-        sdg-workspace
         sdg-datastore
-        sdg-kmercounter
-        sdg-mapper
         sdg
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib

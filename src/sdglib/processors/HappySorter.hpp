@@ -15,6 +15,7 @@ public:
     int64_t get_node_position(sgNodeID_t nid) const;
     int64_t place_node(const ReadThreadsGraph &rtg, sgNodeID_t nid, const std::unordered_map<sgNodeID_t,int64_t> & node_coordinates={}, int max_hops=3, int min_links=3);
     bool  add_placed_nodes( const std::vector<std::pair<sgNodeID_t, int64_t>> &placed_nodes, bool update_current=true);
+    bool remove_node(sgNodeID_t nid);
     LocalOrder reverse() const;
     int64_t thread_order_crosses(const std::vector<NodePosition> & thread) const;
     auto size() const {return node_positions.size();};
@@ -92,27 +93,3 @@ public:
 
 };
 
-class HappySorterRunner {
-public:
-    HappySorterRunner(const ReadThreadsGraph & _rtg, float _min_thread_happiness=.7, float _min_node_happiness=.7,
-    int _min_thread_nodes=3, int _min_node_threads=2, int _order_end_size=20):
-    rtg(_rtg), min_thread_happiness(_min_thread_happiness), min_node_happiness(_min_node_happiness),
-    min_thread_nodes(_min_thread_nodes), min_node_threads(_min_node_threads), order_end_size(_order_end_size){
-        node_sorted.resize(rtg.sdg.nodes.size());
-    };
-    void run_from_dg_lines(DistanceGraph dg, int min_line_nodes=10, int p=4, int q=6);
-
-    void load(std::string filename);
-    void dump(std::string filename);
-
-    float min_thread_happiness;
-    int min_thread_nodes;
-    float min_node_happiness;
-    int min_node_threads;
-    int order_end_size;
-
-    const ReadThreadsGraph & rtg;
-    std::vector<bool> node_sorted;
-    std::unordered_map<sgNodeID_t,LocalOrder> orders;
-    std::unordered_map<sgNodeID_t,std::vector<sgNodeID_t>> node_orders;
-};
