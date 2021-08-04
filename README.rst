@@ -1,10 +1,9 @@
+Sequence Distance Graph
+========================
 |license|
 
 .. |license| image:: https://img.shields.io/badge/license-MIT-green.svg
     :target: https://github.com/bioinfologics/bsg/blob/master/LICENSE
-
-Sequence Distance Graph
-========================
 
 The Sequence Distance Graph (**SDG**) is a framework to work with genome graphs and sequencing data. It provides a workspace built around a Sequence Distance Graph, datastores for paired, linked and long reads, read mappers, and k-mer counters. It can be used to perform different types of sequence analyses.
 
