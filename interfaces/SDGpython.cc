@@ -591,7 +591,20 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readwrite("node_coordinates",&LocalOrder::node_coordinates);
 
     py::class_<RTGCluster>(m, "RTGCluster", "RTGCluster")
-            .def(py::init<const ReadThreadsGraph &, int, int, float>(),"","rtg"_a,"p"_a,"q"_a,"min_node_happiness"_a=.7, py::return_value_policy::take_ownership)
+            .def(py::init<const ReadThreadsGraph &, int, int, int, float>(),"","rtg"_a,"p"_a,"q"_a,"min_node_threads"_a,"min_node_happiness"_a, py::return_value_policy::take_ownership)
+            .def("is_node_happy",&RTGCluster::is_node_happy,"nid"_a)
+            .def("new_happy_nodes",&RTGCluster::new_happy_nodes)
+            .def("add_node",&RTGCluster::add_node,"nid"_a)
+            .def("is_thread_happy",&RTGCluster::is_thread_happy,"tid"_a)
+            .def("new_happy_threads",&RTGCluster::new_happy_threads)
+            .def("add_thread",&RTGCluster::add_thread,"tid"_a)
+            .def("grow",&RTGCluster::grow,"steps"_a=UINT64_MAX)
+            .def_readonly("nodes",&RTGCluster::nodes)
+            .def_readonly("threads",&RTGCluster::threads)
+            .def_readonly("node_total_threads",&RTGCluster::node_total_threads)
+            .def_readonly("node_happiness_threads",&RTGCluster::node_happiness_threads)
+            .def_readonly("node_threads",&RTGCluster::node_threads)
+            .def_readonly("thread_nodes",&RTGCluster::thread_nodes)
             ;
 
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);
