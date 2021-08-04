@@ -1,4 +1,0 @@
-H	VN:Z:2.0
-S	seq1	*	LN:i:97	UR:Z:./test_gfa2.fasta
-S	seq2	*	LN:i:174	UR:Z:./test_gfa2.fasta
-G	gap_1	seq1-	seq2+	6000	*
