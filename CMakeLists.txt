@@ -261,7 +261,7 @@ target_link_libraries(sdg-datastore sdg)
 MESSAGE("Building simple SDGpython")
 FIND_PACKAGE(PythonInterp 3 REQUIRED)
 FIND_PACKAGE(PythonLibs 3 REQUIRED)
-ADD_LIBRARY( SDGpython SHARED interfaces/simple_python/SDGpython.cc )
+ADD_LIBRARY( SDGpython SHARED interfaces/SDGpython.cc)
 TARGET_INCLUDE_DIRECTORIES( SDGpython PUBLIC
         ${PYTHON_INCLUDE_DIRS}
         "interfaces/simple_python"
