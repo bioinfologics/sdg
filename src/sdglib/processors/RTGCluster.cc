@@ -6,9 +6,10 @@
 
 RTGCluster::RTGCluster(const ReadThreadsGraph &_rtg, int _p, int _q, int _min_node_threads, float _min_node_happiness):
     rtg(_rtg), p(_p), q(_q), min_node_threads(_min_node_threads), min_node_happiness(_min_node_happiness) {
+    int node_hap_perc=_min_node_happiness*100;
     for (const auto &nv:rtg.get_all_nodeviews(false,false)) {
         node_total_threads[nv.node_id()] = node_total_threads[-nv.node_id()] = rtg.node_threads(nv.node_id()).size();
-        int ht=std::ceil(node_total_threads[nv.node_id()]*min_node_happiness);
+        int ht=node_hap_perc*node_total_threads[nv.node_id()]/100;
         node_happiness_threads[nv.node_id()] = node_happiness_threads[-nv.node_id()] = std::max(ht,min_node_threads);
     }
 }
@@ -38,8 +39,8 @@ bool RTGCluster::is_thread_happy(int64_t tid) {
     const auto thread=rtg.get_thread(tid);
     //This uses a "circular queue" over a linear vec<bool>
     std::vector<bool> node_in_cluster(thread.size()+q,false);
-    auto bp=&node_in_cluster[0];
-    auto fp=&node_in_cluster[q];
+    auto bp=node_in_cluster.begin();
+    auto fp=node_in_cluster.begin()+q;
     int current_used=0;
     for (auto &np:thread){
         if (*bp) --current_used;
