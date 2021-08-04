@@ -592,6 +592,7 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<RTGCluster>(m, "RTGCluster", "RTGCluster")
             .def(py::init<const ReadThreadsGraph &, int, int, int, float>(),"","rtg"_a,"p"_a,"q"_a,"min_node_threads"_a,"min_node_happiness"_a, py::return_value_policy::take_ownership)
+            .def(py::init<const RTGCluster & >(),"","rtgcluster"_a, py::return_value_policy::take_ownership)
             .def("is_node_happy",&RTGCluster::is_node_happy,"nid"_a)
             .def("new_happy_nodes",&RTGCluster::new_happy_nodes)
             .def("add_node",&RTGCluster::add_node,"nid"_a)
