@@ -291,6 +291,24 @@ bool LocalOrder::add_placed_nodes(const std::vector<std::pair<sgNodeID_t, int64_
     return node_positions.size()>old_node_count;
 }
 
+bool LocalOrder::remove_node(sgNodeID_t nid) {
+    if (node_positions.count(nid)==0) return false;
+    auto npos=node_positions[nid];
+    if (npos>0) {
+        node_coordinates.erase(-nid);
+        npos=-npos;
+    }
+    else {
+        node_coordinates.erase(nid);
+    }
+    node_positions.erase(nid);
+    for (auto &np:node_positions) {
+        if (np.second>npos) --np.second;
+        if (np.second<-npos) ++np.second;
+    }
+    return true;
+}
+
 void LocalOrder::write(std::ofstream &ofs) {
     std::vector<std::pair<sgNodeID_t, int64_t>> ncv;
     ncv.reserve(node_coordinates.size());
@@ -938,6 +956,7 @@ bool HappySorter::grow(int _thread_hits, int _end_size, int _node_hits, float _m
             if (c.second >= _node_hits and end_nodes_set.count(c.first) == 0 and order.get_node_position(c.first)==0) {
                 ++linked_candidates;
                 if (node_happiness(c.first, true, false) >= _min_happiness) npos[c.first] = {};
+                else if (verbose) std::cout<<node_happiness(c.first, true, false);
             }
         }
         if (verbose) std::cout<<npos.size()<<" / "<< linked_candidates << " candidates are happy"<<std::endl;

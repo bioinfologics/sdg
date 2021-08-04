@@ -15,6 +15,7 @@ public:
     int64_t get_node_position(sgNodeID_t nid) const;
     int64_t place_node(const ReadThreadsGraph &rtg, sgNodeID_t nid, const std::unordered_map<sgNodeID_t,int64_t> & node_coordinates={}, int max_hops=3, int min_links=3);
     bool  add_placed_nodes( const std::vector<std::pair<sgNodeID_t, int64_t>> &placed_nodes, bool update_current=true);
+    bool remove_node(sgNodeID_t nid);
     LocalOrder reverse() const;
     int64_t thread_order_crosses(const std::vector<NodePosition> & thread) const;
     auto size() const {return node_positions.size();};

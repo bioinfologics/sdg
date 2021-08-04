@@ -579,6 +579,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("get_node_position",&LocalOrder::get_node_position,"node_id"_a)
             .def("place_node",&LocalOrder::place_node,"rtg"_a,"nid"_a, "node_coordinates"_a=std::unordered_map<sgNodeID_t,int64_t>(), "max_hops"_a=3, "min_links"_a=3)
             .def("add_placed_nodes",&LocalOrder::add_placed_nodes,"placed_nodes"_a,"update_current"_a=false)
+            .def("remove_node",&LocalOrder::remove_node,"nid"_a)
             .def("as_signed_nodes",&LocalOrder::as_signed_nodes)
             .def("as_thread",&LocalOrder::as_thread,"dg"_a)
             .def("size",&LocalOrder::size)
