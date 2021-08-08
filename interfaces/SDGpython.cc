@@ -25,6 +25,7 @@
 #include <sdglib/graph/ReadThreadsGraph.hpp>
 #include <sdglib/processors/TotalSorter.hpp>
 #include <sdglib/processors/RTGCluster.hpp>
+#include <sdglib/processors/RTGClassifier.hpp>
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -606,6 +607,21 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readonly("node_happiness_threads",&RTGCluster::node_happiness_threads)
             .def_readonly("node_threads",&RTGCluster::node_threads)
             .def_readonly("thread_nodes",&RTGCluster::thread_nodes)
+            ;
+
+    py::class_<RTGClassifier>(m, "RTGClassifier", "RTGClassifier")
+            .def(py::init<const ReadThreadsGraph &, int, float, int, int>(),"","rtg"_a,"min_node_threads"_a=2,"min_node_percentage"_a=.6,"thread_p"_a=10,"thread_q"_a=12, py::return_value_policy::take_ownership)
+            .def("compute_node_class",&RTGClassifier::compute_node_class,"nid"_a)
+            .def("switch_node_class",&RTGClassifier::switch_node_class,"nid"_a,"c"_a)
+            .def("compute_thread_class",&RTGClassifier::compute_thread_class,"tid"_a)
+            .def("switch_thread_class",&RTGClassifier::switch_thread_class,"tid"_a,"c"_a)
+            .def("propagate",&RTGClassifier::propagate,"steps"_a=UINT64_MAX,"verbose"_a=false)
+            .def_readonly("node_threads",&RTGClassifier::node_threads)
+            .def_readonly("thread_nodes",&RTGClassifier::thread_nodes)
+            .def_readonly("node_class",&RTGClassifier::node_class)
+            .def_readonly("thread_class",&RTGClassifier::thread_class)
+            .def_readonly("nodes_to_evaluate",&RTGClassifier::nodes_to_evaluate)
+            .def_readonly("threads_to_evaluate",&RTGClassifier::threads_to_evaluate)
             ;
 
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);

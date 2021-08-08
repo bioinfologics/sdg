@@ -246,7 +246,9 @@ SET(source_files ${source_files}
     src/sdglib/processors/TotalSorter.cc
     src/sdglib/processors/TotalSorter.hpp
     src/sdglib/processors/RTGCluster.cc
-    src/sdglib/processors/RTGCluster.hpp)
+    src/sdglib/processors/RTGCluster.hpp
+    src/sdglib/processors/RTGClassifier.cc
+    src/sdglib/processors/RTGClassifier.hpp)
 
 ## Libraries
 add_library(sdg SHARED
