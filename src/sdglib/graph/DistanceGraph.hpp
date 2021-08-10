@@ -16,7 +16,6 @@
 #include <iosfwd>
 #include <sdglib/types/KmerTypes.hpp>
 #include <sdglib/types/GenericTypes.hpp>
-#include <sdglib/graph/SequenceSubGraph.hpp>
 #include <sdglib/graph/SequenceDistanceGraphPath.hpp>
 #include <sdglib/utilities/OutputLog.hpp>
 

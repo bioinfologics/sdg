@@ -10,7 +10,6 @@
 #include <set>
 #include <sdglib/types/GenericTypes.hpp>
 
-class SequenceSubGraph;
 class SequenceDistanceGraph;
 class SequenceDistanceGraphPath {
 public:
@@ -33,7 +32,6 @@ public:
     bool operator==(const SequenceDistanceGraphPath& rhs) const;
     bool operator<(const SequenceDistanceGraphPath& rhs) const;
 
-    bool extend_if_coherent(SequenceDistanceGraphPath s){};
     void clear() {
         nodes.clear();
     };
