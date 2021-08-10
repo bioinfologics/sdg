@@ -79,7 +79,7 @@ public:
      * @param default_name internal name of the datastore
      * @param long_read_file fastq file of long reads
      */
-    static void build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file, size_t min_size=0);
+    static void build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file, size_t min_size=0, int rle=0);
     void print_status() const;
     void read(std::ifstream &ifs);
     void write(std::ofstream &output_file);

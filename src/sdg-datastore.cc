@@ -43,6 +43,7 @@ int main(int argc, char * argv[]) {
         int fragment_size(0);
         int orientation(0);
         size_t chunk_size=1000000;
+        int run_length_limit=0;
         try {
             cxxopts::Options options("sdg-datastore make", "BSG make datastore");
 
@@ -56,6 +57,7 @@ int main(int argc, char * argv[]) {
                     ("d,read_direction", "0: Undefined(default), 1: FWD-REV, 2: REV-FWD", cxxopts::value(orientation)->default_value("0"))
                     ("l,min_read_size", "min size for read, on short reads pairs discards pairs (default 0)", cxxopts::value(min_readsize)->default_value("0"))
                     ("s,max_read_size", "max size for short reads (fixed size on records), truncates if longer (default 0=auto)", cxxopts::value(max_readsize)->default_value("0"))
+                    ("r,run_length_limit", "compress length of homopolymer runs on long reads (default 0=no compresion)", cxxopts::value(run_length_limit)->default_value("0"))
                     ("n,name", "How do you want to refer to this datastore?", cxxopts::value(dsname))
                     ("o,output", "output file", cxxopts::value(output))
                     ("c,chunk_size", "number of reads to process per chunk", cxxopts::value(chunk_size));
@@ -112,7 +114,7 @@ int main(int argc, char * argv[]) {
 
         }
         else if (read_type == "long") {
-            LongReadsDatastore::build_from_fastq(output+".loseq", dsname, long_reads, min_readsize);
+            LongReadsDatastore::build_from_fastq(output+".loseq", dsname, long_reads, min_readsize, run_length_limit);
         }
         else {
             std::cout << "read_type '" << read_type << "' is not supported (yet?)" << std::endl;

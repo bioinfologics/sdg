@@ -107,7 +107,7 @@ void LongReadsDatastore::load_index(std::string &file) {
     sdglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()<<std::endl;
 }
 
-void LongReadsDatastore::build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file, size_t min_size) {
+void LongReadsDatastore::build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file, size_t min_size, int rle) {
     uint64_t nReads(1);
     std::vector<ReadPosSize> read_to_file_record{ReadPosSize{0,0}};
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
@@ -135,10 +135,54 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
     FastqRecord rec;
     while(reader.next_record(rec)) {
         if (!rec.seq.empty() and (min_size==0 or rec.seq.size()>=min_size)) {
-            uint32_t size = rec.seq.size();
+
+            std::string rleseq;
+            rleseq.reserve(rec.seq.size());
+            char last_char=' ';
+            int run_size=0;
+
+            for (auto c:rec.seq){
+                switch (c){
+                    case 'A':
+                    case 'C':
+                    case 'G':
+                    case 'T':
+                        break;
+                    case 'a':
+                        c='A';
+                        break;
+                    case 'c':
+                        c='C';
+                        break;
+                    case 'g':
+                        c='G';
+                        break;
+                    case 't':
+                        c='T';
+                        break;
+                    default:
+                        c='N';
+                }
+                if (rle==0) {
+                    rleseq.push_back(c);
+                }
+                else {
+                    if (c==last_char) {
+                        ++run_size;
+                    }
+                    else {
+                        last_char=c;
+                        run_size=1;
+                    }
+                    if (run_size<=rle) rleseq.push_back(c);
+                }
+            }
+
+            uint32_t size = rleseq.size();
             auto offset = ofs.tellp();
             read_to_file_record.emplace_back((off_t)offset,size);
-            ofs.write((char*)rec.seq.c_str(), size+1);//+1 writes the \0
+            ofs.write((char*)rleseq.c_str(), size+1);//+1 writes the \0
+
         }
         ++nReads;
     }
