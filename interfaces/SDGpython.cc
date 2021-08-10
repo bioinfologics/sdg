@@ -610,12 +610,15 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<RTGClassifier>(m, "RTGClassifier", "RTGClassifier")
-            .def(py::init<const ReadThreadsGraph &, int, float, int, int>(),"","rtg"_a,"min_node_threads"_a=2,"min_node_percentage"_a=.6,"thread_p"_a=10,"thread_q"_a=12, py::return_value_policy::take_ownership)
+            .def(py::init<const ReadThreadsGraph &, int, float, int, int, int>(),"","rtg"_a,"min_node_threads"_a=2,"min_node_percentage"_a=.6,"thread_p"_a=10,"thread_q"_a=12, "min_thread_nodes"_a=-1, py::return_value_policy::take_ownership)
+            .def("get_node_class",&RTGClassifier::get_node_class,"nid"_a)
             .def("compute_node_class",&RTGClassifier::compute_node_class,"nid"_a)
             .def("switch_node_class",&RTGClassifier::switch_node_class,"nid"_a,"c"_a)
+            .def("get_thread_class",&RTGClassifier::get_thread_class,"tid"_a)
             .def("compute_thread_class",&RTGClassifier::compute_thread_class,"tid"_a)
             .def("switch_thread_class",&RTGClassifier::switch_thread_class,"tid"_a,"c"_a)
             .def("propagate",&RTGClassifier::propagate,"steps"_a=UINT64_MAX,"verbose"_a=false)
+            .def("find_class_bridges",&RTGClassifier::find_class_bridges,"p"_a,"q"_a)
             .def_readonly("node_threads",&RTGClassifier::node_threads)
             .def_readonly("thread_nodes",&RTGClassifier::thread_nodes)
             .def_readonly("node_class",&RTGClassifier::node_class)

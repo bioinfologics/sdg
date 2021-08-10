@@ -5,17 +5,17 @@
 #include "RTGClassifier.hpp"
 
 template <typename T>
-std::vector<T> find_all_p_in_q(int p, int q, const std::vector<T>& input){
+std::vector<T> find_all_p_in_q(int p, int q, const std::vector<T>& input, bool discard_zero=false){
     std::vector<T> v;
     std::unordered_map<T,int64_t> votes;
-    for (auto &x:input) ++votes[x];
+    for (auto &x:input) if (not discard_zero or x!=0) ++votes[x];
     std::vector<int64_t> pos;
-    for (auto xc:votes) if (xc.second>p) {
+    for (auto xc:votes) if (xc.second>=p) {
         for (auto i=0;i<input.size();++i) {
             auto x=input[i];
             if (x == xc.first) {
                 pos.emplace_back(i);
-                if (pos.size()>=p and pos.back()-*(pos.end()-p)<=q) {
+                if (pos.size()>=p and pos.back()-*(pos.end()-p)<q) {
                     v.emplace_back(x);
                     break;
                 }
@@ -26,27 +26,38 @@ std::vector<T> find_all_p_in_q(int p, int q, const std::vector<T>& input){
     return v;
 };
 
+//TODO: this needs parallelisation. fill things in local maps of vectors, then swap them into the real maps.
 RTGClassifier::RTGClassifier(const ReadThreadsGraph &rtg, int min_node_threads, float node_min_percentage, int thread_p,
-                             int thread_q): rtg(rtg), min_node_threads(min_node_threads),
-                             node_min_percentage(node_min_percentage), thread_p(thread_p), thread_q(thread_q) {
-
+                             int thread_q, int min_thread_nodes): rtg(rtg), min_node_threads(min_node_threads),
+                             node_min_percentage(node_min_percentage), thread_p(thread_p), thread_q(thread_q), min_thread_nodes(min_thread_nodes) {
+    if (min_thread_nodes==-1) this->min_thread_nodes=thread_p;
+    sdglib::OutputLog()<<"analysing nodeviews"<<std::endl;
     for (auto &nv:rtg.get_all_nodeviews(false,false)) {
         auto nid=nv.node_id();
         auto nts=rtg.node_threads(nid);
         node_threads[nid].reserve(nts.size());
         node_class[nid]=0;
         for (auto &tid : nts) {
+            if (rtg.thread_info.at(tid).link_count<=this->min_thread_nodes-1) continue;
             node_threads[nid].emplace_back(tid);
             thread_class[tid]=0;
         }
+        if (node_threads[nid].empty()) node_threads.erase(nid);
     }
+    sdglib::OutputLog()<<"analysing threads"<<std::endl;
     for (auto & tc:thread_class){
         auto t=rtg.get_thread(tc.first);
         thread_nodes[tc.first].reserve(t.size());
         for (auto &np:t) thread_nodes[tc.first].emplace_back(llabs(np.node));
     }
+    sdglib::OutputLog()<<"done with "<<node_class.size()<<" nodes in "<<thread_class.size()<<" threads"<<std::endl;
 }
 
+
+int64_t RTGClassifier::get_node_class(sgNodeID_t nid) {
+    if (node_class.count(nid)==0) return -1;
+    return node_class[nid];
+}
 int64_t RTGClassifier::compute_node_class(sgNodeID_t nid) {
     std::map<int64_t, int64_t> class_votes;
     int64_t highest_votes=0;
@@ -63,16 +74,22 @@ int64_t RTGClassifier::compute_node_class(sgNodeID_t nid) {
             highest_votes_class = c;
         }
     }
-    if (2*highest_votes_class>threads.size() or (highest_votes>=min_node_threads and highest_votes>=node_min_percentage*threads.size()))
+    //TODO: check for a second?
+    if (highest_votes>=min_node_threads and highest_votes>=node_min_percentage*threads.size())
         return highest_votes_class;
     return 0;
 }
 
 bool RTGClassifier::switch_node_class(sgNodeID_t nid, int64_t c) {
-    if (node_class[nid]==c) return false;
+    if (node_class.count(nid)==0 or node_class[nid]==c) return false;
     node_class[nid]=c;
     for (auto &tid:node_threads[nid]) threads_to_evaluate.insert(tid);
     return true;
+}
+
+int64_t RTGClassifier::get_thread_class(int64_t tid) {
+    if (thread_class.count(tid)==0) return -1;
+    return thread_class[tid];
 }
 
 int64_t RTGClassifier::compute_thread_class(int64_t tid) {
@@ -93,34 +110,57 @@ int64_t RTGClassifier::compute_thread_class(int64_t tid) {
             highest_votes_class = c;
         }
     }
-    if (2*highest_votes_class>nodes.size()) //condition 1: 50+% nodes in class
+    if (2*highest_votes>nodes.size()) //condition 1: 50+% nodes in class
         return highest_votes_class;
-    if (highest_votes_class>=thread_p) { //condition 2: only one class with p in q
-        auto p_in_q=find_all_p_in_q(thread_p,thread_q,nc);
+    if (highest_votes>=thread_p) { //condition 2: only one class with p in q
+        auto p_in_q=find_all_p_in_q(thread_p,thread_q,nc,true);
         if (p_in_q.size()==1) return p_in_q[0];
     }
     return 0;
 }
 
 bool RTGClassifier::switch_thread_class(int64_t tid, int64_t c) {
-    if (thread_class[tid]==c) return false;
+    if (thread_class.count(tid)==0 or thread_class[tid]==c) return false;
     thread_class[tid]=c;
     for (auto &nid:thread_nodes[tid]) nodes_to_evaluate.insert(nid);
     return true;
 }
 
 uint64_t RTGClassifier::propagate(uint64_t steps, bool verbose) {
-    uint64_t switched;
+    uint64_t switched=0;
     while (steps-- and threads_to_evaluate.size()+nodes_to_evaluate.size()) {
         std::unordered_set<int64_t> otte;
         std::swap(otte,threads_to_evaluate);
         for (auto tid:otte) {
-            if(switch_thread_class(tid,compute_thread_class(tid))) ++switched; //switch won't do anything if class doesn't change
+            if(switch_thread_class(tid,compute_thread_class(tid))) {
+                ++switched; //switch won't do anything if class doesn't change
+                if (verbose) std::cout<<"Thread "<<tid<<" switched class to "<<thread_class[tid]<<std::endl;
+            }
         }
         std::unordered_set<sgNodeID_t> onte;
         std::swap(onte,nodes_to_evaluate);
-        for (auto nid:onte)
-            if (switch_node_class(nid,compute_node_class(nid))) ++switched; //switch won't do anything if class doesn't change
+        for (auto nid:onte){
+            if (switch_node_class(nid,compute_node_class(nid))) {
+                ++switched; //switch won't do anything if class doesn't change
+                if (verbose) std::cout<<"Node "<<nid<<" switched class to "<<node_class[nid]<<std::endl;
+            }
+        }
     }
     return switched;
+}
+
+std::unordered_map<std::pair<int64_t, int64_t>, std::vector<int64_t>> RTGClassifier::find_class_bridges(int p, int q) {
+    std::unordered_map<std::pair<int64_t, int64_t>, std::vector<int64_t>> cb;
+    for (auto tn:thread_nodes){
+        //if (thread_class[tn.first]!=0) continue;
+        auto & nodes=tn.second;
+        std::vector<int64_t> nc;
+        nc.reserve(nodes.size());
+        for (auto nid:nodes) nc.emplace_back(node_class[nid]);
+        auto pq=find_all_p_in_q(p,q,nc,true);
+        if (pq.size()==2) {
+            cb[{std::min(pq[0],pq[1]),std::max(pq[0],pq[1])}].emplace_back(tn.first);
+        }
+    }
+    return cb;
 }
