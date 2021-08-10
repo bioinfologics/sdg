@@ -221,30 +221,6 @@ void PairedReadsDatastore::write(std::ofstream &output_file) {
     mapper.write(output_file);
 }
 
-void PairedReadsDatastore::write_selection(std::ofstream &output_file, std::vector<uint64_t> read_ids) {
-    for (auto i=0;i<read_ids.size()-1;i+=2){
-        if (read_ids[i]+1!=read_ids[i+1]) {
-            sdglib::OutputLog()<<"ERROR: paired read selection not paired!"<<std::endl;
-            return;//exit if not properly paired
-        }
-    }
-    output_file.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
-    output_file.write((const char *) &SDG_VN, sizeof(SDG_VN));
-    SDG_FILETYPE type(PairedDS_FT);
-    output_file.write((char *) &type, sizeof(type));
-
-    output_file.write((char *) &readsize,sizeof(readsize));
-    uint64_t rids_size=read_ids.size();
-    output_file.write((char *) &rids_size,sizeof(rids_size));
-    char buffer[2*readsize+2];
-    for (auto i=0;i<read_ids.size()-1;i+=2) {
-        size_t read_offset_in_file = readpos_offset + (readsize + 1) * (read_ids[i] - 1);
-        fseek(fd, read_offset_in_file, SEEK_SET);
-        fread(buffer, 2 * readsize + 2, 1, fd);
-        output_file.write(buffer,2 * readsize + 2);
-    }
-}
-
 std::string PairedReadsDatastore::get_read_sequence(seqID_t readID) {
     if (readID==0 or llabs(readID)>size()) return "";
     char buffer[readsize+1];
