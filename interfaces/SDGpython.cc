@@ -435,7 +435,6 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("recruit_threads",&LongReadsRecruiter::recruit_threads)
             .def("thread_reads",&LongReadsRecruiter::thread_reads,"end_size"_a=500,"end_matches"_a=2)
             .def("simple_thread_reads",&LongReadsRecruiter::simple_thread_reads)
-            .def("dg_from_threads",&LongReadsRecruiter::dg_from_threads,"multi_link"_a=false,"remove_duplicated"_a=false,"min_thread_nodes"_a=1)
             .def("rtg_from_threads",&LongReadsRecruiter::rtg_from_threads,"remove_duplicated"_a=false,"min_thread_nodes"_a=1)
             .def("endmatches_to_positions",&LongReadsRecruiter::endmatches_to_positions)
             .def("thread_and_pop",&LongReadsRecruiter::thread_and_pop)
