@@ -184,4 +184,10 @@ void PerfectMatchExtender::make_path_as_perfect_matches() {
         next_index=matchparts[next_index].previous_part;
     }
     std::reverse(best_path_matches.begin(),best_path_matches.end());
+    //fix the start for matches that are coming from overlap
+    for (auto i=0;i<best_path_matches.size()-1;++i){
+        auto shift=best_path_matches[i].size>=best_path_matches[i+1].node_position ? best_path_matches[i+1].node_position : best_path_matches[i].size;
+        best_path_matches[i+1].node_position-=shift;
+        best_path_matches[i+1].size+=shift;
+    }
 }
