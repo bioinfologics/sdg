@@ -131,8 +131,6 @@ public:
     void read_counts(std::ifstream &count_file);
     int8_t get_k(){return k;};
 
-    void dump_cache(const std::string filename);
-    void load_cache(const std::string filename);
 
     /**
      * @brief Retrieves a count by name
@@ -143,6 +141,7 @@ public:
     std::vector<std::string> list_names ();
 
     std::vector<uint64_t> kindex;               /// Ordered list of kmers that contain counts
+    std::vector<__uint128_t> kindex128;               /// Ordered list of kmers that contain counts
     std::vector<std::string> count_names;       /// Names of the counts vectors
     std::vector<std::vector<uint16_t>> counts;  /// Count vector, contains an entry per kmer in the kindex
     
