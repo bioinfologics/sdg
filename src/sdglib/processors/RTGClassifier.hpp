@@ -23,6 +23,17 @@ public:
     //find_class_bridges -> threads on class 0, where %threads on nodes switches from start to end between two classes
         //could also be done will all thread's p/q, then comparing all p/q's
     //is_class_mixed: -> can use lines to check? also, connectivity/subclasses
+
+    void compute_thread_intersections(int min_threads, int max_threads);
+
+    void compute_thread_neighbours(int min_shared=10);
+
+    std::vector<int64_t> get_thread_neighbours(int64_t tid) const;
+
+    void reset(int min_node_threads=-1,float node_min_percentage=-1, int thread_p=-1, int thread_q=-1);
+
+    int64_t get_thread_intersection(int64_t tid1, int64_t tid2) const;
+
     const ReadThreadsGraph &rtg;
     int min_node_threads;
     float node_min_percentage;
@@ -35,6 +46,8 @@ public:
     std::unordered_map<int64_t ,int64_t> thread_class;
     std::unordered_set<sgNodeID_t> nodes_to_evaluate;
     std::unordered_set<int64_t> threads_to_evaluate;
+    std::unordered_map<std::pair<int64_t, int64_t> ,int64_t> thread_intersections;
+    std::unordered_map<int64_t,std::vector<int64_t>> thread_neighbours;
 };
 
 

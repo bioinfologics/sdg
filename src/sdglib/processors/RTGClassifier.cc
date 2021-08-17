@@ -164,3 +164,53 @@ std::unordered_map<std::pair<int64_t, int64_t>, std::vector<int64_t>> RTGClassif
     }
     return cb;
 }
+
+void RTGClassifier::compute_thread_intersections(int min_threads, int max_threads) {
+    thread_intersections.clear();
+    for (auto &nt:node_threads){
+        if (nt.second.size()<min_threads or nt.second.size()>max_threads) continue;
+        for (auto i=0;i<nt.second.size()-1;++i){
+            for (auto j=i;j<nt.second.size();++j){
+                if (nt.second[i]<nt.second[j]) ++thread_intersections[{nt.second[i],nt.second[j]}];
+                else ++thread_intersections[{nt.second[j],nt.second[i]}];
+            }
+        }
+    }
+}
+
+void RTGClassifier::compute_thread_neighbours(int min_shared) {
+    thread_neighbours.clear();
+    for (auto &ti:thread_intersections) {
+        if (ti.second>=min_shared){
+            thread_neighbours[ti.first.first].emplace_back(ti.first.second);
+            thread_neighbours[ti.first.second].emplace_back(ti.first.first);
+        }
+    }
+}
+
+std::vector<int64_t> RTGClassifier::get_thread_neighbours(int64_t tid) const {
+    if (thread_neighbours.count(llabs(tid))==0) return {};
+    return thread_neighbours.at(llabs(tid));
+}
+
+void RTGClassifier::reset(int _min_node_threads, float _node_min_percentage, int _thread_p, int _thread_q) {
+    if (_min_node_threads!=-1) min_node_threads=_min_node_threads;
+    if (_node_min_percentage!=-1) node_min_percentage=_node_min_percentage;
+    if (_thread_p!=-1) thread_p=_thread_p;
+    if (_thread_q!=-1) thread_p=_thread_q;
+    for (auto &tc:thread_class) tc.second=0;
+    for (auto &nc:node_class) nc.second=0;
+    nodes_to_evaluate.clear();
+    threads_to_evaluate.clear();
+    thread_intersections.clear();
+}
+
+int64_t RTGClassifier::get_thread_intersection(int64_t tid1, int64_t tid2) const {
+    std::pair<int64_t, int64_t> p;
+    tid1 = llabs(tid1);
+    tid2 = llabs(tid2);
+    if (tid1<tid2) p={tid1,tid2};
+    else p={tid2,tid1};
+    if (thread_intersections.count(p)) return thread_intersections.at(p);
+    return 0;
+}

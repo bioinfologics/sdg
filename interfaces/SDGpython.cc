@@ -392,29 +392,6 @@ PYBIND11_MODULE(SDGpython, m) {
             })
             ;
 
-    py::class_<PerfectMatchesFilter>(m,"PerfectMatchesFilter","Collection of static methods that filter PerfercMatch vectors")
-            .def(py::init<WorkSpace&>(),"workspace"_a=0,py::return_value_policy::take_ownership)
-            .def("truncate_turnaround",&PerfectMatchesFilter::truncate_turnaround,"matches"_a,py::return_value_policy::take_ownership)
-            .def("matches_fw_from_node",&PerfectMatchesFilter::matches_fw_from_node,"node"_a,"matches"_a,py::return_value_policy::take_ownership)
-            .def("clean_linear_groups",&PerfectMatchesFilter::clean_linear_groups,"matches"_a,"group_size"_a=5,"small_node_size"_a=500,py::return_value_policy::take_ownership)
-            .def("merge_and_sort",&PerfectMatchesFilter::merge_and_sort,"vvmatches"_a,py::return_value_policy::take_ownership)
-            ;
-
-    py::class_<PerfectMatchesMergeSorter>(m,"PerfectMatchesMergeSorter","A whole class to merge multiple LRs from a node")
-            .def(py::init<WorkSpace&>(),"workspace"_a=0,py::return_value_policy::take_ownership)
-            .def("init_from_node",&PerfectMatchesMergeSorter::init_from_node,"node"_a,"lrr"_a,"min_reads"_a=3, "group_size"_a=5,"small_node_size"_a=500)
-            .def("find_next_node",&PerfectMatchesMergeSorter::find_next_node,"d"_a=2000,"candidate_percentaje"_a=0.5,"first_percentaje"_a=0.8, "verbose"_a=false)
-            .def("advance_reads_to_node",&PerfectMatchesMergeSorter::advance_reads_to_node)
-            .def("advance_reads_through_node",&PerfectMatchesMergeSorter::advance_reads_through_node)
-            .def("drop_conflictive_reads",&PerfectMatchesMergeSorter::drop_conflictive_reads)
-            .def_readwrite("next_node",&PerfectMatchesMergeSorter::next_node)
-            .def_readwrite("read_matches",&PerfectMatchesMergeSorter::read_matches)
-            .def_readwrite("read_next_match",&PerfectMatchesMergeSorter::read_next_match)
-            .def_readwrite("read_dropped_position",&PerfectMatchesMergeSorter::read_dropped_position)
-            .def_readwrite("read_last_hit_position",&PerfectMatchesMergeSorter::read_last_hit_position)
-            .def_readwrite("out",&PerfectMatchesMergeSorter::out)
-            ;
-
     py::class_<LongReadsRecruiter>(m, "LongReadsRecruiter", "Long reads exact mapper, threader, etd")
             .def(py::init<SequenceDistanceGraph &, const LongReadsDatastore &,uint8_t, uint16_t>(),"sdg"_a,"datastore"_a,"k"_a=25,"f"_a=50,py::return_value_policy::take_ownership)
             .def_readwrite("read_perfect_matches",&LongReadsRecruiter::read_perfect_matches)
@@ -616,6 +593,11 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("switch_thread_class",&RTGClassifier::switch_thread_class,"tid"_a,"c"_a)
             .def("propagate",&RTGClassifier::propagate,"steps"_a=UINT64_MAX,"verbose"_a=false)
             .def("find_class_bridges",&RTGClassifier::find_class_bridges,"p"_a,"q"_a)
+            .def("compute_thread_intersections",&RTGClassifier::compute_thread_intersections,"min_threads"_a,"max_threads"_a)
+            .def("compute_thread_neighbours",&RTGClassifier::compute_thread_neighbours,"min_shared"_a=10)
+            .def("get_thread_neighbours",&RTGClassifier::get_thread_neighbours,"tid"_a)
+            .def("get_thread_intersection",&RTGClassifier::get_thread_intersection,"tid1"_a,"tid2"_a)
+            .def("reset",&RTGClassifier::reset,"min_node_threads"_a=-1,"min_node_percentage"_a=-1,"thread_p"_a=-1,"thread_q"_a=-1)
             .def_readonly("node_threads",&RTGClassifier::node_threads)
             .def_readonly("thread_nodes",&RTGClassifier::thread_nodes)
             .def_readonly("node_class",&RTGClassifier::node_class)
