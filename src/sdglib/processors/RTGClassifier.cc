@@ -149,6 +149,45 @@ uint64_t RTGClassifier::propagate(uint64_t steps, bool verbose) {
     return switched;
 }
 
+uint64_t RTGClassifier::thread_propagate(uint64_t steps, float vote_perc, int max_noise, bool verbose) {
+    std::map<sgNodeID_t, std::map<int64_t,uint64_t>> tcvotes;
+    uint64_t switched=0;
+    while (steps--){
+        if (verbose) std::cout<<"thread propagation starting, "<<steps+1<<" steps left"<<std::endl;
+        //go through every thread that has a class, check its neighbours for p/q condition, if met, add a vote to switch them to this class
+        for (auto &tc:thread_class){
+            if (tc.second!=0) {
+                for (auto &nt:thread_neighbours[tc.first]) {
+                    ++tcvotes[nt][tc.second];
+                }
+            }
+        }
+        if (verbose) std::cout<<tcvotes.size()<<" threads with votes"<<std::endl;
+        //check votes, if a thread has only one class with enough votes and no other class with >1 vote, switch it
+        uint64_t new_switched=0;
+        for (auto &tcv:tcvotes){
+            int64_t winner=0;
+            uint64_t threshold=vote_perc*thread_neighbours[tcv.first].size();
+            //threshold=(2*max_noise>threshold? 2*max_noise:threshold);
+            for (auto &cv:tcv.second) {
+                if (winner and cv.second>max_noise) {
+                    winner=0;
+                    break;
+                }
+                if (cv.second>=threshold) winner=cv.first;
+            }
+            if (winner!=thread_class[tcv.first]) {
+                switch_thread_class(tcv.first,winner);
+                ++new_switched;
+            }
+        }
+        if (verbose) std::cout<<new_switched<<" threads switched"<<std::endl;
+        if (new_switched==0) break;//no switches, propagation finished.
+        switched+=new_switched;
+    }
+    return switched;
+}
+
 std::unordered_map<std::pair<int64_t, int64_t>, std::vector<int64_t>> RTGClassifier::find_class_bridges(int p, int q) {
     std::unordered_map<std::pair<int64_t, int64_t>, std::vector<int64_t>> cb;
     for (auto tn:thread_nodes){
@@ -188,6 +227,18 @@ void RTGClassifier::compute_thread_neighbours(int min_shared) {
     }
 }
 
+void RTGClassifier::compute_thread_neighbours_p_q(int p, int q) {
+    thread_neighbours.clear();
+    for (auto &ti:thread_intersections) {
+        auto t1=ti.first.first;
+        auto t2=ti.first.second;
+        if (ti.second>=p and ( find_all_p_in_q(p,q, thread_shared_detail(t1,t2),true).size()==1 or find_all_p_in_q(p,q, thread_shared_detail(t2,t1),true).size()==1 )){
+            thread_neighbours[t1].emplace_back(t2);
+            thread_neighbours[t2].emplace_back(t1);
+        }
+    }
+}
+
 std::vector<int64_t> RTGClassifier::get_thread_neighbours(int64_t tid) const {
     if (thread_neighbours.count(llabs(tid))==0) return {};
     return thread_neighbours.at(llabs(tid));
@@ -213,4 +264,14 @@ int64_t RTGClassifier::get_thread_intersection(int64_t tid1, int64_t tid2) const
     else p={tid2,tid1};
     if (thread_intersections.count(p)) return thread_intersections.at(p);
     return 0;
+}
+
+std::vector<int> RTGClassifier::thread_shared_detail(int64_t tid1, int64_t tid2) const {
+    if (thread_nodes.count(llabs(tid1))==0 or thread_nodes.count(llabs(tid2))==0) return {};
+    std::vector<int> s;
+    std::unordered_set<sgNodeID_t> t2nodes(thread_nodes.at(llabs(tid2)).begin(),thread_nodes.at(llabs(tid2)).end());
+    for (auto &nid:thread_nodes.at(llabs(tid1))) {
+        s.emplace_back(t2nodes.count(nid));
+    }
+    return s;
 }

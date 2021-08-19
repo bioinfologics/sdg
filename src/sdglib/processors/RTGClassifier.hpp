@@ -18,6 +18,7 @@ public:
     bool switch_thread_class(int64_t tid, int64_t c);
 
     uint64_t propagate(uint64_t steps=UINT64_MAX, bool verbose=false);
+    uint64_t thread_propagate(uint64_t steps=UINT64_MAX, float vote_perc=.1, int max_noise=3, bool verbose=false);
 
     std::unordered_map<std::pair<int64_t,int64_t>,std::vector<int64_t>> find_class_bridges(int p, int q);
     //find_class_bridges -> threads on class 0, where %threads on nodes switches from start to end between two classes
@@ -28,11 +29,15 @@ public:
 
     void compute_thread_neighbours(int min_shared=10);
 
+    void compute_thread_neighbours_p_q(int p=10, int q=10);
+
     std::vector<int64_t> get_thread_neighbours(int64_t tid) const;
 
     void reset(int min_node_threads=-1,float node_min_percentage=-1, int thread_p=-1, int thread_q=-1);
 
     int64_t get_thread_intersection(int64_t tid1, int64_t tid2) const;
+
+    std::vector<int> thread_shared_detail(int64_t tid1, int64_t tid2) const;
 
     const ReadThreadsGraph &rtg;
     int min_node_threads;
