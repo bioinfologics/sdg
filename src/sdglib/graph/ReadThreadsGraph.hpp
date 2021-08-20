@@ -16,6 +16,7 @@ public:
     uint16_t link_count=0;
 };
 
+enum class ThreadOverlapType {invalid, complete, rcomplete, t1_in_t2, t1_in_rt2, t2_in_t1, rt2_in_t1, t1_t2, t1_rt2, t2_t1, rt2_t1};
 /**
  * The ReadThreadsGraph is a DistanceGraph where the links form read threads, it has added conditions and functions to
  * work directly with threads, as to make it more efficient.
@@ -143,6 +144,8 @@ public:
      */
     std::vector<NodePosition> get_thread(int64_t thread_id) const;
 
+    std::vector<sgNodeID_t> get_thread_nodes(int64_t thread_id) const;
+
     bool flip_thread(int64_t thread_id);
 
     /** @brief Creates a map with threads as keys and sets of nodes as values
@@ -215,6 +218,8 @@ public:
     int64_t nodes_after_in_thread(int64_t tid, sgNodeID_t nid) const;
 
     std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> make_thread_nodepositions(const std::set<sgNodeID_t> &nodes) const;
+
+    ThreadOverlapType classify_thread_overlap(int64_t tid1, int64_t tid2, int skip_nodes=10);
 
     /**
      * This map stores the information for all the threads of the graph
