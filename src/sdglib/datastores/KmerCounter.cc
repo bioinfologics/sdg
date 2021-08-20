@@ -441,22 +441,3 @@ std::ostream &operator<<(std::ostream &os, const KmerCounter &kc) {
     os << "KmerCounter "<< ( kc.name.empty() ? "unnamed":kc.name ) <<": index with "<<kc.kindex.size()<<" "<<std::to_string(kc.k)<<"-mers";
     return os;
 }
-
-void KmerCounter::dump_cache(const std::string filename) {
-    std::ofstream ofs(filename);
-    std::vector<std::pair<int64_t, float>> cache_pairs(kci_cache.begin(), kci_cache.end());
-    sdglib::write_flat_vector(ofs, cache_pairs);
-    ofs.write((char *) &kci_peak_f, sizeof(kci_peak_f));
-}
-
-void KmerCounter::load_cache(const std::string filename) {
-    std::ifstream ifs(filename);
-
-    std::vector<std::pair<int64_t, float>> cache_pairs;
-    sdglib::read_flat_vector(ifs, cache_pairs);
-    kci_cache.clear();
-    for (const std::pair<int64_t, float> &element : cache_pairs)
-      kci_cache.insert(element);
-
-    ifs.read((char *) &kci_peak_f, sizeof(kci_peak_f));
-}

@@ -391,41 +391,6 @@ void LinkedReadsDatastore::write(std::ofstream &output_file) {
     mapper.write(output_file);
 }
 
-void LinkedReadsDatastore::write_selection(std::ofstream &output_file, const std::set<LinkedTag> &tagSet) {
-    //write readsize
-    output_file.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
-    output_file.write((const char *) &SDG_VN, sizeof(SDG_VN));
-    SDG_FILETYPE type(LinkedDS_FT);
-    output_file.write((char *) &type, sizeof(type));
-
-    output_file.write((char *) &readsize, sizeof(readsize));
-    //create a vector of read tags (including each tag as many times as reads it contains).
-    //std::cout << "creating vector of tags" << std::endl;
-    std::vector<LinkedTag> readtags;
-    //readtags.push_back(0);
-    for (auto trc:get_tag_readcount()) {
-        if (tagSet.count(trc.first)) readtags.resize(readtags.size() + trc.second, trc.first);
-    }
-    //readtags.push_back(0);
-
-    // write tag count and tags.
-    uint64_t rts = readtags.size();
-    output_file.write((const char *) &rts, sizeof(rts));
-    output_file.write((const char *) readtags.data(), sizeof(LinkedTag) * readtags.size());
-
-    //now for each read in each included tag, just copy the readsize+1 sequence into the file.
-    uint64_t totaldata = 0;
-    for (auto t:tagSet) {
-        for (auto n = std::lower_bound(read_tag.begin(), read_tag.end(), t) - read_tag.begin(); read_tag[n] == t; ++n) {
-            auto s = get_read_sequence(n * 2 + 1);
-            output_file.write(s.c_str(), readsize + 1);
-            s = get_read_sequence(n * 2 + 2);
-            output_file.write(s.c_str(), readsize + 1);
-            totaldata += 2 * readsize + 2;
-        }
-    }
-}
-
 std::string LinkedReadsDatastore::get_read_sequence(size_t readID) {
     if (readID==0 or readID>size()) return "";
     char buffer[readsize+1];

@@ -239,18 +239,6 @@ public:
      */
     void simple_thread_reads();
 
-    /** @brief creates a thread graph from the read threads information.
-     *
-     * multi_link causes the nodes in a thread to connect in an all vs all way, if it's set to false the links are
-     * created between successive nodes in the thread only.
-     *
-     * @param multi_link activates the multi link mode, conections are made in an all vs all for each thread
-     * @param remove_duplicated remove duplicated links
-     * @param min_thread_nodes Min length of the thread in nodes for the thread to be considered
-     * @return Distance graph linked as the threads describe
-     */
-    DistanceGraph dg_from_threads(bool multi_link=false, bool remove_duplicated=false, int min_thread_nodes=1);
-
     /** @brief Create a ReadThreadsGraph object using the threads information
      * see ReadThreadsGraph class
      * @param remove_duplicated remove duplicated links

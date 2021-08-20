@@ -70,29 +70,19 @@ public:
      * Initialises the memory mapping of the reads file
      */
     LongReadsDatastore(WorkSpace &ws, std::string filename);
-    /**
-     * Initialize from long_read_file then store the index
-     * @param long_read_file
-     * @param output_file
-     *
-     * Initialises the memory mapping of the reads file
-     */
-    LongReadsDatastore(WorkSpace &ws, const std::string &long_read_file, const std::string &output_file);
 
     friend std::ostream& operator<<(std::ostream &os, const LongReadsDatastore &lords);
 
-    uint32_t dump_seqs_create_index(std::ofstream &outf, const std::string &long_read_file);
     /**
      * Create a long reads data-store from fastq files and write the lords to disk
      * @param output_file Output filename of the datastore
      * @param default_name internal name of the datastore
      * @param long_read_file fastq file of long reads
      */
-    static void build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file, size_t min_size=0);
+    static void build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file, size_t min_size=0, int rle=0);
     void print_status() const;
     void read(std::ifstream &ifs);
     void write(std::ofstream &output_file);
-    void write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids);
     size_t size() const { return read_to_fileRecord.size()-1; }
 
     std::string get_read_sequence(size_t readID) const;

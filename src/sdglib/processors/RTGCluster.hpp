@@ -8,6 +8,7 @@
 class RTGCluster {
 public:
     RTGCluster(const ReadThreadsGraph & _rtg, int _p, int _q, int _min_node_threads, float _min_node_happiness);
+    RTGCluster(const RTGCluster & _other) = default;
     bool is_node_happy(sgNodeID_t nid);
     std::vector<sgNodeID_t> new_happy_nodes();
     void add_node(sgNodeID_t nid);

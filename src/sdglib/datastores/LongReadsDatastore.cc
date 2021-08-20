@@ -17,37 +17,6 @@ LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, std::string filename) : fi
     load_index(filename);
 }
 
-LongReadsDatastore::LongReadsDatastore(WorkSpace &ws, const std::string &long_read_file, const std::string &output_file) : filename(output_file), ws(ws), mapper(ws.sdg, *this) {
-    uint32_t nReads(1);
-    std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
-    if (!ofs) {
-        std::cerr << "Failed to open " << output_file <<": " << strerror(errno);
-        throw std::runtime_error("Could not open " + output_file);
-    }
-    uint64_t fPos;
-    ofs.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
-    ofs.write((const char *) &SDG_VN, sizeof(SDG_VN));
-    SDG_FILETYPE type(LongDS_FT);
-    ofs.write((char *) &type, sizeof(type));
-
-    ofs.write((char*) &nReads, sizeof(nReads));
-    ofs.write((char*) &fPos, sizeof(fPos));
-    nReads = dump_seqs_create_index(ofs, long_read_file); // Build read_to_fileRecord
-    fPos = ofs.tellp();                             // Write position after reads
-    sdglib::write_flat_vector(ofs, read_to_fileRecord);
-    ofs.seekp(sizeof(SDG_MAGIC)+sizeof(SDG_VN)+sizeof(type));                                   // Go to top and dump # reads and position of index
-    ofs.write((char*) &nReads, sizeof(nReads));     // Dump # of reads
-    ofs.write((char*) &fPos, sizeof(fPos));         // Dump index
-    ofs.flush();                                    // Make sure everything has been written
-    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<size()<<" reads"<<std::endl;
-    fd = open(filename.data(), O_RDONLY);
-    if (!fd) {
-        std::cerr << "Failed to open " << filename << ": " << strerror(errno);
-        throw std::runtime_error("Could not open " + filename);
-    }
-
-}
-
 LongReadsDatastore::LongReadsDatastore(WorkSpace &ws) : filename(), ws(ws), mapper(ws.sdg, *this) {
 }
 
@@ -138,7 +107,7 @@ void LongReadsDatastore::load_index(std::string &file) {
     sdglib::OutputLog()<<"LongReadsDatastore open: "<<filename<<" Total reads: " <<size()<<std::endl;
 }
 
-void LongReadsDatastore::build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file, size_t min_size) {
+void LongReadsDatastore::build_from_fastq(const std::string &output_file, const std::string &default_name, const std::string &long_read_file, size_t min_size, int rle) {
     uint64_t nReads(1);
     std::vector<ReadPosSize> read_to_file_record{ReadPosSize{0,0}};
     std::ofstream ofs(output_file, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
@@ -166,10 +135,54 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
     FastqRecord rec;
     while(reader.next_record(rec)) {
         if (!rec.seq.empty() and (min_size==0 or rec.seq.size()>=min_size)) {
-            uint32_t size = rec.seq.size();
+
+            std::string rleseq;
+            rleseq.reserve(rec.seq.size());
+            char last_char=' ';
+            int run_size=0;
+
+            for (auto c:rec.seq){
+                switch (c){
+                    case 'A':
+                    case 'C':
+                    case 'G':
+                    case 'T':
+                        break;
+                    case 'a':
+                        c='A';
+                        break;
+                    case 'c':
+                        c='C';
+                        break;
+                    case 'g':
+                        c='G';
+                        break;
+                    case 't':
+                        c='T';
+                        break;
+                    default:
+                        c='N';
+                }
+                if (rle==0) {
+                    rleseq.push_back(c);
+                }
+                else {
+                    if (c==last_char) {
+                        ++run_size;
+                    }
+                    else {
+                        last_char=c;
+                        run_size=1;
+                    }
+                    if (run_size<=rle) rleseq.push_back(c);
+                }
+            }
+
+            uint32_t size = rleseq.size();
             auto offset = ofs.tellp();
             read_to_file_record.emplace_back((off_t)offset,size);
-            ofs.write((char*)rec.seq.c_str(), size+1);//+1 writes the \0
+            ofs.write((char*)rleseq.c_str(), size+1);//+1 writes the \0
+
         }
         ++nReads;
     }
@@ -188,26 +201,6 @@ void LongReadsDatastore::build_from_fastq(const std::string &output_file, const 
 
     ofs.flush();                                    // Make sure everything has been written
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Built datastore with "<<read_to_file_record.size()-1<<" reads"<<std::endl;
-}
-
-uint32_t LongReadsDatastore::dump_seqs_create_index(std::ofstream &outf, const std::string &long_read_file) {
-    // open the file
-    std::ifstream fastq_ifstream(long_read_file);
-    if (!fastq_ifstream) {
-        std::cerr << "Failed to open " << long_read_file <<": " << strerror(errno);
-        throw std::runtime_error("Could not open " + long_read_file);
-    }
-    FastqReader<FastqRecord> reader({}, long_read_file);
-    FastqRecord rec;
-    while(reader.next_record(rec)) {
-        if (!rec.seq.empty()) {
-            uint32_t size = rec.seq.size();
-            auto offset = outf.tellp();
-            read_to_fileRecord.emplace_back((off_t)offset,size);
-            outf.write((char*)rec.seq.c_str(), size+1);//+1 writes the \0
-        }
-    }
-    return static_cast<uint32_t>(read_to_fileRecord.size());
 }
 
 void LongReadsDatastore::print_status() const {
@@ -265,25 +258,6 @@ std::string LongReadsDatastore::get_read_sequence(size_t readID) const {
     lseek(fd,read_offset_in_file,SEEK_SET);
     ::read(fd,buffer,sizeof(buffer));
     return std::string(buffer);
-}
-
-void LongReadsDatastore::write_selection(std::ofstream &output_file, const std::vector<uint64_t> &read_ids) {
-    unsigned long size(read_ids.size());
-    auto rsb=ReadSequenceBuffer(*this);
-    output_file.write((const char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
-    output_file.write((const char *) &SDG_VN, sizeof(SDG_VN));
-    SDG_FILETYPE type(LongDS_FT);
-    output_file.write((char *) &type, sizeof(type));
-
-    output_file.write((char *) &size, sizeof(size)); // How many reads we will write in the file
-    const char* seq_ptr;
-    for (unsigned long long read_id : read_ids) {
-        seq_ptr = rsb.get_read_sequence(read_id);
-        std::string seq(seq_ptr);
-        size=seq.size();
-        output_file.write((char *) &size,sizeof(size)); // Read length
-        output_file.write(seq.data(),seq.size());       // Read sequence
-    }
 }
 
 std::string LongReadsDatastore::ls(int level, bool recursive) const {

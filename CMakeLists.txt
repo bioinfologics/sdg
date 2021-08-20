@@ -166,15 +166,14 @@ include_directories("deps/")
 
 SET(header_files
     src/sdglib/graph/SequenceDistanceGraph.hpp
-    src/sdglib/graph/SequenceSubGraph.hpp
-        src/sdglib/graph/SequenceDistanceGraphPath.hpp
+    src/sdglib/graph/SequenceDistanceGraphPath.hpp
     src/sdglib/graph/DistanceGraph.hpp
     src/sdglib/utilities/OutputLog.hpp
     src/sdglib/datastores/PairedReadsDatastore.hpp
     src/sdglib/datastores/LinkedReadsDatastore.hpp
     src/sdglib/datastores/LongReadsDatastore.hpp
     src/sdglib/datastores/KmerCounter.hpp
-        src/sdglib/datastores/ReadSequenceBuffer.hpp
+    src/sdglib/datastores/ReadSequenceBuffer.hpp
     src/sdglib/mappers/LongReadsMapper.hpp
     src/sdglib/mappers/LinkedReadsMapper.hpp
     src/sdglib/mappers/PairedReadsMapper.hpp
@@ -182,7 +181,7 @@ SET(header_files
     src/sdglib/workspace/WorkSpace.hpp
     src/sdglib/processors/GraphEditor.hpp
     src/sdglib/processors/GraphMaker.hpp
-        src/sdglib/indexers/UniqueKmerIndex.hpp
+    src/sdglib/indexers/UniqueKmerIndex.hpp
     src/sdglib/indexers/SatKmerIndex.hpp
     src/sdglib/indexers/NKmerIndex.hpp
     src/sdglib/views/NodeView.hpp
@@ -194,7 +193,6 @@ SET(header_files
 
 SET(source_files ${source_files}
     src/sdglib/graph/SequenceDistanceGraph.cc
-    src/sdglib/graph/SequenceSubGraph.cc
     src/sdglib/graph/SequenceDistanceGraphPath.cc
     src/sdglib/graph/DistanceGraph.cc
     src/sdglib/utilities/OutputLog.cc
@@ -219,8 +217,6 @@ SET(source_files ${source_files}
     deps/xxhash/xxhash.c
     src/sdglib/mappers/SequenceMapper.cc
     src/sdglib/processors/LinkageMaker.cc
-    src/sdglib/mappers/GraphSelfAligner.cc
-    src/sdglib/mappers/GraphSelfAligner.hpp
     src/sdglib/processors/GraphContigger.cc
     src/sdglib/processors/GraphContigger.hpp
     src/sdglib/mappers/LongReadsRecruiter.cc
@@ -246,7 +242,9 @@ SET(source_files ${source_files}
     src/sdglib/processors/TotalSorter.cc
     src/sdglib/processors/TotalSorter.hpp
     src/sdglib/processors/RTGCluster.cc
-    src/sdglib/processors/RTGCluster.hpp)
+    src/sdglib/processors/RTGCluster.hpp
+    src/sdglib/processors/RTGClassifier.cc
+    src/sdglib/processors/RTGClassifier.hpp)
 
 ## Libraries
 add_library(sdg SHARED

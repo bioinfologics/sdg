@@ -17,7 +17,6 @@
 #include "DistanceGraph.hpp"
 
 class SequenceDistanceGraphPath;
-class SequenceSubGraph;
 class WorkSpace;
 /**
  *
@@ -127,11 +126,6 @@ public:
      */
     void expand_node(sgNodeID_t nodeID, std::vector<std::vector<sgNodeID_t>> bw,
                                     std::vector<std::vector<sgNodeID_t>> fw);
-    //TODO: deprecate, please
-    std::vector<SequenceSubGraph> get_all_bubbly_subgraphs(uint32_t maxsubgraphs = 0);
-
-    //TODO: deprecate, please
-    void print_bubbly_subgraph_stats(const std::vector<SequenceSubGraph> &bubbly_paths);
 
     /**
      * From a list of names get a list of node IDs from the graph

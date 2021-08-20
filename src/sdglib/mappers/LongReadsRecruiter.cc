@@ -753,40 +753,6 @@ void LongReadsRecruiter::simple_thread_reads() {
     }
 }
 
-DistanceGraph LongReadsRecruiter::dg_from_threads(bool multi_link, bool remove_duplicated, int min_thread_nodes) {
-    DistanceGraph dg(sdg,"LRRthreads");
-    std::unordered_set<sgNodeID_t> seen,duplicated;
-    for (auto rid=1;rid<read_threads.size();++rid) {
-        auto &pos=read_threads[rid];
-        if (pos.size()<min_thread_nodes) continue;
-        if (remove_duplicated) {
-            seen.clear();
-            duplicated.clear();
-            for (const auto &p:read_threads[rid]){
-                if (seen.count(llabs(p.node))) duplicated.insert(llabs(p.node));
-                else seen.insert(llabs(p.node));
-            }
-        }
-        if (multi_link) {
-            for (auto i = 0; i < pos.size() - 1; ++i) {
-                if (remove_duplicated and duplicated.count(llabs(pos[i].node))) continue;
-                for (auto j = i + 1; j < pos.size(); ++j) {
-                    if (remove_duplicated && duplicated.count(llabs(pos[j].node))) continue;
-                    dg.add_link(-pos[i].node, pos[j].node, pos[j].start - pos[i].end, {SupportType::LongRead, 0, static_cast<int64_t>(rid)});
-                }
-            }
-        }
-        else {
-            uint16_t lidx=0;
-            for (auto i = 0; i < pos.size() - 1; ++i) {
-                if (remove_duplicated and ( duplicated.count(llabs(pos[i].node))  or duplicated.count(llabs(pos[i+1].node)) ) ) continue;
-                dg.add_link(-pos[i].node, pos[i + 1].node, pos[i + 1].start - pos[i].end, {SupportType::LongRead, lidx++, static_cast<int64_t>(rid)});
-            }
-        }
-    }
-    return dg;
-}
-
 ReadThreadsGraph LongReadsRecruiter::rtg_from_threads(bool remove_duplicated, int min_thread_nodes) {
     ReadThreadsGraph rtg(sdg);
     for (auto rid=1;rid<read_threads.size();++rid) {
