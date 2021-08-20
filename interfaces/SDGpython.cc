@@ -84,6 +84,19 @@ PYBIND11_MODULE(SDGpython, m) {
             .value("NonCanonical",KmerCountMode::NonCanonical)
             .export_values();
 
+    py::enum_<ThreadOverlapType>(m,"ThreadOverlapType")
+            .value("invalid",ThreadOverlapType::invalid)
+            .value("complete",ThreadOverlapType::complete)
+            .value("t1_in_t2",ThreadOverlapType::t1_in_t2)
+            .value("t1_in_rt2",ThreadOverlapType::t1_in_rt2)
+            .value("t2_in_t1",ThreadOverlapType::t2_in_t1)
+            .value("rt2_in_t1",ThreadOverlapType::rt2_in_t1)
+            .value("t1_t2",ThreadOverlapType::t1_t2)
+            .value("t1_rt2",ThreadOverlapType::t1_rt2)
+            .value("t2_t1",ThreadOverlapType::t2_t1)
+            .value("rt2_t1",ThreadOverlapType::rt2_t1)
+            ;
+
     py::class_<Support>(m,"Support","Support for an operation or piece of data")
             .def(py::init<SupportType,uint16_t,int64_t>(),"","support"_a=SupportType::Undefined,"index"_a=0,"id"_a=0,py::return_value_policy::take_ownership)
             .def_readonly("type",&Support::type)
@@ -200,6 +213,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("add_thread",&ReadThreadsGraph::add_thread, "thread_id"_a, "thread"_a,"remove_duplicated"_a=true,"min_nodes"_a=2)
             .def("remove_thread",&ReadThreadsGraph::remove_thread, "thread_id"_a)
             .def("get_thread",&ReadThreadsGraph::get_thread, "thread_id"_a)
+            .def("get_thread_nodes",&ReadThreadsGraph::get_thread_nodes, "thread_id"_a)
             .def("thread_start_nodeview", &ReadThreadsGraph::thread_start_nodeview, "thread_id"_a)
             .def("thread_end_nodeview", &ReadThreadsGraph::thread_end_nodeview, "thread_id"_a)
             .def("next_in_thread",&ReadThreadsGraph::next_in_thread, "nid"_a,"thread_id"_a,"link_index"_a=-1)
@@ -224,6 +238,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("nodes_before_in_thread",&ReadThreadsGraph::nodes_before_in_thread,"thread_id"_a,"node_id"_a)
             .def("nodes_after_in_thread",&ReadThreadsGraph::nodes_after_in_thread,"thread_id"_a,"node_id"_a)
             .def("make_thread_nodepositions",&ReadThreadsGraph::make_thread_nodepositions,"nodes"_a)
+            .def("classify_thread_overlap",&ReadThreadsGraph::classify_thread_overlap,"tid1"_a,"tid2"_a,"skip_nodes"_a=10)
             ;
 
 

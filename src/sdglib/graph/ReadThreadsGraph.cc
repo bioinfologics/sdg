@@ -221,7 +221,7 @@ std::vector<NodePosition> ReadThreadsGraph::get_thread(int64_t thread_id) const{
         link_increment=-1;
         lc=ti.link_count-1;
     }
-    thread.reserve(ti.link_count);
+    thread.reserve(ti.link_count+1);
     uint64_t p=0;
     sgNodeID_t nid=0;
     do {
@@ -234,6 +234,32 @@ std::vector<NodePosition> ReadThreadsGraph::get_thread(int64_t thread_id) const{
             lc+=link_increment;
         }
         thread.emplace_back(nid,p,p+sdg.get_node_size(nid));
+    } while (lc>=0 and lc<ti.link_count);
+    return thread;
+}
+
+std::vector<sgNodeID_t> ReadThreadsGraph::get_thread_nodes(int64_t thread_id) const{
+    std::vector<sgNodeID_t> thread;
+    if (thread_info.count(llabs(thread_id))==0) return {};
+    auto ti=thread_info.at(llabs(thread_id));
+    auto s=ti.start;
+    int64_t lc=0;
+    int link_increment=1;
+    if (thread_id<0) {
+        s=ti.end;
+        link_increment=-1;
+        lc=ti.link_count-1;
+    }
+    thread.reserve(ti.link_count+1);
+    sgNodeID_t nid=0;
+    do {
+        if (nid==0) nid=s;
+        else {
+            auto ln=next_in_thread(nid,llabs(thread_id),lc);
+            nid=ln.node().node_id();
+            lc+=link_increment;
+        }
+        thread.emplace_back(nid);
     } while (lc>=0 and lc<ti.link_count);
     return thread;
 }
@@ -664,4 +690,54 @@ std::map<uint64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> ReadThreadsGraph
     }
     return thread_node_positions;
 
+}
+
+ThreadOverlapType ReadThreadsGraph::classify_thread_overlap(int64_t tid1, int64_t tid2, int skip_nodes) {
+    using ToT=ThreadOverlapType;
+    auto t1n= get_thread_nodes(tid1);
+    std::set<sgNodeID_t> t1s(t1n.begin(),t1n.end());
+    auto t2n= get_thread_nodes(tid2);
+    std::set<sgNodeID_t> t2s(t2n.begin(),t2n.end());
+    auto t2rn= get_thread_nodes(-tid2);
+    std::set<sgNodeID_t> t2rs(t2rn.begin(),t2rn.end());
+    auto shared=nodeset_intersection_size(t1s,t2s);
+    auto rshared=nodeset_intersection_size(t1s,t2rs);
+    bool t2reversed=false;
+    if (shared<rshared) {
+        shared=rshared;
+        t2n=t2rn;
+        t2s=t2rs;
+        t2reversed=true;
+    }
+    auto to_check=shared;
+    int last_shared_i1=-1,last_shared_i2=-1;
+    bool t1start=false,t2start=false,t1end=false,t2end=false;
+    auto i2=0;
+    for (auto i1=0;to_check and i1<t1n.size();++i1){
+        if (t2s.count(t1n[i1])){
+            if (last_shared_i1!=-1 and i1-last_shared_i1>skip_nodes) return ToT::invalid;
+            while (i2<t2n.size() and t2n[i2]!=t1n[i1]) ++i2;
+            if (i2==t2n.size()) return ToT::invalid; //there was a permutation in node order
+            if (last_shared_i2!=-1 and i2-last_shared_i2>skip_nodes) return ToT::invalid;
+            --to_check;
+            if (i1<skip_nodes) t1start=true;
+            if (i1+skip_nodes>t1n.size()) t1end=true;
+            if (i2<skip_nodes) t2start=true;
+            if (i2+skip_nodes>t2n.size()) t2end=true;
+            last_shared_i1=i1;
+            last_shared_i2=i2;
+        }
+    }
+    //if we reached here, overlap is valid on both threads, and ends are set correctly
+    if ((not t2start and not t1start) or (not t2end and not t1end)) {
+        return ToT::invalid;//repeat (i.e. collase in the middle or Y)
+    }
+    if (t1start and t1end) {
+        if (t2start and t2end) return (t2reversed ? ToT::rcomplete : ToT::complete);
+        else return (t2reversed ? ToT::t1_in_rt2 : ToT::t1_in_t2);
+    }
+    if (t2start and t2end) return (t2reversed ? ToT::rt2_in_t1 : ToT::t2_in_t1);
+    if (t1start and t2end) return (t2reversed ? ToT::rt2_t1 : ToT::t2_t1);
+    if (t2start and t1end) return (t2reversed ? ToT::t1_rt2 : ToT::t1_t2);
+    return ToT::invalid;
 }
