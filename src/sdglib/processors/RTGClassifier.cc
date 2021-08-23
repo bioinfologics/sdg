@@ -46,9 +46,9 @@ RTGClassifier::RTGClassifier(const ReadThreadsGraph &rtg, int min_node_threads, 
     }
     sdglib::OutputLog()<<"analysing threads"<<std::endl;
     for (auto & tc:thread_class){
-        auto t=rtg.get_thread(tc.first);
+        auto t=rtg.get_thread_nodes(tc.first);
         thread_nodes[tc.first].reserve(t.size());
-        for (auto &np:t) thread_nodes[tc.first].emplace_back(llabs(np.node));
+        for (auto &nid:t) thread_nodes[tc.first].emplace_back(llabs(nid));
     }
     sdglib::OutputLog()<<"done with "<<node_class.size()<<" nodes in "<<thread_class.size()<<" threads"<<std::endl;
 }
@@ -265,6 +265,11 @@ std::vector<int64_t> RTGClassifier::get_thread_neighbours(int64_t tid) const {
     return thread_neighbours.at(llabs(tid));
 }
 
+std::vector<ThreadOverlapType> RTGClassifier::get_thread_neighbours_types(int64_t tid) const {
+    if (thread_neighbours_types.count(llabs(tid))==0) return {};
+    return thread_neighbours_types.at(llabs(tid));
+}
+
 void RTGClassifier::reset(int _min_node_threads, float _node_min_percentage, int _thread_p, int _thread_q) {
     if (_min_node_threads!=-1) min_node_threads=_min_node_threads;
     if (_node_min_percentage!=-1) node_min_percentage=_node_min_percentage;
@@ -295,4 +300,28 @@ std::vector<int> RTGClassifier::thread_shared_detail(int64_t tid1, int64_t tid2)
         s.emplace_back(t2nodes.count(nid));
     }
     return s;
+}
+
+void RTGClassifier::classify_neighbours(int skip_nodes) {
+#pragma omp parallel for
+    for (auto b=0;b<thread_neighbours.bucket_count();++b){
+        for (auto bi=thread_neighbours.begin(b);bi!=thread_neighbours.end(b);++bi){
+            auto &tid=bi->first;
+            auto &nns=bi->second;
+            std::vector<sgNodeID_t> valid_nodes;
+            std::vector<ThreadOverlapType> valid_nodes_types;
+            for (auto otid:nns){
+                auto oc=rtg.classify_thread_overlap(tid,otid,skip_nodes);
+                if (oc!=ThreadOverlapType::invalid) {
+                    valid_nodes.emplace_back(otid);
+                    valid_nodes_types.emplace_back(oc);
+                }
+            }
+#pragma omp critical
+            {
+                std::swap(nns,valid_nodes);
+                thread_neighbours_types[tid]=valid_nodes_types;
+            }
+        }
+    }
 }

@@ -84,8 +84,9 @@ LinkView ReadThreadsGraph::next_in_thread(sgNodeID_t nid, int64_t thread_id, int
     sgNodeID_t nnid;
     Support s;
     int32_t d;
-    for (auto l:links[llabs(nid)]) {
-        if (l.source==-nid and l.support.id == llabs(thread_id) and (link_index==-1 or l.support.index==link_index)) {
+    auto tid=llabs(thread_id);
+    for (const auto &l:links[llabs(nid)]) {
+        if (l.support.id == tid and l.source==-nid and (link_index==-1 or l.support.index==link_index)) {
             if (found) throw std::runtime_error("There is more than one link out in thread");
             found=true;
             nnid=l.dest;
@@ -252,11 +253,16 @@ std::vector<sgNodeID_t> ReadThreadsGraph::get_thread_nodes(int64_t thread_id) co
     }
     thread.reserve(ti.link_count+1);
     sgNodeID_t nid=0;
+    auto tid=llabs(thread_id);
     do {
         if (nid==0) nid=s;
         else {
-            auto ln=next_in_thread(nid,llabs(thread_id),lc);
-            nid=ln.node().node_id();
+            for (const auto &l:links[llabs(nid)]) {
+                if (l.support.index==lc and l.support.id == tid and l.source==-nid) {
+                    nid=l.dest;
+                    break;
+                }
+            }
             lc+=link_increment;
         }
         thread.emplace_back(nid);
@@ -692,13 +698,15 @@ std::map<uint64_t, std::vector<std::pair<int64_t, sgNodeID_t>>> ReadThreadsGraph
 
 }
 
-ThreadOverlapType ReadThreadsGraph::classify_thread_overlap(int64_t tid1, int64_t tid2, int skip_nodes) {
+ThreadOverlapType ReadThreadsGraph::classify_thread_overlap(int64_t tid1, int64_t tid2, int skip_nodes) const {
     using ToT=ThreadOverlapType;
     auto t1n= get_thread_nodes(tid1);
     std::set<sgNodeID_t> t1s(t1n.begin(),t1n.end());
     auto t2n= get_thread_nodes(tid2);
     std::set<sgNodeID_t> t2s(t2n.begin(),t2n.end());
-    auto t2rn= get_thread_nodes(-tid2);
+    std::vector<sgNodeID_t> t2rn;
+    t2rn.reserve(t2n.size());
+    for (auto rit=t2n.crbegin();rit!=t2n.crend();++rit) t2rn.emplace_back(-*rit);
     std::set<sgNodeID_t> t2rs(t2rn.begin(),t2rn.end());
     auto shared=nodeset_intersection_size(t1s,t2s);
     auto rshared=nodeset_intersection_size(t1s,t2rs);
