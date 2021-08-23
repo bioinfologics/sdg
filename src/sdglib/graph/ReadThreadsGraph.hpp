@@ -219,7 +219,7 @@ public:
 
     std::map<uint64_t,std::vector<std::pair<int64_t,sgNodeID_t>>> make_thread_nodepositions(const std::set<sgNodeID_t> &nodes) const;
 
-    ThreadOverlapType classify_thread_overlap(int64_t tid1, int64_t tid2, int skip_nodes=10);
+    ThreadOverlapType classify_thread_overlap(int64_t tid1, int64_t tid2, int skip_nodes=10) const;
 
     /**
      * This map stores the information for all the threads of the graph

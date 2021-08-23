@@ -33,11 +33,15 @@ public:
 
     std::vector<int64_t> get_thread_neighbours(int64_t tid) const;
 
+    std::vector<ThreadOverlapType> get_thread_neighbours_types(int64_t tid) const;
+
     void reset(int min_node_threads=-1,float node_min_percentage=-1, int thread_p=-1, int thread_q=-1);
 
     int64_t get_thread_intersection(int64_t tid1, int64_t tid2) const;
 
     std::vector<int> thread_shared_detail(int64_t tid1, int64_t tid2) const;
+
+    void classify_neighbours(int skip_nodes=10);
 
     const ReadThreadsGraph &rtg;
     int min_node_threads;
@@ -53,6 +57,7 @@ public:
     std::unordered_set<int64_t> threads_to_evaluate;
     std::unordered_map<std::pair<int64_t, int64_t> ,int64_t> thread_intersections;
     std::unordered_map<int64_t,std::vector<int64_t>> thread_neighbours;
+    std::unordered_map<int64_t,std::vector<ThreadOverlapType>> thread_neighbours_types;
 };
 
 
