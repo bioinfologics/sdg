@@ -199,6 +199,114 @@ uint64_t RTGClassifier::thread_propagate(uint64_t steps, float vote_perc, int ma
     return switched;
 }
 
+
+
+uint64_t RTGClassifier::thread_propagate2(uint64_t steps, int min_side_votes, float side_vote_perc,
+                                          int min_contain_votes, float contain_vote_perc, bool reclassify, bool verbose) {
+
+
+    uint64_t switched=0;
+    while (steps--){
+        //Steps: 1 -> find candidates  / 3 -> find candidates / 4 -> recruit fw/bw threads (check coherency first?)
+        std::set<uint64_t> class_neighbours;
+        for (auto &tn:thread_neighbours){
+            auto c=thread_class[tn.first];
+            for (auto &ntid:tn.second) {
+                if (thread_class[ntid]!=c) {
+                    class_neighbours.insert(tn.first);
+                    break;
+                }
+            }
+        }
+        if (verbose) std::cout<<"there are "<<class_neighbours.size()<<" class neighbours"<<std::endl;
+        // 2 -> recruit threads
+        std::vector<std::pair<uint64_t,uint64_t>> to_switch;
+        for (auto tid:class_neighbours) {
+            if (not reclassify and thread_class[tid]!=0) continue;
+            auto &neighs=thread_neighbours[tid];
+            auto &neightypes=thread_neighbours_types[tid];
+            if (neighs.size()!=neightypes.size()) continue;
+            //TODO: add an "included" case, where all threads included in this one vote to place it
+            uint64_t including_total=0,fw_total=0,bw_total=0;
+            uint64_t including_highest=0,fw_highest=0,bw_highest=0;
+            uint64_t including_highest_class=0,fw_highest_class=0,bw_highest_class=0;
+            std::map<uint64_t,uint64_t> included_votes,bw_votes,fw_votes;
+            for (auto nix=0;nix<neighs.size();++nix){
+                auto ntid=neighs[nix];
+                auto ntype=neightypes[nix];
+                //count included votes
+                if (ntype==ThreadOverlapType::t1_in_t2 or ntype==ThreadOverlapType::t1_in_rt2 or ntype==ThreadOverlapType::complete) {
+                    ++including_total;
+                    auto c= thread_class[ntid];
+                    if (c!=0) {
+                        auto v = ++included_votes[c];
+                        if (including_highest < v) {
+                            including_highest = v;
+                            including_highest_class = c;
+                        }
+                    }
+                }
+                else if (ntype==ThreadOverlapType::t1_t2 or ntype==ThreadOverlapType::t1_rt2) {
+                    ++fw_total;
+                    auto c= thread_class[ntid];
+                    if (c!=0) {
+                        auto v = ++fw_votes[c];
+                        if (fw_highest < v) {
+                            fw_highest = v;
+                            fw_highest_class = c;
+                        }
+                    }
+                }
+                else if (ntype==ThreadOverlapType::t2_t1 or ntype==ThreadOverlapType::rt2_t1) {
+                    ++fw_total;
+                    auto c= thread_class[ntid];
+                    if (c!=0) {
+                        auto v = ++fw_votes[c];
+                        if (fw_highest < v) {
+                            fw_highest = v;
+                            fw_highest_class = c;
+                        }
+                    }
+                }
+
+            }
+            //TODO: consider the winners, if clear cut (all winners to same class, where they win), add to to_switch
+            int64_t winner=0;
+            if (including_highest>=min_contain_votes and including_highest>=including_total*contain_vote_perc)
+                winner=including_highest_class;
+            if (fw_highest>=min_side_votes and fw_highest>=fw_total*side_vote_perc) {
+                if (winner==0 or winner==fw_highest_class) winner=fw_highest_class;
+                else winner=-1;
+            }
+            if (bw_highest>=min_side_votes and bw_highest>=bw_total*side_vote_perc) {
+                if (winner==0 or winner==bw_highest_class) winner=bw_highest_class;
+                else winner=-1;
+            }
+            std::cout<<tid<<": IN: "<<including_highest_class<<" ("<<including_highest<<"/"<<including_total<<")  BW: "<<bw_highest_class<<" ("<<bw_highest<<"/"<<bw_total<<")  FW:"<<fw_highest_class<<" ("<<fw_highest<<"/"<<fw_total<<") --> winner: "<<winner<<std::endl;
+            if (winner>0 and winner!=thread_class[tid]) {
+                std::cout<<" SWITCHED from "<<thread_class[tid]<<" to "<<winner<<"!"<<std::endl;
+                to_switch.emplace_back(tid,winner);
+            }
+        }
+
+        for (auto tc:to_switch) switch_thread_class(tc.first,tc.second);
+        if (verbose) std::cout<<to_switch.size()<<" threads switched"<<std::endl;
+        if (to_switch.empty()) break;//no switches, propagation finished.
+        switched+=to_switch.size();
+    }
+    return switched;
+}
+
+std::map<uint64_t, uint64_t> RTGClassifier::thread_class_votes(uint64_t tid, std::set<ThreadOverlapType> ovltypes) {
+    std::map<uint64_t, uint64_t> votes;
+    auto &tn=thread_neighbours[tid];
+    auto &tnt=thread_neighbours_types[tid];
+    for (auto i=0;i<tn.size();++i) {
+        if (ovltypes.empty() or ovltypes.count(tnt[i])) ++votes[thread_class[tn[i]]];
+    }
+    return votes;
+}
+
 std::unordered_map<std::pair<int64_t, int64_t>, std::vector<int64_t>> RTGClassifier::find_class_bridges(int p, int q) {
     std::unordered_map<std::pair<int64_t, int64_t>, std::vector<int64_t>> cb;
     for (auto tn:thread_nodes){
