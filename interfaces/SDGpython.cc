@@ -87,6 +87,7 @@ PYBIND11_MODULE(SDGpython, m) {
     py::enum_<ThreadOverlapType>(m,"ThreadOverlapType")
             .value("invalid",ThreadOverlapType::invalid)
             .value("complete",ThreadOverlapType::complete)
+            .value("rcomplete",ThreadOverlapType::rcomplete)
             .value("t1_in_t2",ThreadOverlapType::t1_in_t2)
             .value("t1_in_rt2",ThreadOverlapType::t1_in_rt2)
             .value("t2_in_t1",ThreadOverlapType::t2_in_t1)
