@@ -41,7 +41,7 @@ public:
 
     std::vector<int> thread_shared_detail(int64_t tid1, int64_t tid2) const;
 
-    void classify_neighbours(int skip_nodes=10);
+    void classify_neighbours(int skip_nodes=10, bool discard_invalid=true);
 
     const ReadThreadsGraph &rtg;
     int min_node_threads;

@@ -302,7 +302,7 @@ std::vector<int> RTGClassifier::thread_shared_detail(int64_t tid1, int64_t tid2)
     return s;
 }
 
-void RTGClassifier::classify_neighbours(int skip_nodes) {
+void RTGClassifier::classify_neighbours(int skip_nodes, bool discard_invalid) {
 #pragma omp parallel for
     for (auto b=0;b<thread_neighbours.bucket_count();++b){
         for (auto bi=thread_neighbours.begin(b);bi!=thread_neighbours.end(b);++bi){
@@ -312,7 +312,7 @@ void RTGClassifier::classify_neighbours(int skip_nodes) {
             std::vector<ThreadOverlapType> valid_nodes_types;
             for (auto otid:nns){
                 auto oc=rtg.classify_thread_overlap(tid,otid,skip_nodes);
-                if (oc!=ThreadOverlapType::invalid) {
+                if (not discard_invalid or oc!=ThreadOverlapType::invalid) {
                     valid_nodes.emplace_back(otid);
                     valid_nodes_types.emplace_back(oc);
                 }
