@@ -711,6 +711,7 @@ ThreadOverlapType ReadThreadsGraph::classify_thread_overlap(int64_t tid1, int64_
     auto shared=nodeset_intersection_size(t1s,t2s);
     auto rshared=nodeset_intersection_size(t1s,t2rs);
     bool t2reversed=false;
+    if (shared==rshared) return ThreadOverlapType::invalid;
     if (shared<rshared) {
         shared=rshared;
         t2n=t2rn;
