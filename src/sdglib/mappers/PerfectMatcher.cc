@@ -188,6 +188,7 @@ void PerfectMatchExtender::make_path_as_perfect_matches() {
     for (auto i=0;i<best_path_matches.size()-1;++i){
         auto shift=best_path_matches[i].size>=best_path_matches[i+1].node_position ? best_path_matches[i+1].node_position : best_path_matches[i].size;
         best_path_matches[i+1].node_position-=shift;
+        best_path_matches[i+1].read_position-=shift;
         best_path_matches[i+1].size+=shift;
     }
 }
