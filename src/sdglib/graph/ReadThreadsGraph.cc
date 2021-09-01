@@ -6,6 +6,11 @@
 #include <sdglib/views/NodeView.hpp>
 #include <atomic>
 
+ReadThreadsGraph::ReadThreadsGraph(const ReadThreadsGraph &other): DistanceGraph(other.sdg,other.name){
+    links=other.links;
+    thread_info=other.thread_info;
+}
+
 void ReadThreadsGraph::dump(std::string filename) {
     std::ofstream ofs(filename);
     DistanceGraph::write(ofs);
@@ -706,4 +711,38 @@ ThreadOverlapType ReadThreadsGraph::classify_thread_overlap(int64_t tid1, int64_
     if (t1start and t2end) return (t2reversed ? ToT::rt2_t1 : ToT::t2_t1);
     if (t2start and t1end) return (t2reversed ? ToT::t1_rt2 : ToT::t1_t2);
     return ToT::invalid;
+}
+
+ReadThreadsGraph ReadThreadsGraph::reduced_graph(int min_thread_nodes, int min_node_threads) {
+    ReadThreadsGraph rrtg(*this);
+    bool nodes_deleted=true;
+    bool threads_deleted=true;
+    while (nodes_deleted or threads_deleted) {
+        nodes_deleted=false;
+        threads_deleted=false;
+        ReadThreadsGraph new_rrtg(sdg);
+        std::unordered_set<sgNodeID_t> nodes_to_keep;
+        for (sgNodeID_t nid=0;nid<rrtg.links.size(); ++nid) if (rrtg.links[nid].size()>0 and rrtg.node_threads(nid).size()>=min_node_threads) {
+            nodes_to_keep.insert(nid);
+            new_rrtg.links[nid].reserve(rrtg.links[nid].size());
+        }
+        for (auto &ti:rrtg.thread_info) {
+            if (ti.second.link_count<=min_thread_nodes) {
+                threads_deleted=true;
+                continue;
+            }
+            auto t=rrtg.get_thread(ti.first);
+            std::vector<NodePosition> filtered_thread;
+            filtered_thread.reserve(t.size());
+            for (auto &tp:t) {
+                if (nodes_to_keep.count(llabs(tp.node))) filtered_thread.emplace_back(tp);
+                else nodes_deleted=true;
+            }
+            if (filtered_thread.size()>=min_thread_nodes) new_rrtg.add_thread(ti.first,filtered_thread);
+            else threads_deleted=true;
+        }
+        rrtg.links=std::move(new_rrtg.links);
+        rrtg.thread_info=std::move(new_rrtg.thread_info);
+    }
+    return std::move(rrtg);
 }

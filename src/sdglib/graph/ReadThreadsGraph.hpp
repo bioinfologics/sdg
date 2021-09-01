@@ -28,7 +28,7 @@ enum class ThreadOverlapType {invalid, complete, rcomplete, t1_in_t2, t1_in_rt2,
 class ReadThreadsGraph : public DistanceGraph {
 public:
     explicit ReadThreadsGraph(SequenceDistanceGraph & sdg,const std::string &_name="RTG"): DistanceGraph(sdg,_name) {};
-
+    ReadThreadsGraph(const ReadThreadsGraph &other);
     void dump(std::string filename);
     void load(std::string filename);
 
@@ -208,11 +208,14 @@ public:
 
     ThreadOverlapType classify_thread_overlap(int64_t tid1, int64_t tid2, int skip_nodes=10) const;
 
+    ReadThreadsGraph reduced_graph(int min_thread_nodes, int min_node_threads);
     /**
      * This map stores the information for all the threads of the graph
      * key: thread id
      * value: ThreadInfo object with the thread information (start, end, link_count)
      */
     std::unordered_map<int64_t,ThreadInfo> thread_info;
+
+
 
 };

@@ -209,6 +209,7 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<ReadThreadsGraph,DistanceGraph>(m, "ReadThreadsGraph", "A Read Threads Graph")
             .def(py::init<SequenceDistanceGraph &, const std::string &>(),"","sdg"_a,"name"_a="unnamed",py::return_value_policy::take_ownership)
+            .def(py::init<ReadThreadsGraph &>(),"","rtg"_a,py::return_value_policy::take_ownership)
             .def("dump",&ReadThreadsGraph::dump, "filename"_a)
             .def("load",&ReadThreadsGraph::load, "filename"_a)
             .def("add_thread",&ReadThreadsGraph::add_thread, "thread_id"_a, "thread"_a,"remove_duplicated"_a=true,"min_nodes"_a=2)
@@ -238,6 +239,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("nodes_after_in_thread",&ReadThreadsGraph::nodes_after_in_thread,"thread_id"_a,"node_id"_a)
             .def("make_thread_nodepositions",&ReadThreadsGraph::make_thread_nodepositions,"nodes"_a)
             .def("classify_thread_overlap",&ReadThreadsGraph::classify_thread_overlap,"tid1"_a,"tid2"_a,"skip_nodes"_a=10)
+            .def("reduced_graph",&ReadThreadsGraph::reduced_graph,"min_thread_nodes"_a,"min_node_threads"_a)
             ;
 
 
