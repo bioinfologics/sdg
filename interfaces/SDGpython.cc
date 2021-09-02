@@ -209,22 +209,21 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<ReadThreadsGraph,DistanceGraph>(m, "ReadThreadsGraph", "A Read Threads Graph")
             .def(py::init<SequenceDistanceGraph &, const std::string &>(),"","sdg"_a,"name"_a="unnamed",py::return_value_policy::take_ownership)
+            .def(py::init<ReadThreadsGraph &>(),"","rtg"_a,py::return_value_policy::take_ownership)
             .def("dump",&ReadThreadsGraph::dump, "filename"_a)
             .def("load",&ReadThreadsGraph::load, "filename"_a)
             .def("add_thread",&ReadThreadsGraph::add_thread, "thread_id"_a, "thread"_a,"remove_duplicated"_a=true,"min_nodes"_a=2)
             .def("remove_thread",&ReadThreadsGraph::remove_thread, "thread_id"_a)
             .def("get_thread",&ReadThreadsGraph::get_thread, "thread_id"_a)
-            .def("get_thread_nodes",&ReadThreadsGraph::get_thread_nodes, "thread_id"_a)
+            .def("get_thread_nodes",&ReadThreadsGraph::get_thread_nodes, "thread_id"_a,"oriented"_a=true)
             .def("thread_start_nodeview", &ReadThreadsGraph::thread_start_nodeview, "thread_id"_a)
             .def("thread_end_nodeview", &ReadThreadsGraph::thread_end_nodeview, "thread_id"_a)
             .def("next_in_thread",&ReadThreadsGraph::next_in_thread, "nid"_a,"thread_id"_a,"link_index"_a=-1)
             .def("prev_in_thread",&ReadThreadsGraph::prev_in_thread, "nid"_a,"thread_id"_a,"link_index"_a=-1)
             .def("all_nids_fw_in_thread",&ReadThreadsGraph::all_nids_fw_in_thread, "nid"_a,"thread_id"_a)
-            .def("local_graph",&ReadThreadsGraph::local_graph, "node_id"_a,"distance"_a,"min_links"_a)
             .def("pop_node",&ReadThreadsGraph::pop_node,"node_id"_a,"thread_id"_a)
             .def("pop_nodes",&ReadThreadsGraph::pop_nodes,"node_ids"_a,"thread_id"_a)
             .def("pop_node_from_all",&ReadThreadsGraph::pop_node_from_all,"node_id"_a)
-            .def("flip_thread",&ReadThreadsGraph::flip_thread,"thread_id"_a)
             .def("node_threads",&ReadThreadsGraph::node_threads,"node_id"_a,"oriented"_a=false)
             .def("node_threadpositions",&ReadThreadsGraph::node_threadpositions,"node_id"_a)
             .def("node_thread_neighbours",&ReadThreadsGraph::node_thread_neighbours,"node_id"_a,"oriented"_a=false)
@@ -240,6 +239,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("nodes_after_in_thread",&ReadThreadsGraph::nodes_after_in_thread,"thread_id"_a,"node_id"_a)
             .def("make_thread_nodepositions",&ReadThreadsGraph::make_thread_nodepositions,"nodes"_a)
             .def("classify_thread_overlap",&ReadThreadsGraph::classify_thread_overlap,"tid1"_a,"tid2"_a,"skip_nodes"_a=10)
+            .def("reduced_graph",&ReadThreadsGraph::reduced_graph,"min_thread_nodes"_a,"min_node_threads"_a)
             ;
 
 

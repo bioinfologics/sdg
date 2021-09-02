@@ -143,10 +143,7 @@ size_t SequenceDistanceGraph::count_active_nodes() const {
 }
 
 bool Link::operator==(const Link a) const {
-    if (a.source == source && a.dest == dest){
-        return true;
-    }
-    return false;
+    return (a.source == source && a.dest == dest && a.dist == dist && a.support == support);
 }
 
 bool Link::operator<(const Link a) const {

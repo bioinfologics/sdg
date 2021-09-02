@@ -28,7 +28,7 @@ enum class ThreadOverlapType {invalid, complete, rcomplete, t1_in_t2, t1_in_rt2,
 class ReadThreadsGraph : public DistanceGraph {
 public:
     explicit ReadThreadsGraph(SequenceDistanceGraph & sdg,const std::string &_name="RTG"): DistanceGraph(sdg,_name) {};
-
+    ReadThreadsGraph(const ReadThreadsGraph &other);
     void dump(std::string filename);
     void load(std::string filename);
 
@@ -93,15 +93,6 @@ public:
      */
     std::vector<sgNodeID_t> all_nids_fw_in_thread(sgNodeID_t nid, int64_t thread_id);
 
-    /** @brief Construct the neighbouring thread graph starting from a node
-     *
-     * @param nid central node
-     * @param distance Maximum distance to include a node counting from the central node
-     * @param min_links number of links in the thread graph to include a node
-     * @return ReadThreadsGraph graph
-     */
-    ReadThreadsGraph local_graph(sgNodeID_t nid,int64_t distance,uint16_t min_links);
-
     /** @brief Get all thread ids that go across the node
      *
      * @param nid node id to get the threads from
@@ -109,7 +100,6 @@ public:
      */
     std::unordered_set<int64_t> node_threads(sgNodeID_t nid,bool oriented=false) const;
     std::unordered_set<std::pair<int64_t,int32_t>> node_threadpositions(sgNodeID_t nid) const;
-    // std::vector<std::pair<int64_t,sgNodeID_t>> sort_graph();
 
     /** @brief Removes the node nid from the thread thread_id in the graph (inplace)
      *
@@ -144,16 +134,13 @@ public:
      */
     std::vector<NodePosition> get_thread(int64_t thread_id) const;
 
-    std::vector<sgNodeID_t> get_thread_nodes(int64_t thread_id) const;
-
-    bool flip_thread(int64_t thread_id);
+    std::vector<sgNodeID_t> get_thread_nodes(int64_t thread_id, bool oriented=true) const;
 
     /** @brief Creates a map with threads as keys and sets of nodes as values
      *
      * @return thread nodeset map
      */
     std::unordered_map<uint64_t,std::set<sgNodeID_t>> thread_nodesets();
-    //bool split_thread_at(int64_t thread_id, int lidx); FUTURE
 
     /** @brief Get all the reaching nodes from a graph with the threads
      *
@@ -221,11 +208,14 @@ public:
 
     ThreadOverlapType classify_thread_overlap(int64_t tid1, int64_t tid2, int skip_nodes=10) const;
 
+    ReadThreadsGraph reduced_graph(int min_thread_nodes, int min_node_threads);
     /**
      * This map stores the information for all the threads of the graph
      * key: thread id
      * value: ThreadInfo object with the thread information (start, end, link_count)
      */
     std::unordered_map<int64_t,ThreadInfo> thread_info;
-    //TODO: maybe save the exact positions of nodes in threads to directly compute distances between any two?
+
+
+
 };

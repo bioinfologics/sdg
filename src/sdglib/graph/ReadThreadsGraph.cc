@@ -6,6 +6,11 @@
 #include <sdglib/views/NodeView.hpp>
 #include <atomic>
 
+ReadThreadsGraph::ReadThreadsGraph(const ReadThreadsGraph &other): DistanceGraph(other.sdg,other.name){
+    links=other.links;
+    thread_info=other.thread_info;
+}
+
 void ReadThreadsGraph::dump(std::string filename) {
     std::ofstream ofs(filename);
     DistanceGraph::write(ofs);
@@ -177,39 +182,6 @@ std::vector<sgNodeID_t> ReadThreadsGraph::all_nids_fw_in_thread(sgNodeID_t nid, 
     return nodes;
 }
 
-ReadThreadsGraph ReadThreadsGraph::local_graph(sgNodeID_t nid, int64_t distance, uint16_t min_links) {
-    ReadThreadsGraph lrtg(sdg,"local_rtg_"+std::to_string(nid)+"_"+std::to_string(distance)+"_"+std::to_string(min_links));
-    nid=llabs(nid);
-    for (auto tid:node_threads(nid)){
-        auto thread=get_thread(tid);
-        //find first start and last end of node
-        int64_t first_start=10000000000,last_end=0;
-        for (const auto &np:thread){
-            if (llabs(np.node)==nid){
-                if (np.start<first_start) first_start=np.start;
-                if (np.end>last_end) last_end=np.end;
-            }
-        }
-        //copy only nodes within the range into the new thread
-        std::vector<NodePosition> new_thread;
-        new_thread.reserve(thread.size());
-        for (const auto &np:thread) {
-            if (llabs(np.node)==nid or (np.start < first_start and np.end >= first_start - distance) or
-                (np.end > last_end and np.start <= last_end + distance))
-                new_thread.push_back(np);
-        }
-        //insert new thread into the local graph
-        lrtg.add_thread(tid,new_thread);
-    }
-    //for each node in the new graph, if it doesnt have enough links, pop from all
-    for (auto nv:lrtg.get_all_nodeviews(false,false)){
-        if (lrtg.node_threads(nv.node_id()).size()<min_links) lrtg.pop_node_from_all(nv.node_id());
-    }
-
-    return lrtg;
-
-}
-
 std::vector<NodePosition> ReadThreadsGraph::get_thread(int64_t thread_id) const{
     std::vector<NodePosition> thread;
     if (thread_info.count(llabs(thread_id))==0) return {};
@@ -239,7 +211,7 @@ std::vector<NodePosition> ReadThreadsGraph::get_thread(int64_t thread_id) const{
     return thread;
 }
 
-std::vector<sgNodeID_t> ReadThreadsGraph::get_thread_nodes(int64_t thread_id) const{
+std::vector<sgNodeID_t> ReadThreadsGraph::get_thread_nodes(int64_t thread_id, bool oriented) const{
     std::vector<sgNodeID_t> thread;
     if (thread_info.count(llabs(thread_id))==0) return {};
     auto ti=thread_info.at(llabs(thread_id));
@@ -265,19 +237,9 @@ std::vector<sgNodeID_t> ReadThreadsGraph::get_thread_nodes(int64_t thread_id) co
             }
             lc+=link_increment;
         }
-        thread.emplace_back(nid);
+        thread.emplace_back(oriented ? nid : llabs(nid));
     } while (lc>=0 and lc<ti.link_count);
     return thread;
-}
-
-//TODO: this could be much faster by reversing the ends in thread info and updating the link index all along.
-bool ReadThreadsGraph::flip_thread(int64_t thread_id) {
-    thread_id=llabs(thread_id);
-    if (thread_info.count(llabs(thread_id))==0) return false;
-    auto rt=get_thread(-thread_id);
-    remove_thread(thread_id);
-    add_thread(thread_id,rt);
-    return true;
 }
 
 std::unordered_map<sgNodeID_t, uint64_t> ReadThreadsGraph::node_thread_neighbours(sgNodeID_t nid, bool oriented) {
@@ -749,4 +711,38 @@ ThreadOverlapType ReadThreadsGraph::classify_thread_overlap(int64_t tid1, int64_
     if (t1start and t2end) return (t2reversed ? ToT::rt2_t1 : ToT::t2_t1);
     if (t2start and t1end) return (t2reversed ? ToT::t1_rt2 : ToT::t1_t2);
     return ToT::invalid;
+}
+
+ReadThreadsGraph ReadThreadsGraph::reduced_graph(int min_thread_nodes, int min_node_threads) {
+    ReadThreadsGraph rrtg(*this);
+    bool nodes_deleted=true;
+    bool threads_deleted=true;
+    while (nodes_deleted or threads_deleted) {
+        nodes_deleted=false;
+        threads_deleted=false;
+        ReadThreadsGraph new_rrtg(sdg);
+        std::unordered_set<sgNodeID_t> nodes_to_keep;
+        for (sgNodeID_t nid=0;nid<rrtg.links.size(); ++nid) if (rrtg.links[nid].size()>0 and rrtg.node_threads(nid).size()>=min_node_threads) {
+            nodes_to_keep.insert(nid);
+            new_rrtg.links[nid].reserve(rrtg.links[nid].size());
+        }
+        for (auto &ti:rrtg.thread_info) {
+            if (ti.second.link_count<=min_thread_nodes) {
+                threads_deleted=true;
+                continue;
+            }
+            auto t=rrtg.get_thread(ti.first);
+            std::vector<NodePosition> filtered_thread;
+            filtered_thread.reserve(t.size());
+            for (auto &tp:t) {
+                if (nodes_to_keep.count(llabs(tp.node))) filtered_thread.emplace_back(tp);
+                else nodes_deleted=true;
+            }
+            if (filtered_thread.size()>=min_thread_nodes) new_rrtg.add_thread(ti.first,filtered_thread);
+            else threads_deleted=true;
+        }
+        rrtg.links=std::move(new_rrtg.links);
+        rrtg.thread_info=std::move(new_rrtg.thread_info);
+    }
+    return std::move(rrtg);
 }
