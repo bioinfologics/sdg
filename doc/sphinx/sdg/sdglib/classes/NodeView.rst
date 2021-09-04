@@ -1,5 +1,0 @@
-NodeView
-========
-
-.. doxygenclass:: NodeView
-   :members:

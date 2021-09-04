@@ -1,5 +1,0 @@
-PairedReadsMapper
-=======================
-
-.. doxygenclass:: PairedReadsMapper
-   :members:
