@@ -240,6 +240,9 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("make_thread_nodepositions",&ReadThreadsGraph::make_thread_nodepositions,"nodes"_a)
             .def("classify_thread_overlap",&ReadThreadsGraph::classify_thread_overlap,"tid1"_a,"tid2"_a,"skip_nodes"_a=10)
             .def("reduced_graph",&ReadThreadsGraph::reduced_graph,"min_thread_nodes"_a,"min_node_threads"_a)
+            .def("compute_node_proximity",&ReadThreadsGraph::compute_node_proximity,"radius"_a)
+            .def("get_proximal_nodes",&ReadThreadsGraph::get_proximal_nodes,"nid"_a,"oriented"_a=false)
+            .def("shared_threads",&ReadThreadsGraph::shared_threads,"nid1"_a,"nid2"_a,"oriented"_a=false)
             ;
 
 
@@ -496,7 +499,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("solve_all_canonical",&GraphContigger::solve_all_canonical, "ge"_a, "peds"_a, "size"_a=1000, "apply"_a=false)
             .def("clip_all_tips",&GraphContigger::clip_all_tips, "ge"_a, "peds"_a, "size"_a=1000, "apply"_a=false)
             .def("pop_all_error_bubbles",&GraphContigger::pop_all_error_bubbles, "ge"_a, "peds"_a, "size"_a=1000, "apply"_a=false)
-            .def("contig_reduction_to_unique_kmers",&GraphContigger::contig_reduction_to_unique_kmers, "ws"_a, "kmer_counter"_a, "kmer_count"_a, "min_cov"_a, "max_cov"_a, "max_run_size"_a=100)
+            .def("contig_reduction_to_unique_kmers",&GraphContigger::contig_reduction_to_unique_kmers, "ws"_a, "kmer_counter"_a, "kmer_count"_a, "min_cov"_a, "max_cov"_a, "max_run_size"_a=100, "min_kci"_a=0, "max_kci"_a=0)
             .def("group_nodes",&GraphContigger::group_nodes, "peds"_a)
             ;
 
@@ -605,7 +608,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("compute_node_class",&RTGClassifier::compute_node_class,"nid"_a)
             .def("switch_node_class",&RTGClassifier::switch_node_class,"nid"_a,"c"_a)
             .def("get_thread_class",&RTGClassifier::get_thread_class,"tid"_a)
-            .def("compute_thread_class",&RTGClassifier::compute_thread_class,"tid"_a)
+            .def("compute_thread_class",&RTGClassifier::compute_thread_class,"tid"_a,"distance_to_end"_a=5)
             .def("switch_thread_class",&RTGClassifier::switch_thread_class,"tid"_a,"c"_a)
             .def("propagate",&RTGClassifier::propagate,"steps"_a=UINT64_MAX,"verbose"_a=false)
             .def("thread_propagate",&RTGClassifier::thread_propagate,"steps"_a=UINT64_MAX,"vote_perc"_a=.1,"max_noise"_a=3,"verbose"_a=false)

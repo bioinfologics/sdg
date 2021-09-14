@@ -14,7 +14,7 @@ public:
     bool switch_node_class(sgNodeID_t nid, int64_t c);
 
     int64_t get_thread_class(int64_t tid);
-    int64_t compute_thread_class(int64_t tid);
+    int64_t compute_thread_class(int64_t tid, int distance_to_end= 5);
     bool switch_thread_class(int64_t tid, int64_t c);
 
     uint64_t propagate(uint64_t steps=UINT64_MAX, bool verbose=false);

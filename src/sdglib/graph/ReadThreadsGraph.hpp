@@ -209,12 +209,21 @@ public:
     ThreadOverlapType classify_thread_overlap(int64_t tid1, int64_t tid2, int skip_nodes=10) const;
 
     ReadThreadsGraph reduced_graph(int min_thread_nodes, int min_node_threads);
+
+    void compute_node_proximity(int radius);
+
+    std::unordered_map<sgNodeID_t,uint64_t> get_proximal_nodes(sgNodeID_t nid, bool oriented=false);
+
+    int64_t shared_threads(sgNodeID_t n1, sgNodeID_t n2, bool oriented=false);
+
+
     /**
      * This map stores the information for all the threads of the graph
      * key: thread id
      * value: ThreadInfo object with the thread information (start, end, link_count)
      */
     std::unordered_map<int64_t,ThreadInfo> thread_info;
+    std::unordered_map<sgNodeID_t, std::vector<std::pair<sgNodeID_t,uint64_t > > > node_proximal_nodes;
 
 
 

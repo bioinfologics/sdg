@@ -31,10 +31,10 @@ void DistanceGraph::copy_links(const DistanceGraph &other) {
 bool DistanceGraph::remove_link(sgNodeID_t source, sgNodeID_t dest) {
     auto & slinks = links[(source > 0 ? source : -source)];
     auto slinksLen = slinks.size();
-    slinks.erase(std::remove(slinks.begin(), slinks.end(), Link(source,dest,0)), slinks.end());
+    slinks.erase(std::remove_if(slinks.begin(), slinks.end(), [source,dest] (auto l) {return l.source==source and l.dest==dest;}), slinks.end());
     auto & dlinks = links[(dest > 0 ? dest : -dest)];
     auto dlinksLen = dlinks.size();
-    dlinks.erase(std::remove(dlinks.begin(), dlinks.end(), Link(dest,source,0)), dlinks.end());
+    dlinks.erase(std::remove_if(dlinks.begin(), dlinks.end(), [source,dest] (auto l) {return l.source==dest and l.dest==source;}), dlinks.end());
     if (slinks.size() != slinksLen or dlinks.size() != dlinksLen) return true;
     return false;
 }

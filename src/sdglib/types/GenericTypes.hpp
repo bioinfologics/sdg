@@ -11,6 +11,8 @@
 #include <limits>
 #include <cstdint>
 #include <xxhash/xxhash.h>
+#include <set>
+#include <unordered_set>
 
 using sgNodeID_t = int64_t; //first node is 1; negatives are RC
 using seqID_t = int64_t; //first sequence is 0;
@@ -174,5 +176,27 @@ namespace sdglib {
                 if (end>v.size()) end=v.size();
                 if (start>=end) return {};
                 return std::vector<T>(v.begin()+start,v.begin()+end);
-            }
+            };
+    template <class T>
+            size_t intersection_size(const std::set<T>& v1, const std::set<T>& v2)
+            {
+                size_t s=0;
+                for (auto p1=v1.cbegin(),p2=v2.cbegin();p1!=v1.cend() and p2!=v2.cend();){
+                    if (*p1==*p2) {
+                        ++s;
+                        ++p1;
+                        ++p2;
+                    }
+                    else if (*p1<*p2) ++p1;
+                    else ++p2;
+                }
+                return s;
+            };
+    template <class T>
+            size_t intersection_size(const std::unordered_set<T>& v1, const std::unordered_set<T>& v2)
+            {
+                size_t s=0;
+                for (const auto & x:v1) if (v2.count(x)) ++s;
+                return s;
+            };
 }

@@ -714,6 +714,7 @@ ThreadOverlapType ReadThreadsGraph::classify_thread_overlap(int64_t tid1, int64_
 }
 
 ReadThreadsGraph ReadThreadsGraph::reduced_graph(int min_thread_nodes, int min_node_threads) {
+    //TODO: this can probably be speed up with a node-to-threads map and a threads-to-nodes map, and counters, iterating over the map's vectors, then using the map to filter the graph only once
     ReadThreadsGraph rrtg(*this);
     bool nodes_deleted=true;
     bool threads_deleted=true;
@@ -745,4 +746,49 @@ ReadThreadsGraph ReadThreadsGraph::reduced_graph(int min_thread_nodes, int min_n
         rrtg.thread_info=std::move(new_rrtg.thread_info);
     }
     return std::move(rrtg);
+}
+
+void ReadThreadsGraph::compute_node_proximity(int radius) {
+    //TODO: OpenMP is your friend
+    std::unordered_set<std::pair<sgNodeID_t,sgNodeID_t>> node_pairs;
+    ++radius;
+    for (auto ti:thread_info) {
+        auto t= get_thread_nodes(ti.first);
+        for (auto i=0;i<t.size();++i) {
+            for (auto j=i+1;j<t.size() and j<i+radius;++j) {
+                auto n1=(llabs(t[i])<llabs(t[j]) ? t[i] : t[j]);
+                auto n2=(llabs(t[i])<llabs(t[j]) ? t[j] : t[i]);
+                if (n1<0) {
+                    n1=-n1;
+                    n2=-n2;
+                }
+                node_pairs.insert({n1,n2});
+            }
+        }
+    }
+    node_proximal_nodes.clear();
+    for (auto np:node_pairs) {
+        auto n1=np.first;
+        auto n2=np.second;
+        auto s=shared_threads(n1,n2,true);
+        node_proximal_nodes[n1].emplace_back(n1 > 0 ? n2:-n2,s);
+        node_proximal_nodes[llabs(n2)].emplace_back(n2 > 0 ? n1:-n1,s);
+
+    }
+}
+
+std::unordered_map<sgNodeID_t, uint64_t> ReadThreadsGraph::get_proximal_nodes(sgNodeID_t nid, bool oriented) {
+    std::unordered_map<sgNodeID_t, uint64_t> s;
+    for (auto &nc:node_proximal_nodes[llabs(nid)]) {
+        if (oriented) {
+            if (nid>0) s[nc.first]=nc.second;
+            else s[-nc.first]=nc.second;
+        }
+        else s[llabs(nc.first)]+=nc.second;
+    }
+    return s;
+}
+
+int64_t ReadThreadsGraph::shared_threads(sgNodeID_t n1, sgNodeID_t n2, bool oriented) {
+    return sdglib::intersection_size(node_threads(n1,oriented),node_threads(n2,oriented));
 }
