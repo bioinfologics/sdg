@@ -92,16 +92,18 @@ int64_t RTGClassifier::get_thread_class(int64_t tid) {
     return thread_class[tid];
 }
 
-int64_t RTGClassifier::compute_thread_class(int64_t tid) {
+int64_t RTGClassifier::compute_thread_class(int64_t tid, int distance_to_end) {
     std::map<int64_t, int64_t> class_votes;
     int64_t highest_votes=0;
     int64_t highest_votes_class=0;
-    int64_t v;
-    int64_t c;
+
+
     auto &nodes=thread_nodes[tid];
     std::vector<int64_t> nc;
     nc.reserve(nodes.size());
     for (auto nid:nodes) nc.emplace_back(node_class[nid]);
+
+    int64_t v;
     for (auto c:nc) {
         if (c==0) continue;
         v = ++class_votes[c];
@@ -110,13 +112,31 @@ int64_t RTGClassifier::compute_thread_class(int64_t tid) {
             highest_votes_class = c;
         }
     }
+    int64_t winner_class=0;
     if (2*highest_votes>nodes.size()) //condition 1: 50+% nodes in class
-        return highest_votes_class;
-    if (highest_votes>=thread_p) { //condition 2: only one class with p in q
+        winner_class=highest_votes_class;
+    else if (highest_votes>=thread_p) { //condition 2: only one class with p in q
         auto p_in_q=find_all_p_in_q(thread_p,thread_q,nc,true);
-        if (p_in_q.size()==1) return p_in_q[0];
+        if (p_in_q.size()==1) winner_class=p_in_q[0];
     }
-    return 0;
+    if (winner_class!=0 and nc.size()>distance_to_end) {
+        bool start=false;
+        bool end=false;
+        for (auto i=0;i<distance_to_end;++i) {
+            if (nc[i]==winner_class) {
+                start=true;
+                break;
+            }
+        }
+        for (auto i=nc.size()-distance_to_end ; i<nc.size();++i) {
+            if (nc[i]==winner_class) {
+                end=true;
+                break;
+            }
+        }
+        if (not start and not end) winner_class=0;
+    }
+    return winner_class;
 }
 
 bool RTGClassifier::switch_thread_class(int64_t tid, int64_t c) {

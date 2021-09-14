@@ -905,7 +905,7 @@ void GraphContigger::solve_all_tangles(WorkSpace &ws, PairedReadsDatastore &peds
 }
 
 
-std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger::contig_reduction_to_unique_kmers(WorkSpace &rws, std::string kmer_counter, std::string kmer_count, int min_cov, int max_cov, uint32_t max_run_size){
+std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger::contig_reduction_to_unique_kmers(WorkSpace &rws, std::string kmer_counter, std::string kmer_count, int min_cov, int max_cov, uint32_t max_run_size, float min_kci, float max_kci){
     SequenceDistanceGraph & anchor_graph=rws.sdg;
     std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> anchor_nodes; //old_node -> [ [new_node, offset]... [new_node, offset] ]
     // File to write translation table to
@@ -914,8 +914,16 @@ std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger:
 
 #pragma omp parallel for schedule(dynamic,1)
     for (const auto& nv: ws.sdg.get_all_nodeviews()){
+
         auto c = nv.kmer_coverage(kmer_counter, kmer_count);
         auto cg = nv.kmer_coverage(kmer_counter, "sdg");
+        if (max_kci>0 ) {
+            auto ckci=ws.get_kmer_counter(kmer_counter).kci(nv.node_id());
+            if (ckci < min_kci or ckci > max_kci) {
+                //std::cout<<"discarding node "<<nv.node_id()<<" with kci= "<<ckci<<std::endl;
+                continue;
+            }
+        }
 #pragma omp critical
         {
             // while to identify all sub-sequences of a node and putting them in a temp vector
