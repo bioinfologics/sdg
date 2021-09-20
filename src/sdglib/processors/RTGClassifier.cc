@@ -74,9 +74,12 @@ int64_t RTGClassifier::compute_node_class(sgNodeID_t nid) {
             highest_votes_class = c;
         }
     }
-    //TODO: check for a second?
-    if (highest_votes>=min_node_threads and highest_votes>=node_min_percentage*threads.size())
+    if (highest_votes>=min_node_threads and highest_votes>=node_min_percentage*threads.size()) {
+        for (auto &cv:class_votes) {
+            if (cv.first!=0 and cv.first!=highest_votes_class and cv.second>=node_min_percentage*threads.size()) return 0; //two classes met the number of votes
+        }
         return highest_votes_class;
+    }
     return 0;
 }
 
@@ -119,23 +122,23 @@ int64_t RTGClassifier::compute_thread_class(int64_t tid, int distance_to_end) {
         auto p_in_q=find_all_p_in_q(thread_p,thread_q,nc,true);
         if (p_in_q.size()==1) winner_class=p_in_q[0];
     }
-    if (winner_class!=0 and nc.size()>distance_to_end) {
-        bool start=false;
-        bool end=false;
-        for (auto i=0;i<distance_to_end;++i) {
-            if (nc[i]==winner_class) {
-                start=true;
-                break;
-            }
-        }
-        for (auto i=nc.size()-distance_to_end ; i<nc.size();++i) {
-            if (nc[i]==winner_class) {
-                end=true;
-                break;
-            }
-        }
-        if (not start and not end) winner_class=0;
-    }
+//    if (winner_class!=0 and nc.size()>distance_to_end) {
+//        bool start=false;
+//        bool end=false;
+//        for (auto i=0;i<distance_to_end;++i) {
+//            if (nc[i]==winner_class) {
+//                start=true;
+//                break;
+//            }
+//        }
+//        for (auto i=nc.size()-distance_to_end ; i<nc.size();++i) {
+//            if (nc[i]==winner_class) {
+//                end=true;
+//                break;
+//            }
+//        }
+//        if (not start and not end) winner_class=0;
+//    }
     return winner_class;
 }
 
@@ -144,6 +147,53 @@ bool RTGClassifier::switch_thread_class(int64_t tid, int64_t c) {
     thread_class[tid]=c;
     for (auto &nid:thread_nodes[tid]) nodes_to_evaluate.insert(nid);
     return true;
+}
+
+std::vector<int64_t> RTGClassifier::find_unclassified_threads(int min_nodes, float max_classified_nodes_perc) {
+    std::vector<int64_t> tids;
+    for (auto tc:thread_class) {
+        if (tc.second==0) {
+            auto &tid=tc.first;
+            auto &tns=thread_nodes[tid];
+            if (tns.size()<min_nodes) continue;
+            auto skip_countdown= ceil(max_classified_nodes_perc*tns.size());
+            for (auto nid:tns) {
+                if (node_class[nid]!=0) {
+                    --skip_countdown;
+                    if (skip_countdown==0) break;
+                }
+            }
+            if (skip_countdown) tids.emplace_back(tid);
+        }
+    }
+    return tids;
+}
+
+int64_t RTGClassifier::new_class_from_thread(int64_t tid) {
+    //find the next-up class
+    int64_t next_class=1;
+    for (auto &tc:thread_class) if (tc.second>=next_class) next_class=tc.second+1;
+    for (auto &nc:node_class) if (nc.second>=next_class) next_class=nc.second+1;
+    switch_thread_class(tid,next_class);
+    int64_t node_counter=0;
+    for (auto nid:thread_nodes[tid]){
+        if (node_class[nid]==0) {
+            ++node_counter;
+            switch_node_class(nid,next_class);
+        }
+    }
+    return node_counter;
+}
+
+int64_t RTGClassifier::class_from_sorter(HappySorter &sorter, int64_t cid) {
+    if (cid==0) {
+        cid=1;
+        for (auto &tc:thread_class) if (tc.second>=cid) cid=tc.second+1;
+        for (auto &nc:node_class) if (nc.second>=cid) cid=nc.second+1;
+    }
+    for (auto &tid:sorter.threads) switch_thread_class(llabs(tid),cid);
+    for (auto &nc:sorter.order.node_coordinates) switch_node_class(llabs(nc.first),cid);
+    return cid;
 }
 
 uint64_t RTGClassifier::propagate(uint64_t steps, bool verbose) {

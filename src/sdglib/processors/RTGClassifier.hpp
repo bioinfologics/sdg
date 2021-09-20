@@ -4,10 +4,12 @@
 
 #pragma once
 #include <sdglib/graph/ReadThreadsGraph.hpp>
+#include <sdglib/processors/HappySorter.hpp>
 
 class RTGClassifier {
 public:
     RTGClassifier(const ReadThreadsGraph &rtg,int min_node_threads=2,float node_min_percentage=.6, int thread_p=10, int thread_q=12, int min_thread_nodes=-1);
+
 
     int64_t get_node_class(sgNodeID_t nid);
     int64_t compute_node_class(sgNodeID_t nid);
@@ -16,6 +18,14 @@ public:
     int64_t get_thread_class(int64_t tid);
     int64_t compute_thread_class(int64_t tid, int distance_to_end= 5);
     bool switch_thread_class(int64_t tid, int64_t c);
+
+    std::vector<int64_t> find_unclassified_threads(int min_nodes=50, float max_classified_nodes_perc=.05);
+
+    int64_t new_class_from_thread(int64_t tid);
+
+    int64_t class_from_sorter(HappySorter & sorter,int64_t cid=0);
+
+    HappySorter sorter_from_class(int64_t cid);
 
     uint64_t propagate(uint64_t steps=UINT64_MAX, bool verbose=false);
     uint64_t thread_propagate(uint64_t steps=UINT64_MAX, float vote_perc=.1, int max_noise=3, bool verbose=false);
