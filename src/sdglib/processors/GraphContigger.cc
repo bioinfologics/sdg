@@ -938,15 +938,29 @@ std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger:
                 if (i == c.size()) break;//contig ended, coverage condition not met
                 auto si = i;
 
-                while (i < c.size() and cg[i] == 1 and c[i] >= min_cov and c[i] <= max_cov and i-si < max_run_size) {
+                while (i < c.size() and cg[i] == 1 and c[i] >= min_cov and c[i] <= max_cov) {
                     i++;
                 }
-                //add a node at the end of the graph and add the id to the list for future reference
-                sgNodeID_t new_node = anchor_graph.add_node(Node(seq.substr(si, i - si + 30)));
-                //int64_t distance = si-last_node_position-30;
 
-                anchor_nodes[nv.node_id()].push_back({new_node, si});
-                ofile << nv.node_id() << "," << new_node << "," << si << std::endl;
+                //check end conditions are happening at the same time
+                if (si>0 and (cg[si-1]==1 or (c[si-1]*10<15*c[si])) ) {
+                    std::cout<<"discarding potential anchor run, start conditions not met, si:"<<si<<" cg[si-1]: "<<cg[si-1]<<" c[si-1]: "<<c[si-1]<<"c[si]: "<<c[si]<<std::endl;
+                    continue; //graph was unique before read coverage unique, collapsing alert!
+                }
+                if (i<c.size() and (cg[i]==1 or (c[i]*10<15*c[i-1])) ) {
+                    std::cout<<"discarding potential anchor run, end conditions not met, i:"<<i<<" cg[i]: "<<cg[i]<<" c[i]: "<<c[i]<<"c[i-1]: "<<c[i-1]<<std::endl;
+                    continue;//graph is unique after read coverage unique, collapsing alert!
+                }
+                //iterate and break into max_size chunks
+                for (auto ssi=si;ssi<=i;ssi+=max_run_size) {
+                    auto ii=ssi+max_run_size;
+                    if (ii>i) ii=i;
+                    //add a node at the end of the graph and add the id to the list for future reference
+                    sgNodeID_t new_node = anchor_graph.add_node(Node(seq.substr(ssi, ii - ssi + 30)));
+                    //int64_t distance = si-last_node_position-30;
+                    anchor_nodes[nv.node_id()].push_back({new_node, ssi});
+                    ofile << nv.node_id() << "," << new_node << "," << ssi << std::endl;
+                }
             }
 
             if (!anchor_nodes[nv.node_id()].empty()) {
