@@ -67,6 +67,9 @@ public:
      */
     void add_count(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
 
+    void _add_count64(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
+    void _add_count128(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
+
     /**
      * @brief Accumulates the kmer count from the provided data-store to the last available read_counts collection
      * @param ds PairedReadsDatastore ds
