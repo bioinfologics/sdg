@@ -25,7 +25,7 @@
 #include <sdglib/graph/ReadThreadsGraph.hpp>
 #include <sdglib/processors/TotalSorter.hpp>
 #include <sdglib/processors/RTGCluster.hpp>
-#include <sdglib/processors/RTGClassifier.hpp>
+#include <sdglib/processors/RTGPartition.hpp>
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -602,36 +602,36 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readonly("thread_nodes",&RTGCluster::thread_nodes)
             ;
 
-    py::class_<RTGClassifier>(m, "RTGClassifier", "RTGClassifier")
+    py::class_<RTGPartition>(m, "RTGPartition", "RTGPartition")
             .def(py::init<const ReadThreadsGraph &, int, float, int, int, int>(),"","rtg"_a,"min_node_threads"_a=2,"min_node_percentage"_a=.6,"thread_p"_a=10,"thread_q"_a=12, "min_thread_nodes"_a=-1, py::return_value_policy::take_ownership)
-            .def("get_node_class",&RTGClassifier::get_node_class,"nid"_a)
-            .def("compute_node_class",&RTGClassifier::compute_node_class,"nid"_a)
-            .def("switch_node_class",&RTGClassifier::switch_node_class,"nid"_a,"c"_a)
-            .def("get_thread_class",&RTGClassifier::get_thread_class,"tid"_a)
-            .def("compute_thread_class",&RTGClassifier::compute_thread_class,"tid"_a,"distance_to_end"_a=5)
-            .def("switch_thread_class",&RTGClassifier::switch_thread_class,"tid"_a,"c"_a)
-            .def("find_unclassified_threads",&RTGClassifier::find_unclassified_threads,"min_nodes"_a=50,"max_unclassified_node_perc"_a=0.05)
-            .def("new_class_from_thread",&RTGClassifier::new_class_from_thread,"tid"_a)
-            .def("class_from_sorter",&RTGClassifier::class_from_sorter,"sorter"_a,"cid"_a=0)
-            .def("propagate",&RTGClassifier::propagate,"steps"_a=UINT64_MAX,"verbose"_a=false)
-            .def("thread_propagate",&RTGClassifier::thread_propagate,"steps"_a=UINT64_MAX,"vote_perc"_a=.1,"max_noise"_a=3,"verbose"_a=false)
-            .def("thread_propagate2",&RTGClassifier::thread_propagate2,"steps"_a=UINT64_MAX, "min_side_votes"_a=3, "side_vote_perc"_a=.75, "min_contain_votes"_a=5, "contain_vote_perc"_a=.90,  "reclassify"_a= false, "verbose"_a=false)
-            .def("find_class_bridges",&RTGClassifier::find_class_bridges,"p"_a,"q"_a)
-            .def("compute_thread_intersections",&RTGClassifier::compute_thread_intersections,"min_threads"_a,"max_threads"_a)
-            .def("compute_thread_neighbours",&RTGClassifier::compute_thread_neighbours,"min_shared"_a=10)
-            .def("compute_thread_neighbours_p_q",&RTGClassifier::compute_thread_neighbours_p_q,"p"_a=10,"q"_a=10)
-            .def("classify_neighbours", &RTGClassifier::classify_neighbours, "skip_nodes"_a=10, "discard_invalid"_a=true)
-            .def("get_thread_neighbours",&RTGClassifier::get_thread_neighbours,"tid"_a)
-            .def("get_thread_neighbours_types",&RTGClassifier::get_thread_neighbours_types,"tid"_a)
-            .def("get_thread_intersection",&RTGClassifier::get_thread_intersection,"tid1"_a,"tid2"_a)
-            .def("thread_class_votes",&RTGClassifier::thread_class_votes,"tid"_a,"ovltypes"_a=std::set<ThreadOverlapType>())
-            .def("reset",&RTGClassifier::reset,"min_node_threads"_a=-1,"min_node_percentage"_a=-1,"thread_p"_a=-1,"thread_q"_a=-1)
-            .def_readonly("node_threads",&RTGClassifier::node_threads)
-            .def_readonly("thread_nodes",&RTGClassifier::thread_nodes)
-            .def_readonly("node_class",&RTGClassifier::node_class)
-            .def_readonly("thread_class",&RTGClassifier::thread_class)
-            .def_readonly("nodes_to_evaluate",&RTGClassifier::nodes_to_evaluate)
-            .def_readonly("threads_to_evaluate",&RTGClassifier::threads_to_evaluate)
+            .def("get_node_class",&RTGPartition::get_node_class,"nid"_a)
+            .def("compute_node_class",&RTGPartition::compute_node_class,"nid"_a)
+            .def("switch_node_class",&RTGPartition::switch_node_class,"nid"_a,"c"_a)
+            .def("get_thread_class",&RTGPartition::get_thread_class,"tid"_a)
+            .def("compute_thread_class",&RTGPartition::compute_thread_class,"tid"_a,"distance_to_end"_a=5)
+            .def("switch_thread_class",&RTGPartition::switch_thread_class,"tid"_a,"c"_a)
+            .def("find_unclassified_threads",&RTGPartition::find_unclassified_threads,"min_nodes"_a=50,"max_unclassified_node_perc"_a=0.05)
+            .def("new_class_from_thread",&RTGPartition::new_class_from_thread,"tid"_a)
+            .def("class_from_sorter",&RTGPartition::class_from_sorter,"sorter"_a,"cid"_a=0)
+            .def("propagate",&RTGPartition::propagate,"steps"_a=UINT64_MAX,"verbose"_a=false)
+            .def("thread_propagate",&RTGPartition::thread_propagate,"steps"_a=UINT64_MAX,"vote_perc"_a=.1,"max_noise"_a=3,"verbose"_a=false)
+            .def("thread_propagate2",&RTGPartition::thread_propagate2,"steps"_a=UINT64_MAX, "min_side_votes"_a=3, "side_vote_perc"_a=.75, "min_contain_votes"_a=5, "contain_vote_perc"_a=.90,  "reclassify"_a= false, "verbose"_a=false)
+            .def("find_class_bridges",&RTGPartition::find_class_bridges,"p"_a,"q"_a)
+            .def("compute_thread_intersections",&RTGPartition::compute_thread_intersections,"min_threads"_a,"max_threads"_a)
+            .def("compute_thread_neighbours",&RTGPartition::compute_thread_neighbours,"min_shared"_a=10)
+            .def("compute_thread_neighbours_p_q",&RTGPartition::compute_thread_neighbours_p_q,"p"_a=10,"q"_a=10)
+            .def("classify_neighbours", &RTGPartition::classify_neighbours, "skip_nodes"_a=10, "discard_invalid"_a=true)
+            .def("get_thread_neighbours",&RTGPartition::get_thread_neighbours,"tid"_a)
+            .def("get_thread_neighbours_types",&RTGPartition::get_thread_neighbours_types,"tid"_a)
+            .def("get_thread_intersection",&RTGPartition::get_thread_intersection,"tid1"_a,"tid2"_a)
+            .def("thread_class_votes",&RTGPartition::thread_class_votes,"tid"_a,"ovltypes"_a=std::set<ThreadOverlapType>())
+            .def("reset",&RTGPartition::reset,"min_node_threads"_a=-1,"min_node_percentage"_a=-1,"thread_p"_a=-1,"thread_q"_a=-1)
+            .def_readonly("node_threads",&RTGPartition::node_threads)
+            .def_readonly("thread_nodes",&RTGPartition::thread_nodes)
+            .def_readonly("node_class",&RTGPartition::node_class)
+            .def_readonly("thread_class",&RTGPartition::thread_class)
+            .def_readonly("nodes_to_evaluate",&RTGPartition::nodes_to_evaluate)
+            .def_readonly("threads_to_evaluate",&RTGPartition::threads_to_evaluate)
             ;
 
     m.def("str_to_kmers",&sdglib::str_to_kmers,py::return_value_policy::take_ownership);

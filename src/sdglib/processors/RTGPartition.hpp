@@ -6,9 +6,9 @@
 #include <sdglib/graph/ReadThreadsGraph.hpp>
 #include <sdglib/processors/HappySorter.hpp>
 
-class RTGClassifier {
+class RTGPartition {
 public:
-    RTGClassifier(const ReadThreadsGraph &rtg,int min_node_threads=2,float node_min_percentage=.6, int thread_p=10, int thread_q=12, int min_thread_nodes=-1);
+    RTGPartition(const ReadThreadsGraph &rtg,int min_node_threads=2,float node_min_percentage=.6, int thread_p=10, int thread_q=12, int min_thread_nodes=-1);
 
 
     int64_t get_node_class(sgNodeID_t nid);
