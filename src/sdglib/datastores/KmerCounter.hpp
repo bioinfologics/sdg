@@ -48,6 +48,8 @@ public:
     void index_sdg();
 
     void update_graph_counts();
+    void _update_graph_counts63();
+    void _update_graph_counts128();
 
     bool operator==(const KmerCounter &o) const {
         return (std::tie(k, kindex, count_names, counts) == std::tie(o.k, o.kindex, o.count_names, o.counts));
@@ -156,5 +158,6 @@ private:
     KmerCountMode count_mode;
     float kci_peak_f=-1;
     std::unordered_map<int64_t, float> kci_cache;
+    std::unordered_map<__uint128_t, float> kci_cache128;
 };
 

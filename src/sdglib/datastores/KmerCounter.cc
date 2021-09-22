@@ -82,7 +82,15 @@ void KmerCounter::index_sdg() {
     }
 }
 
-void KmerCounter::update_graph_counts() {
+void KmerCounter::update_graph_counts(){
+    if (k<=31){
+        KmerCounter::_update_graph_counts63();
+    } else {
+        KmerCounter::_update_graph_counts128();
+    }
+}
+
+void KmerCounter::_update_graph_counts63() {
     for (auto &c:counts[0])c=0;
     uint64_t not_found=0;
 
@@ -138,6 +146,64 @@ void KmerCounter::update_graph_counts() {
     //clear kci cache, as it will be invalid since we don't know if the same k-mers are unique in the graph!
     kci_cache.clear();
 }
+
+void KmerCounter::_update_graph_counts128() {
+    for (auto &c:counts[0])c=0;
+    uint64_t not_found=0;
+
+    if (count_mode==Canonical) {
+#pragma omp parallel
+        {
+            std::vector<__uint128_t> nkmers;
+            std::vector<int64_t> nkmerspos;
+            StringKMerFactory128 skf(k);
+#pragma omp for schedule(static,1000) reduction(+:not_found)
+            for (sgNodeID_t nid=0;nid<ws.sdg.nodes.size();++nid) {
+                const auto &n=ws.sdg.nodes[nid];
+                if (n.sequence.size() >= k) {
+                    nkmers.clear();
+                    skf.create_kmers(n.sequence, nkmers);
+                    nkmerspos.clear();
+                    nkmerspos.resize(nkmers.size());
+                    for (uint64_t i=0;i<nkmers.size();++i) {
+                        auto &kmer=nkmers[i];
+                        auto kidx = std::lower_bound(kindex128.begin(), kindex128.end(), kmer);
+                        if (kidx == kindex128.end() or *kidx != kmer) {
+                            ++not_found;
+                            nkmerspos[i]=-1;
+                        }
+                        else {
+                            nkmerspos[i]=kidx - kindex128.begin();
+                            //++counts[0][kidx - kindex.begin()];
+                        }
+                    }
+#pragma omp critical
+                    for (auto &p:nkmerspos) {
+                        if (p!=-1) ++counts[0][p];
+                    }
+                }
+            }
+        }
+    } else if (count_mode==NonCanonical) {
+        std::vector<__uint128_t> nkmers;
+        StringKMerFactoryNC128 skf(k);
+        for (auto &n:ws.sdg.nodes) {
+            nkmers.clear();
+            if (n.sequence.size() >= k) {
+                skf.create_kmers(n.sequence, nkmers);
+                for (auto &kmer:nkmers) {
+                    auto kidx=std::lower_bound(kindex128.begin(), kindex128.end(), kmer);
+                    if (kidx==kindex128.end() or *kidx!=kmer) ++not_found;
+                    else ++counts[0][kidx-kindex128.begin()];
+                }
+            }
+        }
+    }
+    if (not_found) sdglib::OutputLog()<<"WARNING: "<<not_found<<" kmers not in index when updating graph counts"<<std::endl;
+    //clear kci cache, as it will be invalid since we don't know if the same k-mers are unique in the graph!
+    kci_cache128.clear();
+}
+
 void KmerCounter::add_count(const std::string &count_name, const std::vector<std::string> &filenames, bool fastq) {
     if (k<=31){
         _add_count64(count_name, filenames, fastq);
