@@ -560,15 +560,9 @@ void KmerCounter::read_counts(std::ifstream &count_file) {
     count_file.read((char *) &count_mode, sizeof(count_mode));
     sdglib::read_string(count_file,name);
     sdglib::read_stringvector(count_file,count_names);
-    if (k<=31){
-        sdglib::read_flat_vector(count_file,kindex);
-        sdglib::read_flat_vectorvector(count_file,counts);
-    } else {
-        sdglib::read_flat_vector(count_file,kindex128);
-        sdglib::read_flat_vectorvector(count_file,counts);
-    }
-
-
+    if (k<=31) sdglib::read_flat_vector(count_file,kindex);
+    else sdglib::read_flat_vector(count_file,kindex128);
+    sdglib::read_flat_vectorvector(count_file,counts);
 }
 
 void KmerCounter::write(std::ofstream &output_file) const {
@@ -587,7 +581,8 @@ void KmerCounter::write_counts(std::ofstream &count_file) const {
     count_file.write((char *) &count_mode, sizeof(count_mode));
     sdglib::write_string(count_file,name);
     sdglib::write_stringvector(count_file,count_names);
-    sdglib::write_flat_vector(count_file,kindex);
+    if (k<=31) sdglib::write_flat_vector(count_file,kindex);
+    else sdglib::write_flat_vector(count_file,kindex128);
     sdglib::write_flat_vectorvector(count_file,counts);
 }
 
