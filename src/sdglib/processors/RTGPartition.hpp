@@ -25,11 +25,16 @@ public:
 
     int64_t class_from_sorter(HappySorter & sorter,int64_t cid=0);
 
-    HappySorter sorter_from_class(int64_t cid);
+    HappySorter sorter_from_class(int64_t cid, float _min_node_happiness=.7, int _min_node_threads=3, int _order_end_size=30);
+
+    void classify_all_threads(int min_nodes=50, float max_classified_nodes_perc=.05);
 
     uint64_t propagate(uint64_t steps=UINT64_MAX, bool verbose=false);
+
     uint64_t thread_propagate(uint64_t steps=UINT64_MAX, float vote_perc=.1, int max_noise=3, bool verbose=false);
+
     std::map<uint64_t, uint64_t> thread_class_votes(uint64_t tid, std::set<ThreadOverlapType> ovltypes={});
+
     uint64_t thread_propagate2(uint64_t steps=UINT64_MAX, int min_side_votes=3, float side_vote_perc=.75, int min_contain_votes=5, float contain_vote_perc=.90,  bool reclassify= false, bool verbose=false);
 
     std::unordered_map<std::pair<int64_t,int64_t>,std::vector<int64_t>> find_class_bridges(int p, int q);
@@ -70,6 +75,9 @@ public:
     std::unordered_map<std::pair<int64_t, int64_t> ,int64_t> thread_intersections;
     std::unordered_map<int64_t,std::vector<int64_t>> thread_neighbours;
     std::unordered_map<int64_t,std::vector<ThreadOverlapType>> thread_neighbours_types;
+
+private:
+    bool thread_available(uint64_t tid, int min_nodes=50, float max_classified_nodes_perc=.05);
 };
 
 

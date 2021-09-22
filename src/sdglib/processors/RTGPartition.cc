@@ -152,19 +152,7 @@ bool RTGPartition::switch_thread_class(int64_t tid, int64_t c) {
 std::vector<int64_t> RTGPartition::find_unclassified_threads(int min_nodes, float max_classified_nodes_perc) {
     std::vector<int64_t> tids;
     for (auto tc:thread_class) {
-        if (tc.second==0) {
-            auto &tid=tc.first;
-            auto &tns=thread_nodes[tid];
-            if (tns.size()<min_nodes) continue;
-            auto skip_countdown= ceil(max_classified_nodes_perc*tns.size());
-            for (auto nid:tns) {
-                if (node_class[nid]!=0) {
-                    --skip_countdown;
-                    if (skip_countdown==0) break;
-                }
-            }
-            if (skip_countdown) tids.emplace_back(tid);
-        }
+        if (thread_available(tc.first,min_nodes,max_classified_nodes_perc)) tids.emplace_back(tc.first);
     }
     return tids;
 }
@@ -194,6 +182,92 @@ int64_t RTGPartition::class_from_sorter(HappySorter &sorter, int64_t cid) {
     for (auto &tid:sorter.threads) switch_thread_class(llabs(tid),cid);
     for (auto &nc:sorter.order.node_coordinates) switch_node_class(llabs(nc.first),cid);
     return cid;
+}
+
+HappySorter RTGPartition::sorter_from_class(int64_t cid,float _min_node_happiness, int _min_node_threads, int _order_end_size) {
+
+    std::unordered_set<sgNodeID_t> nodes_to_place,nodes;
+    std::unordered_set<int64_t> threads_to_place,threads;
+    for (auto nc:node_class) if (nc.second==cid) nodes_to_place.insert(nc.first);
+    for (auto tc:thread_class) if (tc.second==cid) threads_to_place.insert(tc.first);
+
+    std::unordered_map<sgNodeID_t,int64_t> node_votes;
+    std::unordered_map<int64_t,int64_t> thread_votes;
+
+    std::cout<<"placing a node and its threads"<<std::endl;
+    //choose a node, place it in fw orientation, place all its threads
+    sgNodeID_t starting_node=0;
+    for (auto nid:nodes_to_place) {
+        if (node_threads[nid].size()>6) {
+            nodes.insert(nid);
+            starting_node=nid;
+            nodes_to_place.erase(nid);
+            for (auto tid:rtg.node_threads(nid,true)) if (threads_to_place.count(llabs(tid))) {
+                threads.insert(tid);
+                for (auto nid:rtg.get_thread_nodes(tid,true)) if (nodes_to_place.count(llabs(nid))) ++node_votes[nid];
+            }
+            break;
+        }
+    }
+    uint64_t last_to_place=nodes_to_place.size()+threads_to_place.size()+1;
+
+    while (nodes_to_place.size()+threads_to_place.size()!=last_to_place) {
+//        std::cout<<"Starting placement round, "<<nodes_to_place.size()+threads_to_place.size()<<" elements to place, previous count was "<<last_to_place<<std::endl;
+        last_to_place=nodes_to_place.size()+threads_to_place.size();
+        std::unordered_set<sgNodeID_t> new_nodes;
+        std::unordered_set<int64_t> new_threads;
+//        std::cout<<"placing nodes"<<std::endl;
+        for (auto nid:nodes_to_place) {
+            for (auto nnid:{nid,-nid}){
+                if (node_votes[nnid]>=2) {
+                    new_nodes.insert(nnid);
+                    nodes.insert(nnid);
+                    for (auto tid:rtg.node_threads(nnid,true)) if (threads_to_place.count(llabs(tid))) ++thread_votes[tid];
+                    break;
+                }
+            }
+        }
+//        std::cout<<"placing threads"<<std::endl;
+        for (auto tid:threads_to_place) {
+            for (auto ttid:{tid,-tid}){
+                if (thread_votes[ttid]>=2) {
+                    new_threads.insert(ttid);
+                    threads.insert(ttid);
+                    for (auto nid:rtg.get_thread_nodes(ttid,true)) if (nodes_to_place.count(llabs(nid))) ++node_votes[nid];
+                    break;
+                }
+            }
+        }
+//        std::cout<<"removing "<<new_nodes.size()<<" placed nodes from to_place"<<std::endl;
+        for (auto nid:new_nodes) nodes_to_place.erase(llabs(nid));
+//        std::cout<<"removing "<<new_threads.size()<<" placed threads from to_place"<<std::endl;
+        for (auto tid:new_threads) threads_to_place.erase(llabs(tid));
+//        std::cout<<"placement round finished, "<<nodes_to_place.size()<<" nodes, and "<<threads_to_place.size()<<" threads left to place"<<std::endl;
+    }
+
+    HappySorter hs(rtg,_min_node_happiness,_min_node_threads,_order_end_size); //TODO options for happiness, etc
+    //now add all threads
+    hs.order.add_placed_nodes({{starting_node,0}});
+    hs.threads=threads;
+    //now place every node
+    //now place a random node as start
+    hs.order.add_placed_nodes(hs.place_nodes(nodes,false));
+    return hs;
+}
+
+void RTGPartition::classify_all_threads(int min_nodes, float max_classified_nodes_perc) {
+    for (auto tc:thread_class) {
+        if (thread_available(tc.first,min_nodes,max_classified_nodes_perc)) {
+            auto hs=HappySorter(rtg,.8,2);//TODO: params for this!
+            std::vector<sgNodeID_t> nodes;
+            for (auto nid:rtg.get_thread_nodes(tc.first)) if (node_class.count(llabs(nid))) nodes.emplace_back(nid);
+            hs.start_from_nodelist(nodes);
+            hs.recruit_all_happy_threads_q(3,6);
+            while (hs.grow()) hs.recruit_all_happy_threads_q(3,6);//TODO: params for this!
+            class_from_sorter(hs);
+            propagate();
+        }
+    }
 }
 
 uint64_t RTGPartition::propagate(uint64_t steps, bool verbose) {
@@ -502,4 +576,20 @@ void RTGPartition::classify_neighbours(int skip_nodes, bool discard_invalid) {
             }
         }
     }
+}
+
+bool RTGPartition::thread_available(uint64_t tid, int min_nodes, float max_classified_nodes_perc) {
+    auto tc=thread_class[tid];
+    if (tc!=0) return false;
+    auto &tns=thread_nodes[tid];
+    if (tns.size()<min_nodes) return false;
+    auto skip_countdown= ceil(max_classified_nodes_perc*tns.size());
+    for (auto nid:tns) {
+        if (node_class[nid]!=0) {
+            --skip_countdown;
+            if (skip_countdown==0) break;
+        }
+    }
+    return skip_countdown!=0;
+
 }

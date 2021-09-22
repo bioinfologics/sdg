@@ -613,6 +613,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("find_unclassified_threads",&RTGPartition::find_unclassified_threads,"min_nodes"_a=50,"max_unclassified_node_perc"_a=0.05)
             .def("new_class_from_thread",&RTGPartition::new_class_from_thread,"tid"_a)
             .def("class_from_sorter",&RTGPartition::class_from_sorter,"sorter"_a,"cid"_a=0)
+            .def("classify_all_threads",&RTGPartition::classify_all_threads,"min_nodes"_a=50,"max_unclassified_node_perc"_a=0.05)
+            .def("sorter_from_class",&RTGPartition::sorter_from_class,"cid"_a=0,"min_node_happiness"_a=.7, "min_node_threads"_a=3, "order_end_size"_a=30)
             .def("propagate",&RTGPartition::propagate,"steps"_a=UINT64_MAX,"verbose"_a=false)
             .def("thread_propagate",&RTGPartition::thread_propagate,"steps"_a=UINT64_MAX,"vote_perc"_a=.1,"max_noise"_a=3,"verbose"_a=false)
             .def("thread_propagate2",&RTGPartition::thread_propagate2,"steps"_a=UINT64_MAX, "min_side_votes"_a=3, "side_vote_perc"_a=.75, "min_contain_votes"_a=5, "contain_vote_perc"_a=.90,  "reclassify"_a= false, "verbose"_a=false)
