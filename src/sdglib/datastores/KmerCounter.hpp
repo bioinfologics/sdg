@@ -46,6 +46,8 @@ public:
     friend std::ostream& operator<<(std::ostream &os, const KmerCounter &kc);
 
     void index_sdg();
+    void _index_sdg63();
+    void _index_sdg128();
 
     void update_graph_counts();
     void _update_graph_counts63();
@@ -68,7 +70,6 @@ public:
      * @param filename Path to fastq file
      */
     void add_count(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
-
     void _add_count64(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
     void _add_count128(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
 
