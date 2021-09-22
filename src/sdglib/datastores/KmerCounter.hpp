@@ -124,6 +124,8 @@ public:
     }
 
     float kci(int64_t node);
+    float _kci63(int64_t node);
+    float _kci128(int64_t node);
 
     void compute_all_kcis();
 
