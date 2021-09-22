@@ -23,63 +23,84 @@ std::string KmerCounter::ls(int level, bool recursive) const {
     return ss.str();
 }
 
-void KmerCounter::index_sdg() {
+void KmerCounter::index_sdg(){
+    if (k<=31){
+        KmerCounter::_index_sdg63()
+    } else {
+        KmerCounter::_index_sdg128()
+    }
+}
+
+void KmerCounter::_index_sdg63() {
     //add all k-mers from SDG
     counts.clear();
     count_names.clear();
     uint64_t t=0;
     for(auto &n:ws.sdg.nodes) if (n.sequence.size()>=k) t+=n.sequence.size()+1-k;
-    if (k<=31) kindex.reserve(t);
-    else kindex128.reserve(t);
+    kindex.reserve(t);
 
     if (count_mode==Canonical) {
-        if (k<=31){
-            StringKMerFactory skf(k);
-            for (auto &n:ws.sdg.nodes) if (n.sequence.size() >= k) skf.create_kmers(n.sequence, kindex);
-        } else {
-            StringKMerFactory128 skf(k);
-            for (auto &n:ws.sdg.nodes) if (n.sequence.size() >= k) skf.create_kmers(n.sequence, kindex128);
-        }
+        StringKMerFactory skf(k);
+        for (auto &n:ws.sdg.nodes) if (n.sequence.size() >= k) skf.create_kmers(n.sequence, kindex);
 
     } else if (count_mode==NonCanonical) {
-        if (k<=31){
-            StringKMerFactoryNC skf(k);
-            for (auto &n:ws.sdg.nodes) if (n.sequence.size() >= k) skf.create_kmers(n.sequence, kindex);
-        } else {
-            StringKMerFactoryNC128 skf(k);
-            for (auto &n:ws.sdg.nodes) if (n.sequence.size() >= k) skf.create_kmers(n.sequence, kindex128);
-        }
+        StringKMerFactoryNC skf(k);
+        for (auto &n:ws.sdg.nodes) if (n.sequence.size() >= k) skf.create_kmers(n.sequence, kindex);
     }
     //sort
-    if (k<=31) std::sort(kindex.begin(),kindex.end());
-    else std::sort(kindex128.begin(),kindex128.end());
+    std::sort(kindex.begin(),kindex.end());
+
     //create a first count
     counts.emplace_back();
     count_names.emplace_back("sdg");
     auto &c=counts.back();
-    if (k<=31) c.reserve(kindex.size());
-    else c.reserve(kindex128.size());
+    c.reserve(kindex.size());
 
     //collapse, but save coverage to the first count
-    if (k<=31) {
-        auto wi=kindex.begin();
-        auto ri=kindex.begin();
-        for (;ri<kindex.end();++wi){
-            *wi=*ri;
-            c.emplace_back(1);
-            while(++ri<kindex.end() and *ri==*wi) ++(c.back());
-        }
-        kindex.resize(c.size());
-    } else {
-        auto wi=kindex128.begin();
-        auto ri=kindex128.begin();
-        for (;ri<kindex128.end();++wi){
-            *wi=*ri;
-            c.emplace_back(1);
-            while(++ri<kindex128.end() and *ri==*wi) ++(c.back());
-        }
-        kindex128.resize(c.size());
+    auto wi=kindex.begin();
+    auto ri=kindex.begin();
+    for (;ri<kindex.end();++wi){
+        *wi=*ri;
+        c.emplace_back(1);
+        while(++ri<kindex.end() and *ri==*wi) ++(c.back());
     }
+    kindex.resize(c.size());
+}
+
+void KmerCounter::_index_sdg128() {
+    //add all k-mers from SDG
+    counts.clear();
+    count_names.clear();
+    uint64_t t=0;
+    for(auto &n:ws.sdg.nodes) if (n.sequence.size()>=k) t+=n.sequence.size()+1-k;
+    kindex128.reserve(t);
+
+    if (count_mode==Canonical) {
+        StringKMerFactory128 skf(k);
+        for (auto &n:ws.sdg.nodes) if (n.sequence.size() >= k) skf.create_kmers(n.sequence, kindex128);
+
+    } else if (count_mode==NonCanonical) {
+        StringKMerFactoryNC128 skf(k);
+        for (auto &n:ws.sdg.nodes) if (n.sequence.size() >= k) skf.create_kmers(n.sequence, kindex128);
+    }
+    //sort
+    std::sort(kindex128.begin(),kindex128.end());
+
+    //create a first count
+    counts.emplace_back();
+    count_names.emplace_back("sdg");
+    auto &c=counts.back();
+    c.reserve(kindex128.size());
+
+    //collapse, but save coverage to the first count
+    auto wi=kindex128.begin();
+    auto ri=kindex128.begin();
+    for (;ri<kindex128.end();++wi){
+        *wi=*ri;
+        c.emplace_back(1);
+        while(++ri<kindex128.end() and *ri==*wi) ++(c.back());
+    }
+    kindex128.resize(c.size());
 }
 
 void KmerCounter::update_graph_counts(){
@@ -585,7 +606,6 @@ void KmerCounter::compute_all_kcis() {
     for (sgNodeID_t n=1;n<ws.sdg.nodes.size();++n){
         if (ws.sdg.nodes[n].status==NodeStatus::Active) kci(n);
     }
-
 }
 
 std::vector<uint64_t> KmerCounter::count_spectra(std::string name, uint16_t maxf, bool unique_in_graph, bool present_in_graph) {
