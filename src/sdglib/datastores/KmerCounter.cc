@@ -25,9 +25,9 @@ std::string KmerCounter::ls(int level, bool recursive) const {
 
 void KmerCounter::index_sdg(){
     if (k<=31){
-        KmerCounter::_index_sdg63()
+        KmerCounter::_index_sdg63();
     } else {
-        KmerCounter::_index_sdg128()
+        KmerCounter::_index_sdg128();
     }
 }
 
@@ -564,8 +564,15 @@ std::vector<uint16_t> KmerCounter::project_count(const uint16_t count_idx, const
     return kcov;
 }
 
+float KmerCounter::kci(sgNodeID_t node){
+    if (k<=31){
+      return KmerCounter::_kci63(node);
+    } else {
+        return KmerCounter::_kci128(node);
+    }
+}
 
-float KmerCounter::kci(sgNodeID_t node) {
+float KmerCounter::_kci63(sgNodeID_t node) {
     try {
         return kci_cache.at(llabs(node));
     }
@@ -596,6 +603,42 @@ float KmerCounter::kci(sgNodeID_t node) {
 #pragma omp critical
         {
             kci_cache[llabs(node)] = nkci;
+        }
+        return nkci;
+    }
+}
+
+float KmerCounter::_kci128(sgNodeID_t node) {
+    try {
+        return kci_cache128.at(llabs(node));
+    }
+    catch(const std::out_of_range& oor) {
+        std::vector<__uint128_t> skmers;
+        auto &s=ws.sdg.nodes[llabs(node)].sequence;
+        //StringKMerFactory skf(k);
+        //skf.create_kmers(s,skmers);
+        if (count_mode==Canonical) {
+            StringKMerFactory128 skf(k);
+            skf.create_kmers(s,skmers);
+        } else if (count_mode==NonCanonical) {
+            StringKMerFactoryNC128 skf(k);
+            skf.create_kmers(s,skmers);
+        }
+        uint64_t totalf=0,count=0;
+        std::vector<uint64_t> freqs;
+        freqs.reserve(skmers.size());
+        for (auto &kmer: skmers){
+            auto nk = std::lower_bound(kindex128.begin(), kindex128.end(), kmer);
+
+            if (nk!=kindex128.end() and *nk == kmer and counts[0][nk-kindex128.begin()]==1) {
+                freqs.emplace_back(counts[1][nk-kindex128.begin()]);
+            }
+        }
+        std::sort(freqs.begin(),freqs.end());
+        float nkci=(freqs.size()>10 ? freqs[freqs.size()/2]/ kci_peak_f:-1);
+#pragma omp critical
+        {
+            kci_cache128[llabs(node)] = nkci;
         }
         return nkci;
     }
