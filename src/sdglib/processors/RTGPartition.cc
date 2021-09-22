@@ -2,7 +2,7 @@
 // Created by Bernardo Clavijo (EI) on 06/08/2021.
 //
 
-#include "RTGClassifier.hpp"
+#include "RTGPartition.hpp"
 
 template <typename T>
 std::vector<T> find_all_p_in_q(int p, int q, const std::vector<T>& input, bool discard_zero=false){
@@ -27,7 +27,7 @@ std::vector<T> find_all_p_in_q(int p, int q, const std::vector<T>& input, bool d
 };
 
 //TODO: this needs parallelisation. fill things in local maps of vectors, then swap them into the real maps.
-RTGClassifier::RTGClassifier(const ReadThreadsGraph &rtg, int min_node_threads, float node_min_percentage, int thread_p,
+RTGPartition::RTGPartition(const ReadThreadsGraph &rtg, int min_node_threads, float node_min_percentage, int thread_p,
                              int thread_q, int min_thread_nodes): rtg(rtg), min_node_threads(min_node_threads),
                              node_min_percentage(node_min_percentage), thread_p(thread_p), thread_q(thread_q), min_thread_nodes(min_thread_nodes) {
     if (min_thread_nodes==-1) this->min_thread_nodes=thread_p;
@@ -54,11 +54,11 @@ RTGClassifier::RTGClassifier(const ReadThreadsGraph &rtg, int min_node_threads, 
 }
 
 
-int64_t RTGClassifier::get_node_class(sgNodeID_t nid) {
+int64_t RTGPartition::get_node_class(sgNodeID_t nid) {
     if (node_class.count(nid)==0) return -1;
     return node_class[nid];
 }
-int64_t RTGClassifier::compute_node_class(sgNodeID_t nid) {
+int64_t RTGPartition::compute_node_class(sgNodeID_t nid) {
     std::map<int64_t, int64_t> class_votes;
     int64_t highest_votes=0;
     int64_t highest_votes_class=0;
@@ -74,25 +74,28 @@ int64_t RTGClassifier::compute_node_class(sgNodeID_t nid) {
             highest_votes_class = c;
         }
     }
-    //TODO: check for a second?
-    if (highest_votes>=min_node_threads and highest_votes>=node_min_percentage*threads.size())
+    if (highest_votes>=min_node_threads and highest_votes>=node_min_percentage*threads.size()) {
+        for (auto &cv:class_votes) {
+            if (cv.first!=0 and cv.first!=highest_votes_class and cv.second>=node_min_percentage*threads.size()) return 0; //two classes met the number of votes
+        }
         return highest_votes_class;
+    }
     return 0;
 }
 
-bool RTGClassifier::switch_node_class(sgNodeID_t nid, int64_t c) {
+bool RTGPartition::switch_node_class(sgNodeID_t nid, int64_t c) {
     if (node_class.count(nid)==0 or node_class[nid]==c) return false;
     node_class[nid]=c;
     for (auto &tid:node_threads[nid]) threads_to_evaluate.insert(tid);
     return true;
 }
 
-int64_t RTGClassifier::get_thread_class(int64_t tid) {
+int64_t RTGPartition::get_thread_class(int64_t tid) {
     if (thread_class.count(tid)==0) return -1;
     return thread_class[tid];
 }
 
-int64_t RTGClassifier::compute_thread_class(int64_t tid, int distance_to_end) {
+int64_t RTGPartition::compute_thread_class(int64_t tid, int distance_to_end) {
     std::map<int64_t, int64_t> class_votes;
     int64_t highest_votes=0;
     int64_t highest_votes_class=0;
@@ -119,34 +122,155 @@ int64_t RTGClassifier::compute_thread_class(int64_t tid, int distance_to_end) {
         auto p_in_q=find_all_p_in_q(thread_p,thread_q,nc,true);
         if (p_in_q.size()==1) winner_class=p_in_q[0];
     }
-    if (winner_class!=0 and nc.size()>distance_to_end) {
-        bool start=false;
-        bool end=false;
-        for (auto i=0;i<distance_to_end;++i) {
-            if (nc[i]==winner_class) {
-                start=true;
-                break;
-            }
-        }
-        for (auto i=nc.size()-distance_to_end ; i<nc.size();++i) {
-            if (nc[i]==winner_class) {
-                end=true;
-                break;
-            }
-        }
-        if (not start and not end) winner_class=0;
-    }
+//    if (winner_class!=0 and nc.size()>distance_to_end) {
+//        bool start=false;
+//        bool end=false;
+//        for (auto i=0;i<distance_to_end;++i) {
+//            if (nc[i]==winner_class) {
+//                start=true;
+//                break;
+//            }
+//        }
+//        for (auto i=nc.size()-distance_to_end ; i<nc.size();++i) {
+//            if (nc[i]==winner_class) {
+//                end=true;
+//                break;
+//            }
+//        }
+//        if (not start and not end) winner_class=0;
+//    }
     return winner_class;
 }
 
-bool RTGClassifier::switch_thread_class(int64_t tid, int64_t c) {
+bool RTGPartition::switch_thread_class(int64_t tid, int64_t c) {
     if (thread_class.count(tid)==0 or thread_class[tid]==c) return false;
     thread_class[tid]=c;
     for (auto &nid:thread_nodes[tid]) nodes_to_evaluate.insert(nid);
     return true;
 }
 
-uint64_t RTGClassifier::propagate(uint64_t steps, bool verbose) {
+std::vector<int64_t> RTGPartition::find_unclassified_threads(int min_nodes, float max_classified_nodes_perc) {
+    std::vector<int64_t> tids;
+    for (auto tc:thread_class) {
+        if (thread_available(tc.first,min_nodes,max_classified_nodes_perc)) tids.emplace_back(tc.first);
+    }
+    return tids;
+}
+
+int64_t RTGPartition::new_class_from_thread(int64_t tid) {
+    //find the next-up class
+    int64_t next_class=1;
+    for (auto &tc:thread_class) if (tc.second>=next_class) next_class=tc.second+1;
+    for (auto &nc:node_class) if (nc.second>=next_class) next_class=nc.second+1;
+    switch_thread_class(tid,next_class);
+    int64_t node_counter=0;
+    for (auto nid:thread_nodes[tid]){
+        if (node_class[nid]==0) {
+            ++node_counter;
+            switch_node_class(nid,next_class);
+        }
+    }
+    return node_counter;
+}
+
+int64_t RTGPartition::class_from_sorter(HappySorter &sorter, int64_t cid) {
+    if (cid==0) {
+        cid=1;
+        for (auto &tc:thread_class) if (tc.second>=cid) cid=tc.second+1;
+        for (auto &nc:node_class) if (nc.second>=cid) cid=nc.second+1;
+    }
+    for (auto &tid:sorter.threads) switch_thread_class(llabs(tid),cid);
+    for (auto &nc:sorter.order.node_coordinates) switch_node_class(llabs(nc.first),cid);
+    return cid;
+}
+
+HappySorter RTGPartition::sorter_from_class(int64_t cid,float _min_node_happiness, int _min_node_threads, int _order_end_size) {
+
+    std::unordered_set<sgNodeID_t> nodes_to_place,nodes;
+    std::unordered_set<int64_t> threads_to_place,threads;
+    for (auto nc:node_class) if (nc.second==cid) nodes_to_place.insert(nc.first);
+    for (auto tc:thread_class) if (tc.second==cid) threads_to_place.insert(tc.first);
+
+    std::unordered_map<sgNodeID_t,int64_t> node_votes;
+    std::unordered_map<int64_t,int64_t> thread_votes;
+
+    std::cout<<"placing a node and its threads"<<std::endl;
+    //choose a node, place it in fw orientation, place all its threads
+    sgNodeID_t starting_node=0;
+    for (auto nid:nodes_to_place) {
+        if (node_threads[nid].size()>6) {
+            nodes.insert(nid);
+            starting_node=nid;
+            nodes_to_place.erase(nid);
+            for (auto tid:rtg.node_threads(nid,true)) if (threads_to_place.count(llabs(tid))) {
+                threads.insert(tid);
+                for (auto nid:rtg.get_thread_nodes(tid,true)) if (nodes_to_place.count(llabs(nid))) ++node_votes[nid];
+            }
+            break;
+        }
+    }
+    uint64_t last_to_place=nodes_to_place.size()+threads_to_place.size()+1;
+
+    while (nodes_to_place.size()+threads_to_place.size()!=last_to_place) {
+//        std::cout<<"Starting placement round, "<<nodes_to_place.size()+threads_to_place.size()<<" elements to place, previous count was "<<last_to_place<<std::endl;
+        last_to_place=nodes_to_place.size()+threads_to_place.size();
+        std::unordered_set<sgNodeID_t> new_nodes;
+        std::unordered_set<int64_t> new_threads;
+//        std::cout<<"placing nodes"<<std::endl;
+        for (auto nid:nodes_to_place) {
+            for (auto nnid:{nid,-nid}){
+                if (node_votes[nnid]>=2) {
+                    new_nodes.insert(nnid);
+                    nodes.insert(nnid);
+                    for (auto tid:rtg.node_threads(nnid,true)) if (threads_to_place.count(llabs(tid))) ++thread_votes[tid];
+                    break;
+                }
+            }
+        }
+//        std::cout<<"placing threads"<<std::endl;
+        for (auto tid:threads_to_place) {
+            for (auto ttid:{tid,-tid}){
+                if (thread_votes[ttid]>=2) {
+                    new_threads.insert(ttid);
+                    threads.insert(ttid);
+                    for (auto nid:rtg.get_thread_nodes(ttid,true)) if (nodes_to_place.count(llabs(nid))) ++node_votes[nid];
+                    break;
+                }
+            }
+        }
+//        std::cout<<"removing "<<new_nodes.size()<<" placed nodes from to_place"<<std::endl;
+        for (auto nid:new_nodes) nodes_to_place.erase(llabs(nid));
+//        std::cout<<"removing "<<new_threads.size()<<" placed threads from to_place"<<std::endl;
+        for (auto tid:new_threads) threads_to_place.erase(llabs(tid));
+//        std::cout<<"placement round finished, "<<nodes_to_place.size()<<" nodes, and "<<threads_to_place.size()<<" threads left to place"<<std::endl;
+    }
+
+    HappySorter hs(rtg,_min_node_happiness,_min_node_threads,_order_end_size); //TODO options for happiness, etc
+    //now add all threads
+    hs.order.add_placed_nodes({{starting_node,0}});
+    hs.threads=threads;
+    //now place every node
+    //now place a random node as start
+    hs.order.add_placed_nodes(hs.place_nodes(nodes,false));
+    return hs;
+}
+
+void RTGPartition::classify_all_threads(int min_nodes, float max_classified_nodes_perc) {
+    for (auto tc:thread_class) {
+        if (thread_available(tc.first,min_nodes,max_classified_nodes_perc)) {
+            auto hs=HappySorter(rtg,.8,2);//TODO: params for this!
+            std::vector<sgNodeID_t> nodes;
+            for (auto nid:rtg.get_thread_nodes(tc.first)) if (node_class.count(llabs(nid))) nodes.emplace_back(nid);
+            hs.start_from_nodelist(nodes);
+            hs.recruit_all_happy_threads_q(3,6);
+            while (hs.grow()) hs.recruit_all_happy_threads_q(3,6);//TODO: params for this!
+            class_from_sorter(hs);
+            propagate();
+        }
+    }
+}
+
+uint64_t RTGPartition::propagate(uint64_t steps, bool verbose) {
     uint64_t switched=0;
     while (steps-- and threads_to_evaluate.size()+nodes_to_evaluate.size()) {
         std::unordered_set<int64_t> otte;
@@ -169,7 +293,7 @@ uint64_t RTGClassifier::propagate(uint64_t steps, bool verbose) {
     return switched;
 }
 
-uint64_t RTGClassifier::thread_propagate(uint64_t steps, float vote_perc, int max_noise, bool verbose) {
+uint64_t RTGPartition::thread_propagate(uint64_t steps, float vote_perc, int max_noise, bool verbose) {
 
     uint64_t switched=0;
     while (steps--){
@@ -221,7 +345,7 @@ uint64_t RTGClassifier::thread_propagate(uint64_t steps, float vote_perc, int ma
 
 
 
-uint64_t RTGClassifier::thread_propagate2(uint64_t steps, int min_side_votes, float side_vote_perc,
+uint64_t RTGPartition::thread_propagate2(uint64_t steps, int min_side_votes, float side_vote_perc,
                                           int min_contain_votes, float contain_vote_perc, bool reclassify, bool verbose) {
 
 
@@ -317,7 +441,7 @@ uint64_t RTGClassifier::thread_propagate2(uint64_t steps, int min_side_votes, fl
     return switched;
 }
 
-std::map<uint64_t, uint64_t> RTGClassifier::thread_class_votes(uint64_t tid, std::set<ThreadOverlapType> ovltypes) {
+std::map<uint64_t, uint64_t> RTGPartition::thread_class_votes(uint64_t tid, std::set<ThreadOverlapType> ovltypes) {
     std::map<uint64_t, uint64_t> votes;
     auto &tn=thread_neighbours[tid];
     auto &tnt=thread_neighbours_types[tid];
@@ -327,7 +451,7 @@ std::map<uint64_t, uint64_t> RTGClassifier::thread_class_votes(uint64_t tid, std
     return votes;
 }
 
-std::unordered_map<std::pair<int64_t, int64_t>, std::vector<int64_t>> RTGClassifier::find_class_bridges(int p, int q) {
+std::unordered_map<std::pair<int64_t, int64_t>, std::vector<int64_t>> RTGPartition::find_class_bridges(int p, int q) {
     std::unordered_map<std::pair<int64_t, int64_t>, std::vector<int64_t>> cb;
     for (auto tn:thread_nodes){
         //if (thread_class[tn.first]!=0) continue;
@@ -343,7 +467,7 @@ std::unordered_map<std::pair<int64_t, int64_t>, std::vector<int64_t>> RTGClassif
     return cb;
 }
 
-void RTGClassifier::compute_thread_intersections(int min_threads, int max_threads) {
+void RTGPartition::compute_thread_intersections(int min_threads, int max_threads) {
     thread_intersections.clear();
     for (auto &nt:node_threads){
         if (nt.second.size()<min_threads or nt.second.size()>max_threads) continue;
@@ -356,7 +480,7 @@ void RTGClassifier::compute_thread_intersections(int min_threads, int max_thread
     }
 }
 
-void RTGClassifier::compute_thread_neighbours(int min_shared) {
+void RTGPartition::compute_thread_neighbours(int min_shared) {
     thread_neighbours.clear();
     for (auto &ti:thread_intersections) {
         if (ti.second>=min_shared){
@@ -366,7 +490,7 @@ void RTGClassifier::compute_thread_neighbours(int min_shared) {
     }
 }
 
-void RTGClassifier::compute_thread_neighbours_p_q(int p, int q) {
+void RTGPartition::compute_thread_neighbours_p_q(int p, int q) {
     thread_neighbours.clear();
 #pragma omp parallel for
     for (auto b=0;b<thread_intersections.bucket_count();++b) {
@@ -388,17 +512,17 @@ void RTGClassifier::compute_thread_neighbours_p_q(int p, int q) {
     }
 }
 
-std::vector<int64_t> RTGClassifier::get_thread_neighbours(int64_t tid) const {
+std::vector<int64_t> RTGPartition::get_thread_neighbours(int64_t tid) const {
     if (thread_neighbours.count(llabs(tid))==0) return {};
     return thread_neighbours.at(llabs(tid));
 }
 
-std::vector<ThreadOverlapType> RTGClassifier::get_thread_neighbours_types(int64_t tid) const {
+std::vector<ThreadOverlapType> RTGPartition::get_thread_neighbours_types(int64_t tid) const {
     if (thread_neighbours_types.count(llabs(tid))==0) return {};
     return thread_neighbours_types.at(llabs(tid));
 }
 
-void RTGClassifier::reset(int _min_node_threads, float _node_min_percentage, int _thread_p, int _thread_q) {
+void RTGPartition::reset(int _min_node_threads, float _node_min_percentage, int _thread_p, int _thread_q) {
     if (_min_node_threads!=-1) min_node_threads=_min_node_threads;
     if (_node_min_percentage!=-1) node_min_percentage=_node_min_percentage;
     if (_thread_p!=-1) thread_p=_thread_p;
@@ -410,7 +534,7 @@ void RTGClassifier::reset(int _min_node_threads, float _node_min_percentage, int
     thread_intersections.clear();
 }
 
-int64_t RTGClassifier::get_thread_intersection(int64_t tid1, int64_t tid2) const {
+int64_t RTGPartition::get_thread_intersection(int64_t tid1, int64_t tid2) const {
     std::pair<int64_t, int64_t> p;
     tid1 = llabs(tid1);
     tid2 = llabs(tid2);
@@ -420,7 +544,7 @@ int64_t RTGClassifier::get_thread_intersection(int64_t tid1, int64_t tid2) const
     return 0;
 }
 
-std::vector<int> RTGClassifier::thread_shared_detail(int64_t tid1, int64_t tid2) const {
+std::vector<int> RTGPartition::thread_shared_detail(int64_t tid1, int64_t tid2) const {
     if (thread_nodes.count(llabs(tid1))==0 or thread_nodes.count(llabs(tid2))==0) return {};
     std::vector<int> s;
     std::unordered_set<sgNodeID_t> t2nodes(thread_nodes.at(llabs(tid2)).begin(),thread_nodes.at(llabs(tid2)).end());
@@ -430,7 +554,7 @@ std::vector<int> RTGClassifier::thread_shared_detail(int64_t tid1, int64_t tid2)
     return s;
 }
 
-void RTGClassifier::classify_neighbours(int skip_nodes, bool discard_invalid) {
+void RTGPartition::classify_neighbours(int skip_nodes, bool discard_invalid) {
 #pragma omp parallel for
     for (auto b=0;b<thread_neighbours.bucket_count();++b){
         for (auto bi=thread_neighbours.begin(b);bi!=thread_neighbours.end(b);++bi){
@@ -452,4 +576,20 @@ void RTGClassifier::classify_neighbours(int skip_nodes, bool discard_invalid) {
             }
         }
     }
+}
+
+bool RTGPartition::thread_available(uint64_t tid, int min_nodes, float max_classified_nodes_perc) {
+    auto tc=thread_class[tid];
+    if (tc!=0) return false;
+    auto &tns=thread_nodes[tid];
+    if (tns.size()<min_nodes) return false;
+    auto skip_countdown= ceil(max_classified_nodes_perc*tns.size());
+    for (auto nid:tns) {
+        if (node_class[nid]!=0) {
+            --skip_countdown;
+            if (skip_countdown==0) break;
+        }
+    }
+    return skip_countdown!=0;
+
 }

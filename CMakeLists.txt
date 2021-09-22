@@ -243,8 +243,8 @@ SET(source_files ${source_files}
     src/sdglib/processors/TotalSorter.hpp
     src/sdglib/processors/RTGCluster.cc
     src/sdglib/processors/RTGCluster.hpp
-    src/sdglib/processors/RTGClassifier.cc
-    src/sdglib/processors/RTGClassifier.hpp)
+        src/sdglib/processors/RTGPartition.cc
+        src/sdglib/processors/RTGPartition.hpp)
 
 ## Libraries
 add_library(sdg SHARED
