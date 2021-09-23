@@ -437,7 +437,7 @@ void KmerCounter::_add_count128(const std::string &count_name, const std::vector
 
 /** This template is used to do the counts from the datastores, it is templatised here rather than on the header **/
 template<class T>
-void add_count_to_kds( KmerCounter & kds, const std::string & count_name, const T & datastore) {
+void add_count_to_kds64( KmerCounter & kds, const std::string & count_name, const T & datastore) {
     if (std::find(kds.count_names.cbegin(), kds.count_names.cend(), count_name) != kds.count_names.cend()) {
         throw std::runtime_error(count_name + " already exists, please use a different name");
     }
@@ -505,14 +505,84 @@ void add_count_to_kds( KmerCounter & kds, const std::string & count_name, const 
     sdglib::OutputLog(sdglib::INFO) << "Done" << std::endl;
 }
 
+template<class T>
+void add_count_to_kds128( KmerCounter & kds, const std::string & count_name, const T & datastore) {
+    if (std::find(kds.count_names.cbegin(), kds.count_names.cend(), count_name) != kds.count_names.cend()) {
+        throw std::runtime_error(count_name + " already exists, please use a different name");
+    }
+    kds.count_names.emplace_back(count_name);
+    kds.counts.emplace_back(kds.kindex128.size());
+    uint64_t present(0), absent(0), rp(0);
+    sdglib::OutputLog(sdglib::INFO)<<"Populating lookup map"<<std::endl;
+    std::unordered_map<__uint128_t,uint64_t> kmer_map;
+    kmer_map.reserve(kds.kindex128.size());
+    for (uint64_t i=0;i<kds.kindex128.size();++i) kmer_map[kds.kindex128[i]]=i;
+    sdglib::OutputLog(sdglib::INFO)<<"Map populated with "<<kmer_map.size()<<" entries, counting from datastore: " << datastore.filename << std::endl;
+#pragma omp parallel
+    {
+        ReadSequenceBuffer bpsg(datastore);
+        uint64_t thread_present(0), thread_absent(0), thread_rp(0);
+        const size_t local_kmers_size = 2000000;
+        std::vector<__uint128_t> found_kmers; // kmer index of found kmers is saved here, increments are done in the critical
+        found_kmers.reserve(local_kmers_size);
+        std::vector<__uint128_t> readkmers;
+        CStringKMerFactory128 cskf(kds.get_k());
+#pragma omp for schedule(static,10000)
+        for (uint64_t rid = 1; rid <= datastore.size(); ++rid) {
+            readkmers.clear();
+            cskf.create_kmers(readkmers, bpsg.get_read_sequence(rid));
+            for (auto &rk:readkmers) {
+                auto findk = kmer_map.find(rk);
+                if (kmer_map.end() != findk) {
+                    //++thread_counts[findk->second];
+                    found_kmers.emplace_back(findk->second);
+                    if (found_kmers.size() == local_kmers_size) {
+#pragma omp critical(results_merge)
+                        {
+                            auto &arc=kds.counts.back();
+                            for (auto &x:found_kmers) if (arc[x] < UINT16_MAX) ++arc[x];
+                            if (rp / 100000 != (rp + thread_rp) / 100000)
+                                sdglib::OutputLog(sdglib::INFO) << rp << " reads processed " << present << " / "
+                                << present + absent << " kmers found" << std::endl;
+                            rp += thread_rp;
+                            present += thread_present;
+                            absent += thread_absent;
+                        }
+                        found_kmers.clear();
+                        thread_absent = 0;
+                        thread_present = 0;
+                        thread_rp = 0;
+
+                    }
+                    ++thread_present;
+                } else ++thread_absent;
+            }
+            ++thread_rp;
+        }
+#pragma omp critical(results_merge)
+{
+            auto &arc=kds.counts.back();
+            for (auto &x:found_kmers) if (arc[x] < UINT16_MAX) ++arc[x];
+            rp += thread_rp;
+            present += thread_present;
+            absent += thread_absent;
+        }
+    }
+    sdglib::OutputLog(sdglib::INFO) << rp << " reads processed " << present << " / " << present + absent
+    << " kmers found" << std::endl;
+    sdglib::OutputLog(sdglib::INFO) << "Done" << std::endl;
+}
 void KmerCounter::add_count(const std::string & count_name, const PairedReadsDatastore & datastore){
-    add_count_to_kds(*this,count_name,datastore);
+    if (k<=31) add_count_to_kds64(*this,count_name,datastore);
+    else add_count_to_kds128(*this,count_name,datastore);
 }
 void KmerCounter::add_count(const std::string & count_name, const LinkedReadsDatastore & datastore){
-    add_count_to_kds(*this,count_name,datastore);
+    if (k<=31) add_count_to_kds64(*this,count_name,datastore);
+    else add_count_to_kds128(*this,count_name,datastore);
 }
 void KmerCounter::add_count(const std::string & count_name, const LongReadsDatastore & datastore){
-    add_count_to_kds(*this,count_name,datastore);
+    if (k<=31) add_count_to_kds64(*this,count_name,datastore);
+    else add_count_to_kds128(*this,count_name,datastore);
 }
 
 std::vector<uint16_t> KmerCounter::project_count(const uint16_t count_idx, const std::string &s) {
