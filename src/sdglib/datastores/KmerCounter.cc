@@ -730,6 +730,6 @@ const std::vector<uint16_t> &KmerCounter::get_count_by_name(const std::string &n
 }
 
 std::ostream &operator<<(std::ostream &os, const KmerCounter &kc) {
-    os << "KmerCounter "<< ( kc.name.empty() ? "unnamed":kc.name ) <<": index with "<<kc.kindex.size()<<" "<<std::to_string(kc.k)<<"-mers";
+    os << "KmerCounter "<< ( kc.name.empty() ? "unnamed":kc.name ) <<": index with "<< (kc.k <= 31 ? kc.kindex.size() : kc.kindex128.size()) <<" "<<std::to_string(kc.k)<<"-mers";
     return os;
 }
