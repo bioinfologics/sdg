@@ -256,16 +256,40 @@ HappySorter RTGPartition::sorter_from_class(int64_t cid,float _min_node_happines
 }
 
 void RTGPartition::classify_all_threads(int min_nodes, float max_classified_nodes_perc) {
-    for (auto tc:thread_class) {
-        if (thread_available(tc.first,min_nodes,max_classified_nodes_perc)) {
+    auto ut=find_unclassified_threads(min_nodes,max_classified_nodes_perc);
+#pragma omp parallel for
+    for (auto i=0;i<ut.size();++i) {
+        auto tid=ut[i];
+        bool ta;
+#pragma omp critical
+        ta=thread_available(tid,min_nodes,max_classified_nodes_perc);
+        if (ta) {
+            //std::cout<<"starting sorter from thread"<<tid<<std::endl;
             auto hs=HappySorter(rtg,.8,2);//TODO: params for this!
             std::vector<sgNodeID_t> nodes;
-            for (auto nid:rtg.get_thread_nodes(tc.first)) if (node_class.count(llabs(nid))) nodes.emplace_back(nid);
+            for (auto nid:rtg.get_thread_nodes(tid)) if (node_class.count(llabs(nid))) nodes.emplace_back(nid);
             hs.start_from_nodelist(nodes);
-            hs.recruit_all_happy_threads_q(3,6);
-            while (hs.grow()) hs.recruit_all_happy_threads_q(3,6);//TODO: params for this!
-            class_from_sorter(hs);
-            propagate();
+            if (hs.order.size()>0) {
+                hs.recruit_all_happy_threads_q(3,6);
+                std::cout<<"Started sorter from "<<tid<<" has "<<hs.order.size()<<" / "<<nodes.size()<< " nodes and " <<hs.threads.size()<<" threads"<<std::endl;
+                while (thread_available(tid,min_nodes,max_classified_nodes_perc) and hs.grow()) hs.recruit_all_happy_threads_q(3,6);//TODO: params for this!
+#pragma omp critical
+                {
+                    if (thread_available(tid,min_nodes,max_classified_nodes_perc)) {
+                        auto new_class=class_from_sorter(hs);
+                        int64_t nodes_in_class=0;
+                        for (const auto & nc:node_class) if (nc.second==new_class) ++nodes_in_class;
+                        std::cout<<"Class "<<new_class<<" from sorter from thread "<<tid<<" added with "<<nodes_in_class<<" / "<<hs.order.size()<<" nodes, propagating..."<<std::endl;
+                        propagate();
+                        nodes_in_class=0;
+                        for (const auto & nc:node_class) if (nc.second==new_class) ++nodes_in_class;
+                        std::cout<<"Class "<<new_class<<" from sorter from thread "<<tid<<" has "<<nodes_in_class<<" nodes after propagation"<<std::endl;
+                    }
+                    else {
+                        std::cout<<"discarding thread "<<tid<<"since thread is not available anymore"<<std::endl;
+                    }
+                }
+            }
         }
     }
 }
