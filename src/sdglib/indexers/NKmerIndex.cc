@@ -107,7 +107,10 @@ NKmerIndex::NKmerIndex(const SequenceDistanceGraph &_sg, uint8_t k, int filter_l
 
     sdglib::sort(assembly_kmers.begin(),assembly_kmers.end(), kmerPos::byKmerContigOffset());
     // Filter kmers filters out in place the kmers that are over the frequency limit
+    auto kmers_before_filter=assembly_kmers.size();
     auto total_kmers(filter_kmers(assembly_kmers, filter_limit));
+    sdglib::OutputLog()<<"Kmer frequency filter: "<< kmers_before_filter<< "/" << assembly_kmers.size() << std::endl;
+
 #pragma omp parallel for
     for (uint64_t kidx = 0; kidx < assembly_kmers.size(); ++kidx) {
         bfilter.add(assembly_kmers[kidx].kmer);

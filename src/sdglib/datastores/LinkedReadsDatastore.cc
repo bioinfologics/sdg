@@ -11,6 +11,34 @@
 #include <cstring>
 #include <sstream>
 
+uint32_t LinkedReadsDatastore::read_sanitizer(char* bp){
+    uint32_t changed_bases=0;
+    for (uint32_t i=0; *(bp+i)!='\n'; i++){
+        switch (*(bp+i)){
+            case 'A':
+            case 'a':
+                *(bp+i)='A';
+                break;
+            case 'C':
+            case 'c':
+                *(bp+i)='C';
+                break;
+            case 'T':
+            case 't':
+                *(bp+i)='T';
+                break;
+            case 'G':
+            case 'g':
+                *(bp+i)='G';
+                break;
+            default:
+                *(bp+i)='N';
+                changed_bases++;
+        }
+    }
+    return changed_bases;
+}
+
 const sdgVersion_t LinkedReadsDatastore::min_compat = 0x0003;
 
 std::string LinkedTag_to_seq(LinkedTag tag, uint8_t k) {
@@ -79,6 +107,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
     LinkedReadData currrent_read;
     //First, create the chunk files
     uint64_t pairs=0;
+    uint32_t sanitized_reads=0;
     while (!gzeof(fd1) and !gzeof(fd2)) {
         LinkedTag newtag = 0;
         if (format==LinkedReadsFormat::UCDavis) {
@@ -100,6 +129,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
             }
             currrent_read.tag=newtag;
             if (NULL == gzgets(fd1, readbuffer, 999)) continue;
+            sanitized_reads+=read_sanitizer(readbuffer);
             currrent_read.seq1=std::string(readbuffer);
             if (currrent_read.seq1.back()=='\n') currrent_read.seq1.resize(currrent_read.seq1.size()-1);
             if (NULL == gzgets(fd1, readbuffer, 999)) continue;
@@ -113,6 +143,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
                 throw std::runtime_error("Please check: " + read2_filename + ", it seems to be missing a header");
             }
             if (NULL == gzgets(fd2, readbuffer, 999)) continue;
+            sanitized_reads+=read_sanitizer(readbuffer);
             currrent_read.seq2=std::string(readbuffer);
             if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
             if (NULL == gzgets(fd2, readbuffer, 999)) continue;
@@ -138,6 +169,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
                 }
             }
             currrent_read.tag=newtag;
+            sanitized_reads+=read_sanitizer(readbuffer);
             currrent_read.seq1=std::string(readbuffer + 16 + 7);
             if (currrent_read.seq1.back()=='\n') currrent_read.seq1.resize(currrent_read.seq1.size()-1);
             if (NULL == gzgets(fd1, readbuffer, 999)) continue;
@@ -151,6 +183,7 @@ void LinkedReadsDatastore::build_from_fastq(std::string output_filename, std::st
                 throw std::runtime_error("Please check: " + read2_filename + ", it seems to be missing a header");
             }
             if (NULL == gzgets(fd2, readbuffer, 999)) continue;
+            sanitized_reads+=read_sanitizer(readbuffer);
             currrent_read.seq2=std::string(readbuffer);
             if (currrent_read.seq2.back()=='\n') currrent_read.seq2.resize(currrent_read.seq2.size()-1);
             if (NULL == gzgets(fd2, readbuffer, 999)) continue;

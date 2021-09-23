@@ -46,8 +46,12 @@ public:
     friend std::ostream& operator<<(std::ostream &os, const KmerCounter &kc);
 
     void index_sdg();
+    void _index_sdg63();
+    void _index_sdg128();
 
     void update_graph_counts();
+    void _update_graph_counts63();
+    void _update_graph_counts128();
 
     bool operator==(const KmerCounter &o) const {
         return (std::tie(k, kindex, count_names, counts) == std::tie(o.k, o.kindex, o.count_names, o.counts));
@@ -66,6 +70,8 @@ public:
      * @param filename Path to fastq file
      */
     void add_count(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
+    void _add_count64(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
+    void _add_count128(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
 
     /**
      * @brief Accumulates the kmer count from the provided data-store to the last available read_counts collection
@@ -118,6 +124,8 @@ public:
     }
 
     float kci(int64_t node);
+    float _kci63(int64_t node);
+    float _kci128(int64_t node);
 
     void compute_all_kcis();
 
@@ -153,5 +161,6 @@ private:
     KmerCountMode count_mode;
     float kci_peak_f=-1;
     std::unordered_map<int64_t, float> kci_cache;
+    std::unordered_map<__uint128_t, float> kci_cache128;
 };
 

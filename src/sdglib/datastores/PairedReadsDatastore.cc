@@ -12,6 +12,33 @@
 #include <cstring>
 #include <sstream>
 
+uint32_t PairedReadsDatastore::read_sanitizer(char* bp){
+    uint32_t changed_bases=0;
+    for (uint32_t i=0; *(bp+i)!='\n'; i++){
+        switch (*(bp+i)){
+            case 'A':
+            case 'a':
+                *(bp+i)='A';
+                break;
+            case 'C':
+            case 'c':
+                *(bp+i)='C';
+                break;
+            case 'T':
+            case 't':
+                *(bp+i)='T';
+                break;
+            case 'G':
+            case 'g':
+                *(bp+i)='G';
+                break;
+            default:
+                *(bp+i)='N';
+                changed_bases++;
+        }
+    }
+    return changed_bases;
+}
 
 void PairedReadsDatastore::print_status() const {
     sdglib::OutputLog()<<"PairedRead Datastore from "<<filename<<" contains "<<size()-1<<" reads."<<std::endl;
@@ -66,6 +93,7 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
 
     auto size_pos=output.tellp();
     output.write((const char *) &_size, sizeof(_size));//just to save the space!
+    uint32_t sanitized_bases=0;
     while (!gzeof(fd1) and !gzeof(fd2)) {
 
         if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
@@ -73,6 +101,7 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
             throw std::runtime_error("Please check: " + read1_filename + ", it seems to be missing a header");
         }
         if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
+        sanitized_bases+=read_sanitizer(readbuffer); //<-- Bases check R1
         currrent_read.seq1=std::string(readbuffer);
         if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
         if(!readbuffer[0] == '+') {
@@ -86,6 +115,7 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
             throw std::runtime_error("Please check: " + read2_filename + ", it seems to be missing a header");
         }
         if (NULL == gzgets(fd2, readbuffer, 2999)) continue;
+        sanitized_bases+=read_sanitizer(readbuffer); //<-- Bases check R2
         currrent_read.seq2=std::string(readbuffer);
         if (NULL == gzgets(fd2, readbuffer, 2999)) continue;
         if(!readbuffer[0] == '+') {
@@ -160,6 +190,7 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
 
     gzclose(fd1);
     gzclose(fd2);
+    std::cout<<"Bases replaced: "<< sanitized_bases << std::endl;
 }
 
 void PairedReadsDatastore::read(std::ifstream &input_file) {

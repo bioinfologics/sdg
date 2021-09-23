@@ -217,6 +217,26 @@ private:
         {
             if (isgraph(c))
             {
+                switch (c){
+                    case 'A':
+                    case 'a':
+                        c='A';
+                        break;
+                    case 'C':
+                    case 'c':
+                        c='C';
+                        break;
+                    case 'T':
+                    case 't':
+                        c='T';
+                        break;
+                    case 'G':
+                    case 'g':
+                        c='G';
+                        break;
+                    default:
+                        c='N';
+                }
                 seq.seq += (char)c;
             }
         }
