@@ -23,16 +23,26 @@ std::string KmerCounter::ls(int level, bool recursive) const {
     return ss.str();
 }
 
-void KmerCounter::index_sdg() {
+void KmerCounter::index_sdg(){
+    if (k<=31){
+        KmerCounter::_index_sdg63();
+    } else {
+        KmerCounter::_index_sdg128();
+    }
+}
+
+void KmerCounter::_index_sdg63() {
     //add all k-mers from SDG
     counts.clear();
     count_names.clear();
     uint64_t t=0;
     for(auto &n:ws.sdg.nodes) if (n.sequence.size()>=k) t+=n.sequence.size()+1-k;
     kindex.reserve(t);
+
     if (count_mode==Canonical) {
         StringKMerFactory skf(k);
         for (auto &n:ws.sdg.nodes) if (n.sequence.size() >= k) skf.create_kmers(n.sequence, kindex);
+
     } else if (count_mode==NonCanonical) {
         StringKMerFactoryNC skf(k);
         for (auto &n:ws.sdg.nodes) if (n.sequence.size() >= k) skf.create_kmers(n.sequence, kindex);
@@ -57,10 +67,52 @@ void KmerCounter::index_sdg() {
     kindex.resize(c.size());
 }
 
-void KmerCounter::update_graph_counts() {
+void KmerCounter::_index_sdg128() {
+    //add all k-mers from SDG
+    counts.clear();
+    count_names.clear();
+    uint64_t t=0;
+    for(auto &n:ws.sdg.nodes) if (n.sequence.size()>=k) t+=n.sequence.size()+1-k;
+    kindex128.reserve(t);
+
+    if (count_mode==Canonical) {
+        StringKMerFactory128 skf(k);
+        for (auto &n:ws.sdg.nodes) if (n.sequence.size() >= k) skf.create_kmers(n.sequence, kindex128);
+
+    } else if (count_mode==NonCanonical) {
+        StringKMerFactoryNC128 skf(k);
+        for (auto &n:ws.sdg.nodes) if (n.sequence.size() >= k) skf.create_kmers(n.sequence, kindex128);
+    }
+    //sort
+    std::sort(kindex128.begin(),kindex128.end());
+
+    //create a first count
+    counts.emplace_back();
+    count_names.emplace_back("sdg");
+    auto &c=counts.back();
+    c.reserve(kindex128.size());
+
+    //collapse, but save coverage to the first count
+    auto wi=kindex128.begin();
+    auto ri=kindex128.begin();
+    for (;ri<kindex128.end();++wi){
+        *wi=*ri;
+        c.emplace_back(1);
+        while(++ri<kindex128.end() and *ri==*wi) ++(c.back());
+    }
+    kindex128.resize(c.size());
+}
+
+void KmerCounter::update_graph_counts(){
+    if (k<=31){
+        KmerCounter::_update_graph_counts63();
+    } else {
+        KmerCounter::_update_graph_counts128();
+    }
+}
+
+void KmerCounter::_update_graph_counts63() {
     for (auto &c:counts[0])c=0;
-
-
     uint64_t not_found=0;
 
     if (count_mode==Canonical) {
@@ -116,17 +168,90 @@ void KmerCounter::update_graph_counts() {
     kci_cache.clear();
 }
 
+void KmerCounter::_update_graph_counts128() {
+    for (auto &c:counts[0])c=0;
+    uint64_t not_found=0;
+
+    if (count_mode==Canonical) {
+#pragma omp parallel
+        {
+            std::vector<__uint128_t> nkmers;
+            std::vector<int64_t> nkmerspos;
+            StringKMerFactory128 skf(k);
+#pragma omp for schedule(static,1000) reduction(+:not_found)
+            for (sgNodeID_t nid=0;nid<ws.sdg.nodes.size();++nid) {
+                const auto &n=ws.sdg.nodes[nid];
+                if (n.sequence.size() >= k) {
+                    nkmers.clear();
+                    skf.create_kmers(n.sequence, nkmers);
+                    nkmerspos.clear();
+                    nkmerspos.resize(nkmers.size());
+                    for (uint64_t i=0;i<nkmers.size();++i) {
+                        auto &kmer=nkmers[i];
+                        auto kidx = std::lower_bound(kindex128.begin(), kindex128.end(), kmer);
+                        if (kidx == kindex128.end() or *kidx != kmer) {
+                            ++not_found;
+                            nkmerspos[i]=-1;
+                        }
+                        else {
+                            nkmerspos[i]=kidx - kindex128.begin();
+                            //++counts[0][kidx - kindex.begin()];
+                        }
+                    }
+#pragma omp critical
+                    for (auto &p:nkmerspos) {
+                        if (p!=-1) ++counts[0][p];
+                    }
+                }
+            }
+        }
+    } else if (count_mode==NonCanonical) {
+        std::vector<__uint128_t> nkmers;
+        StringKMerFactoryNC128 skf(k);
+        for (auto &n:ws.sdg.nodes) {
+            nkmers.clear();
+            if (n.sequence.size() >= k) {
+                skf.create_kmers(n.sequence, nkmers);
+                for (auto &kmer:nkmers) {
+                    auto kidx=std::lower_bound(kindex128.begin(), kindex128.end(), kmer);
+                    if (kidx==kindex128.end() or *kidx!=kmer) ++not_found;
+                    else ++counts[0][kidx-kindex128.begin()];
+                }
+            }
+        }
+    }
+    if (not_found) sdglib::OutputLog()<<"WARNING: "<<not_found<<" kmers not in index when updating graph counts"<<std::endl;
+    //clear kci cache, as it will be invalid since we don't know if the same k-mers are unique in the graph!
+    kci_cache128.clear();
+}
+
 void KmerCounter::add_count(const std::string &count_name, const std::vector<std::string> &filenames, bool fastq) {
+    if (k<=31){
+        _add_count64(count_name, filenames, fastq);
+    } else {
+        _add_count128(count_name, filenames, fastq);
+    }
+}
+
+void KmerCounter::_add_count64(const std::string &count_name, const std::vector<std::string> &filenames, bool fastq) {
     if (std::find(count_names.cbegin(), count_names.cend(), count_name) != count_names.cend()) {
         throw std::runtime_error(count_name + " already exists, please use a different name");
     }
     count_names.emplace_back(count_name);
-    counts.emplace_back(kindex.size());
+
+    // Get the size of the correct index according to k
+    size_t index_size = kindex.size();
+    counts.emplace_back(index_size);
+    sdglib::OutputLog(sdglib::INFO)<<"Size of index: "<< index_size <<std::endl;
+
     uint64_t present(0), absent(0), rp(0);
     sdglib::OutputLog(sdglib::INFO)<<"Populating lookup map"<<std::endl;
+
     std::unordered_map<uint64_t,uint64_t> kmer_map;
-    kmer_map.reserve(kindex.size());
-    for (uint64_t i=0;i<kindex.size();++i) kmer_map[kindex[i]]=i;
+
+    kmer_map.reserve(index_size);
+    for (uint64_t i=0;i<index_size;++i) kmer_map[kindex[i]]=i;
+
     sdglib::OutputLog(sdglib::INFO)<<"Map populated with "<<kmer_map.size()<<" entries"<< std::endl;
     for (auto filename:filenames) {
         sdglib::OutputLog(sdglib::INFO) << "Counting from file: " << filename << std::endl;
@@ -205,6 +330,107 @@ void KmerCounter::add_count(const std::string &count_name, const std::vector<std
         }
         sdglib::OutputLog(sdglib::INFO) << rp << " reads processed " << present << " / " << present + absent
                                         << " kmers found" << std::endl;
+    }
+    sdglib::OutputLog(sdglib::INFO) << "Done" << std::endl;
+}
+
+void KmerCounter::_add_count128(const std::string &count_name, const std::vector<std::string> &filenames, bool fastq) {
+    if (std::find(count_names.cbegin(), count_names.cend(), count_name) != count_names.cend()) {
+        throw std::runtime_error(count_name + " already exists, please use a different name");
+    }
+    count_names.emplace_back(count_name);
+
+    // Get the size of the correct index according to k
+    size_t index_size = kindex128.size();
+    counts.emplace_back(index_size);
+    sdglib::OutputLog(sdglib::INFO)<<"Size of index: "<< index_size <<std::endl;
+
+    uint64_t present(0), absent(0), rp(0);
+    sdglib::OutputLog(sdglib::INFO)<<"Populating lookup map"<<std::endl;
+
+    std::unordered_map<__uint128_t,uint64_t> kmer_map;
+
+    kmer_map.reserve(index_size);
+    for (uint64_t i=0;i<index_size;++i) kmer_map[kindex128[i]]=i;
+
+    sdglib::OutputLog(sdglib::INFO)<<"Map populated with "<<kmer_map.size()<<" entries"<< std::endl;
+    for (auto filename:filenames) {
+        sdglib::OutputLog(sdglib::INFO) << "Counting from file: " << filename << std::endl;
+        FastqReader<FastqRecord> fastqReader({0}, filename);
+        FastaReader<FastaRecord> fastaReader({0}, filename);
+#pragma omp parallel shared(fastqReader)
+        {
+            uint64_t thread_present(0), thread_absent(0), thread_rp(0);
+            const size_t local_kmers_size = 2000000;
+            std::vector<__uint128_t> found_kmers;
+            found_kmers.reserve(local_kmers_size);
+            FastqRecord read;
+            FastaRecord reada;
+
+            std::vector<__uint128_t> readkmers;
+            StringKMerFactory128 skf(k);
+            StringKMerFactoryNC128 skfnc(k);
+
+            bool c;
+#pragma omp critical(fastqreader)
+            {
+                if (fastq) c = fastqReader.next_record(read);
+                else c= fastaReader.next_record(reada);
+            }
+            while (c) {
+                readkmers.clear();
+                if (count_mode==Canonical) {
+                    skf.create_kmers((fastq?read.seq:reada.seq),readkmers);
+                } else if (count_mode==NonCanonical) {
+                    skfnc.create_kmers((fastq?read.seq:reada.seq),readkmers);
+                }
+
+
+
+                for (auto &rk:readkmers) {
+                    auto findk = kmer_map.find(rk);
+                    if (kmer_map.end() != findk) {
+                        //++thread_counts[findk->second];
+                        found_kmers.emplace_back(findk->second);
+                        if (found_kmers.size() == local_kmers_size) {
+#pragma omp critical(results_merge)
+                            {
+                                auto &arc = counts.back();
+                                for (auto &x:found_kmers) if (arc[x] < UINT16_MAX) ++arc[x];
+                                if (rp / 100000 != (rp + thread_rp) / 100000)
+                                    sdglib::OutputLog(sdglib::INFO) << rp << " reads processed " << present << " / "
+                                    << present + absent << " kmers found" << std::endl;
+                                rp += thread_rp;
+                                present += thread_present;
+                                absent += thread_absent;
+                            }
+                            found_kmers.clear();
+                            thread_absent = 0;
+                            thread_present = 0;
+                            thread_rp = 0;
+
+                        }
+                        ++thread_present;
+                    } else ++thread_absent;
+                }
+                ++thread_rp;
+#pragma omp critical(fastqreader)
+                {
+                    if (fastq) c = fastqReader.next_record(read);
+                    else c= fastaReader.next_record(reada);
+                }
+            }
+#pragma omp critical(results_merge)
+            {
+                auto &arc = counts.back();
+                for (auto &x:found_kmers) if (arc[x] < UINT16_MAX) ++arc[x];
+                rp += thread_rp;
+                present += thread_present;
+                absent += thread_absent;
+            }
+        }
+        sdglib::OutputLog(sdglib::INFO) << rp << " reads processed " << present << " / " << present + absent
+        << " kmers found" << std::endl;
     }
     sdglib::OutputLog(sdglib::INFO) << "Done" << std::endl;
 }
@@ -291,32 +517,62 @@ void KmerCounter::add_count(const std::string & count_name, const LongReadsDatas
 
 std::vector<uint16_t> KmerCounter::project_count(const uint16_t count_idx, const std::string &s) {
     std::vector<uint64_t> skmers;
+    std::vector<__uint128_t> skmers128;
 
     //StringKMerFactory skf(k);
     //skf.create_kmers(s,skmers);
     if (count_mode==Canonical) {
-        StringKMerFactory skf(k);
-        skf.create_kmers(s,skmers);
+        if (k<=31){
+            StringKMerFactory skf(k);
+            skf.create_kmers(s,skmers);
+        } else {
+            StringKMerFactory128 skf(k);
+            skf.create_kmers(s,skmers128);
+        }
     } else if (count_mode==NonCanonical) {
-        StringKMerFactoryNC skf(k);
-        skf.create_kmers(s,skmers);
+        if (k<=31){
+            StringKMerFactoryNC skf(k);
+            skf.create_kmers(s,skmers);
+        } else {
+            StringKMerFactoryNC128 skf(k);
+            skf.create_kmers(s,skmers128);
+        }
+
     }
     std::vector<uint16_t> kcov;
     kcov.reserve(skmers.size());
-    for (auto &kmer: skmers){
-        auto nk = std::lower_bound(kindex.begin(), kindex.end(), kmer);
-
-        if (nk!=kindex.end() and *nk == kmer) {
-            kcov.emplace_back(counts[count_idx][nk-kindex.begin()]);
-
-        } else {
-            kcov.emplace_back(0);
+    if (k<=31){
+        for (auto &kmer: skmers){
+            auto nk = std::lower_bound(kindex.begin(), kindex.end(), kmer);
+            if (nk!=kindex.end() and *nk == kmer) {
+                kcov.emplace_back(counts[count_idx][nk-kindex.begin()]);
+            } else {
+                kcov.emplace_back(0);
+            }
+        }
+    } else {
+        for (auto &kmer: skmers128){
+            auto nk = std::lower_bound(kindex128.begin(), kindex128.end(), kmer);
+            if (nk!=kindex128.end() and *nk == kmer) {
+                kcov.emplace_back(counts[count_idx][nk-kindex128.begin()]);
+            } else {
+                kcov.emplace_back(0);
+            }
         }
     }
+
     return kcov;
 }
 
-float KmerCounter::kci(sgNodeID_t node) {
+float KmerCounter::kci(sgNodeID_t node){
+    if (k<=31){
+      return KmerCounter::_kci63(node);
+    } else {
+        return KmerCounter::_kci128(node);
+    }
+}
+
+float KmerCounter::_kci63(sgNodeID_t node) {
     try {
         return kci_cache.at(llabs(node));
     }
@@ -352,12 +608,47 @@ float KmerCounter::kci(sgNodeID_t node) {
     }
 }
 
+float KmerCounter::_kci128(sgNodeID_t node) {
+    try {
+        return kci_cache128.at(llabs(node));
+    }
+    catch(const std::out_of_range& oor) {
+        std::vector<__uint128_t> skmers;
+        auto &s=ws.sdg.nodes[llabs(node)].sequence;
+        //StringKMerFactory skf(k);
+        //skf.create_kmers(s,skmers);
+        if (count_mode==Canonical) {
+            StringKMerFactory128 skf(k);
+            skf.create_kmers(s,skmers);
+        } else if (count_mode==NonCanonical) {
+            StringKMerFactoryNC128 skf(k);
+            skf.create_kmers(s,skmers);
+        }
+        uint64_t totalf=0,count=0;
+        std::vector<uint64_t> freqs;
+        freqs.reserve(skmers.size());
+        for (auto &kmer: skmers){
+            auto nk = std::lower_bound(kindex128.begin(), kindex128.end(), kmer);
+
+            if (nk!=kindex128.end() and *nk == kmer and counts[0][nk-kindex128.begin()]==1) {
+                freqs.emplace_back(counts[1][nk-kindex128.begin()]);
+            }
+        }
+        std::sort(freqs.begin(),freqs.end());
+        float nkci=(freqs.size()>10 ? freqs[freqs.size()/2]/ kci_peak_f:-1);
+#pragma omp critical
+        {
+            kci_cache128[llabs(node)] = nkci;
+        }
+        return nkci;
+    }
+}
+
 void KmerCounter::compute_all_kcis() {
 #pragma omp parallel for schedule(static,1000)
     for (sgNodeID_t n=1;n<ws.sdg.nodes.size();++n){
         if (ws.sdg.nodes[n].status==NodeStatus::Active) kci(n);
     }
-
 }
 
 std::vector<uint64_t> KmerCounter::count_spectra(std::string name, uint16_t maxf, bool unique_in_graph, bool present_in_graph) {
@@ -398,9 +689,9 @@ void KmerCounter::read_counts(std::ifstream &count_file) {
     count_file.read((char *) &count_mode, sizeof(count_mode));
     sdglib::read_string(count_file,name);
     sdglib::read_stringvector(count_file,count_names);
-    sdglib::read_flat_vector(count_file,kindex);
+    if (k<=31) sdglib::read_flat_vector(count_file,kindex);
+    else sdglib::read_flat_vector(count_file,kindex128);
     sdglib::read_flat_vectorvector(count_file,counts);
-
 }
 
 void KmerCounter::write(std::ofstream &output_file) const {
@@ -419,7 +710,8 @@ void KmerCounter::write_counts(std::ofstream &count_file) const {
     count_file.write((char *) &count_mode, sizeof(count_mode));
     sdglib::write_string(count_file,name);
     sdglib::write_stringvector(count_file,count_names);
-    sdglib::write_flat_vector(count_file,kindex);
+    if (k<=31) sdglib::write_flat_vector(count_file,kindex);
+    else sdglib::write_flat_vector(count_file,kindex128);
     sdglib::write_flat_vectorvector(count_file,counts);
 }
 
@@ -438,6 +730,6 @@ const std::vector<uint16_t> &KmerCounter::get_count_by_name(const std::string &n
 }
 
 std::ostream &operator<<(std::ostream &os, const KmerCounter &kc) {
-    os << "KmerCounter "<< ( kc.name.empty() ? "unnamed":kc.name ) <<": index with "<<kc.kindex.size()<<" "<<std::to_string(kc.k)<<"-mers";
+    os << "KmerCounter "<< ( kc.name.empty() ? "unnamed":kc.name ) <<": index with "<< (kc.k <= 31 ? kc.kindex.size() : kc.kindex128.size()) <<" "<<std::to_string(kc.k)<<"-mers";
     return os;
 }
