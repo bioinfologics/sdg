@@ -457,7 +457,7 @@ void add_count_to_kds64( KmerCounter & kds, const std::string & count_name, cons
         std::vector<uint64_t> found_kmers; // kmer index of found kmers is saved here, increments are done in the critical
         found_kmers.reserve(local_kmers_size);
         std::vector<uint64_t> readkmers;
-        CStringKMerFactory cskf(kds.get_k());
+        CStringKMerFactory cskf(kds.k);
 #pragma omp for schedule(static,10000)
         for (uint64_t rid = 1; rid <= datastore.size(); ++rid) {
             readkmers.clear();
@@ -526,7 +526,7 @@ void add_count_to_kds128( KmerCounter & kds, const std::string & count_name, con
         std::vector<__uint128_t> found_kmers; // kmer index of found kmers is saved here, increments are done in the critical
         found_kmers.reserve(local_kmers_size);
         std::vector<__uint128_t> readkmers;
-        CStringKMerFactory128 cskf(kds.get_k());
+        CStringKMerFactory128 cskf(kds.k);
 #pragma omp for schedule(static,10000)
         for (uint64_t rid = 1; rid <= datastore.size(); ++rid) {
             readkmers.clear();
