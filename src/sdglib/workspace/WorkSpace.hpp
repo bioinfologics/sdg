@@ -165,10 +165,6 @@ public:
     std::vector<std::string> list_long_reads_datastores();
     std::vector<std::string> list_kmer_counters();
 
-    //general operations
-
-    void remap_all();
-    void remap_all63();
     //Projected operations with info from the graph
 
     std::vector<sgNodeID_t>
