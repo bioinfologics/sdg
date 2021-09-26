@@ -911,7 +911,7 @@ std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger:
     // File to write translation table to
     std::ofstream ofile;
     ofile.open("./translation_table.txt");
-
+    auto k=ws.get_kmer_counter(kmer_counter).k;
 #pragma omp parallel for schedule(dynamic,1)
     for (const auto& nv: ws.sdg.get_all_nodeviews()){
 
@@ -952,12 +952,11 @@ std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger:
                     continue;//graph is unique after read coverage unique, collapsing alert!
                 }
                 //iterate and break into max_size chunks
-                for (auto ssi=si;ssi<=i;ssi+=max_run_size) {
+                for (auto ssi=si;ssi<i;ssi+=max_run_size) {
                     auto ii=ssi+max_run_size;
                     if (ii>i) ii=i;
                     //add a node at the end of the graph and add the id to the list for future reference
-                    sgNodeID_t new_node = anchor_graph.add_node(Node(seq.substr(ssi, ii - ssi + 30)));
-                    //int64_t distance = si-last_node_position-30;
+                    sgNodeID_t new_node = anchor_graph.add_node(Node(seq.substr(ssi, ii - ssi + k - 1)));
                     anchor_nodes[nv.node_id()].push_back({new_node, ssi});
                     ofile << nv.node_id() << "," << new_node << "," << ssi << std::endl;
                 }

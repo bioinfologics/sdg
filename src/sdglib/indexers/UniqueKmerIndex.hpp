@@ -36,10 +36,6 @@ public:
         return kmer_to_graphposition.cend();
     };
 
-    uint8_t get_k() const {
-        return k;
-    }
-
     std::tuple<bool, graphStrandPos> find_unique_kmer_in_graph(const uint64_t kmer) const {
         const auto nk = find(kmer);
         auto exists = end() != nk;
@@ -102,10 +98,6 @@ public:
     const_iterator end() const {
         return kmer_to_graphposition.cend();
     };
-
-    uint8_t get_k() const {
-        return k;
-    }
 
     std::tuple<bool, graphStrandPos> find_unique_kmer_in_graph(const __uint128_t kmer) const {
         const auto nk = find(kmer);

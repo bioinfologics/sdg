@@ -62,6 +62,9 @@ uint64_t filter_kmers(std::vector<kmerPos128> &kmers, int max_kmer_repeat) {
 }
 
 NKmerIndex::NKmerIndex(const SequenceDistanceGraph &_sg, uint8_t k, int filter_limit) : k(k), bfilter(70*1024*1024), sg(_sg){
+    if (k > 31) {
+        throw std::runtime_error("You are trying to use K>31, which is not supported by NKmerIndex");
+    }
     uint64_t total_length=0;
 #pragma omp parallel for reduction(+:total_length)
     for (sgNodeID_t n = 1; n < sg.nodes.size(); ++n) {

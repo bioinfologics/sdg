@@ -137,7 +137,6 @@ public:
 
     void read(std::ifstream & input_file);
     void read_counts(std::ifstream &count_file);
-    int8_t get_k(){return k;};
 
 
     /**
@@ -154,10 +153,10 @@ public:
     std::vector<std::vector<uint16_t>> counts;  /// Count vector, contains an entry per kmer in the kindex
     
     std::string name;   /// Name of the KmerCounter
-
+    int8_t k;
 private:
     const WorkSpace &ws;
-    int8_t k;
+
     KmerCountMode count_mode;
     float kci_peak_f=-1;
     std::unordered_map<int64_t, float> kci_cache;

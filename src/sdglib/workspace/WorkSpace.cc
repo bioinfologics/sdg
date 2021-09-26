@@ -259,51 +259,6 @@ std::vector<sgNodeID_t> WorkSpace::select_from_all_nodes(uint32_t min_size, uint
     return nodes;
 }
 
-void WorkSpace::remap_all() {
-    sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
-    auto op = add_operation("Mapping", "WorkSpace::remap_all", "remapping all reads");
-    //auto pri=0;
-    for (auto &ds:paired_reads_datastores) {
-        sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
-        ds.mapper.remap_all_reads();
-        ds.print_status();
-        sdglib::OutputLog()<<"Computing size distribution..."<<std::endl;
-        //auto sdist=m.size_distribution();
-        //std::ofstream df("prdist_"+std::to_string(pri++)+".csv");
-        //for (auto i=0;i<sdist.size();i+=10){
-        //    uint64_t t=0;
-        //    for (auto j=i;j<i+10;++j) t+=sdist[j];
-        //    if (t>0) df<<i<<", "<<t<<std::endl;
-        //}
-        op.addEntry("reads from "+ds.filename+" re-mapped to current graph");
-        sdglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
-    }
-    for (auto &ds:linked_reads_datastores) {
-        sdglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
-        ds.mapper.remap_all_reads();
-        op.addEntry("reads from "+ds.filename+" re-mapped to current graph");
-        sdglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
-    }
-}
-
-void WorkSpace::remap_all63() {
-    sdglib::OutputLog()<<"Mapping reads..."<<std::endl;
-    auto op = add_operation("Mapping", "WorkSpace::remap_all63", "remapping all reads");
-    for (auto &ds:paired_reads_datastores) {
-        sdglib::OutputLog()<<"Mapping reads from paired library..."<<std::endl;
-        ds.mapper.remap_all_reads63();
-        ds.print_status();
-        op.addEntry("reads from "+ds.filename+" re-mapped to current graph");
-        sdglib::OutputLog()<<"Mapping reads from paired library DONE."<<std::endl;
-    }
-    for (auto &ds:linked_reads_datastores) {
-        sdglib::OutputLog()<<"Mapping reads from linked library..."<<std::endl;
-        ds.mapper.remap_all_reads63();
-        op.addEntry("reads from "+ds.filename+" re-mapped to current graph");
-        sdglib::OutputLog()<<"Mapping reads from linked library DONE."<<std::endl;
-    }
-}
-
 PairedReadsDatastore &WorkSpace::add_paired_reads_datastore(const std::string &filename, const std::string &name) {
     if (paired_reads_datastores.size() > MAX_WORKSPACE_VECTOR_SIZE) {
         throw std::runtime_error("Maximum items exceeded, please increase MAX_WORKSPACE_VECTOR_SIZE compile option to add more items");
