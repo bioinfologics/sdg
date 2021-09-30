@@ -729,26 +729,47 @@ void LongReadsRecruiter::thread_reads(uint32_t end_size, uint16_t matches) {
     }
 }
 
-void LongReadsRecruiter::simple_thread_reads() {
+//helper function: find the next block of alignments to a node, returns the first and last index in the matches
+std::pair<int,int> LongReadsRecruiter::find_next_valid_block(const std::vector<PerfectMatch> & matches, int start, int min_count){
+    if (start>=matches.size()) return {-1,-1};
+    int block_start=start;
+    int block_end=start;
+    sgNodeID_t block_nid=matches[start].node;
+    int block_count=0;
+    for (auto i=start; i<matches.size();++i){
+        if (matches[i].node==block_nid) { //if block continues, keep going, unless its the last match in which case return block.
+            if (++block_count>=min_count) {
+                block_end=i;
+                if (i==matches.size()-1) return {block_start,block_end};
+            }
+        }
+        else if (block_count<min_count) { //if the block hadn't started, just move the start forward
+            block_start=i;
+            block_nid=matches[i].node;
+            block_count==1;
+        }
+        else { //if block is interrupted by a valid block, or a partial block running at the end of the matches, return the block, otherwise skip
+            int next_count=1;
+            for (;i+next_count<matches.size() and matches[i+next_count].node==matches[i].node;++next_count);
+            if (i+next_count==matches.size() or next_count>=min_count) return {block_start, block_end};
+            else i+=next_count;
+        }
+    }
+    return {-1,-1};
+}
+
+void LongReadsRecruiter::simple_thread_reads(int min_count) {
     read_threads.clear();
     read_threads.resize(read_perfect_matches.size());
     for (auto rid=1;rid<read_perfect_matches.size();++rid){
-        read_threads[rid].reserve(read_perfect_matches[rid].size());
-        for (auto &rpm:read_perfect_matches[rid]) {
-            //make each perfect match into a node position
-            read_threads[rid].emplace_back(rpm.node, rpm.read_position - rpm.node_position,
-                                           rpm.read_position - rpm.node_position + sdg.get_node_size(rpm.node));
+        int64_t thread_offset=0;//offset between thread and read, computed on last block's position vs. its last match
+        const auto & matches=read_perfect_matches[rid];
+        for (auto nb= find_next_valid_block(matches,0,min_count);nb.first!=-1;nb=find_next_valid_block(matches,nb.second+1,min_count)) {
+            int64_t pstart=matches[nb.first].read_position-matches[nb.first].node_position+thread_offset;
+            int64_t pend=pstart+sdg.get_node_size(matches[nb.first].node);
+            thread_offset=pstart+matches[nb.second].node_position-matches[nb.second].read_position;
+            read_threads[rid].emplace_back(matches[nb.first].node, pstart, pend);
         }
-        //sort the node positions
-        std::sort(read_threads[rid].begin(),read_threads[rid].end());
-        //eliminate any consecutive node position to the same node
-        int ri=0,wi=0;
-        for (;ri<read_threads[rid].size();++ri){
-            if (read_threads[rid][ri].node!=read_threads[rid][wi].node) {
-                read_threads[rid][++wi]=read_threads[rid][ri];
-            }
-        }
-        read_threads[rid].resize(wi+1);
     }
 }
 

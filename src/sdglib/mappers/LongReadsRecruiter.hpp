@@ -231,13 +231,14 @@ public:
      */
     void thread_reads(uint32_t end_size, uint16_t matches); //uses endmatches_to_positions
 
+    std::pair<int,int> find_next_valid_block(const std::vector<PerfectMatch> & matches, int start, int min_count);
     /** @brief Threads the nodes by plain aggregation of the matches to a node
      *
      * Matches don't need to fulfill any other requirement to appear in the thread other thatn to have a match
      * Fills read_threads with NodePositions. read_threads[i] stores the NodePositions of the thread created by read i.
      *
      */
-    void simple_thread_reads();
+    void simple_thread_reads(int min_count=1);
 
     /** @brief Create a ReadThreadsGraph object using the threads information
      * see ReadThreadsGraph class
