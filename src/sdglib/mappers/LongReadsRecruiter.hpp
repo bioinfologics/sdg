@@ -172,18 +172,6 @@ public:
      */
     void reset_recruitment();
 
-    /** @brief creates threads from read_perfect matches.
-     *
-     * Fills read_paths and node_paths with filtered threads constructed usind reads read_perfect_matches.
-     * read_paths[rid] stores all paths that contain rid
-     * node_paths[node_id] stores all paths containing node_id
-     *
-     * Uses the rudimentary_tap() routine to fill/refill the read_paths and node_paths vectors, this function performs
-     * match aggregation and a rudimentary_pop of single hit and single hit end matches (see rudimentary_tap() in .cc)
-     *
-     */
-    void thread_and_pop();
-
     /** @brief get a list of nodes fw from node in read_id
      *
      * If a negative node is used the function will return the BW path (the FW of the negative node)
@@ -203,33 +191,6 @@ public:
      */
     std::vector<std::vector<sgNodeID_t> > all_paths_fw(sgNodeID_t node) const;
 
-    /** @brief Transforms the mat match coordinates to complete node position over the read in read coordinates.
-     *
-     * Transform the PerfectMatches in the read_perfect_matches in NodePosition, computes the offset of the node in the
-     * read and returns the coordinates of the matches nodes (from first base to last base of the node) in the read
-     *
-     * Node has to match at the end to be considered, node has to match a min ammount of times to be considered.
-     *
-     * @param rid read_id to analyze
-     * @param end_size Distance of the match to the end of the node for the match to be considered
-     * @param matches Min number of matches to a node to consider the node
-     * @return vector of NodePositions describing the coordinates of the nodes in the read
-     */
-    std::vector<NodePosition> endmatches_to_positions(uint64_t rid,int32_t end_size, uint16_t matches);
-
-    /** @brief Threads the nodes using transforming the coordinates of the entire node in the read.
-     *
-     * Fills read_threads with NodePositions. read_threads[i] stores the NodePositions of the thread created by read i.
-     *
-     * Uses the endmatches_to_positions() function to generate the read coordinates of the entire node in the read
-     * (extends the match to the begining and end of the node to include the entire node).
-     *
-     * If no coordinate transformation is desired use simple_thread_reads().
-     *
-     * @param end_size first/last match distance from the end of the node for th enode to be considered
-     * @param matches minimum number of matches between the read and the node for th enode to eb considered
-     */
-    void thread_reads(uint32_t end_size, uint16_t matches); //uses endmatches_to_positions
 
     std::pair<int,int> find_next_valid_block(const std::vector<PerfectMatch> & matches, int start, int min_count);
     /** @brief Threads the nodes by plain aggregation of the matches to a node
