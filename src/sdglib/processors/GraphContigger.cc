@@ -912,9 +912,10 @@ std::map<sgNodeID_t,std::vector<std::pair<sgNodeID_t, int64_t>>> GraphContigger:
     std::ofstream ofile;
     ofile.open("./translation_table.txt");
     auto k=ws.get_kmer_counter(kmer_counter).k;
+    auto nvs=ws.sdg.get_all_nodeviews();
 #pragma omp parallel for schedule(dynamic,1)
-    for (const auto& nv: ws.sdg.get_all_nodeviews()){
-
+    for (int64_t i=0;i<nvs.size();++i ){
+        const auto& nv=nvs[i];
         auto c = nv.kmer_coverage(kmer_counter, kmer_count);
         auto cg = nv.kmer_coverage(kmer_counter, "sdg");
         if (max_kci>0 ) {

@@ -655,101 +655,47 @@ void LongReadsRecruiter::recruit_threads() {
                     node_threads[llabs(match.node)].emplace_back(rid);
 }
 
-std::vector<NodePosition> LongReadsRecruiter::endmatches_to_positions(uint64_t rid, int32_t end_size, uint16_t matches) {
-    std::vector<NodePosition> positions;
-    float MAX_DIFF=.1;
-    std::map<sgNodeID_t, int> node_count;
-    for (auto &pm : read_perfect_matches[rid]) node_count[pm.node]+=1;
-    PerfectMatch start_first,start_second,end_first,end_second;
-    for (auto &n:node_count) {
-        if (n.second>=matches) {
-            int64_t nsize=sdg.get_node_size(n.first);
-            //std::cout<<std::endl<<"Matches vs. node "<<n.first<< " ( "<<nsize<<"bp )"<<std::endl;
-            auto mi=read_perfect_matches[rid].begin();
-            for (auto i=0;i<n.second;++i){//iterate thorugh the node's matches TODO: only iterate through matches in ends? a spurious middle match can be a disaster
-                while (mi->node!=n.first) ++mi; // get to the i-th match to this node
-                //std::cout<<mi->read_position<<" -> "<<mi->node_position;
-                if (i==0) {
-                    start_first=*mi;
-                    //std::cout<<" SF ";
-                }
-                if (i==matches-1) {
-                    start_second=*mi;
-                    //std::cout<<" SS ";
-                }
-                if (i==n.second-matches) {
-                    end_first=*mi;
-                    //std::cout<<" EF ";
-                }
-                if (i==n.second-1) {
-                    end_second=*mi;
-                    //std::cout<<" ES ";
-                }
-                //std::cout<<std::endl;
-                ++mi;
+//helper function: find the next block of alignments to a node, returns the first and last index in the matches
+std::pair<int,int> LongReadsRecruiter::find_next_valid_block(const std::vector<PerfectMatch> & matches, int start, int min_count){
+    if (start>=matches.size()) return {-1,-1};
+    int block_start=start;
+    int block_end=start;
+    sgNodeID_t block_nid=matches[start].node;
+    int block_count=0;
+    for (auto i=start; i<matches.size();++i){
+        if (matches[i].node==block_nid) { //if block continues, keep going, unless its the last match in which case return block.
+            if (++block_count>=min_count) {
+                block_end=i;
+                if (i==matches.size()-1) return {block_start,block_end};
             }
-
-            //std::cout<<start_first.node_position<<" "<<start_second.node_position<<" : "<<end_first.node_position<<" "<<end_second.node_position<<"  ( node: "<<nsize<<"  last_match:"<<read_perfect_matches[rid].back().read_position<<" )"<<std::endl;
-            int32_t nstart=INT32_MIN,nend=INT32_MIN;
-            //std::cout<<start_second.node_position<<"<="<<end_size<<"?"<<std::endl;
-            if (start_second.node_position<=end_size) nstart=start_first.read_position-start_first.node_position;
-            //std::cout<<end_first.node_position<<">="<<nsize-end_size<<"?"<<std::endl;
-            if (end_first.node_position>=nsize-end_size) nend=end_second.read_position-end_second.node_position+nsize;
-            //std::cout<<"from matches --> "<<nstart<<" - "<<nend<<std::endl;
-            //skip if no end detected
-            if (nstart==INT32_MIN and nend==INT32_MIN) continue;
-
-            //skip if only start and end should be there
-            if (nend==INT32_MIN){
-                if (nstart+nsize<=read_perfect_matches[rid].back().read_position) continue;
-                nend=nstart+nsize;
-            }
-            //skip if only end and start should be there
-            else if (nstart==INT32_MIN){
-                if (nend-nsize>0) continue;
-                nstart=nend-nsize;
-            }
-            //skip if node size is wrong
-            else if (llabs(nend-nstart-nsize)/nsize>MAX_DIFF) continue;
-            //std::cout<<"adjusted to --> "<<nstart<<" - "<<nend<<std::endl;
-            positions.emplace_back(n.first,nstart,nend);
-
+        }
+        else if (block_count<min_count) { //if the block hadn't started, just move the start forward
+            block_start=i;
+            block_nid=matches[i].node;
+            block_count==1;
+        }
+        else { //if block is interrupted by a valid block, or a partial block running at the end of the matches, return the block, otherwise skip
+            int next_count=1;
+            for (;i+next_count<matches.size() and matches[i+next_count].node==matches[i].node;++next_count);
+            if (i+next_count==matches.size() or next_count>=min_count) return {block_start, block_end};
+            else i+=next_count;
         }
     }
-    std::sort(positions.begin(),positions.end());
-    return positions;
+    return {-1,-1};
 }
 
-void LongReadsRecruiter::thread_reads(uint32_t end_size, uint16_t matches) {
+void LongReadsRecruiter::simple_thread_reads(int min_count) {
     read_threads.clear();
     read_threads.resize(read_perfect_matches.size());
     for (auto rid=1;rid<read_perfect_matches.size();++rid){
-        if (read_perfect_matches[rid].empty()) continue;
-        //std::cout<<std::endl<<"analysing read "<<rid<<" ( matches from "<<read_perfect_matches[rid].front().read_position<<" to "<<read_perfect_matches[rid].back().read_position<<" )"<<std::endl;
-        read_threads[rid]=endmatches_to_positions(rid,end_size,matches);
-    }
-}
-
-void LongReadsRecruiter::simple_thread_reads() {
-    read_threads.clear();
-    read_threads.resize(read_perfect_matches.size());
-    for (auto rid=1;rid<read_perfect_matches.size();++rid){
-        read_threads[rid].reserve(read_perfect_matches[rid].size());
-        for (auto &rpm:read_perfect_matches[rid]) {
-            //make each perfect match into a node position
-            read_threads[rid].emplace_back(rpm.node, rpm.read_position - rpm.node_position,
-                                           rpm.read_position - rpm.node_position + sdg.get_node_size(rpm.node));
+        int64_t thread_offset=0;//offset between thread and read, computed on last block's position vs. its last match
+        const auto & matches=read_perfect_matches[rid];
+        for (auto nb= find_next_valid_block(matches,0,min_count);nb.first!=-1;nb=find_next_valid_block(matches,nb.second+1,min_count)) {
+            int64_t pstart=matches[nb.first].read_position-matches[nb.first].node_position+thread_offset;
+            int64_t pend=pstart+sdg.get_node_size(matches[nb.first].node);
+            thread_offset=pstart+matches[nb.second].node_position-matches[nb.second].read_position;
+            read_threads[rid].emplace_back(matches[nb.first].node, pstart, pend);
         }
-        //sort the node positions
-        std::sort(read_threads[rid].begin(),read_threads[rid].end());
-        //eliminate any consecutive node position to the same node
-        int ri=0,wi=0;
-        for (;ri<read_threads[rid].size();++ri){
-            if (read_threads[rid][ri].node!=read_threads[rid][wi].node) {
-                read_threads[rid][++wi]=read_threads[rid][ri];
-            }
-        }
-        read_threads[rid].resize(wi+1);
     }
 }
 
@@ -759,78 +705,6 @@ ReadThreadsGraph LongReadsRecruiter::rtg_from_threads(bool remove_duplicated, in
         rtg.add_thread(rid,read_threads[rid],remove_duplicated,min_thread_nodes);
     }
     return rtg;
-}
-
-
-//*********************** WELL INTENTIONED WARNING ****************************
-// Thread And Pop is a nugget of what it could potentially become.
-// It is unreliable and buggy, and so will be for a while.It works where it has
-// been tested, and I am working on making it better. For now, it still is my
-// pet project.
-//
-// bj
-//*****************************************************************************
-
-/** @brief Class used to aggregate consecutive PerfectMatches from read_perfect_matches into contiguous PerfectMatches.
- * and functions to work with them.
- *
- * From one particular PerfectMatch, as long as successive PMs are ordered in the read and in the node and
- * in the same node, the matches are aggregated into one bigger consecutive PerfectMatch.
- *
- * Does not require complete coverage (can have gaps between matches).
- */
-class AggregatedHits{
-public:
-    AggregatedHits(const std::vector<PerfectMatch> &_read_pms,uint start):read_pms(_read_pms){
-        start_idx=start;
-        for(end_idx=start;end_idx+1<read_pms.size();++end_idx) {
-            auto & l = read_pms[end_idx];
-            auto & n = read_pms[end_idx+1];
-            if (n.node != l.node or n.read_position < l.read_position or l.node_position < l.node_position) break;
-        }
-    }
-
-    uint hit_count() const { return end_idx-start_idx+1;}
-
-    sgNodeID_t node() const { return read_pms[start_idx].node;}
-
-    int32_t rstart() const {return read_pms[start_idx].read_position;}
-
-    int32_t rend() const {return read_pms[end_idx].read_position+read_pms[end_idx].size;}
-
-    int32_t nstart() const {return read_pms[start_idx].node_position;}
-
-    int32_t nend() const {return read_pms[end_idx].node_position+read_pms[end_idx].size;}
-
-    bool can_join(const AggregatedHits &other) const {
-        if (node() == other.node()) {
-            if (rend() < other.rstart() and nend() < other.nend()) return true;
-            if (other.rend() < rstart() and other.nend() < nend()) return true;
-        }
-        return false;
-    }
-
-    uint start_idx;
-    uint end_idx;
-    const std::vector<PerfectMatch> &read_pms;
-};
-
-/** @brief aggregate PerfectMatches of read_perfect_matches into AggregatedHits of that read
- *
- * If RPMs are consecutive and ordered in the same node they are aggregated into bigger AggregatedHits.
- *
- * PMs allow matching gaps in the middle
- *
- * @param prm PerfectMatches for a read
- * @return PerfectMatches for that read
- */
-std::vector<AggregatedHits> aggregate_hits(const std::vector<PerfectMatch>&prm) {
-    std::vector<AggregatedHits> ahs;
-    for(auto next_hit=0;next_hit<prm.size();){
-        ahs.emplace_back(AggregatedHits(prm,next_hit));
-        next_hit=ahs.back().end_idx+1;
-    }
-    return ahs;
 }
 
 std::vector<sgNodeID_t> LongReadsRecruiter::path_fw(seqID_t read_id, sgNodeID_t node) const {
@@ -865,55 +739,4 @@ std::vector<std::vector<sgNodeID_t> > LongReadsRecruiter::all_paths_fw(sgNodeID_
 
     }
     return r;
-}
-
-//def rudimentary_tap(rid):
-//    #transform consecutive runs of ascending hits to the same node into single long-runs
-//    prm=[x for x in lrr.read_perfect_matches[rid]]
-//    ahs=aggregate_hits(prm)
-//
-//    #identify runs of just one hit, evaluate if they represent a transition or a switch
-//    switches=[]
-//    if ahs[0].size()==1: switches.append(0)
-//    if ahs[-1].size()==1: switches.append(len(prm)-1)
-//    for i in range(1,len(ahs)-1):
-//        if ahs[i].size()==1 and ahs[i-1].can_join(ahs[i+1]):
-//            #print(ahs[i]," identified as a 1-hit switch")
-//            for x in range(ahs[i].start_index,ahs[i].end_index+1): switches.append(x)
-//    prm=[prm[x] for x in range(len(prm)) if x not in switches]
-//    ahs=aggregate_hits(prm)
-//    return ahs
-
-std::vector<sgNodeID_t> rudimentary_tap(const std::vector<PerfectMatch>&prm){
-    std::vector<PerfectMatch> filtered_prm;
-    auto ahs=aggregate_hits(prm);
-
-    for (auto i=0;i<ahs.size();++i){
-        if (i==0 or i==ahs.size()-1){
-            if (ahs[i].hit_count()==1) continue; //Discards starting and ending single-hits, may be valid but not trustworthy
-        }
-        else {
-            if (ahs[i].hit_count()==1 and ahs[i-1].can_join(ahs[i+1])) continue; //Discards 1-hit switches
-        }
-        for (auto mi=ahs[i].start_idx;mi<=ahs[i].end_idx;++mi) filtered_prm.emplace_back(prm[mi]);
-    }
-    std::vector<sgNodeID_t> p;
-    for (auto &ah: aggregate_hits(filtered_prm)) p.emplace_back(ah.node());
-    return p;
-}
-
-void LongReadsRecruiter::thread_and_pop() {
-    read_paths.clear();
-    read_paths.resize(read_perfect_matches.size());
-    node_paths.clear();
-    node_paths.resize(sdg.nodes.size());
-    std::vector<uint32_t> pcount(sdg.nodes.size());
-    for (auto rid=1;rid<read_perfect_matches.size();++rid) {
-        read_paths[rid]=rudimentary_tap(read_perfect_matches[rid]);
-        for (auto const & n:read_paths[rid]) ++pcount[abs(n)];
-    }
-    for(auto i=1;i<pcount.size();++i) node_paths[i].reserve(pcount[i]);
-    for (auto rid=1;rid<read_perfect_matches.size();++rid){
-        for (auto const & n:read_paths[rid]) node_paths[abs(n)].emplace_back( n>0 ? rid : -rid);
-    }
 }
