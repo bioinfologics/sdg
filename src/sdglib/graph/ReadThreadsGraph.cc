@@ -748,6 +748,20 @@ ReadThreadsGraph ReadThreadsGraph::reduced_graph(int min_thread_nodes, int min_n
     return std::move(rrtg);
 }
 
+ReadThreadsGraph ReadThreadsGraph::reduced_graph(std::unordered_set<sgNodeID_t> nodes) {
+    ReadThreadsGraph rrtg(sdg);
+    for (auto &ti:thread_info) {
+        auto t=get_thread(ti.first);
+        std::vector<NodePosition> filtered_thread;
+        filtered_thread.reserve(t.size());
+        for (auto &tp:t) {
+            if (nodes.count(tp.node) or nodes.count(-tp.node)) filtered_thread.emplace_back(tp);
+        }
+        if (filtered_thread.size()>=1) rrtg.add_thread(ti.first,filtered_thread);
+    }
+    return std::move(rrtg);
+}
+
 void ReadThreadsGraph::compute_node_proximity(int radius) {
     //TODO: OpenMP is your friend
     std::unordered_set<std::pair<sgNodeID_t,sgNodeID_t>> node_pairs;

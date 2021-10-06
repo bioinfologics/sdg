@@ -210,6 +210,8 @@ public:
 
     ReadThreadsGraph reduced_graph(int min_thread_nodes, int min_node_threads);
 
+    ReadThreadsGraph reduced_graph(std::unordered_set<sgNodeID_t> nodes);
+
     void compute_node_proximity(int radius);
 
     std::unordered_map<sgNodeID_t,uint64_t> get_proximal_nodes(sgNodeID_t nid, bool oriented=false);
