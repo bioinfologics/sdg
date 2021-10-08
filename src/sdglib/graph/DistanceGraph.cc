@@ -808,6 +808,20 @@ std::string DistanceGraph::stats_by_kci() {
     uint64_t kci3_tips=0;
     uint64_t kci4_tips=0;
 
+    uint64_t nokci_cr=0;
+    uint64_t kci0_cr=0;
+    uint64_t kci1_cr=0;
+    uint64_t kci2_cr=0;
+    uint64_t kci3_cr=0;
+    uint64_t kci4_cr=0;
+
+    uint64_t nokci_bubs=0;
+    uint64_t kci0_bubs=0;
+    uint64_t kci1_bubs=0;
+    uint64_t kci2_bubs=0;
+    uint64_t kci3_bubs=0;
+    uint64_t kci4_bubs=0;
+
     std::vector<uint64_t> binned_bps(61, 0);
     std::vector<uint64_t> binned_counts(61, 0);
 
@@ -816,22 +830,34 @@ std::string DistanceGraph::stats_by_kci() {
 
         if (kci == -1){
             nokci_sizes.push_back(nv.size());
-            if (nv.next().empty() or nv.prev().empty()) nokci_tips++;
+            if (nv.is_tip()) nokci_tips++;
+            if (nv.is_canonical_repeat()) nokci_cr++;
+            if (nv.is_bubble_side()) nokci_bubs++;
         } else if (kci<.5){
             kci0_sizes.push_back(nv.size());
-            if (nv.next().empty() or nv.prev().empty()) kci0_tips++;
+            if (nv.is_tip()) kci0_tips++;
+            if (nv.is_canonical_repeat()) kci0_cr++;
+            if (nv.is_bubble_side()) kci0_bubs++;
         } else if (kci<=1.5){
             kci1_sizes.push_back(nv.size());
-            if (nv.next().empty() or nv.prev().empty()) kci1_tips++;
+            if (nv.is_tip()) kci1_tips++;
+            if (nv.is_canonical_repeat()) kci1_cr++;
+            if (nv.is_bubble_side()) kci1_bubs++;
         } else if (kci<=2.5){
             kci2_sizes.push_back(nv.size());
-            if (nv.next().empty() or nv.prev().empty()) kci2_tips++;
+            if (nv.is_tip()) kci2_tips++;
+            if (nv.is_canonical_repeat()) kci2_cr++;
+            if (nv.is_bubble_side()) kci2_bubs++;
         } else if (kci<=3.5){
             kci3_sizes.push_back(nv.size());
-            if (nv.next().empty() or nv.prev().empty()) kci3_tips++;
+            if (nv.is_tip()) kci3_tips++;
+            if (nv.is_canonical_repeat()) kci3_cr++;
+            if (nv.is_bubble_side()) kci3_bubs++;
         } else {
             kci4_sizes.push_back(nv.size());
-            if (nv.next().empty() or nv.prev().empty()) kci4_tips++;
+            if (nv.is_tip()) kci4_tips++;
+            if (nv.is_canonical_repeat()) kci4_cr++;
+            if (nv.is_bubble_side()) kci4_bubs++;
         }
 
         if (kci != -1) binned_bps[std::min((int)(kci*10),60)]+=nv.size();
@@ -847,6 +873,8 @@ std::string DistanceGraph::stats_by_kci() {
     all_sizes.insert( all_sizes.end(), kci4_sizes.begin(), kci4_sizes.end() );
 
     uint64_t all_tips = nokci_tips+kci0_tips+kci1_tips+kci2_tips+kci3_tips+kci4_tips;
+    uint64_t all_cr = nokci_cr+kci0_cr+kci1_cr+kci2_cr+kci3_cr+kci4_cr;
+    uint64_t all_bubs = nokci_bubs+kci0_bubs+kci1_bubs+kci2_bubs+kci3_bubs+kci4_bubs;
 
     auto nstats_nokci = nstats(nokci_sizes);
     auto nstats_0 = nstats(kci0_sizes);
@@ -856,18 +884,18 @@ std::string DistanceGraph::stats_by_kci() {
     auto nstats_4 = nstats(kci4_sizes);
     auto all_stats = nstats(all_sizes);
     char buffer[10000]={0};
-    std::sprintf(buffer," -----------------------------------------------------------------------------------\n");
-    std::sprintf(buffer+std::strlen(buffer),"|  KCI  |    Total bp   |   Nodes  |  Tips   |     N25    |     N50    |     N75    |\n");
-    std::sprintf(buffer+std::strlen(buffer),"|-------+---------------+----------+---------+------------+------------+------------|\n");
-    std::sprintf(buffer+std::strlen(buffer),"| None  | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(nokci_sizes.begin(), nokci_sizes.end(), (uint64_t) 0), nokci_sizes.size(), nokci_tips, nstats_nokci[0], nstats_nokci[1], nstats_nokci[2]);
-    std::sprintf(buffer+std::strlen(buffer),"| < 0.5 | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci0_sizes.begin(), kci0_sizes.end(), (uint64_t) 0), kci0_sizes.size(), kci0_tips, nstats_0[0], nstats_0[1], nstats_0[2]);
-    std::sprintf(buffer+std::strlen(buffer),"| ~ 1   | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci1_sizes.begin(), kci1_sizes.end(), (uint64_t) 0), kci1_sizes.size(), kci1_tips,  nstats_1[0], nstats_1[1], nstats_1[2]);
-    std::sprintf(buffer+std::strlen(buffer),"| ~ 2   | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci2_sizes.begin(), kci2_sizes.end(), (uint64_t) 0), kci2_sizes.size(), kci2_tips,  nstats_2[0], nstats_2[1], nstats_2[2]);
-    std::sprintf(buffer+std::strlen(buffer),"| ~ 3   | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci3_sizes.begin(), kci3_sizes.end(), (uint64_t) 0), kci3_sizes.size(), kci3_tips,  nstats_3[0], nstats_3[1], nstats_3[2]);
-    std::sprintf(buffer+std::strlen(buffer),"| > 3.5 | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci4_sizes.begin(), kci4_sizes.end(), (uint64_t) 0), kci4_sizes.size(), kci4_tips,  nstats_4[0], nstats_4[1], nstats_4[2]);
-    std::sprintf(buffer+std::strlen(buffer),"|-------+---------------+----------+---------+------------+------------+------------|\n");
-    std::sprintf(buffer+std::strlen(buffer),"| All   | %13lld | %8lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(all_sizes.begin(), all_sizes.end(), (uint64_t) 0), all_sizes.size(), all_tips, all_stats[0], all_stats[1], all_stats[2]);
-    std::sprintf(buffer+std::strlen(buffer)," -----------------------------------------------------------------------------------\n");
+    std::sprintf(buffer," -------------------------------------------------------------------------------------------------------\n");
+    std::sprintf(buffer+std::strlen(buffer),"|  KCI  |    Total bp   |   Nodes  |  Tips   | C Reps  | B Sides |     N25    |     N50    |     N75    |\n");
+    std::sprintf(buffer+std::strlen(buffer),"|-------+---------------+----------+---------+---------+---------+------------+------------+------------|\n");
+    std::sprintf(buffer+std::strlen(buffer),"| None  | %13lld | %8lld | %7lld | %7lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(nokci_sizes.begin(), nokci_sizes.end(), (uint64_t) 0), nokci_sizes.size(), nokci_tips, nokci_cr, nokci_bubs, nstats_nokci[0], nstats_nokci[1], nstats_nokci[2]);
+    std::sprintf(buffer+std::strlen(buffer),"| < 0.5 | %13lld | %8lld | %7lld | %7lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci0_sizes.begin(), kci0_sizes.end(), (uint64_t) 0), kci0_sizes.size(), kci0_tips, kci0_cr, kci0_bubs, nstats_0[0], nstats_0[1], nstats_0[2]);
+    std::sprintf(buffer+std::strlen(buffer),"| ~ 1   | %13lld | %8lld | %7lld | %7lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci1_sizes.begin(), kci1_sizes.end(), (uint64_t) 0), kci1_sizes.size(), kci1_tips, kci1_cr, kci1_bubs,  nstats_1[0], nstats_1[1], nstats_1[2]);
+    std::sprintf(buffer+std::strlen(buffer),"| ~ 2   | %13lld | %8lld | %7lld | %7lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci2_sizes.begin(), kci2_sizes.end(), (uint64_t) 0), kci2_sizes.size(), kci2_tips, kci2_cr, kci2_bubs,  nstats_2[0], nstats_2[1], nstats_2[2]);
+    std::sprintf(buffer+std::strlen(buffer),"| ~ 3   | %13lld | %8lld | %7lld | %7lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci3_sizes.begin(), kci3_sizes.end(), (uint64_t) 0), kci3_sizes.size(), kci3_tips, kci3_cr, kci3_bubs,  nstats_3[0], nstats_3[1], nstats_3[2]);
+    std::sprintf(buffer+std::strlen(buffer),"| > 3.5 | %13lld | %8lld | %7lld | %7lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(kci4_sizes.begin(), kci4_sizes.end(), (uint64_t) 0), kci4_sizes.size(), kci4_tips, kci4_cr, kci4_bubs,  nstats_4[0], nstats_4[1], nstats_4[2]);
+    std::sprintf(buffer+std::strlen(buffer),"|-------+---------------+----------+---------+---------+---------+------------+------------+------------|\n");
+    std::sprintf(buffer+std::strlen(buffer),"| All   | %13lld | %8lld | %7lld | %7lld | %7lld | %10lld | %10lld | %10lld |\n", std::accumulate(all_sizes.begin(), all_sizes.end(), (uint64_t) 0), all_sizes.size(), all_tips, all_cr, all_bubs, all_stats[0], all_stats[1], all_stats[2]);
+    std::sprintf(buffer+std::strlen(buffer)," -------------------------------------------------------------------------------------------------------\n");
     return std::string(buffer);
 }
 
