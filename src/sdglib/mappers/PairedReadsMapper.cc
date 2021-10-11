@@ -118,11 +118,20 @@ void PairedReadsMapper::load_readpaths(std::string filename) {
     paths_in_node.resize(path_counts.size());
     for (auto i=0;i<path_counts.size();++i) paths_in_node[i].reserve(path_counts[i]);
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Filling paths_in_node"<<std::endl;
+    int64_t pid,nid;
+
     for (auto i=0;i<read_paths.size();++i){
         const auto &p=read_paths[i];
         for (const auto &n:p.path){
-            auto pid=(n<0 ? -i : i);
-            if (paths_in_node[llabs(n)].empty() or paths_in_node[llabs(n)].back()!=pid) paths_in_node[llabs(n)].emplace_back(pid);
+            if (n>0) {
+                pid=i;
+                nid=n;
+            }
+            else {
+                pid=-i;
+                nid=-n;
+            }
+            if (paths_in_node[nid].empty() or paths_in_node[nid].back()!=pid) paths_in_node[nid].emplace_back(pid);
         }
     }
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"paths_in_node filled"<<std::endl;

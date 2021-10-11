@@ -604,8 +604,6 @@ void LongReadsMapper::write(std::string filename) {
 }
 
 void LongReadsMapper::write(std::ofstream &ofs) {
-    sdglib::OutputLog() << "Dumping long read mappings" << std::endl;
-
     ofs.write(reinterpret_cast<const char *>(&k), sizeof(k));
     ofs.write(reinterpret_cast<const char *>(&max_index_freq), sizeof(max_index_freq));
     ofs.write(reinterpret_cast<const char *>(&min_size), sizeof(min_size));
@@ -614,7 +612,6 @@ void LongReadsMapper::write(std::ofstream &ofs) {
     ofs.write(reinterpret_cast<const char *>(&max_delta_change), sizeof(max_delta_change));
 
     sdglib::write_flat_vector(ofs, mappings);
-    sdglib::OutputLog() << "Done!" << std::endl;
 }
 
 void LongReadsMapper::write_read_paths(std::string filename) {
