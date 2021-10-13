@@ -322,8 +322,16 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readonly("read_path_offsets",&PairedReadsMapper::read_path_offsets)
             .def("path_fw",&PairedReadsMapper::path_fw,"read_id"_a,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true)
             .def("all_paths_fw",&PairedReadsMapper::all_paths_fw,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true)
-            .def("dump_readpaths",&PairedReadsMapper::dump_readpaths)
-            .def("load_readpaths",&PairedReadsMapper::load_readpaths)
+            .def("dump_readpaths",[](PairedReadsMapper &prm,std::string filename) {
+                std::ofstream opf(filename);
+                prm.dump_readpaths(opf);
+                return;
+                },"filename"_a)
+            .def("load_readpaths",[](PairedReadsMapper &prm,std::string filename) {
+                std::ifstream ipf(filename);
+                prm.load_readpaths(ipf);
+                return;
+            },"filename"_a)
             .def("get_node_inmediate_neighbours",&PairedReadsMapper::get_node_inmediate_neighbours, "node"_a)
             .def("get_paths_in_node",&PairedReadsMapper::get_paths_in_node, "nid"_a)
             ;
