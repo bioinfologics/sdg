@@ -46,11 +46,10 @@ typedef union {
 class GraphMaker {
 public:
     GraphMaker(SequenceDistanceGraph & _sg): sg(_sg){};
-    void new_graph_from_kmerlist_trivial64(const std::vector<__uint64_t> & kmerset,uint8_t k);
-    void new_graph_from_kmerlist_trivial128(const std::vector<__uint128_t> & kmerset,uint8_t k);
+    void new_graph_from_kmerlist_64(const std::vector<__uint64_t> & kmerset,uint8_t k);
+    void new_graph_from_kmerlist_128(const std::vector<__uint128_t> & kmerset,uint8_t k);
     void new_graph_from_paired_datastore(const PairedReadsDatastore & ds, int k, int min_coverage, int num_batches);
     void new_graph_from_long_datastore(const LongReadsDatastore & ds, int k, int min_coverage, int num_batches);
-    void new_knodes_graph_from_long_datastore(const LongReadsDatastore & ds, int k, int min_coverage, int max_coverage, int num_batches);
 
 //    //Minimum cleanup options
 

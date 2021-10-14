@@ -25,13 +25,13 @@ std::string KmerCounter::ls(int level, bool recursive) const {
 
 void KmerCounter::index_sdg(){
     if (k<=31){
-        KmerCounter::_index_sdg63();
+        KmerCounter::_index_sdg64();
     } else {
         KmerCounter::_index_sdg128();
     }
 }
 
-void KmerCounter::_index_sdg63() {
+void KmerCounter::_index_sdg64() {
     //add all k-mers from SDG
     counts.clear();
     count_names.clear();
@@ -105,13 +105,13 @@ void KmerCounter::_index_sdg128() {
 
 void KmerCounter::update_graph_counts(){
     if (k<=31){
-        KmerCounter::_update_graph_counts63();
+        KmerCounter::_update_graph_counts64();
     } else {
         KmerCounter::_update_graph_counts128();
     }
 }
 
-void KmerCounter::_update_graph_counts63() {
+void KmerCounter::_update_graph_counts64() {
     for (auto &c:counts[0])c=0;
     uint64_t not_found=0;
 
@@ -636,13 +636,13 @@ std::vector<uint16_t> KmerCounter::project_count(const uint16_t count_idx, const
 
 float KmerCounter::kci(sgNodeID_t node){
     if (k<=31){
-      return KmerCounter::_kci63(node);
+      return KmerCounter::_kci64(node);
     } else {
         return KmerCounter::_kci128(node);
     }
 }
 
-float KmerCounter::_kci63(sgNodeID_t node) {
+float KmerCounter::_kci64(sgNodeID_t node) {
     try {
         return kci_cache.at(llabs(node));
     }
