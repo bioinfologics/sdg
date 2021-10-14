@@ -43,45 +43,11 @@ public:
     void dump_readpaths(std::ofstream &opf);
     void load_readpaths(std::ifstream &ipf);
 
-    /** @brief Maps each read in the data-store to the nodes using unique kmers form the graph
-     *
-     * Maps each read in the data-store to the nodes using unique kmers form the graph.
-     * Reads are mapped only if the placing in the graph is unique, if one or more kmers of a read
-     * maps to a different node the mapping for that read is discarded.
-     * Results are stored in this.read_to_node and this.reads_in_node
-     *
-     * If a set of reads ids is passed the mapper will only remap those reads.
-     *
-     * @param reads_to_remap
-     */
-    void map_reads(std::unordered_set<uint64_t> const &  reads_to_remap={});
-    /**
-     * Clears this.read_to_node and this.reads_in_node collections and reruns map_reads()
-     */
-    void remap_all_reads();
-
-    /** @brief same as map_reads() but using k=63
-     *
-     * @param reads_to_remap
-     */
-    void map_reads63(std::unordered_set<uint64_t> const &  reads_to_remap={});
-
-    /** @brief Same as remap_all_reads but using map_reads63
-     *
-     */
-    void remap_all_reads63();
-
     /** @brief creates a read path for each read through mapping
      *
      * @return
      */
     void path_reads(uint8_t k=63,int filter=200, bool fill_offsets=false);
-
-    /** @brief creates a read path for each read through mapping
-     *
-     * @return
-     */
-    void path_reads63();
 
     /** @brief returns a list of possible nodes fw, node needs to appear with same sign in read's path, negative read id means reversed path
      *
@@ -116,13 +82,6 @@ public:
     void print_status() const ;
 
     PairedReadsMapper& operator=(const PairedReadsMapper &other);
-
-    /** @brief Returns a collection of read ids that have both ends mapped to the nodeID.
-     *
-     * @param nodeID id of the node to get the read ids from
-     * @return vector of read ids where both ends are mapped to the nodeID
-     */
-    std::vector<uint64_t> get_node_readpairs_ids(sgNodeID_t nodeID);
 
     /** Get the most conected neighbour of a node
      *
