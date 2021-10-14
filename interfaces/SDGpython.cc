@@ -154,6 +154,9 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("get_mappings_tags", &NodeView::get_mappings_tags,"dsname"_a,"min_reads"_a=3)
             .def("get_paths_tags", &NodeView::get_paths_tags,"dsname"_a,"min_reads"_a=3)
             .def("get_kmers",&NodeView::get_kmers, "K"_a=31)
+            .def("is_tip",&NodeView::is_tip)
+            .def("is_bubble_size()",&NodeView::is_bubble_side)
+            .def("is_canonical_repeat",&NodeView::is_canonical_repeat,"max_degree"_a=2)
             .def("__eq__", &NodeView::operator==, py::is_operator())
             .def("__repr__",
                  [](const NodeView &nv) {

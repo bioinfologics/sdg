@@ -207,28 +207,36 @@ std::unordered_set<uint64_t> NodeView::get_linked_tags_kmers(std::string datasto
 };
 
 bool NodeView::is_tip() const {
-    if((prev().size()==0 and next().size()>0) or (next().size()==0 and prev().size()>0)) {
-        return true;
-    }
+    auto p=prev();
+    auto n=next();
+    if (p.size()==1 and n.size()==0 and p[0].node().next().size()>1) return true;
+    if (n.size()==1 and p.size()==0 and n[0].node().prev().size()>1) return true;
     return false;
 }
 
 bool NodeView::is_bubble_side() const {
-    if ( parallels().size()== 1 and prev().size()==1 and next().size()==1 and prev()[0].node().next().size()==2 and next()[0].node().prev().size()==2) {
+    auto p=prev();
+    auto n=next();
+    if ( parallels().size()== 1 and p.size()==1 and n.size()==1 and p[0].node().next().size()==2 and n[0].node().prev().size()==2) {
         return true;
     }
     return false;
 }
 
-bool NodeView::is_canonical_repeat() const{
-    if(prev().size()>1 and next().size()>1 and prev().size()==next().size()) {
-        for (const auto &pl: prev()) {
-            if (pl.node().next().size() > 1) return false;
-        }
-        for (const auto &nl: next()) {
-            if (nl.node().prev().size() > 1) return false;
-        }
-        return true;
+bool NodeView::is_canonical_repeat(int max_degree) const{
+    auto p=prev();
+    auto n=next();
+    if(p.size()!=n.size() or p.size()<=1 or p.size()>max_degree) return false;
+    std::unordered_set<sgNodeID_t> nodes;
+    nodes.insert(llabs(id));
+    for (const auto &pl: p) {
+        if (pl.node().next().size() > 1) return false;
+        nodes.insert(llabs(pl.node().id));
     }
+    for (const auto &nl: n) {
+        if (nl.node().prev().size() > 1) return false;
+        nodes.insert(llabs(nl.node().id));
+    }
+    if (nodes.size()==p.size()+n.size()+1) return true;
     return false;
 }
