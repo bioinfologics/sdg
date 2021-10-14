@@ -81,6 +81,7 @@ void PairedReadsMapper::dump_readpaths(std::ofstream &opf) {
         opf.write((char *) &p.offset, sizeof(p.offset));
         sdglib::write_flat_vector(opf, p.path);
     }
+    sdglib::write_flat_vectorvector(opf,paths_in_node);
 }
 
 void PairedReadsMapper::load_readpaths(std::ifstream & ipf) {
@@ -94,38 +95,7 @@ void PairedReadsMapper::load_readpaths(std::ifstream & ipf) {
         auto &pp=p.path;
         sdglib::read_flat_vector(ipf,pp);
     }
-
-    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Reserving paths_in_node"<<std::endl;
-    //first pass, size computing for vector allocation;
-    std::vector<uint64_t> path_counts(ws.sdg.nodes.size());
-    for (auto i=0;i<read_paths.size();++i){
-        const auto &p=read_paths[i];
-        for (const auto &n:p.path){
-            ++path_counts[llabs(n)];
-        }
-    }
-
-    paths_in_node.clear();
-    paths_in_node.resize(path_counts.size());
-    for (auto i=0;i<path_counts.size();++i) paths_in_node[i].reserve(path_counts[i]);
-    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Filling paths_in_node"<<std::endl;
-    int64_t pid,nid;
-
-    for (auto i=0;i<read_paths.size();++i){
-        const auto &p=read_paths[i];
-        for (const auto &n:p.path){
-            if (n>0) {
-                pid=i;
-                nid=n;
-            }
-            else {
-                pid=-i;
-                nid=-n;
-            }
-            if (paths_in_node[nid].empty() or paths_in_node[nid].back()!=pid) paths_in_node[nid].emplace_back(pid);
-        }
-    }
-    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"paths_in_node filled"<<std::endl;
+    sdglib::read_flat_vectorvector(ipf,paths_in_node);
 }
 
 void PairedReadsMapper::remap_all_reads() {
