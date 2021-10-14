@@ -37,14 +37,10 @@ void PairedReadsMapper::write(std::ofstream &output_file) {
     //read-to-node
     output_file.write((char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
     output_file.write((char *) &SDG_VN, sizeof(SDG_VN));
-    SDG_FILETYPE type(PairedMap_FT);
+    SDG_FILETYPE type(PairedMap_FT2);
     output_file.write((char *) &type, sizeof(type));
 
-    // TODO: to activate the path persistance comment the first 2 lines and uncomment the next 2
-    sdglib::write_flat_vector(output_file, read_to_node);
-    sdglib::write_flat_vectorvector(output_file, reads_in_node);
-//    sdglib::write_flat_vectorvector(output_file, paths_in_node);
-//    sdglib::write_flat_vector(output_file, read_paths);
+    dump_readpaths(output_file);
 }
 
 void PairedReadsMapper::read(std::ifstream &input_file) {
@@ -63,23 +59,19 @@ void PairedReadsMapper::read(std::ifstream &input_file) {
         throw std::runtime_error("PairedReadsMapper file Incompatible version");
     }
 
-    if (type != PairedMap_FT) {
-        throw std::runtime_error("PairedReadsMapper file Incompatible file type");
+    if (type == PairedMap_FT) {
+        sdglib::OutputLog()<<"WARNING: reading old workspace without PE paths"<<std::endl;
+        sdglib::read_flat_vector(input_file, read_to_node);
+        sdglib::read_flat_vectorvector(input_file, reads_in_node);
     }
-
-
-
-    // TODO: to activate the path persistance comment the first 2 lines and uncomment the next 2
-    sdglib::read_flat_vector(input_file, read_to_node);
-    sdglib::read_flat_vectorvector(input_file, reads_in_node);
-//    sdglib::read_flat_vectorvector(input_file, paths_in_node);
-//    sdglib::read_flat_vector(input_file, read_paths);
-    populate_orientation();
+    else if(type == PairedMap_FT2){
+        load_readpaths(input_file);
+    }
+    else throw std::runtime_error("PairedReadsMapper file Incompatible file type");
 }
 
 
-void PairedReadsMapper::dump_readpaths(std::string filename) {
-    std::ofstream opf(filename);
+void PairedReadsMapper::dump_readpaths(std::ofstream &opf) {
     uint64_t count;
 
     //dump operations
@@ -91,8 +83,7 @@ void PairedReadsMapper::dump_readpaths(std::string filename) {
     }
 }
 
-void PairedReadsMapper::load_readpaths(std::string filename) {
-    std::ifstream ipf(filename);
+void PairedReadsMapper::load_readpaths(std::ifstream & ipf) {
     uint64_t count;
 
     //dump operations
@@ -118,11 +109,20 @@ void PairedReadsMapper::load_readpaths(std::string filename) {
     paths_in_node.resize(path_counts.size());
     for (auto i=0;i<path_counts.size();++i) paths_in_node[i].reserve(path_counts[i]);
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Filling paths_in_node"<<std::endl;
+    int64_t pid,nid;
+
     for (auto i=0;i<read_paths.size();++i){
         const auto &p=read_paths[i];
         for (const auto &n:p.path){
-            auto pid=(n<0 ? -i : i);
-            if (paths_in_node[llabs(n)].empty() or paths_in_node[llabs(n)].back()!=pid) paths_in_node[llabs(n)].emplace_back(pid);
+            if (n>0) {
+                pid=i;
+                nid=n;
+            }
+            else {
+                pid=-i;
+                nid=-n;
+            }
+            if (paths_in_node[nid].empty() or paths_in_node[nid].back()!=pid) paths_in_node[nid].emplace_back(pid);
         }
     }
     sdglib::OutputLog(sdglib::LogLevels::INFO)<<"paths_in_node filled"<<std::endl;
@@ -196,123 +196,6 @@ void PairedReadsMapper::map_reads(const std::unordered_set<uint64_t> &reads_to_r
                                 mapping.rev = false;
                             else
                                 mapping.rev = true;
-                            mapping.first_pos = nk->second.pos;
-                            mapping.last_pos = nk->second.pos;
-                            ++mapping.unique_matches;
-                        } else {
-                            //TODO:break mapping by change of direction and such
-                            if (mapping.node != nknode) {
-                                mapping.node = 0;
-                                ++multimap_count;
-                                break; //exit -> multi-mapping read! TODO: allow mapping to consecutive nodes
-                            } else {
-                                mapping.last_pos = nk->second.pos;
-                                ++mapping.unique_matches;
-                            }
-                        }
-                    }
-                }
-                if (mapping.node != 0 and mapping.unique_matches >= min_matches) {
-                    //optimisation: just save the mapping in a thread private collection for now, have a single thread putting from that into de structure at the end
-                    private_results.push_back(mapping);
-                    ++mapped_count;
-                }
-            }
-            auto tc = ++total_count;
-            if (tc % 10000000 == 0) sdglib::OutputLog()<< mapped_count << " / " << tc <<" ("<<multimap_count<<" multi-mapped)"<< std::endl;
-        }
-    }
-    for (auto & tres:thread_mapping_results){
-        //sdglib::OutputLog(sdglib::LogLevels::DEBUG)<<"mixing in "<<tres.size()<<" thread specific results"<<std::endl;
-        for (auto &rm:tres){
-            read_to_node[rm.read_id] = rm.node;
-            reads_in_node[rm.node].emplace_back(rm);
-        }
-        tres.clear();
-        tres.shrink_to_fit();
-    }
-    uint64_t mapped_count=0,total_count=0,multimap_count=0;
-    for (auto i=0;i<omp_get_max_threads();++i){
-        mapped_count+=thread_mapped_count[i];
-        total_count+=thread_total_count[i];
-        multimap_count+=thread_multimap_count[i];
-    }
-    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Reads without k-mers: "<<nokmers<<std::endl;
-    sdglib::OutputLog(sdglib::LogLevels::INFO)<<"Reads mapped: "<<mapped_count<<" / "<<total_count<<" ("<<multimap_count<<" multi-mapped)"<<std::endl;
-#pragma omp parallel for
-    for (sgNodeID_t n=1;n<reads_in_node.size();++n){
-        std::sort(reads_in_node[n].begin(),reads_in_node[n].end());
-    }
-    populate_orientation();
-}
-
-void PairedReadsMapper::remap_all_reads63() {
-    for (auto &rtn:read_to_node) rtn=0;
-    for (auto &rin:reads_in_node) rin.clear();
-    map_reads63();
-}
-
-void PairedReadsMapper::map_reads63(const std::unordered_set<uint64_t> &reads_to_remap) {
-    const int k = 63;
-    Unique63merIndex ukindex(ws.sdg);
-    std::atomic<int64_t> nokmers(0);
-    reads_in_node.resize(ws.sdg.nodes.size());
-    read_to_node.resize(datastore.size()+1);
-    if (not reads_to_remap.empty())
-        sdglib::OutputLog()<<reads_to_remap.size()<<" selected reads / "<<read_to_node.size()-1<<" total"<<std::endl;
-
-    /*
-     * Read mapping in parallel,
-     */
-    uint64_t thread_mapped_count[omp_get_max_threads()],thread_total_count[omp_get_max_threads()],thread_multimap_count[omp_get_max_threads()];
-    std::vector<ReadMapping> thread_mapping_results[omp_get_max_threads()];
-    sdglib::OutputLog(sdglib::LogLevels::DEBUG)<<"Private mapping initialised for "<<omp_get_max_threads()<<" threads"<<std::endl;
-#pragma omp parallel
-    {
-        const int min_matches=1;
-        std::vector<KmerIDX128> readkmers;
-        StreamKmerIDXFactory128 skf(63);
-        ReadMapping mapping;
-        auto blrs=ReadSequenceBuffer(datastore,128*1024,datastore.readsize*2+2);
-        auto & private_results=thread_mapping_results[omp_get_thread_num()];
-        auto & mapped_count=thread_mapped_count[omp_get_thread_num()];
-        auto & total_count=thread_total_count[omp_get_thread_num()];
-        auto & multimap_count=thread_multimap_count[omp_get_thread_num()];
-        mapped_count=0;
-        total_count=0;
-        multimap_count=0;
-        bool c ;
-        //std::cout<<omp_get_thread_num()<<std::endl;
-#pragma omp for
-        for (uint64_t readID=1;readID<read_to_node.size();++readID) {
-            mapping.read_id = readID;
-            //this enables partial read re-mapping by setting read_to_node to 0
-            if ((reads_to_remap.size()>0 and reads_to_remap.count(mapping.read_id)>0) or (reads_to_remap.empty() and 0==read_to_node[mapping.read_id])) {
-                mapping.node = 0;
-                mapping.unique_matches = 0;
-                mapping.first_pos = 0;
-                mapping.last_pos = 0;
-                mapping.rev = false;
-                mapping.unique_matches = 0;
-                //get all kmers from read
-                auto seq=blrs.get_read_sequence(readID);
-                readkmers.clear();
-                skf.produce_all_kmers(seq,readkmers);
-                if (readkmers.size()==0) {
-                    ++nokmers;
-                }
-                for (auto &rk:readkmers) {
-                    auto nk = ukindex.find(rk.kmer);
-                    if (ukindex.end()!=nk) {
-                        //get the node just as node
-                        sgNodeID_t nknode = llabs(nk->second.node);
-                        //TODO: sort out the sign/orientation representation
-                        if (mapping.node == 0) {
-                            mapping.node = nknode;
-                            if ((nk->second.node > 0 and rk.contigID > 0) or
-                                (nk->second.node < 0 and rk.contigID < 0))
-                                mapping.rev = false;
-                            else mapping.rev = true;
                             mapping.first_pos = nk->second.pos;
                             mapping.last_pos = nk->second.pos;
                             ++mapping.unique_matches;
@@ -839,5 +722,9 @@ sgNodeID_t PairedReadsMapper::get_node_inmediate_neighbours(sgNodeID_t node){
 }
 
 std::vector<int64_t> PairedReadsMapper::get_paths_in_node(sgNodeID_t nid){
-    return paths_in_node[std::abs(nid)];
+    if (nid>=0) return paths_in_node[nid];
+    std::vector<int64_t> p;
+    p.reserve(paths_in_node[-nid].size());
+    for (auto &pin:paths_in_node[-nid]) p.emplace_back(-pin);
+    return p;
 }

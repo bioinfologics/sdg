@@ -147,7 +147,7 @@ public:
 
     bool is_tip() const;
     bool is_bubble_side() const;
-    bool is_canonical_repeat() const;
+    bool is_canonical_repeat(int max_degree=2) const;
 
 private:
     sgNodeID_t id;

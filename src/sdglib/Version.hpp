@@ -24,6 +24,7 @@ enum SDG_FILETYPE : uint16_t{
     LongMap_FT,
     HLAP_FT,
     HLAF_FT,
-    NUM_TYPES
+    NUM_TYPES,
+    PairedMap_FT2
 };
 #endif //BSG_VERSIONING_HPP

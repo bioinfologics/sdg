@@ -154,6 +154,9 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("get_mappings_tags", &NodeView::get_mappings_tags,"dsname"_a,"min_reads"_a=3)
             .def("get_paths_tags", &NodeView::get_paths_tags,"dsname"_a,"min_reads"_a=3)
             .def("get_kmers",&NodeView::get_kmers, "K"_a=31)
+            .def("is_tip",&NodeView::is_tip)
+            .def("is_bubble_size()",&NodeView::is_bubble_side)
+            .def("is_canonical_repeat",&NodeView::is_canonical_repeat,"max_degree"_a=2)
             .def("__eq__", &NodeView::operator==, py::is_operator())
             .def("__repr__",
                  [](const NodeView &nv) {
@@ -322,8 +325,16 @@ PYBIND11_MODULE(SDGpython, m) {
             .def_readonly("read_path_offsets",&PairedReadsMapper::read_path_offsets)
             .def("path_fw",&PairedReadsMapper::path_fw,"read_id"_a,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true)
             .def("all_paths_fw",&PairedReadsMapper::all_paths_fw,"node"_a,"use_pair"_a=true,"collapse_pair"_a=true)
-            .def("dump_readpaths",&PairedReadsMapper::dump_readpaths)
-            .def("load_readpaths",&PairedReadsMapper::load_readpaths)
+            .def("dump_readpaths",[](PairedReadsMapper &prm,std::string filename) {
+                std::ofstream opf(filename);
+                prm.dump_readpaths(opf);
+                return;
+                },"filename"_a)
+            .def("load_readpaths",[](PairedReadsMapper &prm,std::string filename) {
+                std::ifstream ipf(filename);
+                prm.load_readpaths(ipf);
+                return;
+            },"filename"_a)
             .def("get_node_inmediate_neighbours",&PairedReadsMapper::get_node_inmediate_neighbours, "node"_a)
             .def("get_paths_in_node",&PairedReadsMapper::get_paths_in_node, "nid"_a)
             ;

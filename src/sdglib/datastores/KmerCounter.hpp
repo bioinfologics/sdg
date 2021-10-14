@@ -46,11 +46,11 @@ public:
     friend std::ostream& operator<<(std::ostream &os, const KmerCounter &kc);
 
     void index_sdg();
-    void _index_sdg63();
+    void _index_sdg64();
     void _index_sdg128();
 
     void update_graph_counts();
-    void _update_graph_counts63();
+    void _update_graph_counts64();
     void _update_graph_counts128();
 
     bool operator==(const KmerCounter &o) const {
@@ -124,7 +124,7 @@ public:
     }
 
     float kci(int64_t node);
-    float _kci63(int64_t node);
+    float _kci64(int64_t node);
     float _kci128(int64_t node);
 
     void compute_all_kcis();

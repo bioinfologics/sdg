@@ -161,7 +161,7 @@ void GraphPatcher::create_patch(std::vector<sgNodeID_t> reconnection_group) {
             std::cout<<kts(k64mers[i],patch_K)<<">="<<kts(k64mers[i+1],patch_K)<<" @ "<<i<<std::endl;
         }
     }
-    gm.new_graph_from_kmerlist_trivial64(k64mers,patch_K);
+    gm.new_graph_from_kmerlist_64(k64mers,patch_K);
 
     std::cout<<"writing graph"<<std::endl;
     tempws.sdg.write_to_gfa1("tempws_sdg.gfa");

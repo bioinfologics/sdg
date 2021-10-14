@@ -204,7 +204,7 @@ inline bool in_sorted_vector(const std::vector<T> &V,T VAL) {
     return itr!=V.end() and *itr==VAL;
 }
 
-void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_t> & kmerlist,uint8_t k) {
+void GraphMaker::new_graph_from_kmerlist_128(const std::vector<__uint128_t> & kmerlist,uint8_t k) {
     //TODO: add a bloom filter to speed this up
     sg.nodes.clear();
     sg.links.clear();
@@ -392,13 +392,12 @@ void GraphMaker::new_graph_from_kmerlist_trivial128(const std::vector<__uint128_
     sdglib::OutputLog()<<"Graph construction finished"<<std::endl;
 }
 
-void GraphMaker::new_graph_from_kmerlist_trivial64(const std::vector<__uint64_t> & kmerlist,uint8_t k) {
+void GraphMaker::new_graph_from_kmerlist_64(const std::vector<__uint64_t> & kmerlist,uint8_t k) {
     //TODO: add a bloom filter to speed this up
     sg.nodes.clear();
     sg.links.clear();
     sg.oldnames.clear();
     sdglib::OutputLog()<<"Constructing Graph from "<<kmerlist.size()<<" "<<std::to_string(k)<<"-mers"<<std::endl;
-    //for (auto &kmer:kmerlist) std::cout<<kmer_to_sequence(kmer,k)<<std::endl;
     std::string s;
     s.reserve(1000000); //avoid contig-sequence growth
     std::vector<bool> used_kmers(kmerlist.size());
@@ -596,17 +595,9 @@ void GraphMaker::new_graph_from_kmerlist_trivial64(const std::vector<__uint64_t>
 }
 
 void GraphMaker::new_graph_from_paired_datastore(const PairedReadsDatastore& ds,  int k, int min_coverage, int num_batches) {
-    new_graph_from_kmerlist_trivial128(BatchKmersCounter::countKmersToList(ds, k, min_coverage, num_batches),k);
+    new_graph_from_kmerlist_128(BatchKmersCounter::countKmersToList(ds, k, min_coverage, num_batches),k);
 }
 
 void GraphMaker::new_graph_from_long_datastore(const LongReadsDatastore& ds,  int k, int min_coverage, int num_batches) {
-    new_graph_from_kmerlist_trivial128(BatchKmersCounter::countKmersToList(ds, k, min_coverage, num_batches),k);
-}
-
-void GraphMaker::new_knodes_graph_from_long_datastore(const LongReadsDatastore& ds,  int k, int min_coverage, int max_coverage, int num_batches) {
-    //new_graph_from_kmerlist_trivial128(BatchKmersCounter::countKmersToList(ds, k, min_coverage, num_batches),k);
-    auto kmer_list = BatchKmersCounter::buildKMerCount(k, ds, min_coverage, ".", ".", num_batches);
-    for (auto kp=kmer_list->kmers;kp<kmer_list->kmers+kmer_list->size;++kp){
-        if (kp->count>=min_coverage and kp->count<=max_coverage) sg.add_node(kmer_to_sequence128(kp->kdata,k));
-    }
+    new_graph_from_kmerlist_128(BatchKmersCounter::countKmersToList(ds, k, min_coverage, num_batches),k);
 }
