@@ -136,7 +136,11 @@ public:
      * @param first_read position in the datastore of the first read to map (chunk initial position)
      * @param last_read positino in the datastore the last read to map (chunk final position)
      */
-    void map(uint16_t seed_size,uint64_t first_read=1,uint64_t last_read=0);
+    void map(uint16_t seed_size);
+
+    void anchormap(uint16_t seed_size, std::string kcname, std::string countname, uint32_t fmin, uint32_t fmax, uint32_t graph_fmin=1, uint32_t graph_fmax=1);
+
+    void map_to_index(uint16_t seed_size, NKmerIndex &nki);
 
     /** @brief recruit the reads in nodes.
      * Fills the node_reads ( std::vector<std::vector<int64_t>> ) vector.

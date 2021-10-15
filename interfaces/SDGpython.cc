@@ -377,7 +377,7 @@ PYBIND11_MODULE(SDGpython, m) {
 
     py::class_<KmerCounter>(m, "KmerCounters", "A kmer counter container")
             .def("list_names",&KmerCounter::list_names)
-            .def("project_count",py::overload_cast<const std::string &, const std::string & >(&KmerCounter::project_count))
+            .def("project_count",py::overload_cast<const std::string &, const std::string & >(&KmerCounter::project_count),"countname"_a,"seq"_a)
             .def("set_kci_peak",&KmerCounter::set_kci_peak)
             .def("kci",&KmerCounter::kci,"node"_a)
             .def("add_count",py::overload_cast<const std::string &, const std::vector<std::string> &,bool>(&KmerCounter::add_count),"name"_a,"input_files"_a,"fastq"_a=true)
@@ -437,7 +437,9 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("load",&LongReadsRecruiter::load,"filename"_a)
             .def("load_threads",&LongReadsRecruiter::load_threads,"filename"_a)
             .def("map_old",&LongReadsRecruiter::perfect_mappings,"hit_size"_a=21,"first_read"_a=1,"last_read"_a=0)
-            .def("map",&LongReadsRecruiter::map,"hit_size"_a=21,"first_read"_a=1,"last_read"_a=0)
+            .def("map",&LongReadsRecruiter::map,"hit_size"_a=21)
+            .def("anchormap",&LongReadsRecruiter::anchormap,"seed_size"_a=31, "kcname"_a="main", "countname"_a="pe",
+                 "fmin"_a=0, "fmax"_a=UINT32_MAX, "graph_fmin"_a=0, "graph_fmax"_a=UINT32_MAX)
             .def("recruit",&LongReadsRecruiter::recruit_reads,"hit_size"_a=21,"hit_count"_a=1,"first_read"_a=1,"last_read"_a=0)
             .def("recruit_threads",&LongReadsRecruiter::recruit_threads)
             .def("find_next_valid_block",&LongReadsRecruiter::find_next_valid_block,"matches"_a,"start"_a,"min_count"_a)
