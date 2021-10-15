@@ -37,6 +37,13 @@ public:
      */
     explicit NKmerIndex(const SequenceDistanceGraph &_sg,uint8_t k=15, int filter_limit = 200);
 
+    /** @brief Initializes the index
+     * @param _sg graph to index
+     * @param k kmer size to use in the index
+     * @param whitelist a list of kmers to restrict the index
+     */
+    explicit NKmerIndex(const SequenceDistanceGraph &_sg,uint8_t k, std::unordered_set<uint64_t> whitelist);
+
     /** @Empties the filter (only the assembly_kmers vector)
      *  TODO: shouldn't this empty the bfilter as well!?
      *

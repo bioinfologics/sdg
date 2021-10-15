@@ -551,12 +551,35 @@ std::vector<PerfectMatch> LongReadsRecruiter::reverse_perfect_matches(const std:
     return rmatches;
 }
 
-void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t last_read) {
+void LongReadsRecruiter::map(uint16_t seed_size) {
     if (seed_size<k) seed_size=k;
     sdglib::OutputLog()<<"Creating index!"<<std::endl;
     NKmerIndex nki(sdg,k,f);
     sdglib::OutputLog()<<"Index created with "<<nki.end()-nki.begin()<<" items"<<std::endl;
-    if (last_read==0) last_read=datastore.size();
+    map_to_index(seed_size,nki);
+}
+
+void LongReadsRecruiter::anchormap(uint16_t seed_size, std::string kcname, std::string countname, uint32_t fmin,
+                                   uint32_t fmax, uint32_t graph_fmin, uint32_t graph_fmax) {
+    std::unordered_set<uint64_t> whitelist;
+    auto &kc=sdg.ws.get_kmer_counter(kcname);
+    if (kc.k!=k) throw std::runtime_error("LRR anchormap: k is different between KC and LRR");
+    auto kcg=kc.get_count_by_name("sdg");
+    auto kcr=kc.get_count_by_name(countname);
+    sdglib::OutputLog()<<"Creating whitelist from "<<kc.kindex.size()<<" kmers"<<std::endl;
+    for (auto kcix=0;kcix<kc.kindex.size();++kcix){
+        if (kcg[kcix]>=graph_fmin and kcg[kcix]<=graph_fmax and kcr[kcix]>=fmin and kcr[kcix]<=fmax)
+            whitelist.insert(kc.kindex[kcix]);
+    }
+    if (seed_size<k) seed_size=k;
+    sdglib::OutputLog()<<"Creating index with "<<whitelist.size()<<" kmers in whitelist"<<std::endl;
+    NKmerIndex nki(sdg,k,whitelist);
+    sdglib::OutputLog()<<"Index created with "<<nki.end()-nki.begin()<<" items"<<std::endl;
+
+    map_to_index(seed_size,nki);
+}
+
+void LongReadsRecruiter::map_to_index(uint16_t seed_size, NKmerIndex &nki) {
     auto total_reads = datastore.size();
     auto maped_reads_count=0;
     bool debug=false;
@@ -569,7 +592,7 @@ void LongReadsRecruiter::map(uint16_t seed_size, uint64_t first_read, uint64_t l
         ReadSequenceBuffer sequence_reader(datastore);
         uint64_t private_mapped_reads=0;
 #pragma omp for schedule(dynamic,1)
-        for (auto rid=first_read;rid<=last_read;++rid){
+        for (auto rid=1;rid<=datastore.size();++rid){
 
             std::vector<PerfectMatch> private_read_perfect_matches;
             const auto seq=std::string(sequence_reader.get_read_sequence(rid));

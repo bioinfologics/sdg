@@ -793,7 +793,7 @@ std::string DistanceGraph::stats_by_kci() {
     if (sdg.ws.kmer_counters[0].get_kci_peak() < 0){
         return "KCI peak not set!";
     }
-
+    sdg.ws.kmer_counters[0].compute_all_kcis();
     std::vector<uint64_t> nokci_sizes;
     std::vector<uint64_t> kci0_sizes;
     std::vector<uint64_t> kci1_sizes;
