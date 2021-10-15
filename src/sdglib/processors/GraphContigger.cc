@@ -15,17 +15,26 @@ void GraphContigger::pop_bubbles(const PairedReadsDatastore &prds, int bubble_si
         throw std::runtime_error("Path reads first");
     }
     std::set<sgNodeID_t> to_delete;
+    uint64_t total=0;
     for (auto &nv:ws.sdg.get_all_nodeviews()) {
         if (nv.size() > bubble_size) continue;
-        auto p = nv.parallels();
-        if (p.size() != 1) continue;
+        if (not nv.is_bubble_side()) continue;
+        total+=1;
+        //std::cout<<"analysing bubble side "<<nv.node_id()<<std::endl;
         auto noise = prds.mapper.paths_in_node[nv.node_id()].size();
-        if (noise > max_noise) continue;
-        auto support = prds.mapper.paths_in_node[llabs(p[0].node_id())].size();
-        if (support < min_support or (noise > 0 and (float) support / noise < snr)) continue;
+        if (noise > max_noise) {
+            //std::cout<<"noise too high:"<<noise<<std::endl;
+            continue;
+        }
+        auto support = prds.mapper.paths_in_node[llabs(nv.parallels()[0].node_id())].size();
+        if (support < min_support or (noise > 0 and (float) support / noise < snr)) {
+            //std::cout<<"Conditions not met: noise="<<noise<<" support="<<support<<std::endl;
+            continue;
+        }
+        //std::cout<<"DELETING bubble side "<<nv.node_id()<<std::endl;
         to_delete.insert(nv.node_id());
     }
-    sdglib::OutputLog()<<"Deleting "<< to_delete.size()<< " nodes" <<std::endl;
+    sdglib::OutputLog()<<"Bubble popping, deleting "<< to_delete.size()<<"/"<<total<< " evaluated nodes" <<std::endl;
     for (auto n:to_delete) ws.sdg.remove_node(n);
     ws.sdg.join_all_unitigs();
 }
@@ -352,7 +361,7 @@ void GraphContigger::clip_tips(int tip_size, int rounds) {
     for (auto r=0;r<rounds;++r) {
         std::set<sgNodeID_t> to_delete;
         for (auto &nv:ws.sdg.get_all_nodeviews()){
-            if (nv.size()<=tip_size and (nv.prev().size()==0 or nv.next().size()==0))
+            if (nv.size()<=tip_size and nv.is_tip())
                 to_delete.insert(nv.node_id());
         }
         std::cout << "Nodes to delete: " << to_delete.size() << std::endl;
