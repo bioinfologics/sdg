@@ -371,6 +371,32 @@ void GraphContigger::clip_tips(int tip_size, int rounds) {
     }
 }
 
+void
+GraphContigger::remove_low_kcov_nodes(std::string counter_name, std::string count_name, int low_cov, int max_size) {
+    auto kc=ws.get_kmer_counter(counter_name);
+    std::set<sgNodeID_t> to_delete;
+    for (auto nv:ws.sdg.get_all_nodeviews()){
+        if (nv.size()>max_size) continue;
+        auto gc=kc.project_count("sdg",nv.sequence());
+        auto rc=kc.project_count(count_name,nv.sequence());
+        int all_low=true;
+        int all_unique_low=true;
+        for (auto i=0;i<gc.size();++i) {
+            if (rc[i]>low_cov) {
+                all_low=false;
+                if (gc[i]==1) {
+                    all_unique_low=false;
+                    break;
+                }
+            }
+        }
+        if (all_low or all_unique_low) to_delete.insert(nv.node_id());
+    }
+    std::cout << "Low kcov nodes to delete: " << to_delete.size() << std::endl;
+    for (auto n:to_delete) ws.sdg.remove_node(n);
+    auto utc = ws.sdg.join_all_unitigs();
+}
+
 void GraphContigger::remove_small_unconnected(int min_size) {
     for (sgNodeID_t n = 1; n < ws.sdg.nodes.size(); ++n) {
         if (ws.sdg.nodes[n].status == NodeStatus::Deleted) continue;
