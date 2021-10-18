@@ -88,12 +88,15 @@ public:
 
 
 class NKmerIndex128 {
-    BloomFilter bfilter;
-    std::vector<kmerPos128> assembly_kmers;
-    uint8_t k=0;
-    const SequenceDistanceGraph &sg;
 public:
     using const_iterator = std::vector<kmerPos128>::const_iterator;
+    BloomFilter bfilter;
+    std::vector<kmerPos128> assembly_kmers;
+    const_iterator dlt[262145];
+    uint8_t k=0;
+    const SequenceDistanceGraph &sg;
+
+
 
     explicit NKmerIndex128(const SequenceDistanceGraph &_sg,uint8_t k=63, int filter_limit = 200);
 
@@ -106,7 +109,17 @@ public:
     }
 
     const_iterator find(const __uint128_t kmer) const {
-        if (bfilter.contains(kmer)) { return std::lower_bound(assembly_kmers.cbegin(), assembly_kmers.cend(), kmer); }
+        if (bfilter.contains(kmer)) {
+            return std::lower_bound(assembly_kmers.cbegin(), assembly_kmers.cend(), kmer);
+        }
+        return assembly_kmers.cend();
+    }
+
+    const_iterator find_with_dlt(const __uint128_t kmer) const {
+        if (bfilter.contains(kmer)) {
+            size_t first_byte=kmer>>108;
+            return std::lower_bound(dlt[first_byte], dlt[first_byte+1], kmer);
+        }
         return assembly_kmers.cend();
     }
 

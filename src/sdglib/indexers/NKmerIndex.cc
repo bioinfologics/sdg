@@ -239,6 +239,15 @@ NKmerIndex128::NKmerIndex128(const SequenceDistanceGraph &_sg, uint8_t k, int fi
     for (uint64_t kidx = 0; kidx < assembly_kmers.size(); ++kidx) {
         bfilter.add(assembly_kmers[kidx].kmer);
     }
+
+    size_t next_dlt=0;
+
+    for (auto it=assembly_kmers.cbegin();it<assembly_kmers.end();++it) {
+        size_t first_byte=it->kmer>>108;
+        while (next_dlt<=first_byte) dlt[next_dlt++]=it;
+    }
+    while (next_dlt<262145) dlt[next_dlt++]=assembly_kmers.cend();
+    std::cout<<262145*sizeof (const_iterator)<<" used in dtl"<<std::endl;
 }
 
 void NKmerIndex128::get_all_kmer_matches(std::vector<std::vector<std::pair<int32_t, int32_t>>> &matches,

@@ -210,7 +210,8 @@ void PairedReadsMapper::path_reads(uint8_t k,int _filter,bool fill_offsets) {
                 ro.clear();
                 pme.set_read(seq);
                 for (auto rki=0;rki<read_kmers.size();++rki){
-                    auto kmatch=nki.find(read_kmers[rki].second);
+                    //auto kmatch=nki.find(read_kmers[rki].second);
+                    auto kmatch=nki.find_with_dlt(read_kmers[rki].second);
                     if (kmatch!=nki.end() and kmatch->kmer==read_kmers[rki].second){
                         pme.reset();
 //                    std::cout<<std::endl<<"PME reset done"<<std::endl;
