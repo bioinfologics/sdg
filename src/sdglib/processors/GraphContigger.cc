@@ -379,8 +379,9 @@ GraphContigger::remove_low_kcov_nodes(std::string counter_name, std::string coun
         if (nv.size()>max_size) continue;
         auto gc=kc.project_count("sdg",nv.sequence());
         auto rc=kc.project_count(count_name,nv.sequence());
-        int all_low=true;
-        int all_unique_low=true;
+        bool all_low=true;
+        bool has_unique=false;
+        bool all_unique_low=true;
         for (auto i=0;i<gc.size();++i) {
             if (rc[i]>low_cov) {
                 all_low=false;
@@ -389,8 +390,9 @@ GraphContigger::remove_low_kcov_nodes(std::string counter_name, std::string coun
                     break;
                 }
             }
+            if (gc[i]==1) has_unique= true;
         }
-        if (all_low or all_unique_low) to_delete.insert(nv.node_id());
+        if (all_low or (has_unique and all_unique_low)) to_delete.insert(nv.node_id());
     }
     std::cout << "Low kcov nodes to delete: " << to_delete.size() << std::endl;
     for (auto n:to_delete) ws.sdg.remove_node(n);
