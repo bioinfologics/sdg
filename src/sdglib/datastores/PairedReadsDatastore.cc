@@ -18,10 +18,28 @@ void PairedReadsDatastore::print_status() const {
     mapper.print_status();
 }
 
+inline std::string compress_str(const std::string &s,int rle) {
+    if (rle==0) return s;
+    std::string rleseq;
+    rleseq.reserve(s.size());
+    char last_char=' ';
+    int run_size=0;
+    for (auto c:s){
+        if (c==last_char) {
+            ++run_size;
+        }
+        else {
+            last_char=c;
+            run_size=1;
+        }
+        if (run_size<=rle) rleseq.push_back(c);
+    }
+    return rleseq;
+}
 void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::string read1_filename,
                                             std::string read2_filename, std::string default_name,
                                             uint64_t min_readsize, uint64_t max_readsize, int fs, int orientation,
-                                            size_t chunksize) {
+                                            size_t chunksize, int run_length_limit) {
 
     //std::cout<<"Memory used by every read's entry:"<< sizeof(PairedRead)<<std::endl;
     //read each read, put it on the index and on the appropriate tag
@@ -73,7 +91,7 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
             throw std::runtime_error("Please check: " + read1_filename + ", it seems to be missing a header");
         }
         if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
-        currrent_read.seq1=std::string(readbuffer);
+        currrent_read.seq1= compress_str(std::string(readbuffer),run_length_limit);
         if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
         if(!readbuffer[0] == '+') {
             throw std::runtime_error("Please check: " + read1_filename + ", it seems to be desynchronised a header");
@@ -86,7 +104,7 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
             throw std::runtime_error("Please check: " + read2_filename + ", it seems to be missing a header");
         }
         if (NULL == gzgets(fd2, readbuffer, 2999)) continue;
-        currrent_read.seq2=std::string(readbuffer);
+        currrent_read.seq2= compress_str(std::string(readbuffer),run_length_limit);
         if (NULL == gzgets(fd2, readbuffer, 2999)) continue;
         if(!readbuffer[0] == '+') {
             throw std::runtime_error("Please check: " + read2_filename + ", it seems to be desynchronised a header");
