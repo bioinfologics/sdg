@@ -34,12 +34,10 @@ std::string PairedReadsMapper::ls(int level,bool recursive) const {
 }
 
 void PairedReadsMapper::write(std::ofstream &output_file) {
-    //read-to-node
     output_file.write((char *) &SDG_MAGIC, sizeof(SDG_MAGIC));
     output_file.write((char *) &SDG_VN, sizeof(SDG_VN));
     SDG_FILETYPE type(PairedMap_FT2);
     output_file.write((char *) &type, sizeof(type));
-
     dump_readpaths(output_file);
 }
 

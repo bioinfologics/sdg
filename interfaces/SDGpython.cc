@@ -340,11 +340,19 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<LinkedReadsMapper>(m, "LinkedReadsMapper", "A Paired Reads Mapper")
-            .def("path_reads",&LinkedReadsMapper::path_reads,"k"_a=63,"max_freq"_a=200)
+            .def("path_reads",&LinkedReadsMapper::path_reads,"k"_a=63,"max_freq"_a=200,"fill_offsets"_a=false)
             .def_readonly("paths_in_node",&LinkedReadsMapper::paths_in_node)
             .def_readonly("read_paths",&LinkedReadsMapper::read_paths)
-            .def("dump_readpaths",&LinkedReadsMapper::dump_readpaths)
-            .def("load_readpaths",&LinkedReadsMapper::load_readpaths)
+            .def("dump_readpaths",[](PairedReadsMapper &prm,std::string filename) {
+                std::ofstream opf(filename);
+                prm.dump_readpaths(opf);
+                return;
+            },"filename"_a)
+            .def("load_readpaths",[](PairedReadsMapper &prm,std::string filename) {
+                std::ifstream ipf(filename);
+                prm.load_readpaths(ipf);
+                return;
+            },"filename"_a)
             ;
 
     py::class_<LinkedReadsDatastore>(m, "LinkedReadsDatastore", "A Linked Reads Datastore")

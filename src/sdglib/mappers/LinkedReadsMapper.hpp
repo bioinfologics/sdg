@@ -49,22 +49,10 @@ public:
 
     void write(std::ofstream & output_file);
     void read(std::ifstream & input_file);
-    void dump_readpaths(std::string filename);
-    void load_readpaths(std::string filename);
+    void dump_readpaths(std::ofstream &opf);
+    void load_readpaths(std::ifstream &ipf);
 
-    /** @brief Maps the provided LinkedReadsDatastore to the provided graph, saves the results to the reads_in_node and nodes_in_read collections.
-     * The mapper only considers unique perfect matches, if a single kmer from the read matches 2 different nodes the read is marked as multi-mapping and the mapping is discarded.
-     * If a reads_to_remap set is passed to the function only the selected set of reads is mapped, the rest of the mappings remains as they are.
-     *
-     * To access the results see the reads_in_node and nodes_in_read collections in this class
-     *
-     * @param reads_to_remap set of readsIDs to remap
-     */
-    void map_reads(std::unordered_set<uint64_t> const &  reads_to_remap={});
 
-    /** @brief Clears the reads_in_node and nodes_in_read collections and runs the map_reads() function with no selected set (maps all reads again)
-     */
-    void remap_all_reads();
 
     /**
      * Checks that the graph and datastore are the same and if they are assigns reads_in_node and nodes_in_read collections
@@ -74,22 +62,11 @@ public:
      */
     LinkedReadsMapper& operator=(const LinkedReadsMapper &other);
 
-    /**
-     * This is the same as map_reads() but using k63
-     * @param reads_to_remap Optional argument of set of reads to map.
-     */
-    void map_reads63(std::unordered_set<uint64_t> const &  reads_to_remap={});
-
-    /**
-     * Clears the reads_in_node and nodes_in_read collections and remaps reads to regenerate them.
-     */
-    void remap_all_reads63();
-
     /** @brief creates a read path for each read through mapping
      *
      * @return
      */
-    void path_reads(uint8_t k=63,int filter=200);
+    void path_reads(uint8_t k=63,int filter=200, bool fill_offsets=false);
 
     /** @brief Prints the count of pairs mapped.
      *
@@ -126,13 +103,7 @@ public:
     void write_tag_neighbours(std::string filename);
     void read_tag_neighbours(std::string filename);
 
-    /** @brief Populates the read_direction_in_node collection for the dataset
-    *
-    */
-    void populate_orientation();
-
     WorkSpace &ws;
-
     LinkedReadsDatastore &datastore;
 
     /**
@@ -148,17 +119,14 @@ public:
     std::vector<sgNodeID_t> read_to_node;//id of the main node if mapped, set to 0 to remap on next process
 
     /**
-     * read_direction_in_node[i] has the direction with wich read i was mapped in the corresponding mapping (in read_to_node[i])
-     */
-    std::vector<bool> read_direction_in_node;//0-> fw, 1->rev;
-
-    /**
      *  Collection of neighbouring nodes
      *  Completed using compute_all_tag_neighbours()
      *  tag_neighbours[nodeID] = [collection of 10 determined neighbours (see TagNeighbour) ...]
      */
     std::vector<std::vector<TagNeighbour>> tag_neighbours; //not persisted yet!
     std::vector<ReadPath> read_paths;
+
+    std::vector<std::vector<std::pair<uint32_t,uint32_t>>> read_path_offsets;
 
     std::vector<std::vector<int64_t>> paths_in_node;
 
