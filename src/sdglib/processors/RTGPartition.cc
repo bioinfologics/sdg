@@ -271,22 +271,25 @@ void RTGPartition::classify_all_threads(int min_nodes, float max_classified_node
             hs.start_from_nodelist(nodes);
             if (hs.order.size()>0) {
                 hs.recruit_all_happy_threads_q(3,6);
-                std::cout<<"Started sorter from "<<tid<<" has "<<hs.order.size()<<" / "<<nodes.size()<< " nodes and " <<hs.threads.size()<<" threads"<<std::endl;
-                while (thread_available(tid,min_nodes,max_classified_nodes_perc) and hs.grow()) hs.recruit_all_happy_threads_q(3,6);//TODO: params for this!
+                //std::cout<<"Started sorter from "<<tid<<" has "<<hs.order.size()<<" / "<<nodes.size()<< " nodes and " <<hs.threads.size()<<" threads"<<std::endl;
+                while (thread_available(tid,min_nodes,max_classified_nodes_perc) and hs.grow(4,-1,3,node_min_percentage)) hs.recruit_all_happy_threads_q(thread_p,thread_q);//TODO: params for this!
 #pragma omp critical
                 {
                     if (thread_available(tid,min_nodes,max_classified_nodes_perc)) {
                         auto new_class=class_from_sorter(hs);
                         int64_t nodes_in_class=0;
                         for (const auto & nc:node_class) if (nc.second==new_class) ++nodes_in_class;
-                        std::cout<<"Class "<<new_class<<" from sorter from thread "<<tid<<" added with "<<nodes_in_class<<" / "<<hs.order.size()<<" nodes, propagating..."<<std::endl;
+                        //std::cout<<"Class "<<new_class<<" from sorter from thread "<<tid<<" added with "<<nodes_in_class<<" / "<<hs.order.size()<<" nodes, propagating..."<<std::endl;
                         propagate();
                         nodes_in_class=0;
                         for (const auto & nc:node_class) if (nc.second==new_class) ++nodes_in_class;
                         std::cout<<"Class "<<new_class<<" from sorter from thread "<<tid<<" has "<<nodes_in_class<<" nodes after propagation"<<std::endl;
+                        auto classified_nodes=0;
+                        for (const auto &nc:node_class) if (nc.second!=0) ++classified_nodes;
+                        std::cout<<classified_nodes<<" / "<<node_class.size()<<" nodes classified"<<std::endl;
                     }
                     else {
-                        std::cout<<"discarding thread "<<tid<<"since thread is not available anymore"<<std::endl;
+                        //std::cout<<"discarding thread "<<tid<<"since thread is not available anymore"<<std::endl;
                     }
                 }
             }
