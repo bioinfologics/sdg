@@ -436,8 +436,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("dump_threads",&LongReadsRecruiter::dump_threads,"filename"_a)
             .def("load",&LongReadsRecruiter::load,"filename"_a)
             .def("load_threads",&LongReadsRecruiter::load_threads,"filename"_a)
-            .def("map_old",&LongReadsRecruiter::perfect_mappings,"hit_size"_a=21,"first_read"_a=1,"last_read"_a=0)
             .def("map",&LongReadsRecruiter::map,"hit_size"_a=21)
+            .def("recruit_reads",&LongReadsRecruiter::recruit_reads, "seed_size"_a=1, "seed_count"_a=1, "first_read"_a=1,"last_read"_a=0)
             .def("anchormap",&LongReadsRecruiter::anchormap,"seed_size"_a=31, "kcname"_a="main", "countname"_a="pe",
                  "fmin"_a=0, "fmax"_a=UINT32_MAX, "graph_fmin"_a=0, "graph_fmax"_a=UINT32_MAX)
             .def("recruit",&LongReadsRecruiter::recruit_reads,"hit_size"_a=21,"hit_count"_a=1,"first_read"_a=1,"last_read"_a=0)

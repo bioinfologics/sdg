@@ -723,6 +723,12 @@ void LongReadsRecruiter::simple_thread_reads(int min_count) {
 
 ReadThreadsGraph LongReadsRecruiter::rtg_from_threads(bool remove_duplicated, int min_thread_nodes) {
     ReadThreadsGraph rtg(sdg);
+    std::vector<uint64_t> node_counts(sdg.nodes.size());
+    for (auto const &t:read_threads) {
+        for (auto const &np:t ) ++node_counts[llabs(np.node)];
+    }
+    rtg.links.resize(node_counts.size());
+    for (uint64_t i=1;i<node_counts.size();++i) rtg.links[i].reserve(2*node_counts[i]);
     for (auto rid=1;rid<read_threads.size();++rid) {
         rtg.add_thread(rid,read_threads[rid],remove_duplicated,min_thread_nodes);
     }
