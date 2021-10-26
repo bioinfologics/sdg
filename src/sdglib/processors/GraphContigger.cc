@@ -39,6 +39,63 @@ void GraphContigger::pop_bubbles(const PairedReadsDatastore &prds, int bubble_si
     ws.sdg.join_all_unitigs();
 }
 
+void GraphContigger::solve_canonical_repeats(const PairedReadsDatastore & prds,int min_support, int max_noise, float snr) {
+    //TODO: resolve 2:2 connections with no repeat node (i.e. repeats of size k-1)
+    //TODO: this only solves 2:2 canonical repeats so far (which is probably right, we can leave the rest to strider)
+    GraphEditor ge(ws);
+    uint64_t repeats=0;
+    uint64_t solved_repeats=0;
+    for (auto & nv :ws.sdg.get_all_nodeviews()){
+        if (not nv.is_canonical_repeat()) continue;
+        ++repeats;
+
+        auto nvp=nv.prev();
+        auto nvn=nv.next();
+        auto pA=nvp[0].node().node_id();
+        auto pB=nvp[1].node().node_id();
+        auto nA=nvn[0].node().node_id();
+        auto nB=nvn[1].node().node_id();
+        int vAA=0,vAB=0,vBA=0,vBB=0;
+        //First, find the universe of possible voting paths (both paired and single)
+        for (auto &pf:prds.mapper.all_paths_fw(pA)){
+            for (auto &nid:pf) {
+                if (nid==nA) {
+                    ++vAA;
+                    break;
+                }
+                if (nid==nB) {
+                    ++vAB;
+                    break;
+                }
+            }
+        }
+        for (auto &pf:prds.mapper.all_paths_fw(pB)){
+            for (auto &nid:pf) {
+                if (nid==nA) {
+                    ++vBA;
+                    break;
+                }
+                if (nid==nB) {
+                    ++vBB;
+                    break;
+                }
+            }
+        }
+        if (vAA>=min_support and vBB>=min_support and vAB<=std::min(max_noise,(int)std::ceil(vAA/snr)) and vBA<=std::min(max_noise,(int)std::ceil(vBB/snr))) {
+            ge.queue_node_expansion(nv.node_id(),{{-pA,nA},{-pB,nB}});
+            ++solved_repeats;
+        }
+        if (vAB>=min_support and vBA>=min_support and vAA<=std::min(max_noise,(int)std::ceil(vAB/snr)) and vBB<=std::min(max_noise,(int)std::ceil(vBA/snr))) {
+            ge.queue_node_expansion(nv.node_id(),{{-pA,nB},{-pB,nA}});
+            ++solved_repeats;
+        }
+
+    }
+    sdglib::OutputLog()<<"Contigger repeat_expansion: "<<solved_repeats<<" / "<<repeats<<std::endl;
+    ge.apply_all();
+    ws.sdg.join_all_unitigs();
+}
+
 void GraphContigger::solve_canonical_repeats_with_single_paths(const PairedReadsDatastore & prds,int min_support, int max_noise, float snr, bool join_unitigs, bool dry_run, bool verbose) {
     GraphEditor ge(ws);
     uint64_t repeats=0;
@@ -369,6 +426,34 @@ void GraphContigger::clip_tips(int tip_size, int rounds) {
         auto utc = ws.sdg.join_all_unitigs();
         if (to_delete.empty() and utc==0) break;
     }
+}
+
+void
+GraphContigger::remove_low_kcov_nodes(std::string counter_name, std::string count_name, int low_cov, int max_size) {
+    auto kc=ws.get_kmer_counter(counter_name);
+    std::set<sgNodeID_t> to_delete;
+    for (auto nv:ws.sdg.get_all_nodeviews()){
+        if (nv.size()>max_size) continue;
+        auto gc=kc.project_count("sdg",nv.sequence());
+        auto rc=kc.project_count(count_name,nv.sequence());
+        bool all_low=true;
+        bool has_unique=false;
+        bool all_unique_low=true;
+        for (auto i=0;i<gc.size();++i) {
+            if (rc[i]>low_cov) {
+                all_low=false;
+                if (gc[i]==1) {
+                    all_unique_low=false;
+                    break;
+                }
+            }
+            if (gc[i]==1) has_unique= true;
+        }
+        if (all_low or (has_unique and all_unique_low)) to_delete.insert(nv.node_id());
+    }
+    std::cout << "Low kcov nodes to delete: " << to_delete.size() << std::endl;
+    for (auto n:to_delete) ws.sdg.remove_node(n);
+    auto utc = ws.sdg.join_all_unitigs();
 }
 
 void GraphContigger::remove_small_unconnected(int min_size) {

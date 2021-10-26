@@ -57,7 +57,7 @@ int main(int argc, char * argv[]) {
                     ("d,read_direction", "0: Undefined(default), 1: FWD-REV, 2: REV-FWD", cxxopts::value(orientation)->default_value("0"))
                     ("l,min_read_size", "min size for read, on short reads pairs discards pairs (default 0)", cxxopts::value(min_readsize)->default_value("0"))
                     ("s,max_read_size", "max size for short reads (fixed size on records), truncates if longer (default 0=auto)", cxxopts::value(max_readsize)->default_value("0"))
-                    ("r,run_length_limit", "compress length of homopolymer runs on long reads (default 0=no compresion)", cxxopts::value(run_length_limit)->default_value("0"))
+                    ("r,run_length_limit", "compress length of homopolymer runs (default 0=no compresion)", cxxopts::value(run_length_limit)->default_value("0"))
                     ("n,name", "How do you want to refer to this datastore?", cxxopts::value(dsname))
                     ("o,output", "output file", cxxopts::value(output))
                     ("c,chunk_size", "number of reads to process per chunk", cxxopts::value(chunk_size));
@@ -110,7 +110,7 @@ int main(int argc, char * argv[]) {
                 max_readsize = detect_read_size(read1);
                 sdglib::OutputLog() << "Detected max read size " << max_readsize << std::endl;
             }
-            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, dsname, min_readsize, max_readsize, fragment_size, orientation,chunk_size);
+            PairedReadsDatastore::build_from_fastq(output + ".prseq", read1, read2, dsname, min_readsize, max_readsize, fragment_size, orientation,chunk_size, run_length_limit);
 
         }
         else if (read_type == "long") {

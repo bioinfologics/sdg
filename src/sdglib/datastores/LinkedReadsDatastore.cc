@@ -622,46 +622,5 @@ std::ostream &operator<<(std::ostream &os, const LinkedReadsDatastore &lrds) {
     return os;
 }
 
-void BufferedTagKmerizer::get_tag_kmers(LinkedTag tag) {
-    auto read_ids=datastore.get_tag_reads(tag);
-    //counts.reserve(counts.size()+read_ids.size()*(datastore.readsize-K+1));
-    for (auto rid:read_ids){
-        skf.produce_all_kmers(bprsg.get_read_sequence(rid),counts);
-    }
-}
-
-std::unordered_set<uint64_t> BufferedTagKmerizer::get_tags_kmers(int min_tag_cov, std::set<LinkedTag> tags) {
-    counts.clear();
-    for (auto t:tags) get_tag_kmers(t);
-    std::cout<<"Sorting "<<counts.size()<<" kmers..."<<std::endl;
-    std::sort(counts.begin(),counts.end());
-    std::cout<<"...DONE"<<std::endl;
-    uint64_t curr_k=UINT64_MAX;
-    int curr_count=0;
-    auto wi=counts.begin();
-    for (auto &k:counts) {
-        if (curr_k!=k){
-            if (curr_count>=min_tag_cov) {
-                *wi=curr_k;
-                ++wi;
-            }
-            curr_count=1;
-            curr_k=k;
-        }
-        else {
-            ++curr_count;
-        }
-    }
-    if (curr_count>=min_tag_cov) {
-        *wi=counts.back();
-        ++wi;
-    }
-    counts.resize(wi-counts.begin());
-    std::unordered_set<uint64_t> r(counts.begin(),counts.end());
-    return r;
-
-}
-
-
 
 

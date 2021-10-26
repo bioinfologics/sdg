@@ -12,43 +12,34 @@
 #include <cstring>
 #include <sstream>
 
-uint32_t PairedReadsDatastore::read_sanitizer(char* bp){
-    uint32_t changed_bases=0;
-    for (uint32_t i=0; *(bp+i)!='\n'; i++){
-        switch (*(bp+i)){
-            case 'A':
-            case 'a':
-                *(bp+i)='A';
-                break;
-            case 'C':
-            case 'c':
-                *(bp+i)='C';
-                break;
-            case 'T':
-            case 't':
-                *(bp+i)='T';
-                break;
-            case 'G':
-            case 'g':
-                *(bp+i)='G';
-                break;
-            default:
-                *(bp+i)='N';
-                changed_bases++;
-        }
-    }
-    return changed_bases;
-}
 
 void PairedReadsDatastore::print_status() const {
     sdglib::OutputLog()<<"PairedRead Datastore from "<<filename<<" contains "<<size()-1<<" reads."<<std::endl;
     mapper.print_status();
 }
 
+inline std::string compress_str(const std::string &s,int rle) {
+    if (rle==0) return s;
+    std::string rleseq;
+    rleseq.reserve(s.size());
+    char last_char=' ';
+    int run_size=0;
+    for (auto c:s){
+        if (c==last_char) {
+            ++run_size;
+        }
+        else {
+            last_char=c;
+            run_size=1;
+        }
+        if (run_size<=rle) rleseq.push_back(c);
+    }
+    return rleseq;
+}
 void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::string read1_filename,
                                             std::string read2_filename, std::string default_name,
                                             uint64_t min_readsize, uint64_t max_readsize, int fs, int orientation,
-                                            size_t chunksize) {
+                                            size_t chunksize, int run_length_limit) {
 
     //std::cout<<"Memory used by every read's entry:"<< sizeof(PairedRead)<<std::endl;
     //read each read, put it on the index and on the appropriate tag
@@ -93,7 +84,6 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
 
     auto size_pos=output.tellp();
     output.write((const char *) &_size, sizeof(_size));//just to save the space!
-    uint32_t sanitized_bases=0;
     while (!gzeof(fd1) and !gzeof(fd2)) {
 
         if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
@@ -101,8 +91,7 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
             throw std::runtime_error("Please check: " + read1_filename + ", it seems to be missing a header");
         }
         if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
-        sanitized_bases+=read_sanitizer(readbuffer); //<-- Bases check R1
-        currrent_read.seq1=std::string(readbuffer);
+        currrent_read.seq1= compress_str(std::string(readbuffer),run_length_limit);
         if (NULL == gzgets(fd1, readbuffer, 2999)) continue;
         if(!readbuffer[0] == '+') {
             throw std::runtime_error("Please check: " + read1_filename + ", it seems to be desynchronised a header");
@@ -115,8 +104,7 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
             throw std::runtime_error("Please check: " + read2_filename + ", it seems to be missing a header");
         }
         if (NULL == gzgets(fd2, readbuffer, 2999)) continue;
-        sanitized_bases+=read_sanitizer(readbuffer); //<-- Bases check R2
-        currrent_read.seq2=std::string(readbuffer);
+        currrent_read.seq2= compress_str(std::string(readbuffer),run_length_limit);
         if (NULL == gzgets(fd2, readbuffer, 2999)) continue;
         if(!readbuffer[0] == '+') {
             throw std::runtime_error("Please check: " + read2_filename + ", it seems to be desynchronised a header");
@@ -190,7 +178,6 @@ void PairedReadsDatastore::build_from_fastq(std::string output_filename, std::st
 
     gzclose(fd1);
     gzclose(fd2);
-    std::cout<<"Bases replaced: "<< sanitized_bases << std::endl;
 }
 
 void PairedReadsDatastore::read(std::ifstream &input_file) {

@@ -340,11 +340,19 @@ PYBIND11_MODULE(SDGpython, m) {
             ;
 
     py::class_<LinkedReadsMapper>(m, "LinkedReadsMapper", "A Paired Reads Mapper")
-            .def("path_reads",&LinkedReadsMapper::path_reads,"k"_a=63,"max_freq"_a=200)
+            .def("path_reads",&LinkedReadsMapper::path_reads,"k"_a=63,"max_freq"_a=200,"fill_offsets"_a=false)
             .def_readonly("paths_in_node",&LinkedReadsMapper::paths_in_node)
             .def_readonly("read_paths",&LinkedReadsMapper::read_paths)
-            .def("dump_readpaths",&LinkedReadsMapper::dump_readpaths)
-            .def("load_readpaths",&LinkedReadsMapper::load_readpaths)
+            .def("dump_readpaths",[](PairedReadsMapper &prm,std::string filename) {
+                std::ofstream opf(filename);
+                prm.dump_readpaths(opf);
+                return;
+            },"filename"_a)
+            .def("load_readpaths",[](PairedReadsMapper &prm,std::string filename) {
+                std::ifstream ipf(filename);
+                prm.load_readpaths(ipf);
+                return;
+            },"filename"_a)
             ;
 
     py::class_<LinkedReadsDatastore>(m, "LinkedReadsDatastore", "A Linked Reads Datastore")
@@ -436,8 +444,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("dump_threads",&LongReadsRecruiter::dump_threads,"filename"_a)
             .def("load",&LongReadsRecruiter::load,"filename"_a)
             .def("load_threads",&LongReadsRecruiter::load_threads,"filename"_a)
-            .def("map_old",&LongReadsRecruiter::perfect_mappings,"hit_size"_a=21,"first_read"_a=1,"last_read"_a=0)
             .def("map",&LongReadsRecruiter::map,"hit_size"_a=21)
+            .def("recruit_reads",&LongReadsRecruiter::recruit_reads, "seed_size"_a=1, "seed_count"_a=1, "first_read"_a=1,"last_read"_a=0)
             .def("anchormap",&LongReadsRecruiter::anchormap,"seed_size"_a=31, "kcname"_a="main", "countname"_a="pe",
                  "fmin"_a=0, "fmax"_a=UINT32_MAX, "graph_fmin"_a=0, "graph_fmax"_a=UINT32_MAX)
             .def("recruit",&LongReadsRecruiter::recruit_reads,"hit_size"_a=21,"hit_count"_a=1,"first_read"_a=1,"last_read"_a=0)
@@ -497,7 +505,9 @@ PYBIND11_MODULE(SDGpython, m) {
             .def(py::init<WorkSpace &>(),py::return_value_policy::take_ownership)
             .def("reconnect_tips",&GraphContigger::reconnect_tips,"datastore"_a,"min_links"_a=3)
             .def("clip_tips",&GraphContigger::clip_tips,"size"_a,"rounds"_a=10)
+            .def("remove_low_kcov_nodes",&GraphContigger::remove_low_kcov_nodes,"counter_name"_a, "count_name"_a, "low_cov"_a, "max_size"_a)
             .def("pop_bubbles",&GraphContigger::pop_bubbles,"datastore"_a,"bubble_size"_a=200,"min_support"_a=4,"max_noise"_a=3,"snr"_a=10)
+            .def("solve_canonical_repeats",&GraphContigger::solve_canonical_repeats,"datastore"_a,"min_support"_a=5,"max_noise"_a=2,"snr"_a=10)
             .def("solve_canonical_repeats_with_single_paths",&GraphContigger::solve_canonical_repeats_with_single_paths,"datastore"_a,"min_support"_a,"max_noise"_a,"snr"_a=10, "join_unitigs"_a=true, "dry_run"_a=false, "verbose"_a=false)
             .def("solve_canonical_repeats_with_paired_paths",&GraphContigger::solve_canonical_repeats_with_paired_paths,"datastore"_a,"min_support"_a,"max_noise"_a,"snr"_a=10, "join_unitigs"_a=true, "dry_run"_a=false, "verbose"_a=false)
             .def("solve_canonical_repeats_with_long_reads",&GraphContigger::solve_canonical_repeats_with_long_reads,"recruiter"_a,"max_kci"_a,"min_support"_a,"max_noise"_a,"snr"_a=10)
