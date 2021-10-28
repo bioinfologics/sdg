@@ -389,6 +389,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("set_kci_peak",&KmerCounter::set_kci_peak)
             .def("kci",&KmerCounter::kci,"node"_a)
             .def("add_count",py::overload_cast<const std::string &, const std::vector<std::string> &,bool>(&KmerCounter::add_count),"name"_a,"input_files"_a,"fastq"_a=true)
+            .def("add_multicount",&KmerCounter::add_multicount,"names"_a,"input_files"_a,"fastq"_a=true)
             .def("add_count",py::overload_cast<const std::string &, const PairedReadsDatastore &>(&KmerCounter::add_count),"name"_a,"datastore"_a)
             .def("add_count",py::overload_cast<const std::string &, const LinkedReadsDatastore &>(&KmerCounter::add_count),"name"_a,"datastore"_a)
             .def("add_count",py::overload_cast<const std::string &, const LongReadsDatastore &>(&KmerCounter::add_count),"name"_a,"datastore"_a)

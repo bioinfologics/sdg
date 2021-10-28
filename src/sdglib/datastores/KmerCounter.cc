@@ -227,13 +227,28 @@ void KmerCounter::_update_graph_counts128() {
 
 void KmerCounter::add_count(const std::string &count_name, const std::vector<std::string> &filenames, bool fastq) {
     if (k<=31){
-        _add_count64(count_name, filenames, fastq);
+        std::unordered_map<uint64_t,uint64_t> kmer_map;
+        _add_count64(count_name, filenames, kmer_map, fastq);
     } else {
-        _add_count128(count_name, filenames, fastq);
+        std::unordered_map<__uint128_t,uint64_t> kmer_map;
+        _add_count128(count_name, filenames, kmer_map, fastq);
     }
 }
 
-void KmerCounter::_add_count64(const std::string &count_name, const std::vector<std::string> &filenames, bool fastq) {
+void KmerCounter::add_multicount(const std::vector<std::string> & _count_names, const std::vector<std::vector<std::string>> &filenames, bool fastq) {
+    if (_count_names.size()!=filenames.size()) {
+        throw std::runtime_error("add_multicount called with different sizes for names and files");
+    }
+    if (k<=31){
+        std::unordered_map<uint64_t,uint64_t> kmer_map;
+        for (auto i=0;i<_count_names.size();++i) _add_count64(_count_names[i],filenames[i],kmer_map,fastq);
+    } else {
+        std::unordered_map<__uint128_t,uint64_t> kmer_map;
+        for (auto i=0;i<_count_names.size();++i) _add_count128(_count_names[i],filenames[i],kmer_map,fastq);
+    }
+}
+
+void KmerCounter::_add_count64(const std::string &count_name, const std::vector<std::string> &filenames, std::unordered_map<uint64_t,uint64_t> &kmer_map, bool fastq) {
     if (std::find(count_names.cbegin(), count_names.cend(), count_name) != count_names.cend()) {
         throw std::runtime_error(count_name + " already exists, please use a different name");
     }
@@ -245,14 +260,11 @@ void KmerCounter::_add_count64(const std::string &count_name, const std::vector<
     sdglib::OutputLog(sdglib::INFO)<<"Size of index: "<< index_size <<std::endl;
 
     uint64_t present(0), absent(0), rp(0);
-    sdglib::OutputLog(sdglib::INFO)<<"Populating lookup map"<<std::endl;
-
-    std::unordered_map<uint64_t,uint64_t> kmer_map;
-
-    kmer_map.reserve(index_size);
-    for (uint64_t i=0;i<index_size;++i) kmer_map[kindex[i]]=i;
-
-    sdglib::OutputLog(sdglib::INFO)<<"Map populated with "<<kmer_map.size()<<" entries"<< std::endl;
+    if (kmer_map.empty()) {sdglib::OutputLog(sdglib::INFO)<<"Populating lookup map"<<std::endl;
+        kmer_map.reserve(index_size);
+        for (uint64_t i=0;i<index_size;++i) kmer_map[kindex[i]]=i;
+        sdglib::OutputLog(sdglib::INFO)<<"Map populated with "<<kmer_map.size()<<" entries"<< std::endl;
+    }
     for (auto filename:filenames) {
         sdglib::OutputLog(sdglib::INFO) << "Counting from file: " << filename << std::endl;
         FastqReader<FastqRecord> fastqReader({0}, filename);
@@ -334,7 +346,7 @@ void KmerCounter::_add_count64(const std::string &count_name, const std::vector<
     sdglib::OutputLog(sdglib::INFO) << "Done" << std::endl;
 }
 
-void KmerCounter::_add_count128(const std::string &count_name, const std::vector<std::string> &filenames, bool fastq) {
+void KmerCounter::_add_count128(const std::string &count_name, const std::vector<std::string> &filenames, std::unordered_map<__uint128_t,uint64_t> &kmer_map, bool fastq) {
     if (std::find(count_names.cbegin(), count_names.cend(), count_name) != count_names.cend()) {
         throw std::runtime_error(count_name + " already exists, please use a different name");
     }
@@ -346,12 +358,11 @@ void KmerCounter::_add_count128(const std::string &count_name, const std::vector
     sdglib::OutputLog(sdglib::INFO)<<"Size of index: "<< index_size <<std::endl;
 
     uint64_t present(0), absent(0), rp(0);
-    sdglib::OutputLog(sdglib::INFO)<<"Populating lookup map"<<std::endl;
-
-    std::unordered_map<__uint128_t,uint64_t> kmer_map;
-
-    kmer_map.reserve(index_size);
-    for (uint64_t i=0;i<index_size;++i) kmer_map[kindex128[i]]=i;
+    if (kmer_map.empty()) {
+        sdglib::OutputLog(sdglib::INFO)<<"Populating lookup map"<<std::endl;
+        kmer_map.reserve(index_size);
+        for (uint64_t i=0;i<index_size;++i) kmer_map[kindex128[i]]=i;
+    }
 
     sdglib::OutputLog(sdglib::INFO)<<"Map populated with "<<kmer_map.size()<<" entries"<< std::endl;
     for (auto filename:filenames) {

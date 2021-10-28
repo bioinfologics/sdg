@@ -70,8 +70,9 @@ public:
      * @param filename Path to fastq file
      */
     void add_count(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
-    void _add_count64(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
-    void _add_count128(const std::string & count_name,const std::vector<std::string> &filenames, bool fastq=true);
+    void _add_count64(const std::string & count_name,const std::vector<std::string> &filenames, std::unordered_map<uint64_t,uint64_t> &kmer_map, bool fastq=true);
+    void _add_count128(const std::string & count_name,const std::vector<std::string> &filenames, std::unordered_map<__uint128_t,uint64_t> &kmer_map, bool fastq=true);
+    void add_multicount(const std::vector<std::string> & _count_names,const std::vector<std::vector<std::string>> &filenames, bool fastq=true);
 
     /**
      * @brief Accumulates the kmer count from the provided data-store to the last available read_counts collection
