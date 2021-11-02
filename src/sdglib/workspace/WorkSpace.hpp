@@ -48,8 +48,9 @@ public:
     /**
      * @brief Writes a disk version of the information held by that can be used in the future, it can be used as a form of checkpoint
      * @param filename Path to the file to write to disk
+     * @param graph_only writes only the SequenceDistanceGraph, effectively removing all datastores and counters
      */
-    void dump_to_disk(std::string filename);
+    void dump_to_disk(std::string filename, bool graph_only=false);
 
     /**
      * @brief

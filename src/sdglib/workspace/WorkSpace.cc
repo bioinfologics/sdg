@@ -8,7 +8,7 @@
 
 const sdgVersion_t WorkSpace::min_compat = 0x0003;
 
-void WorkSpace::dump_to_disk(std::string filename) {
+void WorkSpace::dump_to_disk(std::string filename, bool graph_only) {
     sdglib::OutputLog()<<"Dumping workspace to "<<filename<<std::endl;
     std::ofstream of(filename);
 
@@ -43,6 +43,15 @@ void WorkSpace::dump_to_disk(std::string filename) {
     of.write((char *) &count, sizeof(count));
     for (auto i=0; i < count; ++i) {
         distance_graphs[i].write(of);
+    }
+
+    if (graph_only){
+        count=0;
+        of.write((char *) &count,sizeof(count));
+        of.write((char *) &count,sizeof(count));
+        of.write((char *) &count,sizeof(count));
+        of.write((char *) &count,sizeof(count));
+        return;
     }
 
     //paired read datastores
