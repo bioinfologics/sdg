@@ -23,9 +23,7 @@ public:
 
     int64_t new_class_from_thread(int64_t tid);
 
-    int64_t class_from_sorter(HappySorter & sorter,int64_t cid=0);
-
-    HappySorter sorter_from_class(int64_t cid, float _min_node_happiness=.7, int _min_node_threads=3, int _order_end_size=30);
+    LocalOrder order_from_class(int64_t cid);
 
     void classify_all_threads(int min_nodes=50, float max_classified_nodes_perc=.05);
 

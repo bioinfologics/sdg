@@ -76,7 +76,7 @@ int64_t RTGPartition::compute_node_class(sgNodeID_t nid) {
     }
     if (highest_votes>=min_node_threads and highest_votes>=node_min_percentage*threads.size()) {
         for (auto &cv:class_votes) {
-            if (cv.first!=0 and cv.first!=highest_votes_class and cv.second>=node_min_percentage*threads.size()) return 0; //two classes met the number of votes
+            if (cv.first!=0 and cv.first!=highest_votes_class and cv.second/4>=highest_votes/*node_min_percentage*threads.size()*/) return 0; //two classes met the number of votes
         }
         return highest_votes_class;
     }
@@ -170,21 +170,10 @@ int64_t RTGPartition::new_class_from_thread(int64_t tid) {
             switch_node_class(nid,next_class);
         }
     }
-    return node_counter;
+    return next_class;
 }
 
-int64_t RTGPartition::class_from_sorter(HappySorter &sorter, int64_t cid) {
-    if (cid==0) {
-        cid=1;
-        for (auto &tc:thread_class) if (tc.second>=cid) cid=tc.second+1;
-        for (auto &nc:node_class) if (nc.second>=cid) cid=nc.second+1;
-    }
-    for (auto &tid:sorter.threads) switch_thread_class(llabs(tid),cid);
-    for (auto &nc:sorter.order.node_coordinates) switch_node_class(llabs(nc.first),cid);
-    return cid;
-}
-
-HappySorter RTGPartition::sorter_from_class(int64_t cid,float _min_node_happiness, int _min_node_threads, int _order_end_size) {
+LocalOrder RTGPartition::order_from_class(int64_t cid) {
 
     std::unordered_set<sgNodeID_t> nodes_to_place,nodes;
     std::unordered_set<int64_t> threads_to_place,threads;
@@ -245,54 +234,34 @@ HappySorter RTGPartition::sorter_from_class(int64_t cid,float _min_node_happines
 //        std::cout<<"placement round finished, "<<nodes_to_place.size()<<" nodes, and "<<threads_to_place.size()<<" threads left to place"<<std::endl;
     }
 
-    HappySorter hs(rtg,_min_node_happiness,_min_node_threads,_order_end_size); //TODO options for happiness, etc
+    HappySorter hs(rtg,node_min_percentage,min_node_threads,0); //TODO options for happiness, etc
     //now add all threads
     hs.order.add_placed_nodes({{starting_node,0}});
     hs.threads=threads;
     //now place every node
     //now place a random node as start
     hs.order.add_placed_nodes(hs.place_nodes(nodes,false));
-    return hs;
+    return LocalOrder(hs.order);
 }
+
 
 void RTGPartition::classify_all_threads(int min_nodes, float max_classified_nodes_perc) {
     auto ut=find_unclassified_threads(min_nodes,max_classified_nodes_perc);
-#pragma omp parallel for
     for (auto i=0;i<ut.size();++i) {
         auto tid=ut[i];
-        bool ta;
-#pragma omp critical
-        ta=thread_available(tid,min_nodes,max_classified_nodes_perc);
-        if (ta) {
+        if (thread_available(tid,min_nodes,max_classified_nodes_perc)) {
             //std::cout<<"starting sorter from thread"<<tid<<std::endl;
-            auto hs=HappySorter(rtg,.8,2);//TODO: params for this!
-            std::vector<sgNodeID_t> nodes;
-            for (auto nid:rtg.get_thread_nodes(tid)) if (node_class.count(llabs(nid))) nodes.emplace_back(nid);
-            hs.start_from_nodelist(nodes);
-            if (hs.order.size()>0) {
-                hs.recruit_all_happy_threads_q(3,6);
-                //std::cout<<"Started sorter from "<<tid<<" has "<<hs.order.size()<<" / "<<nodes.size()<< " nodes and " <<hs.threads.size()<<" threads"<<std::endl;
-                while (thread_available(tid,min_nodes,max_classified_nodes_perc) and hs.grow(4,-1,3,node_min_percentage)) hs.recruit_all_happy_threads_q(thread_p,thread_q);//TODO: params for this!
-#pragma omp critical
-                {
-                    if (thread_available(tid,min_nodes,max_classified_nodes_perc)) {
-                        auto new_class=class_from_sorter(hs);
-                        int64_t nodes_in_class=0;
-                        for (const auto & nc:node_class) if (nc.second==new_class) ++nodes_in_class;
-                        //std::cout<<"Class "<<new_class<<" from sorter from thread "<<tid<<" added with "<<nodes_in_class<<" / "<<hs.order.size()<<" nodes, propagating..."<<std::endl;
-                        propagate();
-                        nodes_in_class=0;
-                        for (const auto & nc:node_class) if (nc.second==new_class) ++nodes_in_class;
-                        std::cout<<"Class "<<new_class<<" from sorter from thread "<<tid<<" has "<<nodes_in_class<<" nodes after propagation"<<std::endl;
-                        auto classified_nodes=0;
-                        for (const auto &nc:node_class) if (nc.second!=0) ++classified_nodes;
-                        std::cout<<classified_nodes<<" / "<<node_class.size()<<" nodes classified"<<std::endl;
-                    }
-                    else {
-                        //std::cout<<"discarding thread "<<tid<<"since thread is not available anymore"<<std::endl;
-                    }
-                }
-            }
+            auto new_class=new_class_from_thread(tid);
+            int64_t nodes_in_class=0;
+            for (const auto & nc:node_class) if (nc.second==new_class) ++nodes_in_class;
+            //std::cout<<"Class "<<new_class<<" from sorter from thread "<<tid<<" added with "<<nodes_in_class<<" / "<<hs.order.size()<<" nodes, propagating..."<<std::endl;
+            propagate();
+            nodes_in_class=0;
+            for (const auto & nc:node_class) if (nc.second==new_class) ++nodes_in_class;
+            std::cout<<"Class "<<new_class<<" from sorter from thread "<<tid<<" has "<<nodes_in_class<<" nodes after propagation"<<std::endl;
+            auto classified_nodes=0;
+            for (const auto &nc:node_class) if (nc.second!=0) ++classified_nodes;
+            std::cout<<classified_nodes<<" / "<<node_class.size()<<" nodes classified"<<std::endl;
         }
     }
 }
