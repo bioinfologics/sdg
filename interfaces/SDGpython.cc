@@ -416,7 +416,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("list_paired_reads_datastores",&WorkSpace::list_paired_reads_datastores)
             .def("list_kmer_counters",&WorkSpace::list_kmer_counters)
             .def("list_distance_graphs",&WorkSpace::list_distance_graphs)
-            .def("dump",&WorkSpace::dump_to_disk,"filename"_a)
+            .def("dump",&WorkSpace::dump_to_disk,"filename"_a,"graph_only"_a=false)
             .def("ls",&WorkSpace::ls,"level"_a=0,"recursive"_a=true)
             ;
 
