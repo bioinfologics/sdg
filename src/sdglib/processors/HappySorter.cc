@@ -629,7 +629,7 @@ int64_t HappySorter::hs_place_node(const std::unordered_map<sgNodeID_t, int64_t>
         if (node_positions.count(nd.first))
             positions.emplace_back(node_positions.at(nd.first)+nd.second);
     }
-    if (positions.size()<3) return INT64_MIN;
+    if (positions.size()<1) return INT64_MIN;
     std::sort(positions.begin(),positions.end());
 //    if (positions[positions.size()-2]-positions[1]>5000) {
 //        std::cout<<"position dispersion is too high"<<std::endl;
