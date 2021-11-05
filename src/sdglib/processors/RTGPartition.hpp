@@ -25,6 +25,8 @@ public:
 
     LocalOrder order_from_class(int64_t cid);
 
+    bool supported_thread(int64_t tid,int min_support=2);
+
     void classify_all_threads(int min_nodes=50, float max_classified_nodes_perc=.05);
 
     uint64_t propagate(uint64_t steps=UINT64_MAX, bool verbose=false);

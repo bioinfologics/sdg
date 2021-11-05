@@ -244,6 +244,43 @@ LocalOrder RTGPartition::order_from_class(int64_t cid) {
     return LocalOrder(hs.order);
 }
 
+bool RTGPartition::supported_thread(int64_t tid, int min_support) {
+    std::map<int64_t, int> thread_nodes_counted;
+    bool last_node_unsafe=false;
+    auto tnf=rtg.get_thread_nodes(tid);
+    for (int i=0;i<tnf.size();++i){
+        if (i>tnf.size()/2) {
+            //compute "supported threads" in this node
+            int good_threads=0;
+            for (auto otid:rtg.node_threads(tnf[i],true)) if (thread_nodes_counted[otid]>=min_support) ++good_threads;
+            if (good_threads>=min_support){
+                last_node_unsafe=false;
+            }
+            else {
+                if (last_node_unsafe) return false;
+                last_node_unsafe=true;
+            }
+        }
+        for (auto otid:rtg.node_threads(tnf[i],true)) if (otid!=tid) ++thread_nodes_counted[otid];
+    }
+    thread_nodes_counted.clear();
+    for (int i=tnf.size()-1;i<=0;--i){
+        if (i<tnf.size()/2) {
+            //compute "supported threads" in this node
+            int good_threads=0;
+            for (auto otid:rtg.node_threads(tnf[i],true)) if (thread_nodes_counted[otid]>=min_support) ++good_threads;
+            if (good_threads>=min_support){
+                last_node_unsafe=false;
+            }
+            else {
+                if (last_node_unsafe) return false;
+                last_node_unsafe=true;
+            }
+        }
+        for (auto otid:rtg.node_threads(tnf[i],true)) if (otid!=tid) ++thread_nodes_counted[otid];
+    }
+    return true;
+}
 
 void RTGPartition::classify_all_threads(int min_nodes, float max_classified_nodes_perc) {
     auto ut=find_unclassified_threads(min_nodes,max_classified_nodes_perc);

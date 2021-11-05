@@ -635,6 +635,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("compute_thread_class",&RTGPartition::compute_thread_class,"tid"_a,"distance_to_end"_a=5)
             .def("switch_thread_class",&RTGPartition::switch_thread_class,"tid"_a,"c"_a)
             .def("find_unclassified_threads",&RTGPartition::find_unclassified_threads,"min_nodes"_a=50,"max_unclassified_node_perc"_a=0.05)
+            .def("supported_thread",&RTGPartition::supported_thread,"tid"_a,"min_support"_a=2)
             .def("new_class_from_thread",&RTGPartition::new_class_from_thread,"tid"_a)
             .def("classify_all_threads",&RTGPartition::classify_all_threads,"min_nodes"_a=50,"max_classified_node_perc"_a=0.05)
             .def("order_from_class",&RTGPartition::order_from_class,"cid"_a=0)
