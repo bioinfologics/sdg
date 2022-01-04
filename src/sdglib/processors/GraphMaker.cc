@@ -209,6 +209,7 @@ void GraphMaker::new_graph_from_kmerlist_128(const std::vector<__uint128_t> & km
     sg.nodes.clear();
     sg.links.clear();
     sg.oldnames.clear();
+    sg.add_node(Node("",NodeStatus::Deleted));
     sdglib::OutputLog()<<"Constructing Graph from "<<kmerlist.size()<<" "<<std::to_string(k)<<"-mers"<<std::endl;
     std::string s;
     s.reserve(1000000); //avoid contig-sequence growth
@@ -397,6 +398,7 @@ void GraphMaker::new_graph_from_kmerlist_64(const std::vector<__uint64_t> & kmer
     sg.nodes.clear();
     sg.links.clear();
     sg.oldnames.clear();
+    sg.add_node(Node("",NodeStatus::Deleted));
     sdglib::OutputLog()<<"Constructing Graph from "<<kmerlist.size()<<" "<<std::to_string(k)<<"-mers"<<std::endl;
     std::string s;
     s.reserve(1000000); //avoid contig-sequence growth

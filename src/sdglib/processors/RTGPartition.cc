@@ -289,15 +289,17 @@ void RTGPartition::classify_all_threads(int min_nodes, float max_classified_node
         if (thread_available(tid,min_nodes,max_classified_nodes_perc) and supported_thread(tid)) {
             //std::cout<<"starting sorter from thread"<<tid<<std::endl;
             auto new_class=new_class_from_thread(tid);
-            int64_t nodes_in_class=0;
-            for (const auto & nc:node_class) if (nc.second==new_class) ++nodes_in_class;
-            //std::cout<<"Class "<<new_class<<" from sorter from thread "<<tid<<" added with "<<nodes_in_class<<" / "<<hs.order.size()<<" nodes, propagating..."<<std::endl;
+
             propagate();
-            nodes_in_class=0;
-            for (const auto & nc:node_class) if (nc.second==new_class) ++nodes_in_class;
+            int64_t classified_nodes=0;
+            int64_t nodes_in_class=0;
+            for (const auto &nc:node_class) {
+                if (nc.second!=0) {
+                    ++classified_nodes;
+                    if (nc.second==new_class) ++nodes_in_class;
+                }
+            }
             std::cout<<"Class "<<new_class<<" from sorter from thread "<<tid<<" has "<<nodes_in_class<<" nodes after propagation"<<std::endl;
-            auto classified_nodes=0;
-            for (const auto &nc:node_class) if (nc.second!=0) ++classified_nodes;
             std::cout<<classified_nodes<<" / "<<node_class.size()<<" nodes classified"<<std::endl;
         }
     }
