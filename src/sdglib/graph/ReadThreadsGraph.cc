@@ -372,6 +372,13 @@ std::unordered_map<uint64_t,std::set<sgNodeID_t>> ReadThreadsGraph::thread_nodes
     return tns;
 }
 
+std::vector<int64_t> ReadThreadsGraph::list_threads(int min_nodes) {
+    std::vector<int64_t> tids;
+    tids.reserve(thread_info.size());
+    for (auto &ti:thread_info) if (ti.second.link_count+1>=min_nodes) tids.emplace_back(ti.first);
+    return tids;
+}
+
 size_t nodeset_intersection_size(const std::set<sgNodeID_t>& v1, const std::set<sgNodeID_t>& v2)
 {
     size_t s=0;

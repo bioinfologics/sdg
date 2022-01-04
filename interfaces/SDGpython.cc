@@ -218,6 +218,7 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("add_thread",&ReadThreadsGraph::add_thread, "thread_id"_a, "thread"_a,"remove_duplicated"_a=true,"min_nodes"_a=2)
             .def("remove_thread",&ReadThreadsGraph::remove_thread, "thread_id"_a)
             .def("get_thread",&ReadThreadsGraph::get_thread, "thread_id"_a)
+            .def("list_threads",&ReadThreadsGraph::list_threads, "min_nodes"_a=2)
             .def("get_thread_nodes",&ReadThreadsGraph::get_thread_nodes, "thread_id"_a,"oriented"_a=true)
             .def("thread_start_nodeview", &ReadThreadsGraph::thread_start_nodeview, "thread_id"_a)
             .def("thread_end_nodeview", &ReadThreadsGraph::thread_end_nodeview, "thread_id"_a)
