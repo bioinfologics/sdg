@@ -142,6 +142,8 @@ public:
      */
     std::unordered_map<uint64_t,std::set<sgNodeID_t>> thread_nodesets();
 
+    std::vector<int64_t> list_threads(int min_nodes);
+
     /** @brief Get all the reaching nodes from a graph with the threads
      *
      * Get all threads where the node is present, get all nodes in those threads and fill the map
