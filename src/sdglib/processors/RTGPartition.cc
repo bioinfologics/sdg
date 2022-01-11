@@ -38,7 +38,7 @@ RTGPartition::RTGPartition(const ReadThreadsGraph &rtg, int min_node_threads, fl
         node_threads[nid].reserve(nts.size());
         node_class[nid]=0;
         for (auto &tid : nts) {
-            if (rtg.thread_info.at(tid).link_count<=this->min_thread_nodes-1) continue;
+            if (rtg.thread_info.at(tid).link_count+1<this->min_thread_nodes) continue;
             node_threads[nid].emplace_back(tid);
             thread_class[tid]=0;
         }
