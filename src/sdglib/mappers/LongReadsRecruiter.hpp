@@ -142,6 +142,8 @@ public:
 
     void map_to_index(uint16_t seed_size, NKmerIndex &nki);
 
+    void clean_sandwich_matches(int look_ahead=5);
+
     /** @brief recruit the reads in nodes.
      * Fills the node_reads ( std::vector<std::vector<int64_t>> ) vector.
      *

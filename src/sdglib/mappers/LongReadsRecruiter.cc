@@ -651,6 +651,35 @@ void LongReadsRecruiter::map_to_index(uint16_t seed_size, NKmerIndex &nki) {
     }
 }
 
+void LongReadsRecruiter::clean_sandwich_matches(int look_ahead) {
+    std::vector<PerfectMatch> cleaned;
+    for (auto &rpm:read_perfect_matches){
+        if (rpm.size()<3) continue;
+        cleaned.clear();
+        cleaned.push_back(rpm[0]);
+        for (auto i=1;i<rpm.size()-1;++i) {
+
+            if (rpm[i].node==cleaned.back().node) cleaned.push_back(rpm[i]);
+            else {
+                bool skip=false;
+                for (auto j=i+1;j<rpm.size() and j<=i+look_ahead;++j) {
+                    auto &nm=rpm[j];
+                    if (nm.node==rpm[i].node) break;
+                    if (nm.node==cleaned.back().node and nm.node_position>cleaned.back().node_position) {
+                        skip=true;
+                        break;
+                    }
+                }
+                if (not skip) cleaned.push_back(rpm[i]);
+            }
+
+
+        }
+        cleaned.push_back(rpm.back());
+        rpm=cleaned;
+    }
+}
+
 //TODO: add read position and node position to match
 void LongReadsRecruiter::recruit_reads(uint16_t seed_size, uint16_t seed_count, int64_t first_read,
                                        int64_t last_read) {
