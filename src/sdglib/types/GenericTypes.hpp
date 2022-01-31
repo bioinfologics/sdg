@@ -199,4 +199,11 @@ namespace sdglib {
                 for (const auto & x:v1) if (v2.count(x)) ++s;
                 return s;
             };
+    template <class T>
+            T rough_median(std::vector<T> v)
+            {
+                if (v.empty()) throw std::runtime_error("tried to compute rough_median of empty vector");
+                std::sort(v.begin(),v.end());
+                return v[v.size()/2];
+            }
 }

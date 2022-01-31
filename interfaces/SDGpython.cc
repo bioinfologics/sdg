@@ -248,6 +248,9 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("compute_node_proximity",&ReadThreadsGraph::compute_node_proximity,"radius"_a)
             .def("get_proximal_nodes",&ReadThreadsGraph::get_proximal_nodes,"nid"_a,"oriented"_a=false)
             .def("shared_threads",&ReadThreadsGraph::shared_threads,"nid1"_a,"nid2"_a,"oriented"_a=false)
+            .def("closest_reliable_connections",&ReadThreadsGraph::closest_reliable_connections,"nid"_a,"count"_a=3,"min_links"_a=10)
+            .def("closest_reliable_connections_graph",&ReadThreadsGraph::closest_reliable_connections_graph,"count"_a=3,"min_links"_a=10)
+            .def("merge",&ReadThreadsGraph::merge,"rtg"_a,"max_ovlp"_a=200,"min_shared_threads"_a=5)
             ;
 
 
@@ -446,7 +449,8 @@ PYBIND11_MODULE(SDGpython, m) {
             .def("dump_threads",&LongReadsRecruiter::dump_threads,"filename"_a)
             .def("load",&LongReadsRecruiter::load,"filename"_a)
             .def("load_threads",&LongReadsRecruiter::load_threads,"filename"_a)
-            .def("map",&LongReadsRecruiter::map,"hit_size"_a=21)
+            .def("map",&LongReadsRecruiter::map,"hit_size"_a=1)
+            .def("clean_sandwich_matches",&LongReadsRecruiter::clean_sandwich_matches,"look_ahead"_a=5)
             .def("recruit_reads",&LongReadsRecruiter::recruit_reads, "seed_size"_a=1, "seed_count"_a=1, "first_read"_a=1,"last_read"_a=0)
             .def("anchormap",&LongReadsRecruiter::anchormap,"seed_size"_a=31, "kcname"_a="main", "countname"_a="pe",
                  "fmin"_a=0, "fmax"_a=UINT32_MAX, "graph_fmin"_a=0, "graph_fmax"_a=UINT32_MAX)

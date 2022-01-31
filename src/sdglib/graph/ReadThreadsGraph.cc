@@ -813,3 +813,117 @@ std::unordered_map<sgNodeID_t, uint64_t> ReadThreadsGraph::get_proximal_nodes(sg
 int64_t ReadThreadsGraph::shared_threads(sgNodeID_t n1, sgNodeID_t n2, bool oriented) {
     return sdglib::intersection_size(node_threads(n1,oriented),node_threads(n2,oriented));
 }
+
+DistanceGraph ReadThreadsGraph::closest_reliable_connections_graph(int count, int min_links) {
+    DistanceGraph rcg(sdg);
+    std::map<sgNodeID_t, std::unordered_set<int64_t>> ntcache;
+    for (auto &nv: get_all_nodeviews(true,false)){
+        for (auto &l: closest_reliable_connections_cached(nv.node_id(),ntcache,count,min_links)){
+            if (not rcg.are_connected(l.source,l.dest))
+                rcg.add_link(l.source,l.dest,l.dist);
+        }
+    }
+    return rcg;
+}
+
+std::vector<Link> ReadThreadsGraph::closest_reliable_connections_cached(sgNodeID_t nid,
+                                                                        std::map<sgNodeID_t, std::unordered_set<int64_t>> &nodethreads_cache,
+                                                                        int count, int min_links) {
+    auto tids= node_threads(nid,true);
+    std::map<sgNodeID_t,std::vector<int32_t>> candidates;
+    if (nodethreads_cache.count(nid)==0) nodethreads_cache[nid]= node_threads(nid,true);
+    for (auto &tid: tids){
+        auto c=0;
+        auto last_nid=nid;
+        auto d=-sdg.get_node_size(nid);
+        std::unordered_set<sgNodeID_t> seen_nodes={nid};
+
+        while (c<count){
+            sgNodeID_t nnid=0;
+            int32_t nd=0;
+            for(auto &l:links[abs(last_nid)]) {
+                if (l.source==-last_nid and l.support.id==abs(tid)){
+                    if (nnid!=0) {//abort as more than one link out on same thread
+                        nnid=0;
+                        break;
+                    }
+                    else {
+                        nnid=l.dest;
+                        nd=l.dist;
+                    }
+                }
+            }
+            if (nnid==0) break;
+            if (seen_nodes.count(nnid)) break;
+            seen_nodes.insert(nnid);
+            d+=sdg.get_node_size(last_nid)+nd;
+            last_nid = nnid;
+            if (nodethreads_cache.count(nnid)==0) nodethreads_cache[nnid]= node_threads(nnid,true);
+            if (candidates.count(nnid) or sdglib::intersection_size(nodethreads_cache[nnid],nodethreads_cache[nid])>=min_links) {
+                c+=1;
+                candidates[nnid].push_back(d);
+            }
+        }
+    }
+    std::vector<Link> lv;
+    for (auto &c:candidates) {
+        if (c.second.size()>=min_links/2) {
+            lv.emplace_back(-nid,c.first,sdglib::rough_median(c.second));
+        }
+    }
+    std::sort(lv.begin(),lv.end(),[](const auto &a, const auto &b){return a.dist < b.dist;});
+    return lv;
+}
+
+std::vector<Link> ReadThreadsGraph::closest_reliable_connections(sgNodeID_t nid, int count, int min_links) {
+    std::map<sgNodeID_t, std::unordered_set<int64_t>> ntcache;
+    return closest_reliable_connections_cached(nid, ntcache, count, min_links);
+}
+
+ReadThreadsGraph ReadThreadsGraph::merge(ReadThreadsGraph rtg2, int max_ovlp, int min_shared_threads) {
+    ReadThreadsGraph rtg3(sdg);
+    std::map<sgNodeID_t,std::unordered_set<int64_t>> node_threads;
+    for (auto &nv:rtg2.get_all_nodeviews(false,false)) node_threads[nv.node_id()]=rtg2.node_threads(nv.node_id());
+    for (auto tid: list_threads()){
+        auto t1=get_thread(tid);
+        auto t2=rtg2.get_thread(tid);
+        if (t1.empty() and not t2.empty()) {
+            rtg3.add_thread(tid,t2);
+        }
+        else if (t1.size()==t2.size()){
+            rtg3.add_thread(tid,t1);
+        }
+        else {
+//            #this is where the mix really happens
+            std::vector<NodePosition> t3;
+//            t1nodes=[x.node for x in t1]
+            std::set<sgNodeID_t> t1nodes;
+            for (auto &x:t1) t1nodes.insert(x.node);
+            int64_t latest_end=0;
+            for (auto i=0;i<t2.size();++i){
+                auto &x=t2[i];
+                bool to_add=false;
+                if (t1nodes.count(x.node)){
+                    if (latest_end-x.start<=max_ovlp) to_add=true;
+                }
+                else {
+//                    #any node added need to share min_shared with at least 1 already included
+                    for (auto &on:t1nodes){
+                        //if (rtg2.shared_threads(on,x.node,true)>=min_shared_threads){
+                        //if (rtg2.shared_threads(on,x.node)>=min_shared_threads){
+                        if (sdglib::intersection_size(node_threads[llabs(on)],node_threads[llabs(x.node)])>=min_shared_threads){
+                            if (latest_end-x.start<=max_ovlp and (i==t2.size()-1 or x.end-t2[i+1].start<=max_ovlp)) to_add=true;
+                            break;
+                        }
+                    }
+                }
+                if (to_add){
+                    t3.push_back(x);
+                    latest_end=(latest_end>x.end ? latest_end:x.end);
+                }
+            }
+            rtg3.add_thread(tid,t3);
+        }
+    }
+    return rtg3;
+}

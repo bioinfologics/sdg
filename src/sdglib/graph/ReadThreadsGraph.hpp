@@ -142,7 +142,7 @@ public:
      */
     std::unordered_map<uint64_t,std::set<sgNodeID_t>> thread_nodesets();
 
-    std::vector<int64_t> list_threads(int min_nodes);
+    std::vector<int64_t> list_threads(int min_nodes=2);
 
     /** @brief Get all the reaching nodes from a graph with the threads
      *
@@ -219,6 +219,14 @@ public:
     std::unordered_map<sgNodeID_t,uint64_t> get_proximal_nodes(sgNodeID_t nid, bool oriented=false);
 
     int64_t shared_threads(sgNodeID_t n1, sgNodeID_t n2, bool oriented=false);
+
+    DistanceGraph closest_reliable_connections_graph(int count=3, int min_links=10);
+
+    std::vector<Link> closest_reliable_connections(sgNodeID_t nid, int count=3, int min_links=10);
+
+    std::vector<Link> closest_reliable_connections_cached(sgNodeID_t nid, std::map<sgNodeID_t,std::unordered_set<int64_t>> & nodethreads_cache, int count=3, int min_links=10);
+
+    ReadThreadsGraph merge(ReadThreadsGraph rtg2,int max_ovlp=200,int min_shared_threads=5);
 
 
     /**
