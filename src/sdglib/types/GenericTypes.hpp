@@ -13,6 +13,7 @@
 #include <xxhash/xxhash.h>
 #include <set>
 #include <unordered_set>
+#include <algorithm>
 
 using sgNodeID_t = int64_t; //first node is 1; negatives are RC
 using seqID_t = int64_t; //first sequence is 0;
