@@ -38,6 +38,9 @@ public:
     //explicit DistanceGraph(SequenceDistanceGraph& sdg, std::ifstream &input_file);
     explicit DistanceGraph(SequenceDistanceGraph & _sdg, const std::string& name="unnamed");
     std::string ls(int level=0,bool recursive=true) const;
+    void dump(std::string filename);
+    void load(std::string filename);
+
     /** @brief Adds a link between source and destination in the links collection.
      * Each link is added from both ends in the collection (see links vector)
      * The link is directed
@@ -195,19 +198,7 @@ public:
     std::vector<sgNodeID_t> find_tips(uint32_t min_size=0,uint32_t max_size=1000000) const;
     std::vector<sgNodeID_t> find_self_loops(uint32_t min_size=0,uint32_t max_size=1000000, bool include_circles=true) const;
 
-    /**
-     * Dumps the LinkageDiGraph (links) to filename
-     * @param filename
-     */
-    void dump_to_text(std::string filename);
 
-    /**
-     * Loads the LinkageDiGraph (links) from filename
-     * @param filename
-     */
-    void load_from_text(std::string filename);
-
-//    std::vector<sgNodeID_t> select_nodes_subcomponent(std::vector<sgNodeID_t> nodes);
 
     /**
      * Writes the graph to a GFA v1 file, optionally a few nodes can be selected for writing.

@@ -306,23 +306,14 @@ std::vector<SequenceDistanceGraphPath> DistanceGraph::find_all_paths_between(sgN
     return final_paths;
 }
 
-void DistanceGraph::dump_to_text(std::string filename) {
-    std::ofstream of(filename);
-    for (auto &lv:links) for (auto &l:lv){
-        if (llabs(l.source)<=llabs(l.dest)) of<<l.source<<" "<<l.dest<<" "<<l.dist<<std::endl;
-    }
+void DistanceGraph::dump(std::string filename) {
+    std::ofstream ofs(filename);
+    write(ofs);
 }
 
-void DistanceGraph::load_from_text(std::string filename) {
-    std::ifstream link_file(filename);
-    Link l(0,0,0);
-    while (true){
-        link_file>>l.source;
-        link_file>>l.dest;
-        link_file>>l.dist;
-        if (link_file.eof()) break;
-        add_link(l.source,l.dest,l.dist);
-    }
+void DistanceGraph::load(std::string filename) {
+    std::ifstream ifs(filename);
+    read(ifs);
 }
 
 std::vector<std::pair<sgNodeID_t,sgNodeID_t>> DistanceGraph::find_bubbles(uint32_t min_size,uint32_t max_size) const {
