@@ -171,11 +171,10 @@ void WorkSpace::load_from_disk(std::string filename, bool log_only) {
 
     // Kmer counts datastore
     wsfile.read((char *) &count,sizeof(count));
-    kmer_counters.reserve(count);
     for (auto i = 0; i < count; i++) {
         kmer_counters.emplace_back(*this,wsfile);
     }
-
+    sdglib::OutputLog() <<"WS loaded" <<std::endl;
 }
 
 std::string WorkSpace::ls(int level,bool recursive) const {
