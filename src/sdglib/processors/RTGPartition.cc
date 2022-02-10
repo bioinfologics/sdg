@@ -282,7 +282,7 @@ bool RTGPartition::supported_thread(int64_t tid, int min_support) {
     return true;
 }
 
-void RTGPartition::classify_all_threads(int min_nodes, float max_classified_nodes_perc) {
+void RTGPartition::classify_all_threads(int min_nodes, float max_classified_nodes_perc, int max_threads) {
     auto ut=find_unclassified_threads(min_nodes,max_classified_nodes_perc);
     for (auto i=0;i<ut.size();++i) {
         auto tid=ut[i];
@@ -301,6 +301,7 @@ void RTGPartition::classify_all_threads(int min_nodes, float max_classified_node
             }
             std::cout<<"Class "<<new_class<<" from sorter from thread "<<tid<<" has "<<nodes_in_class<<" nodes after propagation"<<std::endl;
             std::cout<<classified_nodes<<" / "<<node_class.size()<<" nodes classified"<<std::endl;
+            if (max_threads!=-1 and --max_threads==0) break;
         }
     }
 }

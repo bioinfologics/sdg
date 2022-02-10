@@ -27,7 +27,7 @@ public:
 
     bool supported_thread(int64_t tid,int min_support=2);
 
-    void classify_all_threads(int min_nodes=50, float max_classified_nodes_perc=.05);
+    void classify_all_threads(int min_nodes=50, float max_classified_nodes_perc=.05, int max_threads=-1);
 
     uint64_t propagate(uint64_t steps=UINT64_MAX, bool verbose=false);
 
