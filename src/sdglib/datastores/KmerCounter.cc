@@ -654,10 +654,12 @@ float KmerCounter::kci(sgNodeID_t node){
 }
 
 float KmerCounter::_kci64(sgNodeID_t node) {
-    try {
-        return kci_cache.at(llabs(node));
+    float nkci=-1;
+#pragma omp critical
+    {
+        if (kci_cache.count(llabs(node))) nkci=kci_cache.at(llabs(node));
     }
-    catch(const std::out_of_range& oor) {
+    if (nkci==-1) {
         std::vector<uint64_t> skmers;
         auto &s=ws.sdg.nodes[llabs(node)].sequence;
         //StringKMerFactory skf(k);
@@ -680,20 +682,22 @@ float KmerCounter::_kci64(sgNodeID_t node) {
             }
         }
         std::sort(freqs.begin(),freqs.end());
-        float nkci=(freqs.size()>10 ? freqs[freqs.size()/2]/ kci_peak_f:-1);
+        nkci=(freqs.size()>10 ? freqs[freqs.size()/2]/ kci_peak_f:-1);
 #pragma omp critical
         {
             kci_cache[llabs(node)] = nkci;
         }
-        return nkci;
     }
+    return nkci;
 }
 
 float KmerCounter::_kci128(sgNodeID_t node) {
-    try {
-        return kci_cache128.at(llabs(node));
+    float nkci=-1;
+#pragma omp critical
+    {
+        if (kci_cache128.count(llabs(node))) nkci=kci_cache128.at(llabs(node));
     }
-    catch(const std::out_of_range& oor) {
+    if (nkci==-1) {
         std::vector<__uint128_t> skmers;
         auto &s=ws.sdg.nodes[llabs(node)].sequence;
         //StringKMerFactory skf(k);
@@ -716,13 +720,13 @@ float KmerCounter::_kci128(sgNodeID_t node) {
             }
         }
         std::sort(freqs.begin(),freqs.end());
-        float nkci=(freqs.size()>10 ? freqs[freqs.size()/2]/ kci_peak_f:-1);
+        nkci=(freqs.size()>10 ? freqs[freqs.size()/2]/ kci_peak_f:-1);
 #pragma omp critical
         {
             kci_cache128[llabs(node)] = nkci;
         }
-        return nkci;
     }
+    return nkci;
 }
 
 void KmerCounter::compute_all_kcis() {
