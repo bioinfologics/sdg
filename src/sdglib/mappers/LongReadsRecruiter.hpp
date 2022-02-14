@@ -198,7 +198,7 @@ public:
     std::vector<std::vector<sgNodeID_t> > all_paths_fw(sgNodeID_t node) const;
 
 
-    std::pair<int,int> find_next_valid_block(const std::vector<PerfectMatch> & matches, int start, int min_count);
+    std::vector<std::pair<int,int>> find_all_valid_blocks(const std::vector<PerfectMatch> & matches, int min_count);
     /** @brief Threads the nodes by plain aggregation of the matches to a node
      *
      * Matches don't need to fulfill any other requirement to appear in the thread other thatn to have a match

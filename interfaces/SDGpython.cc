@@ -458,7 +458,7 @@ PYBIND11_MODULE(SDGpython, m) {
                  "fmin"_a=0, "fmax"_a=UINT32_MAX, "graph_fmin"_a=0, "graph_fmax"_a=UINT32_MAX)
             .def("recruit",&LongReadsRecruiter::recruit_reads,"hit_size"_a=21,"hit_count"_a=1,"first_read"_a=1,"last_read"_a=0)
             .def("recruit_threads",&LongReadsRecruiter::recruit_threads)
-            .def("find_next_valid_block",&LongReadsRecruiter::find_next_valid_block,"matches"_a,"start"_a,"min_count"_a)
+            .def("find_all_valid_blocks",&LongReadsRecruiter::find_all_valid_blocks,"matches"_a,"min_count"_a)
             .def("simple_thread_reads",&LongReadsRecruiter::simple_thread_reads,"min_count"_a=1)
             .def("rtg_from_threads",&LongReadsRecruiter::rtg_from_threads,"remove_duplicated"_a=false,"min_thread_nodes"_a=1)
             .def("path_fw",&LongReadsRecruiter::path_fw,"read_id"_a,"node"_a)

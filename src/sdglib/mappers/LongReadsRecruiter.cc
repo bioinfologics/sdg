@@ -706,33 +706,26 @@ void LongReadsRecruiter::recruit_threads() {
                     node_threads[llabs(match.node)].emplace_back(rid);
 }
 
-//helper function: find the next block of alignments to a node, returns the first and last index in the matches
-std::pair<int,int> LongReadsRecruiter::find_next_valid_block(const std::vector<PerfectMatch> & matches, int start, int min_count){
-    if (start>=matches.size()) return {-1,-1};
-    int block_start=start;
-    int block_end=start;
-    sgNodeID_t block_nid=matches[start].node;
-    int block_count=0;
-    for (auto i=start; i<matches.size();++i){
-        if (matches[i].node==block_nid) { //if block continues, keep going, unless its the last match in which case return block.
-            if (++block_count>=min_count) {
-                block_end=i;
-                if (i==matches.size()-1) return {block_start,block_end};
-            }
+std::vector<std::pair<int,int>> LongReadsRecruiter::find_all_valid_blocks(const std::vector<PerfectMatch> & matches, int min_count){
+    std::vector<std::pair<int,int>> blocks;
+    std::unordered_map<sgNodeID_t,int> node_count;
+    for (auto &m:matches) ++node_count[m.node];
+    int start=0;
+    int nid=0;
+    int count;
+    for (auto i=0;i<matches.size();++i) {
+        //std::cout<<matches[i].node<<" "<<node_count[matches[i].node]<<std::endl;
+        if (node_count[matches[i].node]<min_count) continue;
+        if (matches[i].node!=nid) {
+            nid=matches[i].node;
+            start=i;
+            count=0;
         }
-        else if (block_count<min_count) { //if the block hadn't started, just move the start forward
-            block_start=i;
-            block_nid=matches[i].node;
-            block_count==1;
-        }
-        else { //if block is interrupted by a valid block, or a partial block running at the end of the matches, return the block, otherwise skip
-            int next_count=1;
-            for (;i+next_count<matches.size() and matches[i+next_count].node==matches[i].node;++next_count);
-            if (i+next_count==matches.size() or next_count>=min_count) return {block_start, block_end};
-            else i+=next_count;
-        }
+        ++count;
+        //std::cout<<nid<<" reached count "<<count<<std::endl;
+        if (node_count[nid]==count) blocks.emplace_back(start,i);
     }
-    return {-1,-1};
+    return blocks;
 }
 
 void LongReadsRecruiter::simple_thread_reads(int min_count) {
@@ -741,7 +734,7 @@ void LongReadsRecruiter::simple_thread_reads(int min_count) {
     for (auto rid=1;rid<read_perfect_matches.size();++rid){
         int64_t thread_offset=0;//offset between thread and read, computed on last block's position vs. its last match
         const auto & matches=read_perfect_matches[rid];
-        for (auto nb= find_next_valid_block(matches,0,min_count);nb.first!=-1;nb=find_next_valid_block(matches,nb.second+1,min_count)) {
+        for (auto nb:find_all_valid_blocks(matches,min_count)) {
             int64_t pstart=matches[nb.first].read_position-matches[nb.first].node_position+thread_offset;
             int64_t pend=pstart+sdg.get_node_size(matches[nb.first].node);
             thread_offset=pstart+matches[nb.second].node_position-matches[nb.second].read_position;
