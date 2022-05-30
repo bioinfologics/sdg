@@ -91,6 +91,71 @@ void GraphContigger::solve_canonical_repeats(const PairedReadsDatastore & prds,i
         }
 
     }
+    //This covers 2:2 repeats with no intermediate node (i.e. k size repeats)
+    for (auto & nv :ws.sdg.get_all_nodeviews(true,false)){
+
+        auto pAn=nv.next();
+        if (pAn.size()!=2) continue;
+        if (abs(pAn[0].node().node_id())>abs(pAn[1].node().node_id())) std::swap(pAn[0],pAn[1]);
+
+        auto nAp=pAn[0].node().prev();
+        if (nAp.size()!=2) continue;
+        if (abs(nAp[0].node().node_id())>abs(nAp[1].node().node_id())) std::swap(nAp[0],nAp[1]);
+        if (nAp[0].node().node_id()!=nv.node_id()) continue;
+
+        auto pBn=nAp[1].node().next();
+        if (pBn.size()!=2) continue;
+        if (abs(pBn[0].node().node_id())>abs(pBn[1].node().node_id())) std::swap(pBn[0],pBn[1]);
+
+        auto nBp=pAn[1].node().prev();
+        if (nBp.size()!=2) continue;
+        if (abs(nBp[0].node().node_id())>abs(nBp[1].node().node_id())) std::swap(nBp[0],nBp[1]);
+
+        //all links match
+        if (nAp[0].node().node_id()!=nBp[0].node().node_id() or nAp[1].node().node_id()!=nBp[1].node().node_id() or pAn[0].node().node_id()!=pBn[0].node().node_id() or pAn[1].node().node_id()!=pBn[1].node().node_id()) continue;
+        ++repeats;
+
+        auto pA=nAp[0].node().node_id();
+        auto pB=nAp[1].node().node_id();
+        auto nA=pAn[0].node().node_id();
+        auto nB=pAn[1].node().node_id();
+        int vAA=0,vAB=0,vBA=0,vBB=0;
+        //First, find the universe of possible voting paths (both paired and single)
+        for (auto &pf:prds.mapper.all_paths_fw(pA)){
+            for (auto &nid:pf) {
+                if (nid==nA) {
+                    ++vAA;
+                    break;
+                }
+                if (nid==nB) {
+                    ++vAB;
+                    break;
+                }
+            }
+        }
+        for (auto &pf:prds.mapper.all_paths_fw(pB)){
+            for (auto &nid:pf) {
+                if (nid==nA) {
+                    ++vBA;
+                    break;
+                }
+                if (nid==nB) {
+                    ++vBB;
+                    break;
+                }
+            }
+        }
+        if (vAA>=min_support and vBB>=min_support and vAB<=std::min(max_noise,(int)std::ceil(vAA/snr)) and vBA<=std::min(max_noise,(int)std::ceil(vBB/snr))) {
+            ge.queue_link_deletion(-pA,nB);
+            ge.queue_link_deletion(-pB,nA);
+            ++solved_repeats;
+        }
+        if (vAB>=min_support and vBA>=min_support and vAA<=std::min(max_noise,(int)std::ceil(vAB/snr)) and vBB<=std::min(max_noise,(int)std::ceil(vBA/snr))) {
+            ge.queue_link_deletion(-pA,nA);
+            ge.queue_link_deletion(-pB,nB);
+            ++solved_repeats;
+        }
+    }
     sdglib::OutputLog()<<"Contigger repeat_expansion: "<<solved_repeats<<" / "<<repeats<<std::endl;
     ge.apply_all();
     ws.sdg.join_all_unitigs();
