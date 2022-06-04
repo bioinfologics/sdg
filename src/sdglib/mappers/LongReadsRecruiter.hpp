@@ -198,14 +198,14 @@ public:
     std::vector<std::vector<sgNodeID_t> > all_paths_fw(sgNodeID_t node) const;
 
 
-    std::vector<std::pair<int,int>> find_all_valid_blocks(const std::vector<PerfectMatch> & matches, int min_count);
+    std::vector<std::pair<int,int>> find_all_valid_blocks(const std::vector<PerfectMatch> & matches, int min_count, int min_bp=1);
     /** @brief Threads the nodes by plain aggregation of the matches to a node
      *
      * Matches don't need to fulfill any other requirement to appear in the thread other thatn to have a match
      * Fills read_threads with NodePositions. read_threads[i] stores the NodePositions of the thread created by read i.
      *
      */
-    void simple_thread_reads(int min_count=1);
+    void simple_thread_reads(int min_count=1,int min_bp=1);
 
     /** @brief Create a ReadThreadsGraph object using the threads information
      * see ReadThreadsGraph class

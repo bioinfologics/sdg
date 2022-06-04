@@ -706,16 +706,19 @@ void LongReadsRecruiter::recruit_threads() {
                     node_threads[llabs(match.node)].emplace_back(rid);
 }
 
-std::vector<std::pair<int,int>> LongReadsRecruiter::find_all_valid_blocks(const std::vector<PerfectMatch> & matches, int min_count){
+std::vector<std::pair<int,int>> LongReadsRecruiter::find_all_valid_blocks(const std::vector<PerfectMatch> & matches, int min_count, int min_bp){
     std::vector<std::pair<int,int>> blocks;
-    std::unordered_map<sgNodeID_t,int> node_count;
-    for (auto &m:matches) ++node_count[m.node];
+    std::unordered_map<sgNodeID_t,int> node_count,node_bp;
+    for (auto &m:matches) {
+        ++node_count[m.node];
+        node_bp[m.node]+=m.size;
+    }
     int start=0;
     int nid=0;
     int count;
     for (auto i=0;i<matches.size();++i) {
         //std::cout<<matches[i].node<<" "<<node_count[matches[i].node]<<std::endl;
-        if (node_count[matches[i].node]<min_count) continue;
+        if (node_count[matches[i].node]<min_count or node_bp[matches[i].node]<min_bp) continue;
         if (matches[i].node!=nid) {
             nid=matches[i].node;
             start=i;
@@ -728,13 +731,13 @@ std::vector<std::pair<int,int>> LongReadsRecruiter::find_all_valid_blocks(const 
     return blocks;
 }
 
-void LongReadsRecruiter::simple_thread_reads(int min_count) {
+void LongReadsRecruiter::simple_thread_reads(int min_count,int min_bp) {
     read_threads.clear();
     read_threads.resize(read_perfect_matches.size());
     for (auto rid=1;rid<read_perfect_matches.size();++rid){
         int64_t thread_offset=0;//offset between thread and read, computed on last block's position vs. its last match
         const auto & matches=read_perfect_matches[rid];
-        for (auto nb:find_all_valid_blocks(matches,min_count)) {
+        for (auto nb:find_all_valid_blocks(matches,min_count,min_bp)) {
             int64_t pstart=matches[nb.first].read_position-matches[nb.first].node_position+thread_offset;
             int64_t pend=pstart+sdg.get_node_size(matches[nb.first].node);
             thread_offset=pstart+matches[nb.second].node_position-matches[nb.second].read_position;
